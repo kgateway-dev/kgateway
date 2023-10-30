@@ -269,7 +269,7 @@ type Settings struct {
 	// defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions,
 	// or RouteOptions.
 	ExtProc *extproc.Settings `protobuf:"bytes,39,opt,name=ext_proc,json=extProc,proto3" json:"ext_proc,omitempty"`
-	// Enterprise-only: Tap filter settings.
+	// Enterprise-only: Tap filter settings. (experimental)
 	Tap *tap.Tap `protobuf:"bytes,40,opt,name=tap,proto3" json:"tap,omitempty"`
 }
 
