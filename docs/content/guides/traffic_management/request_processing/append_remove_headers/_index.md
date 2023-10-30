@@ -251,6 +251,7 @@ Headers can be inherited by children options, such as shown in the following exa
            - header:
                key: x-route-table
                value: alphabet
+             append: false # overwrite the value of `x-route-table` if it already exists
    ```
 3. In the RouteTable child object, define other headers. In the following example, the `x-route-table` header is added to requests, and the `x-route-table: a` header is added to responses.
    ```yaml
@@ -282,4 +283,63 @@ Headers can be inherited by children options, such as shown in the following exa
 4. Now, requests that match the route `/a/1` get the following headers:
    * The `x-gateway-start-time` request header is inherited from the parent VirtualHost option.
    * The `x-route-table` request header is set in the child Route option.
-   * The `x-route-table` response header in the child overwrites the parent object's value of `alphabet` instead to `a`, because child objects take precedence in case of conflict.
+   * The `x-route-table` response header in the parent overwrites the child object's value of `a` instead to `alphabet`.
+
+Due to how header manipulations are processed, less specific headers overwrite more specific headers.
+
+From the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers):
+> Headers are appended to requests/responses in the following order: weighted cluster level headers, route level headers, virtual host level headers and finally global level headers.
+
+In the previous example of the `x-route-table` response header, the virtual host level header overwrites the route level header because the virtual host level header is evaluated after the route level header.
+* If you set `append: true` or omit this field on the virtual host, then the route level response header (`a`) would get appended to the virtual host level header (`alphabet`).
+* If you set `append: false` on the route, the route does not affect the virtual host because the route is evaluated before the virtual host. In the example, the response header would stay `x-route-table: alphabet`.
+
+### Reversing the order of header manipulation evaluation
+
+You can reverse the order in which header manipulations are evaluated so that order of evaluation becomes: global level headers, virtual host level headers, route level headers, and finally weighted cluster level headers.
+With the order of evaluation being reversed, more specific header manipulations can override less specific ones.
+
+To reverse the order of evaluation, set the `mostSpecificHeaderMutationsWins` field to `true` in the [routeOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#routeconfigurationoptions" >}}) settings for a [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}}).
+
+The route options that you set on the Gateway will apply to all routes that the Gateway serves.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata: # collapsed for brevity
+spec:
+  routeOptions:
+    mostSpecificHeaderMutationsWins: true
+status: # collapsed for brevity
+```
+
+Following the VirtualService and RouteTable setup in the previous section, add the `append` setting to `false` on the RouteTable. This way, the header values added by the RouteTable override less specific headers instead of append to the values.
+{{< highlight yaml "hl_lines=25-25" >}}
+apiVersion: gateway.solo.io/v1
+kind: RouteTable
+metadata:
+  name: 'a-routes'
+  namespace: 'a'
+spec:
+  routes:
+    - matchers:
+        # the path matchers in this RouteTable must begin with the prefix `/a/`
+      - prefix: '/a/1'
+      routeAction:
+        single:
+          upstream:
+            name: 'foo-upstream'
+  options:
+    headerManipulation:
+      requestHeadersToAdd:
+        - header:
+            key: x-route-table
+            value: a
+      responseHeadersToAdd:
+        - header:
+            key: x-route-table
+            value: a
+          append: false
+{{< /highlight >}}
+
+With `mostSpecificHeaderMutationsWins` set to `true` and `append` set to `false`, now the `x-route-table` response header in the child RouteTable overwrites the parent object's value of `alphabet` instead to `a`.

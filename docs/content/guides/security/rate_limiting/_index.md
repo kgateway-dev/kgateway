@@ -1,5 +1,5 @@
 ---
-title: Rate Limiting
+title: Global rate limiting
 weight: 30
 description: Control the rate of traffic sent to your services.
 ---

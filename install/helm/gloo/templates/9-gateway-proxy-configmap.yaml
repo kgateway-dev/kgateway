@@ -394,6 +394,9 @@ data:
 {{- $kubeResourceOverride = $gatewaySpec.configMap.kubeResourceOverride -}}
 {{- end -}} {{/* if $gatewaySpec.configMap */}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.configMapSpec") -}}
+{{- $configmap := include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.configMapSpec") -}}
+{{- $checksum := $configmap | sha256sum -}}
+{{- $_ := set $gatewaySpec "checksum" $checksum -}}
+{{- $configmap -}}
 {{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }}{{/* if .Values.gateway.enabled */}}

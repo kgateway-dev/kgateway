@@ -815,6 +815,16 @@ func (m *GatewayOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTranslateEmptyGateways()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTranslateEmptyGateways()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTranslateEmptyGateways(), target.GetTranslateEmptyGateways()) {
+			return false
+		}
+	}
+
 	return true
 }
 

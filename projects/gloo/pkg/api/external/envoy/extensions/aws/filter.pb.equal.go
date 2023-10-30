@@ -287,5 +287,9 @@ func (m *AWSLambdaConfig_ServiceAccountCredentials) Equal(that interface{}) bool
 		}
 	}
 
+	if strings.Compare(m.GetRegion(), target.GetRegion()) != 0 {
+		return false
+	}
+
 	return true
 }

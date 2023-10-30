@@ -181,6 +181,16 @@ func (m *RouteConfigurationOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetMostSpecificHeaderMutationsWins()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMostSpecificHeaderMutationsWins()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMostSpecificHeaderMutationsWins(), target.GetMostSpecificHeaderMutationsWins()) {
+			return false
+		}
+	}
+
 	return true
 }
 

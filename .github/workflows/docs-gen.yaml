@@ -7,10 +7,10 @@ on:
   push:
     branches:
     - 'main'
+    - 'v1.15.x'
     - 'v1.14.x'
     - 'v1.13.x'
     - 'v1.12.x'
-    - 'v1.11.x'
   pull_request:
     branches:
     - 'main'

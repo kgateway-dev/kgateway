@@ -528,6 +528,12 @@ func (m *GatewayOptions) Clone() proto.Message {
 		target.IsolateVirtualHostsBySslConfig = proto.Clone(m.GetIsolateVirtualHostsBySslConfig()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetTranslateEmptyGateways()).(clone.Cloner); ok {
+		target.TranslateEmptyGateways = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.TranslateEmptyGateways = proto.Clone(m.GetTranslateEmptyGateways()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

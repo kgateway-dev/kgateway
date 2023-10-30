@@ -34,6 +34,8 @@ Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl
 
 ```shell
 % glooctl get upstreams default-httpbin-8000
+```
+```shell
 +----------------------+------------+----------+------------------------+
 |       UPSTREAM       |    TYPE    |  STATUS  |        DETAILS         |
 +----------------------+------------+----------+------------------------+
@@ -72,6 +74,8 @@ Run the following `glooctl` command to confirm that the new Route was accepted b
 
 ```shell
 % glooctl get virtualservice httpbin-auth0-vs
+```
+```shell
 +------------------+--------------+--------------+------+----------+-----------------+----------------------------------+
 | VIRTUAL SERVICE  | DISPLAY NAME |   DOMAINS    | SSL  |  STATUS  | LISTENERPLUGINS |              ROUTES              |
 +------------------+--------------+--------------+------+----------+-----------------+----------------------------------+
@@ -93,10 +97,16 @@ Update your `/etc/hosts` file to resolve `glootest.com` by the IP address return
 34.75.13.137 glootest.com
 ```
 
-You can now access the application using the `glootest.com` domain.
+You can now access the application using the `glootest.com` domain. 
+
+{{% notice note %}}
+If you locally test on kind, you must include the port in all URLs, such as `http://glootest.com:32500/get`. 
+{{% /notice %}}
 
 ```shell
 % curl http://glootest.com/get
+```
+```shell
 {
   "args": {},
   "headers": {
@@ -121,6 +131,8 @@ For test purposes only, we'll begin by creating a self-signed certificate for th
 
 ```shell
 % openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=glootest.com"
+```
+```shell
 Generating a 2048 bit RSA private key
 ...+++
 ....+++
@@ -131,10 +143,12 @@ Second, we'll create a Kubernetes secret containing this certificate.
 
 ```shell
 % kubectl create secret tls upstream-tls --key tls.key --cert tls.crt --namespace gloo-system
+```
+```shell
 secret/upstream-tls created
 ```
 
-Third, we enable HTTPS for our Virtual Service by using `kubectl` to apply the following change.
+Third, we enable HTTPS for our Virtual Service by using `kubectl` to apply the following change. (If you are using Kind, you will need to include the port in the domain names)
 
 {{< highlight yaml "hl_lines=7-10" >}}
 apiVersion: gateway.solo.io/v1
@@ -164,6 +178,8 @@ Finally, we will use `curl` to confirm that we can access the new https endpoint
 
 ```shell
 % curl -k https://glootest.com/get
+```
+```shell
 {
   "args": {},
   "headers": {
@@ -218,6 +234,8 @@ Create the oauth secret in Kubernetes using `glooctl` with the Auth0 application
 
 ```shell
 % glooctl create secret oauth --namespace gloo-system --name auth0-client-secret --client-secret $CLIENT_SECRET
+```
+```shell
 +---------------------+-------+
 |       SECRET        | TYPE  |
 +---------------------+-------+
@@ -243,7 +261,7 @@ spec:
         clientSecretRef:
           name: auth0-client-secret
           namespace: gloo-system
-        issuerUrl: https://solo-io.us.auth0.com/
+        issuerUrl: <insert-your-app-url-here>
         scopes:
         - email
 ```
@@ -283,6 +301,23 @@ spec:
 
 Note that the `/callback` path will be handled by this same Virtual Service because we used a catch-all `/` prefix matcher.
 
+### Adjust the timeout
+It is common for initial requests that are routed through Auth0, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object. The default timeout is 200ms, which is often inadequate to account for the external network hop to Auth0. Increasing that timeout can resolve the problem.
+
+You can get the current state of the `Settings` object like this:
+```shell
+% kubectl get settings.gloo.solo.io -n gloo-system -oyaml
+```
+
+Then apply a change to the `spec.extauth` stanza of [settings]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings">}}) to add a `requestTimeout` greater than 200ms, like this:
+{{< highlight yaml "hl_lines=2-2" >}}
+    extauth:
+      requestTimeout: 1s
+      extauthzServerRef:
+        name: extauth
+        namespace: gloo-system
+{{< /highlight >}}
+
 ### Verify Auth0 Integration
 
 {{< notice note >}}
@@ -313,21 +348,6 @@ The examples in this guide were tested using both Safari and Chrome on MacOS.  Y
 
 You may experience browser issues if there is an overlap between the email of your Auth0 user and an active Google oauth connection in your browser.  Issuing these requests in Incognito (Chrome) or Private (Safari) windows resolves these problems.
 
-It is common for initial requests that are routed through Auth0, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object.  The default timeout is 200ms, which is often inadequate to account for the external network hop to Auth0.  Increasing that timeout should resolve the problem.
-
-You can get the current state of the `Settings` object like this:
-```shell
-% kubectl get settings.gloo.solo.io -n gloo-system -oyaml
-```
-
-Then apply a change to the `spec.extauth` stanza to add a `requestTimeout` greater than 200ms, like this:
-```yaml
-    extauth:
-      requestTimeout: 1s
-      extauthzServerRef:
-        name: extauth
-        namespace: gloo-system
-```
 
 ## JWT Claim Extraction
 

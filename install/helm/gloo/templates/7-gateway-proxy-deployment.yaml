@@ -70,10 +70,10 @@ spec:
         sidecar.istio.io/inject: "true"
           {{- end }}
         {{- end }}
-{{ $annotationExist := false}}
-{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
-{{ $annotationExist = true}}
       annotations:
+        # This annotation was introduced to resolve https://github.com/solo-io/gloo/issues/8392
+        # It triggers a new rollout of the gateway proxy if the values in this config map changes.
+        checksum/{{ $name | kebabcase }}-envoy-config: {{ $gatewaySpec.checksum }}
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
@@ -83,12 +83,7 @@ spec:
         ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8081/stats"}]'
         ad.datadoghq.com/gateway-proxy.logs: '[{"source": "envoy", "service": "gloo","log_processing_rules":[{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}"}]}]'
       {{- end }}
-{{- end }}
 {{- if $statsConfig.enabled }}
-{{- if not $annotationExist }}
-{{- $annotationExist = true}}
-      annotations:
-{{- end}}
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
@@ -97,9 +92,6 @@ spec:
         {{- end }}
 {{- end}}
 {{- if $spec.readConfig }}
-{{- if not $annotationExist }}
-      annotations:
-{{- end}}
         readconfig-stats: /stats
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
@@ -469,6 +461,12 @@ spec:
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
           name: istio-token
+        - mountPath: /var/run/secrets/credential-uds
+          name: credential-socket
+        - mountPath: /var/run/secrets/workload-spiffe-uds
+          name: workload-socket
+        - mountPath: /var/run/secrets/workload-spiffe-credentials
+          name: workload-certs
 {{- end }} {{/* if not $global.istioSDS.customSidecars */}}
 {{- end }}{{/* if $global.istioSDS.enabled */}}
       volumes:
@@ -494,6 +492,12 @@ spec:
               audience: istio-ca
               expirationSeconds: 43200
               path: istio-token
+      - name: credential-socket
+        emptyDir: {}
+      - name: workload-socket
+        emptyDir: {}
+      - name: workload-certs
+        emptyDir: {}
 {{- end}}
 
 {{- if $global.glooMtls.enabled }}

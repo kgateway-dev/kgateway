@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.26.4-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.26.5-patch1
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -801,7 +801,7 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 # The minimum version to scan with trivy
-MIN_SCANNED_VERSION ?= v1.11.0
+MIN_SCANNED_VERSION ?= v1.12.0
 
 .PHONY: run-security-scans
 run-security-scan:

@@ -66,6 +66,7 @@ discovery:
     fsGroup: 10101
 gateway:
   enabled: true
+  translateEmptyGateways: false
   readGatewaysFromAllNamespaces: false
   isolateVirtualHostsBySslConfig: false
   validation:
@@ -91,6 +92,7 @@ gateway:
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
     forceRotation: true
+    rotationDuration: 65s
     cron:
       enabled: false
       schedule: "* * * * *"
@@ -101,7 +103,10 @@ gateway:
       repository: kubectl
     restartPolicy: OnFailure
     runAsUser: 10101
-    ttlSecondsAfterFinished: 60
+    # When adding the --wait && --wait-for-jobs flag in helm, sometimes the job can complete and be deleted before helm can check if it has finished (for instance, while helm is waiting on a deployment).
+    # So set this to a higher value where it should still be around after all the other resources are ready
+    ttlSecondsAfterFinished: 300
+    timeout: 600
   cleanupJob:
     enabled: true
     image:
@@ -155,7 +160,7 @@ gatewayProxies:
     envoyOverloadManager:
       enabled: false
       actions: []
-      bufferFactoryConfig: 
+      bufferFactoryConfig:
       refreshInterval: 1s
       resourceMonitors: []
     globalDownstreamMaxConnections: 250000
@@ -224,7 +229,7 @@ global:
       image:
         repository: proxyv2
         registry: docker.io/istio
-        tag: 1.9.5
+        tag: 1.18.2
     envoy:
       image:
         repository: gloo-envoy-wrapper
@@ -238,4 +243,3 @@ global:
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true
-  

@@ -1058,7 +1058,7 @@ spec:
 						if structuredDeployment.GetName() == "gateway-proxy" {
 							Expect(len(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal(3), "should have exactly 3 containers")
 							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an sds sidecar")
-							Ω(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.9.5"), "istio proxy sidecar should be the default")
+							Ω(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.18.2"), "istio proxy sidecar should be the default")
 							Ω(haveIstioSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an istio-proxy sidecar")
 							Ω(sdsIsIstioMode(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "sds sidecar should have istio mode enabled")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(istioCertsVolume), "should have istio-certs volume mounted")
@@ -1630,6 +1630,33 @@ spec:
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
 						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
+					})
+
+					It("has a different checksum for each gateway-proxy-envoy-config", func() {
+						getDeployment := func(name string) *appsv1.Deployment {
+							gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, name)
+							gwp, err := kuberesource.ConvertUnstructured(gwpUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+							gwpStr := *gwp.(*appsv1.Deployment)
+							return &gwpStr
+						}
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.globalDownstreamMaxConnections=54321",
+								// anotherGatewayProxy should a different value of globalDownstreamMaxConnections to ensure that the config maps generated are different
+								"gatewayProxies.anotherGatewayProxy.globalDownstreamMaxConnections=12345",
+							},
+						})
+
+						defaultGWPconfigMap := getConfigMap(testManifest, namespace, "gateway-proxy-envoy-config")
+						anotherGWPconfigMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
+						Expect(defaultGWPconfigMap.Data["envoy.yaml"]).ToNot(Equal(anotherGWPconfigMap.Data["envoy.yaml"]))
+
+						defaultGWP := getDeployment("gateway-proxy")
+						anotherGWP := getDeployment("another-gateway-proxy")
+						Expect(defaultGWP.Spec.Template.Annotations["checksum/gateway-proxy-envoy-config"]).ToNot(Equal(anotherGWP.Spec.Template.Annotations["checksum/another-gateway-proxy-envoy-config"]))
 					})
 
 					It("uses default nodeSelectors for custom gateway proxy when none is specified", func() {
@@ -2801,6 +2828,10 @@ spec:
 							"prometheus.io/path":   "/metrics",
 							"prometheus.io/port":   "8081",
 							"prometheus.io/scrape": "true",
+							// This annotation was introduced to resolve https://github.com/solo-io/gloo/issues/8392
+							// It triggers a new rollout of the gateway proxy if the config map it uses changes
+							// As of PR 8733, changing the values of the deployment spec doesn't change the gateway-proxy config map, so it is safe to hardcode the checksum in the tests
+							"checksum/gateway-proxy-envoy-config": "27068cd033014d38f6c77522484e957ab25fa1be34a900a1f5241b8f7d62f525",
 						}
 						deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
 							Name: "envoy-config",
@@ -3025,7 +3056,7 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("unprivelged user", func() {
+					It("unprivileged user", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.runUnprivileged=true"},
 						})
@@ -3338,7 +3369,7 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("can overwrite sds and istioProxy images", func() {
+					It("can overwrite sds and istioProxy images from istioSDS", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
@@ -3369,6 +3400,14 @@ spec:
 						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
 						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
 						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(v1.PullAlways))
+
+						// Volumes env added to support more recent istio versions as of https://github.com/solo-io/gloo/pull/8666
+						Expect(istioProxyContainer.VolumeMounts[4]).To(Equal(v1.VolumeMount{Name: "credential-socket", MountPath: "/var/run/secrets/credential-uds"}))
+						Expect(istioProxyContainer.VolumeMounts[5]).To(Equal(v1.VolumeMount{Name: "workload-socket", MountPath: "/var/run/secrets/workload-spiffe-uds"}))
+						Expect(istioProxyContainer.VolumeMounts[6]).To(Equal(v1.VolumeMount{Name: "workload-certs", MountPath: "/var/run/secrets/workload-spiffe-credentials"}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[5]).To(Equal(v1.Volume{Name: "credential-socket", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[6]).To(Equal(v1.Volume{Name: "workload-socket", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(v1.Volume{Name: "workload-certs", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
 					})
 
 					It("adds readConfig annotations", func() {
@@ -3380,6 +3419,10 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true"},
 						})
+						// Since changing the value of gatewayProxies.gatewayProxy.readConfig changes the gateway-proxy-envoy-config configmap, we need to update the checksum on the deployment as well.
+						// This also doubles as a check to validate that changes in the configmap change the checksum annotation on the deployment which will trigger a rollout.
+						gatewayProxyDeployment.Spec.Template.Annotations["checksum/gateway-proxy-envoy-config"] = "3e431b3dbb3fa7e31cedf9594474ad19e6ecc0e5a7bba59b99cf044d51546eaa"
+
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -4362,12 +4405,15 @@ metadata:
 
 					It("creates the certgen job, rbac, and service account", func() {
 						prepareMakefile(namespace, helmValues{valuesArgs: []string{
+							"global.glooMtls.enabled=true",
 							"gateway.certGenJob.resources.requests.memory=64Mi",
 							"gateway.certGenJob.resources.requests.cpu=250m",
 							"gateway.certGenJob.resources.limits.memory=128Mi",
 							"gateway.certGenJob.resources.limits.cpu=500m",
+							"gateway.certGenJob.forceRotation=true",
+							"gateway.certGenJob.rotationDuration=30s",
 						}})
-						job := makeUnstructured(`
+						gwJob := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -4378,7 +4424,7 @@ metadata:
   namespace: ` + namespace + `
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": "hook-succeeded"
+    "helm.sh/hook-delete-policy": before-hook-creation
     "helm.sh/hook-weight": "10"
 spec:
   ttlSecondsAfterFinished: 60
@@ -4414,9 +4460,57 @@ spec:
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
             - "--force-rotation=true"
       restartPolicy: OnFailure
-
 `)
-						testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
+						testManifest.ExpectUnstructured(gwJob.GetKind(), gwJob.GetNamespace(), gwJob.GetName()).To(BeEquivalentTo(gwJob))
+
+						mtlsJob := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo-mtls-certgen
+  name: gloo-mtls-certgen
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "10"
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      labels:
+        gloo: gloo-mtls-certs
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: certgen
+      restartPolicy: OnFailure
+      containers:
+        - image: quay.io/solo-io/certgen:` + version + `
+          imagePullPolicy: IfNotPresent
+          name: certgen
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10101
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 250m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          args:
+            - "--secret-name=gloo-mtls-certs"
+            - "--svc-name=gloo"
+            - "--rotation-duration=30s"
+            - "--force-rotation=true"
+`)
+						testManifest.ExpectUnstructured(mtlsJob.GetKind(), mtlsJob.GetNamespace(), mtlsJob.GetName()).To(BeEquivalentTo(mtlsJob))
 
 						clusterRole := makeUnstructured(`
 
@@ -4928,6 +5022,18 @@ metadata:
 							},
 						})
 
+					})
+
+					It("supports deploying the fips envoy image", func() {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/discovery-ee-fips:" + version
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.image.fips=true",
+								"discovery.deployment.image.repository=discovery-ee",
+							},
+						})
+
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
 					It("can set log level env var", func() {
@@ -5861,6 +5967,11 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(BeNil())
+								if kind == "Job" {
+									helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+									Expect(ok).To(BeTrue())
+									Expect(helmHookDeletePolicy).To(ContainSubstring("hook-succeeded"))
+								}
 								return true
 							}
 							return false
@@ -5874,7 +5985,7 @@ metadata:
 				)
 
 				DescribeTable("Setting setTtlAfterFinished=true includes ttlSecondsAfterFinished on Jobs",
-					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+					func(kind string, resourceName string, jobValuesPrefix string, expectAnnotation bool, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
 								jobValuesPrefix + ".setTtlAfterFinished=true",
@@ -5889,16 +6000,60 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								if kind == "Job" {
+									helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+									if expectAnnotation {
+										Expect(ok).To(BeTrue())
+										Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+									} else {
+										Expect(ok).To(BeFalse())
+									}
+								}
 								return true
 							}
 							return false
 						})
 						Expect(resources.NumResources()).To(Equal(1))
 					},
-					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
-					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
-					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
-					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob", true),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", false, "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", false, "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+				)
+
+				DescribeTable("When setTtlAfterFinished is unset, includes ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, expectAnnotation bool, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								if kind == "Job" {
+									helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+									if expectAnnotation {
+										Expect(ok).To(BeTrue())
+										Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+									} else if resourceName == "gloo-mtls-certgen" {
+										Expect(ok).To(BeFalse())
+									}
+								}
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob", true),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", false, "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", false, "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", false, "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",

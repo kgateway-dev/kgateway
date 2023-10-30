@@ -29,14 +29,13 @@ spec:
         {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
-      {{- if or .Values.ingressProxy.deployment.extraAnnotations .Values.global.istioIntegration.disableAutoinjection }}
       annotations:
+        checksum/ingress-envoy-config: {{ include (print .Template.BasePath "/12-ingress-proxy-configmap.yaml") . | sha256sum }}
         {{- if .Values.ingressProxy.deployment.extraAnnotations }}
         {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       containers:

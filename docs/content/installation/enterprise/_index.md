@@ -133,29 +133,34 @@ To install Gloo Edge Enterprise in an air-gapped environment:
    ```
 2. On the connected device, download the Gloo Edge Enterprise images.
    ```shell
-   helm template glooe/gloo-ee --version $GLOO_EE_VERSION | yq e '. | .. | select(has("image"))' - | grep image: | sed 's/image: //'
+   helm template glooe/gloo-ee --version $GLOO_EE_VERSION --set-string license_key=$GLOO_LICENSE_KEY | yq e '. | .. | select(has("image"))' - | grep image: | sed 's/image: //'
    ```
    
    The example output includes the list of images.
    ```
-   quay.io/solo-io/gloo-fed-apiserver:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-federation-console:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-fed-apiserver-envoy:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-fed:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/discovery-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/gloo-ee-envoy-wrapper:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo-fed-apiserver:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:07cfb09d3f57e7ff13f0b77a27f85541c323fbbb64611a6d103d4869cd9e53b2
+   quay.io/solo-io/gloo-federation-console:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:a114aac5fb45a82f9496e080abc6491998bd582a2d108ba7e283e8ae74bb9f31
+   quay.io/solo-io/gloo-fed-apiserver-envoy:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:5d81b0a5ea7366536870a26348722d8ca54a814fef5b6bdb5c925b6a5e866980
+   quay.io/solo-io/gloo-fed:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:1dae4f26058cc7e189b3d67832732d0126765f3e9336e437634791ea43081580
+   quay.io/solo-io/gloo-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:5a189ff231d4a6e7d3d17b4c59a8173f9f93e3f0e8e899ba570e9d2fa3006751
+   quay.io/solo-io/discovery-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:12a9408f36955aa9b632259556a0055fc3fa55a40d4fccf64c5ba1c9b3593fbf
+   quay.io/solo-io/gloo-ee-envoy-wrapper:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:92e8389cfa6589d2b5d76ebc25071566117fb98cc58916013f342e1a4bc366d7
    "grafana/grafana:8.2.1"
-   "quay.io/coreos/kube-state-metrics:v1.9.7"
+   "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.6.0"
    "jimmidyson/configmap-reload:v0.5.0"
-   "quay.io/prometheus/prometheus:v2.24.0"
+   "quay.io/prometheus/prometheus:v2.39.1"
    docker.io/busybox:1.28
-   docker.io/redis:6.2.4
-   quay.io/solo-io/rate-limit-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/extauth-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/observability-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   quay.io/solo-io/certgen:{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
-   quay.io/solo-io/kubectl:1.22.9
+   docker.io/redis:7.0.11
+   quay.io/solo-io/rate-limit-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:18be159bbabce83d085359761682204e79b3dd1e4e7e250cb504658c4828dbc8
+   quay.io/solo-io/extauth-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:2ad07cd3cd734aa48f332c8c8d453d501e6ad8f0ab70bb7e9c0bd518e084d41d
+   quay.io/solo-io/observability-ee:{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}@sha256:e3b3e61e0d9b4801f4b4cf0b7c2dd80b43181017ef3d24fad778c60e6c771b82
+   quay.io/solo-io/kubectl:1.15.11@sha256:a32099a598211312c12f5dc5162d3dbfb3046e59b8099ad2dead2068d4dd453d
+   quay.io/solo-io/kubectl:1.15.11@sha256:a32099a598211312c12f5dc5162d3dbfb3046e59b8099ad2dead2068d4dd453d
+   quay.io/solo-io/kubectl:1.15.11@sha256:a32099a598211312c12f5dc5162d3dbfb3046e59b8099ad2dead2068d4dd453d
+   quay.io/solo-io/kubectl:1.15.11@sha256:a32099a598211312c12f5dc5162d3dbfb3046e59b8099ad2dead2068d4dd453d
+   quay.io/solo-io/kubectl:1.15.11@sha256:a32099a598211312c12f5dc5162d3dbfb3046e59b8099ad2dead2068d4dd453d
+   quay.io/solo-io/certgen:1.15.11@sha256:4a30d309158ddf575878508c38f38745c483853da61cb69f669b3fee8da35541
+   quay.io/solo-io/kubectl:1.15.11@sha256:a32099a598211312c12f5dc5162d3dbfb3046e59b8099ad2dead2068d4dd453d
    ```
 
 3. Push the images from the connected device to a private registry that the disconnected device can pull from. For instructions and any credentials you must set up to complete this step, consult your registry provider, such as [Nexus Repository Manager](https://help.sonatype.com/repomanager3/formats/docker-registry/pushing-images) or [JFrog Artifactory](https://www.jfrog.com/confluence/display/JFROG/Getting+Started+with+Artifactory+as+a+Docker+Registry).

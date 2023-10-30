@@ -830,6 +830,9 @@ message GatewayOptions {
     // Individual Gateways can override this behavior by configuring the "gateway.solo.io/isolate_vhost" annotation
     // to be a truthy ("true", "false") value
     google.protobuf.BoolValue isolate_virtual_hosts_by_ssl_config = 10;
+
+    // This field is a no-op for now
+    google.protobuf.BoolValue translate_empty_gateways = 11;
 }
 
 // Settings used by the Enterprise Console (UI)

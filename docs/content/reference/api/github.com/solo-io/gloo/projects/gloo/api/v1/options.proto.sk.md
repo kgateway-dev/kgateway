@@ -109,12 +109,14 @@ connections that rarely cycle (e.g., service mesh gRPC egress).
 
 ```yaml
 "maxDirectResponseBodySizeBytes": .google.protobuf.UInt32Value
+"mostSpecificHeaderMutationsWins": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `maxDirectResponseBodySizeBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum bytes of the response direct response body size. If not specified the default is 4096. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-max-direct-response-body-size-bytes) for more details about the `max_direct_response_body_size_bytes` attribute. |
+| `mostSpecificHeaderMutationsWins` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default, headers that should be added/removed are evaluated from most to least specific. To allow setting overrides at the route or virtual host level, this order can be reversed by setting this option to true. Refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-most-specific-header-mutations-wins) for more details. |
 
 
 
