@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Introduce developer facing documentation around the UDS and EDS features of Gloo Edge
