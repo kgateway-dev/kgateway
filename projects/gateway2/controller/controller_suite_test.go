@@ -100,7 +100,7 @@ var _ = BeforeSuite(func() {
 		AutoProvision:  true,
 		XdsServer:      "localhost",
 		XdsPort:        0,
-        Kick: func(ctx context.Context) error {return nil},
+		Kick:           func(ctx context.Context) { return },
 	}
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())

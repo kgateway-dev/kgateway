@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +30,7 @@ type GatewayConfig struct {
 	AutoProvision  bool
 	XdsServer      string
 	XdsPort        uint16
-	Kick           func(ctx context.Context) error
+	Kick           func(ctx context.Context)
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -39,13 +39,6 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 
 	controllerBuilder := &controllerBuilder{
 		cfg: cfg,
-		//		controllerName: cfg.ControllerName,
-		//		release:        cfg.Release,
-		//		autoProvision:  cfg.AutoProvision,
-		//		server:         cfg.XdsServer,
-		//		port:           cfg.XdsPort,
-		//		mgr:            cfg.Mgr,
-		//		gwclass:        cfg.GWClass,
 		reconciler: &controllerReconciler{
 			cli:    cfg.Mgr.GetClient(),
 			scheme: cfg.Mgr.GetScheme(),
@@ -186,7 +179,7 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
-	kick   func(ctx context.Context) error
+	kick   func(ctx context.Context)
 }
 
 func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

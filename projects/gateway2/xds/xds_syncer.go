@@ -8,6 +8,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/reports"
+	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
+	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
@@ -27,6 +31,9 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // empty resources to give to envoy when a proxy was deleted
@@ -78,16 +85,18 @@ type XdsSyncer struct {
 	xdsGarbageCollection bool
 
 	inputs *XdsInputChannels
+	cli    client.Client
+	scheme *runtime.Scheme
 }
 
 type XdsInputChannels struct {
-	proxyEvent     AsyncQueue[ProxyInputs]
+	genericEvent   AsyncQueue[struct{}]
 	discoveryEvent AsyncQueue[DiscoveryInputs]
 	secretEvent    AsyncQueue[SecretInputs]
 }
 
-func (x *XdsInputChannels) UpdateProxyInputs(ctx context.Context, inputs ProxyInputs) {
-	x.proxyEvent.Enqueue(inputs)
+func (x *XdsInputChannels) Kick(ctx context.Context) {
+	x.genericEvent.Enqueue(struct{}{})
 }
 
 func (x *XdsInputChannels) UpdateDiscoveryInputs(ctx context.Context, inputs DiscoveryInputs) {
@@ -100,7 +109,7 @@ func (x *XdsInputChannels) UpdateSecretInputs(ctx context.Context, inputs Secret
 
 func NewXdsInputChannels() *XdsInputChannels {
 	return &XdsInputChannels{
-		proxyEvent:     NewAsyncQueue[ProxyInputs](),
+		genericEvent:   NewAsyncQueue[struct{}](),
 		discoveryEvent: NewAsyncQueue[DiscoveryInputs](),
 		secretEvent:    NewAsyncQueue[SecretInputs](),
 	}
@@ -112,6 +121,8 @@ func NewXdsSyncer(
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
+	cli client.Client,
+	scheme *runtime.Scheme,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		translator:           translator,
@@ -119,39 +130,54 @@ func NewXdsSyncer(
 		xdsCache:             xdsCache,
 		xdsGarbageCollection: xdsGarbageCollection,
 		inputs:               inputs,
+		cli:                  cli,
+		scheme:               scheme,
 	}
 }
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
-func (s *XdsSyncer) SyncXdsOnEvent(
+func (s *XdsSyncer) Start(
 	ctx context.Context,
-	onXdsSynced func(XdsSyncResult),
-) {
+) error {
 	proxyApiSnapshot := &v1snap.ApiSnapshot{}
+	// proxyApiSnapshot := &v1snap.ApiSnapshot{}
 	var (
-		proxiesWarmed   bool
 		discoveryWarmed bool
 		secretsWarmed   bool
 	)
 	resyncXds := func() {
-		if !proxiesWarmed || !discoveryWarmed || !secretsWarmed {
+		if !discoveryWarmed || !secretsWarmed {
 			return
 		}
+		var gwl apiv1.GatewayList
+		err := s.cli.List(ctx, &gwl)
+		if err != nil {
+			// This should never happen, try again?
+			return
+		}
+		queries := query.NewData(s.cli, s.scheme)
+		t := gloot.NewTranslator()
+		proxies := gloo_solo_io.ProxyList{}
+		for _, gw := range gwl.Items {
+			rm := &reports.ReportMap{Gateways: make(map[string]*reports.GatewayReport)}
+			r := reports.NewReporter(rm)
 
-		reports := s.syncEnvoy(ctx, proxyApiSnapshot)
-		onXdsSynced(XdsSyncResult{
-			ResourceReports: reports,
-		})
+			proxy := t.TranslateProxy(ctx, &gw, queries, r)
+			if proxy != nil {
+				proxies = append(proxies, proxy)
+				//TODO: handle reports and process statuses
+			}
+		}
+		proxyApiSnapshot.Proxies = proxies
+		s.syncEnvoy(ctx, proxyApiSnapshot)
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			contextutils.LoggerFrom(ctx).Debug("context done, stopping syncer")
-			return
-		case proxyEvent := <-s.inputs.proxyEvent.Next():
-			proxyApiSnapshot.Proxies = proxyEvent.Proxies
-			proxiesWarmed = true
+			return nil
+		case <-s.inputs.genericEvent.Next():
 			resyncXds()
 		case discoveryEvent := <-s.inputs.discoveryEvent.Next():
 			proxyApiSnapshot.Upstreams = discoveryEvent.Upstreams

@@ -25,7 +25,7 @@ type gatewayReconciler struct {
 
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
-	kick     func(ctx context.Context) error
+	kick     func(ctx context.Context)
 }
 
 func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
