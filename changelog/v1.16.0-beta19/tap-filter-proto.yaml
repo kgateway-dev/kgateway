@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/solo-projects/issues/5315
+  description: Implement the .proto API for the tap filter
+  resolvesIssue: false
+
