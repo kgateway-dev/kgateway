@@ -24,6 +24,10 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Tap filter: a filter that copies the contents of HTTP requests and responses
+// to an external tap server. The full HTTP headers and bodies are reported in
+// full to the configured address, and data can be reported using either over
+// HTTP or GRPC.
 type Tap struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
