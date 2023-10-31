@@ -7,7 +7,6 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/go-logr/logr"
-	gwxds "github.com/solo-io/gloo/projects/gateway2/xds"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
@@ -25,7 +24,7 @@ type xdsserver struct {
 	log logr.Logger
 }
 
-func NewServer(ctx context.Context, port uint16, inputChannels *gwxds.XdsInputChannels, xdsSyncer *gwxds.XdsSyncer) manager.RunnableFunc {
+func NewServer(ctx context.Context, port uint16) manager.RunnableFunc {
 	return func(ctx context.Context) error {
 		grpcServer := grpc.NewServer()
 

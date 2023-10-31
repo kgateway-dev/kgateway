@@ -19,7 +19,7 @@ func TranslateListeners(
 	routesForGw query.RoutesForGwResult,
 	reporter reports.Reporter,
 ) []*v1.Listener {
-	validatedListeners := validateListeners(gateway.Spec.Listeners, reporter.Gateway(gateway))
+	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
 	return mergeGWListeners(gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(reporter)
 }

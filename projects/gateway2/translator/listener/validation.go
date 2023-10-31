@@ -118,12 +118,12 @@ func validateSupportedRoutes(listeners []gwv1.Listener, reporter reports.Gateway
 	return validListeners
 }
 
-func validateListeners(listeners []gwv1.Listener, reporter reports.GatewayReporter) []gwv1.Listener {
-	if len(listeners) == 0 {
+func validateListeners(gw *gwv1.Gateway, reporter reports.GatewayReporter) []gwv1.Listener {
+	if len(gw.Spec.Listeners) == 0 {
 		// gwReporter.Err("gateway must contain at least 1 listener")
 	}
 
-	validListeners := validateSupportedRoutes(listeners, reporter)
+	validListeners := validateSupportedRoutes(gw.Spec.Listeners, reporter)
 
 	portListeners := map[gwv1.PortNumber]*portProtocol{}
 	for _, listener := range validListeners {
@@ -200,6 +200,19 @@ func validateListeners(listeners []gwv1.Listener, reporter reports.GatewayReport
 				validListeners = append(validListeners, listener)
 			}
 		}
+	}
+
+	if len(validListeners) == 0 {
+		reporter.SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionAccepted,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.GatewayReasonListenersNotValid,
+		})
+		reporter.SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionProgrammed,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.GatewayReasonInvalid,
+		})
 	}
 
 	return validListeners

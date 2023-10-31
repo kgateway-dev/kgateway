@@ -81,7 +81,7 @@ func Start(cfg ControllerConfig) {
 		go xdsSyncer.ServeXdsSnapshots()
 	}
 
-	if err := mgr.Add(NewServer(ctx, cfg.XdsPort, inputChannels, xdsSyncer)); err != nil {
+	if err := mgr.Add(NewServer(ctx, cfg.XdsPort)); err != nil {
 		setupLog.Error(err, "unable to start xds server")
 		os.Exit(1)
 	}

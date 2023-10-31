@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -31,6 +32,8 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -158,10 +161,9 @@ func (s *XdsSyncer) Start(
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
 		proxies := gloo_solo_io.ProxyList{}
+		rm := &reports.ReportMap{Gateways: make(map[string]*reports.GatewayReport)}
+		r := reports.NewReporter(rm)
 		for _, gw := range gwl.Items {
-			rm := &reports.ReportMap{Gateways: make(map[string]*reports.GatewayReport)}
-			r := reports.NewReporter(rm)
-
 			proxy := t.TranslateProxy(ctx, &gw, queries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
@@ -170,6 +172,7 @@ func (s *XdsSyncer) Start(
 		}
 		proxyApiSnapshot.Proxies = proxies
 		s.syncEnvoy(ctx, proxyApiSnapshot)
+		s.syncStatus(ctx, *rm, gwl)
 	}
 
 	for {
@@ -336,4 +339,79 @@ func prettify(original interface{}) string {
 	}
 
 	return string(b)
+}
+
+func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl apiv1.GatewayList) {
+	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
+	logger := contextutils.LoggerFrom(ctx)
+	//TODO(Law): bail out early if possible
+	//TODO(Law): do another Get on the gw, possibly use Patch for status subresource modification
+	//TODO(Law): add generation changed predicate
+	for _, gw := range gwl.Items {
+		gwReport, ok := rm.Gateways[gw.Name]
+		if !ok {
+			// why don't we have a report for this gateway?
+			continue
+		}
+		//TODO(Law): deterministic sorting
+		finalListeners := make([]apiv1.ListenerStatus, 0)
+		for _, lis := range gw.Spec.Listeners {
+			lisReport, ok := gwReport.Listeners[string(lis.Name)]
+			if !ok {
+				//TODO(Law): why don't we have a report for a listner? shouldnt happen
+				continue
+			}
+
+			if len(lisReport.Status.Conditions) == 0 {
+				// no conditions found in report, this means listener is healthy
+				lisReport.SetCondition(reports.ListenerCondition{
+					Type:   apiv1.ListenerConditionAccepted,
+					Status: v1.ConditionTrue,
+					Reason: apiv1.ListenerReasonAccepted,
+				})
+			}
+
+			finalConditions := make([]v1.Condition, 0)
+			for _, lisCondition := range lisReport.Status.Conditions {
+				lisCondition.ObservedGeneration = gw.Generation          // don't have generation is the report, should consider adding it
+				lisCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
+				finalConditions = append(finalConditions, lisCondition)
+			}
+			lisReport.Status.Conditions = finalConditions
+			finalListeners = append(finalListeners, lisReport.Status)
+		}
+
+		// recalculate top-level GatewayStatus
+		finalGwStatus := apiv1.GatewayStatus{}
+		if len(gwReport.Conditions) == 0 {
+			// set accepted statuses completely (including generation and transitionTime)
+			meta.SetStatusCondition(&finalGwStatus.Conditions, v1.Condition{
+				Type:               string(apiv1.GatewayConditionAccepted),
+				Status:             v1.ConditionTrue,
+				Reason:             string(apiv1.GatewayReasonAccepted),
+				ObservedGeneration: gw.Generation,
+			})
+			meta.SetStatusCondition(&finalGwStatus.Conditions, v1.Condition{
+				Type:               string(apiv1.GatewayConditionProgrammed),
+				Status:             v1.ConditionTrue,
+				Reason:             string(apiv1.GatewayReasonProgrammed),
+				ObservedGeneration: gw.Generation,
+			})
+		} else {
+			// we have conditions, so we need to add generation and transitionTime
+			finalConditions := make([]v1.Condition, 0)
+			for _, gwCondition := range gwReport.Conditions {
+				gwCondition.ObservedGeneration = gw.Generation          // don't have generation is the report, should consider adding it
+				gwCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
+				finalConditions = append(finalConditions, gwCondition)
+			}
+			finalGwStatus.Conditions = finalConditions
+		}
+
+		finalGwStatus.Listeners = finalListeners
+		gw.Status = finalGwStatus
+		if err := s.cli.Status().Update(ctx, &gw); err != nil {
+			logger.Error(err)
+		}
+	}
 }

@@ -12,11 +12,8 @@ type ReportMap struct {
 }
 
 type GatewayReport struct {
-	//TODO(Law): figure out what this should actually look like
-	// condition for the top-level gateway
-	Condition metav1.Condition
-	// listeners under this GW
-	Listeners map[string]*ListenerReport
+	Conditions []metav1.Condition
+	Listeners  map[string]*ListenerReport
 }
 
 type RouteReport struct {
@@ -74,6 +71,16 @@ func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
 	return lr
 }
 
+func (g *GatewayReport) SetCondition(gc GatewayCondition) {
+	condition := metav1.Condition{
+		Type:    string(gc.Type),
+		Status:  gc.Status,
+		Reason:  string(gc.Reason),
+		Message: gc.Message,
+	}
+	g.Conditions = append(g.Conditions, condition)
+}
+
 func (l *ListenerReport) SetCondition(lc ListenerCondition) {
 	condition := metav1.Condition{
 		Type:    string(lc.Type),
@@ -109,7 +116,14 @@ type GatewayReporter interface {
 	// TODO(Law): use string here instead of Listener type
 	Listener(listener *gwv1.Listener) ListenerReporter
 
-	// SetCondition(condition gwv1.ListenerConditionType, status metav1.ConditionStatus, reason gwv1.ListenerConditionReason, message string)
+	SetCondition(condition GatewayCondition)
+}
+
+type GatewayCondition struct {
+	Type    gwv1.GatewayConditionType
+	Status  metav1.ConditionStatus
+	Reason  gwv1.GatewayConditionReason
+	Message string
 }
 
 type ListenerCondition struct {
