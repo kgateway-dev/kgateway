@@ -17,10 +17,8 @@ func TranslateGatewayHTTPRouteRules(
 ) []*v1.Route {
 	var routes []*v1.Route
 	for _, rule := range rules {
-		route := translateGatewayHTTPRouteRule(parentNamespace, rule, reporter)
-		if route != nil {
-			routes = append(routes, route)
-		}
+		matchRoutes := translateGatewayHTTPRouteRule(parentNamespace, rule, reporter)
+		routes = append(routes, matchRoutes...)
 	}
 	return routes
 }
@@ -29,76 +27,76 @@ func translateGatewayHTTPRouteRule(
 	parentNamespace string,
 	rule gwv1.HTTPRouteRule,
 	reporter reports.Reporter,
-) *v1.Route {
-	route := &v1.Route{
-		Matchers: translateGlooMatchers(rule.Matches),
-		Action:   nil,
-		Options:  translateGatewayGlooRouteOptions(rule),
+) []*v1.Route {
+
+	routes := make([]*v1.Route, 0, len(rule.Matches))
+	for _, match := range rule.Matches {
+		route := &v1.Route{
+			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
+			Action:   nil,
+			Options:  translateGatewayGlooRouteOptions(rule),
+		}
+		setAction(parentNamespace, route, rule.Filters, rule.BackendRefs, reporter)
+		if route.Action == nil {
+			// TODO: report error
+			// return nil
+		}
+		routes = append(routes, route)
 	}
-	setAction(parentNamespace, route, rule.Filters, rule.BackendRefs, reporter)
-	if route.Action == nil {
-		// TODO: report error
-		return nil
-	}
-	return route
+	return routes
 }
 
-func translateGlooMatchers(matches []gwv1.HTTPRouteMatch) []*matchers.Matcher {
+func translateGlooMatcher(match gwv1.HTTPRouteMatch) *matchers.Matcher {
 
-	var glooMatchers []*matchers.Matcher
-	for _, match := range matches {
-
-		// headers
-		headers := make([]*matchers.HeaderMatcher, 0, len(match.Headers))
-		for _, header := range match.Headers {
-			h := translateGlooHeaderMatcher(header)
-			if h != nil {
-				headers = append(headers, h)
-			}
+	// headers
+	headers := make([]*matchers.HeaderMatcher, 0, len(match.Headers))
+	for _, header := range match.Headers {
+		h := translateGlooHeaderMatcher(header)
+		if h != nil {
+			headers = append(headers, h)
 		}
-
-		// query params
-		var queryParamMatchers []*matchers.QueryParameterMatcher
-		for _, param := range match.QueryParams {
-			queryParamMatchers = append(queryParamMatchers, &matchers.QueryParameterMatcher{
-				Name:  string(param.Name),
-				Value: param.Value,
-				Regex: true,
-			})
-		}
-
-		// set path
-		pathType, pathValue := parsePath(match.Path)
-
-		var methods []string
-		if match.Method != nil {
-			methods = []string{string(*match.Method)}
-		}
-		m := &matchers.Matcher{
-			//CaseSensitive:   nil,
-			Headers:         headers,
-			QueryParameters: queryParamMatchers,
-			Methods:         methods,
-		}
-
-		switch pathType {
-		case gwv1.PathMatchPathPrefix:
-			m.PathSpecifier = &matchers.Matcher_Prefix{
-				Prefix: pathValue,
-			}
-		case gwv1.PathMatchExact:
-			m.PathSpecifier = &matchers.Matcher_Exact{
-				Exact: pathValue,
-			}
-		case gwv1.PathMatchRegularExpression:
-			m.PathSpecifier = &matchers.Matcher_Regex{
-				Regex: pathValue,
-			}
-		}
-
-		glooMatchers = append(glooMatchers, m)
 	}
-	return nil
+
+	// query params
+	var queryParamMatchers []*matchers.QueryParameterMatcher
+	for _, param := range match.QueryParams {
+		queryParamMatchers = append(queryParamMatchers, &matchers.QueryParameterMatcher{
+			Name:  string(param.Name),
+			Value: param.Value,
+			Regex: false,
+		})
+	}
+
+	// set path
+	pathType, pathValue := parsePath(match.Path)
+
+	var methods []string
+	if match.Method != nil {
+		methods = []string{string(*match.Method)}
+	}
+	m := &matchers.Matcher{
+		//CaseSensitive:   nil,
+		Headers:         headers,
+		QueryParameters: queryParamMatchers,
+		Methods:         methods,
+	}
+
+	switch pathType {
+	case gwv1.PathMatchPathPrefix:
+		m.PathSpecifier = &matchers.Matcher_Prefix{
+			Prefix: pathValue,
+		}
+	case gwv1.PathMatchExact:
+		m.PathSpecifier = &matchers.Matcher_Exact{
+			Exact: pathValue,
+		}
+	case gwv1.PathMatchRegularExpression:
+		m.PathSpecifier = &matchers.Matcher_Regex{
+			Regex: pathValue,
+		}
+	}
+
+	return m
 }
 
 func translateGlooHeaderMatcher(header gwv1.HTTPHeaderMatch) *matchers.HeaderMatcher {

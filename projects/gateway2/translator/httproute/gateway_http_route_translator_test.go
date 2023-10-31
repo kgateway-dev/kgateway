@@ -5,5 +5,4 @@ import (
 )
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
-
 })

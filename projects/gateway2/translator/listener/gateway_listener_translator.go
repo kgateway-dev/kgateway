@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
+	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -250,11 +251,15 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
 	var (
-		routesByHost = map[string][]*v1.Route{}
+		routesByHost = map[string]routeutils.SortableRoutes{}
 	)
 	for _, parent := range mfc.parents {
 		for _, routeWithHosts := range parent.routes {
-			routes := httproute.TranslateGatewayHTTPRouteRules(gatewayNamespace, routeWithHosts.route.Spec.Rules, reporter)
+			routes := httproute.TranslateGatewayHTTPRouteRules(
+				gatewayNamespace,
+				routeWithHosts.route.Spec.Rules,
+				reporter,
+			)
 
 			if len(routes) == 0 {
 				// TODO report
@@ -262,7 +267,7 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 			}
 
 			for _, host := range routeWithHosts.childHosts {
-				routesByHost[host] = append(routesByHost[host], routes...)
+				routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.route, routes)...)
 			}
 		}
 	}
@@ -272,12 +277,12 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 		virtualHosts    = map[string]*v1.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		sortRoutes(vhostRoutes)
+		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(parentName, host)
 		virtualHosts[vhostName] = &v1.VirtualHost{
 			Name:    vhostName,
 			Domains: []string{host},
-			Routes:  vhostRoutes,
+			Routes:  vhostRoutes.ToRoutes(),
 			Options: nil,
 		}
 
@@ -312,10 +317,14 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	}
 
 	var (
-		routesByHost = map[string][]*v1.Route{}
+		routesByHost = map[string]routeutils.SortableRoutes{}
 	)
 	for _, routeWithHosts := range mfc.routesWithHosts {
-		routes := httproute.TranslateGatewayHTTPRouteRules(gatewayNamespace, routeWithHosts.route.Spec.Rules, reporter)
+		routes := httproute.TranslateGatewayHTTPRouteRules(
+			gatewayNamespace,
+			routeWithHosts.route.Spec.Rules,
+			reporter,
+		)
 
 		if len(routes) == 0 {
 			// TODO report
@@ -323,7 +332,7 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		}
 
 		for _, host := range routeWithHosts.childHosts {
-			routesByHost[host] = append(routesByHost[host], routes...)
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.route, routes)...)
 		}
 	}
 
@@ -332,12 +341,12 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHosts    = map[string]*v1.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		sortRoutes(vhostRoutes)
+		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(parentName, host)
 		virtualHosts[vhostName] = &v1.VirtualHost{
 			Name:    vhostName,
 			Domains: []string{host},
-			Routes:  vhostRoutes,
+			Routes:  vhostRoutes.ToRoutes(),
 			Options: nil,
 		}
 
@@ -375,11 +384,4 @@ func makeVhostName(
 ) string {
 	// TODO is this a valid vh name?
 	return parentName + "~" + domain
-}
-
-func sortRoutes(routes []*v1.Route) {
-	// TODO rout sorter
-	sort.SliceStable(routes, func(i, j int) bool {
-		return routes[i].Name < routes[j].Name
-	})
 }
