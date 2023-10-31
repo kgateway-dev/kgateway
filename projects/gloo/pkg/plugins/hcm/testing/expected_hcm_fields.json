@@ -49,5 +49,9 @@
     "ProxyStatusConfig",
     "TypedHeaderValidationConfig",
     "EarlyHeaderMutationExtensions",
-    "AppendXForwardedPort"
+    "AppendXForwardedPort",
+    "AccessLogFlushInterval",
+    "FlushAccessLogOnNewRequest",
+    "AccessLogOptions",
+    "AddProxyProtocolConnectionState"
 ]
