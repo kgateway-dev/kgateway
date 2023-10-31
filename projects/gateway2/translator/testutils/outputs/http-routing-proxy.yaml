@@ -23,11 +23,9 @@ listeners:
               multi:
                 destinations:
                 - destination:
-                    kube:
-                      port: 8080
-                      ref:
-                        name: bar-svc-canary
-                        namespace: default
+                    upstream:
+                      name: default-bar-svc-canary-8080
+                      namespace: default
         http~foo.example.com:
           domains:
           - foo.example.com
@@ -39,11 +37,9 @@ listeners:
               multi:
                 destinations:
                 - destination:
-                    kube:
-                      port: 8080
-                      ref:
-                        name: foo-svc
-                        namespace: default
+                    upstream:
+                      name: default-foo-svc-8080
+                      namespace: default
   bindAddress: '::'
   bindPort: 80
   name: http

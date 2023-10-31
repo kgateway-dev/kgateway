@@ -59,6 +59,10 @@ spec:
         - "--disable-hot-restart"
         - "--service-node"
         - $(POD_NAME).$(POD_NAMESPACE)
+        {{- if .Values.develop }}
+        - "--log-level"
+        - "debug"
+        {{- end }}
         image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
         volumeMounts:
@@ -161,7 +165,7 @@ data:
       cluster: {{ include "gloo-gateway2.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
         gateway:
-          name: {{ include "gloo-gateway2.gateway.fullname" . }}
+          name: {{ .Values.gateway.gatewayName | default (include "gloo-gateway2.gateway.fullname" .) }}
           namespace: {{ .Release.Namespace }}
     static_resources:
       listeners:

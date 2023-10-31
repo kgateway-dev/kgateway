@@ -25,7 +25,8 @@ import (
 type GatewayConfig struct {
 	Mgr            manager.Manager
 	GWClass        apiv1.ObjectName
-	Release        string
+	Dev            bool
+	HelmRelease    string
 	ControllerName string
 	AutoProvision  bool
 	XdsServer      string
@@ -83,7 +84,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.XdsServer, "port", c.cfg.XdsPort)
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Release, c.cfg.ControllerName, c.cfg.XdsServer, c.cfg.XdsPort)
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Dev, c.cfg.HelmRelease, c.cfg.ControllerName, c.cfg.XdsServer, c.cfg.XdsPort)
 	if err != nil {
 		return err
 	}

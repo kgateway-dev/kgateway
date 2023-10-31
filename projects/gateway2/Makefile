@@ -15,7 +15,7 @@ kind:
 
 conformance:
 	[ -d gateway-api ] || git clone https://github.com/kubernetes-sigs/gateway-api
-	cd gateway-api && git checkout $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Version') && go test ./conformance/... -test.v -args \
+	cd gateway-api && git fetch && git checkout $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Version') && go test -test.v ./conformance/... -args \
     -gateway-class=solo-gateway \
     -supported-features=Gateway,HTTPRoute
 

@@ -230,7 +230,7 @@ func validateRoutes(
 	for _, route := range routes {
 		for _, rule := range route.Spec.Rules {
 			for _, backendRef := range rule.BackendRefs {
-				_, err := queries.GetBackendForRef(context.TODO(), &route, &backendRef)
+				_, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(&route), &backendRef)
 				if err != nil {
 					if err == query.ErrMissingReferenceGrant {
 						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{

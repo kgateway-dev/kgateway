@@ -59,14 +59,14 @@ func Start(cfg ControllerConfig) {
 
 	ctx := signals.SetupSignalHandler()
 
-	snapshotCache := newAdsSnapshotCache(ctx)
+	xdsCache := newAdsSnapshotCache(ctx)
 	glooTranslator := newGlooTranslator(ctx)
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
 		glooTranslator,
 		sanz,
-		snapshotCache,
+		xdsCache,
 		false,
 		inputChannels,
 		mgr.GetClient(),
@@ -81,7 +81,7 @@ func Start(cfg ControllerConfig) {
 		go xdsSyncer.ServeXdsSnapshots()
 	}
 
-	if err := mgr.Add(NewServer(ctx, cfg.XdsPort)); err != nil {
+	if err := mgr.Add(NewServer(ctx, cfg.XdsPort, xdsCache)); err != nil {
 		setupLog.Error(err, "unable to start xds server")
 		os.Exit(1)
 	}
@@ -91,7 +91,8 @@ func Start(cfg ControllerConfig) {
 	gwcfg := GatewayConfig{
 		Mgr:            mgr,
 		GWClass:        gatewayClassName,
-		Release:        cfg.Release,
+		HelmRelease:    cfg.Release,
+		Dev:            cfg.Dev,
 		ControllerName: cfg.GatewayControllerName,
 		AutoProvision:  cfg.AutoProvision,
 		XdsServer:      cfg.XdsServer,

@@ -74,6 +74,9 @@
                         "name": {
                             "type": "string"
                         },
+                        "gatewayName": {
+                            "type": "string"
+                        },
                         "image": {
                             "$ref": "#/definitions/containerImage"
                         },

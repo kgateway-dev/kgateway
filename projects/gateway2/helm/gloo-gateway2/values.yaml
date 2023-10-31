@@ -74,6 +74,7 @@ gateway:
   enabled: true
   nameOverride: ""
   fullnameOverride: ""
+  gatewayName: ""
   createGateway: true
   xds:
     host: ""
@@ -96,10 +97,10 @@ gateway:
     protocol: TCP
     name: http
   image:
-    repository: docker.io/envoyproxy/envoy
+    repository: quay.io/solo-io/envoy-gloo
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "v1.27.1"
+    tag: "1.26.4-patch4"
   securityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true

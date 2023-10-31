@@ -33,6 +33,7 @@ type gatewayPort struct {
 }
 
 type Deployer struct {
+	dev            bool
 	chart          *chart.Chart
 	scheme         *runtime.Scheme
 	controllerName string
@@ -41,7 +42,7 @@ type Deployer struct {
 	release        string
 }
 
-func NewDeployer(scheme *runtime.Scheme, release, controllerName, host string, port uint16) (*Deployer, error) {
+func NewDeployer(scheme *runtime.Scheme, dev bool, release, controllerName, host string, port uint16) (*Deployer, error) {
 
 	chart, err := loadFs(helm.GlooGateway2HelmChart)
 	if err != nil {
@@ -52,6 +53,7 @@ func NewDeployer(scheme *runtime.Scheme, release, controllerName, host string, p
 		release = chart.Metadata.Name
 	}
 	return &Deployer{
+		dev:            dev,
 		chart:          chart,
 		scheme:         scheme,
 		controllerName: controllerName,
@@ -117,12 +119,16 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 			"enabled":       true,
 			"createGateway": false,
 			"name":          gw.Name,
+			"gatewayName":   gw.Name,
 			"ports":         portsAny,
 			"xds": map[string]any{
 				"host": d.host,
 				"port": d.port,
 			},
 		},
+	}
+	if d.dev {
+		vals["develop"] = true
 	}
 	objs, err := d.Render(ctx, gw.Namespace, vals)
 	if err != nil {

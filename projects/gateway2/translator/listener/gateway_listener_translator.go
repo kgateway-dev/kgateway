@@ -15,16 +15,18 @@ import (
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
+	queries query.GatewayQueries,
 	gateway *gwv1.Gateway,
 	routesForGw query.RoutesForGwResult,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
-	return mergeGWListeners(gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(reporter)
+	return mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(reporter)
 }
 
 func mergeGWListeners(
+	queries query.GatewayQueries,
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
 	routesForGw query.RoutesForGwResult,
@@ -32,6 +34,7 @@ func mergeGWListeners(
 ) *mergedListeners {
 	ml := &mergedListeners{
 		gatewayNamespace: gatewayNamespace,
+		queries:          queries,
 	}
 	for _, listener := range listeners {
 		result, ok := routesForGw.ListenerResults[string(listener.Name)]
@@ -47,6 +50,7 @@ func mergeGWListeners(
 type mergedListeners struct {
 	gatewayNamespace string
 	listeners        []*mergedListener
+	queries          query.GatewayQueries
 }
 
 func (ml *mergedListeners) append(
@@ -87,6 +91,7 @@ func (ml *mergedListeners) appendHttpListener(
 
 	fc := &httpFilterChain{
 		parents: []httpFilterChainParent{parent},
+		queries: ml.queries,
 	}
 	listenerName := string(listener.Name)
 	for _, lis := range ml.listeners {
@@ -124,6 +129,7 @@ func (ml *mergedListeners) appendHttpsListener(
 		gatewayListenerName: string(listener.Name),
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
+		queries:             ml.queries,
 	}
 
 	listenerName := string(listener.Name)
@@ -230,6 +236,7 @@ func (ml *mergedListener) translateListener(
 // In the case where no GW Listener merging takes place, every listener will use a Gloo AggregatedListeener with 1 HTTP filter chain.
 type httpFilterChain struct {
 	parents []httpFilterChainParent
+	queries query.GatewayQueries
 }
 
 type httpFilterChainParent struct {
@@ -255,11 +262,7 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 	)
 	for _, parent := range mfc.parents {
 		for _, routeWithHosts := range parent.routes {
-			routes := httproute.TranslateGatewayHTTPRouteRules(
-				gatewayNamespace,
-				routeWithHosts.route.Spec.Rules,
-				reporter,
-			)
+			routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.route, reporter)
 
 			if len(routes) == 0 {
 				// TODO report
@@ -302,6 +305,7 @@ type httpsFilterChain struct {
 	gatewayListenerName string
 	tls                 *gwv1.GatewayTLSConfig
 	routesWithHosts     []routeWithChildHosts
+	queries             query.GatewayQueries
 }
 
 func (mfc *httpsFilterChain) translateHttpsFilterChain(
@@ -320,11 +324,7 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		routesByHost = map[string]routeutils.SortableRoutes{}
 	)
 	for _, routeWithHosts := range mfc.routesWithHosts {
-		routes := httproute.TranslateGatewayHTTPRouteRules(
-			gatewayNamespace,
-			routeWithHosts.route.Spec.Rules,
-			reporter,
-		)
+		routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.route, reporter)
 
 		if len(routes) == 0 {
 			// TODO report

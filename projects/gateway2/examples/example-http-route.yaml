@@ -4,13 +4,13 @@ metadata:
   name: example-route
 spec:
   parentRefs:
-  - name: solo-gateway
+  - name: gw
   hostnames:
   - "example.com"
   rules:
   - backendRefs:
     - name: example-svc
-      port: 80
+      port: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -21,8 +21,8 @@ spec:
     app.kubernetes.io/name: nginx
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 80
+      port: 8080
+      targetPort: http-web-svc
 ---
 apiVersion: v1
 kind: Pod

@@ -40,15 +40,69 @@ func (e *Error) Unwrap() error {
 	return e.E
 }
 
+type GroupKindNs struct {
+	gk metav1.GroupKind
+	ns string
+}
+
+func (g *GroupKindNs) GroupKind() (metav1.GroupKind, error) {
+	return g.gk, nil
+}
+
+func (g *GroupKindNs) Namespace() string {
+	return g.ns
+}
+
+func NewGroupKindNs(gk metav1.GroupKind, ns string) *GroupKindNs {
+	return &GroupKindNs{
+		gk: gk,
+		ns: ns,
+	}
+}
+
+type From interface {
+	GroupKind() (metav1.GroupKind, error)
+	Namespace() string
+}
+
+type FromObject struct {
+	client.Object
+	Scheme *runtime.Scheme
+}
+
+func (f FromObject) GroupKind() (metav1.GroupKind, error) {
+	scheme := f.Scheme
+	from := f.Object
+	gvks, isUnversioned, err := scheme.ObjectKinds(from)
+	var zero metav1.GroupKind
+	if err != nil {
+		return zero, fmt.Errorf("failed to get object kind %T", from)
+	}
+	if isUnversioned {
+		return zero, fmt.Errorf("object of type %T is not versioned", from)
+	}
+	if len(gvks) != 1 {
+		return zero, fmt.Errorf("ambigous gvks for %T, %v", f, gvks)
+	}
+	gvk := gvks[0]
+	return metav1.GroupKind{Group: gvk.Group, Kind: gvk.Kind}, nil
+}
+
+func (f FromObject) Namespace() string {
+	return f.GetNamespace()
+}
+
 type GatewayQueries interface {
+	ObjToFrom(obj client.Object) From
+
 	// Returns map of listener names -> list of http routes.
 	GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (RoutesForGwResult, error)
 	// Given a backendRef that resides in namespace obj, return the service that backs it.
 	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
 	// return value depends on the group/kind in the backendRef.
-	GetBackendForRef(ctx context.Context, obj client.Object, backendRef *apiv1.HTTPBackendRef) (client.Object, error)
+	GetBackendForRef(ctx context.Context, obj From, backendRef *apiv1.HTTPBackendRef) (client.Object, error)
 
-	GetSecretForRef(ctx context.Context, obj client.Object, secretRef *apiv1.SecretObjectReference) (client.Object, error)
+	GetSecretForRef(ctx context.Context, obj From, secretRef *apiv1.SecretObjectReference) (client.Object, error)
 }
 
 type RoutesForGwResult struct {
@@ -85,20 +139,16 @@ type gatewayQueries struct {
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
 
 	var list apiv1beta1.ReferenceGrantList
-	err := r.client.List(ctx, &list, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(ReferenceGrantFromField, fromns)})
+	err := r.client.List(ctx, &list, client.InNamespace(tons), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(ReferenceGrantFromField, fromns)})
 	if err != nil {
 		return false, err
 	}
-	// filter out just ref grants in tons
-	var refGrants []apiv1beta1.ReferenceGrant
-	for _, rg := range list.Items {
-		if rg.Namespace != tons {
-			continue
-		}
-		refGrants = append(refGrants, rg)
-	}
 
-	return ReferenceAllowed(ctx, from, fromns, to, toname, refGrants), nil
+	return ReferenceAllowed(ctx, from, fromns, to, toname, list.Items), nil
+}
+
+func (r *gatewayQueries) ObjToFrom(obj client.Object) From {
+	return FromObject{Object: obj, Scheme: r.scheme}
 }
 
 func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (RoutesForGwResult, error) {
@@ -304,7 +354,7 @@ func hostnameIntersect(l *apiv1.Listener, hr *apiv1.HTTPRoute) (bool, []string) 
 	return false, nil
 }
 
-func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object, secretRef *apiv1.SecretObjectReference) (client.Object, error) {
+func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj From, secretRef *apiv1.SecretObjectReference) (client.Object, error) {
 	secretKind := "Secret"
 	secretGroup := ""
 
@@ -319,7 +369,7 @@ func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object,
 	return r.getRef(ctx, obj, string(secretRef.Name), secretRef.Namespace, secretGK)
 }
 
-func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object, backend *apiv1.HTTPBackendRef) (client.Object, error) {
+func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj From, backend *apiv1.HTTPBackendRef) (client.Object, error) {
 	backendKind := "Service"
 	backendGroup := ""
 
@@ -334,30 +384,20 @@ func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object
 	return r.getRef(ctx, obj, string(backend.Name), backend.Namespace, backendGK)
 }
 
-func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backendName string, backendNS *apiv1.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
+func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName string, backendNS *apiv1.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
 
-	gvks, isUnversioned, err := r.scheme.ObjectKinds(from)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get object kind %T", from)
-	}
-	if isUnversioned {
-		return nil, fmt.Errorf("object of type %T is not versioned", from)
-	}
-	if len(gvks) != 1 {
-		return nil, fmt.Errorf("ambigous gvks for %T, %v", from, gvks)
-	}
-	gvk := gvks[0]
-	fromgk := metav1.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-
-	fromNs := from.GetNamespace()
-	ns := fromNs
+	ns := from.Namespace()
 	if backendNS != nil {
 		ns = string(*backendNS)
 	}
-	if ns != fromNs {
+	if ns != from.Namespace() {
+
+		fromgk, err := from.GroupKind()
+		if err != nil {
+			return nil, err
+		}
 		// check if we're allowed to reference this namespace
-		allowed, err := r.referenceAllowed(ctx, fromgk, fromNs, backendGK, ns, backendName)
+		allowed, err := r.referenceAllowed(ctx, fromgk, from.Namespace(), backendGK, ns, backendName)
 		if err != nil {
 			return nil, err
 		}

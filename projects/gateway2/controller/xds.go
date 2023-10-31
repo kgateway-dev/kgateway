@@ -6,7 +6,6 @@ import (
 	"net"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/go-logr/logr"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
@@ -20,11 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-type xdsserver struct {
-	log logr.Logger
-}
-
-func NewServer(ctx context.Context, port uint16) manager.RunnableFunc {
+func NewServer(ctx context.Context, port uint16, xdsSyncer cache.SnapshotCache) manager.RunnableFunc {
 	return func(ctx context.Context) error {
 		grpcServer := grpc.NewServer()
 
@@ -38,11 +33,10 @@ func NewServer(ctx context.Context, port uint16) manager.RunnableFunc {
 			<-ctx.Done()
 			grpcServer.GracefulStop()
 		}()
-		snapshotCache := newAdsSnapshotCache(ctx)
-		xdsServer := server.NewServer(ctx, snapshotCache, nil)
+		xdsServer := server.NewServer(ctx, xdsSyncer, nil)
 		reflection.Register(grpcServer)
 
-		xds.SetupEnvoyXds(grpcServer, xdsServer, snapshotCache)
+		xds.SetupEnvoyXds(grpcServer, xdsServer, xdsSyncer)
 
 		return grpcServer.Serve(lis)
 	}

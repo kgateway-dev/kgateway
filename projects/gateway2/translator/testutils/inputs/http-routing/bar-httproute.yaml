@@ -21,3 +21,27 @@ spec:
   - backendRefs:
     - name: bar-svc
       port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar-svc-canary
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

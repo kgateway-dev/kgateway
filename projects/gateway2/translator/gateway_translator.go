@@ -48,6 +48,7 @@ func (t *translator) TranslateProxy(
 	}
 
 	listeners := listener.TranslateListeners(
+		queries,
 		gateway,
 		routesForGw,
 		reporter,
