@@ -362,12 +362,26 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 				continue
 			}
 
-			if len(lisReport.Status.Conditions) == 0 {
-				// no conditions found in report, this means listener is healthy
+			// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
+			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionAccepted)); cond == nil {
 				lisReport.SetCondition(reports.ListenerCondition{
 					Type:   apiv1.ListenerConditionAccepted,
 					Status: v1.ConditionTrue,
 					Reason: apiv1.ListenerReasonAccepted,
+				})
+			}
+			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionConflicted)); cond == nil {
+				lisReport.SetCondition(reports.ListenerCondition{
+					Type:   apiv1.ListenerConditionConflicted,
+					Status: v1.ConditionFalse,
+					Reason: apiv1.ListenerReasonNoConflicts,
+				})
+			}
+			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionResolvedRefs)); cond == nil {
+				lisReport.SetCondition(reports.ListenerCondition{
+					Type:   apiv1.ListenerConditionResolvedRefs,
+					Status: v1.ConditionTrue,
+					Reason: apiv1.ListenerReasonResolvedRefs,
 				})
 			}
 
@@ -381,33 +395,31 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 			finalListeners = append(finalListeners, lisReport.Status)
 		}
 
-		// recalculate top-level GatewayStatus
-		finalGwStatus := apiv1.GatewayStatus{}
-		if len(gwReport.Conditions) == 0 {
-			// set accepted statuses completely (including generation and transitionTime)
-			meta.SetStatusCondition(&finalGwStatus.Conditions, v1.Condition{
-				Type:               string(apiv1.GatewayConditionAccepted),
-				Status:             v1.ConditionTrue,
-				Reason:             string(apiv1.GatewayReasonAccepted),
-				ObservedGeneration: gw.Generation,
+		// set missing conditions, i.e. set healthy conditions
+		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionAccepted)); cond == nil {
+			gwReport.SetCondition(reports.GatewayCondition{
+				Type:   apiv1.GatewayConditionAccepted,
+				Status: v1.ConditionTrue,
+				Reason: apiv1.GatewayReasonAccepted,
 			})
-			meta.SetStatusCondition(&finalGwStatus.Conditions, v1.Condition{
-				Type:               string(apiv1.GatewayConditionProgrammed),
-				Status:             v1.ConditionTrue,
-				Reason:             string(apiv1.GatewayReasonProgrammed),
-				ObservedGeneration: gw.Generation,
+		}
+		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionProgrammed)); cond == nil {
+			gwReport.SetCondition(reports.GatewayCondition{
+				Type:   apiv1.GatewayConditionProgrammed,
+				Status: v1.ConditionTrue,
+				Reason: apiv1.GatewayReasonProgrammed,
 			})
-		} else {
-			// we have conditions, so we need to add generation and transitionTime
-			finalConditions := make([]v1.Condition, 0)
-			for _, gwCondition := range gwReport.Conditions {
-				gwCondition.ObservedGeneration = gw.Generation          // don't have generation is the report, should consider adding it
-				gwCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
-				finalConditions = append(finalConditions, gwCondition)
-			}
-			finalGwStatus.Conditions = finalConditions
 		}
 
+		// recalculate top-level GatewayStatus
+		finalGwStatus := apiv1.GatewayStatus{}
+		finalConditions := make([]v1.Condition, 0)
+		for _, gwCondition := range gwReport.Conditions {
+			gwCondition.ObservedGeneration = gw.Generation          // don't have generation is the report, should consider adding it
+			gwCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
+			finalConditions = append(finalConditions, gwCondition)
+		}
+		finalGwStatus.Conditions = finalConditions
 		finalGwStatus.Listeners = finalListeners
 		gw.Status = finalGwStatus
 		if err := s.cli.Status().Update(ctx, &gw); err != nil {
