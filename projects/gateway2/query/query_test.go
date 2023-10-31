@@ -176,7 +176,7 @@ var _ = Describe("Query", func() {
 			rg := refGrantSecret()
 			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
 			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.SecretObjectReference{
+			ref := apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
 			}

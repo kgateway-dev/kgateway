@@ -1,6 +1,9 @@
 package listener
 
 import (
+	"context"
+	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 
 	"github.com/rotisserie/eris"
@@ -10,11 +13,14 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
+	ctx context.Context,
 	queries query.GatewayQueries,
 	gateway *gwv1.Gateway,
 	routesForGw query.RoutesForGwResult,
@@ -22,7 +28,7 @@ func TranslateListeners(
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
-	return mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(reporter)
+	return mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(ctx, queries, reporter)
 }
 
 func mergeGWListeners(
@@ -127,6 +133,7 @@ func (ml *mergedListeners) appendHttpsListener(
 	//protocol:            listener.Protocol,
 	mfc := httpsFilterChain{
 		gatewayListenerName: string(listener.Name),
+		sniDomain:           listener.Hostname,
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
 		queries:             ml.queries,
@@ -149,10 +156,13 @@ func (ml *mergedListeners) appendHttpsListener(
 	})
 }
 
-func (ml *mergedListeners) translateListeners(reporter reports.Reporter) []*v1.Listener {
+func (ml *mergedListeners) translateListeners(
+	ctx context.Context,
+	queries query.GatewayQueries,
+	reporter reports.Reporter) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
-		listener := mergedListener.translateListener(reporter)
+		listener := mergedListener.translateListener(ctx, queries, reporter)
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -168,6 +178,8 @@ type mergedListener struct {
 }
 
 func (ml *mergedListener) translateListener(
+	ctx context.Context,
+	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Listener {
 
@@ -196,10 +208,16 @@ func (ml *mergedListener) translateListener(
 		// each virtual host name must be unique across all filter chains
 		// to prevent collisions because the vhosts have to be re-computed for each set
 		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
+			ctx,
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
+			queries,
 			reporter,
 		)
+		if httpsFilterChain == nil {
+			// TODO report
+			continue
+		}
 		httpFilterChains = append(httpFilterChains, httpsFilterChain)
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
@@ -303,22 +321,32 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 // In the case where no GW Listener merging takes place, every listener will use a Gloo AggregatedListeener with 1 HTTP filter chain.
 type httpsFilterChain struct {
 	gatewayListenerName string
+	sniDomain           *gwv1.Hostname
 	tls                 *gwv1.GatewayTLSConfig
 	routesWithHosts     []routeWithChildHosts
 	queries             query.GatewayQueries
 }
 
 func (mfc *httpsFilterChain) translateHttpsFilterChain(
+	ctx context.Context,
 	parentName string,
 	gatewayNamespace string,
+	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
-	matcher := &v1.Matcher{
-		SslConfig:               translateSslConfig(mfc.tls),
-		SourcePrefixRanges:      nil,
-		PassthroughCipherSuites: nil,
+	sslConfig, err := translateSslConfig(
+		ctx,
+		gatewayNamespace,
+		mfc.sniDomain,
+		mfc.tls,
+		queries,
+	)
+	if err != nil {
+		// TODO report err
+		return nil, nil
 	}
+	matcher := &v1.Matcher{SslConfig: sslConfig, SourcePrefixRanges: nil, PassthroughCipherSuites: nil}
 
 	var (
 		routesByHost = map[string]routeutils.SortableRoutes{}
@@ -360,13 +388,65 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	}, virtualHosts
 }
 
-// TODO ssl config
-func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
-	// TODO validate ssl config
+func translateSslConfig(
+	ctx context.Context,
+	parentNamespace string,
+	sniDomain *gwv1.Hostname,
+	tls *gwv1.GatewayTLSConfig,
+	queries query.GatewayQueries,
+) (*ssl.SslConfig, error) {
+	if tls == nil {
+		return nil, nil
+	}
 
+	// TODO support passthrough mode
+	if tls.Mode == nil ||
+		*tls.Mode != gwv1.TLSModeTerminate {
+		return nil, nil
+	}
+
+	var secretRef *core.ResourceRef
+	for _, certRef := range tls.CertificateRefs {
+		if isSecretRef(certRef) {
+
+			// validate via query
+			secret, err := queries.GetSecretForRef(ctx, query.FromGkNs{
+				Gk: metav1.GroupKind{
+					Group: gwv1.GroupName,
+					Kind:  "Gateway",
+				},
+				Ns: parentNamespace,
+			}, certRef)
+			if err != nil {
+				return nil, err
+			}
+			if err := sslutils.ValidateTlsSecret(secret.(*corev1.Secret)); err != nil {
+				return nil, err
+			}
+
+			// TODO verify secret ref / grant using query
+			secretNamespace := parentNamespace
+			if certRef.Namespace != nil {
+				secretNamespace = string(*certRef.Namespace)
+			}
+			secretRef = &core.ResourceRef{
+				Name:      string(certRef.Name),
+				Namespace: secretNamespace,
+			}
+			break // TODO support multiple certs
+		}
+	}
+	if secretRef == nil {
+		return nil, nil
+	}
+
+	var sniDomains []string
+	if sniDomain != nil {
+		sniDomains = []string{string(*sniDomain)}
+	}
 	return &ssl.SslConfig{
-		SslSecrets:                    nil,
-		SniDomains:                    nil,
+		SslSecrets:                    &ssl.SslConfig_SecretRef{SecretRef: secretRef},
+		SniDomains:                    sniDomains,
 		VerifySubjectAltName:          nil,
 		Parameters:                    nil,
 		AlpnProtocols:                 nil,
@@ -374,7 +454,12 @@ func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
 		DisableTlsSessionResumption:   nil,
 		TransportSocketConnectTimeout: nil,
 		OcspStaplePolicy:              0,
-	}
+	}, nil
+}
+
+func isSecretRef(ref gwv1.SecretObjectReference) bool {
+	return (ref.Group == nil || *ref.Group == corev1.GroupName) &&
+		(ref.Kind == nil || *ref.Kind == "Secret")
 }
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.

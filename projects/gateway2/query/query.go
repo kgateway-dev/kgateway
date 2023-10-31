@@ -92,6 +92,19 @@ func (f FromObject) Namespace() string {
 	return f.GetNamespace()
 }
 
+type FromGkNs struct {
+	Gk metav1.GroupKind
+	Ns string
+}
+
+func (f FromGkNs) GroupKind() (metav1.GroupKind, error) {
+	return f.Gk, nil
+}
+
+func (f FromGkNs) Namespace() string {
+	return f.Ns
+}
+
 type GatewayQueries interface {
 	ObjToFrom(obj client.Object) From
 
@@ -102,7 +115,7 @@ type GatewayQueries interface {
 	// return value depends on the group/kind in the backendRef.
 	GetBackendForRef(ctx context.Context, obj From, backendRef *apiv1.HTTPBackendRef) (client.Object, error)
 
-	GetSecretForRef(ctx context.Context, obj From, secretRef *apiv1.SecretObjectReference) (client.Object, error)
+	GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error)
 }
 
 type RoutesForGwResult struct {
@@ -354,7 +367,7 @@ func hostnameIntersect(l *apiv1.Listener, hr *apiv1.HTTPRoute) (bool, []string) 
 	return false, nil
 }
 
-func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj From, secretRef *apiv1.SecretObjectReference) (client.Object, error) {
+func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error) {
 	secretKind := "Secret"
 	secretGroup := ""
 
