@@ -215,9 +215,9 @@ to see which configuration formats are supported by each version.
 
 An extended configuration is available that allows use of the SHA1 hashing algorithm instead of APR.
 
-This configuration splits the users from the encryption algorithm, and to match the functionality of 
+This configuration splits definition the users from the definition of the encryption algorithm. The configuration with the same functionality as the example would look like:
 
-{{< highlight shell "hl_lines=9,11-14" >}}
+{{< highlight shell "hl_lines=9-15" >}}
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
@@ -237,7 +237,7 @@ spec:
 
 To switch to SHA1 encryption, the following config would support the same user list (with updated salted and hashed passwords):
 
-{{< highlight shell "hl_lines=9" >}}
+{{< highlight shell "hl_lines=10" >}}
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
@@ -256,6 +256,9 @@ spec:
 {{< /highlight >}}
 
 The same `curls` should work with this config as the hashing algorithm only affects the hashed password stored on the server side.
+```shell
+curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl proxy url)/posts/1
+```
 
 The hashed password is case-insensitive as the alphabetic characters represent hexadecimal digits.
 
