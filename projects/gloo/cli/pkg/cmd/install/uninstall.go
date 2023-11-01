@@ -110,8 +110,6 @@ func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUni
 		}
 	}
 
-	u.uninstallKnativeIfNecessary(ctx)
-
 	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.DeleteCrds || cliArgs.DeleteAll {
 		if len(crdNames) == 0 {
@@ -189,23 +187,4 @@ func makeUnstructured(manifest string) (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	return runtimeObj.(*unstructured.Unstructured), nil
-}
-
-func (u *uninstaller) uninstallKnativeIfNecessary(ctx context.Context) {
-	_, installOpts, err := checkKnativeInstallation(ctx)
-	if err != nil {
-		_, _ = fmt.Fprintf(u.output, "Finding knative installation\n")
-		return
-	}
-	if installOpts != nil {
-		_, _ = fmt.Fprintf(u.output, "Removing knative components installed by Gloo %#v...\n", installOpts)
-		manifests, err := RenderKnativeManifests(*installOpts)
-		if err != nil {
-			_, _ = fmt.Fprintf(u.output, "Could not determine which knative components to remove. Continuing...\n")
-			return
-		}
-		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
-			_, _ = fmt.Fprintf(u.output, "Unable to delete knative. Continuing...\n")
-		}
-	}
 }

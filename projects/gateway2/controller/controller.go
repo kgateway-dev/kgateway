@@ -216,14 +216,23 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 	log.Info("reconciling gateway class")
 
 	// mark it as accepted:
-	condition := metav1.Condition{
+	acceptedCondition := metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwclass.Generation,
 		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
 	}
-	meta.SetStatusCondition(&gwclass.Status.Conditions, condition)
+	meta.SetStatusCondition(&gwclass.Status.Conditions, acceptedCondition)
+
+	// TODO: This should actually check the version of the CRDs in the cluster to be 100% sure
+	supportedVersionCondition := metav1.Condition{
+		Type:               string(apiv1.GatewayClassConditionStatusSupportedVersion),
+		Status:             metav1.ConditionTrue,
+		ObservedGeneration: gwclass.Generation,
+		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
+	}
+	meta.SetStatusCondition(&gwclass.Status.Conditions, supportedVersionCondition)
 
 	err = r.cli.Status().Update(ctx, gwclass)
 	if err != nil {

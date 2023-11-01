@@ -58,6 +58,14 @@ var _ = Describe("GwController", func() {
 		}, timeout, interval).Should(BeTrue(), "service not created")
 		Expect(svc.Spec.ClusterIP).NotTo(BeEmpty())
 
+		// Need to update the status of the service
+		svc.Status.LoadBalancer = corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{{
+				IP: "127.0.0.1",
+			}},
+		}
+		Expect(k8sClient.Status().Update(ctx, &svc)).NotTo(HaveOccurred())
+
 		Eventually(func() bool {
 			err := k8sClient.Get(ctx, client.ObjectKey{Name: "gw", Namespace: "default"}, &gw)
 			if err != nil {
@@ -71,7 +79,7 @@ var _ = Describe("GwController", func() {
 
 		Expect(gw.Status.Addresses).To(HaveLen(1))
 		Expect(*gw.Status.Addresses[0].Type).To(Equal(api.IPAddressType))
-		Expect(gw.Status.Addresses[0].Value).To(Equal(svc.Spec.ClusterIP))
+		Expect(gw.Status.Addresses[0].Value).To(Equal("127.0.0.1"))
 
 	})
 

@@ -1,25 +1,4 @@
 {{- if .Values.gateway.enabled -}}
-{{- if .Values.gateway.createGateway -}}
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1beta1
-metadata:
-  name: {{ include "gloo-gateway2.gateway.fullname" . }}
-  labels:
-    {{- include "gloo-gateway2.gateway.labels" . | nindent 4 }}
-spec:
-  gatewayClassName: {{ .Values.gatewayClass.className }}
-  listeners:
-  {{- range $p := .Values.gateway.ports }}
-  - protocol: HTTP
-    port: {{ $p.port }}
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: Same
-  {{- end }}
----
-{{- end }}
-{{- if .Values.gateway.create -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -249,6 +228,4 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
-
-{{- end }}
 {{- end }}

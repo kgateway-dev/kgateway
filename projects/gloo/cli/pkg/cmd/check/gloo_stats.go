@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
 )
@@ -64,7 +65,7 @@ func RateLimitIsConnected(stats string) bool {
 	return true
 }
 
-func checkXdsMetrics(ctx context.Context, opts *options.Options, deployments *v1.DeploymentList) error {
+func checkXdsMetrics(ctx context.Context, printer printers.P, opts *options.Options, deployments *v1.DeploymentList) error {
 	errMessage := "Problem while checking for gloo xds errors"
 	if deployments == nil {
 		fmt.Println("Skipping due to an error in checking deployments")

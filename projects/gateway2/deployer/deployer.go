@@ -116,11 +116,14 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	vals := map[string]any{
 		"controlPlane": map[string]any{"enabled": false},
 		"gateway": map[string]any{
-			"enabled":       true,
-			"createGateway": false,
-			"name":          gw.Name,
-			"gatewayName":   gw.Name,
-			"ports":         portsAny,
+			"enabled":     true,
+			"name":        gw.Name,
+			"gatewayName": gw.Name,
+			"ports":       portsAny,
+			// Default to Load Balancer
+			"service": map[string]any{
+				"type": "LoadBalancer",
+			},
 			"xds": map[string]any{
 				"host": d.host,
 				"port": d.port,
@@ -157,7 +160,7 @@ func (d *Deployer) Render(ctx context.Context, ns string, vals map[string]any) (
 		return nil, fmt.Errorf("failed to render helm chart: %w", err)
 	}
 
-	objs, err := convertYAMLToObjects(d.scheme, []byte(release.Manifest))
+	objs, err := ConvertYAMLToObjects(d.scheme, []byte(release.Manifest))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml to objects: %w", err)
 	}
@@ -247,7 +250,7 @@ func loadFs(filesystem fs.FS) (*chart.Chart, error) {
 	return loader.LoadFiles(bufferedFiles)
 }
 
-func convertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Object, error) {
+func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Object, error) {
 	var objs []client.Object
 
 	// Split the YAML manifest into separate documents

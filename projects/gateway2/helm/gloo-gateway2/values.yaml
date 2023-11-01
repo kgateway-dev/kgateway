@@ -75,11 +75,9 @@ gateway:
   nameOverride: ""
   fullnameOverride: ""
   gatewayName: ""
-  createGateway: true
   xds:
     host: ""
     port: 8080
-  create: true
   replicaCount: 1
   resources: {}
   autoscaling:
