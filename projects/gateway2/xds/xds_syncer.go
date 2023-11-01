@@ -21,7 +21,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -43,7 +43,7 @@ import (
 const emptyVersionKey = "empty"
 
 var (
-	emptyResource = cache.Resources{
+	emptyResource = envoycache.Resources{
 		Version: emptyVersionKey,
 		Items:   map[string]envoycache.Resource{},
 	}
@@ -161,7 +161,10 @@ func (s *XdsSyncer) Start(
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
 		proxies := gloo_solo_io.ProxyList{}
-		rm := &reports.ReportMap{Gateways: make(map[string]*reports.GatewayReport)}
+		rm := &reports.ReportMap{
+			Gateways: make(map[string]*reports.GatewayReport),
+			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
+		}
 		r := reports.NewReporter(rm)
 		for _, gw := range gwl.Items {
 			proxy := t.TranslateProxy(ctx, &gw, queries, r)
@@ -173,6 +176,7 @@ func (s *XdsSyncer) Start(
 		proxyApiSnapshot.Proxies = proxies
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, *rm, gwl)
+		s.syncRouteStatus(ctx, *rm)
 	}
 
 	for {
@@ -341,8 +345,72 @@ func prettify(original interface{}) string {
 	return string(b)
 }
 
+func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
+	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
+	logger := contextutils.LoggerFrom(ctx)
+	rl := apiv1.HTTPRouteList{}
+	err := s.cli.List(ctx, &rl)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	for _, route := range rl.Items {
+		routeReport, ok := rm.Routes[client.ObjectKeyFromObject(&route)]
+		if !ok {
+			//TODO more thought here
+			continue
+		}
+		routeStatus := apiv1.RouteStatus{}
+		for _, parentRef := range route.Spec.ParentRefs {
+			key := reports.GetParentRefKey(&parentRef)
+			parentStatus, ok := routeReport.Parents[key]
+			if !ok {
+				//todo think
+				continue
+			}
+			if cond := meta.FindStatusCondition(parentStatus.Conditions, string(apiv1.RouteConditionAccepted)); cond == nil {
+				parentStatus.SetCondition(reports.HTTPRouteCondition{
+					Type:   apiv1.RouteConditionAccepted,
+					Status: v1.ConditionTrue,
+					Reason: apiv1.RouteReasonAccepted,
+				})
+			}
+			if cond := meta.FindStatusCondition(parentStatus.Conditions, string(apiv1.RouteConditionResolvedRefs)); cond == nil {
+				parentStatus.SetCondition(reports.HTTPRouteCondition{
+					Type:   apiv1.RouteConditionResolvedRefs,
+					Status: v1.ConditionTrue,
+					Reason: apiv1.RouteReasonResolvedRefs,
+				})
+			}
+
+			//TODO add logic for partially invalid condition
+
+			finalConditions := make([]v1.Condition, 0)
+			for _, pCondition := range parentStatus.Conditions {
+				pCondition.ObservedGeneration = route.Generation       // don't have generation is the report, should consider adding it
+				pCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
+				finalConditions = append(finalConditions, pCondition)
+			}
+
+			routeParentStatus := apiv1.RouteParentStatus{
+				ParentRef:      parentRef,
+				ControllerName: "solo.io/gloo-gateway2",
+				Conditions:     finalConditions,
+			}
+			routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
+		}
+		route.Status = apiv1.HTTPRouteStatus{
+			RouteStatus: routeStatus,
+		}
+		if err := s.cli.Status().Update(ctx, &route); err != nil {
+			logger.Error(err)
+		}
+	}
+}
+
 func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl apiv1.GatewayList) {
-	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
+	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	//TODO(Law): bail out early if possible
 	//TODO(Law): do another Get on the gw, possibly use Patch for status subresource modification

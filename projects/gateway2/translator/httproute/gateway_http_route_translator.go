@@ -21,7 +21,7 @@ func TranslateGatewayHTTPRouteRules(
 	queries query.GatewayQueries,
 	parentNamespace string,
 	route gwv1.HTTPRoute,
-	reporter reports.Reporter,
+	reporter reports.ParentRefReporter,
 ) []*v1.Route {
 	var routes []*v1.Route
 	for _, rule := range route.Spec.Rules {
@@ -38,7 +38,7 @@ func translateGatewayHTTPRouteRule(
 	parentNamespace string,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
-	reporter reports.Reporter,
+	reporter reports.ParentRefReporter,
 ) []*v1.Route {
 
 	routes := make([]*v1.Route, 0, len(rule.Matches))
@@ -140,23 +140,21 @@ func setAction(
 	route *v1.Route,
 	filters []gwv1.HTTPRouteFilter,
 	backendRefs []gwv1.HTTPBackendRef,
-	reporter reports.Reporter, // TODO: (yuval-k, ilackarms) this reporter should be for the HTTPRoute, then we won't need to propagate the http route here
+	reporter reports.ParentRefReporter,
 ) {
 	var weightedDestinations []*v1.WeightedDestination
 
 	for _, backendRef := range backendRefs {
-
 		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef)
 		if err != nil {
-
 			if errors.Is(err, query.ErrMissingReferenceGrant) {
-				reporter.Route(gwroute).SetCondition(reports.HTTPRouteCondition{
+				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonRefNotPermitted,
 				})
 			} else {
-				reporter.Route(gwroute).SetCondition(reports.HTTPRouteCondition{
+				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
@@ -174,7 +172,7 @@ func setAction(
 		switch cli := cli.(type) {
 		case *corev1.Service:
 			if port == 0 {
-				reporter.Route(gwroute).SetCondition(reports.HTTPRouteCondition{
+				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonUnsupportedValue,
@@ -185,7 +183,7 @@ func setAction(
 			ns = cli.Namespace
 
 		default:
-			reporter.Route(gwroute).SetCondition(reports.HTTPRouteCondition{
+			reporter.SetCondition(reports.HTTPRouteCondition{
 				Type:   gwv1.RouteConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.RouteReasonInvalidKind,

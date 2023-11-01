@@ -119,6 +119,7 @@ type GatewayQueries interface {
 }
 
 type RoutesForGwResult struct {
+	// key is listener name
 	ListenerResults map[string]*ListenerResult
 	RouteErrors     []*RouteError
 }

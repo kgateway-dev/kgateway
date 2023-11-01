@@ -1,12 +1,10 @@
 package listener
 
 import (
-	"context"
 	"slices"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -223,30 +221,30 @@ func getGroupName() *gwv1.Group {
 	return &g
 }
 
-func validateRoutes(
-	queries query.GatewayQueries,
-	reporter reports.Reporter,
-	routes []gwv1.HTTPRoute) {
-	for _, route := range routes {
-		for _, rule := range route.Spec.Rules {
-			for _, backendRef := range rule.BackendRefs {
-				_, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(&route), &backendRef)
-				if err != nil {
-					if err == query.ErrMissingReferenceGrant {
-						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
-							Type:   gwv1.RouteConditionResolvedRefs,
-							Status: metav1.ConditionFalse,
-							Reason: gwv1.RouteReasonRefNotPermitted,
-						})
-					} else if errors.IsNotFound(err) {
-						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
-							Type:   gwv1.RouteConditionResolvedRefs,
-							Status: metav1.ConditionFalse,
-							Reason: gwv1.RouteReasonBackendNotFound,
-						})
-					}
-				}
-			}
-		}
-	}
-}
+// func validateRoutes(
+// 	queries query.GatewayQueries,
+// 	reporter reports.Reporter,
+// 	routes []gwv1.HTTPRoute) {
+// 	for _, route := range routes {
+// 		for _, rule := range route.Spec.Rules {
+// 			for _, backendRef := range rule.BackendRefs {
+// 				_, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(&route), &backendRef)
+// 				if err != nil {
+// 					if err == query.ErrMissingReferenceGrant {
+// 						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
+// 							Type:   gwv1.RouteConditionResolvedRefs,
+// 							Status: metav1.ConditionFalse,
+// 							Reason: gwv1.RouteReasonRefNotPermitted,
+// 						})
+// 					} else if errors.IsNotFound(err) {
+// 						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
+// 							Type:   gwv1.RouteConditionResolvedRefs,
+// 							Status: metav1.ConditionFalse,
+// 							Reason: gwv1.RouteReasonBackendNotFound,
+// 						})
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }

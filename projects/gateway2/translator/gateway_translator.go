@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -45,6 +46,14 @@ func (t *translator) TranslateProxy(
 		// TODO(ilackarms): fill in the specific error / validation
 		// reporter.Gateway(gateway).Err(err.Error())
 		return nil
+	}
+	for _, rErr := range routesForGw.RouteErrors {
+		reporter.Route(&rErr.Route).ParentRef(&rErr.ParentRef).SetCondition(reports.HTTPRouteCondition{
+			Type:   gwv1.RouteConditionAccepted,
+			Status: metav1.ConditionFalse,
+			Reason: rErr.Error.Reason,
+			// TODO message
+		})
 	}
 
 	listeners := listener.TranslateListeners(

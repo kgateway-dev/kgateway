@@ -19,6 +19,7 @@ conformance:
     -gateway-class=solo-gateway \
     -supported-features=Gateway,HTTPRoute
 
+# internal target used by controller_suite_test.go
 envtest:
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
 

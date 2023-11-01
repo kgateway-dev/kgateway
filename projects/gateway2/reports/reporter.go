@@ -17,7 +17,17 @@ type GatewayReport struct {
 }
 
 type RouteReport struct {
-	Conditions []HTTPRouteCondition
+	Parents map[ParentRefKey]*ParentRefReport
+}
+
+type ParentRefReport struct {
+	Conditions []metav1.Condition
+}
+
+type ParentRefKey struct {
+	Group string
+	Kind  string
+	types.NamespacedName
 }
 
 type ListenerReport struct {
@@ -41,6 +51,7 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 
 func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 	var rr *RouteReport
+	//TODO use client.ObjectKeyFromObject
 	key := types.NamespacedName{
 		Namespace: route.Namespace,
 		Name:      route.Name,
@@ -53,8 +64,48 @@ func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 	return rr
 }
 
-func (r *RouteReport) SetCondition(rc HTTPRouteCondition) {
-	r.Conditions = append(r.Conditions, rc)
+func GetParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
+	var kind string
+	if parentRef.Kind != nil {
+		kind = string(*parentRef.Kind)
+	}
+	var ns string
+	if parentRef.Namespace != nil {
+		kind = string(*parentRef.Namespace)
+	}
+	return ParentRefKey{
+		Group: string(parentRef.Name),
+		Kind:  kind,
+		NamespacedName: types.NamespacedName{
+			Namespace: ns,
+			Name:      string(parentRef.Name),
+		},
+	}
+
+}
+
+func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {
+	key := GetParentRefKey(parentRef)
+	if r.Parents == nil {
+		r.Parents = make(map[ParentRefKey]*ParentRefReport)
+	}
+	var prr *ParentRefReport
+	prr, ok := r.Parents[key]
+	if !ok {
+		prr = &ParentRefReport{}
+		r.Parents[key] = prr
+	}
+	return prr
+}
+
+func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {
+	condition := metav1.Condition{
+		Type:    string(rc.Type),
+		Status:  rc.Status,
+		Reason:  string(rc.Reason),
+		Message: rc.Message,
+	}
+	prr.Conditions = append(prr.Conditions, condition)
 }
 
 func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
@@ -151,6 +202,9 @@ type HTTPRouteCondition struct {
 
 type HTTPRouteReporter interface {
 	// Err(format string, a ...any)
+	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
+}
 
+type ParentRefReporter interface {
 	SetCondition(condition HTTPRouteCondition)
 }

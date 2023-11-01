@@ -30,7 +30,9 @@ func TranslateListeners(
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
-	return mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(ctx, queries, reporter)
+	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw)
+	translatedListeners := mergedListeners.translateListeners(ctx, queries, reporter)
+	return translatedListeners
 }
 
 func mergeGWListeners(
@@ -38,7 +40,6 @@ func mergeGWListeners(
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
 	routesForGw query.RoutesForGwResult,
-	reporter reports.Reporter,
 ) *mergedListeners {
 	ml := &mergedListeners{
 		gatewayNamespace: gatewayNamespace,
@@ -50,7 +51,7 @@ func mergeGWListeners(
 			// TODO report
 			continue
 		}
-		ml.append(listener, result.Routes, reporter)
+		ml.append(listener, result.Routes)
 	}
 	return ml
 }
@@ -64,22 +65,12 @@ type mergedListeners struct {
 func (ml *mergedListeners) append(
 	listener gwv1.Listener,
 	routes []*query.ListenerRouteResult,
-	reporter reports.Reporter,
 ) error {
-
-	var routesWithHosts []routeWithChildHosts
-	for _, routeResult := range routes {
-		routesWithHosts = append(routesWithHosts, routeWithChildHosts{
-			childHosts: routeResult.Hostnames,
-			route:      routeResult.Route,
-		})
-	}
-
 	switch listener.Protocol {
 	case gwv1.HTTPProtocolType:
-		ml.appendHttpListener(listener, routesWithHosts)
+		ml.appendHttpListener(listener, routes)
 	case gwv1.HTTPSProtocolType:
-		ml.appendHttpsListener(listener, routesWithHosts)
+		ml.appendHttpsListener(listener, routes)
 	// TODO default handling
 	default:
 		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
@@ -90,7 +81,7 @@ func (ml *mergedListeners) append(
 
 func (ml *mergedListeners) appendHttpListener(
 	listener gwv1.Listener,
-	routesWithHosts []routeWithChildHosts,
+	routesWithHosts []*query.ListenerRouteResult,
 ) {
 	parent := httpFilterChainParent{
 		gatewayListenerName: string(listener.Name),
@@ -128,7 +119,7 @@ func (ml *mergedListeners) appendHttpListener(
 
 func (ml *mergedListeners) appendHttpsListener(
 	listener gwv1.Listener,
-	routesWithHosts []routeWithChildHosts,
+	routesWithHosts []*query.ListenerRouteResult,
 ) {
 
 	// create a new filter chain for the listener
@@ -184,14 +175,12 @@ func (ml *mergedListener) translateListener(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Listener {
-
 	var (
 		httpFilterChains []*v1.AggregateListener_HttpFilterChain
 		mergedVhosts     = map[string]*v1.VirtualHost{}
 	)
 
 	if ml.httpFilterChain != nil {
-
 		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
 			ml.name,
 			ml.gatewayNamespace,
@@ -261,14 +250,7 @@ type httpFilterChain struct {
 
 type httpFilterChainParent struct {
 	gatewayListenerName string
-	routes              []routeWithChildHosts
-}
-
-type routeWithChildHosts struct {
-	// the resolved child hosts to translate for the route table
-	childHosts []string
-	// the route to translate
-	route gwv1.HTTPRoute
+	routes              []*query.ListenerRouteResult
 }
 
 func (mfc *httpFilterChain) translateHttpFilterChain(
@@ -282,15 +264,16 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 	)
 	for _, parent := range mfc.parents {
 		for _, routeWithHosts := range parent.routes {
-			routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.route, reporter)
+			parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
+			routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.Route, parentRefReporter)
 
 			if len(routes) == 0 {
 				// TODO report
 				continue
 			}
 
-			for _, host := range routeWithHosts.childHosts {
-				routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.route, routes)...)
+			for _, host := range routeWithHosts.Hostnames {
+				routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
 			}
 		}
 	}
@@ -325,7 +308,7 @@ type httpsFilterChain struct {
 	gatewayListenerName string
 	sniDomain           *gwv1.Hostname
 	tls                 *gwv1.GatewayTLSConfig
-	routesWithHosts     []routeWithChildHosts
+	routesWithHosts     []*query.ListenerRouteResult
 	queries             query.GatewayQueries
 }
 
@@ -354,15 +337,16 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		routesByHost = map[string]routeutils.SortableRoutes{}
 	)
 	for _, routeWithHosts := range mfc.routesWithHosts {
-		routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.route, reporter)
+		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
+		routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.Route, parentRefReporter)
 
 		if len(routes) == 0 {
 			// TODO report
 			continue
 		}
 
-		for _, host := range routeWithHosts.childHosts {
-			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.route, routes)...)
+		for _, host := range routeWithHosts.Hostnames {
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
 		}
 	}
 
