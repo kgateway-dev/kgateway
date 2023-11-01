@@ -1,6 +1,3 @@
-# ignore gateway-api repo that may be downloaded to run conformance tests.
-gateway-api
-gateway-api/*
 # ignore binary that may be created in the current dir
 /gloo-gateway2
 /.bin

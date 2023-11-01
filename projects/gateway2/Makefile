@@ -13,9 +13,14 @@ kind:
 	helm upgrade -i gloo-gateway2 ./helm/gloo-gateway2/ --set controlPlane.image.tag=latest --set gateway.enabled=false --set develop=true
 	kubectl delete rs --all
 
-conformance:
-	[ -d gateway-api ] || git clone https://github.com/kubernetes-sigs/gateway-api
-	cd gateway-api && git fetch && git checkout $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Version') && go test -test.v ./conformance/... -args \
+tests/conformance/conformance_test.go:
+	echo "//go:build conformance" >  $@
+	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
+	go fmt $@
+
+.PHONY: conformance
+conformance: tests/conformance/conformance_test.go
+	go test -test.v ./tests/conformance/... -args \
     -gateway-class=solo-gateway \
     -supported-features=Gateway,HTTPRoute
 
