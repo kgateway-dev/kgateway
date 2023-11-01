@@ -254,7 +254,7 @@ spec:
             hashedPassword: "010eb058a59f4ac5ba05639b0263cf91b4345fd6"
 {{< /highlight >}}
 
-The same `curls` should work with this config as the hashing algorithm only affects the hashed password stored on the server side.
+Because the hashing algorithm only affects how the hashed password is stored on the server side, you can run the `curl` commands to test your auth configuration. 
 ```shell
 curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
