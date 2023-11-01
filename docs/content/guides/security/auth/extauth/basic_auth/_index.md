@@ -206,6 +206,56 @@ If the auth config has been received successfully, you should see the log line:
 "logger":"extauth","caller":"runner/run.go:179","msg":"got new config"
 ```
 
+### Extended configuration
+
+An extended configuration is available that allows use of the SHA1 hashing algorithm instead of APR.
+
+This configuration splits the users from the encryption algorithm, and to match the functionality of 
+
+{{< highlight shell "hl_lines=9,11-14" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: basic-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - basicAuth:
+      encryption:
+        apr: {}
+      userList:
+        users:
+          user:
+            salt: "TYiryv0/"
+            hashedPassword: "8BvzLUO9IfGPGGsPnAgSu1"
+{{< /highlight >}}
+
+To switch to SHA1 encryption, the following config would support the same user list (with updated salted and hashed passwords):
+
+{{< highlight shell "hl_lines=9" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: basic-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - basicAuth:
+      encryption:
+        sha1: {}
+      userList:
+        users:
+          user:
+            salt: "TYiryv0/"
+            hashedPassword: "010eb058a59f4ac5ba05639b0263cf91b4345fd6"
+{{< /highlight >}}
+
+The same `curls` should work with this config as the hashing algorithm only affects the hashed password stored on the server side.
+
+The hashed password is case-insensitive as the alphabetic characters represent hexadecimal digits.
+
+When using the extended configuration, the `proxy-authorization` header is also supported.
+
 ## Summary
 
 In this tutorial, we installed Gloo Edge Enterprise and created an unauthenticated Virtual Service that routes requests to a 
