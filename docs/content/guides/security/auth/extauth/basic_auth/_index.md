@@ -214,7 +214,7 @@ To find the configuration format for an earlier version, see [Configuration form
 
 An extended configuration is available that allows use of the SHA1 hashing algorithm instead of APR.
 
-This configuration splits definition the users from the definition of the encryption algorithm. The configuration with the same functionality as the example would look like:
+The following configuration defines a list of users, and the salt and hashedPassword that they need to use to authenticate successfully. The hashed password is encrypted by using the APR algorithm. The following example uses apr encryption to store the credentials for the same user as the previous example.
 
 {{< highlight shell "hl_lines=9-15" >}}
 apiVersion: enterprise.gloo.solo.io/v1
@@ -234,7 +234,7 @@ spec:
             hashedPassword: "8BvzLUO9IfGPGGsPnAgSu1"
 {{< /highlight >}}
 
-To switch to SHA1 encryption, the following config would support the same user list (with updated salted and hashed passwords):
+You can change the encryption algorithm for the hashed password to SHA1 as shown in the following example. In this example, the username and salt remain the same and the hashedPassword needs to be recalculated and updated.
 
 {{< highlight shell "hl_lines=10" >}}
 apiVersion: enterprise.gloo.solo.io/v1
@@ -254,7 +254,7 @@ spec:
             hashedPassword: "010eb058a59f4ac5ba05639b0263cf91b4345fd6"
 {{< /highlight >}}
 
-Because the hashing algorithm only affects how the hashed password is stored on the server side, you can run the `curl` commands to test your auth configuration. 
+The same `curls` should work with this config as the hashing algorithm only affects the hashed password stored on the server side.
 ```shell
 curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
