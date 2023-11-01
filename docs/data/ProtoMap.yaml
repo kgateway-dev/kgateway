@@ -578,12 +578,6 @@ apis:
   envoy.config.resolver.stitching.v2.StitchingResolver:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#StitchingResolver
     package: envoy.config.resolver.stitching.v2
-  envoy.config.tap.output_sink.v3.GrpcOutputSink:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/tap/output_sink/v3/grpc_output_sink.proto.sk/#GrpcOutputSink
-    package: envoy.config.tap.output_sink.v3
-  envoy.config.tap.output_sink.v3.HttpOutputSink:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/tap/output_sink/v3/http_output_sink.proto.sk/#HttpOutputSink
-    package: envoy.config.tap.output_sink.v3
   envoy.config.transformer.xslt.v2.XsltTransformation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation
     package: envoy.config.transformer.xslt.v2
