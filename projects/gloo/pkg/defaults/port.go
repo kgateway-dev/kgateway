@@ -17,8 +17,6 @@ var GlooValidationPort = 9988
 var GlooMtlsModeRestXdsPort = 9998
 var GlooMtlsModeXdsPort = 9999
 var DefaultRefreshRate = time.Minute
-var TapServerHttpPort uint16 = 9001
-var TapServerGrpcPort uint16 = 9002
 
 // https://github.com/solo-io/gloo/blob/1de5515c1fd655c462dce8f0d1f0342fe5400e4e/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L58
 var PrometheusListenerPort = 8081
