@@ -41,7 +41,7 @@ listeners:
                       name: default-foo-svc-8080
                       namespace: default
   bindAddress: '::'
-  bindPort: 80
+  bindPort: 8080
   name: http
 metadata:
   name: example-gateway

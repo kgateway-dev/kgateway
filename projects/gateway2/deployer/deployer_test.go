@@ -114,6 +114,46 @@ var _ = Describe("Deployer", func() {
 		Expect(objs).NotTo(BeEmpty())
 	})
 
+	It("should work with port offset", func() {
+		gw := &api.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+				UID:       "1235",
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Gateway",
+				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				Listeners: []api.Listener{
+					{
+						Name: "listener-1",
+						Port: 80,
+					},
+				},
+			},
+		}
+		objs, err := d.GetObjsToDeploy(context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).NotTo(BeEmpty())
+
+		svc := func() *corev1.Service {
+			for _, obj := range objs {
+				if svc, ok := obj.(*corev1.Service); ok {
+					return svc
+				}
+			}
+			return nil
+		}()
+		Expect(svc).NotTo(BeNil())
+
+		port := svc.Spec.Ports[0]
+		Expect(port.Port).To(Equal(int32(80)))
+		Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
+	})
+
 	It("should get objects with owner refs", func() {
 		gw := &api.Gateway{
 			ObjectMeta: metav1.ObjectMeta{

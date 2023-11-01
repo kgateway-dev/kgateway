@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/solo-io/gloo/projects/gateway2/helm"
+	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -96,19 +97,19 @@ func jsonConvert(in []gatewayPort, out interface{}) error {
 func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
 
 	// must not be nil for helm to not fail.
-	ports := []gatewayPort{}
+	gwPorts := []gatewayPort{}
 	for _, l := range gw.Spec.Listeners {
 		var port gatewayPort
 		port.Port = uint16(l.Port)
-		port.TargetPort = uint16(l.Port)
+		port.TargetPort = ports.TranslatePort(uint16(l.Port))
 		port.Name = string(l.Name)
 		port.Protocol = "TCP"
-		ports = append(ports, port)
+		gwPorts = append(gwPorts, port)
 	}
 
 	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
 	var portsAny []any
-	err := jsonConvert(ports, &portsAny)
+	err := jsonConvert(gwPorts, &portsAny)
 	if err != nil {
 		return nil, err
 	}

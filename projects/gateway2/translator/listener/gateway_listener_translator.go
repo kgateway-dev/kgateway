@@ -2,11 +2,13 @@ package listener
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
@@ -118,7 +120,7 @@ func (ml *mergedListeners) appendHttpListener(
 	ml.listeners = append(ml.listeners, &mergedListener{
 		name:             listenerName,
 		gatewayNamespace: ml.gatewayNamespace,
-		port:             listener.Port,
+		port:             gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpFilterChain:  fc,
 	})
 
@@ -151,7 +153,7 @@ func (ml *mergedListeners) appendHttpsListener(
 	}
 	ml.listeners = append(ml.listeners, &mergedListener{
 		name:              listenerName,
-		port:              listener.Port,
+		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpsFilterChains: []httpsFilterChain{mfc},
 	})
 }
