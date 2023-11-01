@@ -208,9 +208,8 @@ If the auth config has been received successfully, you should see the log line:
 
 ### Extended configuration
 {{% notice warning %}}
-The auth configuration format shown on this page was introduced with **Gloo Enterprise**, release [**1.16.0**]({{ .Site.Data.Solo.DocsVersion }}/reference/changelog/enterprise).
-If you are using an earlier version, please refer to [this page]({{ .Site.Data.Solo.DocsVersion }}/guides/security/auth/extauth/configuration_format_history/)
-to see which configuration formats are supported by each version.
+The auth configuration format that is shown on this page was introduced with [Gloo Edge Enterprise release 1.16.0]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}).
+To find the configuration format for an earlier version, see [Configuration format history]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/configuration_format_history/" >}}). 
 {{% /notice %}}
 
 An extended configuration is available that allows use of the SHA1 hashing algorithm instead of APR.
