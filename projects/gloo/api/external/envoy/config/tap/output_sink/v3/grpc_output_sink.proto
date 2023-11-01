@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package envoy.config.tap.output_sink.v3;
+
+option java_package = "io.envoyproxy.envoy.config.output_sink.tap.v3";
+option java_outer_classname = "GrpcOutputSinkProto";
+option java_multiple_files = true;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/config/tap/output_sink/v3";
+
+import "validate/validate.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/grpc_service.proto";
+
+// [#protodoc-title: GRPC Output Sink]
+// An output sink for the TAP filter that writes to a GRPC socket
+// [#extension: envoy.tap.sinks.solo.grpc_output_sink]
+
+// GRPC output sink definition
+message GrpcOutputSink {
+
+  // Location of the GRPC service to which output traces should be submitted
+  .solo.io.envoy.config.core.v3.GrpcService grpc_service = 1 [(validate.rules).message = {required: true}];
+}
