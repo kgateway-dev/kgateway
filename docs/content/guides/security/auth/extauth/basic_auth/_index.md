@@ -263,6 +263,9 @@ curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl pro
 The hashed password is case-insensitive as the alphabetic characters represent hexadecimal digits.
 
 When using the extended configuration, the `proxy-authorization` header is also supported.
+```shell
+curl -H "Proxy- Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl proxy url)/posts/1
+```
 
 ## Summary
 
