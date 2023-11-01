@@ -214,7 +214,7 @@ To find the configuration format for an earlier version, see [Configuration form
 
 An extended configuration is available that allows use of the SHA1 hashing algorithm instead of APR.
 
-The following configuration defines a list of users, and the salt and hashedPassword that they need to use to authenticate successfully. The hashed password is encrypted by using the APR algorithm. The following example uses apr encryption to store the credentials for the same user as the previous example.
+The following configuration defines a list of users, and the salt and hashed password that they need to use to authenticate successfully. It uses APR encryption to store the credentials for the same user that was used in the previous example.
 
 {{< highlight shell "hl_lines=9-15" >}}
 apiVersion: enterprise.gloo.solo.io/v1
