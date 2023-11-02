@@ -417,7 +417,7 @@
 |gateway.rolloutJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.rolloutJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gateway.rolloutJob.timeout|int|120|Time to wait in seconds until the job has completed. If it exceeds this limit, it is deemed to have failed. Defaults to 600|
+|gateway.rolloutJob.timeout|int|120|Time to wait in seconds until the job has completed. If it exceeds this limit, it is deemed to have failed. Defaults to 120|
 |gateway.cleanupJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.cleanupJob.priorityClassName|string||name of a defined priority class|
 |gateway.cleanupJob.nodeName|string||name of node to run on|
@@ -462,7 +462,7 @@
 |gateway.isolateVirtualHostsBySslConfig|bool|false|if true, Added support for the envoy.filters.listener.tls_inspector listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting.|
 |gateway.compressedProxySpec|bool||if true, enables compression for the Proxy CRD spec|
 |gateway.persistProxySpec|bool||Enable writing Proxy CRD to etcd. Disabled by default for performance.|
-|gateway.translateEmptyGateways|bool|false|If true, the gateways wil be translated into Envoy listeners even if no VirtualServices exist.|
+|gateway.translateEmptyGateways|bool|false|If true, the gateways will be translated into Envoy listeners even if no VirtualServices exist.|
 |gateway.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
