@@ -18,7 +18,7 @@ tests/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_ARGS:=-gateway-class=solo-gateway -supported-features=Gateway,HTTPRoute
+CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,HTTPRoute
 
 .PHONY: conformance
 conformance: tests/conformance/conformance_test.go
