@@ -27,12 +27,8 @@ If release name contains chart name it will be used as a full name.
 {{- if .Values.controlPlane.fullnameOverride }}
 {{- .Values.controlPlane.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- $name := default .Chart.Name .Values.controlPlane.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | printf "%s-cp" | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s-cp" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{- $name := default .Release.Name .Values.controlPlane.nameOverride }}
+{{- .Release.Name | printf "glood-%s" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 
@@ -78,7 +74,7 @@ Expand the name of the chart.
 */}}
 {{- define "gloo-gateway.gateway.name" -}}
 {{- if .Values.gateway.name }}
-{{- .Values.gateway.name | printf "%s-dp" | trunc 63 | trimSuffix "-" }}
+{{- .Values.gateway.name | printf "gloo-proxy-%s" | trunc 63 | trimSuffix "-" }}
 {{- else }}
 {{- default .Chart.Name .Values.gateway.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -92,20 +88,9 @@ If release name contains chart name it will be used as a full name.
 {{- define "gloo-gateway.gateway.fullname" -}}
 {{- if .Values.gateway.fullnameOverride }}
 {{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else if .Values.gateway.name }}
-{{- $name := default .Chart.Name .Values.gateway.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Values.gateway.name | printf "%s-dp" | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- printf "%s-%s-dp" .Release.Name .Values.gateway.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.gateway.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | printf "%s-dp" | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s-dp" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{- $name := default .Release.Name .Values.gateway.nameOverride }}
+{{- .Release.Name | printf "gloo-proxy-%s" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMG=$(kubectl get deploy gw-dp -o jsonpath='{.spec.template.spec.containers[0].image}')
-kubectl get cm gw-dp -o jsonpath='{.data.envoy\.yaml}' | sed 's/address: gloo-gateway-cp.default/address: 127.0.0.1/' > /tmp/envoy.yaml
+kubectl get cm gw-dp -o jsonpath='{.data.envoy\.yaml}' | sed 's/address: glood.default/address: 127.0.0.1/' > /tmp/envoy.yaml
 CMD=$(kubectl get deploy gw-dp -o jsonpath='{.spec.template.spec.containers[0].command}'|jq -r 'join(" ")'| sed 's@/etc/envoy/envoy.yaml@/tmp/envoy.yaml@')
 ARGS=$(kubectl get deploy gw-dp -o jsonpath='{.spec.template.spec.containers[0].args}'|jq -r 'join(" ")'| sed 's@/etc/envoy/envoy.yaml@/tmp/envoy.yaml@')
 

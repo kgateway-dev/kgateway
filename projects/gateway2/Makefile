@@ -2,14 +2,14 @@ build:
 	CGO_ENABLED=0 GOOS=linux go build -o gloo-gateway
 
 docker: build
-	docker build -t us-docker.pkg.dev/gloo-gateway/docker/gloo-gateway-cp:latest .
+	docker build -t us-docker.pkg.dev/gloo-gateway/docker/glood:latest .
 
 crds/gateway-crds.yaml:
 	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=adbd9968d4ff7995af21cb9cd0913288e2b4ca27" -o crds/gateway-crds.yaml
 
 kind:
 	./kind.sh
-	kind load docker-image us-docker.pkg.dev/gloo-gateway/docker/gloo-gateway-cp:latest
+	kind load docker-image us-docker.pkg.dev/gloo-gateway/docker/glood:latest
 	helm upgrade -i gloo-gateway ./helm/gloo-gateway/ --set controlPlane.image.tag=latest --set gateway.enabled=false --set develop=true
 	kubectl delete rs --all
 
