@@ -102,7 +102,7 @@ gateway:
     # When adding the --wait && --wait-for-jobs flag in helm, sometimes the job can complete and be deleted before helm can check if it has finished (for instance, while helm is waiting on a deployment).
     # So set this to a higher value where it should still be around after all the other resources are ready
     ttlSecondsAfterFinished: 300
-    timeout: 600
+    timeout: 120
   cleanupJob:
     enabled: true
     image:
