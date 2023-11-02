@@ -31,7 +31,7 @@ type ParentRefKey struct {
 }
 
 type ListenerReport struct {
-	Status gwv1.ListenerStatus
+	Status      gwv1.ListenerStatus
 }
 
 type reporter struct {
@@ -146,6 +146,10 @@ func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
 	l.Status.SupportedKinds = rgks
 }
 
+func (l *ListenerReport) SetAttachedRoutes(n uint) {
+	l.Status.AttachedRoutes = int32(n)
+}
+
 func NewReporter(reportMap *ReportMap) Reporter {
 	return &reporter{report: reportMap}
 }
@@ -191,6 +195,7 @@ type ListenerReporter interface {
 	SetCondition(ListenerCondition)
 
 	SetSupportedKinds([]gwv1.RouteGroupKind)
+	SetAttachedRoutes(n uint)
 }
 
 type HTTPRouteCondition struct {

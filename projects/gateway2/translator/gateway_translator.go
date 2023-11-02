@@ -56,6 +56,14 @@ func (t *translator) TranslateProxy(
 		})
 	}
 
+    for _, listener := range gateway.Spec.Listeners{
+        availRoutes := 0
+        if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
+            availRoutes = len(res.Routes)
+        }
+        reporter.Gateway(gateway).Listener(&listener).SetAttachedRoutes(uint(availRoutes))
+    } 
+
 	listeners := listener.TranslateListeners(
 		ctx,
 		queries,

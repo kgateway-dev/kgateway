@@ -18,11 +18,15 @@ tests/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
+CONFORMANCE_ARGS:=-gateway-class=solo-gateway -supported-features=Gateway,HTTPRoute
+
 .PHONY: conformance
 conformance: tests/conformance/conformance_test.go
-	go test -test.v ./tests/conformance/... -args \
-    -gateway-class=gloo-gateway \
-    -supported-features=Gateway,HTTPRoute
+	go test -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS)
+
+conformance-%: tests/conformance/conformance_test.go
+	go test -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS) \
+	-run-test=$*
 
 # internal target used by controller_suite_test.go
 envtest:
