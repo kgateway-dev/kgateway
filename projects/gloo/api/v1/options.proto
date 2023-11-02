@@ -218,7 +218,7 @@ message HttpListenerOptions {
     // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
     Router router = 18;
 
-    // Enterprise only: Tap filter settings (experimental). Overrides global tap options configured via settings
+    // Enterprise only: Tap filter settings (experimental).
     tap.options.gloo.solo.io.Tap tap = 34;
 }
 
