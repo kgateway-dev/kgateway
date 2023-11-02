@@ -158,6 +158,7 @@ func (ml *mergedListeners) appendHttpsListener(
 	}
 	ml.listeners = append(ml.listeners, &mergedListener{
 		name:              listenerName,
+		gatewayNamespace:  ml.gatewayNamespace,
 		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,

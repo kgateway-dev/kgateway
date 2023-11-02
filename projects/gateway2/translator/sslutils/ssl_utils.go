@@ -3,6 +3,7 @@ package sslutils
 import (
 	"crypto/tls"
 	"fmt"
+
 	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -25,8 +26,8 @@ func ValidateTlsSecret(secret *corev1.Secret) error {
 }
 
 func validatedCertData(sslSecret *corev1.Secret) error {
-	certChain := sslSecret.Data[corev1.TLSPrivateKeyKey]
-	privateKey := sslSecret.Data[corev1.TLSCertKey]
+	certChain := sslSecret.Data[corev1.TLSCertKey]
+	privateKey := sslSecret.Data[corev1.TLSPrivateKeyKey]
 	rootCa := sslSecret.Data[corev1.ServiceAccountRootCAKey]
 
 	err := isValidSslKeyPair(certChain, privateKey, rootCa)
