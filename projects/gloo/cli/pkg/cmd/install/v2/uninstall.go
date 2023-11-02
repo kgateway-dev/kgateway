@@ -36,12 +36,6 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	// Check if CRDs already exist
-	crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), crds.GatewayCrds)
-	if err != nil {
-		return err
-	}
-
 	objs, err := dep.Render(ctx, installOpts.Namespace, vals)
 	if err != nil {
 		return err
@@ -53,18 +47,21 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 
 	fmt.Printf("Deleting Manifest... ")
 	if err := deleteObjs(ctx, objs, cli); err != nil {
-		fmt.Printf("Failed\n")
-		return err
+		fmt.Printf("Failed, but continuing\n")
+	} else {
+		fmt.Printf("Done\n")
 	}
-
-	fmt.Printf("Done\n")
 
 	fmt.Printf("Deleting Gateway CRDs... ")
-	if err := deleteObjs(ctx, crds, cli); err != nil {
+	crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), crds.GatewayCrds)
+	if err != nil {
 		fmt.Printf("Failed\n")
-		return err
+	} else {
+		if err := dep.DeployObjs(ctx, crds, cli); err != nil {
+			fmt.Printf("Failed\n")
+		}
+		fmt.Printf("Done\n")
 	}
-	fmt.Printf("Done\n")
 
 	deleteNamespace(ctx, cli, installOpts.Namespace)
 

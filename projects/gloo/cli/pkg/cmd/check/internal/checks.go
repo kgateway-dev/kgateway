@@ -13,6 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -117,9 +118,9 @@ func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Op
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
-	gc, err := cli.GatewayV1().GatewayClasses().Get(ctx, "solo-gateway", metav1.GetOptions{})
+	gc, err := cli.GatewayV1().GatewayClasses().Get(ctx, "gloo-gateway", metav1.GetOptions{})
 	if err != nil {
-		errMessage := "Could not find solo GatewayClass solo-gateway"
+		errMessage := "Could not find solo GatewayClass gloo-gateway"
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
@@ -131,6 +132,7 @@ func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Op
 
 	multierr := &multierror.Error{}
 	processConditions(
+		fmt.Sprintf("GatewayClass %s", gc.Name),
 		multierr,
 		expectedConditions,
 		gc.Status.Conditions,
@@ -163,7 +165,7 @@ func CheckGatewys(ctx context.Context, printer printers.P, opts *options.Options
 		// Pike until go 1.22
 		gw := gw
 
-		if gw.Spec.GatewayClassName != "solo-gateway" {
+		if gw.Spec.GatewayClassName != "gloo-gateway" {
 			// #not_my_gateway
 			continue
 		}
@@ -174,6 +176,7 @@ func CheckGatewys(ctx context.Context, printer printers.P, opts *options.Options
 		}
 
 		processConditions(
+			fmt.Sprintf("Gateway %s.%s", gw.Namespace, gw.Name),
 			multierr,
 			expectedConditions,
 			gw.Status.Conditions,
@@ -202,6 +205,7 @@ func CheckGatewys(ctx context.Context, printer printers.P, opts *options.Options
 			}
 
 			processConditions(
+				fmt.Sprintf("Listener %s.%s.%s", gw.Namespace, gw.Name, gw.Spec.Listeners[spec_idx].Name),
 				multierr,
 				expectedConditions,
 				gw.Status.Listeners[status_idx].Conditions,
@@ -258,6 +262,7 @@ func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Opti
 					{condition: gwv1.RouteConditionResolvedRefs, status: metav1.ConditionTrue},
 				}
 				processConditions(
+					fmt.Sprintf("HTTPRoute %s.%s.%s", httpRouteList.Items[route_idx].Namespace, httpRouteList.Items[route_idx].Name, parent_ref.Name),
 					multierr,
 					expectedConditions,
 					httpRouteList.Items[route_idx].Status.Parents[parent_idx].Conditions,
@@ -282,30 +287,32 @@ type expectedCondition[T ~string] struct {
 }
 
 func processConditions[T ~string](
+	parent string,
 	multierr *multierror.Error,
 	expectedConditions []expectedCondition[T],
 	conditions []metav1.Condition,
 	generation int64,
 ) {
 	for idx := range expectedConditions {
-		condition := searchForCondition(conditions, string(expectedConditions[idx].condition))
+		condition := meta.FindStatusCondition(conditions, string(expectedConditions[idx].condition))
 		if condition == nil {
 			multierr = multierror.Append(multierr, fmt.Errorf(
-				"Gateway status (%s) was not found, most likely an error or has not reconciled yet",
-				string(expectedConditions[idx].condition),
+				"%s status (%s) was not found, most likely an error or has not reconciled yet",
+				parent, string(expectedConditions[idx].condition),
 			))
 		} else if condition.ObservedGeneration != generation {
 			// Hasn't reconciled yet
 			multierr = multierror.Append(multierr, fmt.Errorf(
-				"Gateway status (%s) is not up to date with the object's Generation",
-				string(expectedConditions[idx].condition),
+				"status (%s) is not up to date with the object's Generation",
+				parent, string(expectedConditions[idx].condition),
 			))
 		} else {
 			switch condition.Status {
 			case expectedConditions[idx].status: // We're good here
 			default: //ruh roh
 				multierr = multierror.Append(multierr, fmt.Errorf(
-					"Gateway status (%s) is not set to expected (%s). Reason: %s, Message: %s",
+					"%s status (%s) is not set to expected (%s). Reason: %s, Message: %s",
+					parent,
 					string(expectedConditions[idx].condition),
 					string(expectedConditions[idx].status),
 					condition.Reason,
@@ -314,13 +321,4 @@ func processConditions[T ~string](
 			}
 		}
 	}
-}
-
-func searchForCondition(conditions []metav1.Condition, conditionType string) *metav1.Condition {
-	for _, condition := range conditions {
-		if condition.Type == conditionType {
-			return &condition
-		}
-	}
-	return nil
 }

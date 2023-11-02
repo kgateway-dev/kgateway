@@ -1,16 +1,16 @@
 build:
-	CGO_ENABLED=0 GOOS=linux go build -o gloo-gateway2
+	CGO_ENABLED=0 GOOS=linux go build -o gloo-gateway
 
 docker: build
-	docker build -t docker.io/soloio/gloo-gateway2:latest .
+	docker build -t us-docker.pkg.dev/gloo-gateway/docker/gloo-gateway-cp:latest .
 
 crds/gateway-crds.yaml:
 	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=adbd9968d4ff7995af21cb9cd0913288e2b4ca27" -o crds/gateway-crds.yaml
 
 kind:
 	./kind.sh
-	kind load docker-image docker.io/soloio/gloo-gateway2:latest
-	helm upgrade -i gloo-gateway2 ./helm/gloo-gateway2/ --set controlPlane.image.tag=latest --set gateway.enabled=false --set develop=true
+	kind load docker-image us-docker.pkg.dev/gloo-gateway/docker/gloo-gateway-cp:latest
+	helm upgrade -i gloo-gateway ./helm/gloo-gateway/ --set controlPlane.image.tag=latest --set gateway.enabled=false --set develop=true
 	kubectl delete rs --all
 
 tests/conformance/conformance_test.go:
@@ -21,7 +21,7 @@ tests/conformance/conformance_test.go:
 .PHONY: conformance
 conformance: tests/conformance/conformance_test.go
 	go test -test.v ./tests/conformance/... -args \
-    -gateway-class=solo-gateway \
+    -gateway-class=gloo-gateway \
     -supported-features=Gateway,HTTPRoute
 
 # internal target used by controller_suite_test.go

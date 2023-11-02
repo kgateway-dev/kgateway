@@ -45,7 +45,7 @@ type Deployer struct {
 
 func NewDeployer(scheme *runtime.Scheme, dev bool, release, controllerName, host string, port uint16) (*Deployer, error) {
 
-	chart, err := loadFs(helm.GlooGateway2HelmChart)
+	chart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		// don't retrun an error is requeueing won't help here
 		return nil, err
@@ -273,6 +273,9 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 					continue
 				}
 			}
+		} else if len(obj.Object) == 0 {
+			// This can happen with an "empty" document
+			continue
 		}
 
 		objs = append(objs, &obj)

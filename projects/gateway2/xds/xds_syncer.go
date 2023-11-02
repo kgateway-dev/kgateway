@@ -452,6 +452,13 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 					Reason: apiv1.ListenerReasonResolvedRefs,
 				})
 			}
+			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionProgrammed)); cond == nil {
+				lisReport.SetCondition(reports.ListenerCondition{
+					Type:   apiv1.ListenerConditionProgrammed,
+					Status: v1.ConditionTrue,
+					Reason: apiv1.ListenerReasonProgrammed,
+				})
+			}
 
 			finalConditions := make([]v1.Condition, 0)
 			for _, lisCondition := range lisReport.Status.Conditions {

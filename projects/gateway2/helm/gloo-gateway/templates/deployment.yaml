@@ -2,14 +2,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}
   labels:
-    {{- include "gloo-gateway2.controlPlane.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controlPlane.replicaCount }}
   selector:
     matchLabels:
-      {{- include "gloo-gateway2.controlPlane.selectorLabels" . | nindent 6 }}
+      {{- include "gloo-gateway.controlPlane.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.controlPlane.podAnnotations }}
@@ -17,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "gloo-gateway2.controlPlane.selectorLabels" . | nindent 8 }}
+        {{- include "gloo-gateway.controlPlane.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.controlPlane.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "gloo-gateway2.controlPlane.serviceAccountName" . }}
+      serviceAccountName: {{ include "gloo-gateway.controlPlane.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.controlPlane.podSecurityContext | nindent 8 }}
       containers:
@@ -45,7 +46,7 @@ spec:
           - "--auto-provision"
           {{- end }}
           - --xds-server
-          - {{ printf "%s.%s" (include "gloo-gateway2.controlPlane.fullname" . ) .Release.Namespace }}
+          - {{ printf "%s.%s" (include "gloo-gateway.controlPlane.fullname" . ) .Release.Namespace }}
           - --xds-port
           - "{{ .Values.controlPlane.service.port }}"
           - --release-name={{ .Release.Name }}

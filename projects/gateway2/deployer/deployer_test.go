@@ -56,7 +56,7 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(scheme.NewScheme(), false, "gloo-gateway2", "foo", "xds", 8080)
+		d, err = deployer.NewDeployer(scheme.NewScheme(), false, "gloo-gateway", "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

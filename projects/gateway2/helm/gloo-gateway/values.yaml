@@ -1,10 +1,10 @@
-# Default values for gloo-gateway2.
+# Default values for gloo-gateway.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 gatewayClass:
-  className: solo-gateway
-  controllerName: solo.io/gloo-gateway2
+  className: gloo-gateway
+  controllerName: solo.io/gloo-gateway
 
 develop: false
 
@@ -17,7 +17,7 @@ controlPlane:
   fullnameOverride: ""
 
   image:
-    repository: docker.io/soloio/gloo-gateway2
+    repository: us-docker.pkg.dev/gloo-gateway/docker/gloo-gateway-cp
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""

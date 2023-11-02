@@ -1,6 +1,8 @@
 kind create cluster
 
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
+SCRIPTPATH=$( cd "$(dirname "$0")" && pwd -P )
+
+kubectl apply -f $SCRIPTPATH/crds/gateway-crds.yaml
 
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
 

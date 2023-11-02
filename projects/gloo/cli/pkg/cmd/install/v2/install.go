@@ -55,11 +55,6 @@ func install(opts *options.Options, installOpts *Options) error {
 	createNamespace(ctx, cli, installOpts.Namespace)
 
 	// Check if CRDs already exist
-	crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), crds.GatewayCrds)
-	if err != nil {
-		return err
-	}
-
 	crdsExist, err := detectCrds(cfg)
 	if err != nil {
 		return err
@@ -67,6 +62,11 @@ func install(opts *options.Options, installOpts *Options) error {
 
 	if !crdsExist {
 		fmt.Printf("Applying Gateway CRDs... ")
+		crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), crds.GatewayCrds)
+		if err != nil {
+			fmt.Printf("Failed\n")
+			return err
+		}
 		if err := dep.DeployObjs(ctx, crds, cli); err != nil {
 			fmt.Printf("Failed\n")
 			return err
@@ -92,24 +92,38 @@ func install(opts *options.Options, installOpts *Options) error {
 	}
 	fmt.Printf("Done\n")
 
+	all := gwv1.NamespacesFromAll
 	if installOpts.Gateway {
 		fmt.Printf("Creating Gateway Object... ")
-		if err := cli.Create(ctx, &gwv1.Gateway{
+		if err := cli.Patch(ctx, &gwv1.Gateway{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "gateway.networking.k8s.io/v1",
+				Kind:       "Gateway",
+			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "gloo-gateway",
 				Namespace: installOpts.Namespace,
 			},
 			Spec: gwv1.GatewaySpec{
-				GatewayClassName: "solo-gateway",
+				GatewayClassName: "gloo-gateway",
 				Listeners: []gwv1.Listener{
 					{
 						Name:     "http",
 						Port:     8080,
 						Protocol: "HTTP",
+						AllowedRoutes: &gwv1.AllowedRoutes{
+							Namespaces: &gwv1.RouteNamespaces{
+								From: &all,
+							},
+						},
 					},
 				},
 			},
-		}); err != nil {
+		},
+			client.Apply,
+			client.ForceOwnership,
+			client.FieldOwner("glooctl"),
+		); err != nil {
 			fmt.Printf("Failed\n")
 			return err
 		}

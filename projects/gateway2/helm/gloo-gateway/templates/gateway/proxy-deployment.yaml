@@ -2,16 +2,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gloo-gateway2.gateway.fullname" . }}
+  name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway2.gateway.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.gateway.autoscaling.enabled }}
   replicas: {{ .Values.gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "gloo-gateway2.gateway.selectorLabels" . | nindent 6 }}
+      {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.gateway.podAnnotations }}
@@ -19,13 +20,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "gloo-gateway2.gateway.selectorLabels" . | nindent 8 }}
+        {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.gateway.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "gloo-gateway2.gateway.serviceAccountName" . }}
+      serviceAccountName: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.gateway.podSecurityContext | nindent 8 }}
       containers:
@@ -87,16 +88,17 @@ spec:
       {{- end }}
       volumes:
       - configMap:
-          name: {{ include "gloo-gateway2.gateway.fullname" . }}
+          name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
 {{- if .Values.gateway.serviceAccount.create }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "gloo-gateway2.gateway.fullname" . }}
+  name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway2.gateway.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
   {{- with .Values.gateway.serviceAccount.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -107,9 +109,10 @@ automountServiceAccountToken: false
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "gloo-gateway2.gateway.fullname" . }}
+  name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway2.gateway.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.gateway.service.type }}
   ports:
@@ -120,9 +123,9 @@ spec:
     port: {{ $p.port }}
   {{- end }}
   selector:
-    {{- include "gloo-gateway2.gateway.selectorLabels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
 ---
-{{- $xdsDefault := printf "%s.%s" (include "gloo-gateway2.controlPlane.fullname" . ) .Release.Namespace }}
+{{- $xdsDefault := printf "%s.%s" (include "gloo-gateway.controlPlane.fullname" . ) .Release.Namespace }}
 {{- $xdsHost := default $xdsDefault .Values.gateway.xds.host }}
 {{- $xdsPort := default .Values.controlPlane.service.port .Values.gateway.xds.port }}
 {{- $xdsClusterName := printf "%s:%v" $xdsHost $xdsPort }}
@@ -131,9 +134,10 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "gloo-gateway2.gateway.fullname" . }}
+  name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway2.gateway.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 data:
   envoy.yaml: |
     admin:
@@ -141,10 +145,10 @@ data:
         socket_address: { address: 127.0.0.1, port_value: 19000 }
   
     node:
-      cluster: {{ include "gloo-gateway2.gateway.fullname" . }}.{{ .Release.Namespace }}
+      cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
         gateway:
-          name: {{ .Values.gateway.gatewayName | default (include "gloo-gateway2.gateway.fullname" .) }}
+          name: {{ .Values.gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
           namespace: {{ .Release.Namespace }}
     static_resources:
       listeners:

@@ -2,9 +2,10 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}.{{.Release.Namespace}}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}.{{.Release.Namespace}}
   labels:
-    {{- include "gloo-gateway2.controlPlane.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - "gateway.networking.k8s.io"
@@ -39,22 +40,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}.{{.Release.Namespace}}-binding
+  labels:
+    app: gloo
+    {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}.{{.Release.Namespace}}-binding
 subjects:
 - kind: ServiceAccount
-  name: {{ include "gloo-gateway2.controlPlane.serviceAccountName" . }}
+  name: {{ include "gloo-gateway.controlPlane.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}.{{.Release.Namespace}}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}.{{.Release.Namespace}}
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}
   labels:
-    {{- include "gloo-gateway2.controlPlane.labels" . | nindent 4 }}
+    app: gloo
+    {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - ""
@@ -72,13 +77,16 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}-binding
+  labels:
+    app: gloo
+    {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}-binding
 subjects:
 - kind: ServiceAccount
-  name: {{ include "gloo-gateway2.controlPlane.serviceAccountName" . }}
+  name: {{ include "gloo-gateway.controlPlane.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
