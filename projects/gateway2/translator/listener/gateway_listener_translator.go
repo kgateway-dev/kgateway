@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
@@ -30,7 +31,7 @@ func TranslateListeners(
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
-	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw)
+	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter.Gateway(gateway))
 	translatedListeners := mergedListeners.translateListeners(ctx, queries, reporter)
 	return translatedListeners
 }
@@ -40,6 +41,7 @@ func mergeGWListeners(
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
 	routesForGw query.RoutesForGwResult,
+	reporter reports.GatewayReporter,
 ) *mergedListeners {
 	ml := &mergedListeners{
 		gatewayNamespace: gatewayNamespace,
@@ -49,9 +51,15 @@ func mergeGWListeners(
 		result, ok := routesForGw.ListenerResults[string(listener.Name)]
 		if !ok || result.Error != nil {
 			// TODO report
-			continue
+			// TODO, if Error is not nil, this is a user-config error on selectors
+			// continue
 		}
-		ml.append(listener, result.Routes)
+		listenerReporter := reporter.Listener(&listener)
+		var routes []*query.ListenerRouteResult
+		if result != nil {
+			routes = result.Routes
+		}
+		ml.append(listener, routes, listenerReporter)
 	}
 	return ml
 }
@@ -65,12 +73,13 @@ type mergedListeners struct {
 func (ml *mergedListeners) append(
 	listener gwv1.Listener,
 	routes []*query.ListenerRouteResult,
+	reporter reports.ListenerReporter,
 ) error {
 	switch listener.Protocol {
 	case gwv1.HTTPProtocolType:
-		ml.appendHttpListener(listener, routes)
+		ml.appendHttpListener(listener, routes, reporter)
 	case gwv1.HTTPSProtocolType:
-		ml.appendHttpsListener(listener, routes)
+		ml.appendHttpsListener(listener, routes, reporter)
 	// TODO default handling
 	default:
 		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
@@ -82,6 +91,7 @@ func (ml *mergedListeners) append(
 func (ml *mergedListeners) appendHttpListener(
 	listener gwv1.Listener,
 	routesWithHosts []*query.ListenerRouteResult,
+	reporter reports.ListenerReporter,
 ) {
 	parent := httpFilterChainParent{
 		gatewayListenerName: string(listener.Name),
@@ -113,6 +123,7 @@ func (ml *mergedListeners) appendHttpListener(
 		gatewayNamespace: ml.gatewayNamespace,
 		port:             gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpFilterChain:  fc,
+		listenerReporter: reporter,
 	})
 
 }
@@ -120,6 +131,7 @@ func (ml *mergedListeners) appendHttpListener(
 func (ml *mergedListeners) appendHttpsListener(
 	listener gwv1.Listener,
 	routesWithHosts []*query.ListenerRouteResult,
+	reporter reports.ListenerReporter,
 ) {
 
 	// create a new filter chain for the listener
@@ -146,6 +158,7 @@ func (ml *mergedListeners) appendHttpsListener(
 		name:              listenerName,
 		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpsFilterChains: []httpsFilterChain{mfc},
+		listenerReporter:  reporter,
 	})
 }
 
@@ -167,6 +180,7 @@ type mergedListener struct {
 	port              gwv1.PortNumber
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
+	listenerReporter  reports.ListenerReporter
 	// TODO(policy via http listener options)
 }
 
@@ -204,6 +218,7 @@ func (ml *mergedListener) translateListener(
 			ml.gatewayNamespace,
 			queries,
 			reporter,
+			ml.listenerReporter,
 		)
 		if httpsFilterChain == nil {
 			// TODO report
@@ -318,6 +333,7 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	gatewayNamespace string,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
+	listenerReporter reports.ListenerReporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
 	sslConfig, err := translateSslConfig(
@@ -328,7 +344,15 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 	)
 	if err != nil {
-		// TODO report err
+		reason := gwv1.ListenerReasonRefNotPermitted
+		if !errors.Is(err, query.ErrMissingReferenceGrant) {
+			reason = gwv1.ListenerReasonInvalidCertificateRef
+		}
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:   gwv1.ListenerConditionResolvedRefs,
+			Status: metav1.ConditionFalse,
+			Reason: reason,
+		})
 		return nil, nil
 	}
 	matcher := &v1.Matcher{SslConfig: sslConfig, SourcePrefixRanges: nil, PassthroughCipherSuites: nil}

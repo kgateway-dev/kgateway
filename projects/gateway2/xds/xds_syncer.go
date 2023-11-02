@@ -490,7 +490,8 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		finalGwStatus := apiv1.GatewayStatus{}
 		finalConditions := make([]v1.Condition, 0)
 		for _, gwCondition := range gwReport.Conditions {
-			gwCondition.ObservedGeneration = gw.Generation          // don't have generation is the report, should consider adding it
+			gwCondition.ObservedGeneration = gw.Generation // don't have generation is the report, should consider adding it
+			// TODO only set time when condition changes; try and use meta.SetCondition(...) everywhere
 			gwCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
 			finalConditions = append(finalConditions, gwCondition)
 		}
