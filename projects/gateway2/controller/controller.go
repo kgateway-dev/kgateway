@@ -143,12 +143,14 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 
 func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1.GatewayClass{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
 func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1.HTTPRoute{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
 	if err != nil {
@@ -159,6 +161,7 @@ func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 
 func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1beta1.ReferenceGrant{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileReferenceGrants))
 	if err != nil {

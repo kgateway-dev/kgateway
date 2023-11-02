@@ -497,7 +497,7 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		finalGwStatus.Conditions = finalConditions
 		finalGwStatus.Listeners = finalListeners
 		gw.Status = finalGwStatus
-		if err := s.cli.Status().Update(ctx, &gw); err != nil {
+		if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
 			logger.Error(err)
 		}
 	}

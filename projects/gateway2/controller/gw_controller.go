@@ -112,7 +112,7 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 	}
 
 	gw.Status.Addresses = desiredAddresses
-	if err := cli.Status().Update(ctx, gw); err != nil {
+	if err := cli.Status().Patch(ctx, gw, client.Merge); err != nil {
 		return err
 	}
 	return nil
