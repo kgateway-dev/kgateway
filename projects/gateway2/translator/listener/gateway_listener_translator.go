@@ -417,34 +417,31 @@ func translateSslConfig(
 
 	var secretRef *core.ResourceRef
 	for _, certRef := range tls.CertificateRefs {
-		if isSecretRef(certRef) {
-
-			// validate via query
-			secret, err := queries.GetSecretForRef(ctx, query.FromGkNs{
-				Gk: metav1.GroupKind{
-					Group: gwv1.GroupName,
-					Kind:  "Gateway",
-				},
-				Ns: parentNamespace,
-			}, certRef)
-			if err != nil {
-				return nil, err
-			}
-			if err := sslutils.ValidateTlsSecret(secret.(*corev1.Secret)); err != nil {
-				return nil, err
-			}
-
-			// TODO verify secret ref / grant using query
-			secretNamespace := parentNamespace
-			if certRef.Namespace != nil {
-				secretNamespace = string(*certRef.Namespace)
-			}
-			secretRef = &core.ResourceRef{
-				Name:      string(certRef.Name),
-				Namespace: secretNamespace,
-			}
-			break // TODO support multiple certs
+		// validate via query
+		secret, err := queries.GetSecretForRef(ctx, query.FromGkNs{
+			Gk: metav1.GroupKind{
+				Group: gwv1.GroupName,
+				Kind:  "Gateway",
+			},
+			Ns: parentNamespace,
+		}, certRef)
+		if err != nil {
+			return nil, err
 		}
+		if err := sslutils.ValidateTlsSecret(secret.(*corev1.Secret)); err != nil {
+			return nil, err
+		}
+
+		// TODO verify secret ref / grant using query
+		secretNamespace := parentNamespace
+		if certRef.Namespace != nil {
+			secretNamespace = string(*certRef.Namespace)
+		}
+		secretRef = &core.ResourceRef{
+			Name:      string(certRef.Name),
+			Namespace: secretNamespace,
+		}
+		break // TODO support multiple certs
 	}
 	if secretRef == nil {
 		return nil, nil
@@ -465,11 +462,6 @@ func translateSslConfig(
 		TransportSocketConnectTimeout: nil,
 		OcspStaplePolicy:              0,
 	}, nil
-}
-
-func isSecretRef(ref gwv1.SecretObjectReference) bool {
-	return (ref.Group == nil || *ref.Group == corev1.GroupName) &&
-		(ref.Kind == nil || *ref.Kind == "Secret")
 }
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.

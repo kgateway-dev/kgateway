@@ -395,7 +395,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 
 			routeParentStatus := apiv1.RouteParentStatus{
 				ParentRef:      parentRef,
-				ControllerName: "solo.io/gloo-gateway2",
+				ControllerName: "solo.io/gloo-gateway",
 				Conditions:     finalConditions,
 			}
 			routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
