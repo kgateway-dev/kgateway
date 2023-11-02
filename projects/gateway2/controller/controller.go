@@ -195,6 +195,17 @@ func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl
 
 func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// find impacted gateways and queue them
+	hr := apiv1.HTTPRoute{}
+	err := r.cli.Get(ctx, req.NamespacedName, &hr)
+	if err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// TODO: consider enabling this
+	//	// reconcile this specific route:
+	//	queries := query.NewData(r.cli, r.scheme)
+	//	httproute.TranslateGatewayHTTPRouteRules(queries, hr, nil)
+
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
@@ -213,7 +224,7 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 	gwclass := &apiv1.GatewayClass{}
 	err := r.cli.Get(ctx, req.NamespacedName, gwclass)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	log.Info("reconciling gateway class")

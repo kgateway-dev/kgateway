@@ -64,6 +64,7 @@ func Start(cfg ControllerConfig) {
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
+		cfg.GatewayControllerName,
 		glooTranslator,
 		sanz,
 		xdsCache,

@@ -293,7 +293,6 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 				ctx,
 				plugins,
 				mfc.queries,
-				gatewayNamespace,
 				routeWithHosts.Route,
 				parentRefReporter,
 			)
@@ -352,6 +351,29 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
+	// process routes first, so any route related errors are reported on the httproute.
+	var (
+		routesByHost = map[string]routeutils.SortableRoutes{}
+	)
+	for _, routeWithHosts := range mfc.routesWithHosts {
+		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
+		routes := httproute.TranslateGatewayHTTPRouteRules(
+			ctx,
+			plugins,
+			mfc.queries,
+			routeWithHosts.Route,
+			parentRefReporter,
+		)
+
+		if len(routes) == 0 {
+			// TODO report
+			continue
+		}
+
+		for _, host := range routeWithHosts.Hostnames {
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
+		}
+	}
 
 	sslConfig, err := translateSslConfig(
 		ctx,
@@ -370,33 +392,15 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 			Status: metav1.ConditionFalse,
 			Reason: reason,
 		})
+		// listener with no ssl is invalid. We return nil so set programmed to false
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:   gwv1.ListenerConditionProgrammed,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.ListenerReasonInvalid,
+		})
 		return nil, nil
 	}
 	matcher := &v1.Matcher{SslConfig: sslConfig, SourcePrefixRanges: nil, PassthroughCipherSuites: nil}
-
-	var (
-		routesByHost = map[string]routeutils.SortableRoutes{}
-	)
-	for _, routeWithHosts := range mfc.routesWithHosts {
-		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
-		routes := httproute.TranslateGatewayHTTPRouteRules(
-			ctx,
-			plugins,
-			mfc.queries,
-			gatewayNamespace,
-			routeWithHosts.Route,
-			parentRefReporter,
-		)
-
-		if len(routes) == 0 {
-			// TODO report
-			continue
-		}
-
-		for _, host := range routeWithHosts.Hostnames {
-			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
-		}
-	}
 
 	var (
 		virtualHostRefs []string

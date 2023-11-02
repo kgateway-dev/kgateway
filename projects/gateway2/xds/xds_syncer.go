@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -78,9 +79,10 @@ func init() {
 }
 
 type XdsSyncer struct {
-	translator translator.Translator
-	sanitizer  sanitizer.XdsSanitizer
-	xdsCache   envoycache.SnapshotCache
+	translator     translator.Translator
+	sanitizer      sanitizer.XdsSanitizer
+	xdsCache       envoycache.SnapshotCache
+	controllerName string
 
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
@@ -119,6 +121,7 @@ func NewXdsInputChannels() *XdsInputChannels {
 }
 
 func NewXdsSyncer(
+	controllerName string,
 	translator translator.Translator,
 	sanitizer sanitizer.XdsSanitizer,
 	xdsCache envoycache.SnapshotCache,
@@ -128,6 +131,7 @@ func NewXdsSyncer(
 	scheme *runtime.Scheme,
 ) *XdsSyncer {
 	return &XdsSyncer{
+		controllerName:       controllerName,
 		translator:           translator,
 		sanitizer:            sanitizer,
 		xdsCache:             xdsCache,
@@ -395,7 +399,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 
 			routeParentStatus := apiv1.RouteParentStatus{
 				ParentRef:      parentRef,
-				ControllerName: "solo.io/gloo-gateway",
+				ControllerName: apiv1.GatewayController(s.controllerName),
 				Conditions:     finalConditions,
 			}
 			routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
@@ -461,10 +465,19 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 			}
 
 			finalConditions := make([]v1.Condition, 0)
+			oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l apiv1.ListenerStatus) bool {
+				return l.Name == lis.Name
+			})
 			for _, lisCondition := range lisReport.Status.Conditions {
-				lisCondition.ObservedGeneration = gw.Generation          // don't have generation is the report, should consider adding it
-				lisCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
-				finalConditions = append(finalConditions, lisCondition)
+				lisCondition.ObservedGeneration = gw.Generation // don't have generation is the report, should consider adding it
+				// copy the old condition from the gw so last transition time is set correctly
+				if oldLisStatusIndex != -1 {
+					if cond := meta.FindStatusCondition(gw.Status.Listeners[oldLisStatusIndex].Conditions, lisCondition.Type); cond != nil {
+						finalConditions = append(finalConditions, *cond)
+					}
+				}
+
+				meta.SetStatusCondition(&finalConditions, lisCondition)
 			}
 			lisReport.Status.Conditions = finalConditions
 			finalListeners = append(finalListeners, lisReport.Status)
@@ -490,11 +503,14 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		finalGwStatus := apiv1.GatewayStatus{}
 		finalConditions := make([]v1.Condition, 0)
 		for _, gwCondition := range gwReport.Conditions {
-			gwCondition.ObservedGeneration = gw.Generation // don't have generation is the report, should consider adding it
-			// TODO only set time when condition changes; try and use meta.SetCondition(...) everywhere
-			gwCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
-			finalConditions = append(finalConditions, gwCondition)
+			gwCondition.ObservedGeneration = gw.Generation
+			// copy the old condition from the gw so last transition time is set correctly
+			if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
+				finalConditions = append(finalConditions, *cond)
+			}
+			meta.SetStatusCondition(&finalConditions, gwCondition)
 		}
+
 		finalGwStatus.Conditions = finalConditions
 		finalGwStatus.Listeners = finalListeners
 		gw.Status = finalGwStatus
