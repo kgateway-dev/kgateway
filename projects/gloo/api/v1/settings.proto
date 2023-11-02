@@ -18,7 +18,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto";
@@ -552,9 +551,6 @@ message Settings {
     // defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions,
     // or RouteOptions.
     extproc.options.gloo.solo.io.Settings ext_proc = 39;
-
-    // Enterprise-only: Tap filter settings. (experimental)
-    tap.options.gloo.solo.io.Tap tap = 40;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream
