@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8288
+    description: >- 
+      Fixes the issue of defining a custom readiness probe for the gateway proxy for zero downtime upgrades via helm with the `--wait` flag and via ArgoCD.
+
