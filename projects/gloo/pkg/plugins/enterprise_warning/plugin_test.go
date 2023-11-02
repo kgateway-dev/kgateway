@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/advanced_http"
 	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/enterprise_warning"
@@ -270,6 +271,28 @@ var _ = Describe("enterprise_warning plugin", func() {
 			hl := &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
 					SanitizeClusterHeader: &wrappers.BoolValue{},
+				},
+			}
+
+			f, err := p.HttpFilters(plugins.Params{}, hl)
+			ExpectEnterpriseOnlyErr(err)
+			Expect(f).To(BeNil())
+		})
+	})
+
+	Context("tap", func() {
+		It("should not add filter if tap config is nil", func() {
+			p := NewPlugin()
+			f, err := p.HttpFilters(plugins.Params{}, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(f).To(BeNil())
+		})
+
+		It("will error if tap is configured", func() {
+			p := NewPlugin()
+			hl := &v1.HttpListener{
+				Options: &v1.HttpListenerOptions{
+					Tap: &tap.Tap{},
 				},
 			}
 

@@ -42,6 +42,7 @@ const (
 	WasmExtensionName                  = "wasm"
 	Aws                                = "aws"
 	ExtProcExtensionName               = "extproc"
+	TapFilterExtensionName             = "tap"
 )
 
 type plugin struct{}
@@ -165,6 +166,10 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		enterpriseExtensions = append(enterpriseExtensions, ExtProcExtensionName)
 	}
 
+	if isTapConfiguredOnListener(listener) {
+		enterpriseExtensions = append(enterpriseExtensions, TapFilterExtensionName)
+	}
+
 	return nil, GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
@@ -234,6 +239,11 @@ func isRbacConfiguredOnRoute(in *v1.Route) bool {
 // sanitize_cluster_header
 func isSanitizeClusterHeaderConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetSanitizeClusterHeader() != nil
+}
+
+// tap
+func isTapConfiguredOnListener(in *v1.HttpListener) bool {
+	return in.GetOptions().GetTap() != nil
 }
 
 // waf
