@@ -22,3 +22,7 @@ func TestHelm(t *testing.T) {
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "Helm Suite", []Reporter{junitReporter})
 }
+
+var _ = BeforeSuite(func() {
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, namespace))
+})
