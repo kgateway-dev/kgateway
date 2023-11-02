@@ -19,3 +19,11 @@ This directory also contains .proto files that are stored in the `envoy-gloo` an
 .proto files here so that the corresponding Go protobuf files are generated from these definitions during the generation phase of
 the Gloo build. This is necessary so that we can instantiate these objects in our control plane code so that they can be written
 over to Envoy via XDS.
+
+For example, if the `envoy-gloo` .proto has the following line:
+
+```
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/config/tap/output_sink/v3";
+```
+
+The messages in that package will be generated in ` projects/gloo/pkg/api/config/tap/output_sink/v3/grpc_output_sink.pb.go`
