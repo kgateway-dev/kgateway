@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
+	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -25,6 +26,7 @@ import (
 func TranslateListeners(
 	ctx context.Context,
 	queries query.GatewayQueries,
+	plugins registry.HTTPFilterPluginRegistry,
 	gateway *gwv1.Gateway,
 	routesForGw query.RoutesForGwResult,
 	reporter reports.Reporter,
@@ -32,7 +34,7 @@ func TranslateListeners(
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
 	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter.Gateway(gateway))
-	translatedListeners := mergedListeners.translateListeners(ctx, queries, reporter)
+	translatedListeners := mergedListeners.translateListeners(ctx, plugins, queries, reporter)
 	return translatedListeners
 }
 
@@ -164,11 +166,12 @@ func (ml *mergedListeners) appendHttpsListener(
 
 func (ml *mergedListeners) translateListeners(
 	ctx context.Context,
+	plugins registry.HTTPFilterPluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
-		listener := mergedListener.translateListener(ctx, queries, reporter)
+		listener := mergedListener.translateListener(ctx, plugins, queries, reporter)
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -186,6 +189,7 @@ type mergedListener struct {
 
 func (ml *mergedListener) translateListener(
 	ctx context.Context,
+	plugins registry.HTTPFilterPluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Listener {
@@ -196,8 +200,10 @@ func (ml *mergedListener) translateListener(
 
 	if ml.httpFilterChain != nil {
 		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
+			ctx,
 			ml.name,
 			ml.gatewayNamespace,
+			plugins,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
@@ -214,6 +220,7 @@ func (ml *mergedListener) translateListener(
 		// to prevent collisions because the vhosts have to be re-computed for each set
 		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
 			ctx,
+			plugins,
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
 			queries,
@@ -269,8 +276,10 @@ type httpFilterChainParent struct {
 }
 
 func (mfc *httpFilterChain) translateHttpFilterChain(
+	ctx context.Context,
 	parentName string,
 	gatewayNamespace string,
+	plugins registry.HTTPFilterPluginRegistry,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
@@ -280,7 +289,14 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 	for _, parent := range mfc.parents {
 		for _, routeWithHosts := range parent.routes {
 			parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
-			routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.Route, parentRefReporter)
+			routes := httproute.TranslateGatewayHTTPRouteRules(
+				ctx,
+				plugins,
+				mfc.queries,
+				gatewayNamespace,
+				routeWithHosts.Route,
+				parentRefReporter,
+			)
 
 			if len(routes) == 0 {
 				// TODO report
@@ -329,6 +345,7 @@ type httpsFilterChain struct {
 
 func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	ctx context.Context,
+	plugins registry.HTTPFilterPluginRegistry,
 	parentName string,
 	gatewayNamespace string,
 	queries query.GatewayQueries,
@@ -362,7 +379,14 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	)
 	for _, routeWithHosts := range mfc.routesWithHosts {
 		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
-		routes := httproute.TranslateGatewayHTTPRouteRules(mfc.queries, gatewayNamespace, routeWithHosts.Route, parentRefReporter)
+		routes := httproute.TranslateGatewayHTTPRouteRules(
+			ctx,
+			plugins,
+			mfc.queries,
+			gatewayNamespace,
+			routeWithHosts.Route,
+			parentRefReporter,
+		)
 
 		if len(routes) == 0 {
 			// TODO report

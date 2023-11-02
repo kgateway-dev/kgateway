@@ -19,6 +19,7 @@ listeners:
                 regex: true
                 value: canary
               prefix: /
+            options: {}
             routeAction:
               multi:
                 destinations:
@@ -33,6 +34,7 @@ listeners:
           routes:
           - matchers:
             - prefix: /login
+            options: {}
             routeAction:
               multi:
                 destinations:
