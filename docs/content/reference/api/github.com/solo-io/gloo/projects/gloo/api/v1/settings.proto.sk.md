@@ -99,7 +99,6 @@ Represents global settings for all the Gloo components.
 "consoleOptions": .gloo.solo.io.ConsoleOptions
 "graphqlOptions": .gloo.solo.io.GraphqlOptions
 "extProc": .extproc.options.gloo.solo.io.Settings
-"tap": .tap.options.gloo.solo.io.Tap
 
 ```
 
@@ -141,7 +140,6 @@ Represents global settings for all the Gloo components.
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
 | `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
 | `extProc` | [.extproc.options.gloo.solo.io.Settings](../enterprise/options/extproc/extproc.proto.sk/#settings) | Enterprise-only: External Processing filter settings. These settings are used as defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions, or RouteOptions. |
-| `tap` | [.tap.options.gloo.solo.io.Tap](../enterprise/options/tap/tap.proto.sk/#tap) | Enterprise-only: Tap filter settings. (experimental). |
 
 
 
