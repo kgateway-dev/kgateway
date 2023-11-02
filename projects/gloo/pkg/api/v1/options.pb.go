@@ -366,7 +366,7 @@ type HttpListenerOptions struct {
 	// Router is an extension of the envoy http filters
 	// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
 	Router *router.Router `protobuf:"bytes,18,opt,name=router,proto3" json:"router,omitempty"`
-	// Enterprise only: Tap filter settings (experimental). Overrides global tap options configured via settings
+	// Enterprise only: Tap filter settings (experimental).
 	Tap *tap.Tap `protobuf:"bytes,34,opt,name=tap,proto3" json:"tap,omitempty"`
 }
 
