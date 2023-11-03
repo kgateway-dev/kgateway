@@ -32,8 +32,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	admission_v1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -253,6 +254,11 @@ var _ = Describe("Kube2e: helm", func() {
 		var expectGatewayProxyIsReady func()
 
 		BeforeEach(func() {
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kubeClientset, err := kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+
 			valuesForProductionRecommendations = getHelmValuesForProductionRecommendations()
 
 			// Since the production recommendation is to disable discovery, we remove it from the list of deployments to check to consider gloo is healthy
@@ -266,21 +272,14 @@ var _ = Describe("Kube2e: helm", func() {
 			additionalInstallArgs = append(additionalInstallArgs, valuesForProductionRecommendations...)
 
 			expectGatewayProxyIsReady = func() {
-				Eventually(func() (string, error) {
-					a, b := exec_utils.RunCommandOutput(testHelper.RootDir, false,
-						"kubectl", "-n", namespace, "get", "deployment", "gateway-proxy", "-o", "yaml")
-					return a, b
-				}, "30s", "1s").Should(
-					// kubectl -n gloo-system get deployment gateway-proxy -o yaml
-					// ...
-					// readinessProbe:
-					//   httpGet:
-					//     path: /envoy-hc
-					// ...
-					// readyReplicas: 1
-					And(ContainSubstring("readinessProbe:"),
-						ContainSubstring("/envoy-hc"),
-						ContainSubstring("readyReplicas: 1")))
+				var gatewayProxyDeployment *v1.Deployment
+				Eventually(func() *v1.Deployment {
+					gatewayProxyDeployment, err = kubeClientset.AppsV1().Deployments(testHelper.InstallNamespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+					Expect(err).To(BeNil())
+					return gatewayProxyDeployment
+				}, "30s", "1s").Should(Not(BeNil()))
+				Expect(gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe.HTTPGet.Path).To(Equal("/envoy-hc"))
+				Expect(gatewayProxyDeployment.Status.ReadyReplicas).To(Equal(int32(1)))
 			}
 		})
 
@@ -507,7 +506,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 	Context("applies all CRD manifests without an error", func() {
 
-		var crdsByFileName = map[string]v1.CustomResourceDefinition{}
+		var crdsByFileName = map[string]apiextensions_v1.CustomResourceDefinition{}
 
 		BeforeEach(func() {
 			err := filepath.Walk(crdDir, func(crdFile string, info os.FileInfo, err error) error {
