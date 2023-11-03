@@ -3,6 +3,7 @@ package httproute
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gateway2/query"
@@ -60,13 +61,15 @@ func translateGatewayHTTPRouteRule(
 			Action:   nil,
 			Options:  &v1.RouteOptions{},
 		}
-		setAction(
-			queries,
-			gwroute,
-			rule.BackendRefs,
-			outputRoute,
-			reporter,
-		)
+		if len(rule.BackendRefs) > 0 {
+			setRouteAction(
+				queries,
+				gwroute,
+				rule.BackendRefs,
+				outputRoute,
+				reporter,
+			)
+		}
 		if err := applyFilters(
 			ctx,
 			plugins,
@@ -78,8 +81,12 @@ func translateGatewayHTTPRouteRule(
 			// return nil
 		}
 		if outputRoute.Action == nil {
-			// TODO: report error
-			// return nil
+			// TODO: maybe? report error
+			outputRoute.Action = &v1.Route_DirectResponseAction{
+				DirectResponseAction: &v1.DirectResponseAction{
+					Status: http.StatusInternalServerError,
+				},
+			}
 		}
 		routes = append(routes, outputRoute)
 	}
@@ -166,7 +173,7 @@ func parsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 	return pathType, pathValue
 }
 
-func setAction(
+func setRouteAction(
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
 	backendRefs []gwv1.HTTPBackendRef,

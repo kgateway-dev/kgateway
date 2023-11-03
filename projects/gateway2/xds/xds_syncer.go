@@ -266,9 +266,9 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 			reports.AddMessages(proxy, messages...)
 		}
 
-		if validateErr := reports.ValidateStrict(); validateErr != nil {
-			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
-		}
+		// if validateErr := reports.ValidateStrict(); validateErr != nil {
+		// 	logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
+		// }
 
 		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
 		// if the snapshot is not consistent, make it so
