@@ -12,7 +12,7 @@ kubectl rollout status -n metallb-system daemonset/speaker --timeout 2m
 kubectl wait -n metallb-system  pod -l app=metallb --for=condition=Ready --timeout=10s
 
 SUBNET=$(docker network inspect  kind -f '{{(index .IPAM.Config 0).Subnet}}'| cut -d '.' -f1,2)
-MIN=${SUBNET}.255.216
+MIN=${SUBNET}.255.0
 MAX=${SUBNET}.255.231
 
 kubectl apply -f - <<EOF

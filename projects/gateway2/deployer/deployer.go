@@ -99,9 +99,13 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	// must not be nil for helm to not fail.
 	gwPorts := []gatewayPort{}
 	for _, l := range gw.Spec.Listeners {
+		listenerPort := uint16(l.Port)
+		if slices.IndexFunc(gwPorts, func(p gatewayPort) bool { return p.Port == listenerPort }) != -1 {
+			continue
+		}
 		var port gatewayPort
-		port.Port = uint16(l.Port)
-		port.TargetPort = ports.TranslatePort(uint16(l.Port))
+		port.Port = listenerPort
+		port.TargetPort = ports.TranslatePort(listenerPort)
 		port.Name = string(l.Name)
 		port.Protocol = "TCP"
 		gwPorts = append(gwPorts, port)

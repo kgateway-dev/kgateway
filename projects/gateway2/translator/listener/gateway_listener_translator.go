@@ -105,8 +105,10 @@ func (ml *mergedListeners) appendHttpListener(
 		queries: ml.queries,
 	}
 	listenerName := string(listener.Name)
+	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+
 	for _, lis := range ml.listeners {
-		if lis.port == listener.Port {
+		if lis.port == finalPort {
 			// concatenate the names on the parent output listener/filterchain
 			// TODO is this valid listener name?
 			lis.name += "~" + listenerName
@@ -123,7 +125,7 @@ func (ml *mergedListeners) appendHttpListener(
 	ml.listeners = append(ml.listeners, &mergedListener{
 		name:             listenerName,
 		gatewayNamespace: ml.gatewayNamespace,
-		port:             gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
+		port:             finalPort,
 		httpFilterChain:  fc,
 		listenerReporter: reporter,
 	})

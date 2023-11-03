@@ -87,6 +87,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name:                           h.routeConfigName,
+		IgnorePortInHostMatching:       true,
 		VirtualHosts:                   h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
