@@ -138,6 +138,11 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 			if err != nil {
 				continue
 			}
+
+			if v.Major != 1{
+				continue
+			}
+
 			// We only consider releases that have assets to download.
 			// More expensive to do this call than to check version infos.
 			if tryGetAssetWithName(release, expectedAssetName) == nil {
