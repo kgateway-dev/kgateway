@@ -1,0 +1,9 @@
+# The following setting is to enable access logging
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#access-logging
+settings:
+  accessLoggingService:
+    accessLog:
+    - fileSink:
+        path: /dev/stdout
+        stringFormat: ""
+

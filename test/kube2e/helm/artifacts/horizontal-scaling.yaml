@@ -1,0 +1,16 @@
+# The following setting is to horizontally scale the data plane
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#horizontally-scaling-the-data-plane
+gatewayProxies:
+  gatewayProxy:
+    deployment:
+      replicas: 2
+    podDisruptionBudget:
+      minAvailable: 2
+
+# The following setting is to horizontally scale the control plane
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#horizontally-scaling-the-control-plane
+gloo:
+  disableLeaderElection: false
+  deployment:
+    replicas: 2
+

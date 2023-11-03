@@ -12,9 +12,12 @@ metadata:
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
-    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob | nindent 4 }}
+    # Argo checks the status of resources in an app to determine its state. Since a job is cleaned up (deleted) after ttlSecondsAfterFinished,
+    # the missing job causes the argo app to go out of sync.
+    # Annotating this job as a Sync hook along with an argo-specific hook deletion policy ensures that even when the job is cleaned up,
+    # it does not alter the state of the argo app and that it is still in sync.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
@@ -76,6 +79,22 @@ spec:
             # if validation webhook is enabled, wait for deployment rollout so validation service will be available
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
+
+            # Wait for the enterprise job if present
+            kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout &> /dev/null
+            if [ $? -eq 0 ]
+            then
+              # Exit immediately if the enterprise rollout job failed
+              kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' | grep -i "True" &> /dev/null
+              if [ $? -eq 0 ]
+              then
+                  echo "Enterprise rollout job failed"
+                  exit 1
+              fi
+
+              echo "Waiting for the enterprise resource rollout job to complete"
+              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout --timeout={{ .Values.gateway.rolloutJob.timeout }}s || exit 1
+            fi
 
             # apply Gloo Edge custom resources
             if [ $HAS_CUSTOM_RESOURCES == "true" ]

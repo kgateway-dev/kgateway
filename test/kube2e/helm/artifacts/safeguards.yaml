@@ -1,0 +1,20 @@
+# The following config is to safeguard the control plane configuration
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#safeguarding-the-control-plane-configuration
+settings:
+  invalidConfigPolicy:
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+      should run `glooctl check` to find and fix config errors.
+    invalidRouteResponseCode: 404
+    replaceInvalidRoutes: true
+gateway:
+  validation:
+    allowWarnings: false
+    alwaysAcceptResources: false
+    warnRouteShortCircuiting: true
+    failurePolicy: Fail
+
+# The following config is to safeguard the data plane configuration
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#safeguarding-the-data-plane-configuration
+gloo:
+  headerSecretRefNsMatchesUs: true
+
