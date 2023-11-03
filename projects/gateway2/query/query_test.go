@@ -540,6 +540,9 @@ var _ = Describe("Query", func() {
 			It("should work with catch all http hostname", func() {
 				expectHostnamesToMatch("foo.com", nil, "foo.com")
 			})
+			It("should work with listener prefix and catch all http hostname", func() {
+				expectHostnamesToMatch("*.foo.com", nil, "*.foo.com")
+			})
 			It("should work with double catch all", func() {
 				expectHostnamesToMatch("", nil)
 			})

@@ -340,6 +340,10 @@ func hostnameIntersect(l *apiv1.Listener, hr *apiv1.HTTPRoute) (bool, []string) 
 	var listenerHostname string = string(*l.Hostname)
 
 	if strings.HasPrefix(listenerHostname, "*.") {
+		if hr.Spec.Hostnames == nil {
+			return true, []string{listenerHostname}
+		}
+
 		for _, hostname := range hr.Spec.Hostnames {
 			hrHost := string(hostname)
 			if strings.HasSuffix(hrHost, listenerHostname[1:]) {
