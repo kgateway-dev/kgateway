@@ -117,11 +117,10 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	vals := map[string]any{
 		"controlPlane": map[string]any{"enabled": false},
 		"gateway": map[string]any{
-			"enabled":      true,
-			"name":         gw.Name,
-			"gatewayName":  gw.Name,
-			"nameOverride": gw.Name,
-			"ports":        portsAny,
+			"enabled":     true,
+			"name":        gw.Name,
+			"gatewayName": gw.Name,
+			"ports":       portsAny,
 			// Default to Load Balancer
 			"service": map[string]any{
 				"type": "LoadBalancer",

@@ -257,10 +257,10 @@ var _ = Describe("Deployer", func() {
 		Expect(objs2).NotTo(BeEmpty())
 
 		for _, obj := range objs1 {
-			Expect(obj.GetName()).To(Equal("gloo-proxy-r1"))
+			Expect(obj.GetName()).To(Equal("r1-foo-dp"))
 		}
 		for _, obj := range objs2 {
-			Expect(obj.GetName()).To(Equal("gloo-proxy-gloo-gateway"))
+			Expect(obj.GetName()).To(Equal("foo-dp"))
 		}
 
 	})
