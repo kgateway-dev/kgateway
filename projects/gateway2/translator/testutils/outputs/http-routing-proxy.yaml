@@ -20,12 +20,10 @@ listeners:
               prefix: /
             options: {}
             routeAction:
-              multi:
-                destinations:
-                - destination:
-                    upstream:
-                      name: default-bar-svc-canary-8080
-                      namespace: default
+              single:
+                upstream:
+                  name: default-bar-svc-canary-8080
+                  namespace: default
         http~foo.example.com:
           domains:
           - foo.example.com
@@ -35,12 +33,10 @@ listeners:
             - prefix: /login
             options: {}
             routeAction:
-              multi:
-                destinations:
-                - destination:
-                    upstream:
-                      name: default-foo-svc-8080
-                      namespace: default
+              single:
+                upstream:
+                  name: default-foo-svc-8080
+                  namespace: default
   bindAddress: '::'
   bindPort: 8080
   name: http

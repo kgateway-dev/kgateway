@@ -265,14 +265,6 @@ func setAction(
 			},
 		}
 	}
-
-	outputRoute.Action = &v1.Route_RouteAction{
-		RouteAction: &v1.RouteAction{
-			Destination: &v1.RouteAction_Multi{Multi: &v1.MultiDestination{
-				Destinations: weightedDestinations,
-			}},
-		},
-	}
 }
 
 func applyFilters(
