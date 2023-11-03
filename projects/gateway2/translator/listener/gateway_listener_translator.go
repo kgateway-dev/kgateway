@@ -303,7 +303,12 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 				continue
 			}
 
-			for _, host := range routeWithHosts.Hostnames {
+			hostnames := routeWithHosts.Hostnames
+			if len(hostnames) == 0 {
+				hostnames = []string{"*"}
+			}
+
+			for _, host := range hostnames {
 				routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
 			}
 		}
