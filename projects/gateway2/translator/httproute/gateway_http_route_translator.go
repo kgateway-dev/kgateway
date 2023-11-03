@@ -139,11 +139,16 @@ func translateGlooMatcher(match gwv1.HTTPRouteMatch) *matchers.Matcher {
 }
 
 func translateGlooHeaderMatcher(header gwv1.HTTPHeaderMatch) *matchers.HeaderMatcher {
+
+	regex := false
+	if header.Type != nil && *header.Type == gwv1.HeaderMatchRegularExpression {
+		regex = true
+	}
+
 	return &matchers.HeaderMatcher{
 		Name:  string(header.Name),
 		Value: header.Value,
-		// TODO(ilackarms) SUPPORT REGEX MATCH BY DEFAULT??
-		Regex: true,
+		Regex: regex,
 		//InvertMatch: header.InvertMatch,
 	}
 }

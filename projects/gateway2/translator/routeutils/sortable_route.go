@@ -17,7 +17,7 @@ type SortableRoutes []*SortableRoute
 
 func (a SortableRoutes) Len() int           { return len(a) }
 func (a SortableRoutes) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a SortableRoutes) Less(i, j int) bool { return routeWrapperLessFunc(a[i], a[j]) }
+func (a SortableRoutes) Less(i, j int) bool { return !routeWrapperLessFunc(a[i], a[j]) }
 
 func (a SortableRoutes) ToRoutes() []*v1.Route {
 	var routes []*v1.Route
@@ -83,26 +83,25 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	}
 
 	// If this matcher doesn't have a method match, then it's lower priority
-	if len(matchA.Methods) < len(matchB.Methods) {
-		return true
+	if len(matchA.Methods) != len(matchB.Methods) {
+		return len(matchA.Methods) < len(matchB.Methods)
 	}
 
-	if len(matchA.Headers) < len(matchB.Headers) {
-		return true
+	if len(matchA.Headers) != len(matchB.Headers) {
+		return len(matchA.Headers) < len(matchB.Headers)
 	}
 
-	if len(matchA.QueryParameters) < len(matchB.QueryParameters) {
-		return true
+	if len(matchA.QueryParameters) != len(matchB.QueryParameters) {
+		return len(matchA.QueryParameters) < len(matchB.QueryParameters)
 	}
 
-	if wrapperA.HttpRoute.CreationTimestamp.Time.After(wrapperB.HttpRoute.CreationTimestamp.Time) {
-		return true
+	if !wrapperA.HttpRoute.CreationTimestamp.Time.Equal(wrapperB.HttpRoute.CreationTimestamp.Time) {
+		return wrapperA.HttpRoute.CreationTimestamp.Time.After(wrapperB.HttpRoute.CreationTimestamp.Time)
 	}
-
-	if wrapperA.HttpRoute.Name != wrapperB.HttpRoute.Name && wrapperA.HttpRoute.Namespace != wrapperB.HttpRoute.Namespace {
-		return types.NamespacedName{Namespace: wrapperA.HttpRoute.Namespace, Name: wrapperA.HttpRoute.Name}.String() <
+	if wrapperA.HttpRoute.Name != wrapperB.HttpRoute.Name || wrapperA.HttpRoute.Namespace != wrapperB.HttpRoute.Namespace {
+		return types.NamespacedName{Namespace: wrapperA.HttpRoute.Namespace, Name: wrapperA.HttpRoute.Name}.String() >
 			types.NamespacedName{Namespace: wrapperB.HttpRoute.Namespace, Name: wrapperB.HttpRoute.Name}.String()
 	}
 
-	return false
+	return wrapperA.Idx > wrapperB.Idx
 }

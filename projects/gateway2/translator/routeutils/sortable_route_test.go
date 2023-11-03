@@ -20,7 +20,16 @@ var _ = Describe("RouteWrappersTest", func() {
 
 	defaultRt := func() *gwv1.HTTPRoute {
 		return &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "a-test",
+			},
+		}
+	}
+	defaultRtB := func() *gwv1.HTTPRoute {
+		return &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "b-test",
+			},
 		}
 	}
 	DescribeTable("Route Sorting",
@@ -173,6 +182,132 @@ var _ = Describe("RouteWrappersTest", func() {
 								{
 									Name:  "test",
 									Value: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			true,
+		),
+		Entry(
+			"different name same ns",
+			&SortableRoute{
+				HttpRoute: defaultRtB(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/",
+							},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:  "test",
+									Value: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/",
+							},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:  "test2",
+									Value: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			true,
+		),
+		Entry(
+			"one has more headers",
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/",
+							},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:  "test",
+									Value: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/",
+							},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:  "test2",
+									Value: "hello",
+								},
+								{
+									Name:  "test",
+									Value: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			true,
+		),
+		Entry(
+			"one is higher more headers",
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Idx:       1,
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/",
+							},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:  "test",
+									Value: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Idx:       0,
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/",
+							},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:  "test",
+									Value: "hello2",
 								},
 							},
 						},

@@ -16,7 +16,6 @@ listeners:
           - matchers:
             - headers:
               - name: env
-                regex: true
                 value: canary
               prefix: /
             options: {}
