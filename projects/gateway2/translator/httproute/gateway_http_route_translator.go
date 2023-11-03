@@ -175,6 +175,8 @@ func setAction(
 	var weightedDestinations []*v1.WeightedDestination
 
 	for _, backendRef := range backendRefs {
+		name := "blackhole_cluster"
+		ns := "blackhole_ns"
 		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef)
 		if err != nil {
 			if errors.Is(err, query.ErrMissingReferenceGrant) {
@@ -190,37 +192,30 @@ func setAction(
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
 			}
-			// TODO(yuval-k): we should set an invalid backend here, so traffic blackholes
-			continue
-		}
-		var port uint32
-		if backendRef.Port != nil {
-			port = uint32(*backendRef.Port)
-		}
-		var name string
-		var ns string
-		switch cli := cli.(type) {
-		case *corev1.Service:
-			if port == 0 {
+		} else {
+			var port uint32
+			if backendRef.Port != nil {
+				port = uint32(*backendRef.Port)
+			}
+			switch cli := cli.(type) {
+			case *corev1.Service:
+				if port == 0 {
+					reporter.SetCondition(reports.HTTPRouteCondition{
+						Type:   gwv1.RouteConditionResolvedRefs,
+						Status: metav1.ConditionFalse,
+						Reason: gwv1.RouteReasonUnsupportedValue,
+					})
+				} else {
+					name = kubernetes.UpstreamName(cli.Namespace, cli.Name, int32(port))
+					ns = cli.Namespace
+				}
+			default:
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonUnsupportedValue,
+					Reason: gwv1.RouteReasonInvalidKind,
 				})
-				continue
 			}
-			name = kubernetes.UpstreamName(cli.Namespace, cli.Name, int32(port))
-			ns = cli.Namespace
-
-		default:
-			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonInvalidKind,
-			})
-			// TODO: we should set an invalid backend here, so traffic blackholes
-			continue
-
 		}
 
 		var weight *wrappers.UInt32Value

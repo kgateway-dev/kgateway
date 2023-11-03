@@ -280,7 +280,9 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 		out.Action = &envoy_config_route_v3.Route_Route{
-			Route: &envoy_config_route_v3.RouteAction{},
+			Route: &envoy_config_route_v3.RouteAction{
+				ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
+			},
 		}
 		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
 			if isWarningErr(err) {
