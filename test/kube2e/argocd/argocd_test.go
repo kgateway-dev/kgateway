@@ -16,13 +16,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+var testHelper *helper.SoloTestHelper
+
 const namespace = defaults.GlooSystem
 
 var _ = Describe("Kube2e: ArgoCD", func() {
-
-	var (
-		testHelper *helper.SoloTestHelper
-	)
 
 	BeforeEach(func() {
 
@@ -61,7 +59,7 @@ func installGloo() {
 	// --dest-namespace gloo-system --dest-server https://kubernetes.default.svc \
 	// --sync-option CreateNamespace=true --upsert --values-literal-file helm-override.yaml
 	command := []string{"--core", "app", "create", "gloo",
-		"--repo", repo, "--helm-chart", "gloo", "--revision", version,
+		"--repo", repo, "--helm-chart", "gloo", "--revision", testHelper.ChartVersion(),
 		"--dest-namespace", "gloo-system", "--dest-server", "https://kubernetes.default.svc",
 		"--sync-option", "CreateNamespace=true", "--upsert", "--values-literal-file", "helm-override.yaml"}
 	fmt.Printf("Running argo command : %s\n", command)
