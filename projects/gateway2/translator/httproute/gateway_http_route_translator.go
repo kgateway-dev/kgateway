@@ -12,6 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -179,13 +180,27 @@ func setAction(
 		ns := "blackhole_ns"
 		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef)
 		if err != nil {
-			if errors.Is(err, query.ErrMissingReferenceGrant) {
+			switch {
+			case errors.Is(err, query.ErrUnknownKind):
+				reporter.SetCondition(reports.HTTPRouteCondition{
+					Type:   gwv1.RouteConditionResolvedRefs,
+					Status: metav1.ConditionFalse,
+					Reason: gwv1.RouteReasonInvalidKind,
+				})
+			case errors.Is(err, query.ErrMissingReferenceGrant):
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonRefNotPermitted,
 				})
-			} else {
+			case apierrors.IsNotFound(err):
+				reporter.SetCondition(reports.HTTPRouteCondition{
+					Type:   gwv1.RouteConditionResolvedRefs,
+					Status: metav1.ConditionFalse,
+					Reason: gwv1.RouteReasonBackendNotFound,
+				})
+			default:
+				// setting other errors to not found. not sure if there's a better option.
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
