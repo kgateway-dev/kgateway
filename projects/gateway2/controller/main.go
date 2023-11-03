@@ -92,7 +92,6 @@ func Start(cfg ControllerConfig) {
 	gwcfg := GatewayConfig{
 		Mgr:            mgr,
 		GWClass:        gatewayClassName,
-		HelmRelease:    cfg.Release,
 		Dev:            cfg.Dev,
 		ControllerName: cfg.GatewayControllerName,
 		AutoProvision:  cfg.AutoProvision,

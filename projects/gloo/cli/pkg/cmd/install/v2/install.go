@@ -47,7 +47,7 @@ func install(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	dep, err := deployer.NewDeployer(cli.Scheme(), false, "", "glooctl", "", 0)
+	dep, err := deployer.NewDeployer(cli.Scheme(), false, "glooctl", "", 0)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func install(opts *options.Options, installOpts *Options) error {
 		fmt.Printf("Skipping Gateway CRDs as they exist...\n")
 	}
 
-	objs, err := dep.Render(ctx, installOpts.Namespace, vals)
+	objs, err := dep.Render(ctx, "default", installOpts.Namespace, vals)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func install(opts *options.Options, installOpts *Options) error {
 				Kind:       "Gateway",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "gloo-gateway",
+				Name:      "http",
 				Namespace: installOpts.Namespace,
 			},
 			Spec: gwv1.GatewaySpec{

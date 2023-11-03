@@ -56,7 +56,7 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(scheme.NewScheme(), false, "gloo-gateway", "foo", "xds", 8080)
+		d, err = deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -78,7 +78,7 @@ var _ = Describe("Deployer", func() {
 				"createGateway": false,
 			},
 		}
-		cpObjs, err := d.Render(context.Background(), "default", vals)
+		cpObjs, err := d.Render(context.Background(), "default", "default", vals)
 		Expect(err).NotTo(HaveOccurred())
 
 		// find the rbac role with deploy in its name
@@ -231,13 +231,13 @@ var _ = Describe("Deployer", func() {
 
 	It("support segmenting by release", func() {
 
-		d1, err := deployer.NewDeployer(scheme.NewScheme(), false, "r1", "foo", "xds", 8080)
+		d1, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(scheme.NewScheme(), false, "", "foo", "xds", 8080)
+		d2, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 
-		gw := &api.Gateway{
+		gw1 := &api.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
@@ -249,18 +249,30 @@ var _ = Describe("Deployer", func() {
 			},
 		}
 
-		objs1, err := d1.GetObjsToDeploy(context.Background(), gw)
+		gw2 := &api.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "bar",
+				Namespace: "default",
+				UID:       "1235",
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Gateway",
+				APIVersion: "gateway.solo.io/v1beta1",
+			},
+		}
+
+		objs1, err := d1.GetObjsToDeploy(context.Background(), gw1)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(objs1).NotTo(BeEmpty())
-		objs2, err := d2.GetObjsToDeploy(context.Background(), gw)
+		objs2, err := d2.GetObjsToDeploy(context.Background(), gw2)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(objs2).NotTo(BeEmpty())
 
 		for _, obj := range objs1 {
-			Expect(obj.GetName()).To(Equal("r1-foo-dp"))
+			Expect(obj.GetName()).To(Equal("gloo-proxy-foo"))
 		}
 		for _, obj := range objs2 {
-			Expect(obj.GetName()).To(Equal("foo-dp"))
+			Expect(obj.GetName()).To(Equal("gloo-proxy-bar"))
 		}
 
 	})

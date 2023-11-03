@@ -17,7 +17,7 @@ controlPlane:
   fullnameOverride: ""
 
   image:
-    repository: us-docker.pkg.dev/gloo-gateway/docker/gloo-gateway-cp
+    repository: ghcr.io/solo-io/gloo-gateway/glood
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
@@ -71,7 +71,7 @@ controlPlane:
   affinity: {}
 
 gateway:
-  enabled: true
+  enabled: false
   nameOverride: ""
   fullnameOverride: ""
   gatewayName: ""

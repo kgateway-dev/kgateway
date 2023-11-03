@@ -40,18 +40,14 @@ type Deployer struct {
 	controllerName string
 	host           string
 	port           uint16
-	release        string
 }
 
-func NewDeployer(scheme *runtime.Scheme, dev bool, release, controllerName, host string, port uint16) (*Deployer, error) {
+func NewDeployer(scheme *runtime.Scheme, dev bool, controllerName, host string, port uint16) (*Deployer, error) {
 
 	chart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		// don't retrun an error is requeueing won't help here
 		return nil, err
-	}
-	if release == "" && chart.Metadata != nil {
-		release = chart.Metadata.Name
 	}
 	return &Deployer{
 		dev:            dev,
@@ -60,14 +56,13 @@ func NewDeployer(scheme *runtime.Scheme, dev bool, release, controllerName, host
 		controllerName: controllerName,
 		host:           host,
 		port:           port,
-		release:        release,
 	}, nil
 }
 
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
 	fakeGw := &api.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
+			Name:      "default",
 			Namespace: "default",
 		},
 	}
@@ -138,7 +133,7 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	if d.dev {
 		vals["develop"] = true
 	}
-	objs, err := d.Render(ctx, gw.Namespace, vals)
+	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +145,7 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	return objs, nil
 }
 
-func (d *Deployer) Render(ctx context.Context, ns string, vals map[string]any) ([]client.Object, error) {
+func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
@@ -158,7 +153,7 @@ func (d *Deployer) Render(ctx context.Context, ns string, vals map[string]any) (
 	}
 	client := action.NewInstall(cfg)
 	client.Namespace = ns
-	client.ReleaseName = d.release
+	client.ReleaseName = name
 	client.ClientOnly = true
 	release, err := client.RunWithContext(ctx, d.chart, vals)
 	if err != nil {
