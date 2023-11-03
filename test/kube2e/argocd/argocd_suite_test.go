@@ -2,15 +2,12 @@ package argocd_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/helpers"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
-
-var version string
 
 func TestArgoCD(t *testing.T) {
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
@@ -20,11 +17,6 @@ func TestArgoCD(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	version = os.Getenv("VERSION")
-	if version == "" {
-		version = "1.0.0-ci"
-	}
-
 	installArgoCD()
 	deployHelmRepo()
 })
