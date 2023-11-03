@@ -55,6 +55,18 @@ func (t *ObjList[T, PT]) EachListItem(f func(runtime.Object) error) error {
 	}
 	return nil
 }
+func (t *ObjList[T, PT]) EachListItemWithAlloc(f func(runtime.Object) error) error {
+	for _, item := range t.Items {
+		// shallow copy
+		var item_copy T = item
+		var pitem PT = &item_copy
+		err := f(pitem)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (t *ObjList[T, PT]) DeepCopyObject() runtime.Object {
 	ret := &ObjList[T, PT]{

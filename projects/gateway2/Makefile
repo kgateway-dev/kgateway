@@ -31,7 +31,7 @@ kind:
 	kubectl delete rs --all
 
 tests/conformance/conformance_test.go:
-	echo "//go:build conformance" >  $@
+	echo "//go:build conformance" > $@
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
