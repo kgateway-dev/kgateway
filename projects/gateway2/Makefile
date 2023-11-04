@@ -38,7 +38,7 @@ kind:
 
 tests/conformance/conformance_test.go:
 	echo "//go:build conformance" > $@
-	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
+ Y	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
 CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,HTTPRoute
