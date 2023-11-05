@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
+	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,10 +29,10 @@ func TranslateGatewayHTTPRouteRules(
 	queries query.GatewayQueries,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
-) []*routev3.Route {
-	var outputRoutes []*routev3.Route
-	for _, rule := range route.Spec.Rules {
-		outputRoute := translateGatewayHTTPRouteRule(
+) []*routeutils.SortableRoute {
+	var outputSortableRoutes []*routeutils.SortableRoute
+	for i, rule := range route.Spec.Rules {
+		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
 			plugins,
 			queries,
@@ -39,11 +40,18 @@ func TranslateGatewayHTTPRouteRules(
 			rule,
 			reporter,
 		)
-		if outputRoute != nil {
-			outputRoutes = append(outputRoutes, outputRoute...)
+		for j, outputRoute := range outputRoutes {
+			sr := &routeutils.SortableRoute{
+				InputMatch: rule.Matches[j],
+				Route:      outputRoute,
+				HttpRoute:  &route,
+				Idx:        i,
+			}
+
+			outputSortableRoutes = append(outputSortableRoutes, sr)
 		}
 	}
-	return outputRoutes
+	return outputSortableRoutes
 }
 
 func translateGatewayHTTPRouteRule(
@@ -54,39 +62,44 @@ func translateGatewayHTTPRouteRule(
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
 ) []*routev3.Route {
+	baseOutputRoute := &routev3.Route{}
+	if len(rule.BackendRefs) > 0 {
+		baseOutputRoute.Action = translateRouteAction(
+			queries,
+			gwroute,
+			rule.BackendRefs,
+			reporter,
+		)
+	}
+	if err := applyFilters(
+		ctx,
+		plugins,
+		rule.Filters,
+		baseOutputRoute,
+	); err != nil {
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:   gwv1.RouteConditionAccepted,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.RouteReasonIncompatibleFilters,
+		})
+		// drop route
+		return nil
+	}
+	if baseOutputRoute.Action == nil {
+		// TODO: maybe? report error
+		baseOutputRoute.Action = &routev3.Route_DirectResponse{
+			DirectResponse: &routev3.DirectResponseAction{
+				Status: http.StatusInternalServerError,
+			},
+		}
+	}
 
 	routes := make([]*routev3.Route, 0, len(rule.Matches))
 	for _, match := range rule.Matches {
 		outputRoute := &routev3.Route{
-			Match:  translateGlooMatcher(match),
-			Action: nil,
-		}
-		if len(rule.BackendRefs) > 0 {
-			setRouteAction(
-				queries,
-				gwroute,
-				rule.BackendRefs,
-				outputRoute,
-				reporter,
-			)
-		}
-		if err := applyFilters(
-			ctx,
-			plugins,
-			rule.Filters,
-			outputRoute,
-		); err != nil {
-			// TODO: report error
-			//reporter.Route(gwroute).Err()
-			// return nil
-		}
-		if outputRoute.Action == nil {
-			// TODO: maybe? report error
-			outputRoute.Action = &routev3.Route_DirectResponse{
-				DirectResponse: &routev3.DirectResponseAction{
-					Status: http.StatusInternalServerError,
-				},
-			}
+			Match:    translateGlooMatcher(match),
+			Action:   baseOutputRoute.Action,
+			Metadata: baseOutputRoute.Metadata,
 		}
 		routes = append(routes, outputRoute)
 	}
@@ -115,7 +128,7 @@ func translateGlooMatcher(matcher gwv1.HTTPRouteMatch) *routev3.RouteMatch {
 var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
 
 func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *routev3.RouteMatch) {
-	pathType, pathValue := parsePath(match.Path)
+	pathType, pathValue := routeutils.ParsePath(match.Path)
 	switch pathType {
 	case gwv1.PathMatchPathPrefix:
 		if !separatedPathRegex.MatchString(pathValue) {
@@ -211,25 +224,12 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*routev3.QueryParameterM
 	return out
 }
 
-func parsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
-	pathType := gwv1.PathMatchPathPrefix
-	pathValue := "/"
-	if path != nil && path.Type != nil {
-		pathType = *path.Type
-	}
-	if path != nil && path.Value != nil {
-		pathValue = *path.Value
-	}
-	return pathType, pathValue
-}
-
-func setRouteAction(
+func translateRouteAction(
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
 	backendRefs []gwv1.HTTPBackendRef,
-	outputRoute *routev3.Route,
 	reporter reports.ParentRefReporter,
-) {
+) *routev3.Route_Route {
 	var clusters []*routev3.WeightedCluster_ClusterWeight
 
 	for _, backendRef := range backendRefs {
@@ -312,7 +312,7 @@ func setRouteAction(
 	action := &routev3.RouteAction{
 		ClusterNotFoundResponseCode: routev3.RouteAction_INTERNAL_SERVER_ERROR,
 	}
-	outputRoute.Action = &routev3.Route_Route{
+	routeAction := &routev3.Route_Route{
 		Route: action,
 	}
 	switch len(clusters) {
@@ -330,6 +330,7 @@ func setRouteAction(
 			},
 		}
 	}
+	return routeAction
 }
 
 func applyFilters(

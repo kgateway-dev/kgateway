@@ -311,7 +311,7 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 			}
 
 			for _, host := range hostnames {
-				routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
+				routesByHost[host] = append(routesByHost[host], routes...)
 			}
 		}
 	}

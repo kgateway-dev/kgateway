@@ -1,16 +1,17 @@
 package routeutils
 
 import (
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 )
 
 type SortableRoute struct {
-	Route     *v1.Route
-	HttpRoute *gwv1.HTTPRoute
-	Idx       int
+	InputMatch gwv1.HTTPRouteMatch
+	Route      *routev3.Route
+	HttpRoute  *gwv1.HTTPRoute
+	Idx        int
 }
 
 type SortableRoutes []*SortableRoute
@@ -19,15 +20,15 @@ func (a SortableRoutes) Len() int           { return len(a) }
 func (a SortableRoutes) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a SortableRoutes) Less(i, j int) bool { return !routeWrapperLessFunc(a[i], a[j]) }
 
-func (a SortableRoutes) ToRoutes() []*v1.Route {
-	var routes []*v1.Route
+func (a SortableRoutes) ToRoutes() []*routev3.Route {
+	var routes []*routev3.Route
 	for _, route := range a {
 		routes = append(routes, route.Route)
 	}
 	return routes
 }
 
-func ToSortable(route *gwv1.HTTPRoute, routes []*v1.Route) SortableRoutes {
+func ToSortable(route *gwv1.HTTPRoute, routes []*routev3.Route) SortableRoutes {
 	var wrappers SortableRoutes
 	for i, glooRoute := range routes {
 		wrappers = append(wrappers, &SortableRoute{
@@ -39,60 +40,69 @@ func ToSortable(route *gwv1.HTTPRoute, routes []*v1.Route) SortableRoutes {
 	return wrappers
 }
 
+func methodLen(p *gwv1.HTTPMethod) int {
+	if p == nil {
+		return 0
+	}
+	return 1
+}
+
 // Return true if A is lower priority than B
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1.HTTPRouteRule
 func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	// We know there's always a single matcher because of the route translator below
-	matchA, matchB := wrapperA.Route.Matchers[0], wrapperB.Route.Matchers[0]
-	switch typedPathA := matchA.PathSpecifier.(type) {
-	case *matchers.Matcher_Prefix:
+	matchA, matchB := wrapperA.InputMatch, wrapperB.InputMatch
+	pathTypeA, pathA := ParsePath(matchA.Path)
+	pathTypeB, pathB := ParsePath(matchB.Path)
+	switch pathTypeA {
+	case gwv1.PathMatchPathPrefix:
 		// If they are both prefix, then check length
-		switch typedPathB := matchB.PathSpecifier.(type) {
-		case *matchers.Matcher_Prefix:
-			if len(typedPathA.Prefix) != len(typedPathB.Prefix) {
-				return len(typedPathA.Prefix) < len(typedPathB.Prefix)
+		switch pathTypeB {
+		case gwv1.PathMatchPathPrefix:
+			if len(pathA) != len(pathB) {
+				return len(pathA) < len(pathB)
 			}
-		case *matchers.Matcher_Exact: // Exact always takes precedence
+		case gwv1.PathMatchExact: // Exact always takes precedence
 			return true
-		case *matchers.Matcher_Regex: // Prefix > regex
+		case gwv1.PathMatchRegularExpression: // Prefix > regex
 			return false
 		}
-	case *matchers.Matcher_Exact:
+	case gwv1.PathMatchExact:
 		// Exact always takes precedence, but for double exact it doesn't really matter
-		switch typedPathB := matchB.PathSpecifier.(type) {
-		case *matchers.Matcher_Prefix:
+		switch pathTypeB {
+		case gwv1.PathMatchPathPrefix:
 			return false
-		case *matchers.Matcher_Exact:
-			if len(typedPathA.Exact) != len(typedPathB.Exact) {
-				return len(typedPathA.Exact) < len(typedPathB.Exact)
+		case gwv1.PathMatchExact:
+			if len(pathA) != len(pathB) {
+				return len(pathA) < len(pathB)
 			}
-		case *matchers.Matcher_Regex:
+		case gwv1.PathMatchRegularExpression:
 			return false
 		}
-	case *matchers.Matcher_Regex:
-		switch typedPathB := matchB.PathSpecifier.(type) {
-		case *matchers.Matcher_Prefix:
+	case gwv1.PathMatchRegularExpression:
+		switch pathTypeB {
+		case gwv1.PathMatchPathPrefix:
 			return true
-		case *matchers.Matcher_Exact:
+		case gwv1.PathMatchExact:
 			return true
-		case *matchers.Matcher_Regex:
-			if len(typedPathA.Regex) != len(typedPathB.Regex) {
-				return len(typedPathA.Regex) < len(typedPathB.Regex)
+		case gwv1.PathMatchRegularExpression:
+			if len(pathA) != len(pathB) {
+				return len(pathA) < len(pathB)
 			}
 		}
 	}
 
 	// If this matcher doesn't have a method match, then it's lower priority
-	if len(matchA.Methods) != len(matchB.Methods) {
-		return len(matchA.Methods) < len(matchB.Methods)
+	if methodLen(matchA.Method) != methodLen(matchB.Method) {
+		return methodLen(matchA.Method) < methodLen(matchB.Method)
 	}
 
 	if len(matchA.Headers) != len(matchB.Headers) {
 		return len(matchA.Headers) < len(matchB.Headers)
 	}
 
-	if len(matchA.QueryParameters) != len(matchB.QueryParameters) {
-		return len(matchA.QueryParameters) < len(matchB.QueryParameters)
+	if len(matchA.QueryParams) != len(matchB.QueryParams) {
+		return len(matchA.QueryParams) < len(matchB.QueryParams)
 	}
 
 	if !wrapperA.HttpRoute.CreationTimestamp.Time.Equal(wrapperB.HttpRoute.CreationTimestamp.Time) {
