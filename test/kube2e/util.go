@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -70,7 +71,8 @@ func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper
 				Ctx: contextWithCancel,
 			},
 		}
-		err := check.CheckResources(opts)
+		printer := printers.P{}
+		err := check.CheckResources(contextWithCancel, printer, opts)
 		if err != nil {
 			return errors.Wrap(err, "glooctl check detected a problem with the installation")
 		}

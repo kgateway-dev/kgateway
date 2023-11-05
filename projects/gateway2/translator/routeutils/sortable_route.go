@@ -43,11 +43,11 @@ func ToSortable(route *gwv1.HTTPRoute, routes []*v1.Route) SortableRoutes {
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1.HTTPRouteRule
 func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	// We know there's always a single matcher because of the route translator below
-	matchA, matchB := wrapperA.Route.Matchers[0], wrapperB.Route.Matchers[0]
-	switch typedPathA := matchA.PathSpecifier.(type) {
+	matchA, matchB := wrapperA.Route.GetMatchers()[0], wrapperB.Route.GetMatchers()[0]
+	switch typedPathA := matchA.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Prefix:
 		// If they are both prefix, then check length
-		switch typedPathB := matchB.PathSpecifier.(type) {
+		switch typedPathB := matchB.GetPathSpecifier().(type) {
 		case *matchers.Matcher_Prefix:
 			if len(typedPathA.Prefix) != len(typedPathB.Prefix) {
 				return len(typedPathA.Prefix) < len(typedPathB.Prefix)
@@ -59,7 +59,7 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 		}
 	case *matchers.Matcher_Exact:
 		// Exact always takes precedence, but for double exact it doesn't really matter
-		switch typedPathB := matchB.PathSpecifier.(type) {
+		switch typedPathB := matchB.GetPathSpecifier().(type) {
 		case *matchers.Matcher_Prefix:
 			return false
 		case *matchers.Matcher_Exact:
@@ -70,7 +70,7 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 			return false
 		}
 	case *matchers.Matcher_Regex:
-		switch typedPathB := matchB.PathSpecifier.(type) {
+		switch typedPathB := matchB.GetPathSpecifier().(type) {
 		case *matchers.Matcher_Prefix:
 			return true
 		case *matchers.Matcher_Exact:
@@ -83,16 +83,16 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	}
 
 	// If this matcher doesn't have a method match, then it's lower priority
-	if len(matchA.Methods) != len(matchB.Methods) {
-		return len(matchA.Methods) < len(matchB.Methods)
+	if len(matchA.GetMethods()) != len(matchB.GetMethods()) {
+		return len(matchA.GetMethods()) < len(matchB.GetMethods())
 	}
 
-	if len(matchA.Headers) != len(matchB.Headers) {
-		return len(matchA.Headers) < len(matchB.Headers)
+	if len(matchA.GetHeaders()) != len(matchB.GetHeaders()) {
+		return len(matchA.GetHeaders()) < len(matchB.GetHeaders())
 	}
 
-	if len(matchA.QueryParameters) != len(matchB.QueryParameters) {
-		return len(matchA.QueryParameters) < len(matchB.QueryParameters)
+	if len(matchA.GetQueryParameters()) != len(matchB.GetQueryParameters()) {
+		return len(matchA.GetQueryParameters()) < len(matchB.GetQueryParameters())
 	}
 
 	if !wrapperA.HttpRoute.CreationTimestamp.Time.Equal(wrapperB.HttpRoute.CreationTimestamp.Time) {

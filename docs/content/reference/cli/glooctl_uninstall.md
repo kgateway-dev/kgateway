@@ -13,13 +13,13 @@ glooctl uninstall [flags]
 ### Options
 
 ```
-      --all                   Deletes all gloo resources, including the namespace, crds, and cluster role
-      --delete-crds           Delete all gloo crds (all custom gloo objects will be deleted)
-      --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
-  -h, --help                  help for uninstall
-  -n, --namespace string      namespace in which Gloo is installed (default "gloo-system")
-      --release-name string   helm release name (default "gloo")
-  -v, --verbose               If true, output from kubectl commands will print to stdout/stderr
+      --dry-run string     print the generated kubernetes manifest to stdout
+  -g, --gateway            install the default gloo gateway proxy, (default false)
+  -h, --help               help for uninstall
+  -n, --namespace string   namespace in which Gloo is installed (default "gloo-system")
+      --set strings        directly set values for the gloo gateway helm chart (can be repeated or comma separated list of values)
+      --values strings     path to a helm values file (can be repeated or comma separated list of values)
+  -v, --verbose            If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### Options inherited from parent commands

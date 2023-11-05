@@ -26,7 +26,7 @@ func (p *Plugin) ApplyFilter(
 	}
 
 	if config.Hostname != nil {
-		outputRoute.Options.HostRewriteType = &v1.RouteOptions_HostRewrite{
+		outputRoute.GetOptions().HostRewriteType = &v1.RouteOptions_HostRewrite{
 			HostRewrite: string(*config.Hostname),
 		}
 	}
@@ -40,7 +40,7 @@ func (p *Plugin) ApplyFilter(
 			if config.Path.ReplacePrefixMatch == nil {
 				return errors.Errorf("UrlRewrite filter supplied does with prefix rewrite type, but no prefix supplied")
 			}
-			outputRoute.Options.PrefixRewrite = &wrapperspb.StringValue{
+			outputRoute.GetOptions().PrefixRewrite = &wrapperspb.StringValue{
 				Value: *config.Path.ReplacePrefixMatch,
 			}
 		}

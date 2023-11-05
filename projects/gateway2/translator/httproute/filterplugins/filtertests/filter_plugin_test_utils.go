@@ -2,8 +2,9 @@ package filtertests
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	"log"
+
+	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"

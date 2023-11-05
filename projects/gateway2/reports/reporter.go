@@ -31,7 +31,7 @@ type ParentRefKey struct {
 }
 
 type ListenerReport struct {
-	Status      gwv1.ListenerStatus
+	Status gwv1.ListenerStatus
 }
 
 type reporter struct {

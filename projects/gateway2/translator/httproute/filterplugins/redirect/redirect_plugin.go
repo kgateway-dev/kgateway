@@ -25,22 +25,30 @@ func (p *Plugin) ApplyFilter(
 		return errors.Errorf("RequestRedirect filter supplied does not define requestRedirect config")
 	}
 
-	if outputRoute.Action != nil {
+	if outputRoute.GetAction() != nil {
 		return errors.Errorf("RequestRedirect route cannot have destinations")
 	}
 
 	outputRoute.Action = &v1.Route_RedirectAction{
 		RedirectAction: &v1.RedirectAction{
 			// TODO: support extended fields on RedirectAction
-			HttpsRedirect: config.Scheme == nil || strings.ToLower(*config.Scheme) == "https",
+			HttpsRedirect: config.Scheme != nil && strings.ToLower(*config.Scheme) == "https",
 			HostRedirect:  translateHostname(config.Hostname),
 			ResponseCode:  translateStatusCode(*config.StatusCode),
+			PortRedirect:  translatePort(config.Port),
 		},
 	}
 
 	translatePathRewrite(config.Path, outputRoute)
 
 	return nil
+}
+
+func translatePort(port *gwv1.PortNumber) uint32 {
+	if port == nil {
+		return 0
+	}
+	return uint32(*port)
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {
@@ -79,6 +87,6 @@ func translateStatusCode(i int) v1.RedirectAction_RedirectResponseCode {
 	case 308:
 		return v1.RedirectAction_PERMANENT_REDIRECT
 	default:
-		return v1.RedirectAction_MOVED_PERMANENTLY
+		return v1.RedirectAction_FOUND
 	}
 }

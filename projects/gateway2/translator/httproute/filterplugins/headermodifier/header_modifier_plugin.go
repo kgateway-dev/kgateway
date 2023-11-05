@@ -38,13 +38,13 @@ func (p *Plugin) applyRequestFilter(
 	if config == nil {
 		return errors.Errorf("RequestHeaderModifier filter supplied does not define requestHeaderModifier")
 	}
-	headerManipulation := outputRoute.Options.HeaderManipulation
+	headerManipulation := outputRoute.GetOptions().GetHeaderManipulation()
 	if headerManipulation == nil {
 		headerManipulation = &headers.HeaderManipulation{}
 	}
 	headerManipulation.RequestHeadersToAdd = requestHeadersToAdd(config.Add, config.Set)
 	headerManipulation.RequestHeadersToRemove = config.Remove
-	outputRoute.Options.HeaderManipulation = headerManipulation
+	outputRoute.GetOptions().HeaderManipulation = headerManipulation
 	return nil
 }
 
@@ -55,13 +55,13 @@ func (p *Plugin) applyResponseFilter(
 	if config == nil {
 		return errors.Errorf("Response filter supplied does not define requestHeaderModifier")
 	}
-	headerManipulation := outputRoute.Options.HeaderManipulation
+	headerManipulation := outputRoute.GetOptions().GetHeaderManipulation()
 	if headerManipulation == nil {
 		headerManipulation = &headers.HeaderManipulation{}
 	}
 	headerManipulation.ResponseHeadersToAdd = responseHeadersToAdd(config.Add, config.Set)
 	headerManipulation.ResponseHeadersToRemove = config.Remove
-	outputRoute.Options.HeaderManipulation = headerManipulation
+	outputRoute.GetOptions().HeaderManipulation = headerManipulation
 	return nil
 }
 

@@ -599,6 +599,7 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 "responseCode": .gloo.solo.io.RedirectAction.RedirectResponseCode
 "httpsRedirect": bool
 "stripQuery": bool
+"portRedirect": int
 
 ```
 
@@ -611,6 +612,7 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 | `responseCode` | [.gloo.solo.io.RedirectAction.RedirectResponseCode](../proxy.proto.sk/#redirectresponsecode) | The HTTP status code to use in the redirect response. The default response code is MOVED_PERMANENTLY (301). |
 | `httpsRedirect` | `bool` | The scheme portion of the URL will be swapped with "https". |
 | `stripQuery` | `bool` | Indicates that during redirection, the query portion of the URL will be removed. Default value is false. |
+| `portRedirect` | `int` | Which port to redirect to if different than original. |
 
 
 

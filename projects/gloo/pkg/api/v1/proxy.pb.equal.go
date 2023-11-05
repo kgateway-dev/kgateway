@@ -1493,6 +1493,10 @@ func (m *RedirectAction) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetPortRedirect() != target.GetPortRedirect() {
+		return false
+	}
+
 	switch m.PathRewriteSpecifier.(type) {
 
 	case *RedirectAction_PathRedirect:

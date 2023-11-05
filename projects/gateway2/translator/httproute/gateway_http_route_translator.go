@@ -80,7 +80,7 @@ func translateGatewayHTTPRouteRule(
 			//reporter.Route(gwroute).Err()
 			// return nil
 		}
-		if outputRoute.Action == nil {
+		if outputRoute.GetAction() == nil {
 			// TODO: maybe? report error
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
@@ -270,7 +270,7 @@ func setRouteAction(
 	case 1:
 		outputRoute.Action = &v1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{
-				Destination: &v1.RouteAction_Single{Single: weightedDestinations[0].Destination},
+				Destination: &v1.RouteAction_Single{Single: weightedDestinations[0].GetDestination()},
 			},
 		}
 	default:
