@@ -846,6 +846,87 @@ func (m *OAuth2) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *AzureOidc) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AzureOidc)
+	if !ok {
+		that2, ok := that.(AzureOidc)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetApplicationClientId(), target.GetApplicationClientId()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClientSecretRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClientSecretRef(), target.GetClientSecretRef()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetIssuerUrl(), target.GetIssuerUrl()) != 0 {
+		return false
+	}
+
+	if len(m.GetScopes()) != len(target.GetScopes()) {
+		return false
+	}
+	for idx, v := range m.GetScopes() {
+
+		if strings.Compare(v, target.GetScopes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSession(), target.GetSession()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetCachingRedisOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCachingRedisOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCachingRedisOptions(), target.GetCachingRedisOptions()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *RedisOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1505,6 +1586,45 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetClientAuthentication(), target.GetClientAuthentication()) {
+			return false
+		}
+	}
+
+	switch m.Provider.(type) {
+
+	case *OidcAuthorizationCode_Default:
+		if _, ok := target.Provider.(*OidcAuthorizationCode_Default); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDefault()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDefault()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDefault(), target.GetDefault()) {
+				return false
+			}
+		}
+
+	case *OidcAuthorizationCode_Azure_:
+		if _, ok := target.Provider.(*OidcAuthorizationCode_Azure_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAzure()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAzure(), target.GetAzure()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Provider != target.Provider {
 			return false
 		}
 	}
@@ -4141,6 +4261,82 @@ func (m *OidcAuthorizationCode_ClientAuthentication) Equal(that interface{}) boo
 }
 
 // Equal function
+func (m *OidcAuthorizationCode_DefaultOIDCProvider) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OidcAuthorizationCode_DefaultOIDCProvider)
+	if !ok {
+		that2, ok := that.(OidcAuthorizationCode_DefaultOIDCProvider)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *OidcAuthorizationCode_Azure) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OidcAuthorizationCode_Azure)
+	if !ok {
+		that2, ok := that.(OidcAuthorizationCode_Azure)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTenantId(), target.GetTenantId()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClientSecret()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClientSecret()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClientSecret(), target.GetClientSecret()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsCachingOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsCachingOptions(), target.GetClaimsCachingOptions()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OidcAuthorizationCode_ClientAuthentication_ClientSecret) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -5156,6 +5352,48 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	} else {
 		if !proto.Equal(m.GetIdentityToken(), target.GetIdentityToken()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_MSEnteraOauth2ConfigSettings) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_MSEnteraOauth2ConfigSettings)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_MSEnteraOauth2ConfigSettings)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTenantId(), target.GetTenantId()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsCachingOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsCachingOptions(), target.GetClaimsCachingOptions()) {
 			return false
 		}
 	}
