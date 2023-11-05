@@ -46,8 +46,9 @@ func (h *httpFilterPluginRegistry) GetExtensionPlugin(extensionRef *gwv1.LocalOb
 func NewHTTPFilterPluginRegistry() HTTPFilterPluginRegistry {
 	return &httpFilterPluginRegistry{
 		standardPlugins: map[gwv1.HTTPRouteFilterType]filterplugins.FilterPlugin{
-			gwv1.HTTPRouteFilterRequestHeaderModifier: headermodifier.NewPlugin(),
-			gwv1.HTTPRouteFilterRequestRedirect:       redirect.NewPlugin(),
+			gwv1.HTTPRouteFilterRequestHeaderModifier:  headermodifier.NewPlugin(),
+			gwv1.HTTPRouteFilterResponseHeaderModifier: headermodifier.NewPlugin(),
+			gwv1.HTTPRouteFilterRequestRedirect:        redirect.NewPlugin(),
 		},
 		extensionPlugins: map[schema.GroupKind]filterplugins.FilterPlugin{},
 	}

@@ -25,6 +25,9 @@ func (p *Plugin) ApplyFilter(
 	if filter.Type == gwv1.HTTPRouteFilterRequestHeaderModifier {
 		return p.applyRequestFilter(filter.RequestHeaderModifier, outputRoute)
 	}
+	if filter.Type == gwv1.HTTPRouteFilterResponseHeaderModifier {
+		return p.applyResponseFilter(filter.ResponseHeaderModifier, outputRoute)
+	}
 	return errors.Errorf("unsupported filter type: %v", filter.Type)
 }
 
@@ -45,8 +48,25 @@ func (p *Plugin) applyRequestFilter(
 	return nil
 }
 
+func (p *Plugin) applyResponseFilter(
+	config *gwv1.HTTPHeaderFilter,
+	outputRoute *v1.Route,
+) error {
+	if config == nil {
+		return errors.Errorf("Response filter supplied does not define requestHeaderModifier")
+	}
+	headerManipulation := outputRoute.Options.HeaderManipulation
+	if headerManipulation == nil {
+		headerManipulation = &headers.HeaderManipulation{}
+	}
+	headerManipulation.ResponseHeadersToAdd = responseHeadersToAdd(config.Add, config.Set)
+	headerManipulation.ResponseHeadersToRemove = config.Remove
+	outputRoute.Options.HeaderManipulation = headerManipulation
+	return nil
+}
+
 func requestHeadersToAdd(add []gwv1.HTTPHeader, set []gwv1.HTTPHeader) []*core.HeaderValueOption {
-	var envoyHeaders []*core.HeaderValueOption
+	envoyHeaders := make([]*core.HeaderValueOption, 0, len(add)+len(set))
 	envoyHeaders = append(envoyHeaders, translateHeaders(add, true)...)
 	envoyHeaders = append(envoyHeaders, translateHeaders(set, false)...)
 	return envoyHeaders
@@ -66,4 +86,33 @@ func translateHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*core.HeaderValue
 		})
 	}
 	return envoyHeaders
+}
+
+func responseHeadersToAdd(add []gwv1.HTTPHeader, set []gwv1.HTTPHeader) []*headers.HeaderValueOption {
+	envoyHeaders := make([]*headers.HeaderValueOption, 0, len(add)+len(set))
+	envoyHeaders = append(envoyHeaders, translateResponseHeaders(add, true)...)
+	envoyHeaders = append(envoyHeaders, translateResponseHeaders(set, false)...)
+	return envoyHeaders
+}
+
+func translateResponseHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*headers.HeaderValueOption {
+	var envoyHeaders []*headers.HeaderValueOption
+	for _, gwHeader := range gwHeaders {
+		envoyHeaders = append(envoyHeaders, &headers.HeaderValueOption{
+			Header: &headers.HeaderValue{
+				Key:   string(gwHeader.Name),
+				Value: gwHeader.Value,
+			},
+			Append: &wrappers.BoolValue{Value: add},
+		})
+	}
+	return envoyHeaders
+}
+
+func mapHeaders[T any, V any](headers []T, transform func(T) V) []V {
+	var result []V
+	for _, header := range headers {
+		result = append(result, transform(header))
+	}
+	return result
 }

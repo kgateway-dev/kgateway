@@ -2,6 +2,7 @@ package redirect
 
 import (
 	"context"
+	"strings"
 
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -28,17 +29,16 @@ func (p *Plugin) ApplyFilter(
 		return errors.Errorf("RequestRedirect route cannot have destinations")
 	}
 
-	if config.StatusCode == nil {
-		return errors.Errorf("RequestRedirect: unsupported value")
-	}
-
 	outputRoute.Action = &v1.Route_RedirectAction{
 		RedirectAction: &v1.RedirectAction{
 			// TODO: support extended fields on RedirectAction
-			HostRedirect: translateHostname(config.Hostname),
-			ResponseCode: translateStatusCode(*config.StatusCode),
+			HttpsRedirect: config.Scheme == nil || strings.ToLower(*config.Scheme) == "https",
+			HostRedirect:  translateHostname(config.Hostname),
+			ResponseCode:  translateStatusCode(*config.StatusCode),
 		},
 	}
+
+	translatePathRewrite(config.Path, outputRoute)
 
 	return nil
 }
@@ -48,6 +48,22 @@ func translateHostname(hostname *gwv1.PreciseHostname) string {
 		return ""
 	}
 	return string(*hostname)
+}
+
+func translatePathRewrite(pathRewrite *gwv1.HTTPPathModifier, outputRoute *v1.Route) {
+	if pathRewrite == nil {
+		return
+	}
+	switch pathRewrite.Type {
+	case gwv1.FullPathHTTPPathModifier:
+		outputRoute.GetRedirectAction().PathRewriteSpecifier = &v1.RedirectAction_PathRedirect{
+			PathRedirect: *pathRewrite.ReplaceFullPath,
+		}
+	case gwv1.PrefixMatchHTTPPathModifier:
+		outputRoute.GetRedirectAction().PathRewriteSpecifier = &v1.RedirectAction_PrefixRewrite{
+			PrefixRewrite: *pathRewrite.ReplacePrefixMatch,
+		}
+	}
 }
 
 func translateStatusCode(i int) v1.RedirectAction_RedirectResponseCode {
