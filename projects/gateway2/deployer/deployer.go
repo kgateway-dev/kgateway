@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
@@ -49,6 +50,12 @@ func NewDeployer(scheme *runtime.Scheme, dev bool, controllerName, host string, 
 		// don't retrun an error is requeueing won't help here
 		return nil, err
 	}
+	// simulate what `helm package` in the Makefile does
+	if version.Version != version.UndefinedVersion {
+		chart.Metadata.AppVersion = version.Version
+		chart.Metadata.Version = version.Version
+	}
+
 	return &Deployer{
 		dev:            dev,
 		chart:          chart,

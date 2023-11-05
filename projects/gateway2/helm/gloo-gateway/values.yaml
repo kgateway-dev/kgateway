@@ -95,10 +95,10 @@ gateway:
     protocol: TCP
     name: http
   image:
-    repository: quay.io/solo-io/envoy-gloo
+    repository: ghcr.io/solo-io/gloo-gateway/gloo-proxy
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "1.26.4-patch4"
+    tag: ""
   securityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true

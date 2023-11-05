@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 )
@@ -152,6 +154,95 @@ var _ = Describe("Deployer", func() {
 		port := svc.Spec.Ports[0]
 		Expect(port.Port).To(Equal(int32(80)))
 		Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
+	})
+
+	It("should work with multiple duplicate ports", func() {
+		version.Version = "testversion"
+		gw := &api.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+				UID:       "1235",
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Gateway",
+				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				Listeners: []api.Listener{
+					{
+						Name: "listener-1",
+						Port: 80,
+					},
+					{
+						Name: "listener-2",
+						Port: 80,
+					},
+				},
+			},
+		}
+		objs, err := d.GetObjsToDeploy(context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).NotTo(BeEmpty())
+
+		svc := func() *corev1.Service {
+			for _, obj := range objs {
+				if svc, ok := obj.(*corev1.Service); ok {
+					return svc
+				}
+			}
+			return nil
+		}()
+		Expect(svc).NotTo(BeNil())
+
+		Expect(svc.Spec.Ports).To(HaveLen(1))
+		port := svc.Spec.Ports[0]
+		Expect(port.Port).To(Equal(int32(80)))
+		Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
+	})
+
+	It("should propagate version.Version to get deployment", func() {
+		version.Version = "testversion"
+		d, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
+		Expect(err).NotTo(HaveOccurred())
+		gw := &api.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+				UID:       "1235",
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Gateway",
+				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				Listeners: []api.Listener{
+					{
+						Name: "listener-1",
+						Port: 80,
+					},
+				},
+			},
+		}
+		objs, err := d.GetObjsToDeploy(context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).NotTo(BeEmpty())
+
+		dep := func() *appsv1.Deployment {
+			for _, obj := range objs {
+				if dep, ok := obj.(*appsv1.Deployment); ok {
+					return dep
+				}
+			}
+			return nil
+		}()
+		Expect(dep).NotTo(BeNil())
+		Expect(dep.Spec.Template.Spec.Containers).NotTo(BeEmpty())
+		for _, c := range dep.Spec.Template.Spec.Containers {
+			Expect(c.Image).To(HaveSuffix(":testversion"))
+		}
 	})
 
 	It("should get objects with owner refs", func() {

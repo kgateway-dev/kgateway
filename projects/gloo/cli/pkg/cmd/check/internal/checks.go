@@ -242,7 +242,7 @@ func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Opti
 
 		for parent_idx := range httpRouteList.Items[route_idx].Spec.ParentRefs {
 			parent_ref := httpRouteList.Items[route_idx].Spec.ParentRefs[parent_idx]
-			child_idx := slices.IndexFunc[gwv1.RouteParentStatus](
+			child_idx := slices.IndexFunc(
 				httpRouteList.Items[route_idx].Status.Parents,
 				func(status_parent gwv1.RouteParentStatus) bool {
 					// Return the idx if we find the parent_ref in the status
