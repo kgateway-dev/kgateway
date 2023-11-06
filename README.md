@@ -9,7 +9,7 @@
 **IMPORTANT UPDATES:**</br>
 Gloo Edge was renamed to Gloo Gateway to align with Solo's support for the Kubernetes Gateway API. The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find out more about the new Gloo Gateway v2 API that is based on the Kubernetes Gateway API, see the v2 branch. 
 
----
+## About Gloo Gateway
 
 Gloo Gateway is a feature-rich, Kubernetes-native ingress controller and next-generation API gateway. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications in which multiple technologies, architectures, protocols, and clouds can coexist. 
 
