@@ -6,13 +6,67 @@
   An Envoy-Powered API Gateway
 </h1>
 
-## Importan Update
+## Important Update
 
 > **Note**
 > Gloo Gateway is now fully a conformant Kubernetes Gateway API implementation!
 >
-> The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find the latest version for the Gloo Edge v1 API, see the [main branch](https://github.com/solo-io/gloo/tree/main). 
+> The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find the latest version for the Gloo Edge v1 API, see the [main branch](https://github.com/solo-io/gloo/tree/main).
 
+## Quickstart
+Install Gloo Gateway and 
+
+1. Install `glooctl`, the Gloo Gateway command line tool.
+   ```sh
+   curl -sL https://run.solo.io/gloo/install | GLOO_VERSION=v2.0.0-beta1 sh
+   export PATH=$HOME/.gloo/bin:$PATH
+   ```
+
+2. Install the Gloo Gateway v2 control plane and use the -g option to set up an HTTP gateway. 
+   ```sh
+   glooctl install -g
+   ```
+
+3. Deploy the httpbin sample app.
+   ```sh
+   kubectl create ns httpbin
+   kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo-mesh-use-cases/main/policy-demo/httpbin.yaml
+   ```
+
+4. Create an HTTPRoute resource to expose the httpbin app on the gateway. The following example exposes the app on the `wwww.example.com` domain.
+   ```yaml
+   kubectl apply -f- <<EOF
+   apiVersion: gateway.networking.k8s.io/v1beta1
+   kind: HTTPRoute
+   metadata:
+     name: httpbin
+     namespace: httpbin
+      labels:
+        example: httpbin-route
+   spec:
+     parentRefs:
+       - name: http
+         namespace: gloo-system
+     hostnames:
+       - "www.example.com"
+     rules:
+       - backendRefs:
+           - name: httpbin
+             port: 8000
+   EOF
+   ```
+
+5. Port-forward the HTTP gateway service.
+   ```sh
+   kubectl port-forward svc -n gloo-system gloo-proxy-http 8080:8080 &
+   ```
+
+6. Send a request to the httpbin app and verify that you get back a 200 HTTP response code.
+   ```
+   curl -vik localhost:8080/status/200 -H "host: www.example.com"
+   ```
+
+## About Gloo Gateway
 Gloo Gateway is a feature-rich, Kubernetes-native ingress controller and next-generation API gateway based on the Kubernetes Gateway API. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications in which multiple technologies, architectures, protocols, and clouds can coexist.
  
 [**Installation**](https://docs.solo.io/gloo-gateway/v2/quickstart) &nbsp; |
@@ -43,7 +97,6 @@ C) Allow different teams in an organization choose different architectures. See 
 - **Function-level routing allows integration of legacy applications, microservices and serverless**: Gloo Gateway can route requests directly to functions. Request to Function can be a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS Function, etc.), an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.), or publishing to a message queue (e.g. NATS, AMQP, etc.). This unique ability is what makes Gloo Gateway the only API gateway that supports hybrid apps as well as the only one that does not tie the user to a specific paradigm.
 - **Gloo Gateway incorporates vetted open-source projects to provide broad functionality**: Gloo Gateway supports high-quality features by integrating with top open-source projects, including gRPC, GraphQL, OpenTracing, NATS and more. Gloo Gateway's architecture allows rapid integration of future popular open-source projects as they emerge.
  **Full automated discovery lets users move fast**: Upon launch, Gloo Gateway creates a catalog of all available destinations and continuously maintains it up to date. This takes the responsibility for 'bookkeeping' away from the developers and guarantees that new features become available as soon as they are ready. Gloo Gateway discovers across IaaS, PaaS and FaaS providers as well as Swagger, gRPC, and GraphQL.
-- **Gloo GatewayG integrates intimately with the user's environment**: with Gloo Gateway, users are free to choose their favorite tools for scheduling (such as K8s, Nomad, OpenShift, etc), persistence (K8s, Consul, etcd, etc) and security (K8s, Vault).
 
 
 ## Next Steps
