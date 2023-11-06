@@ -1,6 +1,6 @@
 options:
   env:
-    - "_GO_VERSION=1.20.1"
+    - "_GO_VERSION=1.21.3"
 
 steps:
 - name: gcr.io/cloud-builders/gsutil
