@@ -3,11 +3,10 @@ package headermodifier
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	errors "github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -20,7 +19,7 @@ func NewPlugin() *Plugin {
 func (p *Plugin) ApplyFilter(
 	ctx context.Context,
 	filter gwv1.HTTPRouteFilter,
-	outputRoute *v1.Route,
+	outputRoute *routev3.Route,
 ) error {
 	if filter.Type == gwv1.HTTPRouteFilterRequestHeaderModifier {
 		return p.applyRequestFilter(filter.RequestHeaderModifier, outputRoute)
@@ -30,39 +29,32 @@ func (p *Plugin) ApplyFilter(
 
 func (p *Plugin) applyRequestFilter(
 	config *gwv1.HTTPHeaderFilter,
-	outputRoute *v1.Route,
+	outputRoute *routev3.Route,
 ) error {
 	if config == nil {
 		return errors.Errorf("RequestHeaderModifier filter supplied does not define requestHeaderModifier")
 	}
-	headerManipulation := outputRoute.Options.HeaderManipulation
-	if headerManipulation == nil {
-		headerManipulation = &headers.HeaderManipulation{}
-	}
-	headerManipulation.RequestHeadersToAdd = requestHeadersToAdd(config.Add, config.Set)
-	headerManipulation.RequestHeadersToRemove = config.Remove
-	outputRoute.Options.HeaderManipulation = headerManipulation
+	outputRoute.RequestHeadersToAdd = requestHeadersToAdd(config.Add, config.Set)
+	outputRoute.RequestHeadersToRemove = config.Remove
 	return nil
 }
 
-func requestHeadersToAdd(add []gwv1.HTTPHeader, set []gwv1.HTTPHeader) []*core.HeaderValueOption {
-	var envoyHeaders []*core.HeaderValueOption
+func requestHeadersToAdd(add []gwv1.HTTPHeader, set []gwv1.HTTPHeader) []*corev3.HeaderValueOption {
+	var envoyHeaders []*corev3.HeaderValueOption
 	envoyHeaders = append(envoyHeaders, translateHeaders(add, true)...)
 	envoyHeaders = append(envoyHeaders, translateHeaders(set, false)...)
 	return envoyHeaders
 }
 
-func translateHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*core.HeaderValueOption {
-	var envoyHeaders []*core.HeaderValueOption
+func translateHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*corev3.HeaderValueOption {
+	var envoyHeaders []*corev3.HeaderValueOption
 	for _, gwHeader := range gwHeaders {
-		envoyHeaders = append(envoyHeaders, &core.HeaderValueOption{
-			HeaderOption: &core.HeaderValueOption_Header{
-				Header: &core.HeaderValue{
-					Key:   string(gwHeader.Name),
-					Value: gwHeader.Value,
-				},
+		envoyHeaders = append(envoyHeaders, &corev3.HeaderValueOption{
+			Header: &corev3.HeaderValue{
+				Key:   string(gwHeader.Name),
+				Value: gwHeader.Value,
 			},
-			Append: &wrappers.BoolValue{Value: add},
+			Append: wrapperspb.Bool(add),
 		})
 	}
 	return envoyHeaders

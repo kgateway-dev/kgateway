@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -24,7 +23,7 @@ type K8sGwTranslator interface {
 		gateway *gwv1.Gateway,
 		queries query.GatewayQueries,
 		reporter reports.Reporter,
-	) *v1.Proxy
+	) []listener.ListenerAndRoutes
 }
 
 func NewTranslator() K8sGwTranslator {
@@ -42,7 +41,7 @@ func (t *translator) TranslateProxy(
 	gateway *gwv1.Gateway,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
-) *v1.Proxy {
+) []listener.ListenerAndRoutes {
 	if !listener.ValidateGateway(gateway, queries, reporter) {
 		return nil
 	}
@@ -62,13 +61,13 @@ func (t *translator) TranslateProxy(
 		})
 	}
 
-    for _, listener := range gateway.Spec.Listeners{
-        availRoutes := 0
-        if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
-            availRoutes = len(res.Routes)
-        }
-        reporter.Gateway(gateway).Listener(&listener).SetAttachedRoutes(uint(availRoutes))
-    } 
+	for _, listener := range gateway.Spec.Listeners {
+		availRoutes := 0
+		if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
+			availRoutes = len(res.Routes)
+		}
+		reporter.Gateway(gateway).Listener(&listener).SetAttachedRoutes(uint(availRoutes))
+	}
 
 	listeners := listener.TranslateListeners(
 		ctx,
@@ -79,10 +78,7 @@ func (t *translator) TranslateProxy(
 		reporter,
 	)
 
-	return &v1.Proxy{
-		Metadata:  proxyMetadata(gateway),
-		Listeners: listeners,
-	}
+	return listeners
 }
 
 func proxyMetadata(gateway *gwv1.Gateway) *core.Metadata {

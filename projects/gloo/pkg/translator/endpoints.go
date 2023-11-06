@@ -46,7 +46,7 @@ func loadAssignmentForUpstream(
 	upstream *v1.Upstream,
 	clusterEndpoints []*v1.Endpoint,
 ) *envoy_config_endpoint_v3.ClusterLoadAssignment {
-	clusterName := UpstreamToClusterName(upstream.GetMetadata().Ref())
+	clusterName := upstreamToClusterName(upstream)
 	var endpoints []*envoy_config_endpoint_v3.LbEndpoint
 	for _, addr := range clusterEndpoints {
 		metadata := getLbMetadata(upstream, addr.GetMetadata().GetLabels(), "")

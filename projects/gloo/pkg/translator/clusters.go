@@ -95,7 +95,7 @@ func (t *translatorInstance) initializeCluster(
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
-		Name:             UpstreamToClusterName(upstream.GetMetadata().Ref()),
+		Name:             upstreamToClusterName(upstream),
 		Metadata:         new(envoy_config_core_v3.Metadata),
 		CircuitBreakers:  getCircuitBreakers(upstream.GetCircuitBreakers(), circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),

@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
-	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
@@ -164,21 +164,18 @@ func (s *XdsSyncer) Start(
 		}
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
-		proxies := gloo_solo_io.ProxyList{}
+		var listenersAndRoutes []listener.ListenerAndRoutes
 		rm := &reports.ReportMap{
 			Gateways: make(map[string]*reports.GatewayReport),
 			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
 		}
 		r := reports.NewReporter(rm)
 		for _, gw := range gwl.Items {
-			proxy := t.TranslateProxy(ctx, &gw, queries, r)
-			if proxy != nil {
-				proxies = append(proxies, proxy)
-				//TODO: handle reports and process statuses
-			}
+			lr := t.TranslateProxy(ctx, &gw, queries, r)
+			listenersAndRoutes = append(listenersAndRoutes, lr...)
+			//TODO: handle reports and process statuses
 		}
-		proxyApiSnapshot.Proxies = proxies
-		s.syncEnvoy(ctx, proxyApiSnapshot)
+		s.syncEnvoy(ctx, listenersAndRoutes, proxyApiSnapshot)
 		s.syncStatus(ctx, *rm, gwl)
 		s.syncRouteStatus(ctx, *rm)
 	}
@@ -205,7 +202,7 @@ func (s *XdsSyncer) Start(
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 // NOTE(ilackarms): the below code was copy-pasted (with some deletions) from projects/gloo/pkg/syncer/translator_syncer.go
-func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
+func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutes []listener.ListenerAndRoutes, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 

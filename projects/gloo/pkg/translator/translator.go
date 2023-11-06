@@ -19,6 +19,7 @@ import (
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -131,6 +132,16 @@ func (t *translatorInstance) Translate(
 	return xdsSnapshot, reports, proxyReport
 }
 
+func upstreamToClusterName(upstream *v1.Upstream) string {
+	if upstream.GetKube() != nil {
+		return kubernetes.UpstreamName(upstream.GetKube().ServiceNamespace, upstream.GetKube().ServiceName, int32(upstream.GetKube().ServicePort))
+	}
+	return UpstreamToClusterName(&core.ResourceRef{
+		Name:      upstream.GetMetadata().GetName(),
+		Namespace: upstream.GetMetadata().GetNamespace(),
+	})
+}
+
 func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
 	[]*envoy_config_cluster_v3.Cluster,
 	[]*envoy_config_endpoint_v3.ClusterLoadAssignment,
@@ -161,10 +172,8 @@ func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.
 	upstreamMap := make(map[string]struct{}, len(params.Snapshot.Upstreams))
 	// make sure to call EndpointPlugin with empty endpoint
 	for _, upstream := range params.Snapshot.Upstreams {
-		key := UpstreamToClusterName(&core.ResourceRef{
-			Name:      upstream.GetMetadata().GetName(),
-			Namespace: upstream.GetMetadata().GetNamespace(),
-		})
+
+		key := upstreamToClusterName(upstream)
 		upstreamMap[key] = struct{}{}
 	}
 	endpointMap := make(map[string][]*envoy_config_endpoint_v3.ClusterLoadAssignment, len(endpoints))
