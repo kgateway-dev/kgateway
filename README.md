@@ -40,42 +40,14 @@ Install Gloo Gateway and set up routing to the httpbin sample app.
    kubectl rollout status deployment -n gloo-system -w
    ```
 
-3. Deploy the httpbin sample app.
+3. Deploy the httpbin sample app, along with a Gateway and HTTPRoute to access it.
    ```sh
-   kubectl create ns httpbin
-   kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo-mesh-use-cases/main/policy-demo/httpbin.yaml
+   kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo/v2.0.x/projects/gateway2/examples/httpbin.yaml
    ```
 
-4. Create an HTTPRoute resource to expose the httpbin app on the gateway. The following example exposes the app on the `wwww.example.com` domain.
-   ```yaml
-   kubectl apply -f- <<EOF
-   apiVersion: gateway.networking.k8s.io/v1beta1
-   kind: HTTPRoute
-   metadata:
-     name: httpbin
-     namespace: httpbin
-      labels:
-        example: httpbin-route
-   spec:
-     parentRefs:
-       - name: http
-         namespace: gloo-system
-     hostnames:
-       - "www.example.com"
-     rules:
-       - backendRefs:
-           - name: httpbin
-             port: 8000
-   EOF
-   ```
-
-5. Port-forward the HTTP gateway service.
+4. Send a request to the httpbin app and verify that you get back a 200 HTTP response code
    ```sh
    kubectl port-forward svc -n gloo-system gloo-proxy-http 8080:8080 &
-   ```
-
-6. Send a request to the httpbin app and verify that you get back a 200 HTTP response code.
-   ```
    curl -vik localhost:8080/status/200 -H "host: www.example.com"
    ```
 
