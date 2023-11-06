@@ -3,12 +3,12 @@ package translator_test
 import (
 	"context"
 	"log"
-	"reflect"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -36,7 +36,28 @@ func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
 		return false, err
 	}
 
-	return reflect.DeepEqual(proxy, actual.ProxyResult), nil
+	if len(proxy.ListenerAndRoutes) != len(actual.ProxyResult.ListenerAndRoutes) {
+		return false, nil
+	}
+
+	for i := range proxy.ListenerAndRoutes {
+		v1 := protoreflect.ValueOf(proxy.ListenerAndRoutes[i].Listener.ProtoReflect())
+		v2 := protoreflect.ValueOf(actual.ProxyResult.ListenerAndRoutes[i].Listener.ProtoReflect())
+		if !v1.Equal(v2) {
+			return false, nil
+		}
+		if len(proxy.ListenerAndRoutes[i].RouteConfigs) != len(actual.ProxyResult.ListenerAndRoutes[i].RouteConfigs) {
+			return false, nil
+		}
+		for j := range proxy.ListenerAndRoutes[i].RouteConfigs {
+			v1 := protoreflect.ValueOf(proxy.ListenerAndRoutes[i].RouteConfigs[j].ProtoReflect())
+			v2 := protoreflect.ValueOf(actual.ProxyResult.ListenerAndRoutes[i].RouteConfigs[j].ProtoReflect())
+			if !v1.Equal(v2) {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }
 
 // map of gwv1.GW namespace/name to translation result
