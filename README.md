@@ -1,14 +1,14 @@
 
 
 <h1 align="center">
-    <img src="https://docs.solo.io/gloo-gateway/latest/img/logo.png" alt="Gloo Gateway v1 (formerly Gloo Edge)" width="200" height="155">
+    <img src="https://docs.solo.io/gloo-gateway/latest/img/logo.png" alt="Gloo Gateway v1 (formerly Gloo Edge)" width="500" height="155">
   <br>
   An Envoy-Powered API Gateway
 </h1>
 
 ---
 
-**Important updates**
+**IMPORTANT UPDATES:**</br>
 Gloo Edge was renamed to Gloo Gateway to align with Solo's support for the Kubernetes Gateway API. The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find out more about the new Gloo Gateway v2 API that is based on the Kubernetes Gateway API, see the v2 branch. 
 
 ---
