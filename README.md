@@ -7,7 +7,8 @@
 </h1>
 
 # Important update
-Gloo Edge was renamed to Gloo Gateway to align with Solo's support for the Kubernetes Gateway API. The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find out more about the new Gloo Gateway v2 API that is based on the Kubernetes Gateway API, see the v2 branch. 
+> **Note**
+> Gloo Edge was renamed to Gloo Gateway to align with Solo's support for the Kubernetes Gateway API. The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find out more about the new Gloo Gateway v2 API that is based on the Kubernetes Gateway API, see the v2 branch. 
 
 ## About Gloo Gateway
 
