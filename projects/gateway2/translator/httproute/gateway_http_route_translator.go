@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,11 +97,8 @@ func translateGatewayHTTPRouteRule(
 
 	routes := make([]*routev3.Route, 0, len(rule.Matches))
 	for _, match := range rule.Matches {
-		outputRoute := &routev3.Route{
-			Match:    translateGlooMatcher(match),
-			Action:   baseOutputRoute.Action,
-			Metadata: baseOutputRoute.Metadata,
-		}
+		outputRoute := proto.Clone(baseOutputRoute).(*routev3.Route)
+		outputRoute.Match = translateGlooMatcher(match)
 		routes = append(routes, outputRoute)
 	}
 	return routes
