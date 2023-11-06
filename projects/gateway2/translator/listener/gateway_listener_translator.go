@@ -40,8 +40,8 @@ type FilterChainInfo struct {
 }
 
 type ListenerAndRoutes struct {
-	Listener     *listenerv3.Listener
-	RouteConfigs []*routev3.RouteConfiguration
+	Listener     *listenerv3.Listener          `json:"listener"`
+	RouteConfigs []*routev3.RouteConfiguration `json:"route_configs"`
 }
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)

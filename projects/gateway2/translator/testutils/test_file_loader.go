@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
+	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/skv2/contrib/pkg/sets"
 )
@@ -150,7 +151,7 @@ func truncateString(str string, num int) string {
 	return result
 }
 
-func ReadProxyFromFile(filename string) (*v1.Proxy, error) {
+func ReadProxyFromFile(filename string) ([]listener.ListenerAndRoutes, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, eris.Wrapf(err, "reading proxy file")

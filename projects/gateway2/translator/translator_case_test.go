@@ -7,8 +7,8 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
+	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -21,21 +21,21 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy   *v1.Proxy
-	Reports map[string]*reports.GatewayReport
+	ListenerAndRoutes []listener.ListenerAndRoutes
+	Reports           map[string]*reports.GatewayReport
 }
 
 type ExpectedTestResult struct {
-	Proxy   string
-	Reports map[string]*reports.GatewayReport
+	ExpectedOutput string
+	Reports        map[string]*reports.GatewayReport
 }
 
 func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
-	proxy, err := testutils.ReadProxyFromFile(r.Proxy)
+	proxy, err := testutils.ReadProxyFromFile(r.ExpectedOutput)
 	if err != nil {
 		return false, err
 	}
-	return proxy.Equal(actual.Proxy), nil
+	return proxy.Equal(actual.ListenerAndRoutes), nil
 }
 
 // map of gwv1.GW namespace/name to translation result
@@ -73,7 +73,7 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 		reporter, reportsMap := testutils.BuildReporter()
 
 		// translate gateway
-		proxy := NewTranslator().TranslateProxy(
+		listenerRoutes := NewTranslator().TranslateProxy(
 			ctx,
 			gw,
 			queries,
@@ -81,7 +81,7 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 		)
 
 		if logActual {
-			actualYam, err := testutils.MarshalYaml(proxy)
+			actualYam, err := testutils.MarshalYaml(listenerRoutes)
 			if err != nil {
 				return nil, err
 			}
@@ -89,8 +89,8 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 		}
 
 		actual := ActualTestResult{
-			Proxy:   proxy,
-			Reports: reportsMap,
+			ListenerAndRoutes: listenerRoutes,
+			Reports:           reportsMap,
 		}
 
 		expected, ok := tc.ResultsByGateway[ref]
