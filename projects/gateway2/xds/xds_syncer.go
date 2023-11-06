@@ -173,6 +173,7 @@ func (s *XdsSyncer) Start(
 		}
 		r := reports.NewReporter(rm)
 		for _, gw := range gwl.Items {
+			gw := gw
 			lr := t.TranslateProxy(ctx, &gw, queries, r)
 			if lr != nil {
 				listenersAndRoutesForGateway[&gw] = *lr
