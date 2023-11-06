@@ -51,7 +51,7 @@ jobs:
       with:
         go-version: "1.21"
     - name: "Build glooctl"
-      run: make glooctl-linux-amd64 glooctl-linux-arm64 glooctl-darwin-amd64 glooctl-darwin-arm64 TAGGED_VERSION=${{  github.ref_name }}
+      run: make glooctl-linux-amd64.sha256 glooctl-linux-arm64.sha256 glooctl-darwin-amd64.sha256 glooctl-darwin-arm64.sha256 TAGGED_VERSION=${{  github.ref_name }}
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
