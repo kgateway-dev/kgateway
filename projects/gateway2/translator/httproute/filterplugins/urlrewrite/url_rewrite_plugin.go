@@ -4,6 +4,7 @@ import (
 	"context"
 
 	errors "github.com/rotisserie/eris"
+	matcherv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -34,11 +35,18 @@ func (p *Plugin) ApplyFilter(
 	if config.Path != nil {
 		switch config.Path.Type {
 		case gwv1.FullPathHTTPPathModifier:
-			// TODO: Gloo Edge API doesn't seem to support this.
-			return errors.Errorf("Unsupported UrlRewrite type")
+			if config.Path.ReplacePrefixMatch == nil {
+				return errors.Errorf("UrlRewrite filter supplied with Full Path rewrite type, but no Full Path supplied")
+			}
+			outputRoute.Options.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
+				Pattern: &matcherv3.RegexMatcher{
+					Regex: "/.+",
+				},
+				Substitution: *config.Path.ReplaceFullPath,
+			}
 		case gwv1.PrefixMatchHTTPPathModifier:
 			if config.Path.ReplacePrefixMatch == nil {
-				return errors.Errorf("UrlRewrite filter supplied does with prefix rewrite type, but no prefix supplied")
+				return errors.Errorf("UrlRewrite filter supplied with prefix rewrite type, but no prefix supplied")
 			}
 			outputRoute.GetOptions().PrefixRewrite = &wrapperspb.StringValue{
 				Value: *config.Path.ReplacePrefixMatch,

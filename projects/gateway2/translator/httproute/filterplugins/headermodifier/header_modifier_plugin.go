@@ -108,11 +108,3 @@ func translateResponseHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*headers.
 	}
 	return envoyHeaders
 }
-
-func mapHeaders[T any, V any](headers []T, transform func(T) V) []V {
-	var result []V
-	for _, header := range headers {
-		result = append(result, transform(header))
-	}
-	return result
-}
