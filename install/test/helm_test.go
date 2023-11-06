@@ -4401,6 +4401,30 @@ metadata:
 							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()).To(Equal("350Mi"))
 							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().String()).To(Equal("450m"))
 						})
+
+						Context("Timeout waiting for the resource rollout job", func() {
+							It("sets the default value when none specified", func() {
+								prepareMakefile(namespace, helmValues{valuesArgs: []string{}})
+
+								rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
+								Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=120s || exit 1"))
+
+								rolloutCheckJob := getJob(testManifest, namespace, "gloo-resource-rollout-check")
+								Expect(rolloutCheckJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=120s || exit 1"))
+							})
+
+							It("sets the custom values specified", func() {
+								prepareMakefile(namespace, helmValues{valuesArgs: []string{
+									"gateway.rolloutJob.timeout=800",
+								}})
+
+								rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
+								Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=800s || exit 1"))
+
+								rolloutCheckJob := getJob(testManifest, namespace, "gloo-resource-rollout-check")
+								Expect(rolloutCheckJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=800s || exit 1"))
+							})
+						})
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
@@ -5103,6 +5127,17 @@ metadata:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"discovery.udsOptions.watchLabels.A=B",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
+					It("allows setting translateEmptyGateways for gateway translation", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/translate_empty_gateway.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.validation.enabled=false",
+								"gateway.translateEmptyGateways=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))

@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package tap.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tap";
+
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "validate/validate.proto";
+import "google/protobuf/duration.proto";
+
+// Tap filter: a filter that copies the contents of HTTP requests and responses
+// to an external tap server. The full HTTP headers and bodies are reported in
+// full to the configured address, and data can be reported using either over
+// HTTP or GRPC.
+message Tap {
+  // Sinks to which tap data should be output. Currently, only a single sink
+  // is supported.
+  repeated Sink sinks = 1 [(validate.rules).repeated = {max_items: 1, min_items: 1}];
+}
+
+message Sink {
+  // The type of the output sink to which tap data should be written
+  oneof SinkType {
+    option (validate.required) = true;
+    // Write tap data out to a GRPC service
+    GrpcService grpc_service = 1;
+
+    // Write tap data out to a HTTP service
+    HttpService http_service = 2;
+  }
+}
+
+// A tap sink over a GRPC service
+message GrpcService {
+  // Upstream reference to the tap server
+  core.solo.io.ResourceRef tap_server = 1 [(validate.rules).message = {required: true}];
+}
+
+// A tap sink over a HTTP service
+message HttpService {
+  // Upstream reference to the tap server
+  core.solo.io.ResourceRef tap_server = 1 [(validate.rules).message = {required: true}];
+
+  // Connection timeout
+  google.protobuf.Duration timeout = 2 [(validate.rules).message = {required: true}];
+}
