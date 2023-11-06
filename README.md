@@ -8,13 +8,13 @@
 
 ## Important Update
 
-> **Note**
+> **Important**
 > Gloo Gateway is now fully a conformant Kubernetes Gateway API implementation!
 >
 > The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find the latest version for the Gloo Edge v1 API, see the [main branch](https://github.com/solo-io/gloo/tree/main).
 
 ## Quickstart
-Install Gloo Gateway and 
+Install Gloo Gateway and set up routing to the httpbin sample app. 
 
 1. Install `glooctl`, the Gloo Gateway command line tool.
    ```sh
@@ -65,6 +65,11 @@ Install Gloo Gateway and
    ```
    curl -vik localhost:8080/status/200 -H "host: www.example.com"
    ```
+
+> **Note**
+> To learn more about Gloo Gateway's support for the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gloo-gateway/v2/).
+>
+> The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find the latest version for the Gloo Edge v1 API, see the [main branch](https://github.com/solo-io/gloo/tree/main).
 
 ## About Gloo Gateway
 Gloo Gateway is a feature-rich, Kubernetes-native ingress controller and next-generation API gateway based on the Kubernetes Gateway API. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications in which multiple technologies, architectures, protocols, and clouds can coexist.
