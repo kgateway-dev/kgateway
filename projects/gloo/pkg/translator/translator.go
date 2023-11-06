@@ -42,18 +42,24 @@ type Translator interface {
 		params plugins.Params,
 		proxy *v1.Proxy,
 	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport)
+	TranslateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
+		[]*envoy_config_cluster_v3.Cluster,
+		[]*envoy_config_endpoint_v3.ClusterLoadAssignment,
+	)
 }
 
 var (
 	_ Translator = new(translatorInstance)
 )
 
+type ResourceHasher func(resources []envoycache.Resource) (uint64, error)
+
 // translatorInstance is the implementation for a Translator used during Gloo translation
 type translatorInstance struct {
 	lock                      sync.Mutex
 	pluginRegistry            plugins.PluginRegistry
 	settings                  *v1.Settings
-	hasher                    func(resources []envoycache.Resource) (uint64, error)
+	hasher                    ResourceHasher
 	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
 }
 
@@ -103,7 +109,7 @@ func (t *translatorInstance) Translate(
 
 	// execute translation of listener and cluster subsystems
 	// during these translations, params.messages is side effected for the reports to use later in this loop
-	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
+	clusters, endpoints := t.TranslateClusterSubsystemComponents(params, proxy, reports)
 	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
 	// run Resource Generator Plugins
 	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
@@ -117,7 +123,7 @@ func (t *translatorInstance) Translate(
 		listeners = append(listeners, generatedListeners...)
 	}
 
-	xdsSnapshot := t.generateXDSSnapshot(params, clusters, endpoints, routeConfigs, listeners)
+	xdsSnapshot := GenerateXDSSnapshot(params.Ctx, t.hasher, clusters, endpoints, routeConfigs, listeners)
 
 	if err := validation.GetProxyError(proxyReport); err != nil {
 		reports.AddError(proxy, err)
@@ -142,7 +148,7 @@ func upstreamToClusterName(upstream *v1.Upstream) string {
 	})
 }
 
-func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
+func (t *translatorInstance) TranslateClusterSubsystemComponents(params plugins.Params, proxy *v1.Proxy, reports reporter.ResourceReports) (
 	[]*envoy_config_cluster_v3.Cluster,
 	[]*envoy_config_endpoint_v3.ClusterLoadAssignment,
 ) {
@@ -272,8 +278,9 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 	return routeConfigs, listeners
 }
 
-func (t *translatorInstance) generateXDSSnapshot(
-	params plugins.Params,
+func GenerateXDSSnapshot(
+	ctx context.Context,
+	hasher ResourceHasher,
 	clusters []*envoy_config_cluster_v3.Cluster,
 	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
@@ -296,17 +303,17 @@ func (t *translatorInstance) generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion, endpointsErr := t.hasher(endpointsProto)
+	endpointsVersion, endpointsErr := hasher(endpointsProto)
 	if endpointsErr != nil {
-		contextutils.LoggerFrom(params.Ctx).DPanic(fmt.Sprintf("error trying to hash endpointsProto: %v", endpointsErr))
+		contextutils.LoggerFrom(ctx).DPanic(fmt.Sprintf("error trying to hash endpointsProto: %v", endpointsErr))
 	}
-	clustersVersion, clustersErr := t.hasher(clustersProto)
+	clustersVersion, clustersErr := hasher(clustersProto)
 	if clustersErr != nil {
-		contextutils.LoggerFrom(params.Ctx).DPanic(fmt.Sprintf("error trying to hash clustersProto: %v", clustersErr))
+		contextutils.LoggerFrom(ctx).DPanic(fmt.Sprintf("error trying to hash clustersProto: %v", clustersErr))
 	}
-	listenersVersion, listenersErr := t.hasher(listenersProto)
+	listenersVersion, listenersErr := hasher(listenersProto)
 	if listenersErr != nil {
-		contextutils.LoggerFrom(params.Ctx).DPanic(fmt.Sprintf("error trying to hash listenersProto: %v", listenersErr))
+		contextutils.LoggerFrom(ctx).DPanic(fmt.Sprintf("error trying to hash listenersProto: %v", listenersErr))
 	}
 
 	// if clusters are updated, provider a new version of the endpoints,

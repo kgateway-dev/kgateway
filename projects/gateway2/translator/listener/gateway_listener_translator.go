@@ -280,21 +280,13 @@ func (ml *mergedListener) translateListener(
 			continue
 		}
 
-		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
-			ctx,
-			ml.name,
-			ml.gatewayNamespace,
-			plugins,
-			reporter,
-		)
-
-		routeConfigName := MatchedRouteConfigName(ml.name, httpFilterChain)
+		routeConfigName := MatchedRouteConfigName(ml.name, httpsFilterChain)
 		rc := newRouteConfig(routeConfigName, vhostsForFilterchain)
 		hcm := initializeHCM(routeConfigName)
 		hcm.HttpFilters = computeHttpFilters()
 		res.RouteConfigs = append(res.RouteConfigs, rc)
 
-		res.Listener.FilterChains = append(res.Listener.FilterChains, makeFilterChain(httpFilterChain, hcm))
+		res.Listener.FilterChains = append(res.Listener.FilterChains, makeFilterChain(httpsFilterChain, hcm))
 
 	}
 

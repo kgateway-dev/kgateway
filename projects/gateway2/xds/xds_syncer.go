@@ -8,12 +8,15 @@ import (
 	"slices"
 	"time"
 
+	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
@@ -164,7 +167,7 @@ func (s *XdsSyncer) Start(
 		}
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
-		var listenersAndRoutes []listener.ListenerAndRoutes
+		listenersAndRoutesForGateway := map[*apiv1.Gateway][]listener.ListenerAndRoutes{}
 		rm := &reports.ReportMap{
 			Gateways: make(map[string]*reports.GatewayReport),
 			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
@@ -172,10 +175,12 @@ func (s *XdsSyncer) Start(
 		r := reports.NewReporter(rm)
 		for _, gw := range gwl.Items {
 			lr := t.TranslateProxy(ctx, &gw, queries, r)
-			listenersAndRoutes = append(listenersAndRoutes, lr...)
+			if lr != nil {
+				listenersAndRoutesForGateway[&gw] = lr
+			}
 			//TODO: handle reports and process statuses
 		}
-		s.syncEnvoy(ctx, listenersAndRoutes, proxyApiSnapshot)
+		s.syncEnvoy(ctx, listenersAndRoutesForGateway, proxyApiSnapshot)
 		s.syncStatus(ctx, *rm, gwl)
 		s.syncRouteStatus(ctx, *rm)
 	}
@@ -200,9 +205,19 @@ func (s *XdsSyncer) Start(
 	}
 }
 
+func proxyMetadata(gateway *apiv1.Gateway) *core.Metadata {
+	// TODO(ilackarms) what should the proxy ID be
+	// ROLE ON ENVOY MUST MATCH <proxy_namespace>~<proxy_name>
+	// equal to role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
+	return &core.Metadata{
+		Name:      gateway.Name,
+		Namespace: gateway.Namespace,
+	}
+}
+
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 // NOTE(ilackarms): the below code was copy-pasted (with some deletions) from projects/gloo/pkg/syncer/translator_syncer.go
-func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutes []listener.ListenerAndRoutes, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
+func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway][]listener.ListenerAndRoutes, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -244,8 +259,13 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutes []listener
 			}
 		}
 	}
-	for _, proxy := range snap.Proxies {
+	for gw, listenersAndRoutes := range listenersAndRoutesForGateway {
 		proxyCtx := ctx
+
+		proxy := &gloov1.Proxy{
+			Metadata: proxyMetadata(gw),
+		}
+
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
 			proxyCtx = ctxWithTags
 		}
@@ -255,8 +275,18 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutes []listener
 			Snapshot: snap,
 			Messages: map[*core.ResourceRef][]string{},
 		}
+		reports := make(reporter.ResourceReports)
 
-		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)
+		clusters, endpoints := s.translator.TranslateClusterSubsystemComponents(params, proxy, reports)
+
+		// replace listeners and routes with the ones we generated
+		var listeners []*listenerv3.Listener
+		var routes []*routev3.RouteConfiguration
+		for _, listenerAndRoutes := range listenersAndRoutes {
+			routes = append(routes, listenerAndRoutes.RouteConfigs...)
+			listeners = append(listeners, listenerAndRoutes.Listener)
+		}
+		xdsSnapshot := translator.GenerateXDSSnapshot(ctx, translator.EnvoyCacheResourcesListToFnvHash, clusters, endpoints, routes, listeners)
 
 		// Messages are aggregated during translation, and need to be added to reports
 		for _, messages := range params.Messages {

@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -79,14 +78,4 @@ func (t *translator) TranslateProxy(
 	)
 
 	return listeners
-}
-
-func proxyMetadata(gateway *gwv1.Gateway) *core.Metadata {
-	// TODO(ilackarms) what should the proxy ID be
-	// ROLE ON ENVOY MUST MATCH <proxy_namespace>~<proxy_name>
-	// equal to role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
-	return &core.Metadata{
-		Name:      gateway.Name,
-		Namespace: gateway.Namespace,
-	}
 }
