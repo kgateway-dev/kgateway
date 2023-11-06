@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://github.com/solo-io/gloo-mesh-enterprise/blob/main/docs/content/gateway/img/logo.svg" alt="Gloo Gateway v1 (formerly Gloo Edge)" width="600" height="155">
+    <img src="https://docs.solo.io/gloo-gateway/latest/img/logo.png" alt="Gloo Gateway v1 (formerly Gloo Edge)" width="600" height="155">
   <br>
   An Envoy-Powered API Gateway
 </h1>
