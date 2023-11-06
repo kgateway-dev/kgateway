@@ -35,7 +35,7 @@ func (p *Plugin) ApplyFilter(
 	if config.Path != nil {
 		switch config.Path.Type {
 		case gwv1.FullPathHTTPPathModifier:
-			if config.Path.ReplacePrefixMatch == nil {
+			if config.Path.ReplaceFullPath == nil {
 				return errors.Errorf("UrlRewrite filter supplied with Full Path rewrite type, but no Full Path supplied")
 			}
 			outputRoute.Options.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
