@@ -139,7 +139,7 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 				continue
 			}
 
-			if v.Major != 1{
+			if v.Major != 1 {
 				continue
 			}
 
