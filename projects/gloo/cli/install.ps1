@@ -20,7 +20,7 @@ if ([string]::IsNullOrEmpty($GLOO_VERSION)) {
 
     $GLOO_VERSIONS = New-Object System.Collections.Generic.List[System.Object]
     foreach ($release in $GLOO_RELEASES) {
-        if (-Not ($release.tag_name.Contains("-beta") -Or $release.tag_name.Contains("-patch"))) {
+        if (-Not ($release.tag_name.Contains("-beta") -Or $release.tag_name.Contains("-patch") -Or $release.tag_name.Contains("v2"))) {
             $GLOO_VERSIONS.Add($release.tag_name)
         }
     }
