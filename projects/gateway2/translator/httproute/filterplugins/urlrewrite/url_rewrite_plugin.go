@@ -40,7 +40,7 @@ func (p *Plugin) ApplyFilter(
 			}
 			outputRoute.Options.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
 				Pattern: &matcherv3.RegexMatcher{
-					Regex: "/.+",
+					Regex: ".*",
 				},
 				Substitution: *config.Path.ReplaceFullPath,
 			}
