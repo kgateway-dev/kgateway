@@ -9,7 +9,7 @@
 ## Important Update
 
 > **Important**
-> Gloo Gateway is now fully a conformant Kubernetes Gateway API implementation!
+> Gloo Gateway is now a fully conformant Kubernetes Gateway API implementation!
 >
 > The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find the latest version for the Gloo Edge v1 API, see the [main branch](https://github.com/solo-io/gloo/tree/main).
 
