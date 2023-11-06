@@ -3,11 +3,11 @@ package translator_test
 import (
 	"context"
 	"log"
+	"reflect"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
-	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,21 +21,22 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	ListenerAndRoutes []listener.ListenerAndRoutes
-	Reports           map[string]*reports.GatewayReport
+	ProxyResult ProxyResult
+	Reports     map[string]*reports.GatewayReport
 }
 
 type ExpectedTestResult struct {
-	ExpectedOutput string
-	Reports        map[string]*reports.GatewayReport
+	ProxyResult string
+	Reports     map[string]*reports.GatewayReport
 }
 
 func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
-	proxy, err := testutils.ReadProxyFromFile(r.ExpectedOutput)
+	proxy, err := testutils.ReadProxyFromFile(r.ProxyResult)
 	if err != nil {
 		return false, err
 	}
-	return proxy.Equal(actual.ListenerAndRoutes), nil
+
+	return reflect.DeepEqual(proxy, actual.ProxyResult), nil
 }
 
 // map of gwv1.GW namespace/name to translation result
@@ -73,7 +74,7 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 		reporter, reportsMap := testutils.BuildReporter()
 
 		// translate gateway
-		listenerRoutes := NewTranslator().TranslateProxy(
+		proxyResult := NewTranslator().TranslateProxy(
 			ctx,
 			gw,
 			queries,
@@ -81,16 +82,16 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 		)
 
 		if logActual {
-			actualYam, err := testutils.MarshalYaml(listenerRoutes)
+			actualYam, err := testutils.MarshalYamlProxyResult(*proxyResult)
 			if err != nil {
 				return nil, err
 			}
-			log.Print("actualYam: \n---\n", string(actualYam), "\n---\n")
+			log.Print("actualYaml: \n---\n", string(actualYam), "\n---\n")
 		}
 
 		actual := ActualTestResult{
-			ListenerAndRoutes: listenerRoutes,
-			Reports:           reportsMap,
+			ProxyResult: *proxyResult,
+			Reports:     reportsMap,
 		}
 
 		expected, ok := tc.ResultsByGateway[ref]

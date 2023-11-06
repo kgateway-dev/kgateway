@@ -12,6 +12,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+type ProxyResult struct {
+	ListenerAndRoutes []listener.ListenerAndRoutes `json:"listener_and_routes"`
+}
+
 // K8sGwTranslator This translator Translates K8s Gateway resources into Gloo Edege Proxies.
 type K8sGwTranslator interface {
 	// TranslateProxy This function is called by the reconciler when a K8s Gateway resource is created or updated.
@@ -22,7 +26,7 @@ type K8sGwTranslator interface {
 		gateway *gwv1.Gateway,
 		queries query.GatewayQueries,
 		reporter reports.Reporter,
-	) []listener.ListenerAndRoutes
+	) *ProxyResult
 }
 
 func NewTranslator() K8sGwTranslator {
@@ -40,7 +44,7 @@ func (t *translator) TranslateProxy(
 	gateway *gwv1.Gateway,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
-) []listener.ListenerAndRoutes {
+) *ProxyResult {
 	if !listener.ValidateGateway(gateway, queries, reporter) {
 		return nil
 	}
@@ -77,5 +81,5 @@ func (t *translator) TranslateProxy(
 		reporter,
 	)
 
-	return listeners
+	return &ProxyResult{ListenerAndRoutes: listeners}
 }

@@ -3,6 +3,8 @@ package testutils
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,7 +13,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -22,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
+	"github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/skv2/contrib/pkg/sets"
 )
@@ -151,20 +152,33 @@ func truncateString(str string, num int) string {
 	return result
 }
 
-func ReadProxyFromFile(filename string) ([]listener.ListenerAndRoutes, error) {
+func ReadProxyFromFile(filename string) (translator.ProxyResult, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, eris.Wrapf(err, "reading proxy file")
+		return translator.ProxyResult{}, eris.Wrapf(err, "reading proxy file")
 	}
-	var proxy v1.Proxy
-	if err := protoutils.UnmarshalYaml(data, &proxy); err != nil {
-		return nil, eris.Wrapf(err, "parsing proxy from file")
+	var proxy translator.ProxyResult
+	jsn, err := yaml.YAMLToJSON([]byte(data))
+	if err != nil {
+		return translator.ProxyResult{}, fmt.Errorf("error parsing yaml: %w", err)
 	}
-	return &proxy, nil
+	err = json.Unmarshal(jsn, &proxy)
+	if err != nil {
+		return translator.ProxyResult{}, fmt.Errorf("error parsing json: %w", err)
+	}
+	return proxy, nil
 }
 
 func MarshalYaml(m proto.Message) ([]byte, error) {
 	jsn, err := protoutils.MarshalBytes(m)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.JSONToYAML(jsn)
+}
+
+func MarshalYamlProxyResult(lr translator.ProxyResult) ([]byte, error) {
+	jsn, err := json.Marshal(lr)
 	if err != nil {
 		return nil, err
 	}

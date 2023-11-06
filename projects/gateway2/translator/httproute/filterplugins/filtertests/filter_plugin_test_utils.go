@@ -10,13 +10,12 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func AssertExpectedRoute(
 	plugin filterplugins.FilterPlugin,
-	filter gwv1.HTTPRouteFilter, expectedRoute *v1.Route, logActual bool) {
+	filter gwv1.HTTPRouteFilter, expectedRoute *routev3.Route, logActual bool) {
 	ctx := context.TODO()
 	outputRoute := &routev3.Route{}
 	err := plugin.ApplyFilter(

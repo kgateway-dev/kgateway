@@ -18,12 +18,12 @@ var _ = Describe("GatewayTranslator", func() {
 			Name:       "basic-http-routing",
 			InputFiles: []string{dir + "/testutils/inputs/http-routing"},
 			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
-				types.NamespacedName{
+				{
 					Namespace: "default",
 					Name:      "example-gateway",
 				}: {
-					Proxy:   dir + "/testutils/outputs/http-routing-proxy.yaml",
-					Reports: nil,
+					ProxyResult: dir + "/testutils/outputs/http-routing-proxy.yaml",
+					Reports:     nil,
 				},
 			},
 		}.Run(ctx, false)

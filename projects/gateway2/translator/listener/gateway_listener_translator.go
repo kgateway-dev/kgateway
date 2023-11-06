@@ -1,7 +1,9 @@
 package listener
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -10,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	"google.golang.org/protobuf/encoding/protojson"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -43,6 +46,76 @@ type ListenerAndRoutes struct {
 	Listener     *listenerv3.Listener          `json:"listener"`
 	RouteConfigs []*routev3.RouteConfiguration `json:"route_configs"`
 }
+
+// UnmarshalJSON implements json.Unmarshaler. Used in tests
+func (o *ListenerAndRoutes) UnmarshalJSON(data []byte) error {
+
+	var tmp struct {
+		Listener     any   `json:"listener"`
+		RouteConfigs []any `json:"route_configs"`
+	}
+
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	listenerJson, err := json.Marshal(tmp.Listener)
+	if err != nil {
+		return err
+	}
+	jsonpbUnmarshaler := &protojson.UnmarshalOptions{}
+
+	listener := new(listenerv3.Listener)
+	err = jsonpbUnmarshaler.Unmarshal(listenerJson, listener)
+	if err != nil {
+		return err
+	}
+	o.Listener = listener
+
+	for _, rc := range tmp.RouteConfigs {
+		rcJson, err := json.Marshal(rc)
+		if err != nil {
+			return err
+		}
+
+		routeConfig := &routev3.RouteConfiguration{}
+		err = jsonpbUnmarshaler.Unmarshal(rcJson, routeConfig)
+		if err != nil {
+			return err
+		}
+
+		o.RouteConfigs = append(o.RouteConfigs, routeConfig)
+	}
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler. Used in tests
+func (lr *ListenerAndRoutes) MarshalJSON() ([]byte, error) {
+	jsonpbMarshaler := &protojson.MarshalOptions{UseProtoNames: false}
+	listenerJson, err := jsonpbMarshaler.Marshal(lr.Listener)
+	if err != nil {
+		return nil, err
+	}
+
+	out := bytes.NewBuffer(nil)
+	fmt.Fprintf(out, "{\"listener\": %s, \"route_configs\": [", string(listenerJson))
+	for i, rc := range lr.RouteConfigs {
+		rcJson, err := jsonpbMarshaler.Marshal(rc)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(out, "%s", string(rcJson))
+		if i != len(lr.RouteConfigs)-1 {
+			fmt.Fprintf(out, ",")
+		}
+	}
+	fmt.Fprintf(out, "]}")
+
+	return out.Bytes(), nil
+}
+
+var _ json.Unmarshaler = new(ListenerAndRoutes)
+var _ json.Marshaler = new(ListenerAndRoutes)
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(

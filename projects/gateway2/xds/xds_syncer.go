@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
-	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -167,7 +166,7 @@ func (s *XdsSyncer) Start(
 		}
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
-		listenersAndRoutesForGateway := map[*apiv1.Gateway][]listener.ListenerAndRoutes{}
+		listenersAndRoutesForGateway := map[*apiv1.Gateway]gloot.ProxyResult{}
 		rm := &reports.ReportMap{
 			Gateways: make(map[string]*reports.GatewayReport),
 			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
@@ -176,7 +175,7 @@ func (s *XdsSyncer) Start(
 		for _, gw := range gwl.Items {
 			lr := t.TranslateProxy(ctx, &gw, queries, r)
 			if lr != nil {
-				listenersAndRoutesForGateway[&gw] = lr
+				listenersAndRoutesForGateway[&gw] = *lr
 			}
 			//TODO: handle reports and process statuses
 		}
@@ -217,7 +216,7 @@ func proxyMetadata(gateway *apiv1.Gateway) *core.Metadata {
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 // NOTE(ilackarms): the below code was copy-pasted (with some deletions) from projects/gloo/pkg/syncer/translator_syncer.go
-func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway][]listener.ListenerAndRoutes, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
+func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway]gloot.ProxyResult, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -282,7 +281,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		// replace listeners and routes with the ones we generated
 		var listeners []*listenerv3.Listener
 		var routes []*routev3.RouteConfiguration
-		for _, listenerAndRoutes := range listenersAndRoutes {
+		for _, listenerAndRoutes := range listenersAndRoutes.ListenerAndRoutes {
 			routes = append(routes, listenerAndRoutes.RouteConfigs...)
 			listeners = append(listeners, listenerAndRoutes.Listener)
 		}

@@ -1,45 +1,49 @@
----
-listeners:
-- aggregateListener:
-    httpFilterChains:
-    - matcher: {}
-      virtualHostRefs:
-      - http~bar.example.com
-      - http~foo.example.com
-    httpResources:
-      virtualHosts:
-        http~bar.example.com:
-          domains:
-          - bar.example.com
-          name: http~bar.example.com
-          routes:
-          - matchers:
-            - headers:
-              - name: env
-                value: canary
-              prefix: /
-            options: {}
-            routeAction:
-              single:
-                upstream:
-                  name: default-bar-svc-canary-8080
-                  namespace: default
-        http~foo.example.com:
-          domains:
-          - foo.example.com
-          name: http~foo.example.com
-          routes:
-          - matchers:
-            - prefix: /login
-            options: {}
-            routeAction:
-              single:
-                upstream:
-                  name: default-foo-svc-8080
-                  namespace: default
-  bindAddress: '::'
-  bindPort: 8080
-  name: http
-metadata:
-  name: example-gateway
-  namespace: default
+listener_and_routes:
+- listener:
+    address:
+      socketAddress:
+        address: '::'
+        ipv4Compat: true
+        portValue: 8080
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
+          rds:
+            configSource:
+              ads: {}
+              resourceApiVersion: V3
+            routeConfigName: http-routes
+          statPrefix: http
+    name: http
+  route_configs:
+  - ignorePortInHostMatching: true
+    name: http-routes
+    virtualHosts:
+    - domains:
+      - bar.example.com
+      name: http~bar.example.com
+      routes:
+      - match:
+          headers:
+          - exactMatch: canary
+            name: env
+          prefix: /
+        route:
+          cluster: default-bar-svc-canary-8080
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+    - domains:
+      - foo.example.com
+      name: http~foo.example.com
+      routes:
+      - match:
+          pathSeparatedPrefix: /login
+        route:
+          cluster: default-foo-svc-8080
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
