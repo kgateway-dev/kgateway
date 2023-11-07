@@ -50,6 +50,10 @@ spec:
                               type: string
                             keyPath:
                               type: string
+                            labelSelector:
+                              additionalProperties:
+                                type: string
+                              type: object
                             namespace:
                               type: string
                             nodeTlsName:
@@ -169,8 +173,27 @@ spec:
                                 type: object
                               type: object
                           type: object
+                        encryption:
+                          properties:
+                            apr:
+                              type: object
+                            sha1:
+                              type: object
+                          type: object
                         realm:
                           type: string
+                        userList:
+                          properties:
+                            users:
+                              additionalProperties:
+                                properties:
+                                  hashedPassword:
+                                    type: string
+                                  salt:
+                                    type: string
+                                type: object
+                              type: object
+                          type: object
                       type: object
                     hmacAuth:
                       properties:

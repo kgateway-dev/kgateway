@@ -56,6 +56,8 @@ const versionBeforeGlooGatewayMerge = "1.11.0"
 
 const namespace = defaults.GlooSystem
 
+var glooDeploymentsToCheck []string
+
 var _ = Describe("Kube2e: helm", func() {
 
 	var (
@@ -100,6 +102,7 @@ var _ = Describe("Kube2e: helm", func() {
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 		strictValidation = false
 
+		glooDeploymentsToCheck = []string{"gloo", "discovery", "gateway-proxy"}
 		additionalInstallArgs = []string{}
 	})
 
@@ -245,15 +248,22 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 	})
 
-	// The aim of the test is to ensure that the readiness probe is configured on the gateway proxy
-	// and the gateway-proxy deployment is ready before helm marks the upgrade as successful.
-	// Ref: https://github.com/solo-io/gloo/issues/8288
-	Context("Custom readiness probe", func() {
-		var valuesFileForCustomReadinessProbe string
+	Context("Production recommendations", func() {
+		var valuesForProductionRecommendations []string
 		var expectGatewayProxyIsReady func()
 
 		BeforeEach(func() {
-			valuesFileForCustomReadinessProbe = getHelmUpgradeValuesOverrideFileForCustomReadinessProbe()
+			valuesForProductionRecommendations = getHelmValuesForProductionRecommendations()
+
+			// Since the production recommendation is to disable discovery, we remove it from the list of deployments to check to consider gloo is healthy
+			glooDeploymentsToCheck = []string{"gloo", "gateway-proxy"}
+
+			additionalInstallArgs = []string{
+				// Setting `settings.disableKubernetesDestinations` && `global.glooRbac.namespaced` leads to panic in gloo
+				// Ref: https://github.com/solo-io/gloo/issues/8801
+				"--set", "global.glooRbac.namespaced=false",
+			}
+			additionalInstallArgs = append(additionalInstallArgs, valuesForProductionRecommendations...)
 
 			expectGatewayProxyIsReady = func() {
 				Eventually(func() (string, error) {
@@ -274,31 +284,10 @@ var _ = Describe("Kube2e: helm", func() {
 			}
 		})
 
-		Context("On clean install", func() {
-			BeforeEach(func() {
-				additionalInstallArgs = []string{
-					"--values", valuesFileForCustomReadinessProbe,
-					"--wait",
-					"--wait-for-jobs",
-				}
-			})
-
-			It("succeeds adding a custom readiness probe and the gateway-proxy deployment is ready", func() {
-				expectGatewayProxyIsReady()
-			})
-		})
-
-		Context("On upgrade", func() {
-			It("succeeds adding a custom readiness probe and the gateway-proxy deployment is ready", func() {
-				settings := []string{
-					"--wait",
-					"--wait-for-jobs",
-				}
-
-				upgradeGlooWithCustomValuesFile(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, settings, valuesFileForCustomReadinessProbe)
-
-				expectGatewayProxyIsReady()
-			})
+		It("succeeds", func() {
+			// Since one of the production recommendations is to have a custom readiness probe, check if it is present on the proxy.
+			// The rest of them have their own unit / e2e tests.
+			expectGatewayProxyIsReady()
 		})
 	})
 
@@ -703,7 +692,10 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 		// So instead we use the service type as ClusterIP to work around this limitation.
 		"--set", "gatewayProxies.gatewayProxy.service.type=ClusterIP",
 		"-n", testHelper.InstallNamespace,
-		"--values", valueOverrideFile}
+	}
+	if valueOverrideFile != "" {
+		args = append(args, "--values", valueOverrideFile)
+	}
 	if targetRelease != "" {
 		args = append(args, "gloo/gloo",
 			"--version", fmt.Sprintf("%s", targetRelease))
@@ -745,12 +737,18 @@ func getHelmValuesFile(filename string) string {
 
 }
 
-func getHelmUpgradeValuesOverrideFileForCustomReadinessProbe() (filename string) {
-	return getHelmValuesFile("custom-readiness-probe.yaml")
-}
-
 func getHelmUpgradeValuesOverrideFile() (filename string) {
 	return getHelmValuesFile("upgrade-override.yaml")
+}
+
+func getHelmValuesForProductionRecommendations() []string {
+	return []string{
+		"--values", getHelmValuesFile("access-logging.yaml"),
+		"--values", getHelmValuesFile("custom-readiness-probe.yaml"),
+		"--values", getHelmValuesFile("horizontal-scaling.yaml"),
+		"--values", getHelmValuesFile("performance.yaml"),
+		"--values", getHelmValuesFile("safeguards.yaml"),
+	}
 }
 
 // return a base64-encoded proto descriptor to use for testing
@@ -783,8 +781,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 }
 
 func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
-	deploymentNames := []string{"gloo", "discovery", "gateway-proxy"}
-	for _, deploymentName := range deploymentNames {
+	for _, deploymentName := range glooDeploymentsToCheck {
 		runAndCleanCommand("kubectl", "rollout", "status", "deployment", "-n", testHelper.InstallNamespace, deploymentName)
 	}
 	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper, "90s")

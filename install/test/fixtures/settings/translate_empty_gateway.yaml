@@ -31,3 +31,4 @@ spec:
  kubernetesSecretSource: {}
  refreshRate: 60s
  discoveryNamespace: {{ . }}
+

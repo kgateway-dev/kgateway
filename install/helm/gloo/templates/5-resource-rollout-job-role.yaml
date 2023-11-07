@@ -9,6 +9,9 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before rollout job
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -19,6 +22,6 @@ rules:
 # This permission is required by the oss rollout job in order to wait for the enterprise rollout job to finish first
 - apiGroups: ["batch"]
   resources: ["jobs"]
-  verbs: ["get", "list", "delete"]
+  verbs: ["get", "list", "watch", "delete"]
 {{- end -}}{{/* if .Values.global.glooRbac.create */}}
 {{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}

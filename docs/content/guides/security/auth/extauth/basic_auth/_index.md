@@ -206,6 +206,66 @@ If the auth config has been received successfully, you should see the log line:
 "logger":"extauth","caller":"runner/run.go:179","msg":"got new config"
 ```
 
+### Extended configuration
+{{% notice warning %}}
+The auth configuration format that is shown on this page was introduced with [Gloo Edge Enterprise release 1.16.0]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}).
+To find the configuration format for an earlier version, see [Configuration format history]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/configuration_format_history/" >}}). 
+{{% /notice %}}
+
+An extended configuration is available that allows use of the SHA1 hashing algorithm instead of APR.
+
+The following configuration defines a list of users, and the salt and hashed password that they need to use to authenticate successfully. It uses APR encryption to store the credentials for the same user that was used in the previous example.
+
+{{< highlight shell "hl_lines=9-15" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: basic-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - basicAuth:
+      encryption:
+        apr: {}
+      userList:
+        users:
+          user:
+            salt: "TYiryv0/"
+            hashedPassword: "8BvzLUO9IfGPGGsPnAgSu1"
+{{< /highlight >}}
+
+You can change the encryption algorithm for the hashed password to SHA1 as shown in the following example. In this example, the username and salt remain the same and the hashedPassword needs to be recalculated and updated.
+
+{{< highlight shell "hl_lines=10" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: basic-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - basicAuth:
+      encryption:
+        sha1: {}
+      userList:
+        users:
+          user:
+            salt: "TYiryv0/"
+            hashedPassword: "010eb058a59f4ac5ba05639b0263cf91b4345fd6"
+{{< /highlight >}}
+
+The same `curls` should work with this config as the hashing algorithm only affects the hashed password stored on the server side.
+```shell
+curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl proxy url)/posts/1
+```
+
+The hashed password is case-insensitive as the alphabetic characters represent hexadecimal digits.
+
+When using the extended configuration, the `proxy-authorization` header is also supported.
+```shell
+curl -H "Proxy- Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(glooctl proxy url)/posts/1
+```
+
 ## Summary
 
 In this tutorial, we installed Gloo Edge Enterprise and created an unauthenticated Virtual Service that routes requests to a 

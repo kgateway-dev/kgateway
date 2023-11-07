@@ -1,3 +1,5 @@
+# The following setting is to ensure a zero downtime gateway rollout
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/advanced/zero-downtime-gateway-rollout/
 gateway:
   translateEmptyGateways: true
   validation:
@@ -27,3 +29,4 @@ gatewayProxies:
         failureThreshold: 2
         initialDelaySeconds: 5
         periodSeconds: 5
+

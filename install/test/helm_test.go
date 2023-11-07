@@ -4401,16 +4401,43 @@ metadata:
 							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()).To(Equal("350Mi"))
 							Expect(cleanupJob.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().String()).To(Equal("450m"))
 						})
+
+						Context("Timeout waiting for the resource rollout job", func() {
+							It("sets the default value when none specified", func() {
+								prepareMakefile(namespace, helmValues{valuesArgs: []string{}})
+
+								rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
+								Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=120s || exit 1"))
+
+								rolloutCheckJob := getJob(testManifest, namespace, "gloo-resource-rollout-check")
+								Expect(rolloutCheckJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=120s || exit 1"))
+							})
+
+							It("sets the custom values specified", func() {
+								prepareMakefile(namespace, helmValues{valuesArgs: []string{
+									"gateway.rolloutJob.timeout=800",
+								}})
+
+								rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
+								Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=800s || exit 1"))
+
+								rolloutCheckJob := getJob(testManifest, namespace, "gloo-resource-rollout-check")
+								Expect(rolloutCheckJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=800s || exit 1"))
+							})
+						})
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
 						prepareMakefile(namespace, helmValues{valuesArgs: []string{
+							"global.glooMtls.enabled=true",
 							"gateway.certGenJob.resources.requests.memory=64Mi",
 							"gateway.certGenJob.resources.requests.cpu=250m",
 							"gateway.certGenJob.resources.limits.memory=128Mi",
 							"gateway.certGenJob.resources.limits.cpu=500m",
+							"gateway.certGenJob.forceRotation=true",
+							"gateway.certGenJob.rotationDuration=30s",
 						}})
-						job := makeUnstructured(`
+						gwJob := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -4457,9 +4484,57 @@ spec:
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
             - "--force-rotation=true"
       restartPolicy: OnFailure
-
 `)
-						testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
+						testManifest.ExpectUnstructured(gwJob.GetKind(), gwJob.GetNamespace(), gwJob.GetName()).To(BeEquivalentTo(gwJob))
+
+						mtlsJob := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo-mtls-certgen
+  name: gloo-mtls-certgen
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "10"
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      labels:
+        gloo: gloo-mtls-certs
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: certgen
+      restartPolicy: OnFailure
+      containers:
+        - image: quay.io/solo-io/certgen:` + version + `
+          imagePullPolicy: IfNotPresent
+          name: certgen
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10101
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 250m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          args:
+            - "--secret-name=gloo-mtls-certs"
+            - "--svc-name=gloo"
+            - "--rotation-duration=30s"
+            - "--force-rotation=true"
+`)
+						testManifest.ExpectUnstructured(mtlsJob.GetKind(), mtlsJob.GetNamespace(), mtlsJob.GetName()).To(BeEquivalentTo(mtlsJob))
 
 						clusterRole := makeUnstructured(`
 

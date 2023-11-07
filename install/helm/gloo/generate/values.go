@@ -370,7 +370,7 @@ type Gateway struct {
 	IsolateVirtualHostsBySslConfig *bool             `json:"isolateVirtualHostsBySslConfig,omitempty" desc:"if true, Added support for the envoy.filters.listener.tls_inspector listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting."`
 	CompressedProxySpec            *bool             `json:"compressedProxySpec,omitempty" desc:"if true, enables compression for the Proxy CRD spec"`
 	PersistProxySpec               *bool             `json:"persistProxySpec,omitempty" desc:"Enable writing Proxy CRD to etcd. Disabled by default for performance."`
-	TranslateEmptyGateways         *bool             `json:"translateEmptyGateways,omitempty" desc:"If true, the gateways wil be translated into Envoy listeners even if no VirtualServices exist"`
+	TranslateEmptyGateways         *bool             `json:"translateEmptyGateways,omitempty" desc:"If true, the gateways will be translated into Envoy listeners even if no VirtualServices exist."`
 	Service                        *KubeResourceOverride
 }
 
@@ -416,6 +416,7 @@ type CertGenJob struct {
 	SetTtlAfterFinished *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished on the job. Defaults to true"`
 	FloatingUserId      *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	ForceRotation       *bool                 `json:"forceRotation,omitempty" desc:"If true, will create new certs even if the old one are still valid."`
+	RotationDuration    *string               `json:"rotationDuration,omitempty" desc:"Time duration string indicating the (environment-specific) expected time for all pods to pick up a secret update via SDS. This is only applicable to the mTLS certgen job and cron job. If this duration is too short, secret changes may not have time to propagate to all pods, and some requests may be dropped during cert rotation. Since we do 2 secret updates during a cert rotation, the certgen job is expected to run for at least twice this amount of time. If activeDeadlineSeconds is set on the job, make sure it is at least twice as long as the rotation duration, otherwise the certgen job might time out."`
 	RunAsUser           *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	Resources           *ResourceRequirements `json:"resources,omitempty"`
 	RunOnUpdate         *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
@@ -429,6 +430,7 @@ type RolloutJob struct {
 	Resources      *ResourceRequirements `json:"resources,omitempty"`
 	FloatingUserId *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser      *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	Timeout        *int                  `json:"timeout,omitempty" desc:"Time to wait in seconds until the job has completed. If it exceeds this limit, it is deemed to have failed. Defaults to 120"`
 }
 
 type CleanupJob struct {
@@ -747,6 +749,6 @@ type IstioIntegration struct {
 	LabelInstallNamespace       *bool   `json:"labelInstallNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label (or 'istio.io/rev=' if 'istioSidecarRevTag' field is also set) to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended."`
 	WhitelistDiscovery          *bool   `json:"whitelistDiscovery,omitempty" desc:"Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled."`
 	DisableAutoinjection        *bool   `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true, as some pods do not immediately work with an Istio sidecar without extra manual configuration."`
-	EnableIstioSidecarOnGateway *bool   `json:"enableIstioSidecarOnGateway,omitempty" desc:"Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if DisableAutoInjection is 'true'."`
-	IstioSidecarRevTag          *string `json:"istioSidecarRevTag,omitempty" desc:"Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if DisableAutoInjection is 'true'."`
+	EnableIstioSidecarOnGateway *bool   `json:"enableIstioSidecarOnGateway,omitempty" desc:"Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if disableAutoinjection is 'true'."`
+	IstioSidecarRevTag          *string `json:"istioSidecarRevTag,omitempty" desc:"Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if disableAutoinjection is 'true'."`
 }
