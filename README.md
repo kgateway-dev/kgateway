@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://raw.githubusercontent.com/solo-io/gloo/v2.0.x/docs/content/img/logo-gloo-gateway.svg" alt="Gloo Gateway v2" width="600" height="155">
+    <img src="https://raw.githubusercontent.com/solo-io/gloo/v2.0.x/docs/content/img/logo-gloo-gateway.png" alt="Gloo Gateway v2" width="600" height="155">
   <br> 
   An Envoy-Powered API Gateway
 </h1>
@@ -14,6 +14,8 @@
 > The existing Gloo Edge v1 APIs were not changed and continue to be fully supported. To find the latest version for the Gloo Edge v1 API, see the [main branch](https://github.com/solo-io/gloo/tree/main).
 
 ## About Gloo Gateway
+Gloo Gateway is a powerful Kubernetes-native ingress controller and API gateway. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
+
 Gloo Gateway is a feature-rich, Kubernetes-native ingress controller and next-generation API gateway based on the Kubernetes Gateway API. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications in which multiple technologies, architectures, protocols, and clouds can coexist.
  
 [**Installation**](https://docs.solo.io/gloo-gateway/v2/quickstart) &nbsp; |
