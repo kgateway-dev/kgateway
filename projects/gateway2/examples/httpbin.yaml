@@ -60,7 +60,6 @@ spec:
             - "600s" # override default 10s
           ports:
             - containerPort: 8080
-        # Include curl container for e2e testing, allows sending traffic mediated by the proxy sidecar
         - name: curl
           image: curlimages/curl:7.83.1
           resources:
@@ -73,9 +72,6 @@ spec:
             - "tail"
             - "-f"
             - "/dev/null"
-        - name: hey
-          image: gcr.io/solo-public/docs/hey:0.1.4
-          imagePullPolicy: IfNotPresent
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
@@ -102,7 +98,7 @@ metadata:
 spec:
   parentRefs:
     - name: http
-      namespace: gloo-system
+      namespace: httpbin
   hostnames:
     - "www.example.com"
   rules:
