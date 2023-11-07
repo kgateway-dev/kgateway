@@ -4607,6 +4607,9 @@ spec:
                               type: boolean
                             pathRedirect:
                               type: string
+                            portRedirect:
+                              format: int32
+                              type: integer
                             prefixRewrite:
                               type: string
                             regexRewrite:

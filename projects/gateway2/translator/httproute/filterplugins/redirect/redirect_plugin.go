@@ -2,6 +2,7 @@ package redirect
 
 import (
 	"context"
+	"strings"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	errors "github.com/rotisserie/eris"
@@ -27,20 +28,33 @@ func (p *Plugin) ApplyFilter(
 	if outputRoute.Action != nil {
 		return errors.Errorf("RequestRedirect route cannot have destinations")
 	}
-
-	if config.StatusCode == nil {
-		return errors.Errorf("RequestRedirect: unsupported value")
+	statusCode := 302
+	if config.StatusCode != nil {
+		statusCode = *config.StatusCode
 	}
 
+	redirectAction := &routev3.RedirectAction{
+		// TODO: support extended fields on RedirectAction
+
+		SchemeRewriteSpecifier: &routev3.RedirectAction_HttpsRedirect{HttpsRedirect: config.Scheme != nil && strings.ToLower(*config.Scheme) == "https"},
+		HostRedirect:           translateHostname(config.Hostname),
+		ResponseCode:           translateStatusCode(statusCode),
+		PortRedirect:           translatePort(config.Port),
+	}
 	outputRoute.Action = &routev3.Route_Redirect{
-		Redirect: &routev3.RedirectAction{
-			// TODO: support extended fields on RedirectAction
-			HostRedirect: translateHostname(config.Hostname),
-			ResponseCode: translateStatusCode(*config.StatusCode),
-		},
+		Redirect: redirectAction,
 	}
+
+	translatePathRewrite(config.Path, redirectAction)
 
 	return nil
+}
+
+func translatePort(port *gwv1.PortNumber) uint32 {
+	if port == nil {
+		return 0
+	}
+	return uint32(*port)
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {
@@ -48,6 +62,30 @@ func translateHostname(hostname *gwv1.PreciseHostname) string {
 		return ""
 	}
 	return string(*hostname)
+}
+
+func translatePathRewrite(pathRewrite *gwv1.HTTPPathModifier, redirectAction *routev3.RedirectAction) {
+	if pathRewrite == nil {
+		return
+	}
+	replaceFullPath := "/"
+	if pathRewrite.ReplaceFullPath != nil {
+		replaceFullPath = *pathRewrite.ReplaceFullPath
+	}
+	prefixRewrite := "/"
+	if pathRewrite.ReplacePrefixMatch != nil {
+		prefixRewrite = *pathRewrite.ReplacePrefixMatch
+	}
+	switch pathRewrite.Type {
+	case gwv1.FullPathHTTPPathModifier:
+		redirectAction.PathRewriteSpecifier = &routev3.RedirectAction_PathRedirect{
+			PathRedirect: replaceFullPath,
+		}
+	case gwv1.PrefixMatchHTTPPathModifier:
+		redirectAction.PathRewriteSpecifier = &routev3.RedirectAction_PrefixRewrite{
+			PrefixRewrite: prefixRewrite,
+		}
+	}
 }
 
 func translateStatusCode(i int) routev3.RedirectAction_RedirectResponseCode {
@@ -63,6 +101,6 @@ func translateStatusCode(i int) routev3.RedirectAction_RedirectResponseCode {
 	case 308:
 		return routev3.RedirectAction_PERMANENT_REDIRECT
 	default:
-		return routev3.RedirectAction_MOVED_PERMANENTLY
+		return routev3.RedirectAction_FOUND
 	}
 }

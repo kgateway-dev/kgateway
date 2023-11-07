@@ -24,6 +24,9 @@ func (p *Plugin) ApplyFilter(
 	if filter.Type == gwv1.HTTPRouteFilterRequestHeaderModifier {
 		return p.applyRequestFilter(filter.RequestHeaderModifier, outputRoute)
 	}
+	if filter.Type == gwv1.HTTPRouteFilterResponseHeaderModifier {
+		return p.applyResponseFilter(filter.ResponseHeaderModifier, outputRoute)
+	}
 	return errors.Errorf("unsupported filter type: %v", filter.Type)
 }
 
@@ -34,16 +37,21 @@ func (p *Plugin) applyRequestFilter(
 	if config == nil {
 		return errors.Errorf("RequestHeaderModifier filter supplied does not define requestHeaderModifier")
 	}
-	outputRoute.RequestHeadersToAdd = requestHeadersToAdd(config.Add, config.Set)
+	outputRoute.RequestHeadersToAdd = headersToAdd(config.Add, config.Set)
 	outputRoute.RequestHeadersToRemove = config.Remove
 	return nil
 }
 
-func requestHeadersToAdd(add []gwv1.HTTPHeader, set []gwv1.HTTPHeader) []*corev3.HeaderValueOption {
-	var envoyHeaders []*corev3.HeaderValueOption
-	envoyHeaders = append(envoyHeaders, translateHeaders(add, true)...)
-	envoyHeaders = append(envoyHeaders, translateHeaders(set, false)...)
-	return envoyHeaders
+func (p *Plugin) applyResponseFilter(
+	config *gwv1.HTTPHeaderFilter,
+	outputRoute *routev3.Route,
+) error {
+	if config == nil {
+		return errors.Errorf("Response filter supplied does not define requestHeaderModifier")
+	}
+	outputRoute.ResponseHeadersToAdd = headersToAdd(config.Add, config.Set)
+	outputRoute.ResponseHeadersToRemove = config.Remove
+	return nil
 }
 
 func translateHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*corev3.HeaderValueOption {
@@ -57,5 +65,12 @@ func translateHeaders(gwHeaders []gwv1.HTTPHeader, add bool) []*corev3.HeaderVal
 			Append: wrapperspb.Bool(add),
 		})
 	}
+	return envoyHeaders
+}
+
+func headersToAdd(add []gwv1.HTTPHeader, set []gwv1.HTTPHeader) []*corev3.HeaderValueOption {
+	envoyHeaders := make([]*corev3.HeaderValueOption, 0, len(add)+len(set))
+	envoyHeaders = append(envoyHeaders, translateHeaders(add, true)...)
+	envoyHeaders = append(envoyHeaders, translateHeaders(set, false)...)
 	return envoyHeaders
 }

@@ -953,6 +953,8 @@ func (m *RedirectAction) Clone() proto.Message {
 
 	target.StripQuery = m.GetStripQuery()
 
+	target.PortRedirect = m.GetPortRedirect()
+
 	switch m.PathRewriteSpecifier.(type) {
 
 	case *RedirectAction_PathRedirect:

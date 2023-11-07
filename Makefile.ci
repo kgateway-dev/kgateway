@@ -12,12 +12,23 @@ $(OUTPUT_DIR)/glooctl: $(SOURCES)
 
 $(OUTPUT_DIR)/glooctl-linux-arm64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+$(OUTPUT_DIR)/glooctl-linux-arm64.sha256: $(OUTPUT_DIR)/glooctl-linux-arm64
+	shasum -a 256 $(OUTPUT_DIR)/glooctl-linux-arm64 > $@
+
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+$(OUTPUT_DIR)/glooctl-linux-amd64.sha256: $(OUTPUT_DIR)/glooctl-linux-amd64
+	shasum -a 256 $(OUTPUT_DIR)/glooctl-linux-amd64 > $@
+
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+$(OUTPUT_DIR)/glooctl-darwin-amd64.sha256: $(OUTPUT_DIR)/glooctl-darwin-amd64
+	shasum -a 256 $(OUTPUT_DIR)/glooctl-darwin-amd64 > $@
+
 $(OUTPUT_DIR)/glooctl-darwin-arm64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+$(OUTPUT_DIR)/glooctl-darwin-arm64.sha256: $(OUTPUT_DIR)/glooctl-darwin-arm64
+	shasum -a 256 $(OUTPUT_DIR)/glooctl-darwin-arm64 > $@
 
 $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
@@ -27,13 +38,21 @@ $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
 glooctl: $(OUTPUT_DIR)/glooctl ## Builds the command line tool
 .PHONY: glooctl-linux-amd64
 glooctl-linux-amd64: $(OUTPUT_DIR)/glooctl-linux-amd64
+.PHONY: glooctl-linux-amd64.sha256
+glooctl-linux-amd64.sha256: $(OUTPUT_DIR)/glooctl-linux-amd64.sha256
 .PHONY: glooctl-linux-arm64
 glooctl-linux-arm64: $(OUTPUT_DIR)/glooctl-linux-arm64
+.PHONY: glooctl-linux-arm64.sha256
+glooctl-linux-arm64.sha256: $(OUTPUT_DIR)/glooctl-linux-arm64.sha256
 
 .PHONY: glooctl-darwin-amd64
 glooctl-darwin-amd64: $(OUTPUT_DIR)/glooctl-darwin-amd64
+.PHONY: glooctl-darwin-amd64.sha256
+glooctl-darwin-amd64.sha256: $(OUTPUT_DIR)/glooctl-darwin-amd64.sha256
 .PHONY: glooctl-darwin-arm64
 glooctl-darwin-arm64: $(OUTPUT_DIR)/glooctl-darwin-arm64
+.PHONY: glooctl-darwin-arm64.sha256
+glooctl-darwin-arm64.sha256: $(OUTPUT_DIR)/glooctl-darwin-arm64.sha256
 .PHONY: glooctl-windows-$(GOARCH)
 glooctl-windows-$(GOARCH): $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe
 
