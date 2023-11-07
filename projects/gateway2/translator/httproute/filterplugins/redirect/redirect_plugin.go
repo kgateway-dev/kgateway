@@ -35,11 +35,13 @@ func (p *Plugin) ApplyFilter(
 
 	redirectAction := &routev3.RedirectAction{
 		// TODO: support extended fields on RedirectAction
+		HostRedirect: translateHostname(config.Hostname),
+		ResponseCode: translateStatusCode(statusCode),
+		PortRedirect: translatePort(config.Port),
+	}
 
-		SchemeRewriteSpecifier: &routev3.RedirectAction_HttpsRedirect{HttpsRedirect: config.Scheme != nil && strings.ToLower(*config.Scheme) == "https"},
-		HostRedirect:           translateHostname(config.Hostname),
-		ResponseCode:           translateStatusCode(statusCode),
-		PortRedirect:           translatePort(config.Port),
+	if config.Scheme != nil && strings.ToLower(*config.Scheme) == "https" {
+		redirectAction.SchemeRewriteSpecifier = &routev3.RedirectAction_HttpsRedirect{HttpsRedirect: true}
 	}
 	outputRoute.Action = &routev3.Route_Redirect{
 		Redirect: redirectAction,
