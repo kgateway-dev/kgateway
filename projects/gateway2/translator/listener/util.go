@@ -73,8 +73,8 @@ func toAny(pb proto.Message) *anypb.Any {
 
 func makeFilterChain(info *FilterChainInfo, config *envoyhttp.HttpConnectionManager) *listenerv3.FilterChain {
 	return &listenerv3.FilterChain{
-		FilterChainMatch: toMatch(info),
-		TransportSocket:  toTransportSocket(info),
+		FilterChainMatch: info.toMatch(),
+		TransportSocket:  info.toTransportSocket(),
 		Filters: []*listenerv3.Filter{
 			{
 				Name: wellknown.HTTPConnectionManager,
@@ -86,7 +86,7 @@ func makeFilterChain(info *FilterChainInfo, config *envoyhttp.HttpConnectionMana
 	}
 }
 
-func toMatch(info *FilterChainInfo) *listenerv3.FilterChainMatch {
+func (info *FilterChainInfo) toMatch() *listenerv3.FilterChainMatch {
 	if info == nil {
 		return nil
 	}
@@ -94,7 +94,8 @@ func toMatch(info *FilterChainInfo) *listenerv3.FilterChainMatch {
 		ServerNames: info.SslConfig.SniDomains,
 	}
 }
-func toTransportSocket(info *FilterChainInfo) *corev3.TransportSocket {
+
+func (info *FilterChainInfo) toTransportSocket() *corev3.TransportSocket {
 	if info == nil {
 		return nil
 	}
