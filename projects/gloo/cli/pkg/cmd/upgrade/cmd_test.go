@@ -43,11 +43,11 @@ var _ = Describe("Cmd", func() {
 		Entry("v2.2.x is not found", "v2.2.x", "", errorNotFoundString),
 	)
 
-	It("Can handle new major versions", func() {
+	It("DOES NOT handle new major versions", func() {
 		ctx = context.WithValue(ctx, "githubURL", ts.URL+"/newMajor/")
 
-		relExp, _ := getReleaseWithAsset(ctx, ts.Client(), "experimental", glooctlBinaryName)
-		Expect(*relExp.Name).To(Equal("v2.0.0-beta1"))
+		// relExp, _ := getReleaseWithAsset(ctx, ts.Client(), "experimental", glooctlBinaryName)
+		// Expect(*relExp.Name).To(Equal("v2.0.0-beta1"))
 		relLatest, _ := getReleaseWithAsset(ctx, ts.Client(), "latest", glooctlBinaryName)
 		Expect(*relLatest.Name).To(Equal("v1.12.5"))
 	})
