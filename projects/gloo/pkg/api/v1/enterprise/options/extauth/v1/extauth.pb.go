@@ -3919,18 +3919,19 @@ type OpaAuthOptions struct {
 	// are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine.
 	// By default, this is set to false and all fields are evaluated by OPA.
 	FastInputConversion bool `protobuf:"varint,1,opt,name=fast_input_conversion,json=fastInputConversion,proto3" json:"fast_input_conversion,omitempty"`
-	// Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules.
-	// This way, you can use the reason in subsequent filters, such as transformation policies.
-	// When using OpaAuth, this `returnDecisionReason` field must be the second parameter of the query.
-	// When using OpaServerAuth, the entire document will be returned as metadata.
-	// The `allowed` field on the document is used to make the policy decision.
-	// The entry will be in the returned DynamicMetadata in the CheckResponse with the structure
-	// `envoy.filters.http.ext_authz:
+	// DEPRECATED: It's recommended to use the `dynamic_metadata` field within Rego policies to specify the decision reason. To learn more about this approach, see the [OPA Envoy Plugin docs](https://github.com/open-policy-agent/opa/blob/c12463c/docs/content/envoy-primer.md#example-policy-with-additional-controls).
 	//
-	//	-> name of the auth step`, such as `spec.configs[i].name
-	//	    -> reason`.
+	// When `returnDecisionReason` is set to true, the decision reason is stored in the Envoy Dynamic Metadata and has the following properties:<ul>
+	// <li>`body` - a textual explanation of the decision</li>
+	// <li>`allowed` - whether the request was allowed or rejected</li></ul>
 	//
-	// If set to false, the response is allowed or denied based on the Rego rules without returning the reason.
+	// When using OpaAuth, the `body` field must be the second parameter of the query.
+	//
+	// Both the OpaAuth and OpaServerAuth approaches use the `allowed` and `body` values from the OPA response in the decision reason.
+	// You can find the `body` and `allowed` fields in the Envoy Filter Dynamic Metadata under the `envoy.filters.http.ext_authz.<authentication_step_name>.reason` section.
+	//
+	// If, however, `returnDecisionReason` is set to false, OPA's decision to allow or reject a request is made according to the Rego policy rules, and no explanation is provided.
+	// Despite of this, the `dynamic_metadata` field can still be used to convey any necessary information to the Envoy Dynamic Metadata, including the decision reason.
 	ReturnDecisionReason bool `protobuf:"varint,2,opt,name=return_decision_reason,json=returnDecisionReason,proto3" json:"return_decision_reason,omitempty"`
 }
 
