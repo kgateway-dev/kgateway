@@ -12,6 +12,7 @@ services:
     - "9977:9977"
     - "10010:10010" # port exposed by `settings.devMode=true`
     restart: always
+    user: root # ensure we can read & write to the mounted volume
 
   gateway-proxy:
     image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.14.0-beta1}
