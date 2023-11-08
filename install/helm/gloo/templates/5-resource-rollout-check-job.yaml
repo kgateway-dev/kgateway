@@ -47,6 +47,10 @@ spec:
             items:
               - key: custom-resources
                 path: custom-resources
+            {{- if .Values.global.extraCustomResources }}
+              - key: extra-custom-resources
+                path: extra-custom-resources
+            {{- end }}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -57,6 +61,13 @@ spec:
                 configMapKeyRef:
                   name: gloo-custom-resource-config
                   key: has-custom-resources
+          {{- if .Values.global.extraCustomResources }}
+            - name: HAS_EXTRA_CUSTOM_RESOURCES
+              valueFrom:
+                configMapKeyRef:
+                  name: gloo-custom-resource-config
+                  key: has-extra-custom-resources
+          {{- end }}
           volumeMounts:
             - name: custom-resource-config-volume
               mountPath: /etc/gloo-custom-resources
@@ -73,7 +84,7 @@ spec:
           - -c
           - |
             # Check if Gloo Edge applied custom resources
-            if [ $HAS_CUSTOM_RESOURCES == "true" ]
+            if [ "$HAS_CUSTOM_RESOURCES" == "true" ]
             then
               # Wait for the resource rollout job to complete
               kubectl -n {{ .Release.Namespace }} get job gloo-resource-rollout &> /dev/null
@@ -88,6 +99,9 @@ spec:
                 fi
                 echo "Waiting for the resource rollout job to complete"
                 kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-resource-rollout --timeout={{ .Values.gateway.rolloutJob.timeout }}s || exit 1
+
+                # Clean up the rollout job up so it doesn't cause issues with upgrades
+                kubectl -n {{ .Release.Namespace }} delete job gloo-resource-rollout || exit $?
               fi
 
               # If the resource has been applied, re-applying it should output something like this
@@ -96,6 +110,18 @@ spec:
               # gateway.gateway.solo.io/default configured
               # gateway.gateway.solo.io/default created
               # This indicates that the resource was not applied in the resource rollout job
+              if [ "$HAS_EXTRA_CUSTOM_RESOURCES" == "true" ]
+              then
+                FAILED_RESOURCES=$(kubectl apply -f /etc/gloo-custom-resources/extra-custom-resources | grep -iv ' unchanged')
+                if [ ! -z "$FAILED_RESOURCES" ]
+                then
+                  echo "The following extra resources failed to be applied by the resource rollout job $FAILED_RESOURCES"
+                  exit 1
+                else
+                  echo "The resource rollout job successfully applied all the extra resources"
+                fi
+              fi
+
               FAILED_RESOURCES=$(kubectl apply -f /etc/gloo-custom-resources/custom-resources | grep -iv ' unchanged')
               if [ ! -z "$FAILED_RESOURCES" ]
               then
