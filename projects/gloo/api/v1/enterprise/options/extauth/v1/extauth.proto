@@ -1212,7 +1212,7 @@ message OpaAuthOptions {
     // and then under `reason`, where you'll find the two fields `body` and `allowed`.
     //
     // If, however, returnDecisionReason is set to false, OPA's decision to allow or reject a request is made according to the Rego policy rules, and no explanation is provided.
-    // Despite this, the `dynamic_metadata` field can still be used to convey any necessary information to the Envoy Dynamic Metadata, including the decision reason.
+    // Despite of this, the `dynamic_metadata` field can still be used to convey any necessary information to the Envoy Dynamic Metadata, including the decision reason.
     bool return_decision_reason = 2;
 }
 
