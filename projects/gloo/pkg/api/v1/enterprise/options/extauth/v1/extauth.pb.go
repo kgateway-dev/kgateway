@@ -3766,7 +3766,7 @@ type OpaAuthOptions struct {
 	// When using OpaAuth, the `body` field must be the second parameter of the query.
 	//
 	// Both the OpaAuth and OpaServerAuth approaches use the `allowed` and `body` values from the OPA response in the decision reason.
-	// You can find the `body` and `allowed` fields in the Envoy Filter Dynamic Metadata under `envoy.filters.http.ext_authz.<authentication_step_name>.reason` section.
+	// You can find the `body` and `allowed` fields in the Envoy Filter Dynamic Metadata under the `envoy.filters.http.ext_authz.<authentication_step_name>.reason` section.
 	//
 	// If, however, `returnDecisionReason` is set to false, OPA's decision to allow or reject a request is made according to the Rego policy rules, and no explanation is provided.
 	// Despite of this, the `dynamic_metadata` field can still be used to convey any necessary information to the Envoy Dynamic Metadata, including the decision reason.
