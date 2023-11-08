@@ -382,32 +382,6 @@ message OAuth2 {
     }
 }
 
-message AzureOidc {
-    // the URL of the backing service
-    string app_url = 1;
-
-    // the callback path to use for OIDC callbacks
-    string callback_path = 2;
-
-    // the client id for the backing service as registered with the issuer
-    string application_client_id = 3;
-
-    // the client secret for the backing service as registered with the issuer
-    core.solo.io.ResourceRef client_secret_ref = 4;
-
-    // the URL of the issuer to redirect to for login
-    string issuer_url = 5;
-
-    // the scopes to request in addition to openid scope
-    repeated string scopes = 6;
-
-    // config for the user's session with the ext auth service
-    UserSession session = 7;
-
-    // config for caching distributed claims in redis
-    RedisOptions caching_redis_options = 8;
-}
-
 message RedisOptions {
     // address of the redis. can be address:port or unix://path/to/unix.sock
     string host = 1;
@@ -817,24 +791,26 @@ message OidcAuthorizationCode {
         Azure azure = 27;
     }
 
-    // Represents default OIDC behavior
+    // No-op, represents default OIDC behavior
     message DefaultOIDCProvider {}
 
     // Represents config specific to Azure Distributed Claims OIDC implementation
     message Azure {
-        // client ID for ExtAuthService as registered with MS Entera, NOT the backing service 
+        // client ID for the external auth service as registered with MS Entera. Note that this is
+        // NOT the same as the client ID for the service the AuthConfig will be applied to.
         string client_id = 1;
 
         // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
-        // may or may not be the same as the tenant ID in the top level `OidcAuthorizationCodeConfig`,
+        // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
         // depending on how your Azure account is provisioned.
         string tenant_id = 2;
 
         // secret registered for the ExtAuthService to communciate with the Entera APIs
-        core.solo.io.ResourceRef client_secret = 3; // TODO: whatever azure actually calls this thing
+        core.solo.io.ResourceRef client_secret = 3;
 
-        // Redis connection details for caching MS Entera claims. Will not turn on Redis session caching,
-        // if you'd like to turn on Redis session caching, use the `userSessionConfig` field.
+        // Redis connection details for caching MS Entera groups resolved from distributed clains.
+        // Will not configure Redis session caching. If you would like to turn on Redis session 
+        // caching, use the `userSessionConfig` field.
         RedisOptions claims_caching_options = 4;
     }
 }
@@ -1733,20 +1709,35 @@ message ExtAuthConfig {
             // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
             repeated ClaimToHeader claims_to_headers = 1;
         }
-    }
 
-    message MSEnteraOauth2ConfigSettings {
-        // client ID for ExtAuthService as registered with MS Entera, NOT the backing service 
-        string client_id = 1;
-
-        // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
-        // may or may not be the same as the tenant ID in the top level `OidcAuthorizationCodeConfig`,
-        // depending on how your Azure account is provisioned.
-        string tenant_id = 2;
-
-        // Redis connection details for caching MS Entera claims. Will not turn on Redis session caching,
-        // if you'd like to turn on Redis session caching, use the `userSessionConfig` field.
-        RedisOptions claims_caching_options = 3;
+        oneof Provider {
+            DefaultOIDCProvider default = 26;
+            Azure azure = 27;
+        }
+    
+        // No-op, represents default OIDC behavior
+        message DefaultOIDCProvider {}
+    
+        // Represents config specific to Azure Distributed Claims OIDC implementation
+        message Azure {
+            // client ID for the external auth service as registered with MS Entera. Note that this is
+            // NOT the same as the client ID for the service the AuthConfig will be applied to.
+            string client_id = 1;
+    
+            // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
+            // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+            // depending on how your Azure account is provisioned.
+            string tenant_id = 2;
+    
+            // secret registered for the ExtAuthService to communciate with the Entera APIs
+            core.solo.io.ResourceRef client_secret = 3;
+    
+            // Redis connection details for caching MS Entera groups resolved from distributed clains.
+            // Will not configure Redis session caching. If you would like to turn on Redis session 
+            // caching, use the `userSessionConfig` field.
+            RedisOptions claims_caching_options = 4;
+        }
+        
     }
 
     message AccessTokenValidationConfig {

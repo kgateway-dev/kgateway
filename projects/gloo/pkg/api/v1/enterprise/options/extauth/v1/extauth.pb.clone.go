@@ -507,52 +507,6 @@ func (m *OAuth2) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AzureOidc) Clone() proto.Message {
-	var target *AzureOidc
-	if m == nil {
-		return target
-	}
-	target = &AzureOidc{}
-
-	target.AppUrl = m.GetAppUrl()
-
-	target.CallbackPath = m.GetCallbackPath()
-
-	target.ApplicationClientId = m.GetApplicationClientId()
-
-	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
-		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
-	} else {
-		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
-	}
-
-	target.IssuerUrl = m.GetIssuerUrl()
-
-	if m.GetScopes() != nil {
-		target.Scopes = make([]string, len(m.GetScopes()))
-		for idx, v := range m.GetScopes() {
-
-			target.Scopes[idx] = v
-
-		}
-	}
-
-	if h, ok := interface{}(m.GetSession()).(clone.Cloner); ok {
-		target.Session = h.Clone().(*UserSession)
-	} else {
-		target.Session = proto.Clone(m.GetSession()).(*UserSession)
-	}
-
-	if h, ok := interface{}(m.GetCachingRedisOptions()).(clone.Cloner); ok {
-		target.CachingRedisOptions = h.Clone().(*RedisOptions)
-	} else {
-		target.CachingRedisOptions = proto.Clone(m.GetCachingRedisOptions()).(*RedisOptions)
-	}
-
-	return target
-}
-
-// Clone function
 func (m *RedisOptions) Clone() proto.Message {
 	var target *RedisOptions
 	if m == nil {
@@ -3153,25 +3107,32 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.IdentityToken = proto.Clone(m.GetIdentityToken()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken)
 	}
 
-	return target
-}
+	switch m.Provider.(type) {
 
-// Clone function
-func (m *ExtAuthConfig_MSEnteraOauth2ConfigSettings) Clone() proto.Message {
-	var target *ExtAuthConfig_MSEnteraOauth2ConfigSettings
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_MSEnteraOauth2ConfigSettings{}
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Default:
 
-	target.ClientId = m.GetClientId()
+		if h, ok := interface{}(m.GetDefault()).(clone.Cloner); ok {
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Default{
+				Default: h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_DefaultOIDCProvider),
+			}
+		} else {
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Default{
+				Default: proto.Clone(m.GetDefault()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_DefaultOIDCProvider),
+			}
+		}
 
-	target.TenantId = m.GetTenantId()
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_:
 
-	if h, ok := interface{}(m.GetClaimsCachingOptions()).(clone.Cloner); ok {
-		target.ClaimsCachingOptions = h.Clone().(*RedisOptions)
-	} else {
-		target.ClaimsCachingOptions = proto.Clone(m.GetClaimsCachingOptions()).(*RedisOptions)
+		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_{
+				Azure: h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure),
+			}
+		} else {
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_{
+				Azure: proto.Clone(m.GetAzure()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure),
+			}
+		}
+
 	}
 
 	return target
@@ -3970,6 +3931,44 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken) Clone() proto.
 			}
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_DefaultOIDCProvider) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_DefaultOIDCProvider
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_DefaultOIDCProvider{}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{}
+
+	target.ClientId = m.GetClientId()
+
+	target.TenantId = m.GetTenantId()
+
+	if h, ok := interface{}(m.GetClientSecret()).(clone.Cloner); ok {
+		target.ClientSecret = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ClientSecret = proto.Clone(m.GetClientSecret()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(clone.Cloner); ok {
+		target.ClaimsCachingOptions = h.Clone().(*RedisOptions)
+	} else {
+		target.ClaimsCachingOptions = proto.Clone(m.GetClaimsCachingOptions()).(*RedisOptions)
 	}
 
 	return target
