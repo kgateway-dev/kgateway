@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/demo"
 	v2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/v2"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"k8s.io/kubectl/pkg/cmd"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/get"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/upgrade"
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
@@ -83,27 +80,26 @@ func GlooCli() *cobra.Command {
 
 	optionsFunc := func(app *cobra.Command) {
 		pflags := app.PersistentFlags()
-		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
+		// pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
 		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", DefaultConfigPath, "set the path to the glooctl config file")
-		flagutils.AddConsulConfigFlags(pflags, &opts.Top.Consul)
 		flagutils.AddKubeContextFlag(pflags, &opts.Top.KubeContext)
 
 		opts.Top.Ctx = context.WithValue(opts.Top.Ctx, "top", opts.Top.ContextAccessible)
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
-			get.RootCmd(opts),
+			// get.RootCmd(opts),
 			// del.RootCmd(opts),
 			// install.InstallCmd(opts),
 			v2.InstallCmd(opts),
 			v2.UninstallCmd(opts),
-			demo.RootCmd(opts),
+			// demo.RootCmd(opts),
 			// add.RootCmd(opts),
 			// remove.RootCmd(opts),
 			// route.RootCmd(opts),
 			// create.RootCmd(opts),
 			// edit.RootCmd(opts),
-			upgrade.RootCmd(opts),
+			// upgrade.RootCmd(opts),
 			// gateway.RootCmd(opts),
 			check.RootCmd(opts),
 			// check_crds.RootCmd(opts),
