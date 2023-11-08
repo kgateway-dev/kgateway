@@ -17,6 +17,8 @@ import (
 
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gateway2/query"
@@ -336,6 +338,9 @@ func (ml *mergedListener) translateListener(
 		res.Listener.FilterChains = append(res.Listener.FilterChains, makeFilterChain(httpFilterChain, hcm))
 
 	}
+	if len(ml.httpsFilterChains) != 0 {
+		res.Listener.ListenerFilters = append(res.Listener.ListenerFilters, tlsInspectorFilter())
+	}
 	for _, mfc := range ml.httpsFilterChains {
 		// each virtual host name must be unique across all filter chains
 		// to prevent collisions because the vhosts have to be re-computed for each set
@@ -364,6 +369,18 @@ func (ml *mergedListener) translateListener(
 	}
 
 	return res
+}
+
+func tlsInspectorFilter() *listenerv3.ListenerFilter {
+	configEnvoy := &envoy_tls_inspector.TlsInspector{}
+	msg := toAny(configEnvoy)
+	return &listenerv3.ListenerFilter{
+		Name: wellknown.TlsInspector,
+		ConfigType: &listenerv3.ListenerFilter_TypedConfig{
+			TypedConfig: msg,
+		},
+	}
+
 }
 
 // httpFilterChain each one represents a GW Listener that has been merged into a single Gloo Listener (with distinct filter chains).
