@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/12848
-    resolvesIssue: false
-    description: >-
-      Add additional options to the OidcAuthorizationCodeConfig API to configure Azure-specific details for resolving distributed claims.
