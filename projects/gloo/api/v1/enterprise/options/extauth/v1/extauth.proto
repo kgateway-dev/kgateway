@@ -787,32 +787,32 @@ message OidcAuthorizationCode {
     ClientAuthentication client_authentication = 25;
 
     oneof Provider {
-        DefaultOIDCProvider default = 26;
-        Azure azure = 27;
+        DefaultOidcProvider default = 26;
+        AzureOidcProvider azure = 27;
     }
+}
 
-    // No-op, represents default OIDC behavior
-    message DefaultOIDCProvider {}
+// No-op, represents default OIDC behavior
+message DefaultOidcProvider {}
 
-    // Represents config specific to Azure Distributed Claims OIDC implementation
-    message Azure {
-        // client ID for the external auth service as registered with MS Entera. Note that this is
-        // NOT the same as the client ID for the service the AuthConfig will be applied to.
-        string client_id = 1;
+// Represents config specific to Azure Distributed Claims OIDC implementation
+message AzureOidcProvider {
+    // client ID for the external auth service as registered with MS Entera. Note that this is
+    // NOT the same as the client ID for the service the AuthConfig will be applied to.
+    string client_id = 1;
 
-        // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
-        // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
-        // depending on how your Azure account is provisioned.
-        string tenant_id = 2;
+    // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
+    // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+    // depending on how your Azure account is provisioned.
+    string tenant_id = 2;
 
-        // secret registered for the ExtAuthService to communciate with the Entera APIs
-        core.solo.io.ResourceRef client_secret = 3;
+    // secret registered for the ExtAuthService to communciate with the Entera APIs
+    core.solo.io.ResourceRef client_secret = 3;
 
-        // Redis connection details for caching MS Entera groups resolved from distributed clains.
-        // Will not configure Redis session caching. If you would like to turn on Redis session 
-        // caching, use the `userSessionConfig` field.
-        RedisOptions claims_caching_options = 4;
-    }
+    // Redis connection details for caching MS Entera groups resolved from distributed clains.
+    // Will not configure Redis session caching. If you would like to turn on Redis session 
+    // caching, use the `userSessionConfig` field.
+    RedisOptions claims_caching_options = 4;
 }
 
 message PlainOAuth2 {
@@ -1711,33 +1711,9 @@ message ExtAuthConfig {
         }
 
         oneof Provider {
-            DefaultOIDCProvider default = 26;
-            Azure azure = 27;
+            DefaultOidcProvider default = 26;
+            AzureOidcProvider azure = 27;
         }
-    
-        // No-op, represents default OIDC behavior
-        message DefaultOIDCProvider {}
-    
-        // Represents config specific to Azure Distributed Claims OIDC implementation
-        message Azure {
-            // client ID for the external auth service as registered with MS Entera. Note that this is
-            // NOT the same as the client ID for the service the AuthConfig will be applied to.
-            string client_id = 1;
-    
-            // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
-            // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
-            // depending on how your Azure account is provisioned.
-            string tenant_id = 2;
-    
-            // secret registered for the ExtAuthService to communciate with the Entera APIs
-            core.solo.io.ResourceRef client_secret = 3;
-    
-            // Redis connection details for caching MS Entera groups resolved from distributed clains.
-            // Will not configure Redis session caching. If you would like to turn on Redis session 
-            // caching, use the `userSessionConfig` field.
-            RedisOptions claims_caching_options = 4;
-        }
-        
     }
 
     message AccessTokenValidationConfig {
