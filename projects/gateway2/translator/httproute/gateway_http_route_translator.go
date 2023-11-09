@@ -72,32 +72,40 @@ func translateGatewayHTTPRouteRule(
 			reporter,
 		)
 	}
-	if err := applyFilters(
-		ctx,
-		plugins,
-		rule.Filters,
-		baseOutputRoute,
-	); err != nil {
-		reporter.SetCondition(reports.HTTPRouteCondition{
-			Type:   gwv1.RouteConditionAccepted,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.RouteReasonIncompatibleFilters,
-		})
-		// drop route
-		return nil
-	}
-	if baseOutputRoute.Action == nil {
-		// TODO: maybe? report error
-		baseOutputRoute.Action = &routev3.Route_DirectResponse{
-			DirectResponse: &routev3.DirectResponseAction{
-				Status: http.StatusInternalServerError,
-			},
-		}
-	}
 
 	routes := make([]*routev3.Route, 0, len(rule.Matches))
 	for _, match := range rule.Matches {
 		outputRoute := proto.Clone(baseOutputRoute).(*routev3.Route)
+		rtCtx := &filterplugins.RouteContext{
+			Ctx:      ctx,
+			Route:    gwroute,
+			Rule:     &rule,
+			Match:    &match,
+			Queries:  queries,
+			Reporter: reporter,
+		}
+		if err := applyFilters(
+			rtCtx,
+			plugins,
+			rule.Filters,
+			outputRoute,
+		); err != nil {
+			reporter.SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionAccepted,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.RouteReasonIncompatibleFilters,
+			})
+			// drop route
+			return nil
+		}
+		if outputRoute.Action == nil {
+			// TODO: maybe? report error
+			outputRoute.Action = &routev3.Route_DirectResponse{
+				DirectResponse: &routev3.DirectResponseAction{
+					Status: http.StatusInternalServerError,
+				},
+			}
+		}
 		outputRoute.Match = translateGlooMatcher(match)
 		routes = append(routes, outputRoute)
 	}
@@ -232,7 +240,7 @@ func translateRouteAction(
 
 	for _, backendRef := range backendRefs {
 		clusterName := "blackhole_cluster"
-		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef)
+		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
 		if err != nil {
 			switch {
 			case errors.Is(err, query.ErrUnknownKind):
@@ -332,7 +340,7 @@ func translateRouteAction(
 }
 
 func applyFilters(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	plugins registry.HTTPFilterPluginRegistry,
 	filters []gwv1.HTTPRouteFilter,
 	outputRoute *routev3.Route,
@@ -346,7 +354,7 @@ func applyFilters(
 }
 
 func applyFilterPlugin(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	plugins registry.HTTPFilterPluginRegistry,
 	filter gwv1.HTTPRouteFilter,
 	outputRoute *routev3.Route,

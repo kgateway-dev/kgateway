@@ -16,8 +16,14 @@ import (
 func AssertExpectedRoute(
 	plugin filterplugins.FilterPlugin,
 	filter gwv1.HTTPRouteFilter, expectedRoute *routev3.Route, logActual bool) {
-	ctx := context.TODO()
 	outputRoute := &routev3.Route{}
+	ctx := &filterplugins.RouteContext{
+		Ctx:      context.TODO(),
+		Route:    &gwv1.HTTPRoute{},
+		Queries:  nil,
+		Rule:     nil,
+		Reporter: nil,
+	}
 	err := plugin.ApplyFilter(
 		ctx,
 		filter,
