@@ -1249,3 +1249,4 @@
 |global.configMaps[].name|string||Name of the ConfigMap to create (required).|
 |global.configMaps[].namespace|string||Namespace in which to create the ConfigMap. If empty, defaults to Gloo Edge install namespace.|
 |global.configMaps[].data.NAME|string||Key-value pairs of ConfigMap data.|
+|global.extraCustomResources|bool||Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise.|
