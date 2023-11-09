@@ -57,6 +57,8 @@ weight: 5
 - [ClientAuthentication](#clientauthentication)
 - [ClientSecret](#clientsecret)
 - [PrivateKeyJwt](#privatekeyjwt)
+- [Default](#default)
+- [Azure](#azure)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -102,6 +104,8 @@ weight: 5
 - [ClaimToHeader](#claimtoheader)
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
+- [Default](#default)
+- [Azure](#azure)
 - [AccessTokenValidationConfig](#accesstokenvalidationconfig)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -1046,6 +1050,8 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 "accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
 "identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
 "clientAuthentication": .enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication
+"default": .enterprise.gloo.solo.io.OidcAuthorizationCode.Default
+"azure": .enterprise.gloo.solo.io.OidcAuthorizationCode.Azure
 
 ```
 
@@ -1075,6 +1081,8 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
 | `clientAuthentication` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication](../extauth.proto.sk/#clientauthentication) |  |
+| `default` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 
 
 
@@ -1171,6 +1179,46 @@ Private Key JWT Authentication requires a signing key for the JWT and an duratio
 | ----- | ---- | ----------- | 
 | `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Signing key for the JWT used to authenticate the client. |
 | `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
+
+
+
+
+---
+### Default
+
+ 
+No-op, represents default OIDC behavior
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Azure
+
+ 
+Represents config specific to Azure Distributed Claims OIDC implementation
+
+```yaml
+"clientId": string
+"tenantId": string
+"clientSecret": .core.solo.io.ResourceRef
+"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | client ID for the external auth service as registered with MS Entera. Note that this is NOT the same as the client ID for the service the AuthConfig will be applied to. |
+| `tenantId` | `string` | tenant ID where the ExtAuthService's client ID is registered with MS Entera. may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig, depending on how your Azure account is provisioned. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | secret registered for the ExtAuthService to communciate with the Entera APIs. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details for caching MS Entera groups resolved from distributed clains. Will not configure Redis session caching. If you would like to turn on Redis session caching, use the `userSessionConfig` field. |
 
 
 
@@ -2175,6 +2223,8 @@ Deprecated, prefer OAuth2Config
 "pkJwtClientAuthenticationConfig": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.PkJwtClientAuthenticationConfig
 "accessToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken
 "identityToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken
+"default": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default
+"azure": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure
 
 ```
 
@@ -2203,6 +2253,8 @@ Deprecated, prefer OAuth2Config
 | `pkJwtClientAuthenticationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.PkJwtClientAuthenticationConfig](../extauth.proto.sk/#pkjwtclientauthenticationconfig) | Configuration for private key JWT client authentication. Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence. |
 | `accessToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
+| `default` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 
 
 
@@ -2281,6 +2333,46 @@ Optional: Map a single claim from an OIDC identity token to a header in the requ
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+
+
+
+
+---
+### Default
+
+ 
+No-op, represents default OIDC behavior
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Azure
+
+ 
+Represents config specific to Azure Distributed Claims OIDC implementation
+
+```yaml
+"clientId": string
+"tenantId": string
+"clientSecret": string
+"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | client ID for the external auth service as registered with MS Entera. Note that this is NOT the same as the client ID for the service the AuthConfig will be applied to. |
+| `tenantId` | `string` | tenant ID where the ExtAuthService's client ID is registered with MS Entera. may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig, depending on how your Azure account is provisioned. |
+| `clientSecret` | `string` | secret registered for the ExtAuthService to communciate with the Entera APIs. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details for caching MS Entera groups resolved from distributed clains. Will not configure Redis session caching. If you would like to turn on Redis session caching, use the `userSessionConfig` field. |
 
 
 

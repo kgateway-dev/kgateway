@@ -492,6 +492,36 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            azure:
+                              properties:
+                                claimsCachingOptions:
+                                  properties:
+                                    db:
+                                      format: int32
+                                      type: integer
+                                    host:
+                                      type: string
+                                    poolSize:
+                                      format: int32
+                                      type: integer
+                                    socketType:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    tlsCertMountPath:
+                                      type: string
+                                  type: object
+                                clientId:
+                                  type: string
+                                clientSecret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                tenantId:
+                                  type: string
+                              type: object
                             callbackPath:
                               type: string
                             clientAuthentication:
@@ -530,6 +560,8 @@ spec:
                                   type: string
                                 namespace:
                                   type: string
+                              type: object
+                            default:
                               type: object
                             disableClientSecret:
                               nullable: true
