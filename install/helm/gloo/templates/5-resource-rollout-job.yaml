@@ -50,6 +50,10 @@ spec:
             items:
               - key: custom-resources
                 path: custom-resources
+            {{- if .Values.global.extraCustomResources }}
+              - key: extra-custom-resources
+                path: extra-custom-resources
+            {{- end }}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -60,6 +64,13 @@ spec:
                 configMapKeyRef:
                   name: gloo-custom-resource-config
                   key: has-custom-resources
+          {{- if .Values.global.extraCustomResources }}
+            - name: HAS_EXTRA_CUSTOM_RESOURCES
+              valueFrom:
+                configMapKeyRef:
+                  name: gloo-custom-resource-config
+                  key: has-extra-custom-resources
+          {{- end }}
           volumeMounts:
             - name: custom-resource-config-volume
               mountPath: /etc/gloo-custom-resources
@@ -80,24 +91,16 @@ spec:
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
 
-            # Wait for the enterprise job if present
-            kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout &> /dev/null
-            if [ $? -eq 0 ]
+            # apply extra Gloo Edge custom resources - these are created in enterprise
+            if [ "$HAS_EXTRA_CUSTOM_RESOURCES" == "true" ]
             then
-              # Exit immediately if the enterprise rollout job failed
-              kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' | grep -i "True" &> /dev/null
-              if [ $? -eq 0 ]
-              then
-                  echo "Enterprise rollout job failed"
-                  exit 1
-              fi
-
-              echo "Waiting for the enterprise resource rollout job to complete"
-              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout --timeout={{ .Values.gateway.rolloutJob.timeout }}s || exit 1
+              kubectl apply -f /etc/gloo-custom-resources/extra-custom-resources || exit $?
+            else
+              echo "no extra custom resources to apply"
             fi
 
             # apply Gloo Edge custom resources
-            if [ $HAS_CUSTOM_RESOURCES == "true" ]
+            if [ "$HAS_CUSTOM_RESOURCES" == "true" ]
             then
               kubectl apply -f /etc/gloo-custom-resources/custom-resources || exit $?
             else
