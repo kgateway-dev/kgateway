@@ -111,6 +111,73 @@ func (e *edgeLegacyTranslator) reconcileAll(ctx context.Context) (ctrl.Result, e
 	return ctrl.Result{}, nil
 }
 
+func (e *edgeLegacyTranslator) reconcileAll2(ctx context.Context) (ctrl.Result, error) {
+	// TODO:
+	// 1. List resources (services, endpoints, pods) using dynamic client
+	// 2. Feed resources into EDS/UDS methods from Gloo Edge, which produce Gloo Endpoints and Upstreams
+	// 3. Store the snapshot
+	// 4. Signal that a new snapshot is available
+
+	svcList := corev1.ServiceList{}
+	if err := e.cli.List(ctx, &svcList); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	epList := corev1.EndpointsList{}
+	if err := e.cli.List(ctx, &epList); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	podList := corev1.PodList{}
+	if err := e.cli.List(ctx, &podList); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	plugin := kubeplugin.DefaultUpstreamConverter()
+
+	// POINTER MAPS?!?!?!?!?
+	usMap := make(map[*core.ResourceRef]*kubernetes.UpstreamSpec)
+	usTotalList := v1.UpstreamList{}
+	for _, svc := range svcList.Items {
+		var ep corev1.Endpoints
+		err := e.cli.Get(ctx, client.ObjectKey{Name: svc.Name, Namespace: svc.Namespace}, &ep)
+		// log err but continue with empty endpoints.
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			//TODO:	log
+		}
+
+		svc := svc
+		usList := plugin.UpstreamsForService(ctx, &svc)
+		usTotalList = append(usTotalList, usList...)
+		for _, us := range usList {
+			kubeUpstream, ok := us.GetUpstreamType().(*v1.Upstream_Kube)
+			// only care about kube upstreams
+			if !ok {
+				continue
+			}
+			usMap[us.GetMetadata().Ref()] = kubeUpstream.Kube
+		}
+	}
+
+	endpoints, _, _ := kubeplugin.FilterEndpoints(
+		ctx,
+		"gloo-system",
+		translateObjectList(epList.Items),
+		translateObjectList(svcList.Items),
+		translateObjectList(podList.Items),
+		usMap,
+	)
+
+	e.inputChannels.UpdateDiscoveryInputs(ctx, xds.DiscoveryInputs{
+		Upstreams: usTotalList,
+		Endpoints: endpoints,
+	})
+
+	// Send across endpoints and upstreams
+	return ctrl.Result{}, nil
+}
+
 func translateObjectList[T any](list []T) []*T {
 	var out []*T
 	for _, item := range list {
