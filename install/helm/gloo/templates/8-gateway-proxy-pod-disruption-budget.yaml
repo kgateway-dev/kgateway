@@ -3,7 +3,7 @@
 {{- $gatewaySpec := (index . 2) }}
 {{- with (first .) }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{- $spec := include "gloo.util.overwriteWithOmit" (list $gatewaySpec $gatewayProxy $gatewaySpec.omitKeys) | fromJson }}
 {{- if $spec.kind.deployment}}
 {{- if $spec.podDisruptionBudget }}
 apiVersion: policy/v1

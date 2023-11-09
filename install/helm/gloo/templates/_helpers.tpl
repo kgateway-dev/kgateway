@@ -112,7 +112,7 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 {{- end -}}
 
-{{- /* 
+{{- /*
 This template is used to generate the gloo pod or container security context.
 It takes 2 values:
   .values - the securityContext passed from the user in values.yaml
@@ -209,7 +209,7 @@ Returns the unique Gateway namespaces as defined by the helm values.
 {{- end -}}
 
 
-{{/* 
+{{/*
 Generated the "operations" array for a resource for the ValidatingWebhookConfiguration
 Arguments are a resource name, and a list of resources for which to skip webhook validation for DELETEs
 This list is expected to come from `gateway.validation.webhook.skipDeleteValidationResources`
@@ -224,4 +224,15 @@ Otherwise it will generate ["Create", "Update", "Delete"]
   {{- $operations = append $operations "DELETE" -}}
 {{- end -}}
 {{ toJson  $operations -}}
+{{- end -}}
+
+{{- define "gloo.util.overwriteWithOmit" -}}
+{{- $resource := first . -}}
+{{- $overwrite := index . 1 -}}
+{{- $result := deepCopy $resource | mergeOverwrite (deepCopy $overwrite) -}}
+{{- $omitKeys := index . 2 | default list -}}
+{{- range $key := $omitKeys }}
+  {{- $_ := unset $result $key }}
+{{- end }}
+{{ $result | toJson }}
 {{- end -}}
