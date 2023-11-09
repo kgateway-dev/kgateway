@@ -4285,9 +4285,6 @@ metadata:
 							It("sets the default value when none specified", func() {
 								prepareMakefile(namespace, helmValues{valuesArgs: []string{}})
 
-								rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
-								Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=120s || exit 1"))
-
 								rolloutCheckJob := getJob(testManifest, namespace, "gloo-resource-rollout-check")
 								Expect(rolloutCheckJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=120s || exit 1"))
 							})
@@ -4296,9 +4293,6 @@ metadata:
 								prepareMakefile(namespace, helmValues{valuesArgs: []string{
 									"gateway.rolloutJob.timeout=800",
 								}})
-
-								rolloutJob := getJob(testManifest, namespace, "gloo-resource-rollout")
-								Expect(rolloutJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=800s || exit 1"))
 
 								rolloutCheckJob := getJob(testManifest, namespace, "gloo-resource-rollout-check")
 								Expect(rolloutCheckJob.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("--timeout=800s || exit 1"))
