@@ -241,10 +241,18 @@ The configuration for the extauth envoy sidecar can be found in the rate-limit-s
 
 ## Cert Rotation
 
-Cert rotation can be done by updating the gloo-mtls-certs secret. The SDS sidecar will
-automatically pick up the change.
+Cert rotation can be done by updating the `gloo-mtls-certs` secret. The SDS sidecar automatically picks up the change.
 
-If you want to automatically rotate certs based on a schedule, you can enable a cert rotation CronJob. In your Helm values file for Gloo Edge installation, set `gateway.certGenJob.cron.enabled` to `true`, and specify a rotation schedule:
+If you want to automatically rotate certificates based on a schedule, you can use the Gloo Edge `certGen` CronJob. The job is configured to rotate certificates in stages to minimize the downtime for your apps. You have the option to instruct Gloo Edge to wait between stages to ensure that your workloads have enough time to pick up certificate changes. The job follows the following steps: 
+
+1. The cert rotation job creates a new Certificate Authority (CA) bundle. 
+2. The new CA bundle is added to the `gloo-mtls-certs` secret alongside the old CA bundle that is about to expire.
+3. Gloo Edge waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step so that workloads in the cluster can pick up this change.
+4. Set the server certificate and private key of the new CA bundle to be the current CA. 
+5. Gloo Edge waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step.
+6. Remove the old CA bundle from the `gloo-mtls-certs` secret. All workloads now use the new CA bundle.
+
+To enable the `certGen` CronJob, set the `gateway.certGenJob.cron.enabled` option to `true` and specify a rotation schedule in your Gloo Edge Helm values file as shown in the following example. If you also want to configure the wait time between stages, use the `gateway.certGenJob.rotationDuration` option. The default wait time is 65s. 
 
 ```yaml
 global:
@@ -255,6 +263,7 @@ gateway:
     cron:
       enabled: true
       schedule: "* * * * *" # enter cron schedule here
+    rotationDuration: 120s
 ```
 
 ---
