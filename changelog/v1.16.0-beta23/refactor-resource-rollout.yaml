@@ -1,6 +1,0 @@
-changelog:
-- type: HELM
-  issueLink: https://github.com/solo-io/solo-projects/issues/5490
-  resolvesIssue: false
-  description: Adds a new helm value `global.extraCustomResources` to allow users to add additional custom resources to create, as defined by a helm partial
-
