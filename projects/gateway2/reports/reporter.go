@@ -3,11 +3,12 @@ package reports
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ReportMap struct {
-	Gateways map[string]*GatewayReport
+	Gateways map[types.NamespacedName]*GatewayReport
 	Routes   map[types.NamespacedName]*RouteReport
 }
 
@@ -40,11 +41,11 @@ type reporter struct {
 
 func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 	var gr *GatewayReport
-	//TODO(Law): use correct name here (include namespace, maybe cluster?)
-	gr, ok := r.report.Gateways[gateway.Name]
+	key := client.ObjectKeyFromObject(gateway)
+	gr, ok := r.report.Gateways[key]
 	if !ok {
 		gr = &GatewayReport{}
-		r.report.Gateways[gateway.Name] = gr
+		r.report.Gateways[key] = gr
 	}
 	return gr
 }

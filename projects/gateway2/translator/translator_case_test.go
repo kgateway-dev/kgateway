@@ -22,12 +22,12 @@ type TestCase struct {
 
 type ActualTestResult struct {
 	ProxyResult ProxyResult
-	Reports     map[string]*reports.GatewayReport
+	Reports     map[types.NamespacedName]*reports.GatewayReport
 }
 
 type ExpectedTestResult struct {
 	ProxyResult string
-	Reports     map[string]*reports.GatewayReport
+	Reports     map[types.NamespacedName]*reports.GatewayReport
 }
 
 func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {

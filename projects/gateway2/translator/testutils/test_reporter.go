@@ -5,8 +5,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func BuildReporter() (reports.Reporter, map[string]*reports.GatewayReport) {
-	gr := make(map[string]*reports.GatewayReport)
+func BuildReporter() (reports.Reporter, map[types.NamespacedName]*reports.GatewayReport) {
+	gr := make(map[types.NamespacedName]*reports.GatewayReport)
 	r := reports.ReportMap{
 		Gateways: gr,
 		Routes:   make(map[types.NamespacedName]*reports.RouteReport),

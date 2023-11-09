@@ -168,7 +168,7 @@ func (s *XdsSyncer) Start(
 		t := gloot.NewTranslator()
 		listenersAndRoutesForGateway := map[*apiv1.Gateway]gloot.ProxyResult{}
 		rm := &reports.ReportMap{
-			Gateways: make(map[string]*reports.GatewayReport),
+			Gateways: make(map[k8stypes.NamespacedName]*reports.GatewayReport),
 			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
 		}
 		r := reports.NewReporter(rm)
@@ -447,7 +447,7 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	//TODO(Law): do another Get on the gw, possibly use Patch for status subresource modification
 	//TODO(Law): add generation changed predicate
 	for _, gw := range gwl.Items {
-		gwReport, ok := rm.Gateways[gw.Name]
+		gwReport, ok := rm.Gateways[client.ObjectKeyFromObject(&gw)]
 		if !ok {
 			// why don't we have a report for this gateway?
 			continue
