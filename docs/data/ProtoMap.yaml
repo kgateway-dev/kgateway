@@ -227,9 +227,6 @@ apis:
   enterprise.gloo.solo.io.AutoMapFromMetadata:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AutoMapFromMetadata
     package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.AzureOidcProvider:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AzureOidcProvider
-    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.BasicAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#BasicAuth
     package: enterprise.gloo.solo.io
@@ -241,9 +238,6 @@ apis:
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.CustomAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#CustomAuth
-    package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.DefaultOidcProvider:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#DefaultOidcProvider
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.DiscoveryOverride:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#DiscoveryOverride
