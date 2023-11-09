@@ -66,7 +66,7 @@ require (
 	go.uber.org/goleak v1.2.1
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.12.0
+	golang.org/x/crypto v0.15.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/tools v0.10.0
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
@@ -280,11 +280,11 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
