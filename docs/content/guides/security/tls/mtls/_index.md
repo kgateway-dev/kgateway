@@ -246,7 +246,7 @@ Cert rotation can be done by updating the `gloo-mtls-certs` secret. The SDS side
 If you want to automatically rotate certificates based on a schedule, you can use the Gloo Edge `gloo-mtls-certgen-cronjob` CronJob. The job is configured to rotate certificates in stages to minimize the downtime for your apps. You have the option to instruct Gloo Edge to wait between stages to ensure that your workloads have enough time to pick up certificate changes. The job follows the following steps: 
 
 1. The cert rotation job creates new TLS credentials, including a Certificate Authority (CA) certificate that is used to sign the new server certificate and private key.
-2. The new PEM-encoded CA certificate is added to the 1gloo-mtls-certs secret1 alongside the old CA certificate that is about to be rotated out, so that both CA certificates are accepted temporarily.
+2. The new PEM-encoded CA certificate is added to the `gloo-mtls-certs secret` alongside the old CA certificate that is about to be rotated out, so that both CA certificates are accepted temporarily.
 3. Gloo Edge waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step so that workloads in the cluster can pick up this change.
 4. The old PEM-encoded server certificate and private key are replaced with the new server certificate and private key.
 5. Gloo Edge waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step.
