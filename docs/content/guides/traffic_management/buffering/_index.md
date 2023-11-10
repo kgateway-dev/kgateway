@@ -24,6 +24,11 @@ spec:
 status: # collapsed for brevity
 ```
 
+{{% notice note %}}
+You can configure a maximum payload size on a gateway (`perConnectionBufferLimitBytes`) or on a route (`perRequestBufferLimitBytes`). The smaller size takes precedence. For example, if a gateway sets the maximum payload size to 10MB and the route to 15MB, the gateway maximum size is enforced. However, if the route size is only 5MB (less than the gateway), then the route maximum size is enforced. To configure different maximum payload sizes for specific workloads, set a larger size on the gateway. Then, set smaller sizes for each workload's route. Routes that do not specify a maximum payload size inherit the payload size from the gateway.
+{{% /notice %}}
+
+
 ## Route
 
 You can set buffer limits and other connection options with the [Buffer]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/" >}}) settings in the options of a [Route]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#route" >}}) in a [RouteTable]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk/" >}}).
