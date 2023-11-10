@@ -64,8 +64,9 @@ func (p *Plugin) ApplyFilter(
 					},
 					Substitution: "/",
 				}
+			} else {
+				routeAction.PrefixRewrite = *config.Path.ReplacePrefixMatch
 			}
-			routeAction.PrefixRewrite = *config.Path.ReplacePrefixMatch
 		}
 	}
 
