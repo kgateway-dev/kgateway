@@ -23,7 +23,7 @@ type TestCase struct {
 
 type ActualTestResult struct {
 	ProxyResult ProxyResult
-	Reports     map[types.NamespacedName]*reports.GatewayReport
+	// Reports     map[types.NamespacedName]*reports.GatewayReport
 	//TODO(Law): figure out how RouteReports fit in
 }
 

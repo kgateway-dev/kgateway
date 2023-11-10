@@ -50,7 +50,7 @@ var _ = Describe("GatewayTranslator", func() {
 					Name:      "example-gateway",
 				}: {
 					ProxyResult: dir + "/testutils/outputs/https-routing-proxy.yaml",
-					Reports:     nil,
+					// Reports:     nil,
 				},
 			},
 		}.Run(ctx)
