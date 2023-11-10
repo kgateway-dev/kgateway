@@ -19,36 +19,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.GetListenerReport(string(lis.Name))
 
-		// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
-		if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {
-			lisReport.SetCondition(ListenerCondition{
-				Type:   gwv1.ListenerConditionAccepted,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.ListenerReasonAccepted,
-			})
-		}
-		if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionConflicted)); cond == nil {
-			lisReport.SetCondition(ListenerCondition{
-				Type:   gwv1.ListenerConditionConflicted,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.ListenerReasonNoConflicts,
-			})
-		}
-		if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
-			lisReport.SetCondition(ListenerCondition{
-				Type:   gwv1.ListenerConditionResolvedRefs,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.ListenerReasonResolvedRefs,
-			})
-		}
-		if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
-			lisReport.SetCondition(ListenerCondition{
-				Type:   gwv1.ListenerConditionProgrammed,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.ListenerReasonProgrammed,
-			})
-		}
-
+		addMissingListenerConditions(lisReport)
 		finalConditions := make([]metav1.Condition, 0)
 		oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l gwv1.ListenerStatus) bool {
 			return l.Name == lis.Name
@@ -68,6 +39,25 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 		finalListeners = append(finalListeners, lisReport.Status)
 	}
 
+	addMissingGatewayConditions(gwReport)
+	// recalculate top-level GatewayStatus
+	finalConditions := make([]metav1.Condition, 0)
+	for _, gwCondition := range gwReport.GetConditions() {
+		gwCondition.ObservedGeneration = gw.Generation
+		// copy the old condition from the gw so last transition time is set correctly
+		if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
+			finalConditions = append(finalConditions, *cond)
+		}
+		meta.SetStatusCondition(&finalConditions, gwCondition)
+	}
+
+	finalGwStatus := gwv1.GatewayStatus{}
+	finalGwStatus.Conditions = finalConditions
+	finalGwStatus.Listeners = finalListeners
+	return finalGwStatus
+}
+
+func addMissingGatewayConditions(gwReport *GatewayReport) {
 	// set missing conditions, i.e. set healthy conditions
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
 		gwReport.SetCondition(GatewayCondition{
@@ -83,20 +73,36 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 			Reason: gwv1.GatewayReasonProgrammed,
 		})
 	}
+}
 
-	// recalculate top-level GatewayStatus
-	finalGwStatus := gwv1.GatewayStatus{}
-	finalConditions := make([]metav1.Condition, 0)
-	for _, gwCondition := range gwReport.GetConditions() {
-		gwCondition.ObservedGeneration = gw.Generation
-		// copy the old condition from the gw so last transition time is set correctly
-		if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
-			finalConditions = append(finalConditions, *cond)
-		}
-		meta.SetStatusCondition(&finalConditions, gwCondition)
+func addMissingListenerConditions(lisReport *ListenerReport) {
+	// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
+	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {
+		lisReport.SetCondition(ListenerCondition{
+			Type:   gwv1.ListenerConditionAccepted,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.ListenerReasonAccepted,
+		})
 	}
-
-	finalGwStatus.Conditions = finalConditions
-	finalGwStatus.Listeners = finalListeners
-	return finalGwStatus
+	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionConflicted)); cond == nil {
+		lisReport.SetCondition(ListenerCondition{
+			Type:   gwv1.ListenerConditionConflicted,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.ListenerReasonNoConflicts,
+		})
+	}
+	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
+		lisReport.SetCondition(ListenerCondition{
+			Type:   gwv1.ListenerConditionResolvedRefs,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.ListenerReasonResolvedRefs,
+		})
+	}
+	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
+		lisReport.SetCondition(ListenerCondition{
+			Type:   gwv1.ListenerConditionProgrammed,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.ListenerReasonProgrammed,
+		})
+	}
 }

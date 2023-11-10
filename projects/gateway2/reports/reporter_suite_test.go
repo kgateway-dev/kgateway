@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestTranslator(t *testing.T) {
+func TestReporter(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Reporter Suite")
 }
