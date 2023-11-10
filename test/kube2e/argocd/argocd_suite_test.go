@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/test/helpers"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
