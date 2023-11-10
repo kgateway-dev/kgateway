@@ -26,8 +26,8 @@ func (p *Plugin) ApplyFilter(
 
 	routeAction := outputRoute.GetRoute()
 
-	if routeAction != nil {
-		return errors.Errorf("RequestMirror route cannot have destinations")
+	if routeAction == nil {
+		return errors.Errorf("RequestMirror must have destinations")
 	}
 
 	cli, err := ctx.Queries.GetBackendForRef(ctx.Ctx, ctx.Queries.ObjToFrom(ctx.Route), &config.BackendRef)
