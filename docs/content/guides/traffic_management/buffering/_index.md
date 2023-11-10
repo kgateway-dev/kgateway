@@ -25,8 +25,9 @@ status: # collapsed for brevity
 ```
 
 {{% notice note %}}
-A maximum payload size that is configured on the gateway (`perConnectionBufferLimitBytes`) takes precedence over any maximum payload size that you configured on a route (`perRequestBufferLimitBytes`) when the gateway payload size is smaller than the payload size of a route. To configure different maximum payload sizes for specific workloads, you must set the maximum payload size for all your workloads on the gateway, and set a smaller maximum payload size on a route. Routes that do not specify a maximum payload size inherit the payload size from the gateway. 
+You can configure a maximum payload size on a gateway (`perConnectionBufferLimitBytes`) or on a route (`perRequestBufferLimitBytes`). The smaller size takes precedence. For example, if a gateway sets the maximum payload size to 10MB and the route to 15MB, the gateway maximum size is enforced. However, if the route size is only 5MB (less than the gateway), then the route maximum size is enforced. To configure different maximum payload sizes for specific workloads, set a larger size on the gateway. Then, set smaller sizes for each workload's route. Routes that do not specify a maximum payload size inherit the payload size from the gateway.
 {{% /notice %}}
+
 
 ## Route
 
