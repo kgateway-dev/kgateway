@@ -40,7 +40,7 @@ func TestValidate(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestSimpleGWNoHostname(t *testing.T) {
@@ -65,7 +65,7 @@ func TestSimpleGWNoHostname(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestSimpleGWDuplicateNoHostname(t *testing.T) {
@@ -113,7 +113,7 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestSimpleListenerWithValidRouteKind(t *testing.T) {
@@ -138,7 +138,7 @@ func TestSimpleListenerWithValidRouteKind(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
@@ -165,7 +165,7 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestMultiListener(t *testing.T) {
@@ -199,7 +199,7 @@ func TestMultiListener(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestMultiListenerExplicitRoutes(t *testing.T) {
@@ -233,7 +233,7 @@ func TestMultiListenerExplicitRoutes(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestMultiListenerWithInavlidRoute(t *testing.T) {
@@ -269,7 +269,7 @@ func TestMultiListenerWithInavlidRoute(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestProtocolConflict(t *testing.T) {
@@ -317,7 +317,7 @@ func TestProtocolConflict(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestProtocolConflictInvalidRoutes(t *testing.T) {
@@ -353,7 +353,7 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
@@ -412,7 +412,7 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestHostnameConflict(t *testing.T) {
@@ -460,7 +460,7 @@ func TestHostnameConflict(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestHostnameConflictWithInvalidRoute(t *testing.T) {
@@ -496,7 +496,7 @@ func TestHostnameConflictWithInvalidRoute(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
@@ -555,7 +555,7 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
@@ -612,7 +612,7 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
 func svc(ns string) *corev1.Service {
@@ -774,7 +774,7 @@ func assertExpectedListenerStatuses(
 	g Gomega,
 	gw *gwv1.Gateway,
 	listeners []gwv1.Listener,
-	gatewayMap map[types.NamespacedName]*reports.GatewayReport,
+	reportMap reports.ReportMap,
 	expectedStatuses map[string]gwv1.ListenerStatus,
 ) {
 	if len(listeners) != len(expectedStatuses) {
@@ -783,11 +783,11 @@ func assertExpectedListenerStatuses(
 			len(expectedStatuses))
 	}
 	gatewayKey := client.ObjectKeyFromObject(gw)
-	gatewayReport := gatewayMap[gatewayKey]
+	gatewayReport := reportMap.GetGateway(gatewayKey)
 
 	for _, listener := range listeners {
 		listenerName := string(listener.Name)
-		actualReport := gatewayReport.GetListener(listenerName)
+		actualReport := gatewayReport.GetListenerReport(listenerName)
 
 		expectedStatus := expectedStatuses[listenerName]
 		g.Expect(actualReport.Status.Name).To(BeEquivalentTo(listenerName))

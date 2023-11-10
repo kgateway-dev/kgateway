@@ -23,7 +23,7 @@ var _ = Describe("GatewayTranslator", func() {
 					Name:      "example-gateway",
 				}: {
 					ProxyResult: dir + "/testutils/outputs/http-routing-proxy.yaml",
-					Reports:     nil,
+					// Reports:     nil,
 				},
 			},
 		}.Run(ctx, false)

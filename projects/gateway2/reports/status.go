@@ -12,12 +12,12 @@ import (
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.GatewayStatus {
 	key := client.ObjectKeyFromObject(&gw)
-	gwReport := r.Gateways[key]
+	gwReport := r.GetGateway(key)
 
 	//TODO(Law): deterministic sorting
 	finalListeners := make([]gwv1.ListenerStatus, 0)
 	for _, lis := range gw.Spec.Listeners {
-		lisReport := gwReport.GetListener(string(lis.Name))
+		lisReport := gwReport.GetListenerReport(string(lis.Name))
 
 		// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
 		if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {

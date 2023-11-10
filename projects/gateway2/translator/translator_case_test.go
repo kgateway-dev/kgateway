@@ -22,13 +22,13 @@ type TestCase struct {
 
 type ActualTestResult struct {
 	ProxyResult ProxyResult
+	Reports     map[types.NamespacedName]*reports.GatewayReport
 	//TODO(Law): figure out how RouteReports fit in
-	Reports map[types.NamespacedName]*reports.GatewayReport
 }
 
 type ExpectedTestResult struct {
 	ProxyResult string
-	Reports     map[types.NamespacedName]*reports.GatewayReport
+	// Reports     map[types.NamespacedName]*reports.GatewayReport
 }
 
 func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
@@ -114,7 +114,7 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 
 		actual := ActualTestResult{
 			ProxyResult: *proxyResult,
-			Reports:     reportsMap.Gateways,
+			// Reports:     reportsMap.Gateways,
 		}
 
 		expected, ok := tc.ResultsByGateway[ref]

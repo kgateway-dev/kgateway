@@ -8,7 +8,7 @@ import (
 )
 
 type ReportMap struct {
-	Gateways map[types.NamespacedName]*GatewayReport
+	gateways map[types.NamespacedName]*GatewayReport
 	Routes   map[types.NamespacedName]*RouteReport
 }
 
@@ -16,9 +16,17 @@ func NewReportMap() ReportMap {
 	gr := make(map[types.NamespacedName]*GatewayReport)
 	rr := make(map[types.NamespacedName]*RouteReport)
 	return ReportMap{
-		Gateways: gr,
+		gateways: gr,
 		Routes:   rr,
 	}
+}
+
+func (r *ReportMap) GetGateway(key types.NamespacedName) *GatewayReport {
+	gr := r.gateways[key]
+	if gr == nil {
+		return &GatewayReport{}
+	}
+	return gr
 }
 
 type GatewayReport struct {
@@ -27,11 +35,16 @@ type GatewayReport struct {
 }
 
 // TODO(Law): consider non-pointer return?
-func (g *GatewayReport) GetListener(lisName string) *ListenerReport {
+func (g *GatewayReport) GetListenerReport(lisName string) *ListenerReport {
 	if g == nil {
 		return &ListenerReport{}
 	}
-	return g.listeners[lisName]
+
+	lr := g.listeners[lisName]
+	if lr == nil {
+		return &ListenerReport{}
+	}
+	return lr
 }
 
 func (g *GatewayReport) GetConditions() []metav1.Condition {
@@ -39,6 +52,30 @@ func (g *GatewayReport) GetConditions() []metav1.Condition {
 		return []metav1.Condition{}
 	}
 	return g.conditions
+}
+
+func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
+	if g.listeners == nil {
+		g.listeners = make(map[string]*ListenerReport)
+	}
+	var lr *ListenerReport
+	lr, ok := g.listeners[string(listener.Name)]
+	if !ok {
+		lr = &ListenerReport{}
+		lr.Status.Name = listener.Name
+		g.listeners[string(listener.Name)] = lr
+	}
+	return lr
+}
+
+func (g *GatewayReport) SetCondition(gc GatewayCondition) {
+	condition := metav1.Condition{
+		Type:    string(gc.Type),
+		Status:  gc.Status,
+		Reason:  string(gc.Reason),
+		Message: gc.Message,
+	}
+	g.conditions = append(g.conditions, condition)
 }
 
 type RouteReport struct {
@@ -59,6 +96,24 @@ type ListenerReport struct {
 	Status gwv1.ListenerStatus
 }
 
+func (l *ListenerReport) SetCondition(lc ListenerCondition) {
+	condition := metav1.Condition{
+		Type:    string(lc.Type),
+		Status:  lc.Status,
+		Reason:  string(lc.Reason),
+		Message: lc.Message,
+	}
+	l.Status.Conditions = append(l.Status.Conditions, condition)
+}
+
+func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
+	l.Status.SupportedKinds = rgks
+}
+
+func (l *ListenerReport) SetAttachedRoutes(n uint) {
+	l.Status.AttachedRoutes = int32(n)
+}
+
 type reporter struct {
 	report *ReportMap
 }
@@ -66,10 +121,10 @@ type reporter struct {
 func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 	var gr *GatewayReport
 	key := client.ObjectKeyFromObject(gateway)
-	gr, ok := r.report.Gateways[key]
+	gr, ok := r.report.gateways[key]
 	if !ok {
 		gr = &GatewayReport{}
-		r.report.Gateways[key] = gr
+		r.report.gateways[key] = gr
 	}
 	return gr
 }
@@ -131,48 +186,6 @@ func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {
 		Message: rc.Message,
 	}
 	prr.Conditions = append(prr.Conditions, condition)
-}
-
-func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
-	if r.listeners == nil {
-		r.listeners = make(map[string]*ListenerReport)
-	}
-	var lr *ListenerReport
-	lr, ok := r.listeners[string(listener.Name)]
-	if !ok {
-		lr = &ListenerReport{}
-		lr.Status.Name = listener.Name
-		r.listeners[string(listener.Name)] = lr
-	}
-	return lr
-}
-
-func (g *GatewayReport) SetCondition(gc GatewayCondition) {
-	condition := metav1.Condition{
-		Type:    string(gc.Type),
-		Status:  gc.Status,
-		Reason:  string(gc.Reason),
-		Message: gc.Message,
-	}
-	g.conditions = append(g.conditions, condition)
-}
-
-func (l *ListenerReport) SetCondition(lc ListenerCondition) {
-	condition := metav1.Condition{
-		Type:    string(lc.Type),
-		Status:  lc.Status,
-		Reason:  string(lc.Reason),
-		Message: lc.Message,
-	}
-	l.Status.Conditions = append(l.Status.Conditions, condition)
-}
-
-func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
-	l.Status.SupportedKinds = rgks
-}
-
-func (l *ListenerReport) SetAttachedRoutes(n uint) {
-	l.Status.AttachedRoutes = int32(n)
 }
 
 func NewReporter(reportMap *ReportMap) Reporter {
