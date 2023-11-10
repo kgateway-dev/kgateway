@@ -173,8 +173,27 @@ spec:
                                 type: object
                               type: object
                           type: object
+                        encryption:
+                          properties:
+                            apr:
+                              type: object
+                            sha1:
+                              type: object
+                          type: object
                         realm:
                           type: string
+                        userList:
+                          properties:
+                            users:
+                              additionalProperties:
+                                properties:
+                                  hashedPassword:
+                                    type: string
+                                  salt:
+                                    type: string
+                                type: object
+                              type: object
+                          type: object
                       type: object
                     hmacAuth:
                       properties:
@@ -473,6 +492,36 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            azure:
+                              properties:
+                                claimsCachingOptions:
+                                  properties:
+                                    db:
+                                      format: int32
+                                      type: integer
+                                    host:
+                                      type: string
+                                    poolSize:
+                                      format: int32
+                                      type: integer
+                                    socketType:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    tlsCertMountPath:
+                                      type: string
+                                  type: object
+                                clientId:
+                                  type: string
+                                clientSecret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                tenantId:
+                                  type: string
+                              type: object
                             callbackPath:
                               type: string
                             clientAuthentication:
@@ -511,6 +560,8 @@ spec:
                                   type: string
                                 namespace:
                                   type: string
+                              type: object
+                            default:
                               type: object
                             disableClientSecret:
                               nullable: true

@@ -12,9 +12,12 @@ metadata:
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
-    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob | nindent 4 }}
+    # Argo checks the status of resources in an app to determine its state. Since a job is cleaned up (deleted) after ttlSecondsAfterFinished,
+    # the missing job causes the argo app to go out of sync.
+    # Annotating this job as a Sync hook along with an argo-specific hook deletion policy ensures that even when the job is cleaned up,
+    # it does not alter the state of the argo app and that it is still in sync.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
@@ -47,6 +50,10 @@ spec:
             items:
               - key: custom-resources
                 path: custom-resources
+            {{- if .Values.global.extraCustomResources }}
+              - key: extra-custom-resources
+                path: extra-custom-resources
+            {{- end }}
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
@@ -57,6 +64,13 @@ spec:
                 configMapKeyRef:
                   name: gloo-custom-resource-config
                   key: has-custom-resources
+          {{- if .Values.global.extraCustomResources }}
+            - name: HAS_EXTRA_CUSTOM_RESOURCES
+              valueFrom:
+                configMapKeyRef:
+                  name: gloo-custom-resource-config
+                  key: has-extra-custom-resources
+          {{- end }}
           volumeMounts:
             - name: custom-resource-config-volume
               mountPath: /etc/gloo-custom-resources
@@ -77,8 +91,16 @@ spec:
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
 
+            # apply extra Gloo Edge custom resources - these are created in enterprise
+            if [ "$HAS_EXTRA_CUSTOM_RESOURCES" == "true" ]
+            then
+              kubectl apply -f /etc/gloo-custom-resources/extra-custom-resources || exit $?
+            else
+              echo "no extra custom resources to apply"
+            fi
+
             # apply Gloo Edge custom resources
-            if [ $HAS_CUSTOM_RESOURCES == "true" ]
+            if [ "$HAS_CUSTOM_RESOURCES" == "true" ]
             then
               kubectl apply -f /etc/gloo-custom-resources/custom-resources || exit $?
             else

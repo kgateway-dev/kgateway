@@ -31,6 +31,9 @@ var (
 	ossImageAnnotation      = "gloo.solo.io/oss-image-tag"
 )
 
+// NewKube creates a new kube client for our cli
+// It knows how to see its namespace and potentially its context
+// Mainly used to retrieve server versions of gloo owned deployments
 func NewKube(namespace, kubeContext string) *kube {
 	return &kube{
 		namespace:   namespace,

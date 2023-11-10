@@ -49,6 +49,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
 
@@ -216,6 +217,9 @@ message HttpListenerOptions {
     // Router is an extension of the envoy http filters
     // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
     Router router = 18;
+
+    // Enterprise only: Tap filter settings (experimental).
+    tap.options.gloo.solo.io.Tap tap = 34;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

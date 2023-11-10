@@ -28,7 +28,7 @@ if [ ! $python_version ]; then
 fi
 
 if [ -z "${GLOO_VERSION:-}" ]; then
-  GLOO_VERSIONS=$(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | $python_version -c "import sys; from distutils.version import StrictVersion, LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  filtered_releases = list(filter(lambda release_string: len(release_string) > 0 and StrictVersion.version_re.match(release_string[1:]) != None, releases)); filtered_releases.sort(key=LooseVersion, reverse=True); print('\n'.join(filtered_releases))")
+  GLOO_VERSIONS=$(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | $python_version -c "import sys; from distutils.version import StrictVersion, LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  filtered_releases = list(filter(lambda release_string: len(release_string) > 0 and StrictVersion.version_re.match(release_string[1:]) != None and StrictVersion(release_string[1:]) < StrictVersion('2.0.0') , releases)); filtered_releases.sort(key=LooseVersion, reverse=True); print('\n'.join(filtered_releases))")
 else
   GLOO_VERSIONS="${GLOO_VERSION}"
 fi
@@ -84,11 +84,19 @@ echo ""
 echo "Add the gloo CLI to your path with:"
 echo "  export PATH=\$HOME/.gloo/bin:\$PATH"
 echo ""
+
+# if version 2, only one install command exists
+
 echo "Now run:"
-echo "  glooctl install gateway     # install gloo's function gateway functionality into the 'gloo-system' namespace"
-echo "  glooctl install ingress     # install very basic Kubernetes Ingress support with Gloo into namespace gloo-system"
-echo "  glooctl install knative     # install Knative serving with Gloo configured as the default cluster ingress"
-echo "Please see visit the Gloo Installation guides for more:  https://docs.solo.io/gloo-edge/latest/installation/"
+if [[ $gloo_version == v2* ]]; then
+  echo "  glooctl install     # install gloo gateway v2 into the 'gloo-system' namespace"
+  echo "Please see visit the Gloo Installation guides for more:  https://docs.solo.io/gloo-gateway/v2/"
+else
+  echo "  glooctl install gateway     # install gloo's function gateway functionality into the 'gloo-system' namespace"
+  echo "  glooctl install ingress     # install very basic Kubernetes Ingress support with Gloo into namespace gloo-system"
+  echo "  glooctl install knative     # install Knative serving with Gloo configured as the default cluster ingress"
+  echo "Please see visit the Gloo Installation guides for more:  https://docs.solo.io/gloo-edge/latest/installation/"
+fi
 exit 0
 done
 
