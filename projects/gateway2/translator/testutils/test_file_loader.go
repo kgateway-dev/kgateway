@@ -176,6 +176,13 @@ func MarshalYaml(m proto.Message) ([]byte, error) {
 	}
 	return yaml.JSONToYAML(jsn)
 }
+func MarshalAnyYaml(m any) ([]byte, error) {
+	jsn, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.JSONToYAML(jsn)
+}
 
 func MarshalYamlProxyResult(lr translator.ProxyResult) ([]byte, error) {
 	jsn, err := json.Marshal(lr)

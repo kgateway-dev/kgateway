@@ -31,12 +31,11 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -217,17 +216,18 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 	defer span.End()
 
 	s.latestSnap = snap
-	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
-	logger := contextutils.LoggerFrom(ctx)
+	logger := log.FromContext(ctx, "pkg", "envoyTranslatorSyncer")
 	snapHash := hashutils.MustHash(snap)
-	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs, %v graphql apis)", snapHash,
-		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
-	defer logger.Infof("end sync %v", snapHash)
+	logger.Info("begin sync", "snapHash", snapHash,
+		"len(proxies)", len(snap.Proxies), "len(upstreams)", len(snap.Upstreams), "len(endpoints)", len(snap.Endpoints), "len(secrets)", len(snap.Secrets), "len(artifacts)", len(snap.Artifacts), "len(authconfigs)", len(snap.AuthConfigs), "len(ratelimits)", len(snap.Ratelimitconfigs), "len(graphqls)", len(snap.GraphqlApis))
+	debugLogger := logger.V(1)
+
+	defer logger.Info("end sync", "len(snapHash)", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		logger.Debug(syncutil.StringifySnapshot(snap))
+	if debugLogger.Enabled() {
+		debugLogger.Info("snap", "snap", syncutil.StringifySnapshot(snap))
 	}
 
 	reports := make(reporter.ResourceReports)
@@ -235,6 +235,12 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 	reports.Accept(snap.Proxies.AsInputResources()...)
 
 	if !s.xdsGarbageCollection {
+		var proxies []*gloov1.Proxy
+		for gw := range listenersAndRoutesForGateway {
+			proxies = append(proxies, &gloov1.Proxy{
+				Metadata: proxyMetadata(gw),
+			})
+		}
 		allKeys := map[string]bool{
 			xds.FallbackNodeCacheKey: true,
 		}
@@ -243,7 +249,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(proxies) {
 			allKeys[key] = true
 		}
 
@@ -297,8 +303,10 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		xdsSnapshot.MakeConsistent()
 
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
-			logger.Warnw("Proxy had invalid config after xds sanitization", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
+			logger.Error(validateErr, "Proxy had invalid config after xds sanitization", "proxy", proxy.GetMetadata().Ref())
 		}
+
+		debugLogger.Info("snap", "key", sanitizedSnapshot)
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		reports.Merge(reports)
@@ -316,16 +324,20 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		measureResource(proxyCtx, "routes", routesLen)
 		measureResource(proxyCtx, "endpoints", endpointsLen)
 
-		logger.Infow("Setting xDS Snapshot", "key", key,
+		debugLogger.Info("Setting xDS Snapshot", "key", key,
 			"clusters", clustersLen,
+			"clustersVersion", xdsSnapshot.GetResources(types.ClusterTypeV3).Version,
 			"listeners", listenersLen,
+			"listenersVersion", xdsSnapshot.GetResources(types.ListenerTypeV3).Version,
 			"routes", routesLen,
-			"endpoints", endpointsLen)
+			"routesVersion", xdsSnapshot.GetResources(types.RouteTypeV3).Version,
+			"endpoints", endpointsLen,
+			"endpointsVersion", xdsSnapshot.GetResources(types.EndpointTypeV3).Version)
 
-		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), xdsSnapshot)
+		debugLogger.Info("Full snapshot for proxy", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
-	logger.Debugf("gloo reports to be written: %v", reports)
+	debugLogger.Info("gloo reports to be written", "reports", reports)
 
 	return reports
 }
