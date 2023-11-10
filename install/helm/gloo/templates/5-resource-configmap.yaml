@@ -12,3 +12,13 @@ data:
   custom-resources: |
 {{ $cr }}
   has-custom-resources: "{{- $hasCr -}}"
+{{- if .Values.global.extraCustomResources }}
+  {{- /* Since the OSS values context is passed to enterprise, we ensure that enterprise can refer to (i) gloo values as .Values.gloo (ii) global values as .Values.global (iii) release values as .Release. That way any changes in enterprise are minimized */}}
+  {{- $values := dict "global" .Values.global "gloo" .Values }}
+  {{- $data := dict "Values" $values "Release" .Release }}
+  {{- $extraCr := include "gloo.extraCustomResources" $data | indent 4 -}}
+  {{- $hasExtraCr := contains "kind:" $extraCr -}}{{/* whether there are any custom resources in enterprise */}}
+  extra-custom-resources: |
+{{ $extraCr }}
+  has-extra-custom-resources: "{{- $hasExtraCr -}}"
+{{- end -}}

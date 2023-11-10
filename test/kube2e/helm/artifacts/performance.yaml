@@ -1,0 +1,28 @@
+# The following config is to enable better performance
+# Ref : https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#performance-tips
+settings:
+  # The following config is to disable transfomation validation for performance
+  # Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#transformations
+  disableTransformationValidation: true
+
+  # The following config is to Disable Kubernetes destinations for performance
+  # Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#disable-kubernetes-destinations
+  disableKubernetesDestinations: true
+
+# The following config is to disable discovery for performance
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#discovery
+discovery:
+  enabled: false
+
+# The following config is to enable gzip for performance
+# Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#enable-envoys-gzip-filter
+gatewayProxies:
+  gatewayProxy:
+    gatewaySettings:
+      customHttpGateway:
+        options:
+          gzip:
+            compressionLevel: BEST
+            contentType:
+            - text/plain
+
