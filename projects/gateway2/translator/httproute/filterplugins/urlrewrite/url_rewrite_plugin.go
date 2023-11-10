@@ -59,9 +59,7 @@ func (p *Plugin) ApplyFilter(
 			// Remove this workaround once https://github.com/envoyproxy/envoy/issues/26055 is fixed
 			if ctx.Match.Path != nil && ctx.Match.Path.Value != nil && *config.Path.ReplacePrefixMatch == "/" {
 				routeAction.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
-					Pattern: &matcherv3.RegexMatcher{
-						Regex: "^" + *ctx.Match.Path.Value + `\/*`,
-					},
+					Pattern:      regexutils.NewRegexWithProgramSize("^"+*ctx.Match.Path.Value+`\/*`, nil),
 					Substitution: "/",
 				}
 			} else {
