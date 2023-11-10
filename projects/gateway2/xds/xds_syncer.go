@@ -451,11 +451,7 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		//TODO(Law): deterministic sorting
 		finalListeners := make([]apiv1.ListenerStatus, 0)
 		for _, lis := range gw.Spec.Listeners {
-			lisReport, ok := gwReport.Listeners[string(lis.Name)]
-			if !ok {
-				//TODO(Law): why don't we have a report for a listner? shouldnt happen
-				continue
-			}
+			lisReport := gwReport.GetListener(string(lis.Name))
 
 			// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
 			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionAccepted)); cond == nil {
@@ -507,14 +503,14 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		}
 
 		// set missing conditions, i.e. set healthy conditions
-		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionAccepted)); cond == nil {
+		if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(apiv1.GatewayConditionAccepted)); cond == nil {
 			gwReport.SetCondition(reports.GatewayCondition{
 				Type:   apiv1.GatewayConditionAccepted,
 				Status: v1.ConditionTrue,
 				Reason: apiv1.GatewayReasonAccepted,
 			})
 		}
-		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionProgrammed)); cond == nil {
+		if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(apiv1.GatewayConditionProgrammed)); cond == nil {
 			gwReport.SetCondition(reports.GatewayCondition{
 				Type:   apiv1.GatewayConditionProgrammed,
 				Status: v1.ConditionTrue,
@@ -525,7 +521,7 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		// recalculate top-level GatewayStatus
 		finalGwStatus := apiv1.GatewayStatus{}
 		finalConditions := make([]v1.Condition, 0)
-		for _, gwCondition := range gwReport.Conditions {
+		for _, gwCondition := range gwReport.GetConditions() {
 			gwCondition.ObservedGeneration = gw.Generation
 			// copy the old condition from the gw so last transition time is set correctly
 			if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {

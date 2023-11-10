@@ -777,19 +777,19 @@ func assertExpectedListenerStatuses(
 	gatewayMap map[types.NamespacedName]*reports.GatewayReport,
 	expectedStatuses map[string]gwv1.ListenerStatus,
 ) {
+	if len(listeners) != len(expectedStatuses) {
+		t.Fatalf("incorrect test setup, `expectedStatuses` MUST be set for all listeners, %d listeners, %d expectedStatuses",
+			len(listeners),
+			len(expectedStatuses))
+	}
 	gatewayKey := client.ObjectKeyFromObject(gw)
 	gatewayReport := gatewayMap[gatewayKey]
-	g.Expect(len(gatewayReport.Listeners)).To(Equal(len(expectedStatuses)))
 
 	for _, listener := range listeners {
 		listenerName := string(listener.Name)
-		actualReport := gatewayReport.Listeners[listenerName]
+		actualReport := gatewayReport.GetListener(listenerName)
 
-		expectedStatus, ok := expectedStatuses[listenerName]
-		if !ok {
-			t.Fatalf("didn't receive an expected status for listener '%s'", listenerName)
-		}
-
+		expectedStatus := expectedStatuses[listenerName]
 		g.Expect(actualReport.Status.Name).To(BeEquivalentTo(listenerName))
 		g.Expect(actualReport.Status.SupportedKinds).To(BeEquivalentTo(expectedStatus.SupportedKinds))
 		g.Expect(len(actualReport.Status.Conditions)).To(Equal(len(expectedStatus.Conditions)))

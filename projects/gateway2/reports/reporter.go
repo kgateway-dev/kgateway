@@ -22,8 +22,23 @@ func NewReportMap() ReportMap {
 }
 
 type GatewayReport struct {
-	Conditions []metav1.Condition
-	Listeners  map[string]*ListenerReport
+	conditions []metav1.Condition
+	listeners  map[string]*ListenerReport
+}
+
+// TODO(Law): consider non-pointer return?
+func (g *GatewayReport) GetListener(lisName string) *ListenerReport {
+	if g == nil {
+		return &ListenerReport{}
+	}
+	return g.listeners[lisName]
+}
+
+func (g *GatewayReport) GetConditions() []metav1.Condition {
+	if g == nil {
+		return []metav1.Condition{}
+	}
+	return g.conditions
 }
 
 type RouteReport struct {
@@ -119,15 +134,15 @@ func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {
 }
 
 func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
-	if r.Listeners == nil {
-		r.Listeners = make(map[string]*ListenerReport)
+	if r.listeners == nil {
+		r.listeners = make(map[string]*ListenerReport)
 	}
 	var lr *ListenerReport
-	lr, ok := r.Listeners[string(listener.Name)]
+	lr, ok := r.listeners[string(listener.Name)]
 	if !ok {
 		lr = &ListenerReport{}
 		lr.Status.Name = listener.Name
-		r.Listeners[string(listener.Name)] = lr
+		r.listeners[string(listener.Name)] = lr
 	}
 	return lr
 }
@@ -139,7 +154,7 @@ func (g *GatewayReport) SetCondition(gc GatewayCondition) {
 		Reason:  string(gc.Reason),
 		Message: gc.Message,
 	}
-	g.Conditions = append(g.Conditions, condition)
+	g.conditions = append(g.conditions, condition)
 }
 
 func (l *ListenerReport) SetCondition(lc ListenerCondition) {
