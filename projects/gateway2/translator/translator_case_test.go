@@ -22,7 +22,8 @@ type TestCase struct {
 
 type ActualTestResult struct {
 	ProxyResult ProxyResult
-	Reports     map[types.NamespacedName]*reports.GatewayReport
+	//TODO(Law): figure out how RouteReports fit in
+	Reports map[types.NamespacedName]*reports.GatewayReport
 }
 
 type ExpectedTestResult struct {
@@ -92,7 +93,8 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
-		reporter, reportsMap := testutils.BuildReporter()
+		reportsMap := reports.NewReportMap()
+		reporter := reports.NewReporter(&reportsMap)
 
 		// translate gateway
 		proxyResult := NewTranslator().TranslateProxy(
@@ -112,7 +114,7 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 
 		actual := ActualTestResult{
 			ProxyResult: *proxyResult,
-			Reports:     reportsMap,
+			Reports:     reportsMap.Gateways,
 		}
 
 		expected, ok := tc.ResultsByGateway[ref]

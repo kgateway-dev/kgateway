@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -167,11 +166,8 @@ func (s *XdsSyncer) Start(
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
 		listenersAndRoutesForGateway := map[*apiv1.Gateway]gloot.ProxyResult{}
-		rm := &reports.ReportMap{
-			Gateways: make(map[k8stypes.NamespacedName]*reports.GatewayReport),
-			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
-		}
-		r := reports.NewReporter(rm)
+		rm := reports.NewReportMap()
+		r := reports.NewReporter(&rm)
 		for _, gw := range gwl.Items {
 			gw := gw
 			lr := t.TranslateProxy(ctx, &gw, queries, r)
@@ -181,8 +177,8 @@ func (s *XdsSyncer) Start(
 			//TODO: handle reports and process statuses
 		}
 		s.syncEnvoy(ctx, listenersAndRoutesForGateway, proxyApiSnapshot)
-		s.syncStatus(ctx, *rm, gwl)
-		s.syncRouteStatus(ctx, *rm)
+		s.syncStatus(ctx, rm, gwl)
+		s.syncRouteStatus(ctx, rm)
 	}
 
 	for {

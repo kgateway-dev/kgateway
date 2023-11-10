@@ -14,20 +14,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func buildReporter() (
-	reports.Reporter,
-	map[types.NamespacedName]*reports.GatewayReport,
-	map[types.NamespacedName]*reports.RouteReport) {
-	gr := make(map[types.NamespacedName]*reports.GatewayReport)
-	rr := make(map[types.NamespacedName]*reports.RouteReport)
-	r := reports.ReportMap{
-		Gateways: gr,
-		Routes:   rr,
-	}
-	report := reports.NewReporter(&r)
-	return report, gr, rr
-}
-
 func GroupNameHelper() *gwv1.Group {
 	g := gwv1.Group(gwv1.GroupName)
 	return &g
@@ -35,8 +21,9 @@ func GroupNameHelper() *gwv1.Group {
 func TestValidate(t *testing.T) {
 	gateway := simpleGw()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -53,14 +40,15 @@ func TestValidate(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestSimpleGWNoHostname(t *testing.T) {
 	gateway := simpleGwNoHostname()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -77,14 +65,15 @@ func TestSimpleGWNoHostname(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 	gateway := simpleGwDuplicateNoHostname()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -124,14 +113,15 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestSimpleListenerWithValidRouteKind(t *testing.T) {
 	gateway := simpleGwValidRouteKind()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -148,14 +138,15 @@ func TestSimpleListenerWithValidRouteKind(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 	gateway := simpleGwInvalidRouteKind()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -174,14 +165,15 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestMultiListener(t *testing.T) {
 	gateway := simpleGwMultiListener()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -207,14 +199,15 @@ func TestMultiListener(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestMultiListenerExplicitRoutes(t *testing.T) {
 	gateway := simpleGwMultiListenerExplicitRoutes()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -240,14 +233,15 @@ func TestMultiListenerExplicitRoutes(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestMultiListenerWithInavlidRoute(t *testing.T) {
 	gateway := simpleGwMultiListenerWithInvalidListener()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -275,14 +269,15 @@ func TestMultiListenerWithInavlidRoute(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestProtocolConflict(t *testing.T) {
 	gateway := protocolConfGw()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -322,14 +317,15 @@ func TestProtocolConflict(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestProtocolConflictInvalidRoutes(t *testing.T) {
 	gateway := protocolConfGwWithInvalidRoute()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -357,14 +353,15 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 	gateway := actualProtocolConfGwWithInvalidRoute()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -415,14 +412,15 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestHostnameConflict(t *testing.T) {
 	gateway := hostConfGw()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -462,14 +460,15 @@ func TestHostnameConflict(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestHostnameConflictWithInvalidRoute(t *testing.T) {
 	gateway := hostConfGwWithInvalidRoute()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -497,14 +496,15 @@ func TestHostnameConflictWithInvalidRoute(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 	gateway := actualHostConfGwWithInvalidRoute()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -555,14 +555,15 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 	gateway := hostConfGw2()
 	listeners := gateway.Spec.Listeners
-	report, gatewayMap, _ := buildReporter()
-	gatewayReporter := report.Gateway(gateway)
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
 
 	validListeners := validateListeners(gateway, gatewayReporter)
 	g := NewWithT(t)
@@ -611,7 +612,7 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 			},
 		},
 	}
-	assertExpectedListenerStatuses(t, g, gateway, listeners, gatewayMap, expectedStatuses)
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report.Gateways, expectedStatuses)
 }
 
 func svc(ns string) *corev1.Service {

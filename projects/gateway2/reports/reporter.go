@@ -12,6 +12,15 @@ type ReportMap struct {
 	Routes   map[types.NamespacedName]*RouteReport
 }
 
+func NewReportMap() ReportMap {
+	gr := make(map[types.NamespacedName]*GatewayReport)
+	rr := make(map[types.NamespacedName]*RouteReport)
+	return ReportMap{
+		Gateways: gr,
+		Routes:   rr,
+	}
+}
+
 type GatewayReport struct {
 	Conditions []metav1.Condition
 	Listeners  map[string]*ListenerReport
