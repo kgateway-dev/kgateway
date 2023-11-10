@@ -68,19 +68,19 @@ Congratulations! You successfully installed Gloo Gateway and used an HTTP gatewa
    helm install default -n gloo-system --create-namespace  oci://ghcr.io/solo-io/helm-charts/gloo-gateway --version 2.0.0-beta1
    ```
 
-4. Verify that the Gloo Gateway v2 control plane is up and running and that the `gloo-gateway` GatewayClass is created. 
+3. Verify that the Gloo Gateway v2 control plane is up and running and that the `gloo-gateway` GatewayClass is created. 
    ```sh
    kubectl get pods -n gloo-system
    kubectl get gatewayclass gloo-gateway 
    ```
 
-5. Deploy the httpbin sample app, along with a Gateway and HTTPRoute to access it.
+4. Deploy the httpbin sample app, along with a Gateway and HTTPRoute to access it.
    ```sh
    kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo/v2.0.x/projects/gateway2/examples/httpbin.yaml
    kubectl rollout status deployment -n httpbin -w
    ```
 
-6. Send a request through our new Gateway.
+5. Send a request through our new Gateway.
    ```sh
    kubectl exec -n httpbin deploy/httpbin -c curl -- curl -v gloo-proxy-http:8080/status/200 -H "host: www.example.com"
    ```
