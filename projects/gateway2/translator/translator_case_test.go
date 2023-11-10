@@ -2,8 +2,9 @@ package translator_test
 
 import (
 	"context"
-	"log"
+	"fmt"
 
+	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
@@ -39,7 +40,7 @@ func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
 }
 
 // map of gwv1.GW namespace/name to translation result
-func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.NamespacedName]bool, error) {
+func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, error) {
 	// load inputs
 
 	var (
@@ -80,13 +81,11 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 			reporter,
 		)
 
-		if logActual {
-			actualYam, err := testutils.MarshalYaml(proxy)
-			if err != nil {
-				return nil, err
-			}
-			log.Print("actualYam: \n---\n", string(actualYam), "\n---\n")
-		}
+		act, _ := testutils.MarshalYaml(proxy)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
+
+		actReport, _ := testutils.MarshalAnyYaml(reportsMap)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual reports:\n %s \n", actReport)
 
 		actual := ActualTestResult{
 			Proxy:   proxy,
