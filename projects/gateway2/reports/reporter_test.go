@@ -12,13 +12,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ = Describe("Reports", func() {
+var _ = Describe("Reporting Infrastructure", func() {
 
 	BeforeEach(func() {
 	})
 
-	Describe("Build Gateway Status", func() {
-		It("should build all positive condtions with an empty report", func() {
+	Describe("building gateway status", func() {
+		It("should build all positive conditions with an empty report", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			status := rm.BuildGWStatus(context.Background(), *gw)
@@ -29,7 +29,7 @@ var _ = Describe("Reports", func() {
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
 
-		It("should not add extra condtions with a gateway condition already set", func() {
+		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
@@ -44,9 +44,12 @@ var _ = Describe("Reports", func() {
 			Expect(status.Conditions).To(HaveLen(2))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			programmed := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionProgrammed))
+			Expect(programmed.Status).To(Equal(metav1.ConditionFalse))
 		})
 
-		It("should not add extra condtions with a listener condition already set", func() {
+		It("should correctly set negative listener conditions from report and not add extra conditions", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
@@ -61,9 +64,12 @@ var _ = Describe("Reports", func() {
 			Expect(status.Conditions).To(HaveLen(2))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			resolvedRefs := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionResolvedRefs))
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
 		})
 
-		It("should not modify LastTransitionTime for existing condtions that have not changed", func() {
+		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
 			status := rm.BuildGWStatus(context.Background(), *gw)
@@ -89,6 +95,7 @@ var _ = Describe("Reports", func() {
 			Expect(newTransitionTime).To(Equal(oldTransitionTime))
 		})
 
+		//TODO(Law): add multiple gws/listener tests
 	})
 })
 
