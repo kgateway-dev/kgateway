@@ -23,7 +23,6 @@ import (
 
 	. "github.com/solo-io/gloo/projects/gloo/constants"
 
-	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,6 +33,7 @@ import (
 	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/sync/errgroup"
 )
 
