@@ -451,7 +451,7 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	//TODO(Law): bail out early if possible
-	//TODO(Law): do another Get on the gw, possibly use Patch for status subresource modification
+	//TODO(Law): do another Get on the gw?
 	//TODO(Law): add generation changed predicate
 	for _, gw := range gwl.Items {
 		gw.Status = rm.BuildGWStatus(ctx, gw)

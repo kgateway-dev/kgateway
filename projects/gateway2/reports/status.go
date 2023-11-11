@@ -63,8 +63,10 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 	return finalGwStatus
 }
 
+// Reports will initially only contain negative conditions found during translation,
+// so all missing conditions are assumed to be positive. Here we will add all missing conditions
+// to a given report, i.e. set healthy conditions
 func addMissingGatewayConditions(gwReport *GatewayReport) {
-	// set missing conditions, i.e. set healthy conditions
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
 		gwReport.SetCondition(GatewayCondition{
 			Type:   gwv1.GatewayConditionAccepted,
@@ -81,6 +83,9 @@ func addMissingGatewayConditions(gwReport *GatewayReport) {
 	}
 }
 
+// Reports will initially only contain negative conditions found during translation,
+// so all missing conditions are assumed to be positive. Here we will add all missing conditions
+// to a given report, i.e. set healthy conditions
 func addMissingListenerConditions(lisReport *ListenerReport) {
 	// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {
