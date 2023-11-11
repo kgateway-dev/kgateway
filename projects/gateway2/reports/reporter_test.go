@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -61,6 +62,33 @@ var _ = Describe("Reports", func() {
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
+
+		It("should not modify LastTransitionTime for existing condtions that have not changed", func() {
+			gw := gw()
+			rm := reports.NewReportMap()
+			status := rm.BuildGWStatus(context.Background(), *gw)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			acceptedCond := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+			oldTransitionTime := acceptedCond.LastTransitionTime
+
+			gw.Status = status
+			status = rm.BuildGWStatus(context.Background(), *gw)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+
+			acceptedCond = meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+			newTransitionTime := acceptedCond.LastTransitionTime
+			Expect(newTransitionTime).To(Equal(oldTransitionTime))
+		})
+
 	})
 })
 

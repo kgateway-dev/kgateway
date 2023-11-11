@@ -42,7 +42,7 @@ func (g *GatewayReport) GetListenerReport(lisName string) *ListenerReport {
 
 	lr := g.listeners[lisName]
 	if lr == nil {
-		return &ListenerReport{}
+		return NewListenerReport(lisName)
 	}
 	return lr
 }
@@ -58,11 +58,9 @@ func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
 	if g.listeners == nil {
 		g.listeners = make(map[string]*ListenerReport)
 	}
-	var lr *ListenerReport
-	lr, ok := g.listeners[string(listener.Name)]
-	if !ok {
-		lr = &ListenerReport{}
-		lr.Status.Name = listener.Name
+	lr := g.listeners[string(listener.Name)]
+	if lr == nil {
+		lr = NewListenerReport(string(listener.Name))
 		g.listeners[string(listener.Name)] = lr
 	}
 	return lr
@@ -94,6 +92,12 @@ type ParentRefKey struct {
 
 type ListenerReport struct {
 	Status gwv1.ListenerStatus
+}
+
+func NewListenerReport(name string) *ListenerReport {
+	lr := ListenerReport{}
+	lr.Status.Name = gwv1.SectionName(name)
+	return &lr
 }
 
 func (l *ListenerReport) SetCondition(lc ListenerCondition) {
