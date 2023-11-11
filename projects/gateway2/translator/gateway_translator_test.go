@@ -26,7 +26,34 @@ var _ = Describe("GatewayTranslator", func() {
 					Reports:     nil,
 				},
 			},
-		}.Run(ctx, false)
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results).To(HaveKey(types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		}))
+		Expect(results[types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		}]).To(BeTrue())
+	})
+
+	It("should translate a gateway with https routing", func() {
+		results, err := TestCase{
+			Name:       "basic-http-routing",
+			InputFiles: []string{dir + "/testutils/inputs/https-routing"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "example-gateway",
+				}: {
+					ProxyResult: dir + "/testutils/outputs/https-routing-proxy.yaml",
+					Reports:     nil,
+				},
+			},
+		}.Run(ctx)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
