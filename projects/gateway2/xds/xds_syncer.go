@@ -17,7 +17,6 @@ import (
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -99,7 +98,7 @@ type XdsSyncer struct {
 type XdsInputChannels struct {
 	genericEvent   AsyncQueue[struct{}]
 	discoveryEvent AsyncQueue[DiscoveryInputs]
-	secretEvent    AsyncQueue[SecretInputs]
+	secretEvent    AsyncQueue[struct{}]
 }
 
 func (x *XdsInputChannels) Kick(ctx context.Context) {
@@ -110,15 +109,15 @@ func (x *XdsInputChannels) UpdateDiscoveryInputs(ctx context.Context, inputs Dis
 	x.discoveryEvent.Enqueue(inputs)
 }
 
-func (x *XdsInputChannels) UpdateSecretInputs(ctx context.Context, inputs SecretInputs) {
-	x.secretEvent.Enqueue(inputs)
+func (x *XdsInputChannels) UpdateSecretInputs(ctx context.Context) {
+	x.secretEvent.Enqueue(struct{}{})
 }
 
 func NewXdsInputChannels() *XdsInputChannels {
 	return &XdsInputChannels{
 		genericEvent:   NewAsyncQueue[struct{}](),
 		discoveryEvent: NewAsyncQueue[DiscoveryInputs](),
-		secretEvent:    NewAsyncQueue[SecretInputs](),
+		secretEvent:    NewAsyncQueue[struct{}](),
 	}
 }
 
@@ -148,8 +147,7 @@ func NewXdsSyncer(
 func (s *XdsSyncer) Start(
 	ctx context.Context,
 ) error {
-	proxyApiSnapshot := &v1snap.ApiSnapshot{}
-	// proxyApiSnapshot := &v1snap.ApiSnapshot{}
+	var discoveryEvent DiscoveryInputs
 	var (
 		discoveryWarmed bool
 		secretsWarmed   bool
@@ -180,7 +178,7 @@ func (s *XdsSyncer) Start(
 			}
 			//TODO: handle reports and process statuses
 		}
-		s.syncEnvoy(ctx, listenersAndRoutesForGateway, proxyApiSnapshot)
+		s.syncEnvoy(ctx, listenersAndRoutesForGateway, discoveryEvent)
 		s.syncStatus(ctx, *rm, gwl)
 		s.syncRouteStatus(ctx, *rm)
 	}
@@ -192,13 +190,10 @@ func (s *XdsSyncer) Start(
 			return nil
 		case <-s.inputs.genericEvent.Next():
 			resyncXds()
-		case discoveryEvent := <-s.inputs.discoveryEvent.Next():
-			proxyApiSnapshot.Upstreams = discoveryEvent.Upstreams
-			proxyApiSnapshot.Endpoints = discoveryEvent.Endpoints
+		case discoveryEvent = <-s.inputs.discoveryEvent.Next():
 			discoveryWarmed = true
 			resyncXds()
-		case secretEvent := <-s.inputs.secretEvent.Next():
-			proxyApiSnapshot.Secrets = secretEvent.Secrets
+		case <-s.inputs.secretEvent.Next():
 			secretsWarmed = true
 			resyncXds()
 		}
@@ -217,7 +212,7 @@ func proxyMetadata(gateway *apiv1.Gateway) *core.Metadata {
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 // NOTE(ilackarms): the below code was copy-pasted (with some deletions) from projects/gloo/pkg/syncer/translator_syncer.go
-func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway]gloot.ProxyResult, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
+func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway]gloot.ProxyResult, discoveryEvent DiscoveryInputs) reporter.ResourceReports {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -270,14 +265,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			proxyCtx = ctxWithTags
 		}
 
-		params := plugins.Params{
-			Ctx:      proxyCtx,
-			Snapshot: snap,
-			Messages: map[*core.ResourceRef][]string{},
-		}
-		reports := make(reporter.ResourceReports)
-
-		clusters, endpoints := s.translator.TranslateClusterSubsystemComponents(params, proxy, reports)
+		clusters, endpoints := discoveryEvent.Clusters, discoveryEvent.Endpoints
 
 		// replace listeners and routes with the ones we generated
 		var listeners []*listenerv3.Listener

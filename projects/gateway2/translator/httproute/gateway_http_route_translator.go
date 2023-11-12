@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -275,7 +275,7 @@ func translateRouteAction(
 						Reason: gwv1.RouteReasonUnsupportedValue,
 					})
 				} else {
-					clusterName = kubernetes.UpstreamName(cli.Namespace, cli.Name, int32(port))
+					clusterName = utils.ClusterName(cli.Namespace, cli.Name, int32(port))
 				}
 			default:
 				reporter.SetCondition(reports.HTTPRouteCondition{

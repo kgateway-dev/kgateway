@@ -9,10 +9,10 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -54,21 +54,11 @@ func ProtoToHttpFilter(name string, config proto.Message) *envoyhttp.HttpFilter 
 	ret := new(envoyhttp.HttpFilter)
 	ret.Name = name
 	ret.ConfigType = &envoyhttp.HttpFilter_TypedConfig{
-		TypedConfig: toAny(config),
+		TypedConfig: utils.ToAny(config),
 	}
 
 	return ret
 
-}
-
-func toAny(pb proto.Message) *anypb.Any {
-	any, err := anypb.New(pb)
-	if err != nil {
-		// all config types should already be known
-		// therefore this should never happen
-		panic(err)
-	}
-	return any
 }
 
 func makeFilterChain(info *FilterChainInfo, config *envoyhttp.HttpConnectionManager) *listenerv3.FilterChain {
@@ -79,7 +69,7 @@ func makeFilterChain(info *FilterChainInfo, config *envoyhttp.HttpConnectionMana
 			{
 				Name: wellknown.HTTPConnectionManager,
 				ConfigType: &listenerv3.Filter_TypedConfig{
-					TypedConfig: toAny(config),
+					TypedConfig: utils.ToAny(config),
 				},
 			},
 		},
@@ -133,7 +123,7 @@ func (info *FilterChainInfo) toTransportSocket() *corev3.TransportSocket {
 		CommonTlsContext: common,
 		//		RequireClientCertificate: requireClientCert,
 	}
-	typedConfig := toAny(out)
+	typedConfig := utils.ToAny(out)
 
 	return &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
