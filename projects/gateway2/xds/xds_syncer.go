@@ -11,22 +11,18 @@ import (
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gorilla/mux"
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/hashutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -84,8 +80,7 @@ type XdsSyncer struct {
 	xdsCache       envoycache.SnapshotCache
 	controllerName string
 
-	// used for debugging purposes only
-	latestSnap *v1snap.ApiSnapshot
+	//	latestSnap *v1snap.ApiSnapshot
 
 	xdsGarbageCollection bool
 
@@ -211,28 +206,24 @@ func proxyMetadata(gateway *apiv1.Gateway) *core.Metadata {
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 // NOTE(ilackarms): the below code was copy-pasted (with some deletions) from projects/gloo/pkg/syncer/translator_syncer.go
-func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway]gloot.ProxyResult, discoveryEvent DiscoveryInputs) reporter.ResourceReports {
+func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway map[*apiv1.Gateway]gloot.ProxyResult, discoveryEvent DiscoveryInputs) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
-	s.latestSnap = snap
+	//	s.latestSnap = snap
 	logger := log.FromContext(ctx, "pkg", "envoyTranslatorSyncer")
-	snapHash := hashutils.MustHash(snap)
-	logger.Info("begin sync", "snapHash", snapHash,
-		"len(proxies)", len(snap.Proxies), "len(upstreams)", len(snap.Upstreams), "len(endpoints)", len(snap.Endpoints), "len(secrets)", len(snap.Secrets), "len(artifacts)", len(snap.Artifacts), "len(authconfigs)", len(snap.AuthConfigs), "len(ratelimits)", len(snap.Ratelimitconfigs), "len(graphqls)", len(snap.GraphqlApis))
+	// snapHash := hashutils.MustHash(snap)
+	logger.Info("begin sync",
+		"len(gw)", len(listenersAndRoutesForGateway), "len(clusters)", len(discoveryEvent.Clusters), "len(endpoints)", len(discoveryEvent.Endpoints))
 	debugLogger := logger.V(1)
 
-	defer logger.Info("end sync", "len(snapHash)", snapHash)
+	defer logger.Info("end sync")
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
 	if debugLogger.Enabled() {
-		debugLogger.Info("snap", "snap", syncutil.StringifySnapshot(snap))
+		//		debugLogger.Info("snap", "snap", syncutil.StringifySnapshot(snap))
 	}
-
-	reports := make(reporter.ResourceReports)
-	reports.Accept(snap.Upstreams.AsInputResources()...)
-	reports.Accept(snap.Proxies.AsInputResources()...)
 
 	if !s.xdsGarbageCollection {
 		var proxies []*gloov1.Proxy
@@ -281,30 +272,25 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			listeners = append(listeners, listenerAndRoutes.Listener)
 		}
 		xdsSnapshot := translator.GenerateXDSSnapshot(ctx, translator.EnvoyCacheResourcesListToFnvHash, clusters, endpoints, routes, listeners)
-
-		// Messages are aggregated during translation, and need to be added to reports
-		for _, messages := range params.Messages {
-			reports.AddMessages(proxy, messages...)
-		}
-
 		// if validateErr := reports.ValidateStrict(); validateErr != nil {
 		// 	logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		// }
 
-		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
+		//	sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
 		// if the snapshot is not consistent, make it so
 		xdsSnapshot.MakeConsistent()
 
-		if validateErr := reports.ValidateStrict(); validateErr != nil {
-			logger.Error(validateErr, "Proxy had invalid config after xds sanitization", "proxy", proxy.GetMetadata().Ref())
-		}
+		// if validateErr := reports.ValidateStrict(); validateErr != nil {
+		// 	logger.Error(validateErr, "Proxy had invalid config after xds sanitization", "proxy", proxy.GetMetadata().Ref())
+		// }
 
-		debugLogger.Info("snap", "key", sanitizedSnapshot)
+		debugLogger.Info("snap", "key", xdsSnapshot)
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
-		reports.Merge(reports)
+		// reports.Merge(reports)
+
 		key := xds.SnapshotCacheKey(proxy)
-		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
+		s.xdsCache.SetSnapshot(key, xdsSnapshot)
 
 		// Record some metrics
 		clustersLen := len(xdsSnapshot.GetResources(types.ClusterTypeV3).Items)
@@ -330,9 +316,8 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		debugLogger.Info("Full snapshot for proxy", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
-	debugLogger.Info("gloo reports to be written", "reports", reports)
+	debugLogger.Info("gloo reports to be written")
 
-	return reports
 }
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
@@ -354,9 +339,9 @@ func (s *XdsSyncer) ServeXdsSnapshots() error {
 		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
 		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
 	})
-	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
-	})
+	//	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
+	//		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
+	//	})
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
 }
