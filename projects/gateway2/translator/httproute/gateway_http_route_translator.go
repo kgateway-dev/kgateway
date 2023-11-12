@@ -33,6 +33,14 @@ func TranslateGatewayHTTPRouteRules(
 ) []*routeutils.SortableRoute {
 	var outputSortableRoutes []*routeutils.SortableRoute
 	for i, rule := range route.Spec.Rules {
+
+		rule := rule
+		if rule.Matches == nil {
+			// from the spec:
+			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
+			rule.Matches = []gwv1.HTTPRouteMatch{{}}
+		}
+
 		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
 			plugins,

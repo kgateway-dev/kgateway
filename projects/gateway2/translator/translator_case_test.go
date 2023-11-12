@@ -2,8 +2,9 @@ package translator_test
 
 import (
 	"context"
-	"log"
+	"fmt"
 
+	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
@@ -57,11 +58,13 @@ func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
 			}
 		}
 	}
+
+	//TODO: return reflect.DeepEqual(r.Reports, actual.Reports), nil
 	return true, nil
 }
 
 // map of gwv1.GW namespace/name to translation result
-func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.NamespacedName]bool, error) {
+func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, error) {
 	// load inputs
 
 	var (
@@ -102,13 +105,11 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 			reporter,
 		)
 
-		if logActual {
-			actualYam, err := testutils.MarshalYamlProxyResult(*proxyResult)
-			if err != nil {
-				return nil, err
-			}
-			log.Print("actualYaml: \n---\n", string(actualYam), "\n---\n")
-		}
+		act, _ := testutils.MarshalYamlProxyResult(*proxyResult)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
+
+		actReport, _ := testutils.MarshalAnyYaml(reportsMap)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual reports:\n %s \n", actReport)
 
 		actual := ActualTestResult{
 			ProxyResult: *proxyResult,
