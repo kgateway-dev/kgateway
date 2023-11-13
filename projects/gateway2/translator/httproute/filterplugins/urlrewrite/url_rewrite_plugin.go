@@ -1,12 +1,11 @@
 package urlrewrite
 
 import (
-	"context"
-
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
+	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -18,7 +17,7 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) ApplyFilter(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	filter gwv1.HTTPRouteFilter,
 	outputRoute *routev3.Route,
 ) error {
@@ -54,7 +53,18 @@ func (p *Plugin) ApplyFilter(
 			if config.Path.ReplacePrefixMatch == nil {
 				return errors.Errorf("UrlRewrite filter supplied with prefix rewrite type, but no prefix supplied")
 			}
-			routeAction.PrefixRewrite = *config.Path.ReplacePrefixMatch
+			// Circumvent the case of "//" when the replace string is "/"
+			// An empty replace string does not seem to solve the issue so we are using
+			// a regex match and replace instead
+			// Remove this workaround once https://github.com/envoyproxy/envoy/issues/26055 is fixed
+			if ctx.Match.Path != nil && ctx.Match.Path.Value != nil && *config.Path.ReplacePrefixMatch == "/" {
+				routeAction.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
+					Pattern:      regexutils.NewRegexWithProgramSize("^"+*ctx.Match.Path.Value+`\/*`, nil),
+					Substitution: "/",
+				}
+			} else {
+				routeAction.PrefixRewrite = *config.Path.ReplacePrefixMatch
+			}
 		}
 	}
 
