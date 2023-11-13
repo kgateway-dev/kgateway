@@ -12,7 +12,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func ProcessBackendRef(cli client.Object, err error, reporter reports.ParentRefReporter, backendRef gwv1.BackendObjectReference) *string {
+// ProcessBackendRef is meant to take the result of a call to `GetBackendForRef` as well as a reporter and the original ref.
+// The return value is a pointer to a string which is the cluster_name of the upstream that the ref resolved to.
+// This function will return nil if the ref is not valid.
+// This function will also set the appropriate condition on the parent via the reporter.
+func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefReporter, backendRef gwv1.BackendObjectReference) *string {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnknownKind):
@@ -46,7 +50,7 @@ func ProcessBackendRef(cli client.Object, err error, reporter reports.ParentRefR
 		if backendRef.Port != nil {
 			port = uint32(*backendRef.Port)
 		}
-		switch cli := cli.(type) {
+		switch cli := obj.(type) {
 		case *corev1.Service:
 			if port == 0 {
 				reporter.SetCondition(reports.HTTPRouteCondition{
