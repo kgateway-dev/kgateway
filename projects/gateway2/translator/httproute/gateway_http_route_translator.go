@@ -2,7 +2,6 @@ package httproute
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"regexp"
 
@@ -15,10 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
 	"google.golang.org/protobuf/proto"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -50,6 +46,12 @@ func TranslateGatewayHTTPRouteRules(
 			reporter,
 		)
 		for j, outputRoute := range outputRoutes {
+			// The above function will return a nil route if a matcher fails to apply plugins
+			// properly. This is a signal to the caller that the route should be dropped.
+			if outputRoute == nil {
+				continue
+			}
+
 			sr := &routeutils.SortableRoute{
 				InputMatch: rule.Matches[j],
 				Route:      outputRoute,
@@ -80,34 +82,43 @@ func translateGatewayHTTPRouteRule(
 			reporter,
 		)
 	}
-	if err := applyFilters(
-		ctx,
-		plugins,
-		rule.Filters,
-		baseOutputRoute,
-	); err != nil {
-		reporter.SetCondition(reports.HTTPRouteCondition{
-			Type:   gwv1.RouteConditionAccepted,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.RouteReasonIncompatibleFilters,
-		})
-		// drop route
-		return nil
-	}
-	if baseOutputRoute.Action == nil {
-		// TODO: maybe? report error
-		baseOutputRoute.Action = &routev3.Route_DirectResponse{
-			DirectResponse: &routev3.DirectResponseAction{
-				Status: http.StatusInternalServerError,
-			},
-		}
-	}
 
-	routes := make([]*routev3.Route, 0, len(rule.Matches))
-	for _, match := range rule.Matches {
+	routes := make([]*routev3.Route, len(rule.Matches))
+	for idx, match := range rule.Matches {
 		outputRoute := proto.Clone(baseOutputRoute).(*routev3.Route)
+		rtCtx := &filterplugins.RouteContext{
+			Ctx:      ctx,
+			Route:    gwroute,
+			Rule:     &rule,
+			Match:    &match,
+			Queries:  queries,
+			Reporter: reporter,
+		}
+		if err := applyFilters(
+			rtCtx,
+			plugins,
+			rule.Filters,
+			outputRoute,
+		); err != nil {
+			reporter.SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionPartiallyInvalid,
+				Status: metav1.ConditionTrue,
+				Reason: gwv1.RouteReasonIncompatibleFilters,
+			})
+			// drop route
+			continue
+			// return nil
+		}
+		if outputRoute.Action == nil {
+			// TODO: maybe? report error
+			outputRoute.Action = &routev3.Route_DirectResponse{
+				DirectResponse: &routev3.DirectResponseAction{
+					Status: http.StatusInternalServerError,
+				},
+			}
+		}
 		outputRoute.Match = translateGlooMatcher(match)
-		routes = append(routes, outputRoute)
+		routes[idx] = outputRoute
 	}
 	return routes
 }
@@ -240,58 +251,10 @@ func translateRouteAction(
 
 	for _, backendRef := range backendRefs {
 		clusterName := "blackhole_cluster"
-		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef)
-		if err != nil {
-			switch {
-			case errors.Is(err, query.ErrUnknownKind):
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonInvalidKind,
-				})
-			case errors.Is(err, query.ErrMissingReferenceGrant):
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonRefNotPermitted,
-				})
-			case apierrors.IsNotFound(err):
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonBackendNotFound,
-				})
-			default:
-				// setting other errors to not found. not sure if there's a better option.
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonBackendNotFound,
-				})
-			}
-		} else {
-			var port uint32
-			if backendRef.Port != nil {
-				port = uint32(*backendRef.Port)
-			}
-			switch cli := cli.(type) {
-			case *corev1.Service:
-				if port == 0 {
-					reporter.SetCondition(reports.HTTPRouteCondition{
-						Type:   gwv1.RouteConditionResolvedRefs,
-						Status: metav1.ConditionFalse,
-						Reason: gwv1.RouteReasonUnsupportedValue,
-					})
-				} else {
-					clusterName = utils.ClusterName(cli.Namespace, cli.Name, int32(port))
-				}
-			default:
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonInvalidKind,
-				})
-			}
+		obj, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
+		ptrClusterName := query.ProcessBackendRef(obj, err, reporter, backendRef.BackendObjectReference)
+		if ptrClusterName != nil {
+			clusterName = *ptrClusterName
 		}
 
 		var weight *wrappers.UInt32Value
@@ -340,7 +303,7 @@ func translateRouteAction(
 }
 
 func applyFilters(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	plugins registry.HTTPFilterPluginRegistry,
 	filters []gwv1.HTTPRouteFilter,
 	outputRoute *routev3.Route,
@@ -354,7 +317,7 @@ func applyFilters(
 }
 
 func applyFilterPlugin(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	plugins registry.HTTPFilterPluginRegistry,
 	filter gwv1.HTTPRouteFilter,
 	outputRoute *routev3.Route,

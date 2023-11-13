@@ -1,11 +1,11 @@
 package redirect
 
 import (
-	"context"
 	"strings"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -16,7 +16,7 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) ApplyFilter(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	filter gwv1.HTTPRouteFilter,
 	outputRoute *routev3.Route,
 ) error {
