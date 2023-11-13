@@ -15,11 +15,6 @@ func ptr[T any](i T) *T {
 	return &i
 }
 
-func hostname(s string) *gwv1.PreciseHostname {
-	h := gwv1.PreciseHostname(s)
-	return &h
-}
-
 var _ = DescribeTable(
 	"UrlRewritePlugin",
 	func(
@@ -44,7 +39,7 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterURLRewrite,
 			URLRewrite: &gwv1.HTTPURLRewriteFilter{
-				Hostname: hostname("foo"),
+				Hostname: ptr(gwv1.PreciseHostname("foo")),
 				Path: &gwv1.HTTPPathModifier{
 					Type:            gwv1.FullPathHTTPPathModifier,
 					ReplaceFullPath: ptr("/bar"),
@@ -103,7 +98,7 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterURLRewrite,
 			URLRewrite: &gwv1.HTTPURLRewriteFilter{
-				Hostname: hostname("foo"),
+				Hostname: ptr(gwv1.PreciseHostname("foo")),
 				Path: &gwv1.HTTPPathModifier{
 					Type:               gwv1.PrefixMatchHTTPPathModifier,
 					ReplacePrefixMatch: ptr("/"),

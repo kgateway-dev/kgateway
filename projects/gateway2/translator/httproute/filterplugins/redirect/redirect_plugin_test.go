@@ -9,13 +9,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func intptr(i int) *int {
+func ptr[T any](i T) *T {
 	return &i
-}
-
-func hostname(s string) *gwv1.PreciseHostname {
-	h := gwv1.PreciseHostname(s)
-	return &h
 }
 
 var _ = DescribeTable(
@@ -38,8 +33,8 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterRequestRedirect,
 			RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
-				Hostname:   hostname("foo"),
-				StatusCode: intptr(301),
+				Hostname:   ptr(gwv1.PreciseHostname("foo")),
+				StatusCode: ptr(301),
 			},
 		},
 		&routev3.Route{
