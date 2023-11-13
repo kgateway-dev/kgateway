@@ -252,7 +252,7 @@ func translateRouteAction(
 	for _, backendRef := range backendRefs {
 		clusterName := "blackhole_cluster"
 		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
-		ptrClusterName := query.ResolveBackendRef(cli, err, reporter, backendRef.BackendObjectReference)
+		ptrClusterName := query.ProcessBackendRef(cli, err, reporter, backendRef.BackendObjectReference)
 		if ptrClusterName != nil {
 			clusterName = *ptrClusterName
 		}

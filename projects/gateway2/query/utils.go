@@ -12,7 +12,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func ResolveBackendRef(cli client.Object, err error, reporter reports.ParentRefReporter, backendRef gwv1.BackendObjectReference) *string {
+func ProcessBackendRef(cli client.Object, err error, reporter reports.ParentRefReporter, backendRef gwv1.BackendObjectReference) *string {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnknownKind):

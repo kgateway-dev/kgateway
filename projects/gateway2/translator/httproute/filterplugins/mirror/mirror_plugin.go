@@ -31,7 +31,7 @@ func (p *Plugin) ApplyFilter(
 	}
 
 	cli, err := ctx.Queries.GetBackendForRef(ctx.Ctx, ctx.Queries.ObjToFrom(ctx.Route), &config.BackendRef)
-	clusterName := query.ResolveBackendRef(
+	clusterName := query.ProcessBackendRef(
 		cli,
 		err,
 		ctx.Reporter,
