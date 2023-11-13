@@ -2,7 +2,6 @@ package httproute
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -11,9 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -28,7 +24,7 @@ func TranslateGatewayHTTPRouteRules(
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
 ) []*v1.Route {
-	var outputRoutes []*v1.Route
+	var finalRoutes []*v1.Route
 	for _, rule := range route.Spec.Rules {
 		rule := rule
 		if rule.Matches == nil {
@@ -37,7 +33,7 @@ func TranslateGatewayHTTPRouteRules(
 			rule.Matches = []gwv1.HTTPRouteMatch{{}}
 		}
 
-		outputRoute := translateGatewayHTTPRouteRule(
+		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
 			plugins,
 			queries,
@@ -45,11 +41,17 @@ func TranslateGatewayHTTPRouteRules(
 			rule,
 			reporter,
 		)
-		if outputRoute != nil {
-			outputRoutes = append(outputRoutes, outputRoute...)
+		for _, outputRoute := range outputRoutes {
+			// The above function will return a nil route if a matcher fails to apply plugins
+			// properly. This is a signal to the caller that the route should be dropped.
+			if outputRoute == nil {
+				continue
+			}
+
+			finalRoutes = append(finalRoutes, outputRoute)
 		}
 	}
-	return outputRoutes
+	return finalRoutes
 }
 
 func translateGatewayHTTPRouteRule(
@@ -60,9 +62,8 @@ func translateGatewayHTTPRouteRule(
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
 ) []*v1.Route {
-
-	routes := make([]*v1.Route, 0, len(rule.Matches))
-	for _, match := range rule.Matches {
+	routes := make([]*v1.Route, len(rule.Matches))
+	for idx, match := range rule.Matches {
 		outputRoute := &v1.Route{
 			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
 			Action:   nil,
@@ -77,31 +78,42 @@ func translateGatewayHTTPRouteRule(
 				reporter,
 			)
 		}
+		rtCtx := &filterplugins.RouteContext{
+			Ctx:      ctx,
+			Route:    gwroute,
+			Rule:     &rule,
+			Match:    &match,
+			Queries:  queries,
+			Reporter: reporter,
+		}
 		if err := applyFilters(
-			ctx,
+			rtCtx,
 			plugins,
 			rule.Filters,
 			outputRoute,
 		); err != nil {
-			// TODO: report error
-			//reporter.Route(gwroute).Err()
-			// return nil
+			reporter.SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionPartiallyInvalid,
+				Status: metav1.ConditionTrue,
+				Reason: gwv1.RouteReasonIncompatibleFilters,
+			})
+			continue // drop route
 		}
 		if outputRoute.Action == nil {
-			// TODO: maybe? report error
+			// TODO: maybe? report error; maybe move this to setRouteAction()
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,
 				},
 			}
 		}
-		routes = append(routes, outputRoute)
+		outputRoute.Matchers = []*matchers.Matcher{translateGlooMatcher(match)}
+		routes[idx] = outputRoute
 	}
 	return routes
 }
 
 func translateGlooMatcher(match gwv1.HTTPRouteMatch) *matchers.Matcher {
-
 	// headers
 	headers := make([]*matchers.HeaderMatcher, 0, len(match.Headers))
 	for _, header := range match.Headers {
@@ -154,7 +166,6 @@ func translateGlooMatcher(match gwv1.HTTPRouteMatch) *matchers.Matcher {
 }
 
 func translateGlooHeaderMatcher(header gwv1.HTTPHeaderMatch) *matchers.HeaderMatcher {
-
 	regex := false
 	if header.Type != nil && *header.Type == gwv1.HeaderMatchRegularExpression {
 		regex = true
@@ -190,67 +201,24 @@ func setRouteAction(
 	var weightedDestinations []*v1.WeightedDestination
 
 	for _, backendRef := range backendRefs {
-		name := "blackhole_cluster"
+		clusterName := "blackhole_cluster"
 		ns := "blackhole_ns"
-		cli, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef)
-		if err != nil {
-			switch {
-			case errors.Is(err, query.ErrUnknownKind):
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonInvalidKind,
-				})
-			case errors.Is(err, query.ErrMissingReferenceGrant):
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonRefNotPermitted,
-				})
-			case apierrors.IsNotFound(err):
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonBackendNotFound,
-				})
-			default:
-				// setting other errors to not found. not sure if there's a better option.
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonBackendNotFound,
-				})
-			}
-		} else {
-			var port uint32
-			if backendRef.Port != nil {
-				port = uint32(*backendRef.Port)
-			}
-			switch cli := cli.(type) {
-			case *corev1.Service:
-				if port == 0 {
-					reporter.SetCondition(reports.HTTPRouteCondition{
-						Type:   gwv1.RouteConditionResolvedRefs,
-						Status: metav1.ConditionFalse,
-						Reason: gwv1.RouteReasonUnsupportedValue,
-					})
-				} else {
-					name = kubernetes.UpstreamName(cli.Namespace, cli.Name, int32(port))
-					ns = cli.Namespace
-				}
-			default:
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonInvalidKind,
-				})
-			}
+		obj, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
+		ptrClusterName := query.ProcessBackendRef(obj, err, reporter, backendRef.BackendObjectReference)
+		if ptrClusterName != nil {
+			clusterName = *ptrClusterName
+			ns = obj.GetNamespace()
 		}
 
 		var weight *wrappers.UInt32Value
 		if backendRef.Weight != nil {
 			weight = &wrappers.UInt32Value{
 				Value: uint32(*backendRef.Weight),
+			}
+		} else {
+			// according to spec, default weight is 1
+			weight = &wrappers.UInt32Value{
+				Value: 1,
 			}
 		}
 
@@ -261,7 +229,7 @@ func setRouteAction(
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
 					Upstream: &core.ResourceRef{
-						Name:      name,
+						Name:      clusterName,
 						Namespace: ns,
 					},
 				},
@@ -270,6 +238,8 @@ func setRouteAction(
 			Options: nil,
 		})
 	}
+
+	//TODO(revert): need to add ClusterNotFoundResponseCode: routev3.RouteAction_INTERNAL_SERVER_ERROR,
 
 	switch len(weightedDestinations) {
 	// case 0:
@@ -292,7 +262,7 @@ func setRouteAction(
 }
 
 func applyFilters(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	plugins registry.HTTPFilterPluginRegistry,
 	filters []gwv1.HTTPRouteFilter,
 	outputRoute *v1.Route,
@@ -306,7 +276,7 @@ func applyFilters(
 }
 
 func applyFilterPlugin(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	plugins registry.HTTPFilterPluginRegistry,
 	filter gwv1.HTTPRouteFilter,
 	outputRoute *v1.Route,

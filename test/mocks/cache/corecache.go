@@ -7,7 +7,7 @@ package mock_cache
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	cache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	v1 "k8s.io/client-go/listers/core/v1"
 )

@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
+	"google.golang.org/protobuf/proto"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
@@ -15,10 +16,42 @@ import (
 
 func AssertExpectedRoute(
 	plugin filterplugins.FilterPlugin,
-	filter gwv1.HTTPRouteFilter, expectedRoute *v1.Route, logActual bool) {
-	ctx := context.TODO()
+	filter gwv1.HTTPRouteFilter,
+	expectedRoute *v1.Route,
+	logActual bool,
+) {
 	outputRoute := &v1.Route{
 		Options: &v1.RouteOptions{},
+	}
+	assertExpectedRoute(plugin, filter, outputRoute, expectedRoute, nil, logActual)
+}
+
+func AssertExpectedRouteWith(
+	plugin filterplugins.FilterPlugin,
+	filter gwv1.HTTPRouteFilter,
+	outputRoute *v1.Route,
+	expectedRoute *v1.Route,
+	match *gwv1.HTTPRouteMatch,
+	logActual bool,
+) {
+	assertExpectedRoute(plugin, filter, outputRoute, expectedRoute, match, logActual)
+}
+
+func assertExpectedRoute(
+	plugin filterplugins.FilterPlugin,
+	filter gwv1.HTTPRouteFilter,
+	outputRoute *v1.Route,
+	expectedRoute *v1.Route,
+	match *gwv1.HTTPRouteMatch,
+	logActual bool,
+) {
+	ctx := &filterplugins.RouteContext{
+		Ctx:      context.TODO(),
+		Route:    &gwv1.HTTPRoute{},
+		Queries:  nil,
+		Rule:     nil,
+		Reporter: nil,
+		Match:    match,
 	}
 	err := plugin.ApplyFilter(
 		ctx,
@@ -35,6 +68,5 @@ func AssertExpectedRoute(
 		Expect(err).NotTo(HaveOccurred())
 		log.Print("expectedYaml: \n---\n", string(expectedYaml), "\n---\n")
 	}
-
-	Expect(outputRoute).To(Equal(expectedRoute))
+	Expect(proto.Equal(outputRoute, expectedRoute)).To(BeTrue())
 }

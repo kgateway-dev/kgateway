@@ -127,8 +127,8 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golang/protobuf/protoc-gen-go
 	go install golang.org/x/tools/cmd/goimports
 	go install github.com/cratonica/2goarray
-	go install github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+	go install go.uber.org/mock/mockgen
+	go install go.uber.org/mock/mockgenn
 	go install github.com/saiskee/gettercheck
 
 .PHONY: check-format

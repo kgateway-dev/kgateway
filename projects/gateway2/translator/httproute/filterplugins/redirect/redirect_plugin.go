@@ -1,10 +1,10 @@
 package redirect
 
 import (
-	"context"
 	"strings"
 
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -16,7 +16,7 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) ApplyFilter(
-	ctx context.Context,
+	ctx *filterplugins.RouteContext,
 	filter gwv1.HTTPRouteFilter,
 	outputRoute *v1.Route,
 ) error {

@@ -366,6 +366,8 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	}
 
 	for _, route := range rl.Items {
+		// Pike
+		route := route
 		routeReport, ok := rm.Routes[client.ObjectKeyFromObject(&route)]
 		if !ok {
 			//TODO more thought here
