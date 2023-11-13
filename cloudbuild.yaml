@@ -1,16 +1,16 @@
 steps:
 
-#- name: 'gcr.io/cloud-builders/gcloud'
-#  args:
-#  - 'builds'
-#  - 'submit'
-#  - '--config'
-#  - 'ci/cloudbuild/publish-artifacts.yaml'
-#  - '--substitutions'
-#  - 'COMMIT_SHA=$COMMIT_SHA,REPO_NAME=$REPO_NAME,TAG_NAME=$TAG_NAME,_PR_NUM=$_PR_NUM'
-#  waitFor:
-#  - '-'
-#  id: 'publish-artifacts'
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'builds'
+  - 'submit'
+  - '--config'
+  - 'ci/cloudbuild/publish-artifacts.yaml'
+  - '--substitutions'
+  - 'COMMIT_SHA=$COMMIT_SHA,REPO_NAME=$REPO_NAME,TAG_NAME=$TAG_NAME,_PR_NUM=$_PR_NUM'
+  waitFor:
+  - '-'
+  id: 'publish-artifacts'
 
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'
