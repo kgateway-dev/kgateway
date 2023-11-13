@@ -46,6 +46,12 @@ func TranslateGatewayHTTPRouteRules(
 			reporter,
 		)
 		for j, outputRoute := range outputRoutes {
+			// The above function will return a nil route if a matcher fails to apply plugins
+			// properly. This is a signal to the caller that the route should be dropped.
+			if outputRoute == nil {
+				continue
+			}
+
 			sr := &routeutils.SortableRoute{
 				InputMatch: rule.Matches[j],
 				Route:      outputRoute,
@@ -77,8 +83,8 @@ func translateGatewayHTTPRouteRule(
 		)
 	}
 
-	routes := make([]*routev3.Route, 0, len(rule.Matches))
-	for _, match := range rule.Matches {
+	routes := make([]*routev3.Route, len(rule.Matches))
+	for idx, match := range rule.Matches {
 		outputRoute := proto.Clone(baseOutputRoute).(*routev3.Route)
 		rtCtx := &filterplugins.RouteContext{
 			Ctx:      ctx,
@@ -95,12 +101,13 @@ func translateGatewayHTTPRouteRule(
 			outputRoute,
 		); err != nil {
 			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionAccepted,
-				Status: metav1.ConditionFalse,
+				Type:   gwv1.RouteConditionPartiallyInvalid,
+				Status: metav1.ConditionTrue,
 				Reason: gwv1.RouteReasonIncompatibleFilters,
 			})
 			// drop route
-			return nil
+			continue
+			// return nil
 		}
 		if outputRoute.Action == nil {
 			// TODO: maybe? report error
@@ -111,7 +118,7 @@ func translateGatewayHTTPRouteRule(
 			}
 		}
 		outputRoute.Match = translateGlooMatcher(match)
-		routes = append(routes, outputRoute)
+		routes[idx] = outputRoute
 	}
 	return routes
 }
