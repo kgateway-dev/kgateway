@@ -103,13 +103,12 @@ func fixupClustersAndEndpoints(
 	endpoints []*endpointv3.ClusterLoadAssignment,
 ) []*endpointv3.ClusterLoadAssignment {
 
-	endpointMap := make(map[string][]*endpointv3.ClusterLoadAssignment, len(endpoints))
+	endpointMap := make(map[string]*endpointv3.ClusterLoadAssignment, len(endpoints))
 	for _, ep := range endpoints {
 		if _, ok := endpointMap[ep.GetClusterName()]; !ok {
-			endpointMap[ep.GetClusterName()] = []*endpointv3.ClusterLoadAssignment{ep}
+			endpointMap[ep.GetClusterName()] = ep
 		} else {
-			// TODO: should check why has duplicated upstream
-			endpointMap[ep.GetClusterName()] = append(endpointMap[ep.GetClusterName()], ep)
+			// TODO: we should never get here. Add a DPanic here?
 		}
 	}
 
@@ -121,11 +120,9 @@ func fixupClustersAndEndpoints(
 		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
 		// Change the cluster eds config, forcing envoy to re-request latest EDS config
 		c.GetEdsClusterConfig().ServiceName = endpointClusterName
-		if eList, ok := endpointMap[c.GetName()]; ok {
-			for _, ep := range eList {
-				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
-				ep.ClusterName = endpointClusterName
-			}
+		if ep, ok := endpointMap[c.GetName()]; ok {
+			// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
+			ep.ClusterName = endpointClusterName
 			continue
 		}
 		// we don't have endpoints, set empty endpoints
@@ -133,11 +130,6 @@ func fixupClustersAndEndpoints(
 			ClusterName: endpointClusterName,
 		}
 
-		if _, ok := endpointMap[emptyEndpointList.GetClusterName()]; !ok {
-			endpointMap[emptyEndpointList.GetClusterName()] = []*endpointv3.ClusterLoadAssignment{emptyEndpointList}
-		} else {
-			endpointMap[emptyEndpointList.GetClusterName()] = append(endpointMap[emptyEndpointList.GetClusterName()], emptyEndpointList)
-		}
 		endpoints = append(endpoints, emptyEndpointList)
 	}
 
