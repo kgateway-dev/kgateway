@@ -113,7 +113,6 @@ func fixupClustersAndEndpoints(
 		}
 	}
 
-ClusterLoop:
 	for _, c := range clusters {
 		if c.GetType() != clusterv3.Cluster_EDS {
 			continue
@@ -127,20 +126,13 @@ ClusterLoop:
 				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
 				ep.ClusterName = endpointClusterName
 			}
-			continue ClusterLoop
+			continue
 		}
 		// we don't have endpoints, set empty endpoints
 		emptyEndpointList := &endpointv3.ClusterLoadAssignment{
 			ClusterName: endpointClusterName,
 		}
-		// make sure to call EndpointPlugin with empty endpoint
-		// if _, ok := upstreamMap[c.GetName()]; ok {
-		// 	for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
-		// 		if err := plugin.ProcessEndpoints(params, upstream, emptyEndpointList); err != nil {
-		// 			reports.AddError(upstream, err)
-		// 		}
-		// 	}
-		// }
+
 		if _, ok := endpointMap[emptyEndpointList.GetClusterName()]; !ok {
 			endpointMap[emptyEndpointList.GetClusterName()] = []*endpointv3.ClusterLoadAssignment{emptyEndpointList}
 		} else {
