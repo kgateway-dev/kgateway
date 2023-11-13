@@ -19,9 +19,8 @@ type EndpointTranslator struct {
 	UseVIP bool
 }
 
-// computeGlooEndpoints computes the endpoints for Gloo from the given Kubernetes endpoints, services, and Gloo upstreams.
-// It is exported to provide an injection point into our existing EDS solution for the Gloo K8s Gateway integration.
-// It returns the endpoints, warnings, and errors.
+// ComputeEndpointsForService computes the endpoints for Gloo from the given Kubernetes service.
+// It returns the endpoints and warnings.
 func (e *EndpointTranslator) ComputeEndpointsForService(
 	ctx context.Context,
 	service *corev1.Service,
