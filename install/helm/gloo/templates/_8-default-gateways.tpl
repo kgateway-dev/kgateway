@@ -147,7 +147,7 @@ spec:
 {{- define "gloo.customResources.defaultGateways" -}}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := include "gloo.util.overwriteWithOmit" (list $gatewaySpec $gatewayProxy $gatewaySpec.omitKeys) | fromJson }}
+{{- $spec := include "gloo.util.mergeOverwriteWithOmit" (list $gatewaySpec $gatewayProxy) | fromJson }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
 {{- if and $spec.gatewaySettings (not $gatewaySpec.disabled) }}
 {{- $ctx := (list $ $name $spec) }}

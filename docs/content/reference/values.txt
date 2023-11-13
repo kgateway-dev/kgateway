@@ -707,6 +707,7 @@
 |gatewayProxies.NAME.xdsServicePort|uint32||The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay.|
 |gatewayProxies.NAME.tcpKeepaliveTimeSeconds|uint32||The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60. See here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive|
 |gatewayProxies.NAME.disableCoreDumps|bool||If set to true, Envoy will not generate core dumps in the event of a crash. Defaults to false|
+|gatewayProxies.NAME.disableExtauthSidecar|bool||When extAuth.envoySidecar is set to true, every gateway proxy pod will come up with an extauth container. If this setting is set to true, the extauth container will not be added to the gatway proxy pod. Defaults to false|
 |gatewayProxies.NAME.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
@@ -956,6 +957,7 @@
 |gatewayProxies.gatewayProxy.xdsServicePort|uint32||The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay.|
 |gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds|uint32|60|The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60. See here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive|
 |gatewayProxies.gatewayProxy.disableCoreDumps|bool|false|If set to true, Envoy will not generate core dumps in the event of a crash. Defaults to false|
+|gatewayProxies.gatewayProxy.disableExtauthSidecar|bool|false|When extAuth.envoySidecar is set to true, every gateway proxy pod will come up with an extauth container. If this setting is set to true, the extauth container will not be added to the gatway proxy pod. Defaults to false|
 |gatewayProxies.gatewayProxy.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|

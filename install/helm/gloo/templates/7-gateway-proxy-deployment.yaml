@@ -9,7 +9,7 @@
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- $spec := include "gloo.util.overwriteWithOmit" (list $gatewaySpec $gatewayProxy $gatewaySpec.omitKeys) | fromJson }}
+{{- $spec := include "gloo.util.mergeOverwriteWithOmit" (list $gatewaySpec $gatewayProxy) | fromJson }}
 {{- $ports := list }}
 {{- if not (empty $spec.podTemplate) }}
   {{- $ports = (list $spec.podTemplate.httpPort $spec.podTemplate.httpsPort $spec.podTemplate.extraPorts) }}

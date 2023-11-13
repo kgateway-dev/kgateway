@@ -1,5 +1,15 @@
 {{/* vim: set filetype=mustache: */}}
 
+{{- /*
+There can be cases when we do not want to overwrite an empty value on a resource when merged.
+Eg. To generate a proxy config, we mergeOverwrite it with the default gateway-proxy config.
+If we want to preserve the empty value of the gateway and not have them overwritten, we set it to `gloo.omitOverwrite`
+and call `gloo.util.mergeOverwriteWithOmit` when merging. This sets all fields with values equal to this back to empty after the overwrite
+*/ -}}
+{{- define "gloo.omitOverwrite" -}}
+DO-NOT-OVERWRITE
+{{- end -}}
+
 {{- define "gloo.roleKind" -}}
 {{- if .Values.global.glooRbac.namespaced -}}
 Role
@@ -226,13 +236,14 @@ Otherwise it will generate ["Create", "Update", "Delete"]
 {{ toJson  $operations -}}
 {{- end -}}
 
-{{- define "gloo.util.overwriteWithOmit" -}}
+{{- define "gloo.util.mergeOverwriteWithOmit" -}}
 {{- $resource := first . -}}
 {{- $overwrite := index . 1 -}}
 {{- $result := deepCopy $resource | mergeOverwrite (deepCopy $overwrite) -}}
-{{- $omitKeys := index . 2 | default list -}}
-{{- range $key := $omitKeys }}
-  {{- $_ := unset $result $key }}
-{{- end }}
-{{ $result | toJson }}
+{{- range $key, $value := $result }}
+  {{- if eq (toString $value) "gloo.omitOverwrite" -}}
+    {{- $_ := unset $result $key }}
+  {{- end -}}
+{{- end -}}
+{{ toJson $result }}
 {{- end -}}
