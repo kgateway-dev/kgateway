@@ -23,7 +23,6 @@ type XdsSyncResult struct {
 // their outputs (which are the proxy syncer inputs)
 type ProyxSyncer interface {
 	UpdateDiscoveryInputs(ctx context.Context, inputs DiscoveryInputs)
-	UpdateSecretInputs(ctx context.Context)
 	Kick(ctx context.Context)
 }
 

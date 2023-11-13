@@ -52,6 +52,6 @@ type controllerReconciler struct {
 }
 
 func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.inputChannels.UpdateSecretInputs(ctx)
+	r.inputChannels.Kick(ctx)
 	return ctrl.Result{}, nil
 }

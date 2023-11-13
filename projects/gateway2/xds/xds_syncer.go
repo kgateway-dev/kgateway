@@ -23,7 +23,6 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -92,7 +91,6 @@ type XdsSyncer struct {
 type XdsInputChannels struct {
 	genericEvent   AsyncQueue[struct{}]
 	discoveryEvent AsyncQueue[DiscoveryInputs]
-	secretEvent    AsyncQueue[struct{}]
 }
 
 func (x *XdsInputChannels) Kick(ctx context.Context) {
@@ -103,15 +101,10 @@ func (x *XdsInputChannels) UpdateDiscoveryInputs(ctx context.Context, inputs Dis
 	x.discoveryEvent.Enqueue(inputs)
 }
 
-func (x *XdsInputChannels) UpdateSecretInputs(ctx context.Context) {
-	x.secretEvent.Enqueue(struct{}{})
-}
-
 func NewXdsInputChannels() *XdsInputChannels {
 	return &XdsInputChannels{
 		genericEvent:   NewAsyncQueue[struct{}](),
 		discoveryEvent: NewAsyncQueue[DiscoveryInputs](),
-		secretEvent:    NewAsyncQueue[struct{}](),
 	}
 }
 
@@ -140,12 +133,10 @@ func (s *XdsSyncer) Start(
 	ctx context.Context,
 ) error {
 	var discoveryEvent DiscoveryInputs
-	var (
-		discoveryWarmed bool
-		secretsWarmed   bool
-	)
+	var discoveryWarmed bool
+
 	resyncXds := func() {
-		if !discoveryWarmed || !secretsWarmed {
+		if !discoveryWarmed {
 			return
 		}
 		var gwl apiv1.GatewayList
@@ -185,20 +176,7 @@ func (s *XdsSyncer) Start(
 		case discoveryEvent = <-s.inputs.discoveryEvent.Next():
 			discoveryWarmed = true
 			resyncXds()
-		case <-s.inputs.secretEvent.Next():
-			secretsWarmed = true
-			resyncXds()
 		}
-	}
-}
-
-func proxyMetadata(gateway *apiv1.Gateway) *core.Metadata {
-	// TODO(ilackarms) what should the proxy ID be
-	// ROLE ON ENVOY MUST MATCH <proxy_namespace>~<proxy_name>
-	// equal to role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
-	return &core.Metadata{
-		Name:      gateway.Name,
-		Namespace: gateway.Namespace,
 	}
 }
 
@@ -331,9 +309,6 @@ func (s *XdsSyncer) ServeXdsSnapshots() error {
 		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
 		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
 	})
-	//	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-	//		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
-	//	})
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
 }

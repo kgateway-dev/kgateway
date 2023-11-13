@@ -32,21 +32,11 @@ func (sc *ServiceConverter) ClustersForService(ctx context.Context, svc *corev1.
 func (sc *ServiceConverter) translateCluster(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *clusterv3.Cluster {
 
 	out := &clusterv3.Cluster{
-		Name:     utils.ClusterName(svc.Namespace, svc.Name, port.Port),
-		Metadata: new(corev3.Metadata),
-		// CircuitBreakers:  getCircuitBreakers(upstream.GetCircuitBreakers(), circuitBreakers),
-		// LbSubsetConfig:   createLbConfig(upstream),
-		// HealthChecks:     hcConfig,
-		// OutlierDetection: detectCfg,
-		//defaults to Cluster_USE_CONFIGURED_PROTOCOL
-		//		ProtocolSelection:             clusterv3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
+		Name:                          utils.ClusterName(svc.Namespace, svc.Name, port.Port),
+		Metadata:                      new(corev3.Metadata),
 		TypedExtensionProtocolOptions: map[string]*anypb.Any{},
 		// this field can be overridden by plugins
 		ConnectTimeout: durationpb.New(ClusterConnectionTimeout),
-		// IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
-		// RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
-		// DnsRefreshRate:            getDnsRefreshRate(upstream, reports),
-
 	}
 
 	out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
