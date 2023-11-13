@@ -6,10 +6,8 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
 	"github.com/solo-io/gloo/projects/gateway2/xds"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,43 +53,52 @@ func (e *edgeLegacyTranslator) ReconcileEndpoints(ctx context.Context, req ctrl.
 }
 
 func (e *edgeLegacyTranslator) reconcileAll(ctx context.Context) (ctrl.Result, error) {
-	// TODO:
-	// 1. List resources (services, endpoints, pods) using dynamic client
-	// 2. Feed resources into EDS/UDS methods from Gloo Edge, which produce Gloo Endpoints and Upstreams
-	// 3. Store the snapshot
-	// 4. Signal that a new snapshot is available
+	clusters, endpoints, warnings := TranslateClusters(ctx, e.cli, false)
 
-	svcList := corev1.ServiceList{}
-	if err := e.cli.List(ctx, &svcList); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+	if clusters == nil {
+		return ctrl.Result{}, nil
 	}
-	var clusters []*clusterv3.Cluster
-	var endpoints []*endpointv3.ClusterLoadAssignment
-	var warnings []string
-
-	var sc ServiceConverter
-
-	for _, svc := range svcList.Items {
-		clusters = append(clusters, sc.ClustersForService(ctx, &svc)...)
-		e, w := ComputeEndpointsForService(ctx, &svc, e.cli)
-		endpoints = append(endpoints, e...)
-		warnings = append(warnings, w...)
-	}
-
-	endpoints = fixupClustersAndEndpoints(clusters, endpoints)
 
 	// TODO: check if endpoints version changed and log warnings if so
 	e.inputChannels.UpdateDiscoveryInputs(ctx, xds.DiscoveryInputs{
 		Clusters:  clusters,
 		Endpoints: endpoints,
+		Warnings:  warnings,
 	})
 
 	// Send across endpoints and upstreams
 	return ctrl.Result{}, nil
 }
 
-func fixupClustersAndEndpoints(
+func TranslateClusters(ctx context.Context, cli client.Client, useVip bool) ([]*clusterv3.Cluster, []*endpointv3.ClusterLoadAssignment, []string) {
+	var warnings []string
 
+	svcList := corev1.ServiceList{}
+	if err := cli.List(ctx, &svcList); err != nil {
+		if client.IgnoreNotFound(err) != nil {
+			warnings = append(warnings, fmt.Sprintf("failed to list services: %v", err))
+			return nil, nil, warnings
+		}
+	}
+
+	clusters := []*clusterv3.Cluster{}
+	endpoints := []*endpointv3.ClusterLoadAssignment{}
+
+	var sc ServiceConverter
+	et := EndpointTranslator{UseVIP: useVip}
+
+	for _, svc := range svcList.Items {
+		clusters = append(clusters, sc.ClustersForService(ctx, &svc)...)
+		e, w := et.ComputeEndpointsForService(ctx, &svc, cli)
+		endpoints = append(endpoints, e...)
+		warnings = append(warnings, w...)
+	}
+
+	endpoints = fixupClustersAndEndpoints(clusters, endpoints)
+	return clusters, endpoints, warnings
+}
+
+func fixupClustersAndEndpoints(
 	clusters []*clusterv3.Cluster,
 	endpoints []*endpointv3.ClusterLoadAssignment,
 ) []*endpointv3.ClusterLoadAssignment {
@@ -146,10 +153,11 @@ ClusterLoop:
 }
 
 func getEndpointClusterName(cluster *clusterv3.Cluster) string {
-	hash, err := translator.EnvoyCacheResourcesListToFnvHash([]envoycache.Resource{resource.NewEnvoyResource(cluster)})
+	hash, err := utils.ProtoFnvHash(nil, cluster)
 	if err != nil {
 		// should never  happen
 		// TODO: log
+		return fmt.Sprintf("%s-hashErr", cluster.GetName())
 	}
 
 	return fmt.Sprintf("%s-%d", cluster.GetName(), hash)

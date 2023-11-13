@@ -1,0 +1,19 @@
+connect_timeout: 5s
+eds_cluster_config:
+  eds_config:
+    ads: {}
+    resource_api_version: V3
+  service_name: default-example-svc-80-8487930703018681040
+metadata: {}
+name: default-example-svc-80
+type: EDS
+---
+cluster_name: default-example-svc-80-8487930703018681040
+endpoints:
+- lb_endpoints:
+  - endpoint:
+      address:
+        socket_address:
+          address: 1.2.3.4
+          port_value: 8080
+---

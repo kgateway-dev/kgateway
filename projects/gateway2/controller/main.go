@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/xds"
+	xdsutils "github.com/solo-io/gloo/projects/gateway2/xds/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -59,13 +60,11 @@ func Start(cfg ControllerConfig) {
 
 	ctx := signals.SetupSignalHandler()
 
-	xdsCache := newAdsSnapshotCache(ctx)
-	glooTranslator := newGlooTranslator(ctx)
+	xdsCache := xdsutils.NewAdsSnapshotCache(ctx)
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
 		cfg.GatewayControllerName,
-		glooTranslator,
 		sanz,
 		xdsCache,
 		false,

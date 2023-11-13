@@ -14,7 +14,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
+	xdsutils "github.com/solo-io/gloo/projects/gateway2/xds/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -75,7 +76,6 @@ func init() {
 }
 
 type XdsSyncer struct {
-	translator     translator.Translator
 	sanitizer      sanitizer.XdsSanitizer
 	xdsCache       envoycache.SnapshotCache
 	controllerName string
@@ -117,7 +117,6 @@ func NewXdsInputChannels() *XdsInputChannels {
 
 func NewXdsSyncer(
 	controllerName string,
-	translator translator.Translator,
 	sanitizer sanitizer.XdsSanitizer,
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
@@ -127,7 +126,6 @@ func NewXdsSyncer(
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:       controllerName,
-		translator:           translator,
 		sanitizer:            sanitizer,
 		xdsCache:             xdsCache,
 		xdsGarbageCollection: xdsGarbageCollection,
@@ -226,11 +224,9 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 	}
 
 	if !s.xdsGarbageCollection {
-		var proxies []*gloov1.Proxy
+		var gws []*apiv1.Gateway
 		for gw := range listenersAndRoutesForGateway {
-			proxies = append(proxies, &gloov1.Proxy{
-				Metadata: proxyMetadata(gw),
-			})
+			gws = append(gws, gw)
 		}
 		allKeys := map[string]bool{
 			xds.FallbackNodeCacheKey: true,
@@ -239,8 +235,8 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		for _, key := range s.xdsCache.GetStatusKeys() {
 			allKeys[key] = false
 		}
-		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(proxies) {
+		// Get all valid node ID keys for Gateways
+		for _, key := range xdsutils.SnapshotCacheKeys(gws) {
 			allKeys[key] = true
 		}
 
@@ -254,11 +250,8 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 	for gw, listenersAndRoutes := range listenersAndRoutesForGateway {
 		proxyCtx := ctx
 
-		proxy := &gloov1.Proxy{
-			Metadata: proxyMetadata(gw),
-		}
-
-		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
+		gwNNs := fmt.Sprintf("%s.%s", gw.Namespace, gw.Name)
+		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, gwNNs)); err == nil {
 			proxyCtx = ctxWithTags
 		}
 
@@ -271,7 +264,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			routes = append(routes, listenerAndRoutes.RouteConfigs...)
 			listeners = append(listeners, listenerAndRoutes.Listener)
 		}
-		xdsSnapshot := translator.GenerateXDSSnapshot(ctx, translator.EnvoyCacheResourcesListToFnvHash, clusters, endpoints, routes, listeners)
+		xdsSnapshot := translator.GenerateXDSSnapshot(ctx, utils.EnvoyCacheResourcesListSetToFnvHash, clusters, endpoints, routes, listeners)
 		// if validateErr := reports.ValidateStrict(); validateErr != nil {
 		// 	logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		// }
@@ -289,7 +282,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		// reports.Merge(reports)
 
-		key := xds.SnapshotCacheKey(proxy)
+		key := xdsutils.SnapshotCacheKey(gw)
 		s.xdsCache.SetSnapshot(key, xdsSnapshot)
 
 		// Record some metrics
@@ -313,11 +306,10 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			"endpoints", endpointsLen,
 			"endpointsVersion", xdsSnapshot.GetResources(types.EndpointTypeV3).Version)
 
-		debugLogger.Info("Full snapshot for proxy", proxy.GetMetadata().GetName(), xdsSnapshot)
+		debugLogger.Info("Full snapshot for proxy", gwNNs, xdsSnapshot)
 	}
 
 	debugLogger.Info("gloo reports to be written")
-
 }
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.

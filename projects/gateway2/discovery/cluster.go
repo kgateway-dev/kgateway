@@ -24,12 +24,12 @@ type ServiceConverter struct {
 func (sc *ServiceConverter) ClustersForService(ctx context.Context, svc *corev1.Service) []*clusterv3.Cluster {
 	var clusters []*clusterv3.Cluster
 	for _, port := range svc.Spec.Ports {
-		clusters = append(clusters, sc.CreateCluster(ctx, svc, port))
+		clusters = append(clusters, sc.translateCluster(ctx, svc, port))
 	}
 	return clusters
 }
 
-func (sc *ServiceConverter) CreateCluster(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *clusterv3.Cluster {
+func (sc *ServiceConverter) translateCluster(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *clusterv3.Cluster {
 
 	out := &clusterv3.Cluster{
 		Name:     utils.ClusterName(svc.Namespace, svc.Name, port.Port),
@@ -73,6 +73,7 @@ func getHttp2options(port corev1.ServicePort) *httpv3.HttpProtocolOptions {
 	if port.AppProtocol != nil {
 		proto := strings.ToLower(*port.AppProtocol)
 		useH2 = useH2 || strings.Contains(proto, "h2") ||
+			(proto == "kubernetes.io/h2c") ||
 			strings.Contains(proto, "http2") ||
 			strings.Contains(proto, "grpc")
 	}

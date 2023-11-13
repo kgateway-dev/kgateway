@@ -15,14 +15,14 @@ import (
 
 const EnvoyLb = "envoy.lb"
 
-func isIstioIntegrationEnabled() bool {
-	return false
+type EndpointTranslator struct {
+	UseVIP bool
 }
 
 // computeGlooEndpoints computes the endpoints for Gloo from the given Kubernetes endpoints, services, and Gloo upstreams.
 // It is exported to provide an injection point into our existing EDS solution for the Gloo K8s Gateway integration.
 // It returns the endpoints, warnings, and errors.
-func ComputeEndpointsForService(
+func (e *EndpointTranslator) ComputeEndpointsForService(
 	ctx context.Context,
 	service *corev1.Service,
 	cli client.Client,
@@ -38,7 +38,6 @@ func ComputeEndpointsForService(
 
 	var warnsToLog []string
 
-	istioIntegrationEnabled := isIstioIntegrationEnabled()
 	// TODO: Investigate possible deprecation of ClusterIPs in newer k8s versions https://github.com/solo-io/gloo/issues/7830
 	isHeadlessSvc := service.Spec.ClusterIP == "None"
 	singlePortService := len(service.Spec.Ports) == 1
@@ -48,21 +47,20 @@ func ComputeEndpointsForService(
 
 		// Istio uses the service's port for routing requests
 		// Headless services don't have a cluster IP, so we'll resort to pod IP endpoints
-		if istioIntegrationEnabled && !isHeadlessSvc {
+		if e.UseVIP && !isHeadlessSvc {
 			lbEndpoints = append(lbEndpoints, createEndpoint(service.Spec.ClusterIP, uint32(kubeServicePort.Port), nil))
-			continue
-		}
-
-		// find each matching endpoint
-		for _, subset := range endpoints.Subsets {
-			port := findFirstPortInEndpointSubsets(subset, singlePortService, &kubeServicePort)
-			if port == 0 {
-				warnsToLog = append(warnsToLog, fmt.Sprintf("port %v not found for service %v in endpoint %v", kubeServicePort.Port, service.Name, subset))
-				continue
+		} else {
+			// find each matching endpoint
+			for _, subset := range endpoints.Subsets {
+				port := findFirstPortInEndpointSubsets(subset, singlePortService, &kubeServicePort)
+				if port == 0 {
+					warnsToLog = append(warnsToLog, fmt.Sprintf("port %v not found for service %v in endpoint %v", kubeServicePort.Port, service.Name, subset))
+					continue
+				}
+				var warnings []string
+				lbEndpoints, warnings = processSubsetAddresses(ctx, subset, port, cli)
+				warnsToLog = append(warnsToLog, warnings...)
 			}
-			var warnings []string
-			lbEndpoints, warnings = processSubsetAddresses(ctx, subset, port, cli)
-			warnsToLog = append(warnsToLog, warnings...)
 		}
 
 		clusterName := utils.ClusterName(service.Namespace, service.Name, kubeServicePort.Port)
@@ -100,26 +98,23 @@ func processSubsetAddresses(ctx context.Context, subset corev1.EndpointSubset, p
 				podLabels = pod.Labels
 			}
 		}
-
 		lbEndpoints = append(lbEndpoints, createEndpoint(addr.IP, port, podLabels))
 	}
 	return lbEndpoints, warnings
 }
 
 func findFirstPortInEndpointSubsets(subset corev1.EndpointSubset, singlePortService bool, kubeServicePort *corev1.ServicePort) uint32 {
-	var port uint32
 	for _, p := range subset.Ports {
 		// if the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
 		switch {
 		case singlePortService:
-			port = uint32(p.Port)
+			return uint32(p.Port)
 		case p.Name == kubeServicePort.Name:
-			port = uint32(p.Port)
-			break
+			return uint32(p.Port)
 		}
 	}
-	return port
+	return 0
 }
 
 func createEndpoint(address string, port uint32, labels map[string]string) *endpointv3.LbEndpoint {
@@ -163,26 +158,4 @@ func createEndpoint(address string, port uint32, labels map[string]string) *endp
 			},
 		},
 	}
-}
-
-func getServiceForHostname(hostname string, serviceName, serviceNamespace string, services []*corev1.Service) (*corev1.Service, error) {
-
-	for _, service := range services {
-		if serviceName != "" && serviceNamespace != "" {
-			// no need for heuristics!
-			if serviceName == service.Name && serviceNamespace == service.Namespace {
-				return service, nil
-			}
-		}
-
-		serviceHostname := fmt.Sprintf("%v.%v", service.Name, service.Namespace)
-
-		if serviceHostname != hostname {
-			continue
-		}
-
-		return service, nil
-	}
-
-	return nil, fmt.Errorf("service not found with hostname %v", hostname)
 }

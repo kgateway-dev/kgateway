@@ -130,6 +130,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		}
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
 			contextutils.LoggerFrom(ctx).Warnw("failed to parse resource YAML",
+				zap.Error(err),
 				zap.String("filename", filename),
 				zap.String("resourceKind", gvk.String()),
 				zap.String("resourceId", sets.Key(obj.(client.Object))),

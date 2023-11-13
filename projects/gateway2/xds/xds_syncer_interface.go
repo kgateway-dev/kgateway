@@ -11,6 +11,7 @@ import (
 type DiscoveryInputs struct {
 	Clusters  []*clusterv3.Cluster
 	Endpoints []*endpointv3.ClusterLoadAssignment
+	Warnings  []string
 }
 
 type XdsSyncResult struct {
