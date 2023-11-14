@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -130,6 +130,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		}
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
 			contextutils.LoggerFrom(ctx).Warnw("failed to parse resource YAML",
+				zap.Error(err),
 				zap.String("filename", filename),
 				zap.String("resourceKind", gvk.String()),
 				zap.String("resourceId", sets.Key(obj.(client.Object))),
@@ -170,7 +171,8 @@ func ReadProxyFromFile(filename string) (translator.ProxyResult, error) {
 }
 
 func MarshalYaml(m proto.Message) ([]byte, error) {
-	jsn, err := protoutils.MarshalBytes(m)
+	jsonpbMarshaler := &protojson.MarshalOptions{UseProtoNames: false}
+	jsn, err := jsonpbMarshaler.Marshal(m)
 	if err != nil {
 		return nil, err
 	}

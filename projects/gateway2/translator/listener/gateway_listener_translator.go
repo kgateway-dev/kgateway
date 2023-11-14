@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
 	"google.golang.org/protobuf/encoding/protojson"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -373,7 +374,7 @@ func (ml *mergedListener) translateListener(
 
 func tlsInspectorFilter() *listenerv3.ListenerFilter {
 	configEnvoy := &envoy_tls_inspector.TlsInspector{}
-	msg := toAny(configEnvoy)
+	msg := utils.ToAny(configEnvoy)
 	return &listenerv3.ListenerFilter{
 		Name: wellknown.TlsInspector,
 		ConfigType: &listenerv3.ListenerFilter_TypedConfig{

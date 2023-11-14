@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: default
+spec:
+  clusterIP: 2.2.2.2
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    app: gloo
+  name: example-svc
+  namespace: default
+subsets:
+- addresses:
+  - ip: 1.2.3.4
+    nodeName: some-node
+    targetRef:
+      kind: Pod
+      name: example-svc-5bc8797b49-lqcdd
+      namespace: default
+      uid: 6d34ed56-d36d-42f0-a05f-582ec8769746
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-svc-5bc8797b49-lqcdd
+  namespace: default
+  uid: 6d34ed56-d36d-42f0-a05f-582ec8769746
+spec:
+  containers:
+  - image: ghcr.io/solo-io/gloo-gateway/glood:latest
+    imagePullPolicy: IfNotPresent
+    name: gloo-gateway

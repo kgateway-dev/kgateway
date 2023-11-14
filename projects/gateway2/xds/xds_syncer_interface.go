@@ -3,17 +3,15 @@ package xds
 import (
 	"context"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 type DiscoveryInputs struct {
-	Upstreams v1.UpstreamList
-	Endpoints v1.EndpointList
-}
-
-type SecretInputs struct {
-	Secrets v1.SecretList
+	Clusters  []*clusterv3.Cluster
+	Endpoints []*endpointv3.ClusterLoadAssignment
+	Warnings  []string
 }
 
 type XdsSyncResult struct {
@@ -25,7 +23,6 @@ type XdsSyncResult struct {
 // their outputs (which are the proxy syncer inputs)
 type ProyxSyncer interface {
 	UpdateDiscoveryInputs(ctx context.Context, inputs DiscoveryInputs)
-	UpdateSecretInputs(ctx context.Context, inputs SecretInputs)
 	Kick(ctx context.Context)
 }
 

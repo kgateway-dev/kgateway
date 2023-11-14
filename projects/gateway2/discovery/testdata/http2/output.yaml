@@ -1,0 +1,24 @@
+connect_timeout: 5s
+eds_cluster_config:
+  eds_config:
+    ads: {}
+    resource_api_version: V3
+  service_name: default-example-svc-80-10685063086680610617
+metadata: {}
+name: default-example-svc-80
+type: EDS
+typed_extension_protocol_options:
+  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    explicit_http_config:
+      http2_protocol_options: {}
+---
+cluster_name: default-example-svc-80-10685063086680610617
+endpoints:
+- lb_endpoints:
+  - endpoint:
+      address:
+        socket_address:
+          address: 1.2.3.4
+          port_value: 8080
+---

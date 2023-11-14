@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/projects/gateway2/xds"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,32 +52,6 @@ type controllerReconciler struct {
 }
 
 func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	secretList := &corev1.SecretList{}
-	if err := r.cli.List(ctx, secretList); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	skSecretList := v1.SecretList{}
-	for _, secret := range secretList.Items {
-		secret := secret
-		// Only try and parse TLS/Opaque secrets for now
-		if secret.Type != corev1.SecretTypeTLS && secret.Type != corev1.SecretTypeOpaque {
-			continue
-		}
-		skSecretList = append(skSecretList, &v1.Secret{
-			Kind: &v1.Secret_Tls{
-				Tls: &v1.TlsSecret{
-					PrivateKey: string(secret.Data[corev1.TLSPrivateKeyKey]),
-					CertChain:  string(secret.Data[corev1.TLSCertKey]),
-					RootCa:     string(secret.Data[corev1.ServiceAccountRootCAKey]),
-				},
-			},
-			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
-		})
-
-	}
-	r.inputChannels.UpdateSecretInputs(ctx, xds.SecretInputs{
-		Secrets: skSecretList,
-	})
+	r.inputChannels.Kick(ctx)
 	return ctrl.Result{}, nil
 }

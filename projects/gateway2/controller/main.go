@@ -7,7 +7,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/xds"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	xdsserver "github.com/solo-io/gloo/projects/gateway2/xds/server"
+	xdsutils "github.com/solo-io/gloo/projects/gateway2/xds/utils"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -59,14 +60,10 @@ func Start(cfg ControllerConfig) {
 
 	ctx := signals.SetupSignalHandler()
 
-	xdsCache := newAdsSnapshotCache(ctx)
-	glooTranslator := newGlooTranslator(ctx)
-	var sanz sanitizer.XdsSanitizers
+	xdsCache := xdsutils.NewAdsSnapshotCache(ctx)
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
 		cfg.GatewayControllerName,
-		glooTranslator,
-		sanz,
 		xdsCache,
 		false,
 		inputChannels,
@@ -82,7 +79,7 @@ func Start(cfg ControllerConfig) {
 		go xdsSyncer.ServeXdsSnapshots()
 	}
 
-	if err := mgr.Add(NewServer(ctx, cfg.XdsPort, xdsCache)); err != nil {
+	if err := mgr.Add(xdsserver.NewServer(ctx, cfg.XdsPort, xdsCache)); err != nil {
 		setupLog.Error(err, "unable to start xds server")
 		os.Exit(1)
 	}
