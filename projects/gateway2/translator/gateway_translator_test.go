@@ -22,8 +22,8 @@ var _ = Describe("GatewayTranslator", func() {
 					Namespace: "default",
 					Name:      "example-gateway",
 				}: {
-					Proxy:   dir + "/testutils/outputs/http-routing-proxy.yaml",
-					Reports: nil,
+					Proxy: dir + "/testutils/outputs/http-routing-proxy.yaml",
+					// Reports:     nil,
 				},
 			},
 		}.Run(ctx)
@@ -49,8 +49,8 @@ var _ = Describe("GatewayTranslator", func() {
 					Namespace: "default",
 					Name:      "example-gateway",
 				}: {
-					Proxy:   dir + "/testutils/outputs/https-routing-proxy.yaml",
-					Reports: nil,
+					Proxy: dir + "/testutils/outputs/https-routing-proxy.yaml",
+					// Reports:     nil,
 				},
 			},
 		}.Run(ctx)

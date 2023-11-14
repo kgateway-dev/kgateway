@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -33,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -164,11 +162,8 @@ func (s *XdsSyncer) Start(
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
 		proxies := gloo_solo_io.ProxyList{}
-		rm := &reports.ReportMap{
-			Gateways: make(map[string]*reports.GatewayReport),
-			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
-		}
-		r := reports.NewReporter(rm)
+		rm := reports.NewReportMap()
+		r := reports.NewReporter(&rm)
 		for _, gw := range gwl.Items {
 			proxy := t.TranslateProxy(ctx, &gw, queries, r)
 			if proxy != nil {
@@ -178,8 +173,8 @@ func (s *XdsSyncer) Start(
 		}
 		proxyApiSnapshot.Proxies = proxies
 		s.syncEnvoy(ctx, proxyApiSnapshot)
-		s.syncStatus(ctx, *rm, gwl)
-		s.syncRouteStatus(ctx, *rm)
+		s.syncStatus(ctx, rm, gwl)
+		s.syncRouteStatus(ctx, rm)
 	}
 
 	for {
@@ -425,103 +420,10 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	//TODO(Law): bail out early if possible
-	//TODO(Law): do another Get on the gw, possibly use Patch for status subresource modification
+	//TODO(Law): do another Get on the gw?
 	//TODO(Law): add generation changed predicate
 	for _, gw := range gwl.Items {
-		gwReport, ok := rm.Gateways[gw.Name]
-		if !ok {
-			// why don't we have a report for this gateway?
-			continue
-		}
-		//TODO(Law): deterministic sorting
-		finalListeners := make([]apiv1.ListenerStatus, 0)
-		for _, lis := range gw.Spec.Listeners {
-			lisReport, ok := gwReport.Listeners[string(lis.Name)]
-			if !ok {
-				//TODO(Law): why don't we have a report for a listner? shouldnt happen
-				continue
-			}
-
-			// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionAccepted)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionAccepted,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.ListenerReasonAccepted,
-				})
-			}
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionConflicted)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionConflicted,
-					Status: v1.ConditionFalse,
-					Reason: apiv1.ListenerReasonNoConflicts,
-				})
-			}
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionResolvedRefs)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionResolvedRefs,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.ListenerReasonResolvedRefs,
-				})
-			}
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionProgrammed)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionProgrammed,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.ListenerReasonProgrammed,
-				})
-			}
-
-			finalConditions := make([]v1.Condition, 0)
-			oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l apiv1.ListenerStatus) bool {
-				return l.Name == lis.Name
-			})
-			for _, lisCondition := range lisReport.Status.Conditions {
-				lisCondition.ObservedGeneration = gw.Generation // don't have generation is the report, should consider adding it
-				// copy the old condition from the gw so last transition time is set correctly
-				if oldLisStatusIndex != -1 {
-					if cond := meta.FindStatusCondition(gw.Status.Listeners[oldLisStatusIndex].Conditions, lisCondition.Type); cond != nil {
-						finalConditions = append(finalConditions, *cond)
-					}
-				}
-
-				meta.SetStatusCondition(&finalConditions, lisCondition)
-			}
-			lisReport.Status.Conditions = finalConditions
-			finalListeners = append(finalListeners, lisReport.Status)
-		}
-
-		// set missing conditions, i.e. set healthy conditions
-		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionAccepted)); cond == nil {
-			gwReport.SetCondition(reports.GatewayCondition{
-				Type:   apiv1.GatewayConditionAccepted,
-				Status: v1.ConditionTrue,
-				Reason: apiv1.GatewayReasonAccepted,
-			})
-		}
-		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionProgrammed)); cond == nil {
-			gwReport.SetCondition(reports.GatewayCondition{
-				Type:   apiv1.GatewayConditionProgrammed,
-				Status: v1.ConditionTrue,
-				Reason: apiv1.GatewayReasonProgrammed,
-			})
-		}
-
-		// recalculate top-level GatewayStatus
-		finalGwStatus := apiv1.GatewayStatus{}
-		finalConditions := make([]v1.Condition, 0)
-		for _, gwCondition := range gwReport.Conditions {
-			gwCondition.ObservedGeneration = gw.Generation
-			// copy the old condition from the gw so last transition time is set correctly
-			if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
-				finalConditions = append(finalConditions, *cond)
-			}
-			meta.SetStatusCondition(&finalConditions, gwCondition)
-		}
-
-		finalGwStatus.Conditions = finalConditions
-		finalGwStatus.Listeners = finalListeners
-		gw.Status = finalGwStatus
+		gw.Status = rm.BuildGWStatus(ctx, gw)
 		if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
 			logger.Error(err)
 		}

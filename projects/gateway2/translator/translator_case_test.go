@@ -22,13 +22,14 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy   *v1.Proxy
-	Reports map[string]*reports.GatewayReport
+	Proxy *v1.Proxy
+	// Reports     map[types.NamespacedName]*reports.GatewayReport
+	//TODO(Law): figure out how RouteReports fit in
 }
 
 type ExpectedTestResult struct {
-	Proxy   string
-	Reports map[string]*reports.GatewayReport
+	Proxy string
+	// Reports     map[types.NamespacedName]*reports.GatewayReport
 }
 
 func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
@@ -71,7 +72,8 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
-		reporter, reportsMap := testutils.BuildReporter()
+		reportsMap := reports.NewReportMap()
+		reporter := reports.NewReporter(&reportsMap)
 
 		// translate gateway
 		proxy := NewTranslator().TranslateProxy(
@@ -88,8 +90,8 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		fmt.Fprintf(ginkgo.GinkgoWriter, "actual reports:\n %s \n", actReport)
 
 		actual := ActualTestResult{
-			Proxy:   proxy,
-			Reports: reportsMap,
+			Proxy: proxy,
+			// Reports:     reportsMap.Gateways,
 		}
 
 		expected, ok := tc.ResultsByGateway[ref]

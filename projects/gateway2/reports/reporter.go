@@ -3,17 +3,107 @@ package reports
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ReportMap struct {
-	Gateways map[string]*GatewayReport
+	gateways map[types.NamespacedName]*GatewayReport
 	Routes   map[types.NamespacedName]*RouteReport
 }
 
+func NewReportMap() ReportMap {
+	gr := make(map[types.NamespacedName]*GatewayReport)
+	rr := make(map[types.NamespacedName]*RouteReport)
+	return ReportMap{
+		gateways: gr,
+		Routes:   rr,
+	}
+}
+
 type GatewayReport struct {
-	Conditions []metav1.Condition
-	Listeners  map[string]*ListenerReport
+	conditions []metav1.Condition
+	listeners  map[string]*ListenerReport
+}
+
+func (g *GatewayReport) GetConditions() []metav1.Condition {
+	if g == nil {
+		return []metav1.Condition{}
+	}
+	return g.conditions
+}
+
+func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
+	return g.listener(listener)
+}
+
+func (g *GatewayReport) listener(listener *gwv1.Listener) *ListenerReport {
+	if g.listeners == nil {
+		g.listeners = make(map[string]*ListenerReport)
+	}
+	lr := g.listeners[string(listener.Name)]
+	if lr == nil {
+		lr = NewListenerReport(string(listener.Name))
+		g.listeners[string(listener.Name)] = lr
+	}
+	return lr
+}
+
+func (g *GatewayReport) SetCondition(gc GatewayCondition) {
+	condition := metav1.Condition{
+		Type:    string(gc.Type),
+		Status:  gc.Status,
+		Reason:  string(gc.Reason),
+		Message: gc.Message,
+	}
+	g.conditions = append(g.conditions, condition)
+}
+
+type ListenerReport struct {
+	Status gwv1.ListenerStatus
+}
+
+func NewListenerReport(name string) *ListenerReport {
+	lr := ListenerReport{}
+	lr.Status.Name = gwv1.SectionName(name)
+	return &lr
+}
+
+func (l *ListenerReport) SetCondition(lc ListenerCondition) {
+	condition := metav1.Condition{
+		Type:    string(lc.Type),
+		Status:  lc.Status,
+		Reason:  string(lc.Reason),
+		Message: lc.Message,
+	}
+	l.Status.Conditions = append(l.Status.Conditions, condition)
+}
+
+func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
+	l.Status.SupportedKinds = rgks
+}
+
+func (l *ListenerReport) SetAttachedRoutes(n uint) {
+	l.Status.AttachedRoutes = int32(n)
+}
+
+func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
+	return r.report.Gateway(gateway)
+}
+
+// Exported for unit test, validation_test.go can be refactored to reduce this visibility
+func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
+	key := client.ObjectKeyFromObject(gateway)
+	gr := r.gateways[key]
+	if gr == nil {
+		gr = &GatewayReport{}
+		r.gateways[key] = gr
+	}
+	return gr
+}
+
+type reporter struct {
+	report *ReportMap
 }
 
 type RouteReport struct {
@@ -30,32 +120,9 @@ type ParentRefKey struct {
 	types.NamespacedName
 }
 
-type ListenerReport struct {
-	Status gwv1.ListenerStatus
-}
-
-type reporter struct {
-	report *ReportMap
-}
-
-func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
-	var gr *GatewayReport
-	//TODO(Law): use correct name here (include namespace, maybe cluster?)
-	gr, ok := r.report.Gateways[gateway.Name]
-	if !ok {
-		gr = &GatewayReport{}
-		r.report.Gateways[gateway.Name] = gr
-	}
-	return gr
-}
-
 func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 	var rr *RouteReport
-	//TODO use client.ObjectKeyFromObject
-	key := types.NamespacedName{
-		Namespace: route.Namespace,
-		Name:      route.Name,
-	}
+	key := client.ObjectKeyFromObject(route)
 	rr, ok := r.report.Routes[key]
 	if !ok {
 		rr = &RouteReport{}
@@ -108,67 +175,19 @@ func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {
 	prr.Conditions = append(prr.Conditions, condition)
 }
 
-func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
-	if r.Listeners == nil {
-		r.Listeners = make(map[string]*ListenerReport)
-	}
-	var lr *ListenerReport
-	lr, ok := r.Listeners[string(listener.Name)]
-	if !ok {
-		lr = &ListenerReport{}
-		lr.Status.Name = listener.Name
-		r.Listeners[string(listener.Name)] = lr
-	}
-	return lr
-}
-
-func (g *GatewayReport) SetCondition(gc GatewayCondition) {
-	condition := metav1.Condition{
-		Type:    string(gc.Type),
-		Status:  gc.Status,
-		Reason:  string(gc.Reason),
-		Message: gc.Message,
-	}
-	g.Conditions = append(g.Conditions, condition)
-}
-
-func (l *ListenerReport) SetCondition(lc ListenerCondition) {
-	condition := metav1.Condition{
-		Type:    string(lc.Type),
-		Status:  lc.Status,
-		Reason:  string(lc.Reason),
-		Message: lc.Message,
-	}
-	l.Status.Conditions = append(l.Status.Conditions, condition)
-}
-
-func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
-	l.Status.SupportedKinds = rgks
-}
-
-func (l *ListenerReport) SetAttachedRoutes(n uint) {
-	l.Status.AttachedRoutes = int32(n)
-}
-
 func NewReporter(reportMap *ReportMap) Reporter {
 	return &reporter{report: reportMap}
 }
 
-// Reports errors for GW translation
 type Reporter interface {
 	// returns the object reporter for the given type
-	// TODO(Law): use string here instead of Gateway type
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
 
 	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
 
 type GatewayReporter interface {
-	// report an error on the whole gateway
-	// Err(format string, a ...any)
-
 	// report an error on the given listener
-	// TODO(Law): use string here instead of Listener type
 	Listener(listener *gwv1.Listener) ListenerReporter
 
 	SetCondition(condition GatewayCondition)
