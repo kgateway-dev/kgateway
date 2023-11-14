@@ -18,6 +18,7 @@ func GroupNameHelper() *gwv1.Group {
 	g := gwv1.Group(gwv1.GroupName)
 	return &g
 }
+
 func TestValidate(t *testing.T) {
 	gateway := simpleGw()
 	listeners := gateway.Spec.Listeners
@@ -782,13 +783,12 @@ func assertExpectedListenerStatuses(
 			len(listeners),
 			len(expectedStatuses))
 	}
-	gatewayKey := client.ObjectKeyFromObject(gw)
-	gatewayReport := reportMap.GetGateway(gatewayKey)
+	gatewayReport := reportMap.Gateway(gw)
 
 	for _, listener := range listeners {
 		listenerName := string(listener.Name)
-		actualReport := gatewayReport.GetListenerReport(listenerName)
-
+		listenerReporter := gatewayReport.Listener(&listener)
+		actualReport := listenerReporter.(*reports.ListenerReport)
 		expectedStatus := expectedStatuses[listenerName]
 		g.Expect(actualReport.Status.Name).To(BeEquivalentTo(listenerName))
 		g.Expect(actualReport.Status.SupportedKinds).To(BeEquivalentTo(expectedStatus.SupportedKinds))

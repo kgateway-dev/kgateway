@@ -6,19 +6,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.GatewayStatus {
-	key := client.ObjectKeyFromObject(&gw)
-	gwReport := r.GetGateway(key)
-
+	gwReport := r.Gateway(&gw)
 	//TODO(Law): deterministic sorting
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
-		lisReport := gwReport.GetListenerReport(string(lis.Name))
-
+		lisReport := gwReport.listener(&lis)
 		addMissingListenerConditions(lisReport)
 
 		finalConditions := make([]metav1.Condition, 0)
@@ -42,7 +38,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 		finalListeners = append(finalListeners, lisReport.Status)
 	}
 
-	addMissingGatewayConditions(gwReport)
+	addMissingGatewayConditions(r.Gateway(&gw))
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, gwCondition := range gwReport.GetConditions() {

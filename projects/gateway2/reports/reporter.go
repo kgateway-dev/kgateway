@@ -21,30 +21,9 @@ func NewReportMap() ReportMap {
 	}
 }
 
-func (r *ReportMap) GetGateway(key types.NamespacedName) *GatewayReport {
-	gr := r.gateways[key]
-	if gr == nil {
-		return &GatewayReport{}
-	}
-	return gr
-}
-
 type GatewayReport struct {
 	conditions []metav1.Condition
 	listeners  map[string]*ListenerReport
-}
-
-// TODO(Law): consider non-pointer return?
-func (g *GatewayReport) GetListenerReport(lisName string) *ListenerReport {
-	if g == nil {
-		return &ListenerReport{}
-	}
-
-	lr := g.listeners[lisName]
-	if lr == nil {
-		return NewListenerReport(lisName)
-	}
-	return lr
 }
 
 func (g *GatewayReport) GetConditions() []metav1.Condition {
@@ -55,6 +34,10 @@ func (g *GatewayReport) GetConditions() []metav1.Condition {
 }
 
 func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
+	return g.listener(listener)
+}
+
+func (g *GatewayReport) listener(listener *gwv1.Listener) *ListenerReport {
 	if g.listeners == nil {
 		g.listeners = make(map[string]*ListenerReport)
 	}
@@ -74,20 +57,6 @@ func (g *GatewayReport) SetCondition(gc GatewayCondition) {
 		Message: gc.Message,
 	}
 	g.conditions = append(g.conditions, condition)
-}
-
-type RouteReport struct {
-	Parents map[ParentRefKey]*ParentRefReport
-}
-
-type ParentRefReport struct {
-	Conditions []metav1.Condition
-}
-
-type ParentRefKey struct {
-	Group string
-	Kind  string
-	types.NamespacedName
 }
 
 type ListenerReport struct {
@@ -118,28 +87,42 @@ func (l *ListenerReport) SetAttachedRoutes(n uint) {
 	l.Status.AttachedRoutes = int32(n)
 }
 
-type reporter struct {
-	report *ReportMap
+func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
+	return r.report.Gateway(gateway)
 }
 
-func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
-	var gr *GatewayReport
+// Exported for unit test, validation_test.go can be refactored to reduce this visibility
+func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	key := client.ObjectKeyFromObject(gateway)
-	gr, ok := r.report.gateways[key]
-	if !ok {
+	gr := r.gateways[key]
+	if gr == nil {
 		gr = &GatewayReport{}
-		r.report.gateways[key] = gr
+		r.gateways[key] = gr
 	}
 	return gr
 }
 
+type reporter struct {
+	report *ReportMap
+}
+
+type RouteReport struct {
+	Parents map[ParentRefKey]*ParentRefReport
+}
+
+type ParentRefReport struct {
+	Conditions []metav1.Condition
+}
+
+type ParentRefKey struct {
+	Group string
+	Kind  string
+	types.NamespacedName
+}
+
 func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 	var rr *RouteReport
-	//TODO use client.ObjectKeyFromObject
-	key := types.NamespacedName{
-		Namespace: route.Namespace,
-		Name:      route.Name,
-	}
+	key := client.ObjectKeyFromObject(route)
 	rr, ok := r.report.Routes[key]
 	if !ok {
 		rr = &RouteReport{}
@@ -196,21 +179,15 @@ func NewReporter(reportMap *ReportMap) Reporter {
 	return &reporter{report: reportMap}
 }
 
-// Reports errors for GW translation
 type Reporter interface {
 	// returns the object reporter for the given type
-	// TODO(Law): use string here instead of Gateway type
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
 
 	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
 
 type GatewayReporter interface {
-	// report an error on the whole gateway
-	// Err(format string, a ...any)
-
 	// report an error on the given listener
-	// TODO(Law): use string here instead of Listener type
 	Listener(listener *gwv1.Listener) ListenerReporter
 
 	SetCondition(condition GatewayCondition)
