@@ -128,7 +128,6 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install golang.org/x/tools/cmd/goimports
 	go install github.com/cratonica/2goarray
 	go install go.uber.org/mock/mockgen
-	go install go.uber.org/mock/mockgenn
 	go install github.com/saiskee/gettercheck
 
 .PHONY: check-format
@@ -249,10 +248,6 @@ generated-code: fmt
 go-generate-all: clean-vendor-any ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
 	GO111MODULE=on go generate ./...
 
-.PHONY: go-generate-apis
-go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
-	GO111MODULE=on go generate generate.go
-
 .PHONY: go-generate-mocks
 go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
@@ -327,75 +322,6 @@ STDERR_SILENCE_REDIRECT := 2> /dev/null
 endif
 
 #----------------------------------------------------------------------------------
-# Ingress
-#----------------------------------------------------------------------------------
-
-INGRESS_DIR=projects/ingress
-INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
-INGRESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(INGRESS_DIR)
-
-$(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH): $(INGRESS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
-
-.PHONY: ingress
-ingress: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH)
-
-$(INGRESS_OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: ingress-docker
-ingress-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress
-	docker buildx build --load $(PLATFORM) $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/ingress:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
-
-#----------------------------------------------------------------------------------
-# Access Logger
-#----------------------------------------------------------------------------------
-
-ACCESS_LOG_DIR=projects/accesslogger
-ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
-ACCESS_LOG_OUTPUT_DIR=$(OUTPUT_DIR)/$(ACCESS_LOG_DIR)
-
-$(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH): $(ACCESS_LOG_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
-
-.PHONY: access-logger
-access-logger: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH)
-
-$(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: access-logger-docker
-access-logger-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger
-	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
-
-#----------------------------------------------------------------------------------
-# Discovery
-#----------------------------------------------------------------------------------
-
-DISCOVERY_DIR=projects/discovery
-DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
-DISCOVERY_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISCOVERY_DIR)
-
-$(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH): $(DISCOVERY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
-
-.PHONY: discovery
-discovery: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH)
-
-$(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: discovery-docker
-discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery
-	docker buildx build --load $(PLATFORM) $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/discovery:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
-
-#----------------------------------------------------------------------------------
 # Gloo
 #----------------------------------------------------------------------------------
 
@@ -468,79 +394,6 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
 		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 	touch $@
-
-#----------------------------------------------------------------------------------
-# SDS Server - gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
-#----------------------------------------------------------------------------------
-
-SDS_DIR=projects/sds
-SDS_SOURCES=$(call get_sources,$(SDS_DIR))
-SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
-
-$(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
-
-.PHONY: sds
-sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
-
-$(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: sds-docker
-sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
-	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/sds:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
-
-#----------------------------------------------------------------------------------
-# Envoy init (BASE/SIDECAR)
-#----------------------------------------------------------------------------------
-
-ENVOYINIT_DIR=projects/envoyinit/cmd
-ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
-ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
-
-$(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
-
-.PHONY: envoyinit
-envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
-
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
-	cp $< $@
-
-$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
-	cp $< $@
-
-.PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
-	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
-
-#----------------------------------------------------------------------------------
-# Certgen - Job for creating TLS Secrets in Kubernetes
-#----------------------------------------------------------------------------------
-
-CERTGEN_DIR=jobs/certgen/cmd
-CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
-CERTGEN_OUTPUT_DIR=$(OUTPUT_DIR)/$(CERTGEN_DIR)
-
-$(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
-
-.PHONY: certgen
-certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
-
-$(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
-	cp $< $@
-
-.PHONY: certgen-docker
-certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen
-	docker buildx build --load $(PLATFORM) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/certgen:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Kubectl - Used in jobs during helm install/upgrade/uninstall

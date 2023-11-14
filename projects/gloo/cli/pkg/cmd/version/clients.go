@@ -4,9 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
-	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,9 +11,19 @@ import (
 )
 
 //go:generate mockgen -destination ./mocks/mock_watcher.go -source clients.go
-
 type ServerVersion interface {
-	Get(ctx context.Context) ([]*version.ServerVersion, error)
+	Get(ctx context.Context) (*ServerVersionInfo, error)
+}
+
+type Container struct {
+	Tag        string
+	Repository string
+	Registry   string
+}
+
+type ServerVersionInfo struct {
+	Containers []Container
+	Namespace  string
 }
 
 type kube struct {
@@ -27,8 +34,7 @@ type kube struct {
 var (
 	KnativeUniqueContainers = []string{"knative-external-proxy", "knative-internal-proxy"}
 	IngressUniqueContainers = []string{"ingress"}
-	GlooEUniqueContainers   = []string{"gloo-ee"}
-	ossImageAnnotation      = "gloo.solo.io/oss-image-tag"
+	GlooEUniqueContainers   = []string{"gloo-gateway"}
 )
 
 func NewKube(namespace, kubeContext string) *kube {
@@ -38,7 +44,7 @@ func NewKube(namespace, kubeContext string) *kube {
 	}
 }
 
-func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
+func (k *kube) Get(ctx context.Context) (*ServerVersionInfo, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if k.kubeContext != "" {
 		cfg, err = kubeutils.GetConfigWithContext("", "", k.kubeContext)
@@ -61,67 +67,41 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 		return nil, err
 	}
 
-	var kubeContainerList []*version.Kubernetes_Container
-	var foundGlooE, foundIngress, foundKnative bool
+	var kubeContainerList []Container
 	for _, v := range deployments.Items {
-		ossTag := v.Spec.Template.GetAnnotations()[ossImageAnnotation]
 		for _, container := range v.Spec.Template.Spec.Containers {
 			containerInfo := parseContainerString(container)
-			kubeContainerList = append(kubeContainerList, &version.Kubernetes_Container{
-				Tag:      *containerInfo.Tag,
-				Name:     *containerInfo.Repository,
-				Registry: *containerInfo.Registry,
-				OssTag:   ossTag,
+			kubeContainerList = append(kubeContainerList, Container{
+				Tag:        containerInfo.Tag,
+				Repository: containerInfo.Repository,
+				Registry:   containerInfo.Registry,
 			})
-			switch {
-			case stringutils.ContainsString(*containerInfo.Repository, KnativeUniqueContainers):
-				foundKnative = true
-			case stringutils.ContainsString(*containerInfo.Repository, IngressUniqueContainers):
-				foundIngress = true
-			case stringutils.ContainsString(*containerInfo.Repository, GlooEUniqueContainers):
-				foundGlooE = true
-			}
-		}
-	}
 
-	var deploymentType version.GlooType
-	switch {
-	case foundKnative:
-		deploymentType = version.GlooType_Knative
-	case foundIngress:
-		deploymentType = version.GlooType_Ingress
-	default:
-		deploymentType = version.GlooType_Gateway
+		}
 	}
 
 	if len(kubeContainerList) == 0 {
 		return nil, nil
 	}
-	serverVersion := &version.ServerVersion{
-		Type:       deploymentType,
-		Enterprise: foundGlooE,
-		VersionType: &version.ServerVersion_Kubernetes{
-			Kubernetes: &version.Kubernetes{
-				Containers: kubeContainerList,
-				Namespace:  k.namespace,
-			},
-		},
+	serverVersion := &ServerVersionInfo{
+		Containers: kubeContainerList,
+		Namespace:  k.namespace,
 	}
-	return []*version.ServerVersion{serverVersion}, nil
+	return serverVersion, nil
 }
 
-func parseContainerString(container kubev1.Container) *generate.Image {
-	img := &generate.Image{}
+func parseContainerString(container kubev1.Container) *Container {
+	img := &Container{}
 	splitImageVersion := strings.Split(container.Image, ":")
 	name, tag := "", "latest"
 	if len(splitImageVersion) == 2 {
 		tag = splitImageVersion[1]
 	}
-	img.Tag = &tag
+	img.Tag = tag
 	name = splitImageVersion[0]
 	splitRepoName := strings.Split(name, "/")
 	registry := strings.Join(splitRepoName[:len(splitRepoName)-1], "/")
-	img.Repository = &splitRepoName[len(splitRepoName)-1]
-	img.Registry = &registry
+	img.Repository = splitRepoName[len(splitRepoName)-1]
+	img.Registry = registry
 	return img
 }

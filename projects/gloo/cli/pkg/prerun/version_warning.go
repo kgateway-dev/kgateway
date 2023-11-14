@@ -9,11 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rotisserie/eris"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
-	versiondiscovery "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/versionutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -22,15 +20,7 @@ import (
 
 const (
 	// If the gateway pod is present use the image tag on that to get the gloo server version
-	// Otherwise, look for the annotation on the gloo pod
-	ContainerNameToCheckTag = "gateway"
-)
-
-var (
-	ContainerNamesToCheckAnnotation = map[string]bool{
-		"gloo":    true,
-		"gloo-ee": true,
-	}
+	ContainerNameToCheckTag = "gloo-gateway/glood"
 )
 
 func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
@@ -39,7 +29,7 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 	if opts.Top.Consul.UseConsul {
 		return nil
 	}
-	nsToCheck := opts.Metadata.GetNamespace()
+	nsToCheck := opts.Top.Namespace
 	// TODO: only use metadata namespace flag, install namespace can be populated from metadata namespace or refactored out of the opts
 	if nsToCheck == flagutils.DefaultNamespace && opts.Install.Gloo.Namespace != flagutils.DefaultNamespace {
 		nsToCheck = opts.Install.Gloo.Namespace
@@ -75,7 +65,7 @@ func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.Server
 		return nil
 	}
 
-	glooctlVersionStr := "v" + clientServerVersions.GetClient().GetVersion()
+	glooctlVersionStr := "v" + clientServerVersions.Client.Version
 
 	// two common cases I ran into in dev that we don't care about warning on
 	if glooctlVersionStr == "vdev" || glooctlVersionStr == "vundefined" {
@@ -88,7 +78,7 @@ func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.Server
 		return nil
 	}
 
-	openSourceVersions, err := GetOpenSourceVersions(clientServerVersions.GetServer())
+	openSourceVersions, err := GetVersions(clientServerVersions.Server)
 	if err != nil {
 		warnOnError(err, logger)
 		return nil
@@ -150,28 +140,14 @@ type ContainerVersion struct {
 
 // return an array of open source gloo versions found in the cluster
 // this is determined by looking at either the version of gateway (if the pod is present) or the annotation in the gloo pod.
-func GetOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
-	for _, podVersion := range podVersions {
-		switch podVersion.GetVersionType().(type) {
-		case *versiondiscovery.ServerVersion_Kubernetes:
-			for _, container := range podVersion.GetKubernetes().GetContainers() {
-				if _, ok := ContainerNamesToCheckAnnotation[container.GetName()]; ok {
-					containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
-					if err != nil {
-						// If the annotation wasn't present or didn't contain a valid version, move on
-						continue
-					}
-					versions = append(versions, containerOssVersion)
-				} else if container.GetName() == ContainerNameToCheckTag {
-					containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
-					if err != nil {
-						continue
-					}
-					versions = append(versions, containerVersion)
-				}
+func GetVersions(podVersions *versioncmd.ServerVersionInfo) (versions []*versionutils.Version, err error) {
+	for _, container := range podVersions.Containers {
+		if container.Repository == ContainerNameToCheckTag {
+			containerVersion, err := versionutils.ParseVersion("v" + container.Tag)
+			if err != nil {
+				continue
 			}
-		default:
-			return nil, eris.Errorf("Unhandled server version type: %v", podVersion.GetVersionType())
+			versions = append(versions, containerVersion)
 		}
 	}
 	return versions, nil

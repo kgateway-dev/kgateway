@@ -2,6 +2,7 @@ package version
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,16 +11,13 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/proto"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +29,14 @@ const (
 var (
 	NoNamespaceAllError = eris.New("single namespace must be specified, cannot be namespace all for version command")
 )
+
+type ClientVersion struct {
+	Version string
+}
+type Versions struct {
+	Server *ServerVersionInfo
+	Client ClientVersion
+}
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	// Default output for version command is JSON
@@ -44,25 +50,25 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Top.Output = versionOutput
 
-			if opts.Metadata.GetNamespace() == "" {
+			if opts.Top.Namespace == "" {
 				return NoNamespaceAllError
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printVersion(NewKube(opts.Metadata.GetNamespace(), ""), os.Stdout, opts)
+			return printVersion(NewKube(opts.Top.Namespace, ""), os.Stdout, opts)
 		},
 	}
 
 	pflags := cmd.PersistentFlags()
 	flagutils.AddOutputFlag(pflags, &versionOutput)
-	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
+	flagutils.AddNamespaceFlag(pflags, &opts.Top.Namespace)
 
 	return cmd
 }
 
-func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Version, error) {
-	v := &version.Version{
+func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*Versions, error) {
+	v := &Versions{
 		Client: getClientVersion(),
 	}
 	serverVersion, err := sv.Get(ctx)
@@ -73,8 +79,8 @@ func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Ve
 	return v, nil
 }
 
-func getClientVersion() *version.ClientVersion {
-	return &version.ClientVersion{
+func getClientVersion() ClientVersion {
+	return ClientVersion{
 		Version: linkedversion.Version,
 	}
 }
@@ -84,19 +90,19 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersion, err := GetJson(vrs.GetClient())
+		clientVersion, err := GetJson(vrs.Client)
 		if err != nil {
 			return err
 		}
 		clientVersionStr := string(clientVersion)
 		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
 		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
-		if vrs.GetServer() == nil {
+		if vrs.Server == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
 		fmt.Fprint(w, "Server: ")
-		for _, v := range vrs.GetServer() {
+		for _, v := range vrs.Server.Containers {
 			serverVersionStr, err := GetJson(v)
 			if err != nil {
 				return err
@@ -104,19 +110,19 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
 		}
 	case printers.YAML:
-		clientVersion, err := GetYaml(vrs.GetClient())
+		clientVersion, err := GetYaml(vrs.Client)
 		if err != nil {
 			return err
 		}
 		clientVersionStr := string(clientVersion)
 		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
 		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
-		if vrs.GetServer() == nil {
+		if vrs.Server == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
 		fmt.Fprintln(w, "Server:")
-		for _, v := range vrs.GetServer() {
+		for _, v := range vrs.Server.Containers {
 			serverVersion, err := GetYaml(v)
 			if err != nil {
 				return err
@@ -126,12 +132,12 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintf(w, "%s\n", serverVersionStr)
 		}
 	default:
-		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().GetVersion())
-		if vrs.GetServer() == nil {
+		fmt.Fprintf(w, "Client: version: %s\n", vrs.Client.Version)
+		if vrs.Server == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
-		srv := vrs.GetServer()
+		srv := vrs.Server
 		if srv == nil {
 			fmt.Println(undefinedServer)
 			return nil
@@ -140,21 +146,14 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		table := tablewriter.NewWriter(w)
 		headers := []string{"Namespace", "Deployment-Type", "Containers"}
 		var rows [][]string
-		for _, v := range srv {
-			kubeSrvVrs := v.GetKubernetes()
-			if kubeSrvVrs == nil {
-				continue
+		content := []string{srv.Namespace}
+		for i, container := range srv.Containers {
+			name := fmt.Sprintf("%s: %s", container.Repository, container.Tag)
+			if i == 0 {
+				rows = append(rows, append(content, name))
+			} else {
+				rows = append(rows, []string{"", "", name})
 			}
-			content := []string{kubeSrvVrs.GetNamespace(), getDistributionName(v.GetType().String(), v.GetEnterprise())}
-			for i, container := range kubeSrvVrs.GetContainers() {
-				name := fmt.Sprintf("%s: %s", container.GetName(), container.GetTag())
-				if i == 0 {
-					rows = append(rows, append(content, name))
-				} else {
-					rows = append(rows, []string{"", "", name})
-				}
-			}
-
 		}
 
 		table.SetHeader(headers)
@@ -173,8 +172,8 @@ func getDistributionName(name string, enterprise bool) string {
 	return name
 }
 
-func GetJson(pb proto.Message) ([]byte, error) {
-	data, err := protoutils.MarshalBytes(pb)
+func GetJson(pb any) ([]byte, error) {
+	data, err := json.Marshal(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return nil, err
@@ -182,7 +181,7 @@ func GetJson(pb proto.Message) ([]byte, error) {
 	return data, nil
 }
 
-func GetYaml(pb proto.Message) ([]byte, error) {
+func GetYaml(pb any) ([]byte, error) {
 	jsn, err := GetJson(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)

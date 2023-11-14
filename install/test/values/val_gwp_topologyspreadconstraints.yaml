@@ -1,9 +1,0 @@
-gatewayProxies:
-  gatewayProxy:
-    topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: zone
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          gloo: gateway-proxy

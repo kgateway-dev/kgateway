@@ -27,7 +27,7 @@ func CheckConnection(ctx context.Context, _ printers.P, opts *options.Options) e
 	if err != nil {
 		return eris.Wrapf(err, "Could not get kubernetes client")
 	}
-	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
+	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Top.Namespace, metav1.GetOptions{})
 	if err != nil {
 		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}
@@ -44,13 +44,13 @@ func CheckDeployments(ctx context.Context, printer printers.P, opts *options.Opt
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage+": %v", err)
 	}
-	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
+	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Top.Namespace, metav1.GetOptions{})
 	if err != nil {
 		errMessage := "Gloo namespace does not exist"
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).List(ctx, metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(opts.Top.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
