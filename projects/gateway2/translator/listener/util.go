@@ -1,6 +1,9 @@
 package listener
 
 import (
+	"fmt"
+	"net"
+
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -10,14 +13,15 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
-	"github.com/solo-io/gloo/projects/gloo/constants"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
 	DefaultHttpStatPrefix = "http"
+	// AllowEmpty is a reusable term to avoid setting defaults.
+	// This should be used where gloo decides to set common sense defaults but needs a way to specify a empty set.
+	AllowEmpty = "allow_empty"
 )
 
 func initializeHCM(routeConfigName string) *envoyhttp.HttpConnectionManager {
@@ -114,7 +118,7 @@ func (info *FilterChainInfo) toTransportSocket() *corev3.TransportSocket {
 	// default alpn for downstreams.
 	if len(common.GetAlpnProtocols()) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
-	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == constants.AllowEmpty { // allow override for advanced usage to set to a dangerous setting
+	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == AllowEmpty { // allow override for advanced usage to set to a dangerous setting
 		common.AlpnProtocols = []string{}
 
 	}
@@ -148,7 +152,7 @@ func bytesDataSource(s []byte) *corev3.DataSource {
 
 }
 func computeListenerAddress(bindAddress string, port uint32) *envoy_config_core_v3.Address {
-	_, isIpv4Address, err := translator.IsIpv4Address(bindAddress)
+	_, isIpv4Address, err := IsIpv4Address(bindAddress)
 	if err != nil {
 		// TODO: ????
 		// validation.AppendListenerError(l.report,
@@ -172,4 +176,38 @@ func computeListenerAddress(bindAddress string, port uint32) *envoy_config_core_
 			},
 		},
 	}
+}
+
+// IsIpv4Address returns whether
+// the provided address is valid IPv4, is pure(unmapped) IPv4, and if there was an error in the bindaddr
+// This is used to distinguish between IPv4 and IPv6 addresses
+func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
+	bindIP := net.ParseIP(bindAddress)
+	if bindIP == nil {
+		// If bindAddress is not a valid textual representation of an IP address
+		return false, false, fmt.Errorf("bindAddress %s is not a valid IP address", bindAddress)
+
+	} else if bindIP.To4() == nil {
+		// If bindIP is not an IPv4 address, To4 returns nil.
+		// so this is not an acceptable ipv4
+		return false, false, nil
+	}
+	return true, isPureIPv4Address(bindAddress), nil
+
+}
+
+// isPureIPv4Address checks the string to see if it is
+// ipv4 and not ipv4 mapped into ipv6 space and not ipv6.
+// Used as the standard net.Parse smashes everything to ipv6.
+// Basically false if ::ffff:0.0.0.0 and true if 0.0.0.0
+func isPureIPv4Address(ipString string) bool {
+	for i := 0; i < len(ipString); i++ {
+		switch ipString[i] {
+		case '.':
+			return true
+		case ':':
+			return false
+		}
+	}
+	return false
 }

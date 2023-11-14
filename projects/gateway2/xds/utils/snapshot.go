@@ -5,10 +5,18 @@ import (
 	"fmt"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
+// FallbackNodeCacheKey is used to let nodes know they have a bad config
+// we assign a "fix me" snapshot for bad nodes
+const FallbackNodeCacheKey = "misconfigured-node"
+
+var (
+	// Compile-time assertion
+	_ cache.NodeHash = &NodeNameNsHasher{}
 )
 
 // SnapshotCacheKey returns the key used to identify a Proxy resource in a SnapshotCache
@@ -42,7 +50,7 @@ func (h *NodeNameNsHasher) ID(node *corev3.Node) string {
 		}
 	}
 
-	return xds.FallbackNodeCacheKey
+	return FallbackNodeCacheKey
 }
 
 func NewAdsSnapshotCache(ctx context.Context) cache.SnapshotCache {

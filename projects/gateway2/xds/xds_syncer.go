@@ -15,11 +15,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
+	xdssnapshot "github.com/solo-io/gloo/projects/gateway2/xds/snapshot"
 	xdsutils "github.com/solo-io/gloo/projects/gateway2/xds/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
-	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
@@ -44,7 +41,7 @@ var (
 		Version: emptyVersionKey,
 		Items:   map[string]envoycache.Resource{},
 	}
-	emptySnapshot = xds.NewSnapshotFromResources(
+	emptySnapshot = xdssnapshot.NewSnapshotFromResources(
 		emptyResource,
 		emptyResource,
 		emptyResource,
@@ -60,13 +57,14 @@ const (
 var (
 	envoySnapshotOut   = stats.Int64("api.gloo.solo.io/translator/resources", "The number of resources in the snapshot in", "1")
 	resourceNameKey, _ = tag.NewKey("resource")
+	ProxyNameKey, _    = tag.NewKey("proxy_name")
 
 	envoySnapshotOutView = &view.View{
 		Name:        "api.gloo.solo.io/translator/resources",
 		Measure:     envoySnapshotOut,
 		Description: "The number of resources in the snapshot for envoy",
 		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{syncerstats.ProxyNameKey, resourceNameKey},
+		TagKeys:     []tag.Key{ProxyNameKey, resourceNameKey},
 	}
 )
 
@@ -75,7 +73,6 @@ func init() {
 }
 
 type XdsSyncer struct {
-	sanitizer      sanitizer.XdsSanitizer
 	xdsCache       envoycache.SnapshotCache
 	controllerName string
 
@@ -110,7 +107,6 @@ func NewXdsInputChannels() *XdsInputChannels {
 
 func NewXdsSyncer(
 	controllerName string,
-	sanitizer sanitizer.XdsSanitizer,
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
@@ -119,7 +115,6 @@ func NewXdsSyncer(
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:       controllerName,
-		sanitizer:            sanitizer,
 		xdsCache:             xdsCache,
 		xdsGarbageCollection: xdsGarbageCollection,
 		inputs:               inputs,
@@ -207,7 +202,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			gws = append(gws, gw)
 		}
 		allKeys := map[string]bool{
-			xds.FallbackNodeCacheKey: true,
+			xdsutils.FallbackNodeCacheKey: true,
 		}
 		// Get all envoy node ID keys
 		for _, key := range s.xdsCache.GetStatusKeys() {
@@ -229,7 +224,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 		proxyCtx := ctx
 
 		gwNNs := fmt.Sprintf("%s.%s", gw.Namespace, gw.Name)
-		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, gwNNs)); err == nil {
+		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(ProxyNameKey, gwNNs)); err == nil {
 			proxyCtx = ctxWithTags
 		}
 
@@ -242,7 +237,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, listenersAndRoutesForGateway 
 			routes = append(routes, listenerAndRoutes.RouteConfigs...)
 			listeners = append(listeners, listenerAndRoutes.Listener)
 		}
-		xdsSnapshot := translator.GenerateXDSSnapshot(ctx, utils.EnvoyCacheResourcesListSetToFnvHash, clusters, endpoints, routes, listeners)
+		xdsSnapshot := xdssnapshot.GenerateXDSSnapshot(ctx, utils.EnvoyCacheResourcesListSetToFnvHash, clusters, endpoints, routes, listeners)
 		// if validateErr := reports.ValidateStrict(); validateErr != nil {
 		// 	logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		// }
