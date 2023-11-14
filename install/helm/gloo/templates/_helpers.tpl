@@ -6,10 +6,9 @@ Eg. To generate a proxy config, we mergeOverwrite it with the default gateway-pr
 If we want to preserve the empty value of the gateway and not have them overwritten, we set it to `gloo.omitOverwrite`
 and call `gloo.util.mergeOverwriteWithOmit` when merging. This sets all fields with values equal to this back to empty after the overwrite
 */ -}}
-{{- define "gloo.omitOverwrite" -}}
-DO-NOT-OVERWRITE
-{{- end -}}
-
+{{- define "gloo.omitOverwrite" }}
+{{ printf "\n" }}{{/* This template is set to a new line. There may be scenarios where a field is initailly set to this value and the same field is appended to later on. Since this is just a new line, it won't cause rendering issues */}}
+{{ end -}}
 {{- define "gloo.roleKind" -}}
 {{- if .Values.global.glooRbac.namespaced -}}
 Role
