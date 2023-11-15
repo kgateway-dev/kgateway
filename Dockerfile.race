@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/tmp/go-cache CGO_ENABLED=1 GOARCH=${GOARCH} GOOS=
     -gcflags="$GCFLAGS" \
     -ldflags="-X github.com/solo-io/gloo/v2/pkg/version.Version=$VERSION $LDFLAGS" \
     -o gloo-gateway-linux-${GOARCH} \
-    main.go
+    cmd/main.go
 
 
 FROM alpine:3.17.3
