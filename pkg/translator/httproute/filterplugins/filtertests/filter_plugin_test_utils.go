@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins"
 	"google.golang.org/protobuf/proto"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+	"github.com/solo-io/gloo/v2/pkg/translator/testutils"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"

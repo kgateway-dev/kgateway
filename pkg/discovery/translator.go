@@ -6,8 +6,8 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
-	"github.com/solo-io/gloo/projects/gateway2/xds"
+	"github.com/solo-io/gloo/v2/pkg/translator/utils"
+	"github.com/solo-io/gloo/v2/pkg/xds"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

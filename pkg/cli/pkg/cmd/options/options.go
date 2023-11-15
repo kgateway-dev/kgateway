@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
-	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options/contextoptions"
+	printTypes "github.com/solo-io/gloo/v2/pkg/cli/pkg/printers"
 )
 
 type Options struct {

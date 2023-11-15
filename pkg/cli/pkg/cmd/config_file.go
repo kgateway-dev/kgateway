@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

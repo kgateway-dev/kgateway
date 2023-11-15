@@ -9,9 +9,9 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/helm"
-	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/v2/helm"
+	"github.com/solo-io/gloo/v2/pkg/ports"
+	"github.com/solo-io/gloo/v2/pkg/version"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"

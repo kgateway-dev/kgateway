@@ -4,7 +4,7 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )

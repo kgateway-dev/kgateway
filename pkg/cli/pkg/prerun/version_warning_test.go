@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	linkedversion "github.com/solo-io/gloo/pkg/version"
-	version2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+	version2 "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/prerun"
+	linkedversion "github.com/solo-io/gloo/v2/pkg/version"
 	"github.com/solo-io/go-utils/versionutils"
 
 	. "github.com/onsi/ginkgo/v2"

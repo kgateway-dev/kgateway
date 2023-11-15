@@ -3,12 +3,12 @@ package registry
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/mirror"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/redirect"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/urlrewrite"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/mirror"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/redirect"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/urlrewrite"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/headermodifier"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/headermodifier"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )

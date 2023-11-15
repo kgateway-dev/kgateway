@@ -3,12 +3,12 @@ package controller
 import (
 	"os"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/discovery"
-	"github.com/solo-io/gloo/projects/gateway2/secrets"
-	"github.com/solo-io/gloo/projects/gateway2/xds"
-	xdsserver "github.com/solo-io/gloo/projects/gateway2/xds/server"
-	xdsutils "github.com/solo-io/gloo/projects/gateway2/xds/utils"
+	"github.com/solo-io/gloo/v2/pkg/controller/scheme"
+	"github.com/solo-io/gloo/v2/pkg/discovery"
+	"github.com/solo-io/gloo/v2/pkg/secrets"
+	"github.com/solo-io/gloo/v2/pkg/xds"
+	xdsserver "github.com/solo-io/gloo/v2/pkg/xds/server"
+	xdsutils "github.com/solo-io/gloo/v2/pkg/xds/utils"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"

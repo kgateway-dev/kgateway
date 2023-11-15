@@ -4,8 +4,8 @@ import (
 	"context"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/v2/pkg/query"
+	"github.com/solo-io/gloo/v2/pkg/reports"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 

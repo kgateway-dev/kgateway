@@ -1,8 +1,8 @@
 package testutils
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/v2/pkg/controller/scheme"
+	"github.com/solo-io/gloo/v2/pkg/query"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )

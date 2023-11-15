@@ -3,8 +3,8 @@ package query
 import (
 	"errors"
 
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
+	"github.com/solo-io/gloo/v2/pkg/reports"
+	"github.com/solo-io/gloo/v2/pkg/translator/utils"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

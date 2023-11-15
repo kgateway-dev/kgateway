@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/v2/pkg/controller"
 	"github.com/spf13/cobra"
 )
 

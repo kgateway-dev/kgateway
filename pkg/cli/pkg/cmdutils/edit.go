@@ -12,7 +12,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"github.com/solo-io/gloo/v2/pkg/utils/protoutils"
 	"k8s.io/kubectl/pkg/cmd/util/editor"
 )
 

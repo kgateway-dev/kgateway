@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options/contextoptions"
 
-	"github.com/solo-io/gloo/pkg/listers"
+	"github.com/solo-io/gloo/v2/pkg/listers"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes/fake"
 

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/flagutils"
 
 	"github.com/spf13/cobra"
 
-	linkedversion "github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	versioncmd "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/version"
+	linkedversion "github.com/solo-io/gloo/v2/pkg/version"
 	"github.com/solo-io/go-utils/versionutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 

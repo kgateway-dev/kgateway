@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/v2/pkg/ports"
 )
 
 var _ = Describe("Ports", func() {

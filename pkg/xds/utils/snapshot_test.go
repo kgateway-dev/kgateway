@@ -3,7 +3,7 @@ package utils_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/xds/utils"
+	"github.com/solo-io/gloo/v2/pkg/xds/utils"
 	"google.golang.org/protobuf/types/known/structpb"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

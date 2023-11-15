@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gateway2/crds"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/crds"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/deployer"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"

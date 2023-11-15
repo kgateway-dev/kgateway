@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gateway2/crds"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/crds"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/deployer"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"

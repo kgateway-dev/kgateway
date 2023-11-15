@@ -7,9 +7,9 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/helpers"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/printers"
 	"golang.org/x/exp/slices"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

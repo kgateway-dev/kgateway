@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/v2/pkg/deployer"
+	"github.com/solo-io/gloo/v2/pkg/query"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

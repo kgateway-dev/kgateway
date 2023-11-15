@@ -3,8 +3,8 @@ package listener
 import (
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/v2/pkg/query"
+	"github.com/solo-io/gloo/v2/pkg/reports"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )

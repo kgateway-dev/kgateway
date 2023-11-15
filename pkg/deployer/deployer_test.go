@@ -16,9 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/v2/pkg/controller/scheme"
+	"github.com/solo-io/gloo/v2/pkg/deployer"
+	"github.com/solo-io/gloo/v2/pkg/version"
 )
 
 func convertUnstructured[T any](f client.Object) T {

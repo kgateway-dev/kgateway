@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/go-utils/clidoc"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd"
 )
 
 func main() {

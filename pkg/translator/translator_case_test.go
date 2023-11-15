@@ -6,9 +6,9 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	. "github.com/solo-io/gloo/projects/gateway2/translator"
-	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+	"github.com/solo-io/gloo/v2/pkg/reports"
+	. "github.com/solo-io/gloo/v2/pkg/translator"
+	"github.com/solo-io/gloo/v2/pkg/translator/testutils"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"

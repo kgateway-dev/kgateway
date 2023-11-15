@@ -6,11 +6,11 @@ import (
 	"errors"
 
 	"github.com/rotisserie/eris"
-	v2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check/internal/v2"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	v2 "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/check/internal/v2"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/constants"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )

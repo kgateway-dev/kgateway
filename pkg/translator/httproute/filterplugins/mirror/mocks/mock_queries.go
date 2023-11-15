@@ -12,7 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	query "github.com/solo-io/gloo/projects/gateway2/query"
+	query "github.com/solo-io/gloo/v2/pkg/query"
 	gomock "go.uber.org/mock/gomock"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"

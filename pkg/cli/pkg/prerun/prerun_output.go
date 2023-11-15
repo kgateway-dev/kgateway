@@ -3,11 +3,11 @@ package prerun
 import (
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/v2/pkg/defaults"
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
 )
 

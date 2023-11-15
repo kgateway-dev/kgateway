@@ -1,8 +1,8 @@
 package flagutils
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/printers"
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/tools/clientcmd"
 )

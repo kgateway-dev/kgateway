@@ -7,8 +7,8 @@ import (
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/solo-io/gloo/projects/gateway2/translator/utils"
-	xdssnapshot "github.com/solo-io/gloo/projects/gateway2/xds/snapshot"
+	"github.com/solo-io/gloo/v2/pkg/translator/utils"
+	xdssnapshot "github.com/solo-io/gloo/v2/pkg/xds/snapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )

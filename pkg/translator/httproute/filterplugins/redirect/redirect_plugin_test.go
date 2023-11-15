@@ -3,9 +3,9 @@ package redirect_test
 import (
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/filtertests"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/redirect"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/filtertests"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/redirect"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 

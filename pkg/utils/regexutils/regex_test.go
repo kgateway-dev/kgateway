@@ -3,7 +3,7 @@ package regexutils_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/pkg/utils/regexutils"
+	. "github.com/solo-io/gloo/v2/pkg/utils/regexutils"
 )
 
 var _ = Describe("Regex", func() {

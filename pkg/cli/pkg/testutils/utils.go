@@ -11,7 +11,7 @@ import (
 
 	errors "github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd"
 )
 
 func Glooctl(args string) error {

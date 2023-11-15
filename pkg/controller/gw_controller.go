@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/v2/pkg/deployer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

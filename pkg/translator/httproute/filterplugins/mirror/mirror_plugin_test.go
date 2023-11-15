@@ -6,9 +6,9 @@ import (
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/mirror"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/mirror/mocks"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/mirror"
+	"github.com/solo-io/gloo/v2/pkg/translator/httproute/filterplugins/mirror/mocks"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

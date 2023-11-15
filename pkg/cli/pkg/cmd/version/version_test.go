@@ -7,13 +7,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	. "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/version"
 
 	"github.com/rotisserie/eris"
-	gloo_version "github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	mock_version "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version/mocks"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
+	mock_version "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/version/mocks"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/printers"
+	gloo_version "github.com/solo-io/gloo/v2/pkg/version"
 	"go.uber.org/mock/gomock"
 )
 

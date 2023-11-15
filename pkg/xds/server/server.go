@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	xdsutils "github.com/solo-io/gloo/projects/gateway2/xds/utils"
+	xdsutils "github.com/solo-io/gloo/v2/pkg/xds/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"google.golang.org/grpc"

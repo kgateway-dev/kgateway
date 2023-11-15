@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	v2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/v2"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	v2 "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/install/v2"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/constants"
 	"k8s.io/kubectl/pkg/cmd"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/check"
+	versioncmd "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/cliutils"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
 )
 

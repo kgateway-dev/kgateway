@@ -12,7 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	version "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	version "github.com/solo-io/gloo/v2/pkg/cli/pkg/cmd/version"
 	gomock "go.uber.org/mock/gomock"
 )
 
