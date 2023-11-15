@@ -80,10 +80,11 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		// let the client connection retry backoff get long enough so
 		time.Sleep(time.Millisecond * 10000)
 		// recreate the listener on the same port
-		grpcAddr, cancel = makeListener(nil, grpcAddr)
+		_, cancel = makeListener(nil, grpcAddr)
+		defer cancel()
 
 		// conn should still be refused
-		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
+		_, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(status.Code(err)).To(Equal(codes.Unavailable))
 
