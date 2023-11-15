@@ -12,3 +12,22 @@ changelog:
     dependencyOwner: jhump
     dependencyRepo: protoreflect
     dependencyTag: v1.15.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: cloud-builders
+    dependencyTag: v0.6.8
+    description: >-
+      Use the latest cloud builders to match go version of builder to that of enterprise
+      This pulls in a go patch bump
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: x
+    dependencyRepo: net
+    dependencyTag:  v0.18.0 
+    description: >-
+      Bump for (https://github.com/advisories/GHSA-m425-mq94-257g)
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: google
+    dependencyRepo: go
+    dependencyTag: 1.20.11
+    description: >-
+      CVE-2023-45283 +  CVE-2023-45284  neither which should affect gloo but are good to bump

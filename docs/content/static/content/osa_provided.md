@@ -25,7 +25,7 @@ Name|Version|License
 [hinshun/vt10x](https://github.com/hinshun/vt10x)|v0.0.0-20180809195222-d55458df857c|MIT License
 [imdario/mergo](https://github.com/imdario/mergo)|v0.3.12|BSD 3-clause "New" or "Revised" License
 [inconshreveable/go-update](https://github.com/inconshreveable/go-update)|v0.0.0-20160112193335-8152e7eb6ccf|UNKNOWN
-[jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.15.3|Apache License 2.0
+[jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.15.1|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
 [onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
@@ -49,9 +49,9 @@ Name|Version|License
 [x/mod](https://golang.org/x/mod)|v0.11.0|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.3.0|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.10.0|BSD 3-clause "New" or "Revised" License
-[googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
-[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.59.0|Apache License 2.0
+[googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230526203410-71b5a4ffd15e|Apache License 2.0
+[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230526203410-71b5a4ffd15e|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.55.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.31.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.6.3|Apache License 2.0
