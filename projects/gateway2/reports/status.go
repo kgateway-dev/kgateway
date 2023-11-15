@@ -3,9 +3,11 @@ package reports
 import (
 	"context"
 	"slices"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -57,6 +59,55 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
 	return finalGwStatus
+}
+
+func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) gwv1.HTTPRouteStatus {
+	routeReport, ok := r.Routes[client.ObjectKeyFromObject(&route)]
+	if !ok {
+		//TODO more thought here
+	}
+	routeStatus := gwv1.RouteStatus{}
+	for _, parentRef := range route.Spec.ParentRefs {
+		key := GetParentRefKey(&parentRef)
+		parentStatus, ok := routeReport.Parents[key]
+		if !ok {
+			//todo think
+			continue
+		}
+		if cond := meta.FindStatusCondition(parentStatus.Conditions, string(gwv1.RouteConditionAccepted)); cond == nil {
+			parentStatus.SetCondition(HTTPRouteCondition{
+				Type:   gwv1.RouteConditionAccepted,
+				Status: metav1.ConditionTrue,
+				Reason: gwv1.RouteReasonAccepted,
+			})
+		}
+		if cond := meta.FindStatusCondition(parentStatus.Conditions, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
+			parentStatus.SetCondition(HTTPRouteCondition{
+				Type:   gwv1.RouteConditionResolvedRefs,
+				Status: metav1.ConditionTrue,
+				Reason: gwv1.RouteReasonResolvedRefs,
+			})
+		}
+
+		//TODO add logic for partially invalid condition
+
+		finalConditions := make([]metav1.Condition, 0)
+		for _, pCondition := range parentStatus.Conditions {
+			pCondition.ObservedGeneration = route.Generation           // don't have generation is the report, should consider adding it
+			pCondition.LastTransitionTime = metav1.NewTime(time.Now()) // same as above, should calculate at report time possibly
+			finalConditions = append(finalConditions, pCondition)
+		}
+
+		routeParentStatus := gwv1.RouteParentStatus{
+			ParentRef:      parentRef,
+			ControllerName: gwv1.GatewayController(cName),
+			Conditions:     finalConditions,
+		}
+		routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
+	}
+	return gwv1.HTTPRouteStatus{
+		RouteStatus: routeStatus,
+	}
 }
 
 // Reports will initially only contain negative conditions found during translation,

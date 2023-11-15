@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -23,8 +22,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -331,53 +328,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	for _, route := range rl.Items {
 		// Pike
 		route := route
-		routeReport, ok := rm.Routes[client.ObjectKeyFromObject(&route)]
-		if !ok {
-			//TODO more thought here
-			continue
-		}
-		routeStatus := apiv1.RouteStatus{}
-		for _, parentRef := range route.Spec.ParentRefs {
-			key := reports.GetParentRefKey(&parentRef)
-			parentStatus, ok := routeReport.Parents[key]
-			if !ok {
-				//todo think
-				continue
-			}
-			if cond := meta.FindStatusCondition(parentStatus.Conditions, string(apiv1.RouteConditionAccepted)); cond == nil {
-				parentStatus.SetCondition(reports.HTTPRouteCondition{
-					Type:   apiv1.RouteConditionAccepted,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.RouteReasonAccepted,
-				})
-			}
-			if cond := meta.FindStatusCondition(parentStatus.Conditions, string(apiv1.RouteConditionResolvedRefs)); cond == nil {
-				parentStatus.SetCondition(reports.HTTPRouteCondition{
-					Type:   apiv1.RouteConditionResolvedRefs,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.RouteReasonResolvedRefs,
-				})
-			}
-
-			//TODO add logic for partially invalid condition
-
-			finalConditions := make([]v1.Condition, 0)
-			for _, pCondition := range parentStatus.Conditions {
-				pCondition.ObservedGeneration = route.Generation       // don't have generation is the report, should consider adding it
-				pCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
-				finalConditions = append(finalConditions, pCondition)
-			}
-
-			routeParentStatus := apiv1.RouteParentStatus{
-				ParentRef:      parentRef,
-				ControllerName: apiv1.GatewayController(s.controllerName),
-				Conditions:     finalConditions,
-			}
-			routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
-		}
-		route.Status = apiv1.HTTPRouteStatus{
-			RouteStatus: routeStatus,
-		}
+		route.Status = rm.BuildRouteStatus(ctx, route, s.controllerName)
 		if err := s.cli.Status().Update(ctx, &route); err != nil {
 			logger.Error(err)
 		}
