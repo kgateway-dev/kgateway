@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -23,7 +22,7 @@ import (
 )
 
 const (
-	undefinedServer = "Server: version undefined, could not find any version of gloo running"
+	UndefinedServer = "Server: version undefined, could not find any version of gloo running"
 )
 
 var (
@@ -56,7 +55,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printVersion(NewKube(opts.Top.Namespace, ""), os.Stdout, opts)
+			return PrintVersion(NewKube(opts.Top.Namespace, ""), os.Stdout, opts)
 		},
 	}
 
@@ -85,61 +84,32 @@ func getClientVersion() ClientVersion {
 	}
 }
 
-func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
+func PrintVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	vrs, _ := GetClientServerVersions(opts.Top.Ctx, sv)
 	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersion, err := GetJson(vrs.Client)
+		verInfo, err := GetJson(vrs)
 		if err != nil {
 			return err
 		}
-		clientVersionStr := string(clientVersion)
-		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
-		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
-		if vrs.Server == nil {
-			fmt.Fprintln(w, undefinedServer)
-			return nil
-		}
-		fmt.Fprint(w, "Server: ")
-		for _, v := range vrs.Server.Containers {
-			serverVersionStr, err := GetJson(v)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
-		}
+		fmt.Fprintf(w, "%s\n", string(verInfo))
 	case printers.YAML:
-		clientVersion, err := GetYaml(vrs.Client)
+		verInfo, err := GetYaml(vrs)
 		if err != nil {
 			return err
 		}
-		clientVersionStr := string(clientVersion)
-		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
-		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
-		if vrs.Server == nil {
-			fmt.Fprintln(w, undefinedServer)
-			return nil
-		}
-		fmt.Fprintln(w, "Server:")
-		for _, v := range vrs.Server.Containers {
-			serverVersion, err := GetYaml(v)
-			if err != nil {
-				return err
-			}
-			serverVersionStr := string(serverVersion)
-			clientVersionStr = strings.TrimRight(clientVersionStr, "\n")
-			fmt.Fprintf(w, "%s\n", serverVersionStr)
-		}
+
+		fmt.Fprintf(w, "%s", string(verInfo))
 	default:
 		fmt.Fprintf(w, "Client: version: %s\n", vrs.Client.Version)
 		if vrs.Server == nil {
-			fmt.Fprintln(w, undefinedServer)
+			fmt.Fprintln(w, UndefinedServer)
 			return nil
 		}
 		srv := vrs.Server
 		if srv == nil {
-			fmt.Println(undefinedServer)
+			fmt.Println(UndefinedServer)
 			return nil
 		}
 
@@ -150,7 +120,7 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		for i, container := range srv.Containers {
 			name := fmt.Sprintf("%s: %s", container.Repository, container.Tag)
 			if i == 0 {
-				rows = append(rows, append(content, name))
+				rows = append(rows, append(content, "Gateway 2", name))
 			} else {
 				rows = append(rows, []string{"", "", name})
 			}
@@ -165,15 +135,8 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	return nil
 }
 
-func getDistributionName(name string, enterprise bool) string {
-	if enterprise {
-		return name + " Enterprise"
-	}
-	return name
-}
-
 func GetJson(pb any) ([]byte, error) {
-	data, err := json.Marshal(pb)
+	data, err := json.MarshalIndent(pb, "", "  ")
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return nil, err

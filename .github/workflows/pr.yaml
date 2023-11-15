@@ -13,11 +13,11 @@ jobs:
       with:
         go-version: "1.21"
     - name: Build
-      run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
+      run: go build -v ./...
     - name: Install utils for env tests
       run: make -C ./projects/gateway2/ install-go-tools
-    - name: Test with the Go CLI
-      run: go test ./projects/gateway2/...
+    - name: Test
+      run: go test ./...
 
   conformance:
     name: Run Gateway api conformance tests

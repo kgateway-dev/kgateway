@@ -20,7 +20,7 @@ import (
 
 const (
 	// If the gateway pod is present use the image tag on that to get the gloo server version
-	ContainerNameToCheckTag = "gloo-gateway/glood"
+	ContainerNameToCheckTag = "glood"
 )
 
 func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {

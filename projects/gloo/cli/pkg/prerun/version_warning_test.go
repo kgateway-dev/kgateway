@@ -12,15 +12,14 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 )
 
 type testVersionGetter struct {
-	versions []*version.ServerVersion
+	versions *version2.ServerVersionInfo
 	err      error
 }
 
-func (t *testVersionGetter) Get(ctx context.Context) ([]*version.ServerVersion, error) {
+func (t *testVersionGetter) Get(ctx context.Context) (*version2.ServerVersionInfo, error) {
 	return t.versions, t.err
 }
 
@@ -57,19 +56,6 @@ var _ = Describe("version command", func() {
 		ctx     context.Context
 		cancel  context.CancelFunc
 
-		buildContainerVersions = func(isEnterprise bool, containers []*version.Kubernetes_Container) []*version.ServerVersion {
-			return []*version.ServerVersion{{
-				Type:       version.GlooType_Gateway,
-				Enterprise: isEnterprise,
-				VersionType: &version.ServerVersion_Kubernetes{
-					Kubernetes: &version.Kubernetes{
-						Containers: containers,
-						Namespace:  namespace,
-					},
-				},
-			}}
-		}
-
 		err                 error
 		versionGetter       *testVersionGetter
 		logger              *testLogger
@@ -99,35 +85,41 @@ var _ = Describe("version command", func() {
 	})
 
 	It("should not warn when the versions match exactly", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_20_12,
-			Name:     "gloo",
-			Registry: "test-registry",
-		}})
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_20_12,
+				Repository: "glood",
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions match exactly")
 	})
 
 	It("should not warn when the versions differ only by patch version", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_20_13,
-			Name:     "gloo",
-			Registry: "test-registry",
-		}})
-
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_20_13,
+				Repository: "glood",
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions differ only by patch version")
 	})
 
 	It("should warn when the versions differ on the gloo-ee pod", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_21_0,
-			Name:     "gloo-ee",
-			Registry: "test-registry",
-			OssTag:   v_21_0,
-		}})
-
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_21_0,
+				Repository: "glood",
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 		mismatches := []*versionutils.Version{{
 			Major: 0,
 			Minor: 21,
@@ -141,13 +133,14 @@ var _ = Describe("version command", func() {
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 	})
 	It("should warn when the versions differ by minor version", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_21_0,
-			Name:     "gloo",
-			Registry: "test-registry",
-			OssTag:   v_21_0,
-		}})
-
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_21_0,
+				Repository: "glood",
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 		mismatches := []*versionutils.Version{{
 			Major: 0,
 			Minor: 21,
@@ -162,13 +155,14 @@ var _ = Describe("version command", func() {
 	})
 
 	It("should warn when the versions differ by major version", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_1_0_0,
-			Name:     "gloo",
-			Registry: "test-registry",
-			OssTag:   v_1_0_0,
-		}})
-
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_1_0_0,
+				Repository: "glood",
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 		mismatches := []*versionutils.Version{{
 			Major: 1,
 			Minor: 0,
@@ -183,13 +177,14 @@ var _ = Describe("version command", func() {
 	})
 
 	It("should warn when the versions differ in gateway pod", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_1_0_0,
-			Name:     prerun.ContainerNameToCheckTag,
-			Registry: "test-registry",
-			OssTag:   v_1_0_0,
-		}})
-
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_1_0_0,
+				Repository: prerun.ContainerNameToCheckTag,
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 		mismatches := []*versionutils.Version{{
 			Major: 1,
 			Minor: 0,
@@ -204,20 +199,18 @@ var _ = Describe("version command", func() {
 	})
 
 	It("should ignore containers other than the one we specifically look for", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
-			{
-				Tag:      v_20_12,
-				Name:     "gloo",
-				Registry: "test-registry",
-			},
-			{
-				Tag:      v_1_0_0,
-				Name:     otherPodName,
-				Registry: "test-registry",
-				OssTag:   v_1_0_0,
-			},
-		})
-
+		versionGetter.versions = &version2.ServerVersionInfo{
+			Containers: []version2.Container{{
+				Tag:        v_20_12,
+				Repository: "glood",
+				Registry:   "test-registry",
+			}, {
+				Tag:        v_1_0_0,
+				Repository: otherPodName,
+				Registry:   "test-registry",
+			}},
+			Namespace: namespace,
+		}
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions match exactly")
 	})

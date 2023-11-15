@@ -32,9 +32,7 @@ type kube struct {
 }
 
 var (
-	KnativeUniqueContainers = []string{"knative-external-proxy", "knative-internal-proxy"}
-	IngressUniqueContainers = []string{"ingress"}
-	GlooEUniqueContainers   = []string{"gloo-gateway"}
+	GlooEUniqueContainers = []string{"gloo-gateway"}
 )
 
 func NewKube(namespace, kubeContext string) *kube {
@@ -61,7 +59,7 @@ func (k *kube) Get(ctx context.Context) (*ServerVersionInfo, error) {
 
 	deployments, err := client.AppsV1().Deployments(k.namespace).List(ctx, metav1.ListOptions{
 		// search only for gloo deployments based on labels
-		LabelSelector: "app=gloo",
+		LabelSelector: "gloo=gateway-v2",
 	})
 	if err != nil {
 		return nil, err

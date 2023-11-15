@@ -4,7 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
