@@ -72,9 +72,10 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 
 		time.Sleep(100 * time.Millisecond) // wait for the server to shut down
 
-		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
-		Expect(err).To(HaveOccurred())
-		Expect(status.Code(err)).To(Equal(codes.Unavailable))
+		Eventually(func() codes.Code {
+			_, err := client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
+			return status.Code(err)
+		}, "10s", "1s").Should(Equal(codes.Unavailable))
 
 		// let the client connection retry backoff get long enough so
 		time.Sleep(time.Millisecond * 10000)
