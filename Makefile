@@ -284,7 +284,7 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
 
 $(GLOO_OUTPUT_DIR)/gloo-gateway-linux-$(GOARCH): $(GLOO_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: gloo
 gloo: $(GLOO_OUTPUT_DIR)/gloo-gateway-linux-$(GOARCH)

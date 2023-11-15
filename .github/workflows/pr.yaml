@@ -15,7 +15,7 @@ jobs:
     - name: Build
       run: go build -v ./...
     - name: Install utils for env tests
-      run: make -C ./projects/gateway2/ install-go-tools
+      run: make install-go-tools
     - name: Test
       run: go test ./...
 
