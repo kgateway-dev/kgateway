@@ -97,7 +97,37 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 		//TODO(Law): add multiple gws/listener tests
 	})
+
+	Describe("building route status", func() {
+		FIt("should build all positive route conditions with an empty report", func() {
+			route := route()
+			rm := reports.NewReportMap()
+			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(HaveLen(1))
+			Expect(status.Parents[0].Conditions).To(HaveLen(2))
+		})
+	})
 })
+
+func route() gwv1.HTTPRoute {
+	return gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: "http",
+					},
+				},
+			},
+		},
+	}
+}
 
 func gw() *gwv1.Gateway {
 	gw := &gwv1.Gateway{

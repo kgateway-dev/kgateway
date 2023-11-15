@@ -9,7 +9,7 @@ import (
 
 type ReportMap struct {
 	gateways map[types.NamespacedName]*GatewayReport
-	Routes   map[types.NamespacedName]*RouteReport
+	routes   map[types.NamespacedName]*RouteReport
 }
 
 type GatewayReport struct {
@@ -22,7 +22,7 @@ type ListenerReport struct {
 }
 
 type RouteReport struct {
-	Parents map[ParentRefKey]*ParentRefReport
+	parents map[ParentRefKey]*ParentRefReport
 }
 
 type ParentRefReport struct {
@@ -40,7 +40,7 @@ func NewReportMap() ReportMap {
 	rr := make(map[types.NamespacedName]*RouteReport)
 	return ReportMap{
 		gateways: gr,
-		Routes:   rr,
+		routes:   rr,
 	}
 }
 
@@ -53,6 +53,16 @@ func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 		r.gateways[key] = gr
 	}
 	return gr
+}
+
+func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
+	key := client.ObjectKeyFromObject(route)
+	rr := r.routes[key]
+	if rr == nil {
+		rr = &RouteReport{}
+		r.routes[key] = rr
+	}
+	return rr
 }
 
 func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
@@ -121,17 +131,10 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 }
 
 func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
-	var rr *RouteReport
-	key := client.ObjectKeyFromObject(route)
-	rr, ok := r.report.Routes[key]
-	if !ok {
-		rr = &RouteReport{}
-		r.report.Routes[key] = rr
-	}
-	return rr
+	return r.report.route(route)
 }
 
-func GetParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
+func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	var kind string
 	if parentRef.Kind != nil {
 		kind = string(*parentRef.Kind)
@@ -150,18 +153,22 @@ func GetParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	}
 }
 
-func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {
-	key := GetParentRefKey(parentRef)
-	if r.Parents == nil {
-		r.Parents = make(map[ParentRefKey]*ParentRefReport)
+func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefReport {
+	key := getParentRefKey(parentRef)
+	if r.parents == nil {
+		r.parents = make(map[ParentRefKey]*ParentRefReport)
 	}
 	var prr *ParentRefReport
-	prr, ok := r.Parents[key]
+	prr, ok := r.parents[key]
 	if !ok {
 		prr = &ParentRefReport{}
-		r.Parents[key] = prr
+		r.parents[key] = prr
 	}
 	return prr
+}
+
+func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {
+	return r.parentRef(parentRef)
 }
 
 func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {

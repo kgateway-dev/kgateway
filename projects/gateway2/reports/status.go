@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -62,34 +61,12 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 }
 
 func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) gwv1.HTTPRouteStatus {
-	routeReport, ok := r.Routes[client.ObjectKeyFromObject(&route)]
-	if !ok {
-		//TODO more thought here
-	}
+	routeReport := r.route(&route)
 	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range route.Spec.ParentRefs {
-		key := GetParentRefKey(&parentRef)
-		parentStatus, ok := routeReport.Parents[key]
-		if !ok {
-			//todo think
-			continue
-		}
-		if cond := meta.FindStatusCondition(parentStatus.Conditions, string(gwv1.RouteConditionAccepted)); cond == nil {
-			parentStatus.SetCondition(HTTPRouteCondition{
-				Type:   gwv1.RouteConditionAccepted,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.RouteReasonAccepted,
-			})
-		}
-		if cond := meta.FindStatusCondition(parentStatus.Conditions, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
-			parentStatus.SetCondition(HTTPRouteCondition{
-				Type:   gwv1.RouteConditionResolvedRefs,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.RouteReasonResolvedRefs,
-			})
-		}
+		parentStatus := routeReport.parentRef(&parentRef)
 
-		//TODO add logic for partially invalid condition
+		addMissingParentRefConditions(parentStatus)
 
 		finalConditions := make([]metav1.Condition, 0)
 		for _, pCondition := range parentStatus.Conditions {
@@ -161,6 +138,26 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:   gwv1.ListenerConditionProgrammed,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.ListenerReasonProgrammed,
+		})
+	}
+}
+
+// Reports will initially only contain negative conditions found during translation,
+// so all missing conditions are assumed to be positive. Here we will add all missing conditions
+// to a given report, i.e. set healthy conditions
+func addMissingParentRefConditions(report *ParentRefReport) {
+	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionAccepted)); cond == nil {
+		report.SetCondition(HTTPRouteCondition{
+			Type:   gwv1.RouteConditionAccepted,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.RouteReasonAccepted,
+		})
+	}
+	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
+		report.SetCondition(HTTPRouteCondition{
+			Type:   gwv1.RouteConditionResolvedRefs,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.RouteReasonResolvedRefs,
 		})
 	}
 }
