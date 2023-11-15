@@ -109,7 +109,7 @@ func translateGatewayHTTPRouteRule(
 			continue
 			// return nil
 		}
-		if outputRoute.Action == nil {
+		if outputRoute.GetAction() == nil {
 			// TODO: maybe? report error
 			outputRoute.Action = &routev3.Route_DirectResponse{
 				DirectResponse: &routev3.DirectResponseAction{
@@ -289,7 +289,7 @@ func translateRouteAction(
 	//TODO: we should never get here
 	case 1:
 		action.ClusterSpecifier = &routev3.RouteAction_Cluster{
-			Cluster: clusters[0].Name,
+			Cluster: clusters[0].GetName(),
 		}
 
 	default:

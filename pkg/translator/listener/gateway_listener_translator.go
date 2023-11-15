@@ -336,11 +336,11 @@ func (ml *mergedListener) translateListener(
 		hcm.HttpFilters = computeHttpFilters()
 		res.RouteConfigs = append(res.RouteConfigs, rc)
 
-		res.Listener.FilterChains = append(res.Listener.FilterChains, makeFilterChain(httpFilterChain, hcm))
+		res.Listener.FilterChains = append(res.Listener.GetFilterChains(), makeFilterChain(httpFilterChain, hcm))
 
 	}
 	if len(ml.httpsFilterChains) != 0 {
-		res.Listener.ListenerFilters = append(res.Listener.ListenerFilters, tlsInspectorFilter())
+		res.Listener.ListenerFilters = append(res.Listener.GetListenerFilters(), tlsInspectorFilter())
 	}
 	for _, mfc := range ml.httpsFilterChains {
 		// each virtual host name must be unique across all filter chains
@@ -365,7 +365,7 @@ func (ml *mergedListener) translateListener(
 		hcm.HttpFilters = computeHttpFilters()
 		res.RouteConfigs = append(res.RouteConfigs, rc)
 
-		res.Listener.FilterChains = append(res.Listener.FilterChains, makeFilterChain(httpsFilterChain, hcm))
+		res.Listener.FilterChains = append(res.Listener.GetFilterChains(), makeFilterChain(httpsFilterChain, hcm))
 
 	}
 
@@ -480,7 +480,7 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		})
 	}
 	slices.SortFunc(virtualHosts, func(a, b *routev3.VirtualHost) int {
-		return strings.Compare(a.Name, b.Name)
+		return strings.Compare(a.GetName(), b.GetName())
 	})
 
 	return &FilterChainInfo{
@@ -532,7 +532,7 @@ func getHosts(
 		})
 	}
 	slices.SortFunc(virtualHosts, func(a, b *routev3.VirtualHost) int {
-		return strings.Compare(a.Name, b.Name)
+		return strings.Compare(a.GetName(), b.GetName())
 	})
 	return virtualHosts
 }

@@ -1,4 +1,4 @@
-NAME={$1:-kind}
+NAME=${1:-kind}
 
 kind create cluster --name $NAME
 

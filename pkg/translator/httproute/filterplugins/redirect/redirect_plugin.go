@@ -25,7 +25,7 @@ func (p *Plugin) ApplyFilter(
 		return errors.Errorf("RequestRedirect filter supplied does not define requestRedirect config")
 	}
 
-	if outputRoute.Action != nil {
+	if outputRoute.GetAction() != nil {
 		return errors.Errorf("RequestRedirect route cannot have destinations")
 	}
 	statusCode := 302

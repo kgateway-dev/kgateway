@@ -41,7 +41,7 @@ func (p *Plugin) ApplyFilter(
 		return nil
 	}
 
-	routeAction.RequestMirrorPolicies = append(routeAction.RequestMirrorPolicies, &routev3.RouteAction_RequestMirrorPolicy{
+	routeAction.RequestMirrorPolicies = append(routeAction.GetRequestMirrorPolicies(), &routev3.RouteAction_RequestMirrorPolicy{
 		Cluster: *clusterName,
 	})
 

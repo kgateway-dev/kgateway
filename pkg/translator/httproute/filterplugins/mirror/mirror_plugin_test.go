@@ -15,7 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-//go:generate mockgen -destination mocks/mock_queries.go -package mocks github.com/solo-io/gloo/projects/gateway2/query GatewayQueries
+//go:generate mockgen -destination mocks/mock_queries.go -package mocks github.com/solo-io/gloo/v2/pkg/query GatewayQueries
 
 func TestSingleMirror(t *testing.T) {
 	g := gomega.NewWithT(t)

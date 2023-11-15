@@ -47,7 +47,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.14.0
 	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
 	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.31.0
@@ -64,6 +64,7 @@ require (
 )
 
 require (
+	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	go.uber.org/mock v0.3.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	sigs.k8s.io/gateway-api v1.0.1-0.20231102234148-3b5969669194

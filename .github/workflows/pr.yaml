@@ -35,6 +35,6 @@ jobs:
         install_only: true
         version: v0.20.0
     - name: Setup Env in KinD
-      run: make -C ./projects/gateway2/ build docker kind
+      run: make kind-create kind-helm
     - name: Test Conformance
-      run: make -C ./projects/gateway2/ conformance
+      run: make conformance

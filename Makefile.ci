@@ -5,7 +5,9 @@
 # glooctl
 #----------------------------------------------------------------------------------
 
-CLI_DIR=projects/gloo/cli
+CLI_DIR=pkg/cli
+
+SHA256:=shasum -a 256
 
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
@@ -13,22 +15,22 @@ $(OUTPUT_DIR)/glooctl: $(SOURCES)
 $(OUTPUT_DIR)/glooctl-linux-arm64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-linux-arm64.sha256: $(OUTPUT_DIR)/glooctl-linux-arm64
-	shasum -a 256 $(OUTPUT_DIR)/glooctl-linux-arm64 > $@
+	$(SHA256) $(OUTPUT_DIR)/glooctl-linux-arm64 > $@
 
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-linux-amd64.sha256: $(OUTPUT_DIR)/glooctl-linux-amd64
-	shasum -a 256 $(OUTPUT_DIR)/glooctl-linux-amd64 > $@
+	$(SHA256) $(OUTPUT_DIR)/glooctl-linux-amd64 > $@
 
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-darwin-amd64.sha256: $(OUTPUT_DIR)/glooctl-darwin-amd64
-	shasum -a 256 $(OUTPUT_DIR)/glooctl-darwin-amd64 > $@
+	$(SHA256) $(OUTPUT_DIR)/glooctl-darwin-amd64 > $@
 
 $(OUTPUT_DIR)/glooctl-darwin-arm64: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-darwin-arm64.sha256: $(OUTPUT_DIR)/glooctl-darwin-arm64
-	shasum -a 256 $(OUTPUT_DIR)/glooctl-darwin-arm64 > $@
+	$(SHA256) $(OUTPUT_DIR)/glooctl-darwin-arm64 > $@
 
 $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)

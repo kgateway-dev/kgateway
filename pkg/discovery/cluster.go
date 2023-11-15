@@ -52,7 +52,7 @@ func (sc *ServiceConverter) translateCluster(ctx context.Context, svc *corev1.Se
 	}
 
 	if opts := getHttp2options(port); opts != nil {
-		out.TypedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = utils.ToAny(opts)
+		out.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = utils.ToAny(opts)
 	}
 
 	return out
