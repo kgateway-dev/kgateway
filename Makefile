@@ -38,7 +38,7 @@ export GOBIN:=$(DEPSGOBIN)
 # To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
 # To use dockerhub images, set the IMAGE_REGISTRY to "soloio"
 # To use gcr images, set the IMAGE_REGISTRY to "gcr.io/$PROJECT_NAME"
-IMAGE_REGISTRY ?= quay.io/solo-io
+IMAGE_REGISTRY ?= ghcr.io/solo-io/gloo-gateway
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -94,6 +94,21 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 include Makefile.ci
 
 #----------------------------------------------------------------------------------
+# Env test
+#----------------------------------------------------------------------------------
+ENVTEST_K8S_VERSION = 1.23
+ENVTEST = $(DEPSGOBIN)/setup-envtest
+
+.PHONY: envtest-path
+envtest-path:
+	@$(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path --arch=amd64
+
+# internal target used by controller_suite_test.go
+.PHONY: envtest
+envtest:
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
+
+#----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
 
@@ -129,6 +144,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/cratonica/2goarray
 	go install go.uber.org/mock/mockgen
 	go install github.com/saiskee/gettercheck
+	test -s $(ENVTEST) || go install sigs.k8s.io/controller-runtime/tools/setup-envtest@15d792835235
 
 .PHONY: check-format
 check-format:
@@ -143,8 +159,7 @@ check-spelling:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
-GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_ENV ?=
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
@@ -154,13 +169,9 @@ TEST_PKG ?= ./... # Default to run all tests
 # For example, you may want to run tests multiple times, or with various timeouts
 GINKGO_USER_FLAGS ?=
 
-.PHONY: install-test-tools
-install-test-tools: check-go-version
-	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
-
 .PHONY: test
 test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
+	$(GINKGO_ENV) go run github.com/onsi/ginkgo/v2/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
@@ -283,36 +294,6 @@ generated-code-apis: clean-solo-kit-gen go-generate-apis fmt ## Executes the tar
 generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes the targets necessary to cleanup and format code
 
 #----------------------------------------------------------------------------------
-# Generate mocks
-#----------------------------------------------------------------------------------
-
-# The values in this array are used in a foreach loop to dynamically generate the
-# commands in the generate-client-mocks target.
-# For each value, the ":" character will be replaced with " " using the subst function,
-# thus turning the string into a 3-element array. The n-th element of the array will
-# then be selected via the word function
-MOCK_RESOURCE_INFO := \
-	gloo:artifact:ArtifactClient \
-	gloo:endpoint:EndpointClient \
-	gloo:proxy:ProxyClient \
-	gloo:secret:SecretClient \
-	gloo:settings:SettingsClient \
-	gloo:upstream:UpstreamClient \
-	gateway:gateway:GatewayClient \
-	gateway:virtual_service:VirtualServiceClient\
-	gateway:route_table:RouteTableClient\
-
-.PHONY: generate-client-mocks
-generate-client-mocks:
-	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
-		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
-		GOBIN=$(DEPSGOBIN) $(DEPSGOBIN)/mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
-		-package=mocks \
-		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
-		$(word 3,$(subst :, , $(INFO))) \
-	;)
-
-#----------------------------------------------------------------------------------
 # glooctl
 #----------------------------------------------------------------------------------
 # build-ci and glooctl along with others are in the ci makefile
@@ -325,25 +306,29 @@ endif
 # Gloo
 #----------------------------------------------------------------------------------
 
-GLOO_DIR=projects/gloo
+GLOO_DIR=.
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
 
-$(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
+$(GLOO_OUTPUT_DIR)/gloo-gateway-$(GOARCH): $(GLOO_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: gloo
-gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
+gloo: $(GLOO_OUTPUT_DIR)/gloo-gateway-linux-$(GOARCH)
 
-$(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
+$(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/Dockerfile
 	cp $< $@
 
 .PHONY: gloo-docker
-gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
+gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-gateway-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+		-t $(IMAGE_REGISTRY)/glood:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
+proxy-docker:
+	docker pull quay.io/solo-io/envoy-gloo:1.26.4-patch4
+	docker tag quay.io/solo-io/envoy-gloo:1.26.4-patch4 $(IMAGE_REGISTRY)/gloo-proxy:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Gloo with race detection enabled.
@@ -392,47 +377,19 @@ gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
 	docker buildx build --load $(PLATFORM) $(GLOO_RACE_OUT_DIR) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+		-t $(IMAGE_REGISTRY)/glood:$(VERSION)-race $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 	touch $@
-
-#----------------------------------------------------------------------------------
-# Kubectl - Used in jobs during helm install/upgrade/uninstall
-#----------------------------------------------------------------------------------
-
-KUBECTL_DIR=jobs/kubectl
-KUBECTL_OUTPUT_DIR=$(OUTPUT_DIR)/$(KUBECTL_DIR)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-docker
-kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
-	docker buildx build --load $(PLATFORM) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
 #----------------------------------------------------------------------------------
 
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
-HELM_DIR := install/helm/gloo
-
-.PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
-
-HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
-$(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	IMAGE_REGISTRY=$(IMAGE_REGISTRY) go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
-	touch $@
+HELM_DIR := ./helm/gloo-gateway
 
 .PHONY: package-chart
-package-chart: generate-helm-files
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
-	helm repo index $(HELM_SYNC_DIR)
+package-chart:
+	helm package $(HELM_DIR)--app-version $(VERSION) --version $(VERSION)
 
 #----------------------------------------------------------------------------------
 # Publish Artifacts
@@ -503,14 +460,9 @@ endif # RELEASE exclusive make targets
 publish-docker: docker docker-push
 
 # create a new helm chart and publish it to $(HELM_BUCKET)
-publish-helm-chart: generate-helm-files
+publish-helm-chart: package-chart
 	@echo "Uploading helm chart to $(HELM_BUCKET) with name gloo-$(VERSION).tgz"
-	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
-					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
-					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
-					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
-					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
-					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
+	until helm push gloo-gateway-$(VERSION).tgz oci://ghcr.io/solo-io/helm-charts; do \
 		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
 		sleep 2; \
 	done
@@ -528,38 +480,19 @@ docker-push-%:
 
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
-docker: check-go-version
 docker: gloo-docker
-docker: discovery-docker
-docker: gloo-envoy-wrapper-docker
-docker: certgen-docker
-docker: sds-docker
-docker: ingress-docker
-docker: access-logger-docker
-docker: kubectl-docker
+docker: proxy-docker
 
 # Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
 docker-push: docker-push-gloo
-docker-push: docker-push-discovery
-docker-push: docker-push-gloo-envoy-wrapper
-docker-push: docker-push-certgen
-docker-push: docker-push-sds
-docker-push: docker-push-ingress
-docker-push: docker-push-access-logger
-docker-push: docker-push-kubectl
+docker-push: docker-push-proxy
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
 .PHONY: docker-retag
 docker-retag: docker-retag-gloo
-docker-retag: docker-retag-discovery
-docker-retag: docker-retag-gloo-envoy-wrapper
-docker-retag: docker-retag-certgen
-docker-retag: docker-retag-sds
-docker-retag: docker-retag-ingress
-docker-retag: docker-retag-access-logger
-docker-retag: docker-retag-kubectl
+docker-retag: docker-retag-proxy
 
 #----------------------------------------------------------------------------------
 # Build assets for Kube2e tests
@@ -571,8 +504,31 @@ docker-retag: docker-retag-kubectl
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= gloo-system
 
+kind-create:
+	./kind.sh $(CLUSTER_NAME)
+
 kind-load-%:
 	kind load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)
+
+
+kind-helm: gloo-race-docker proxy-docker
+	helm upgrade -i default $(HELM_DIR) --set controlPlane.image.tag=$(VERSION)-race --set develop=true
+
+
+tests/conformance/conformance_test.go:
+	echo "//go:build conformance" > $@
+	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
+	go fmt $@
+
+CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror,HTTPRouteRequestMultipleMirrors
+
+.PHONY: conformance
+conformance: tests/conformance/conformance_test.go kind-helm
+	go test -ldflags=$(LDFLAGS) -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS)
+
+conformance-%: tests/conformance/conformance_test.go kind-helm
+	go test -ldflags=$(LDFLAGS) -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS) \
+	-run-test=$*
 
 # Build an image and load it into the KinD cluster
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
@@ -638,13 +594,6 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 .PHONY: kind-prune-images
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
-
-.PHONY: build-test-chart
-build-test-chart: ## Build the Helm chart and place it in the _test directory
-	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) $(STDERR_SILENCE_REDIRECT)
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
-	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
 # Security Scan

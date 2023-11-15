@@ -1,4 +1,6 @@
-kind create cluster
+NAME={$1:-kind}
+
+kind create cluster --name $NAME
 
 SCRIPTPATH=$( cd "$(dirname "$0")" && pwd -P )
 
