@@ -3,7 +3,7 @@ package securityscanutils_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
+	. "github.com/solo-io/gloo/v2/docs/cmd/securityscanutils"
 )
 
 var _ = Describe("generate security scan docgen", func() {

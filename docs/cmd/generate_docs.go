@@ -20,7 +20,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v32/github"
 	"github.com/rotisserie/eris"
-	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
+	. "github.com/solo-io/gloo/v2/docs/cmd/securityscanutils"
 	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/spf13/cobra"

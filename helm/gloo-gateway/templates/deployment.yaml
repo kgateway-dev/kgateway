@@ -1,0 +1,81 @@
+{{- if .Values.controlPlane.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gloo-gateway.controlPlane.fullname" . }}
+  labels:
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.controlPlane.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gloo-gateway.controlPlane.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.controlPlane.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "gloo-gateway.controlPlane.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.controlPlane.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "gloo-gateway.controlPlane.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.controlPlane.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.controlPlane.securityContext | nindent 12 }}
+          image: "{{ .Values.controlPlane.image.repository }}:{{ .Values.controlPlane.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          args:
+          - controller
+          - "--class-name"
+          - "{{ .Values.gatewayClass.className }}"
+          - "--controller-name"
+          - "{{ .Values.gatewayClass.controllerName }}"
+          {{- if .Values.develop }}
+          - "--dev-mode"
+          {{- end }}
+          {{- if .Values.controlPlane.autoProvision }}
+          - "--auto-provision"
+          {{- end }}
+          - --xds-server
+          - {{ printf "%s.%s" (include "gloo-gateway.controlPlane.fullname" . ) .Release.Namespace }}
+          - --xds-port
+          - "{{ .Values.controlPlane.service.port }}"
+          - --release-name={{ .Release.Name }}
+          ports:
+            - name: health
+              containerPort: 9091
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+            - name: http
+              containerPort: {{ .Values.controlPlane.service.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+          resources:
+            {{- toYaml .Values.controlPlane.resources | nindent 12 }}
+      {{- with .Values.controlPlane.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controlPlane.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controlPlane.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

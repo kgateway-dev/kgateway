@@ -1,7 +1,0 @@
-gatewayProxies:
-  gatewayProxy:
-    service:
-      type: LoadBalancer
-      loadBalancerSourceRanges:
-        - 130.211.204.1/32
-        - 130.211.204.2/32

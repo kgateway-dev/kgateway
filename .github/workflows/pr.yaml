@@ -13,11 +13,11 @@ jobs:
       with:
         go-version: "1.21"
     - name: Build
-      run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
+      run: go build -v ./...
     - name: Install utils for env tests
-      run: make -C ./projects/gateway2/ install-go-tools
-    - name: Test with the Go CLI
-      run: go test ./projects/gateway2/...
+      run: make install-go-tools
+    - name: Test
+      run: go test ./...
 
   conformance:
     name: Run Gateway api conformance tests
@@ -35,6 +35,6 @@ jobs:
         install_only: true
         version: v0.20.0
     - name: Setup Env in KinD
-      run: make -C ./projects/gateway2/ build docker kind
+      run: make kind-create kind-helm
     - name: Test Conformance
-      run: make -C ./projects/gateway2/ conformance
+      run: make conformance

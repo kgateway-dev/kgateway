@@ -23,7 +23,7 @@ jobs:
         username: ${{github.actor}}
         password: ${{secrets.GITHUB_TOKEN}}
     - name: Build and Push images
-      run: make -C ./projects/gateway2/ push TAGGED_VERSION=${{  github.ref_name }}
+      run: make publish-docker TAGGED_VERSION=${{  github.ref_name }}
   release-helm:
     name: Release Helm Chart
     runs-on: ubuntu-latest
@@ -40,8 +40,8 @@ jobs:
         username: ${{github.actor}}
         password: ${{secrets.GITHUB_TOKEN}}
     - name: Package Helm Chart
-      run: make -C ./projects/gateway2/ helm TAGGED_VERSION=${{  github.ref_name }}
-  release-artifacts :
+      run: make package-chart publish-helm-chart TAGGED_VERSION=${{  github.ref_name }}
+  release-artifacts:
     name: Release Glooctl
     runs-on: ubuntu-latest
     steps:

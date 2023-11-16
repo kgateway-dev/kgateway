@@ -1,7 +1,0 @@
-gatewayProxies:
-  gatewayProxy:
-    service:
-      type: LoadBalancer
-      externalIPs:
-        - 130.211.204.1
-        - 130.211.204.2
