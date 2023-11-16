@@ -44,9 +44,9 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 
 ## Considerations before upgrading to 1.16.0-beta25 (OSS) or 1.16.0-beta3 (Enterprise) {#review-changes}
 
-Previous Gloo Edge versions defined `resource-rollout` RBAC roles and role bindings in a `pre-upgrade/install` Helm hook that did not exist in the Gloo Edge release. These resources led to issues during upgrades. In OSS version 1.16.0-beta25 and Enterprise version 1.16.0-beta3, the `resource-rollout` RBAC roles and role bindings were removed from the `pre-upgrade/install` hook.  
+Previous Gloo Edge versions defined `resource-rollout` RBAC roles and role bindings in a `pre-upgrade/install` Helm hook that led to issues during upgrades. In OSS version 1.16.0-beta25 and Enterprise version 1.16.0-beta3, the `resource-rollout` RBAC roles and role bindings were removed from the `pre-upgrade/install` hook.  
 
-Before you upgrade from 1.16.20+ (OSS) or 1.16.0-beta2 (Enterprise) to 1.16.0-beta25 (OSS) and 1.16.0-beta3 (Enterprise), you must clean up the `pre-upgrade/install` hook to remove the `resource-rollout` RBAC roles and role bindings that were previously introduced. Use the following code snippet to clean up these resources: 
+Before you upgrade from 1.16.20+ (OSS) or 1.16.0-beta2 (Enterprise) to 1.16.0-beta25 (OSS) and 1.16.0-beta3 (Enterprise), you must remove the `resource-rollout` RBAC roles and role bindings that were previously introduced as `pre-upgrade/install` hooks. Use the following code snippet to clean up these resources: 
 
 ```sh
 export RELEASE_NAMESPACE="gloo-system"  # replace this with the installation namespace
