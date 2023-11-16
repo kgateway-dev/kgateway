@@ -6,7 +6,7 @@ changelog:
     Fix upgrade issues from v1.15.16, v1.14.27 and v1.13.32 to v1.16.0-beta20+. This was caused due to the resource-rollout RBAC being a pre-upgrade/install helm hook in v1.16.0-beta20+ while not being a hook in the latest LTS releases. This fix moves the resource-rollout RBAC out of the pre-upgrade/install hook in this release.
     Upgrades from v1.16.0-beta20+ will require running the following commands prior to the upgrade to cleanup the pre-upgrade/install resource-rollout RBAC helm hooks.
     ```
-    export RELEASE_NAMESPACE="{{ .Release.Namespace }}"
+    export RELEASE_NAMESPACE="gloo-system"  # replace this with the installation namespace
     export RBAC_SUFFIX=`kubectl get ClusterRole | grep gloo-resource-rollout | sed 's/gloo-resource-rollout//g' | cut -d ' ' -f 1`
     kubectl delete ClusterRole gloo-resource-rollout$RBAC_SUFFIX
     kubectl delete ClusterRoleBinding gloo-resource-rollout$RBAC_SUFFIX
