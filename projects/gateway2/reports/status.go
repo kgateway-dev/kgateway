@@ -2,8 +2,8 @@ package reports
 
 import (
 	"context"
+	"reflect"
 	"slices"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +18,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 		lisReport := gwReport.listener(&lis)
 		addMissingListenerConditions(lisReport)
 
-		finalConditions := make([]metav1.Condition, 0)
+		finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
 		oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l gwv1.ListenerStatus) bool {
 			return l.Name == lis.Name
 		})
@@ -64,15 +64,28 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 	routeReport := r.route(&route)
 	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range route.Spec.ParentRefs {
-		parentStatus := routeReport.parentRef(&parentRef)
+		parentStatusReport := routeReport.parentRef(&parentRef)
+		addMissingParentRefConditions(parentStatusReport)
 
-		addMissingParentRefConditions(parentStatus)
+		// get status of current parentRef status if it exists
+		var currentParentRefConditions []metav1.Condition
+		currentParentRefIdx := slices.IndexFunc(route.Status.Parents, func(s gwv1.RouteParentStatus) bool {
+			return reflect.DeepEqual(s.ParentRef, parentRef)
+		})
+		if currentParentRefIdx != -1 {
+			currentParentRefConditions = route.Status.Parents[currentParentRefIdx].Conditions
+		}
 
-		finalConditions := make([]metav1.Condition, 0)
-		for _, pCondition := range parentStatus.Conditions {
-			pCondition.ObservedGeneration = route.Generation           // don't have generation is the report, should consider adding it
-			pCondition.LastTransitionTime = metav1.NewTime(time.Now()) // same as above, should calculate at report time possibly
-			finalConditions = append(finalConditions, pCondition)
+		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
+		for _, pCondition := range parentStatusReport.Conditions {
+			pCondition.ObservedGeneration = route.Generation
+
+			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
+			if cond := meta.FindStatusCondition(currentParentRefConditions, pCondition.Type); cond != nil {
+				finalConditions = append(finalConditions, *cond)
+			}
+
+			meta.SetStatusCondition(&finalConditions, pCondition)
 		}
 
 		routeParentStatus := gwv1.RouteParentStatus{
