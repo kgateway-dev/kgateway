@@ -100,7 +100,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 	})
 
 	Describe("building route status", func() {
-		FIt("should build all positive route conditions with an empty report", func() {
+		It("should build all positive route conditions with an empty report", func() {
 			route := route()
 			rm := reports.NewReportMap()
 
@@ -111,7 +111,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Parents[0].Conditions).To(HaveLen(2))
 		})
 
-		FIt("should correctly set negative route conditions from report and not add extra conditions", func() {
+		It("should correctly set negative route conditions from report and not add extra conditions", func() {
 			route := route()
 			rm := reports.NewReportMap()
 			reporter := reports.NewReporter(&rm)
@@ -131,7 +131,32 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
 		})
 
-		FIt("should not modify LastTransitionTime for existing conditions that have not changed", func() {
+		It("should filter out multiple negative route conditions of the same type from report", func() {
+			route := route()
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Route(&route).ParentRef(parentRef()).SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionResolvedRefs,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.RouteReasonBackendNotFound,
+			})
+			reporter.Route(&route).ParentRef(parentRef()).SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionResolvedRefs,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.RouteReasonBackendNotFound,
+			})
+
+			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(HaveLen(1))
+			Expect(status.Parents[0].Conditions).To(HaveLen(2))
+
+			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
 			route := route()
 			rm := reports.NewReportMap()
 
