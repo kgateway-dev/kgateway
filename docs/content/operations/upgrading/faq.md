@@ -6,9 +6,11 @@ description: Prepare your environment, review version changes, and review FAQs b
 
 Before you upgrade Gloo Edge, complete the following preparatory steps:
 * [Prepare your environment](#prepare), such as upgrading your current version to the latest patch and upgrading any dependencies to the required supported versions. 
+* [Considerations before upgrading to 1.16.0-beta25 (OSS) or 1.16.0-beta3 (Enterprise)](#preview-changes). 
+* [Review frequently-asked questions](#faqs) about the upgrade process.
+
 <!--
 * [Review important changes](#review-changes) made to Gloo Edge in version <!--{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}1.16, including CRD, Helm, CLI, and feature changes.-->
-* [Review frequently-asked questions](#faqs) about the upgrade process.
 
 ## Prepare your environment {#prepare}
 
@@ -40,9 +42,8 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 
 * **Kubernetes**: Enable [Envoy readiness and liveness probes]({{< versioned_link_path fromRoot="/operations/production_deployment/#enable-health-checks" >}}) during the upgrade. When these probes are set, Kubernetes sends requests only to the healthy Envoy proxy during the upgrade process, which helps to prevent potential downtime. The probes are not enabled in default installations because they can lead to timeouts or other poor getting started experiences. 
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
-<!--
 
-## Considerations before upgrading to 1.16.0-beta25 (OSS) or 1.16.0-beta3 (Enterprise) {#review-changes}
+## Considerations before upgrading to 1.16.0-beta25 (OSS) or 1.16.0-beta3 (Enterprise) {#preview-changes}
 
 Previous Gloo Edge versions defined `resource-rollout` RBAC roles and role bindings in a `pre-upgrade/install` Helm hook that led to issues during upgrades. In OSS version 1.16.0-beta25 and Enterprise version 1.16.0-beta3, the `resource-rollout` RBAC roles and role bindings were removed from the `pre-upgrade/install` hook.  
 
