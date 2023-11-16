@@ -96,36 +96,82 @@ var _ = Describe("Reporting Infrastructure", func() {
 		})
 
 		//TODO(Law): add multiple gws/listener tests
+		//TODO(Law): add test confirming transitionTime change when status change
 	})
 
 	Describe("building route status", func() {
 		FIt("should build all positive route conditions with an empty report", func() {
 			route := route()
 			rm := reports.NewReportMap()
+
 			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Parents).To(HaveLen(1))
 			Expect(status.Parents[0].Conditions).To(HaveLen(2))
 		})
+
+		FIt("should correctly set negative route conditions from report and not add extra conditions", func() {
+			route := route()
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Route(&route).ParentRef(parentRef()).SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionResolvedRefs,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.RouteReasonBackendNotFound,
+			})
+
+			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(HaveLen(1))
+			Expect(status.Parents[0].Conditions).To(HaveLen(2))
+
+			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		FIt("should not modify LastTransitionTime for existing conditions that have not changed", func() {
+			route := route()
+			rm := reports.NewReportMap()
+
+			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(HaveLen(1))
+			Expect(status.Parents[0].Conditions).To(HaveLen(2))
+
+			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			oldTransitionTime := resolvedRefs.LastTransitionTime
+
+			route.Status = status
+			status = rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(HaveLen(1))
+			Expect(status.Parents[0].Conditions).To(HaveLen(2))
+
+			resolvedRefs = meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			newTransitionTime := resolvedRefs.LastTransitionTime
+			Expect(newTransitionTime).To(Equal(oldTransitionTime))
+		})
 	})
 })
 
 func route() gwv1.HTTPRoute {
-	return gwv1.HTTPRoute{
+	route := gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
 			Namespace: "default",
 		},
-		Spec: gwv1.HTTPRouteSpec{
-			CommonRouteSpec: gwv1.CommonRouteSpec{
-				ParentRefs: []gwv1.ParentReference{
-					{
-						Name: "http",
-					},
-				},
-			},
-		},
+	}
+	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	return route
+}
+
+func parentRef() *gwv1.ParentReference {
+	return &gwv1.ParentReference{
+		Name: "http",
 	}
 }
 
