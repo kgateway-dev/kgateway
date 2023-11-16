@@ -1,9 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >- 
-    Removes a flakey test that also had weird interactions with grpc.
-    Safe to remove as the robust client is no longer used as it was part of the old methodology of validation -> gateway communication
-    All references to the robust client were removed here:  https://github.com/solo-io/gloo/commit/bc380b36d42fdad7c83ab8dc4f055258b326aeac#diff-c85bd99ea468f5c006633ae3a44e1b569ff3af830e1c632870ddf222fc224205L271
-    While this method is Exported it is generally unsafe to use even for client libraries. Given this we wont remove it from 1.12 but will remove it going forward.
-    If a similar function is needed it is better to roll your own grpc connection logic that also wraps our validation request.
-    If a similar function is implemented the existing test is generally good for logic but makes assumptions about the grpc backoff and retry connections.
