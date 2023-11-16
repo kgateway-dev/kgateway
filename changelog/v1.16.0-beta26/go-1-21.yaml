@@ -2,7 +2,7 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: golang
     dependencyRepo: go
-    dependencyTag: v1.21
+    dependencyTag: v1.21.4
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: cloud-builders
