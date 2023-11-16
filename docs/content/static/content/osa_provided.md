@@ -43,8 +43,8 @@ Name|Version|License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
-[go.uber.org/zap](https://go.uber.org/zap)|v1.21.0|MIT License
-[x/crypto](https://golang.org/x/crypto)|v0.12.0|BSD 3-clause "New" or "Revised" License
+[go.uber.org/zap](https://go.uber.org/zap)|v1.24.0|MIT License
+[x/crypto](https://golang.org/x/crypto)|v0.15.0|BSD 3-clause "New" or "Revised" License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20220921164117-439092de6870|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.3.0|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.10.0|BSD 3-clause "New" or "Revised" License

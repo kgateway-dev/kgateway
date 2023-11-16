@@ -1,6 +1,6 @@
 steps:
 
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.5'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.8'
   id: 'prepare-workspace'
   args:
   - '--repo-name'
@@ -44,7 +44,7 @@ steps:
   - 'us-central1-a'
 
 # Run make targets to push docker images to quay.io
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.5'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.8'
   id: 'docker-push-extended'
   args:
   - 'docker-push-extended'
@@ -65,7 +65,7 @@ steps:
   waitFor:
   - 'docker-push-extended'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.5'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.8'
   id: 'release-chart'
   dir: *dir
   args:
@@ -82,7 +82,7 @@ steps:
   - 'gcr-auth'
 
 # Run make targets to retag and push docker images to GCR
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.5'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.8'
   id: 'docker-push-extended-gcr'
   dir: *dir
   args:
