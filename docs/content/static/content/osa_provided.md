@@ -49,9 +49,9 @@ Name|Version|License
 [x/mod](https://golang.org/x/mod)|v0.11.0|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.3.0|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.10.0|BSD 3-clause "New" or "Revised" License
-[googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230526203410-71b5a4ffd15e|Apache License 2.0
-[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230526203410-71b5a4ffd15e|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.55.0|Apache License 2.0
+[googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230711160842-782d3b101e98|Apache License 2.0
+[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230711160842-782d3b101e98|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.58.3|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.31.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.6.3|Apache License 2.0
