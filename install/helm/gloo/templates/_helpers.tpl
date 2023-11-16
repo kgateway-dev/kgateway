@@ -1,5 +1,14 @@
 {{/* vim: set filetype=mustache: */}}
 
+{{- /*
+There can be cases when we do not want to overwrite an empty value on a resource when merged.
+Eg. To generate a proxy config, we mergeOverwrite it with the default gateway-proxy config.
+If we want to preserve the empty value of the gateway and not have them overwritten, we set it to `gloo.omitOverwrite`
+and call `gloo.util.mergeOverwriteWithOmit` when merging. This sets all fields with values equal to this back to empty after the overwrite
+*/ -}}
+{{- define "gloo.omitOverwrite" }}
+{{ printf "\n" }}{{/* This template is set to a new line. There may be scenarios where a field is initailly set to this value and the same field is appended to later on. Since this is just a new line, it won't cause rendering issues */}}
+{{ end -}}
 {{- define "gloo.roleKind" -}}
 {{- if .Values.global.glooRbac.namespaced -}}
 Role
@@ -112,7 +121,7 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 {{- end -}}
 
-{{- /* 
+{{- /*
 This template is used to generate the gloo pod or container security context.
 It takes 2 values:
   .values - the securityContext passed from the user in values.yaml
@@ -209,7 +218,7 @@ Returns the unique Gateway namespaces as defined by the helm values.
 {{- end -}}
 
 
-{{/* 
+{{/*
 Generated the "operations" array for a resource for the ValidatingWebhookConfiguration
 Arguments are a resource name, and a list of resources for which to skip webhook validation for DELETEs
 This list is expected to come from `gateway.validation.webhook.skipDeleteValidationResources`
@@ -224,4 +233,16 @@ Otherwise it will generate ["Create", "Update", "Delete"]
   {{- $operations = append $operations "DELETE" -}}
 {{- end -}}
 {{ toJson  $operations -}}
+{{- end -}}
+
+{{- define "gloo.util.mergeOverwriteWithOmit" -}}
+{{- $resource := first . -}}
+{{- $overwrite := index . 1 -}}
+{{- $result := deepCopy $resource | mergeOverwrite (deepCopy $overwrite) -}}
+{{- range $key, $value := $result }}
+  {{- if eq (toString $value) "gloo.omitOverwrite" -}}
+    {{- $_ := unset $result $key }}
+  {{- end -}}
+{{- end -}}
+{{ toJson $result }}
 {{- end -}}
