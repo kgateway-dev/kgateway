@@ -7,3 +7,7 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: cloud-builders
     dependencyTag: v0.7.0
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8474
+    resolvesIssue: false
+    description: Bump Go to 1.21
