@@ -11,7 +11,7 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: jhump
     dependencyRepo: protoreflect
-    dependencyTag: v1.15.3
+    dependencyTag: v1.15.1
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: cloud-builders
