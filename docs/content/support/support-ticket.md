@@ -1,7 +1,7 @@
 ---
 title: Submit a request
 weight: 920
-description: Solo customers can submit new requests and update existing ones by using the [Support Portal](#support-portal), email (`support@solo.io`), or [Slack](#slack). 
+description: Solo customers can submit new requests and update existing ones by using the Support Portal, email (`support@solo.io`), or Slack. 
 ---
 Solo customers can submit new requests and update existing ones by using the [Support Portal](#support-portal), email (`support@solo.io`), or [Slack](#slack).
 ## Use the Support Portal {#support-portal}
