@@ -100,7 +100,7 @@ If you are a few versions behind, you have access to Solo’s support for legacy
 
 |Software|Details|
 |--|--|
-|Solo products (Gloo Gateway)|Support for N-3 versions|
+|Solo products, including Gloo Gateway)|Support for N-3 versions|
 
 
 <!--
