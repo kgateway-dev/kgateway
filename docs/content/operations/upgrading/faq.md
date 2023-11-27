@@ -5,9 +5,12 @@ description: Prepare your environment, review version changes, and review FAQs b
 ---
 
 Before you upgrade Gloo Edge, complete the following preparatory steps:
-* [Prepare your environment](#prepare), such as upgrading your current version to the latest patch and upgrading any dependencies to the required supported versions.
-* [Review important changes](#review-changes) made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, including CRD, Helm, CLI, and feature changes.
+* [Prepare your environment](#prepare), such as upgrading your current version to the latest patch and upgrading any dependencies to the required supported versions. 
+* [Considerations before upgrading to 1.16.0-beta25 (OSS) or 1.16.0-beta3 (Enterprise)](#preview-changes). 
 * [Review frequently-asked questions](#faqs) about the upgrade process.
+
+<!--
+* [Review important changes](#review-changes) made to Gloo Edge in version <!--{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}1.16, including CRD, Helm, CLI, and feature changes.-->
 
 ## Prepare your environment {#prepare}
 
@@ -15,19 +18,19 @@ Review the following preparatory steps that might be required for your environme
 
 ### Upgrade your current minor version to the latest patch {#current-patch}
 
-Before you upgrade your minor version, first upgrade your current version to the latest patch. For example, if you currently run Gloo Edge Enterprise version {{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}}, first upgrade your installation to version {{< readfile file="static/content/version_gee_n-1.md" markdown="true">}}. This ensures that your current environment is up-to-date with any bug fixes or security patches before you begin the minor version upgrade process.
+Before you upgrade your minor version, first upgrade your current version to the latest patch. For example, if you currently run Gloo Edge Enterprise version <!-- {{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}} -->1.16.0-beta20, first upgrade your installation to version <!--{{< readfile file="static/content/version_gee_n-1.md" markdown="true">}}-->1.16.0-beta25. This ensures that your current environment is up-to-date with any bug fixes or security patches before you begin the minor version upgrade process.
 
 1. Find the latest patch of your minor version by checking the [Open Source changelog]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}}) or [Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
-2. Go to the documentation set for your current minor version. For example, if you currently run Gloo Edge Enterprise version {{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}}, use the drop-down menu in the header of this page to select **v{{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}.x**.
+2. Go to the documentation set for your current minor version. For example, if you currently run Gloo Edge Enterprise version 1.15.3 <!--{{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}}-->, use the drop-down menu in the header of this page to select **v1.15.x**<!--**v{{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}.x**-->.
 3. Follow the upgrade guide, using the latest patch for your minor version.
 
 ### If required, perform incremental minor version updates {#minor-increment}
 
-If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} from {{< readfile file="static/content/version_geoss_n-2_minor.md" markdown="true">}} or older, you must upgrade incrementally. For example, you must first use the upgrade guide in the v{{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}.x documentation set to upgrade from {{< readfile file="static/content/version_geoss_n-2_minor.md" markdown="true">}} to {{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}, and then follow the upgrade guide in the v{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.x documentation set to upgrade from {{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}} to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
+If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version <!--{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}-->1.16 from {{< readfile file="static/content/version_geoss_n-2_minor.md" markdown="true">}} or older, you must upgrade incrementally. For example, you must first use the upgrade guide in the v{{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}.x documentation set to upgrade from {{< readfile file="static/content/version_geoss_n-2_minor.md" markdown="true">}} to {{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}, and then follow the upgrade guide in the v{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.x documentation set to upgrade from {{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}} to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
 
 ### Upgrade dependencies {#dependencies}
 
-Check that your underlying infrastructure platform, such as Kubernetes, and other dependencies run a version that is supported for {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
+Check that your underlying infrastructure platform, such as Kubernetes, and other dependencies run a version that is supported for 1.16<!--{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}-->.
 
 1. Review the [supported versions]({{% versioned_link_path fromRoot="/reference/support/#supported-versions" %}}) for dependencies such as Kubernetes, Helm, and more.
 2. Compare the supported versions against the versions you currently use.
@@ -39,6 +42,25 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 
 * **Kubernetes**: Enable [Envoy readiness and liveness probes]({{< versioned_link_path fromRoot="/operations/production_deployment/#enable-health-checks" >}}) during the upgrade. When these probes are set, Kubernetes sends requests only to the healthy Envoy proxy during the upgrade process, which helps to prevent potential downtime. The probes are not enabled in default installations because they can lead to timeouts or other poor getting started experiences. 
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
+
+## Considerations before upgrading to 1.16.0-beta25 (OSS) or 1.16.0-beta3 (Enterprise) {#preview-changes}
+
+Previous Gloo Edge versions defined `resource-rollout` RBAC roles and role bindings in a `pre-upgrade/install` Helm hook that led to issues during upgrades. In OSS version 1.16.0-beta25 and Enterprise version 1.16.0-beta3, the `resource-rollout` RBAC roles and role bindings were removed from the `pre-upgrade/install` hook.  
+
+Before you upgrade from 1.16.20+ (OSS) or 1.16.0-beta2 (Enterprise) to 1.16.0-beta25 (OSS) and 1.16.0-beta3 (Enterprise), you must remove the `resource-rollout` RBAC roles and role bindings that were previously introduced as `pre-upgrade/install` hooks. Use the following code snippet to clean up these resources: 
+
+```sh
+export RELEASE_NAMESPACE="gloo-system"  # replace this with the installation namespace
+export RBAC_SUFFIX=`kubectl get ClusterRole | grep gloo-resource-rollout | sed 's/gloo-resource-rollout//g' | cut -d ' ' -f 1`
+kubectl delete ClusterRole gloo-resource-rollout$RBAC_SUFFIX
+kubectl delete ClusterRoleBinding gloo-resource-rollout$RBAC_SUFFIX
+kubectl delete Role gloo-resource-rollout -n $RELEASE_NAMESPACE
+kubectl delete RoleBinding gloo-resource-rollout -n $RELEASE_NAMESPACE
+kubectl delete ServiceAccount gloo-resource-rollout -n $RELEASE_NAMESPACE
+```
+
+
+
 
 ## Review version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} changes {#review-changes}
 
@@ -89,7 +111,7 @@ The following lists consist of the changes that were initially introduced with t
 <!--**Deprecated features**:
 
 
-**Removed features**:-->
+**Removed features**:
 
 
 ### Helm changes {#helm}
@@ -120,7 +142,7 @@ Review the following summary of important new, deprecated, or removed Helm field
 <!--**Deprecated Helm fields**:
 
 
-**Removed Helm fields**:-->
+**Removed Helm fields**:
 
 
 ### CRD changes {#crd}
@@ -141,7 +163,7 @@ Review the following summary of important new, deprecated, or removed CRD update
 
 * `ExtAuthConfig`: In the [`oidcAuthorizationCode` and `oauth2Config` sections]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#oidcauthorizationcodeconfig" %}}), the `session` field is now deprecated. Use the `userSession` field instead.
 
-<!--**Removed CRDs**:-->
+<!--**Removed CRDs**:
 
 
 ### CLI changes {#cli}

@@ -785,6 +785,34 @@ message OidcAuthorizationCode {
     }
 
     ClientAuthentication client_authentication = 25;
+
+    oneof Provider {
+        Default default = 26;
+        Azure azure = 27;
+    }
+
+    // No-op, represents default OIDC behavior
+    message Default {}
+
+    // Represents config specific to Azure Distributed Claims OIDC implementation
+    message Azure {
+        // client ID for the external auth service as registered with MS Entera. Note that this is
+        // NOT the same as the client ID for the service the AuthConfig will be applied to.
+        string client_id = 1;
+
+        // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
+        // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+        // depending on how your Azure account is provisioned.
+        string tenant_id = 2;
+
+        // secret registered for the ExtAuthService to communciate with the Entera APIs
+        core.solo.io.ResourceRef client_secret = 3;
+
+        // Redis connection details for caching MS Entera groups resolved from distributed clains.
+        // Will not configure Redis session caching. If you would like to turn on Redis session 
+        // caching, use the `userSessionConfig` field.
+        RedisOptions claims_caching_options = 4;
+    }
 }
 
 message PlainOAuth2 {
@@ -1199,16 +1227,19 @@ message OpaAuthOptions {
     // By default, this is set to false and all fields are evaluated by OPA.
     bool fast_input_conversion = 1;
 
-    // Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. 
-    // This way, you can use the reason in subsequent filters, such as transformation policies.
-    // When using OpaAuth, this `returnDecisionReason` field must be the second parameter of the query. 
-    // When using OpaServerAuth, the entire document will be returned as metadata.
-    // The `allowed` field on the document is used to make the policy decision.
-    // The entry will be in the returned DynamicMetadata in the CheckResponse with the structure
-    // `envoy.filters.http.ext_authz:
-    //   -> name of the auth step`, such as `spec.configs[i].name
-    //       -> reason`.
-    // If set to false, the response is allowed or denied based on the Rego rules without returning the reason.
+    // DEPRECATED: It's recommended to use the `dynamic_metadata` field within Rego policies to specify the decision reason. To learn more about this approach, see the [OPA Envoy Plugin docs](https://github.com/open-policy-agent/opa/blob/c12463c/docs/content/envoy-primer.md#example-policy-with-additional-controls).
+    //
+    // When `returnDecisionReason` is set to true, the decision reason is stored in the Envoy Dynamic Metadata and has the following properties:<ul>
+    // <li>`body` - a textual explanation of the decision</li>
+    // <li>`allowed` - whether the request was allowed or rejected</li></ul>
+    //
+    // When using OpaAuth, the `body` field must be the second parameter of the query.
+    //
+    // Both the OpaAuth and OpaServerAuth approaches use the `allowed` and `body` values from the OPA response in the decision reason.
+    // You can find the `body` and `allowed` fields in the Envoy Filter Dynamic Metadata under the `envoy.filters.http.ext_authz.<authentication_step_name>.reason` section.
+    //
+    // If, however, `returnDecisionReason` is set to false, OPA's decision to allow or reject a request is made according to the Rego policy rules, and no explanation is provided.
+    // Despite of this, the `dynamic_metadata` field can still be used to convey any necessary information to the Envoy Dynamic Metadata, including the decision reason.
     bool return_decision_reason = 2;
 }
 
@@ -1680,6 +1711,34 @@ message ExtAuthConfig {
         message IdentityToken {
             // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
             repeated ClaimToHeader claims_to_headers = 1;
+        }
+
+        oneof Provider {
+            Default default = 26;
+            Azure azure = 27;
+        }
+    
+        // No-op, represents default OIDC behavior
+        message Default {}
+    
+        // Represents config specific to Azure Distributed Claims OIDC implementation
+        message Azure {
+            // client ID for the external auth service as registered with MS Entera. Note that this is
+            // NOT the same as the client ID for the service the AuthConfig will be applied to.
+            string client_id = 1;
+    
+            // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
+            // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+            // depending on how your Azure account is provisioned.
+            string tenant_id = 2;
+    
+            // secret registered for the ExtAuthService to communciate with the Entera APIs
+            string client_secret = 3 [(extproto.sensitive) = true];
+    
+            // Redis connection details for caching MS Entera groups resolved from distributed clains.
+            // Will not configure Redis session caching. If you would like to turn on Redis session 
+            // caching, use the `userSessionConfig` field.
+            RedisOptions claims_caching_options = 4;
         }
     }
 

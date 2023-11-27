@@ -265,7 +265,9 @@ The result will be the `bodyIdExtractor` having value `4423`.
 
 Extracted values can be used in two ways:
 
-- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` (or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of the `my-extractor` extractor.
+- You can reference extractors by their name in template strings.
+  - If `advancedTemplates` is set to `false`, format the string such as `{{ my-extractor }}`.
+  - If `advancedTemplates` is set to `true`, format the string such as `{{ extraction(my-extractor) }}`.
 - You can use them in conjunction with the `mergeExtractorsToBody` body transformation type to merge them into the body.
 
 ##### headers
@@ -379,7 +381,7 @@ A common use case for this attribute is to define custom data to be included in 
 ##### advancedTemplates
 This attribute determines which notation to use when accessing elements in JSON structures. If set to `true`, Gloo Edge will expect JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start"). Defaults to `false`.
 
-Please note that, if set to `true`, you will need to use the `extraction` function to access extractors in template strings (e.g. `{{ extraction("myExtractor") }}`); if the default value of `false` is used, extractors will simply be available by their name (e.g. `{{ myExtractor }}`).
+If set to `true`, you must use the `extraction` function to access extractors in template strings, such as `{{ extraction("myExtractor") }}`. If set to `false` (default), you must reference extractors in template strings by name only, such as `{{ myExtractor }}`.
 
 ##### escapeCharacters
 This attribute is used to set for the entire transformation whether Inja should be configured to preserve escaped characters in strings. This is particularly useful when using context from the request or response body to construct new JSON bodies.

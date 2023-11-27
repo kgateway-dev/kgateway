@@ -7,7 +7,7 @@
 {{- with (first .) }}
 {{- $global := .Values.global }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{- $spec := include "gloo.util.mergeOverwriteWithOmit" (list $gatewaySpec $gatewayProxy) | fromJson }}
 {{- if not $spec.disabled }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 # config_map

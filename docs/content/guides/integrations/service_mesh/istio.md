@@ -212,7 +212,7 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
 
 7. Repeat the same curl request to the product page.
    ```shell
-   curl -H "Host: www.example.com" "localhost:32000/headers" 
+   curl -v -H "Host: www.example.com" $(glooctl proxy url)/headers 
    ```
    This time, the request succeeds because traffic is encrypted using mTLS. Note that httpbin received the `X-Forwarded-Client-Cert` header, indicating that Istio mTLS has occurred.
    {{<highlight json "hl_lines=9">}}

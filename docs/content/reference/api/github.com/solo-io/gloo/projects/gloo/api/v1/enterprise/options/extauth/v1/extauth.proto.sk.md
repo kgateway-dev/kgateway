@@ -57,6 +57,8 @@ weight: 5
 - [ClientAuthentication](#clientauthentication)
 - [ClientSecret](#clientsecret)
 - [PrivateKeyJwt](#privatekeyjwt)
+- [Default](#default)
+- [Azure](#azure)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -102,6 +104,8 @@ weight: 5
 - [ClaimToHeader](#claimtoheader)
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
+- [Default](#default)
+- [Azure](#azure)
 - [AccessTokenValidationConfig](#accesstokenvalidationconfig)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -1046,6 +1050,8 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 "accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
 "identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
 "clientAuthentication": .enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication
+"default": .enterprise.gloo.solo.io.OidcAuthorizationCode.Default
+"azure": .enterprise.gloo.solo.io.OidcAuthorizationCode.Azure
 
 ```
 
@@ -1075,6 +1081,8 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
 | `clientAuthentication` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication](../extauth.proto.sk/#clientauthentication) |  |
+| `default` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 
 
 
@@ -1171,6 +1179,46 @@ Private Key JWT Authentication requires a signing key for the JWT and an duratio
 | ----- | ---- | ----------- | 
 | `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Signing key for the JWT used to authenticate the client. |
 | `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
+
+
+
+
+---
+### Default
+
+ 
+No-op, represents default OIDC behavior
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Azure
+
+ 
+Represents config specific to Azure Distributed Claims OIDC implementation
+
+```yaml
+"clientId": string
+"tenantId": string
+"clientSecret": .core.solo.io.ResourceRef
+"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | client ID for the external auth service as registered with MS Entera. Note that this is NOT the same as the client ID for the service the AuthConfig will be applied to. |
+| `tenantId` | `string` | tenant ID where the ExtAuthService's client ID is registered with MS Entera. may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig, depending on how your Azure account is provisioned. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | secret registered for the ExtAuthService to communciate with the Entera APIs. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details for caching MS Entera groups resolved from distributed clains. Will not configure Redis session caching. If you would like to turn on Redis session caching, use the `userSessionConfig` field. |
 
 
 
@@ -1678,7 +1726,7 @@ For Gloo Platform environments, use OpaServerAuth instead.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fastInputConversion` | `bool` | Decreases OPA latency by speeding up conversion of input to the OPA engine. If this is set to true, only http_request and state fields which are a scalar, map, or string array are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. By default, this is set to false and all fields are evaluated by OPA. |
-| `returnDecisionReason` | `bool` | Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. This way, you can use the reason in subsequent filters, such as transformation policies. When using OpaAuth, this `returnDecisionReason` field must be the second parameter of the query. When using OpaServerAuth, the entire document will be returned as metadata. The `allowed` field on the document is used to make the policy decision. The entry will be in the returned DynamicMetadata in the CheckResponse with the structure `envoy.filters.http.ext_authz: -> name of the auth step`, such as `spec.configs[i].name -> reason`. If set to false, the response is allowed or denied based on the Rego rules without returning the reason. |
+| `returnDecisionReason` | `bool` | DEPRECATED: It's recommended to use the `dynamic_metadata` field within Rego policies to specify the decision reason. To learn more about this approach, see the [OPA Envoy Plugin docs](https://github.com/open-policy-agent/opa/blob/c12463c/docs/content/envoy-primer.md#example-policy-with-additional-controls). When `returnDecisionReason` is set to true, the decision reason is stored in the Envoy Dynamic Metadata and has the following properties:<ul> <li>`body` - a textual explanation of the decision</li> <li>`allowed` - whether the request was allowed or rejected</li></ul> When using OpaAuth, the `body` field must be the second parameter of the query. Both the OpaAuth and OpaServerAuth approaches use the `allowed` and `body` values from the OPA response in the decision reason. You can find the `body` and `allowed` fields in the Envoy Filter Dynamic Metadata under the `envoy.filters.http.ext_authz.<authentication_step_name>.reason` section. If, however, `returnDecisionReason` is set to false, OPA's decision to allow or reject a request is made according to the Rego policy rules, and no explanation is provided. Despite of this, the `dynamic_metadata` field can still be used to convey any necessary information to the Envoy Dynamic Metadata, including the decision reason. |
 
 
 
@@ -2175,6 +2223,8 @@ Deprecated, prefer OAuth2Config
 "pkJwtClientAuthenticationConfig": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.PkJwtClientAuthenticationConfig
 "accessToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken
 "identityToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken
+"default": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default
+"azure": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure
 
 ```
 
@@ -2203,6 +2253,8 @@ Deprecated, prefer OAuth2Config
 | `pkJwtClientAuthenticationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.PkJwtClientAuthenticationConfig](../extauth.proto.sk/#pkjwtclientauthenticationconfig) | Configuration for private key JWT client authentication. Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence. |
 | `accessToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
+| `default` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 
 
 
@@ -2281,6 +2333,46 @@ Optional: Map a single claim from an OIDC identity token to a header in the requ
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+
+
+
+
+---
+### Default
+
+ 
+No-op, represents default OIDC behavior
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Azure
+
+ 
+Represents config specific to Azure Distributed Claims OIDC implementation
+
+```yaml
+"clientId": string
+"tenantId": string
+"clientSecret": string
+"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | client ID for the external auth service as registered with MS Entera. Note that this is NOT the same as the client ID for the service the AuthConfig will be applied to. |
+| `tenantId` | `string` | tenant ID where the ExtAuthService's client ID is registered with MS Entera. may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig, depending on how your Azure account is provisioned. |
+| `clientSecret` | `string` | secret registered for the ExtAuthService to communciate with the Entera APIs. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details for caching MS Entera groups resolved from distributed clains. Will not configure Redis session caching. If you would like to turn on Redis session caching, use the `userSessionConfig` field. |
 
 
 
