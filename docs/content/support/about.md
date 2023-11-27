@@ -3,7 +3,7 @@ title: About Solo Support
 weight: 910
 description: Learn what is included in Solo's product support and how to communicate with Solo Engineers in case of an issue. 
 ---
-
+Learn what is included in Solo's product support and how to communicate with Solo Engineers in case of an issue.
 ## Solo Support scope
 
 Solo Support offers technical assistance in English for Solo products. We are committed to helping you successfully utilize our software in your production environment by: 
