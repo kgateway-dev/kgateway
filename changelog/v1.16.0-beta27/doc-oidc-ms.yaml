@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/12078
+    resolvesIssue: false
+    description: >- 
+      Doc review of the Azure OIDC distributed claims proto fields.  
+      skipCI-kube-tests:true
