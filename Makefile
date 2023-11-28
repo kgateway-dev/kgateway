@@ -181,7 +181,7 @@ run-performance-tests: test
 
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
-# run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
+run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
 run-e2e-tests: test
 
 .PHONY: run-hashicorp-e2e-tests
