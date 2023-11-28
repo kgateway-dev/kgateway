@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.27.1-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.27.1-patch2
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -181,7 +181,7 @@ run-performance-tests: test
 
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
-run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
+# run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
 run-e2e-tests: test
 
 .PHONY: run-hashicorp-e2e-tests
