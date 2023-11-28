@@ -1349,6 +1349,12 @@ apis:
   ratelimit.api.solo.io.Descriptor:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Descriptor
     package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.MetaData:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#MetaData
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.Override:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Override
+    package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimit:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimit
     package: ratelimit.api.solo.io

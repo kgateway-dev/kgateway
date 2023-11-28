@@ -4,6 +4,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set +x
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG=github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot
@@ -31,13 +32,13 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 
 # Ensure we can execute.
 chmod +x ${CODEGEN_PKG}/generate-groups.sh
-
+chmod +x ${CODEGEN_PKG}/generate-internal-groups.sh
 
 ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
     gloosnapshot.gloo.solo.io:gloosnapshot \
-    --output-base "${TEMP_DIR}" --go-header-file "${CODEGEN_PKG}/hack/boilerplate.go.txt"
+    --output-base "${TEMP_DIR}" --go-header-file "${SCRIPT_ROOT}/hack/boilerplate.go.txt"
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
 

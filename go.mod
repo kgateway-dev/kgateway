@@ -49,15 +49,15 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.8-0.20231123182445-79375d0dfb34
-	github.com/solo-io/k8s-utils v0.5.2-0.20231123190454-aa4ee7e3e9cf
+	github.com/solo-io/go-utils v0.24.8-0.20231128194722-8ca1ac5fcb92
+	github.com/solo-io/k8s-utils v0.5.2-0.20231128200054-48fae08db148
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.1
-	github.com/solo-io/skv2 v0.34.11-0.20231123210501-05fa70400da6
+	github.com/solo-io/skv2 v0.35.1-0.20231128223536-65914ef14080
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.27-bump`)
-	github.com/solo-io/solo-apis v0.0.0-20230801135538-4feef1fa0c08
-	github.com/solo-io/solo-kit v0.33.2-0.20231123212323-a1e4839a5129
+	github.com/solo-io/solo-apis v0.0.0-20231128224827-460bdac722eb
+	github.com/solo-io/solo-kit v0.33.2-0.20231128223744-e099eef9dc15
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
