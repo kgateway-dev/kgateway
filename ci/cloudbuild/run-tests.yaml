@@ -107,16 +107,16 @@ steps:
   secretEnv:
   - 'JWT_PRIVATE_KEY'
 
-# - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.7.0'
-#   id: 'run-hashicorp-e2e-tests'
-#   dir: *dir
-#   entrypoint: 'make'
-#   args:
-#     - 'run-hashicorp-e2e-tests'
-#   waitFor:
-#     - 'prepare-test-tools'
-#   secretEnv:
-#     - 'JWT_PRIVATE_KEY'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.7.0'
+  id: 'run-hashicorp-e2e-tests'
+  dir: *dir
+  entrypoint: 'make'
+  args:
+    - 'run-hashicorp-e2e-tests'
+  waitFor:
+    - 'prepare-test-tools'
+  secretEnv:
+    - 'JWT_PRIVATE_KEY'
 
 secrets:
 - kmsKeyName: 'projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key'
