@@ -38,6 +38,7 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.Metadata.Name).To(Equal("default"))
 	})
 
@@ -46,6 +47,7 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.Metadata.Name).To(Equal("default"))
 		ug := vs.VirtualHost.Routes[0].GetRouteAction().GetUpstreamGroup()
 		Expect(ug.GetName()).To(Equal("petstore"))
@@ -57,6 +59,7 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.Metadata.Name).To(Equal("default"))
 		parameters := vs.VirtualHost.Routes[0].Matchers[0].Headers
 		Expect(parameters[0].Name).To(Equal("param1"))
@@ -72,6 +75,7 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.Metadata.Name).To(Equal("default"))
 		parameters := vs.VirtualHost.Routes[0].Matchers[0].QueryParameters
 		Expect(parameters[0].Name).To(Equal("param1"))
