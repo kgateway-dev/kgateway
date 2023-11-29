@@ -730,24 +730,6 @@ spec:
                                     type: object
                                 type: object
                               type: array
-                            limit:
-                              properties:
-                                dynamicMetadata:
-                                  properties:
-                                    metadataKey:
-                                      properties:
-                                        key:
-                                          type: string
-                                        path:
-                                          items:
-                                            properties:
-                                              key:
-                                                type: string
-                                            type: object
-                                          type: array
-                                      type: object
-                                  type: object
-                              type: object
                             setActions:
                               items:
                                 properties:
@@ -956,24 +938,6 @@ spec:
                                     type: object
                                 type: object
                               type: array
-                            limit:
-                              properties:
-                                dynamicMetadata:
-                                  properties:
-                                    metadataKey:
-                                      properties:
-                                        key:
-                                          type: string
-                                        path:
-                                          items:
-                                            properties:
-                                              key:
-                                                type: string
-                                            type: object
-                                          type: array
-                                      type: object
-                                  type: object
-                              type: object
                             setActions:
                               items:
                                 properties:
@@ -1161,24 +1125,6 @@ spec:
                                     type: object
                                 type: object
                               type: array
-                            limit:
-                              properties:
-                                dynamicMetadata:
-                                  properties:
-                                    metadataKey:
-                                      properties:
-                                        key:
-                                          type: string
-                                        path:
-                                          items:
-                                            properties:
-                                              key:
-                                                type: string
-                                            type: object
-                                          type: array
-                                      type: object
-                                  type: object
-                              type: object
                             setActions:
                               items:
                                 properties:

@@ -15,7 +15,6 @@ weight: 5
 - [FailoverEndpoints](#failoverendpoints)
 - [LocalityLbTargets](#localitylbtargets)
 - [FailoverSchemeStatus](#failoverschemestatus)
-- [Status](#status)
 - [State](#state)
   
 
@@ -120,31 +119,6 @@ namespace: two
 
 ---
 ### FailoverSchemeStatus
-
-
-
-```yaml
-"state": .fed.solo.io.FailoverSchemeStatus.State
-"message": string
-"observedGeneration": int
-"processingTime": .google.protobuf.Timestamp
-"namespacedStatuses": map<string, .fed.solo.io.FailoverSchemeStatus.Status>
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `state` | [.fed.solo.io.FailoverSchemeStatus.State](../failover.proto.sk/#state) | The current state of the resource. Deprecated: use namespacedStatuses instead. |
-| `message` | `string` | A human readable message about the current state of the object. Deprecated: use namespacedStatuses instead. |
-| `observedGeneration` | `int` | The most recently observed generation of the resource. This value corresponds to the `metadata.generation` of a kubernetes resource. Deprecated: use namespacedStatuses instead. |
-| `processingTime` | [.google.protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp) | The time at which this status was recorded. Deprecated: use namespacedStatuses instead. |
-| `namespacedStatuses` | `map<string, .fed.solo.io.FailoverSchemeStatus.Status>` | Map of gloo fed controller namespace to FailoverScheme status. |
-
-
-
-
----
-### Status
 
 
 

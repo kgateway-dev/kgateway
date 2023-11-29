@@ -29,8 +29,7 @@ weight: 5
 ---
 ### TemplateMetadata
 
- 
-Object Metadata to be written with the resource into the remote cluster
+
 
 ```yaml
 "annotations": map<string, string>
@@ -64,7 +63,7 @@ Object Metadata to be written with the resource into the remote cluster
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clusters` | `map<string, .core.fed.solo.io.PlacementStatus.Cluster>` | map containing the name of the cluster, with the associated Cluster namespaces. |
+| `clusters` | `map<string, .core.fed.solo.io.PlacementStatus.Cluster>` |  |
 | `state` | [.core.fed.solo.io.PlacementStatus.State](../placement.proto.sk/#state) |  |
 | `message` | `string` |  |
 | `observedGeneration` | `int` | metadata.Generation of the resource which has been processed. |

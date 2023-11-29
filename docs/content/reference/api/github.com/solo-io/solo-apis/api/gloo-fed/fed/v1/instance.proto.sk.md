@@ -92,7 +92,6 @@ weight: 5
 "availableReplicas": int
 "readyReplicas": int
 "wasmEnabled": bool
-"readConfigMulticlusterEnabled": bool
 "version": string
 "name": string
 "namespace": string
@@ -108,7 +107,6 @@ weight: 5
 | `availableReplicas` | `int` | The number of available proxy replicas. |
 | `readyReplicas` | `int` | The number of ready proxy replicas. |
 | `wasmEnabled` | `bool` | Whether or not this proxy supports wasm plugins. |
-| `readConfigMulticlusterEnabled` | `bool` | Whether or not this proxy allows its config dumps to be read. |
 | `version` | `string` | The version. |
 | `name` | `string` | Name of the proxy instance, this is important to distinguish it from other proxy instances, which may be in the same namespace. |
 | `namespace` | `string` | Namespace in which the proxy is located. |
@@ -207,9 +205,6 @@ Check describes the status of the objects powering the GlooInstance.
 "upstreams": .fed.solo.io.GlooInstanceSpec.Check.Summary
 "upstreamGroups": .fed.solo.io.GlooInstanceSpec.Check.Summary
 "proxies": .fed.solo.io.GlooInstanceSpec.Check.Summary
-"rateLimitConfigs": .fed.solo.io.GlooInstanceSpec.Check.Summary
-"matchableHttpGateways": .fed.solo.io.GlooInstanceSpec.Check.Summary
-"matchableTcpGateways": .fed.solo.io.GlooInstanceSpec.Check.Summary
 "deployments": .fed.solo.io.GlooInstanceSpec.Check.Summary
 "pods": .fed.solo.io.GlooInstanceSpec.Check.Summary
 
@@ -225,9 +220,6 @@ Check describes the status of the objects powering the GlooInstance.
 | `upstreams` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Upstreams describes the Upstreams available to the GlooInstance. |
 | `upstreamGroups` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | UpstreamGroups describes the UpstreamGroups available to the GlooInstance. |
 | `proxies` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Proxies describes the Proxies configuring the GlooInstance. |
-| `rateLimitConfigs` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | RateLimitConfigs describes the RateLimitConfigs available to the GlooInstance. |
-| `matchableHttpGateways` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | MatchableHttpGateways describes the MatchableHttpGateways available to the GlooInstance. |
-| `matchableTcpGateways` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | MatchableTcpGateways describes the MatchableTcpGateways available to the GlooInstance. |
 | `deployments` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Deployments describes the Deployments in the GlooInstance's install namespace. |
 | `pods` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Pods describes the pods in the GlooInstance's install namespace. |
 
