@@ -56,7 +56,7 @@ require (
 	github.com/solo-io/skv2 v0.35.1-0.20231128223536-65914ef14080
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.27-bump`)
-	github.com/solo-io/solo-apis v0.0.0-20231128224827-460bdac722eb
+	github.com/solo-io/solo-apis v0.0.0-20231129154052-ff1b517101b3
 	github.com/solo-io/solo-kit v0.33.2-0.20231128223744-e099eef9dc15
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.7.0

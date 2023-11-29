@@ -1813,8 +1813,8 @@ github.com/solo-io/protoc-gen-openapi v0.1.1 h1:40gsfvDvz+Sd6HFXBzdkeE5QEuAdZnoy
 github.com/solo-io/protoc-gen-openapi v0.1.1/go.mod h1:6d6gsEx74pW3UCA3G0al0GdMlYzGe/iCy2mPgGG9wI8=
 github.com/solo-io/skv2 v0.35.1-0.20231128223536-65914ef14080 h1:xIr2GzhlyxmMUnCp/3W+jq8cDmDZAnqdTkwYPWG8qW4=
 github.com/solo-io/skv2 v0.35.1-0.20231128223536-65914ef14080/go.mod h1:0GKILLOrQiTKvGsf7UEFZJiDxJHrp0yKJQ6NbHzn+vY=
-github.com/solo-io/solo-apis v0.0.0-20231128224827-460bdac722eb h1:I50gDWdri7pcrhFNLFssk+AJ9xCNU87DRRO55NHPCLw=
-github.com/solo-io/solo-apis v0.0.0-20231128224827-460bdac722eb/go.mod h1:jq4QnolvBwFbGh/5O1vAKXeOutlcdsycMVAN5XxxUXA=
+github.com/solo-io/solo-apis v0.0.0-20231129154052-ff1b517101b3 h1:2bSRuPq8RxlVxHfvtecuIsggRJQkAjXZTSMWtaQJzk4=
+github.com/solo-io/solo-apis v0.0.0-20231129154052-ff1b517101b3/go.mod h1:w0yheOMX0EKcHGLA6VYI++Oxq2eGgPNo6Yr/YKDFwaI=
 github.com/solo-io/solo-kit v0.33.2-0.20231128223744-e099eef9dc15 h1:DsG52cO6rmwZaKpq+UZaG4j3LKGJp1QfCBXH5+kQrYk=
 github.com/solo-io/solo-kit v0.33.2-0.20231128223744-e099eef9dc15/go.mod h1:hvAYbuRNlfJLhNhzmAGjxnDX4+kKd6w4l/+O7Hk6KuM=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
