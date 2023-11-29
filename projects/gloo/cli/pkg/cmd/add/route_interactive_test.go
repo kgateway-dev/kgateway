@@ -74,6 +74,7 @@ var _ = Describe("Routes interactive", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
 			ug := vs.VirtualHost.Routes[0].GetRouteAction().GetUpstreamGroup()
 			Expect(ug.GetName()).To(Equal("default"))
 			Expect(ug.GetNamespace()).To(Equal("default"))
