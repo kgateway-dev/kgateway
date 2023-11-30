@@ -332,11 +332,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 
-		var proxyGrpcServerOpts []grpc.ServerOption
-		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
-		if maxGrpcRecvSize >= 0 {
-			proxyGrpcServerOpts = append(proxyGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
-		}
+		proxyGrpcServerOpts := []grpc.ServerOption{grpc.MaxRecvMsgSize(maxGrpcRecvSize)}
 		s.proxyDebugServer = NewProxyDebugServer(ctx, s.makeGrpcServer(ctx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
 		s.previousProxyDebugServer.cancel = cancel
 		s.previousProxyDebugServer.addr = proxyDebugAddr

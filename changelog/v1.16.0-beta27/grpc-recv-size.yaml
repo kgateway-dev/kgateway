@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/8943
+  description: The default grpc server max_recv_size is 4MB, which can be small for a large number of ingresses. This fix allows users to set the grpc server max_recv_size to a value greater than 4MB.
