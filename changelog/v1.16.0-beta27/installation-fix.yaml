@@ -1,4 +1,4 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     description: >-
       Adjust the permissions of the 'data' directory in the 'docker-compose-file' setup to 777 to grant access to users within the container.
