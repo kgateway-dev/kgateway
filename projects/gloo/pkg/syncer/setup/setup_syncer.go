@@ -255,7 +255,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	// process grpcserver options to understand if any servers will need a restart
-	logger := contextutils.LoggerFrom(ctx)
 
 	maxGrpcRecvSize := -1
 	// Use the same maxGrpcMsgSize for validation server, proxy debug server and control plane server as the message size is determined by the size of proxies.
@@ -264,7 +263,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be non-negative, current value: %v", maxGrpcMsgSize.GetValue())
 		}
 		maxGrpcRecvSize = int(maxGrpcMsgSize.GetValue())
-		logger.Infow("the validationServerGrpcMaxSizeBytes is configured", "validationServerGrpcMaxSizeBytes", maxGrpcRecvSize)
 	}
 
 	emptyControlPlane := bootstrap.ControlPlane{}
@@ -308,11 +306,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		}
 
 		var xdsGrpcServerOpts []grpc.ServerOption
-		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
-		if maxGrpcRecvSize >= 0 {
-			xdsGrpcServerOpts = append(xdsGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
-			logger.Infow("xds server grpc max recv size conigured", "maxGrpcRecvSize", maxGrpcRecvSize)
-		}
+		xdsGrpcServerOpts = append(xdsGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
 		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx, xdsGrpcServerOpts...), xdsTcpAddress, callbacks, true)
 		s.previousXdsServer.cancel = cancel
 		s.previousXdsServer.addr = xdsAddr
@@ -327,7 +321,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
 		if maxGrpcRecvSize >= 0 {
 			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
-			logger.Infow("validation server gprc max recv size conigured", "maxGrpcRecvSize", maxGrpcRecvSize)
 		}
 		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
 		s.previousValidationServer.cancel = cancel
@@ -343,7 +336,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		// if validationServerGrpcMaxSizeBytes was set this will be non-negative, otherwise use gRPC default
 		if maxGrpcRecvSize >= 0 {
 			proxyGrpcServerOpts = append(proxyGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
-			logger.Infow("proxy server gprc max recv size conigured", "maxGrpcRecvSize", maxGrpcRecvSize)
 		}
 		s.proxyDebugServer = NewProxyDebugServer(ctx, s.makeGrpcServer(ctx, proxyGrpcServerOpts...), proxyDebugTcpAddress, true)
 		s.previousProxyDebugServer.cancel = cancel
