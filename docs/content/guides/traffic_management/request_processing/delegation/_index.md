@@ -6,7 +6,7 @@ description: Define
 
 You can use the `VirtualHostOption` and `RouteTableOption` resources to specify option settings for virtual hosts and route tables, such as traffic management configurations or policies. The main virtual host and route table resources can then delegate to these options to apply them. 
 
-This approach is useful if you have traffic management or policy settings that you want to apply to multiple virtual hosts or routes, such as a rate limiting configuration that you want to reuse across hosts. It can also help to keep the main virtual host and route table resources small which can simplify the troubleshooting process in case of an error.
+This approach is useful if you have traffic management or policy settings that you want to apply to multiple virtual hosts or routes, such as a rate limiting configuration that you want to reuse across hosts. It can also help to keep the main virtual host and route table resources concise, which can simplify the troubleshooting process in case of an error.
 
 
 ## Rules for delegating to VirtualHostOption and RouteTableOption resources {#rules}
