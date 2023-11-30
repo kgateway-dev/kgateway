@@ -16,7 +16,7 @@ When delegating to `VirtualHostOption` and `RouteTableOption` resources from the
 - If delegating to multiple `VirtualHostOption` and `RouteTableOption` resources, the resource configuration is applied in order. For example, if a virtual service delegates to two `VirtualHostOption` resources, and both of them specify retry policies, only the retry policy from the `VirtualHostOption` resource that is delegated to first is applied. The retry policy in subsequent `VirtualHostOption` resources is ignored. 
 
 {{% notice note %}}
-Keep in mind that delegating to a lot of `VirtualHostOption` and `RouteTableOption` resources can complicate the troubleshooting process as you might need to analyze multiple option resources to find the root cause of an issue. In addition, updates to `VirtualHostOption` and `RouteTableOption` resources that introduce errors can have large impacts on your environment depending on how often these resources are delegated to. 
+Keep in mind that delegating to several `VirtualHostOption` and `RouteTableOption` resources can complicate the troubleshooting process, as you might need to analyze multiple option resources to find the root cause of an issue. In addition, updates to `VirtualHostOption` and `RouteTableOption` resources that introduce errors can have large impacts on your environment depending on how often these resources are delegated to. 
 {{% /notice %}}
 
 ## Example 
