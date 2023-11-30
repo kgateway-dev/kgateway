@@ -305,8 +305,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			callbacks = s.extensions.XdsCallbacks
 		}
 
-		var xdsGrpcServerOpts []grpc.ServerOption
-		xdsGrpcServerOpts = append(xdsGrpcServerOpts, grpc.MaxRecvMsgSize(maxGrpcRecvSize))
+		xdsGrpcServerOpts := []grpc.ServerOption{grpc.MaxRecvMsgSize(maxGrpcRecvSize)}
 		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx, xdsGrpcServerOpts...), xdsTcpAddress, callbacks, true)
 		s.previousXdsServer.cancel = cancel
 		s.previousXdsServer.addr = xdsAddr
