@@ -131,7 +131,7 @@ The following example uses the httpbin app to demonstrate how option settings in
 6. Verify your final settings by sending multiple requests to the httpbin app. Following the [rules for applying virtual host and route table option resources](#rules), the following behavior is expected: 
    - `headerManipulation`: Because the main virtual service resource specifies header manipulation settings, these settings take precedence over header manipulation settings that are configured on delegated `VirtualHostOption` resources. Consequently, the header manipulation settings from both `VirtualHostOption` resources are ignored. 
    - `retries`: Retry settings from the `virtualhost-options-1` resource take precedence over the retry settings in `virtualhost-options-2`, because the main virtual service resource delegates to `virtualhost-options-1` first. Retry settings in subsequent `VirtualHostOption` resources are ignored. 
-   - `ratelimitBasic`: Because the main virtual service and the `virtualhost-options-1` virtual host option resources do not specify any rate limiting settinge, the rate limit settings from `virtualhost-options-2` are applied to the virtual host. 
+   - `ratelimitBasic`: Because the main virtual service and the `virtualhost-options-1` virtual host option resources do not specify any rate limiting settings, the rate limit settings from `virtualhost-options-2` are applied to the virtual host. 
 
    ```sh
    curl -vik $(glooctl proxy url)/headers
