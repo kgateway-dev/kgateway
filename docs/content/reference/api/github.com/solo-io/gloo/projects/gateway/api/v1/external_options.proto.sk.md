@@ -95,7 +95,7 @@ spec:
         transformationTemplate:
           headers:
             x-header-added-in-opt2:
-              text: this header was added in the RouteOption object - #2
+              text: this header was added in the VirtualHostOption object - #2
 ```
 
 The final virtual host options (visible in the Proxy CR) would be:
@@ -107,21 +107,20 @@ spec:
     options:
       # from Virtual host options
       headerManipulation:
-        requestHeadersToRemove: "header-from-vhost"
+        requestHeadersToRemove: ["header-from-vhost"]
       # from delegated virtualhost-external-options-1
       cors:
         exposeHeaders:
           - header-from-extopt1
-        allowOrigin: 
-          - https://solo.io
+        allowOrigin:
+          - 'https://solo.io'
       # from delegated virtualhost-external-options-2
       transformations:
-      - requestMatch:
-          requestTransformation:
-            transformationTemplate:
-              headers:
-                x-header-added-in-opt2:
-                  text: this header was added in the RouteOption object - #2
+        requestTransformation:
+          transformationTemplate:
+            headers:
+              x-header-added-in-opt2:
+                text: this header was added in the VirtualHostOption object - #2
 ```
 
 Notice how the order of VirtualHostOption delegations matters, and that the VirtualHost-level config overrides all delegated configs.
@@ -192,7 +191,7 @@ spec:
     cors:
       exposeHeaders:
         - header-from-extopt1
-      allowOrigin: 
+      allowOrigin:
         - 'https://solo.io'
 ```
 
@@ -210,7 +209,7 @@ spec:
       exposeHeaders:
         - header-from-extopt2
       maxAge: 2s
-      allowOrigin: 
+      allowOrigin:
         - 'https://solo.io'
     transformations:
       requestTransformation:
@@ -228,12 +227,12 @@ routes:
     options:
       # from Route options
       headerManipulation:
-        requestHeadersToRemove: "header-from-route"
+        requestHeadersToRemove: ["header-from-route"]
       # from delegated route-external-options-1
       cors:
         exposeHeaders:
           - header-from-extopt1
-        allowOrigin: 
+        allowOrigin:
           - 'https://solo.io'
       # from delegated route-external-options-2
       transformations:

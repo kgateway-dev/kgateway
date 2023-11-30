@@ -157,11 +157,12 @@ message VirtualHostOption {
 *       options:
 *         headerManipulation:
 *           requestHeadersToRemove: ["header-from-route"]
-*       delegateOptions:
-*         - name: route-external-options-1
-*           namespace: opt-namespace
-*         - name: route-external-options-2
-*           namespace: opt-namespace
+*       optionsConfigRefs:
+*         delegateOptions:
+*           - name: route-external-options-1
+*             namespace: opt-namespace
+*           - name: route-external-options-2
+*             namespace: opt-namespace
 * ```
 *
 * ```yaml
@@ -218,7 +219,7 @@ message VirtualHostOption {
 *       cors:
 *         exposeHeaders:
 *           - header-from-extopt1
-          allowOrigin:
+*         allowOrigin:
 *           - 'https://solo.io'
 *       # from delegated route-external-options-2
 *       transformations:
