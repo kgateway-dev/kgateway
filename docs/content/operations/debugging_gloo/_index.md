@@ -208,7 +208,7 @@ glooctl proxy stats -n gloo-system --name internal-proxy | grep -i default-httpb
 
 ### View Envoy bootstrap config and access the Admin API
 
-There may be more limited times where you need direct access to the [Envoy Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin). You can view both the Envoy bootstrap config as well as access the [Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin) with the following commands:
+In limited cases, you might need direct access to the [Envoy Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin). You can view both the Envoy bootstrap config as well as access the [Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin) with the following commands:
 
 ```bash
 kubectl exec -it -n gloo-system deploy/gateway-proxy \
