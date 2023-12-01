@@ -241,7 +241,8 @@ The configuration for the extauth envoy sidecar can be found in the rate-limit-s
 
 ## Cert Rotation
 
-Cert rotation can be done by updating the `gloo-mtls-certs` secret. The SDS sidecar automatically picks up the change.
+Cert rotation can be done by updating the gloo-mtls-certs secret. The SDS sidecar will
+automatically pick up the change.
 
 If you want to automatically rotate certs based on a schedule, you can enable a cert rotation CronJob. In your Helm values file for Gloo Edge installation, set `gateway.certGenJob.cron.enabled` to `true`, and specify a rotation schedule:
 
