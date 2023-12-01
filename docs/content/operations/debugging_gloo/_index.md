@@ -76,7 +76,10 @@ Gloo Edge is based on Envoy proxies. If requests are handled incorrectly, use th
    kubectl get gateway <gateway-name> -n <namespace> -o yaml
    ```
 
-2. If the resources seem to be ok, you can check any referenced upstreams to verify that they are configured correctly. Things to check include the label selectors to make sure the correct app service is selected, the port that the app serves on, and the IP address of the app service that the upstream points to. 
+2. If the resources seem to be ok, you can check any referenced upstreams to verify that they are configured correctly. In particular, check that the following settings are correct:
+   * Label selectors for the app service
+   * The port that the app serves on
+   * The IP address of the app service that the upstream points to
    ```sh
    kubectl get upstream <upstream-name> -n <namespace> -o yaml
    ```
