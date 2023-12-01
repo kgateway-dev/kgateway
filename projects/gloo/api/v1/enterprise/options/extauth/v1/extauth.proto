@@ -797,11 +797,12 @@ message OidcAuthorizationCode {
     // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
     // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
     message Azure {
-        // The client ID for the ExtAuthService app that is registered in MS Entra.
-        // This app is NOT the same as the app for the backing service for the URL that you want users to access.
+        // The client ID for the ExtAuthService app that is registered in MS Entra,
+        // to access the Microsoft Graph API to retrieve distributed claims.
+        // This app is NOT the app that you want to configure external auth for.
         string client_id = 1;
 
-        // The tenant ID where the ExtAuthService app's client ID is registered with MS Entra. 
+        // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
         // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
         // depending on how your Azure account is provisioned.
         string tenant_id = 2;
@@ -1726,11 +1727,12 @@ message ExtAuthConfig {
         // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
         // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
         message Azure {
-            // The client ID for the ExtAuthService app that is registered in MS Entra.
-            // This app is NOT the same as the app for the backing service for the URL that you want users to access.
+            // The client ID for the ExtAuthService app that is registered in MS Entra,
+            // to access the Microsoft Graph API to retrieve distributed claims.
+            // This app is NOT the app that you want to configure external auth for.
             string client_id = 1;
     
-            // The tenant ID where the ExtAuthService app's client ID is registered with MS Entra. 
+            // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
             // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
             // depending on how your Azure account is provisioned.
             string tenant_id = 2;
