@@ -794,23 +794,26 @@ message OidcAuthorizationCode {
     // No-op, represents default OIDC behavior
     message Default {}
 
-    // Represents config specific to Azure Distributed Claims OIDC implementation
+    // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+    // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
     message Azure {
-        // client ID for the external auth service as registered with MS Entera. Note that this is
-        // NOT the same as the client ID for the service the AuthConfig will be applied to.
+        // The client ID for the ExtAuthService app that is registered in MS Entra,
+        // to access the Microsoft Graph API to retrieve distributed claims.
+        // This app is NOT the app that you want to configure external auth for.
         string client_id = 1;
 
-        // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
-        // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+        // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
+        // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
         // depending on how your Azure account is provisioned.
         string tenant_id = 2;
 
-        // secret registered for the ExtAuthService to communciate with the Entera APIs
+        // The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
         core.solo.io.ResourceRef client_secret = 3;
 
-        // Redis connection details for caching MS Entera groups resolved from distributed clains.
-        // Will not configure Redis session caching. If you would like to turn on Redis session 
-        // caching, use the `userSessionConfig` field.
+        // Redis connection details to cache MS Entera claims. 
+        // This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
+        // Note that this setting does NOT turn on Redis caching for the user session.
+        // To turn on Redis user session caching, use the `userSessionConfig` field.
         RedisOptions claims_caching_options = 4;
     }
 }
@@ -1721,23 +1724,26 @@ message ExtAuthConfig {
         // No-op, represents default OIDC behavior
         message Default {}
     
-        // Represents config specific to Azure Distributed Claims OIDC implementation
+        // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+        // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
         message Azure {
-            // client ID for the external auth service as registered with MS Entera. Note that this is
-            // NOT the same as the client ID for the service the AuthConfig will be applied to.
+            // The client ID for the ExtAuthService app that is registered in MS Entra,
+            // to access the Microsoft Graph API to retrieve distributed claims.
+            // This app is NOT the app that you want to configure external auth for.
             string client_id = 1;
     
-            // tenant ID where the ExtAuthService's client ID is registered with MS Entera. 
-            // may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+            // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
+            // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
             // depending on how your Azure account is provisioned.
             string tenant_id = 2;
     
-            // secret registered for the ExtAuthService to communciate with the Entera APIs
+            // The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
             string client_secret = 3 [(extproto.sensitive) = true];
     
-            // Redis connection details for caching MS Entera groups resolved from distributed clains.
-            // Will not configure Redis session caching. If you would like to turn on Redis session 
-            // caching, use the `userSessionConfig` field.
+            // Redis connection details to cache MS Entera claims. 
+            // This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
+            // Note that this setting does NOT turn on Redis caching for the user session.
+            // To turn on Redis user session caching, use the `userSessionConfig` field.
             RedisOptions claims_caching_options = 4;
         }
     }
