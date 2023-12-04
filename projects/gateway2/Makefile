@@ -43,6 +43,7 @@ tests/conformance/conformance_test.go:
 
 CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRoutePathRedirect
 
+# TODO (Law[revert]): need to add CLI tests here, see CI pr.yaml workflow
 .PHONY: test
 test:
 	go test -ldflags=$(LDFLAGS) ./...

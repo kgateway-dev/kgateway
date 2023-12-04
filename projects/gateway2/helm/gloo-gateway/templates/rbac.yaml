@@ -4,7 +4,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}.{{.Release.Namespace}}
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 rules:
 - apiGroups:
@@ -41,7 +41,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}.{{.Release.Namespace}}-binding
 subjects:
@@ -58,7 +58,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 rules:
 - apiGroups:
@@ -78,7 +78,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}-binding
 subjects:
