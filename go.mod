@@ -49,15 +49,15 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.8-0.20231128194722-8ca1ac5fcb92
-	github.com/solo-io/k8s-utils v0.5.2-0.20231128200054-48fae08db148
+	github.com/solo-io/go-utils v0.24.8
+	github.com/solo-io/k8s-utils v0.6.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.1
-	github.com/solo-io/skv2 v0.35.1-0.20231128223536-65914ef14080
+	github.com/solo-io/skv2 v0.35.1-0.20231204201413-14ca930d2d3e
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.27-bump`)
-	github.com/solo-io/solo-apis v0.0.0-20231129154052-ff1b517101b3
-	github.com/solo-io/solo-kit v0.33.2-0.20231128223744-e099eef9dc15
+	github.com/solo-io/solo-apis v0.0.0-20231204190342-31a811649ef3
+	github.com/solo-io/solo-kit v0.33.2-0.20231204202514-4e47e1edde1e
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -325,7 +325,7 @@ replace (
 	// using the pseudo version of github.com/form3tech-oss/jwt-go@v3.2.3 instead of the version directly,
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
-	github.com/docker/docker => github.com/moby/moby v24.0.4+incompatible
+	github.com/docker/docker => github.com/moby/moby v24.0.7+incompatible
 	// Remove once we get to a version with extproc changes in upstream envoy 1.28
 	github.com/envoyproxy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20231026174848-be784d54c527
 

@@ -4,7 +4,6 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set +x
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG=github.com/solo-io/gloo/projects/gateway/pkg/api/v1
