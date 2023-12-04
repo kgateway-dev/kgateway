@@ -9,16 +9,7 @@ import (
 
 type ReportMap struct {
 	gateways map[types.NamespacedName]*GatewayReport
-	Routes   map[types.NamespacedName]*RouteReport
-}
-
-func NewReportMap() ReportMap {
-	gr := make(map[types.NamespacedName]*GatewayReport)
-	rr := make(map[types.NamespacedName]*RouteReport)
-	return ReportMap{
-		gateways: gr,
-		Routes:   rr,
-	}
+	routes   map[types.NamespacedName]*RouteReport
 }
 
 type GatewayReport struct {
@@ -26,11 +17,52 @@ type GatewayReport struct {
 	listeners  map[string]*ListenerReport
 }
 
-func (g *GatewayReport) GetConditions() []metav1.Condition {
-	if g == nil {
-		return []metav1.Condition{}
+type ListenerReport struct {
+	Status gwv1.ListenerStatus
+}
+
+type RouteReport struct {
+	parents map[ParentRefKey]*ParentRefReport
+}
+
+type ParentRefReport struct {
+	Conditions []metav1.Condition
+}
+
+type ParentRefKey struct {
+	Group string
+	Kind  string
+	types.NamespacedName
+}
+
+func NewReportMap() ReportMap {
+	gr := make(map[types.NamespacedName]*GatewayReport)
+	rr := make(map[types.NamespacedName]*RouteReport)
+	return ReportMap{
+		gateways: gr,
+		routes:   rr,
 	}
-	return g.conditions
+}
+
+// Exported for unit test, validation_test.go can be refactored to reduce this visibility
+func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
+	key := client.ObjectKeyFromObject(gateway)
+	gr := r.gateways[key]
+	if gr == nil {
+		gr = &GatewayReport{}
+		r.gateways[key] = gr
+	}
+	return gr
+}
+
+func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
+	key := client.ObjectKeyFromObject(route)
+	rr := r.routes[key]
+	if rr == nil {
+		rr = &RouteReport{}
+		r.routes[key] = rr
+	}
+	return rr
 }
 
 func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
@@ -49,6 +81,13 @@ func (g *GatewayReport) listener(listener *gwv1.Listener) *ListenerReport {
 	return lr
 }
 
+func (g *GatewayReport) GetConditions() []metav1.Condition {
+	if g == nil {
+		return []metav1.Condition{}
+	}
+	return g.conditions
+}
+
 func (g *GatewayReport) SetCondition(gc GatewayCondition) {
 	condition := metav1.Condition{
 		Type:    string(gc.Type),
@@ -57,10 +96,6 @@ func (g *GatewayReport) SetCondition(gc GatewayCondition) {
 		Message: gc.Message,
 	}
 	g.conditions = append(g.conditions, condition)
-}
-
-type ListenerReport struct {
-	Status gwv1.ListenerStatus
 }
 
 func NewListenerReport(name string) *ListenerReport {
@@ -87,51 +122,19 @@ func (l *ListenerReport) SetAttachedRoutes(n uint) {
 	l.Status.AttachedRoutes = int32(n)
 }
 
-func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
-	return r.report.Gateway(gateway)
-}
-
-// Exported for unit test, validation_test.go can be refactored to reduce this visibility
-func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
-	key := client.ObjectKeyFromObject(gateway)
-	gr := r.gateways[key]
-	if gr == nil {
-		gr = &GatewayReport{}
-		r.gateways[key] = gr
-	}
-	return gr
-}
-
 type reporter struct {
 	report *ReportMap
 }
 
-type RouteReport struct {
-	Parents map[ParentRefKey]*ParentRefReport
-}
-
-type ParentRefReport struct {
-	Conditions []metav1.Condition
-}
-
-type ParentRefKey struct {
-	Group string
-	Kind  string
-	types.NamespacedName
+func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
+	return r.report.Gateway(gateway)
 }
 
 func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
-	var rr *RouteReport
-	key := client.ObjectKeyFromObject(route)
-	rr, ok := r.report.Routes[key]
-	if !ok {
-		rr = &RouteReport{}
-		r.report.Routes[key] = rr
-	}
-	return rr
+	return r.report.route(route)
 }
 
-func GetParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
+func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	var kind string
 	if parentRef.Kind != nil {
 		kind = string(*parentRef.Kind)
@@ -148,21 +151,24 @@ func GetParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 			Name:      string(parentRef.Name),
 		},
 	}
+}
 
+func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefReport {
+	key := getParentRefKey(parentRef)
+	if r.parents == nil {
+		r.parents = make(map[ParentRefKey]*ParentRefReport)
+	}
+	var prr *ParentRefReport
+	prr, ok := r.parents[key]
+	if !ok {
+		prr = &ParentRefReport{}
+		r.parents[key] = prr
+	}
+	return prr
 }
 
 func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {
-	key := GetParentRefKey(parentRef)
-	if r.Parents == nil {
-		r.Parents = make(map[ParentRefKey]*ParentRefReport)
-	}
-	var prr *ParentRefReport
-	prr, ok := r.Parents[key]
-	if !ok {
-		prr = &ParentRefReport{}
-		r.Parents[key] = prr
-	}
-	return prr
+	return r.parentRef(parentRef)
 }
 
 func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {
@@ -182,15 +188,27 @@ func NewReporter(reportMap *ReportMap) Reporter {
 type Reporter interface {
 	// returns the object reporter for the given type
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
-
 	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
 
 type GatewayReporter interface {
 	// report an error on the given listener
 	Listener(listener *gwv1.Listener) ListenerReporter
-
 	SetCondition(condition GatewayCondition)
+}
+
+type ListenerReporter interface {
+	SetCondition(ListenerCondition)
+	SetSupportedKinds([]gwv1.RouteGroupKind)
+	SetAttachedRoutes(n uint)
+}
+
+type HTTPRouteReporter interface {
+	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
+}
+
+type ParentRefReporter interface {
+	SetCondition(condition HTTPRouteCondition)
 }
 
 type GatewayCondition struct {
@@ -207,28 +225,9 @@ type ListenerCondition struct {
 	Message string
 }
 
-type ListenerReporter interface {
-	// report an error on the listener
-	// Err(format string, a ...any)
-
-	SetCondition(ListenerCondition)
-
-	SetSupportedKinds([]gwv1.RouteGroupKind)
-	SetAttachedRoutes(n uint)
-}
-
 type HTTPRouteCondition struct {
 	Type    gwv1.RouteConditionType
 	Status  metav1.ConditionStatus
 	Reason  gwv1.RouteConditionReason
 	Message string
-}
-
-type HTTPRouteReporter interface {
-	// Err(format string, a ...any)
-	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
-}
-
-type ParentRefReporter interface {
-	SetCondition(condition HTTPRouteCondition)
 }

@@ -48,6 +48,10 @@ CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,Refere
 test:
 	go test -ldflags=$(LDFLAGS) ./...
 
+.PHONY: test-full
+test-full:
+	go test -ldflags=$(LDFLAGS) -count=1 ./...
+
 .PHONY: conformance
 conformance: tests/conformance/conformance_test.go
 	go test -ldflags=$(LDFLAGS) -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS)
