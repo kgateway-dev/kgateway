@@ -55,7 +55,7 @@ require (
 	github.com/solo-io/protoc-gen-openapi v0.1.1
 	github.com/solo-io/skv2 v0.36.0
 
-	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.27-bump`)
+	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.28-bump`)
 	github.com/solo-io/solo-apis v0.0.0-20231206142556-d2e3ed6d4476
 	github.com/solo-io/solo-kit v0.34.0
 	github.com/spf13/afero v1.9.2
