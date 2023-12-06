@@ -35,6 +35,8 @@ weight: 5
 - [MetadataKey](#metadatakey)
 - [PathSegment](#pathsegment)
 - [Source](#source)
+- [Override](#override)
+- [DynamicMetadata](#dynamicmetadata)
   
 
 
@@ -341,6 +343,7 @@ setDescriptors:
 ```yaml
 "actions": []ratelimit.api.solo.io.Action
 "setActions": []ratelimit.api.solo.io.Action
+"limit": .ratelimit.api.solo.io.Override
 
 ```
 
@@ -348,6 +351,7 @@ setDescriptors:
 | ----- | ---- | ----------- | 
 | `actions` | [[]ratelimit.api.solo.io.Action](../ratelimit.proto.sk/#action) |  |
 | `setActions` | [[]ratelimit.api.solo.io.Action](../ratelimit.proto.sk/#action) |  |
+| `limit` | [.ratelimit.api.solo.io.Override](../ratelimit.proto.sk/#override) | An optional limit override to be appended to the descriptor produced by this rate limit configuration. If the override value is invalid or cannot be resolved from metadata, no override is provided. |
 
 
 
@@ -402,7 +406,7 @@ https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_compone
 "remoteAddress": .ratelimit.api.solo.io.Action.RemoteAddress
 "genericKey": .ratelimit.api.solo.io.Action.GenericKey
 "headerValueMatch": .ratelimit.api.solo.io.Action.HeaderValueMatch
-"metadata": .ratelimit.api.solo.io.Action.MetaData
+"metadata": .ratelimit.api.solo.io.MetaData
 
 ```
 
@@ -414,7 +418,7 @@ https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_compone
 | `remoteAddress` | [.ratelimit.api.solo.io.Action.RemoteAddress](../ratelimit.proto.sk/#remoteaddress) | Rate limit on remote address. Only one of `remoteAddress`, `sourceCluster`, `destinationCluster`, `requestHeaders`, `genericKey`, `headerValueMatch`, or `metadata` can be set. |
 | `genericKey` | [.ratelimit.api.solo.io.Action.GenericKey](../ratelimit.proto.sk/#generickey) | Rate limit on a generic key. Only one of `genericKey`, `sourceCluster`, `destinationCluster`, `requestHeaders`, `remoteAddress`, `headerValueMatch`, or `metadata` can be set. |
 | `headerValueMatch` | [.ratelimit.api.solo.io.Action.HeaderValueMatch](../ratelimit.proto.sk/#headervaluematch) | Rate limit on the existence of request headers. Only one of `headerValueMatch`, `sourceCluster`, `destinationCluster`, `requestHeaders`, `remoteAddress`, `genericKey`, or `metadata` can be set. |
-| `metadata` | [.ratelimit.api.solo.io.Action.MetaData](../ratelimit.proto.sk/#metadata) | Rate limit on metadata. Only one of `metadata`, `sourceCluster`, `destinationCluster`, `requestHeaders`, `remoteAddress`, `genericKey`, or `headerValueMatch` can be set. |
+| `metadata` | [.ratelimit.api.solo.io.MetaData](../ratelimit.proto.sk/#metadata) | Rate limit on metadata. Only one of `metadata`, `sourceCluster`, `destinationCluster`, `requestHeaders`, `remoteAddress`, `genericKey`, or `headerValueMatch` can be set. |
 
 
 
@@ -627,18 +631,18 @@ The following descriptor entry is appended when the metadata contains a key valu
 
 ```yaml
 "descriptorKey": string
-"metadataKey": .ratelimit.api.solo.io.Action.MetaData.MetadataKey
+"metadataKey": .ratelimit.api.solo.io.MetaData.MetadataKey
 "defaultValue": string
-"source": .ratelimit.api.solo.io.Action.MetaData.Source
+"source": .ratelimit.api.solo.io.MetaData.Source
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `descriptorKey` | `string` | Required. The key to use in the descriptor entry. |
-| `metadataKey` | [.ratelimit.api.solo.io.Action.MetaData.MetadataKey](../ratelimit.proto.sk/#metadatakey) | Required. Metadata struct that defines the key and path to retrieve the string value. A match will only happen if the value in the metadata is of type string. |
+| `metadataKey` | [.ratelimit.api.solo.io.MetaData.MetadataKey](../ratelimit.proto.sk/#metadatakey) | Required. Metadata struct that defines the key and path to retrieve the string value. A match will only happen if the value in the metadata is of type string. |
 | `defaultValue` | `string` | An optional value to use if *metadata_key* is empty. If not set and no value is present under the metadata_key then no descriptor is generated. |
-| `source` | [.ratelimit.api.solo.io.Action.MetaData.Source](../ratelimit.proto.sk/#source) | Source of metadata. |
+| `source` | [.ratelimit.api.solo.io.MetaData.Source](../ratelimit.proto.sk/#source) | Source of metadata. |
 
 
 
@@ -672,14 +676,14 @@ path:
 
 ```yaml
 "key": string
-"path": []ratelimit.api.solo.io.Action.MetaData.MetadataKey.PathSegment
+"path": []ratelimit.api.solo.io.MetaData.MetadataKey.PathSegment
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `key` | `string` | Required. The key name of Metadata to retrieve the Struct from the metadata. Typically, it represents a builtin subsystem or custom extension. |
-| `path` | [[]ratelimit.api.solo.io.Action.MetaData.MetadataKey.PathSegment](../ratelimit.proto.sk/#pathsegment) | Must have at least one element. The path to retrieve the Value from the Struct. It can be a prefix or a full path, e.g. ``[prop, xyz]`` for a struct or ``[prop, foo]`` for a string in the example, which depends on the particular scenario. Note: Due to that only the key type segment is supported, the path can not specify a list unless the list is the last segment. |
+| `path` | [[]ratelimit.api.solo.io.MetaData.MetadataKey.PathSegment](../ratelimit.proto.sk/#pathsegment) | Must have at least one element. The path to retrieve the Value from the Struct. It can be a prefix or a full path, e.g. ``[prop, xyz]`` for a struct or ``[prop, foo]`` for a string in the example, which depends on the particular scenario. Note: Due to that only the key type segment is supported, the path can not specify a list unless the list is the last segment. |
 
 
 
@@ -712,6 +716,43 @@ Currently it is only supported to specify the key, i.e. field name, as one segme
 | ----- | ----------- | 
 | `DYNAMIC` | Query [dynamic metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata#well-known-dynamic-metadata). |
 | `ROUTE_ENTRY` | Query [route entry metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-route-metadata). |
+
+
+
+
+---
+### Override
+
+ 
+Copied directly from envoy
+https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-ratelimit-override
+
+```yaml
+"dynamicMetadata": .ratelimit.api.solo.io.Override.DynamicMetadata
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `dynamicMetadata` | [.ratelimit.api.solo.io.Override.DynamicMetadata](../ratelimit.proto.sk/#dynamicmetadata) | Limit override from dynamic metadata. |
+
+
+
+
+---
+### DynamicMetadata
+
+ 
+Fetches the override from the dynamic metadata.
+
+```yaml
+"metadataKey": .ratelimit.api.solo.io.MetaData.MetadataKey
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `metadataKey` | [.ratelimit.api.solo.io.MetaData.MetadataKey](../ratelimit.proto.sk/#metadatakey) | Metadata struct that defines the key and path to retrieve the struct value. The value must be a struct containing an integer "requests_per_unit" property and a "unit" property with a value parseable to :ref:`RateLimitUnit enum <envoy_v3_api_enum_type.v3.RateLimitUnit>`. |
 
 
 

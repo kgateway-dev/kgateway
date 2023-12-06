@@ -53,11 +53,11 @@ require (
 	github.com/solo-io/k8s-utils v0.6.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.1
-	github.com/solo-io/skv2 v0.35.1-0.20231204201413-14ca930d2d3e
+	github.com/solo-io/skv2 v0.36.0
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.27-bump`)
-	github.com/solo-io/solo-apis v0.0.0-20231204190342-31a811649ef3
-	github.com/solo-io/solo-kit v0.33.2-0.20231204202514-4e47e1edde1e
+	github.com/solo-io/solo-apis v0.0.0-20231206142556-d2e3ed6d4476
+	github.com/solo-io/solo-kit v0.34.0
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -80,7 +80,7 @@ require (
 	k8s.io/client-go v0.28.3
 	k8s.io/code-generator v0.28.3
 	k8s.io/component-base v0.28.3
-	k8s.io/kubectl v0.28.2
+	k8s.io/kubectl v0.28.3
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
