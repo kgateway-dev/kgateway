@@ -79,4 +79,4 @@ changelog:
 - type: DEPENDENCY_BUMP
   dependencyOwner: solo-io
   dependencyRepo: cloud-builders
-  dependencyTag: v0.8.0
+  dependencyTag: v0.8.1
