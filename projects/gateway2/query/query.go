@@ -114,7 +114,7 @@ type GatewayQueries interface {
 	// Given a backendRef that resides in namespace obj, return the service that backs it.
 	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
 	// return value depends on the group/kind in the backendRef.
-	GetBackendForRef(ctx context.Context, obj From, backendRef *apiv1.HTTPBackendRef) (client.Object, error)
+	GetBackendForRef(ctx context.Context, obj From, backendRef *apiv1.BackendObjectReference) (client.Object, error)
 
 	GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error)
 }
@@ -388,7 +388,7 @@ func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj From, secretRe
 	return r.getRef(ctx, obj, string(secretRef.Name), secretRef.Namespace, secretGK)
 }
 
-func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj From, backend *apiv1.HTTPBackendRef) (client.Object, error) {
+func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj From, backend *apiv1.BackendObjectReference) (client.Object, error) {
 	backendKind := "Service"
 	backendGroup := ""
 

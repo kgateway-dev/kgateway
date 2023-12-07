@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	validation "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	grpc "google.golang.org/grpc"
 )

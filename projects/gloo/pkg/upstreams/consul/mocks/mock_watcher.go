@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	api "github.com/hashicorp/consul/api"
 	consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	consul0 "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"

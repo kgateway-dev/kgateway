@@ -3,7 +3,7 @@ kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
   name: {{ .Values.gatewayClass.className }}
 spec:
   controllerName: {{ .Values.gatewayClass.controllerName }}

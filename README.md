@@ -25,7 +25,7 @@ Gloo Gateway is a powerful Kubernetes-native ingress controller and API gateway 
 
 <BR><center><img src="https://docs.solo.io/gloo-edge/main/img/gloo-architecture-envoys.png" alt="Gloo Gateway v2 Architecture" width="906"></center>
 
-## Quickstart
+## Quickstart with `glooctl`
 Install Gloo Gateway and set up routing to the httpbin sample app. 
 
 1. Install `glooctl`, the Gloo Gateway command line tool.
@@ -52,6 +52,38 @@ Install Gloo Gateway and set up routing to the httpbin sample app.
    ```
 
 Congratulations! You successfully installed Gloo Gateway and used an HTTP gateway to expose the httpbin sample app. 
+
+> **Note**
+> To learn more about Gloo Gateway's support for the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gloo-gateway/v2/).
+
+## Quickstart with Helm 
+
+1. Install the custom resources of the Kubernetes Gateway API. 
+   ```sh
+   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+   ```
+
+2. Install Gloo Gateway v2. This command creates the `gloo-system` namespace and installs the Gloo Gateway v2 control plane into it.
+   ```sh
+   helm install default -n gloo-system --create-namespace  oci://ghcr.io/solo-io/helm-charts/gloo-gateway --version 2.0.0-beta1
+   ```
+
+3. Verify that the Gloo Gateway v2 control plane is up and running and that the `gloo-gateway` GatewayClass is created. 
+   ```sh
+   kubectl get pods -n gloo-system
+   kubectl get gatewayclass gloo-gateway 
+   ```
+
+4. Deploy the httpbin sample app, along with a Gateway and HTTPRoute to access it.
+   ```sh
+   kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo/v2.0.x/projects/gateway2/examples/httpbin.yaml
+   kubectl rollout status deployment -n httpbin -w
+   ```
+
+5. Send a request through our new Gateway.
+   ```sh
+   kubectl exec -n httpbin deploy/httpbin -c curl -- curl -v gloo-proxy-http:8080/status/200 -H "host: www.example.com"
+   ```
 
 > **Note**
 > To learn more about Gloo Gateway's support for the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gloo-gateway/v2/).

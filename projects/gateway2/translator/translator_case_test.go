@@ -2,8 +2,9 @@ package translator_test
 
 import (
 	"context"
-	"log"
+	"fmt"
 
+	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
@@ -21,13 +22,14 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy   *v1.Proxy
-	Reports map[string]*reports.GatewayReport
+	Proxy *v1.Proxy
+	// Reports     map[types.NamespacedName]*reports.GatewayReport
+	//TODO(Law): figure out how RouteReports fit in
 }
 
 type ExpectedTestResult struct {
-	Proxy   string
-	Reports map[string]*reports.GatewayReport
+	Proxy string
+	// Reports     map[types.NamespacedName]*reports.GatewayReport
 }
 
 func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
@@ -39,7 +41,7 @@ func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
 }
 
 // map of gwv1.GW namespace/name to translation result
-func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.NamespacedName]bool, error) {
+func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, error) {
 	// load inputs
 
 	var (
@@ -70,7 +72,8 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
-		reporter, reportsMap := testutils.BuildReporter()
+		reportsMap := reports.NewReportMap()
+		reporter := reports.NewReporter(&reportsMap)
 
 		// translate gateway
 		proxy := NewTranslator().TranslateProxy(
@@ -80,17 +83,15 @@ func (tc TestCase) Run(ctx context.Context, logActual bool) (map[types.Namespace
 			reporter,
 		)
 
-		if logActual {
-			actualYam, err := testutils.MarshalYaml(proxy)
-			if err != nil {
-				return nil, err
-			}
-			log.Print("actualYam: \n---\n", string(actualYam), "\n---\n")
-		}
+		act, _ := testutils.MarshalYaml(proxy)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
+
+		actReport, _ := testutils.MarshalAnyYaml(reportsMap)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "actual reports:\n %s \n", actReport)
 
 		actual := ActualTestResult{
-			Proxy:   proxy,
-			Reports: reportsMap,
+			Proxy: proxy,
+			// Reports:     reportsMap.Gateways,
 		}
 
 		expected, ok := tc.ResultsByGateway[ref]

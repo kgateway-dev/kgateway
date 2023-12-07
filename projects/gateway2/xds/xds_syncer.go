@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -30,13 +28,9 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -165,11 +159,8 @@ func (s *XdsSyncer) Start(
 		queries := query.NewData(s.cli, s.scheme)
 		t := gloot.NewTranslator()
 		proxies := gloo_solo_io.ProxyList{}
-		rm := &reports.ReportMap{
-			Gateways: make(map[string]*reports.GatewayReport),
-			Routes:   make(map[k8stypes.NamespacedName]*reports.RouteReport),
-		}
-		r := reports.NewReporter(rm)
+		rm := reports.NewReportMap()
+		r := reports.NewReporter(&rm)
 		for _, gw := range gwl.Items {
 			proxy := t.TranslateProxy(ctx, &gw, queries, r)
 			if proxy != nil {
@@ -179,8 +170,8 @@ func (s *XdsSyncer) Start(
 		}
 		proxyApiSnapshot.Proxies = proxies
 		s.syncEnvoy(ctx, proxyApiSnapshot)
-		s.syncStatus(ctx, *rm, gwl)
-		s.syncRouteStatus(ctx, *rm)
+		s.syncStatus(ctx, rm, gwl)
+		s.syncRouteStatus(ctx, rm)
 	}
 
 	for {
@@ -210,17 +201,18 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 	defer span.End()
 
 	s.latestSnap = snap
-	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
-	logger := contextutils.LoggerFrom(ctx)
+	logger := log.FromContext(ctx, "pkg", "envoyTranslatorSyncer")
 	snapHash := hashutils.MustHash(snap)
-	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs, %v graphql apis)", snapHash,
-		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
-	defer logger.Infof("end sync %v", snapHash)
+	logger.Info("begin sync", "snapHash", snapHash,
+		"len(proxies)", len(snap.Proxies), "len(upstreams)", len(snap.Upstreams), "len(endpoints)", len(snap.Endpoints), "len(secrets)", len(snap.Secrets), "len(artifacts)", len(snap.Artifacts), "len(authconfigs)", len(snap.AuthConfigs), "len(ratelimits)", len(snap.Ratelimitconfigs), "len(graphqls)", len(snap.GraphqlApis))
+	debugLogger := logger.V(1)
+
+	defer logger.Info("end sync", "len(snapHash)", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		logger.Debug(syncutil.StringifySnapshot(snap))
+	if debugLogger.Enabled() {
+		debugLogger.Info("snap", "snap", syncutil.StringifySnapshot(snap))
 	}
 
 	reports := make(reporter.ResourceReports)
@@ -274,9 +266,11 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 		// if the snapshot is not consistent, make it so
 		xdsSnapshot.MakeConsistent()
 
-		if validateErr := reports.ValidateStrict(); validateErr != nil {
-			logger.Warnw("Proxy had invalid config after xds sanitization", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
-		}
+		// if validateErr := reports.ValidateStrict(); validateErr != nil {
+		// 	logger.Error(validateErr, "Proxy had invalid config after xds sanitization", "proxy", proxy.GetMetadata().Ref())
+		// }
+
+		debugLogger.Info("snap", "key", sanitizedSnapshot)
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		reports.Merge(reports)
@@ -294,16 +288,20 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 		measureResource(proxyCtx, "routes", routesLen)
 		measureResource(proxyCtx, "endpoints", endpointsLen)
 
-		logger.Infow("Setting xDS Snapshot", "key", key,
+		debugLogger.Info("Setting xDS Snapshot", "key", key,
 			"clusters", clustersLen,
+			"clustersVersion", xdsSnapshot.GetResources(types.ClusterTypeV3).Version,
 			"listeners", listenersLen,
+			"listenersVersion", xdsSnapshot.GetResources(types.ListenerTypeV3).Version,
 			"routes", routesLen,
-			"endpoints", endpointsLen)
+			"routesVersion", xdsSnapshot.GetResources(types.RouteTypeV3).Version,
+			"endpoints", endpointsLen,
+			"endpointsVersion", xdsSnapshot.GetResources(types.EndpointTypeV3).Version)
 
-		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), xdsSnapshot)
+		debugLogger.Info("Full snapshot for proxy", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
-	logger.Debugf("gloo reports to be written: %v", reports)
+	debugLogger.Info("gloo reports to be written", "reports", reports)
 
 	return reports
 }
@@ -360,53 +358,9 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	}
 
 	for _, route := range rl.Items {
-		routeReport, ok := rm.Routes[client.ObjectKeyFromObject(&route)]
-		if !ok {
-			//TODO more thought here
-			continue
-		}
-		routeStatus := apiv1.RouteStatus{}
-		for _, parentRef := range route.Spec.ParentRefs {
-			key := reports.GetParentRefKey(&parentRef)
-			parentStatus, ok := routeReport.Parents[key]
-			if !ok {
-				//todo think
-				continue
-			}
-			if cond := meta.FindStatusCondition(parentStatus.Conditions, string(apiv1.RouteConditionAccepted)); cond == nil {
-				parentStatus.SetCondition(reports.HTTPRouteCondition{
-					Type:   apiv1.RouteConditionAccepted,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.RouteReasonAccepted,
-				})
-			}
-			if cond := meta.FindStatusCondition(parentStatus.Conditions, string(apiv1.RouteConditionResolvedRefs)); cond == nil {
-				parentStatus.SetCondition(reports.HTTPRouteCondition{
-					Type:   apiv1.RouteConditionResolvedRefs,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.RouteReasonResolvedRefs,
-				})
-			}
-
-			//TODO add logic for partially invalid condition
-
-			finalConditions := make([]v1.Condition, 0)
-			for _, pCondition := range parentStatus.Conditions {
-				pCondition.ObservedGeneration = route.Generation       // don't have generation is the report, should consider adding it
-				pCondition.LastTransitionTime = v1.NewTime(time.Now()) // same as above, should calculate at report time possibly
-				finalConditions = append(finalConditions, pCondition)
-			}
-
-			routeParentStatus := apiv1.RouteParentStatus{
-				ParentRef:      parentRef,
-				ControllerName: apiv1.GatewayController(s.controllerName),
-				Conditions:     finalConditions,
-			}
-			routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
-		}
-		route.Status = apiv1.HTTPRouteStatus{
-			RouteStatus: routeStatus,
-		}
+		// Pike
+		route := route
+		route.Status = rm.BuildRouteStatus(ctx, route, s.controllerName)
 		if err := s.cli.Status().Update(ctx, &route); err != nil {
 			logger.Error(err)
 		}
@@ -417,103 +371,10 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	//TODO(Law): bail out early if possible
-	//TODO(Law): do another Get on the gw, possibly use Patch for status subresource modification
+	//TODO(Law): do another Get on the gw?
 	//TODO(Law): add generation changed predicate
 	for _, gw := range gwl.Items {
-		gwReport, ok := rm.Gateways[gw.Name]
-		if !ok {
-			// why don't we have a report for this gateway?
-			continue
-		}
-		//TODO(Law): deterministic sorting
-		finalListeners := make([]apiv1.ListenerStatus, 0)
-		for _, lis := range gw.Spec.Listeners {
-			lisReport, ok := gwReport.Listeners[string(lis.Name)]
-			if !ok {
-				//TODO(Law): why don't we have a report for a listner? shouldnt happen
-				continue
-			}
-
-			// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionAccepted)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionAccepted,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.ListenerReasonAccepted,
-				})
-			}
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionConflicted)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionConflicted,
-					Status: v1.ConditionFalse,
-					Reason: apiv1.ListenerReasonNoConflicts,
-				})
-			}
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionResolvedRefs)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionResolvedRefs,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.ListenerReasonResolvedRefs,
-				})
-			}
-			if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(apiv1.ListenerConditionProgrammed)); cond == nil {
-				lisReport.SetCondition(reports.ListenerCondition{
-					Type:   apiv1.ListenerConditionProgrammed,
-					Status: v1.ConditionTrue,
-					Reason: apiv1.ListenerReasonProgrammed,
-				})
-			}
-
-			finalConditions := make([]v1.Condition, 0)
-			oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l apiv1.ListenerStatus) bool {
-				return l.Name == lis.Name
-			})
-			for _, lisCondition := range lisReport.Status.Conditions {
-				lisCondition.ObservedGeneration = gw.Generation // don't have generation is the report, should consider adding it
-				// copy the old condition from the gw so last transition time is set correctly
-				if oldLisStatusIndex != -1 {
-					if cond := meta.FindStatusCondition(gw.Status.Listeners[oldLisStatusIndex].Conditions, lisCondition.Type); cond != nil {
-						finalConditions = append(finalConditions, *cond)
-					}
-				}
-
-				meta.SetStatusCondition(&finalConditions, lisCondition)
-			}
-			lisReport.Status.Conditions = finalConditions
-			finalListeners = append(finalListeners, lisReport.Status)
-		}
-
-		// set missing conditions, i.e. set healthy conditions
-		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionAccepted)); cond == nil {
-			gwReport.SetCondition(reports.GatewayCondition{
-				Type:   apiv1.GatewayConditionAccepted,
-				Status: v1.ConditionTrue,
-				Reason: apiv1.GatewayReasonAccepted,
-			})
-		}
-		if cond := meta.FindStatusCondition(gwReport.Conditions, string(apiv1.GatewayConditionProgrammed)); cond == nil {
-			gwReport.SetCondition(reports.GatewayCondition{
-				Type:   apiv1.GatewayConditionProgrammed,
-				Status: v1.ConditionTrue,
-				Reason: apiv1.GatewayReasonProgrammed,
-			})
-		}
-
-		// recalculate top-level GatewayStatus
-		finalGwStatus := apiv1.GatewayStatus{}
-		finalConditions := make([]v1.Condition, 0)
-		for _, gwCondition := range gwReport.Conditions {
-			gwCondition.ObservedGeneration = gw.Generation
-			// copy the old condition from the gw so last transition time is set correctly
-			if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
-				finalConditions = append(finalConditions, *cond)
-			}
-			meta.SetStatusCondition(&finalConditions, gwCondition)
-		}
-
-		finalGwStatus.Conditions = finalConditions
-		finalGwStatus.Listeners = finalListeners
-		gw.Status = finalGwStatus
+		gw.Status = rm.BuildGWStatus(ctx, gw)
 		if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
 			logger.Error(err)
 		}

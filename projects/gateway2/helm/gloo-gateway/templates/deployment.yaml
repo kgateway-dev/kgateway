@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}
   labels:
-    app: gloo
+    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controlPlane.replicaCount }}

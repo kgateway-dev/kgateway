@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"

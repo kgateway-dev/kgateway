@@ -303,7 +303,7 @@ func processConditions[T ~string](
 		} else if condition.ObservedGeneration != generation {
 			// Hasn't reconciled yet
 			multierr = multierror.Append(multierr, fmt.Errorf(
-				"status (%s) is not up to date with the object's Generation",
+				"%s status (%s) is not up to date with the object's Generation",
 				parent, string(expectedConditions[idx].condition),
 			))
 		} else {

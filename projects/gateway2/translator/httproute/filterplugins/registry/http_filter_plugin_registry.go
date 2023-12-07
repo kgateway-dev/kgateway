@@ -3,6 +3,7 @@ package registry
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/redirect"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/urlrewrite"
 
@@ -51,6 +52,7 @@ func NewHTTPFilterPluginRegistry() HTTPFilterPluginRegistry {
 			gwv1.HTTPRouteFilterResponseHeaderModifier: headermodifier.NewPlugin(),
 			gwv1.HTTPRouteFilterURLRewrite:             urlrewrite.NewPlugin(),
 			gwv1.HTTPRouteFilterRequestRedirect:        redirect.NewPlugin(),
+			gwv1.HTTPRouteFilterRequestMirror:          mirror.NewPlugin(),
 		},
 		extensionPlugins: map[schema.GroupKind]filterplugins.FilterPlugin{},
 	}

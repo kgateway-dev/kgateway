@@ -3,6 +3,7 @@ package testutils
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -128,6 +129,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 		}
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
 			contextutils.LoggerFrom(ctx).Warnw("failed to parse resource YAML",
+				zap.Error(err),
 				zap.String("filename", filename),
 				zap.String("resourceKind", gvk.String()),
 				zap.String("resourceId", sets.Key(obj.(client.Object))),
@@ -164,6 +166,13 @@ func ReadProxyFromFile(filename string) (*v1.Proxy, error) {
 
 func MarshalYaml(m proto.Message) ([]byte, error) {
 	jsn, err := protoutils.MarshalBytes(m)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.JSONToYAML(jsn)
+}
+func MarshalAnyYaml(m any) ([]byte, error) {
+	jsn, err := json.Marshal(m)
 	if err != nil {
 		return nil, err
 	}

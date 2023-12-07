@@ -7,7 +7,7 @@ package mock_consul
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	api "github.com/hashicorp/consul/api"
 )
 

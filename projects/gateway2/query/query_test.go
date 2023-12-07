@@ -42,13 +42,10 @@ var _ = Describe("Query", func() {
 			fakeClient := fake.NewFakeClient(svc("default"))
 
 			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.HTTPBackendRef{
-				BackendRef: apiv1.BackendRef{
-					BackendObjectReference: apiv1.BackendObjectReference{
-						Name: "foo",
-					},
-				},
+			ref := &apiv1.BackendObjectReference{
+				Name: "foo",
 			}
+
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(backend).NotTo(BeNil())
@@ -60,14 +57,11 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
 			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.HTTPBackendRef{
-				BackendRef: apiv1.BackendRef{
-					BackendObjectReference: apiv1.BackendObjectReference{
-						Name:      "foo",
-						Namespace: nsptr("default2"),
-					},
-				},
+			ref := &apiv1.BackendObjectReference{
+				Name:      "foo",
+				Namespace: nsptr("default2"),
 			}
+
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(backend).NotTo(BeNil())
@@ -79,13 +73,9 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(rg).Build()
 			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.HTTPBackendRef{
-				BackendRef: apiv1.BackendRef{
-					BackendObjectReference: apiv1.BackendObjectReference{
-						Name:      "foo",
-						Namespace: nsptr("default2"),
-					},
-				},
+			ref := &apiv1.BackendObjectReference{
+				Name:      "foo",
+				Namespace: nsptr("default2"),
 			}
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(apierrors.IsNotFound(err)).To(BeTrue())
@@ -93,13 +83,9 @@ var _ = Describe("Query", func() {
 		})
 
 		It("should fail getting a service with ref grant with wrong from", func() {
-			ref := &apiv1.HTTPBackendRef{
-				BackendRef: apiv1.BackendRef{
-					BackendObjectReference: apiv1.BackendObjectReference{
-						Name:      "foo",
-						Namespace: nsptr("default2"),
-					},
-				},
+			ref := &apiv1.BackendObjectReference{
+				Name:      "foo",
+				Namespace: nsptr("default2"),
 			}
 			rg := &apiv1beta1.ReferenceGrant{
 				ObjectMeta: metav1.ObjectMeta{
@@ -138,14 +124,11 @@ var _ = Describe("Query", func() {
 		It("should fail getting a service with no ref grant", func() {
 			fakeClient := builder.WithObjects(svc("default3")).Build()
 			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.HTTPBackendRef{
-				BackendRef: apiv1.BackendRef{
-					BackendObjectReference: apiv1.BackendObjectReference{
-						Name:      "foo",
-						Namespace: nsptr("default3"),
-					},
-				},
+			ref := &apiv1.BackendObjectReference{
+				Name:      "foo",
+				Namespace: nsptr("default3"),
 			}
+
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
 			Expect(backend).To(BeNil())
@@ -156,13 +139,9 @@ var _ = Describe("Query", func() {
 			fakeClient := builder.WithObjects(svc("default3"), rg).Build()
 
 			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.HTTPBackendRef{
-				BackendRef: apiv1.BackendRef{
-					BackendObjectReference: apiv1.BackendObjectReference{
-						Name:      "foo",
-						Namespace: nsptr("default3"),
-					},
-				},
+			ref := &apiv1.BackendObjectReference{
+				Name:      "foo",
+				Namespace: nsptr("default3"),
 			}
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))

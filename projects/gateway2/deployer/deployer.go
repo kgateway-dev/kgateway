@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -140,6 +141,8 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	if d.dev {
 		vals["develop"] = true
 	}
+	log := log.FromContext(ctx)
+	log.Info("rendering helm chart", "vals", vals)
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
