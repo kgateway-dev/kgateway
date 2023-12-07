@@ -5,6 +5,10 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/8515
   resolvesIssue: false
 - type: DEPENDENCY_BUMP
+  dependencyOwner: golang
+  dependencyRepo: go
+  dependencyTag: v1.21.5
+- type: DEPENDENCY_BUMP
   dependencyOwner: k8s.io
   dependencyRepo: api
   dependencyTag: v0.28.3
