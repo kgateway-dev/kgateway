@@ -1467,6 +1467,30 @@ var _ = Describe("Kube2e: gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			upstreamName = kubernetesplugin.UpstreamName(testHelper.InstallNamespace, service.Name, 5678)
+			// wait for upstream to get created by discovery
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{Ctx: ctx})
+			})
+			// add subset spec to upstream
+			err = helpers.PatchResource(
+				ctx,
+				&core.ResourceRef{
+					Namespace: testHelper.InstallNamespace,
+					Name:      upstreamName,
+				},
+				func(resource resources.Resource) resources.Resource {
+					us := resource.(*gloov1.Upstream)
+					us.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
+						Selectors: []*gloov1plugins.Selector{{
+							Keys: []string{"text"},
+						}},
+					}
+					return us
+				},
+				resourceClientset.UpstreamClient().BaseClient(),
+			)
+			Expect(err).NotTo(HaveOccurred())
+
 			upstreamRef := &core.ResourceRef{
 				Name:      upstreamName,
 				Namespace: testHelper.InstallNamespace,
@@ -1607,24 +1631,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		It("routes to subsets and upstream groups", func() {
-			err := helpers.PatchResource(
-				ctx,
-				&core.ResourceRef{
-					Namespace: testHelper.InstallNamespace,
-					Name:      upstreamName,
-				},
-				func(resource resources.Resource) resources.Resource {
-					us := resource.(*gloov1.Upstream)
-					us.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
-						Selectors: []*gloov1plugins.Selector{{
-							Keys: []string{"text"},
-						}},
-					}
-					return us
-				},
-				resourceClientset.UpstreamClient().BaseClient(),
-			)
-			Expect(err).NotTo(HaveOccurred())
 
 			// make sure we get all three upstreams:
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{

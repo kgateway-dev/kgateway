@@ -103,20 +103,20 @@ func (s *metadataCheckingRateLimitServer) getActionsForServer() []*rltypes.RateL
 			Actions: []*rltypes.Action{
 				{
 					ActionSpecifier: &rltypes.Action_Metadata{
-						Metadata: &rltypes.Action_MetaData{
+						Metadata: &rltypes.MetaData{
 							DescriptorKey: s.descriptorKey,
-							MetadataKey: &rltypes.Action_MetaData_MetadataKey{
+							MetadataKey: &rltypes.MetaData_MetadataKey{
 								Key: s.metadataKey,
-								Path: []*rltypes.Action_MetaData_MetadataKey_PathSegment{
+								Path: []*rltypes.MetaData_MetadataKey_PathSegment{
 									{
-										Segment: &rltypes.Action_MetaData_MetadataKey_PathSegment_Key{
+										Segment: &rltypes.MetaData_MetadataKey_PathSegment_Key{
 											Key: s.pathSegmentKey,
 										},
 									},
 								},
 							},
 							DefaultValue: s.defaultDescriptorValue,
-							Source:       rltypes.Action_MetaData_ROUTE_ENTRY,
+							Source:       rltypes.MetaData_ROUTE_ENTRY,
 						},
 					},
 				},

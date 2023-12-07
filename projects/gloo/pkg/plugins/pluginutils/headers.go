@@ -60,7 +60,7 @@ func configureHeadersMultiDest(
 	out := multiClusterSpecifier.WeightedClusters
 
 	if len(in) != len(out.GetClusters()) {
-		return errors.Errorf("number of input destinations did not match number of destination weighted clusters")
+		return errors.Errorf("number of input destinations (%d) did not match number of destination weighted clusters (%d)", len(in), len(out.GetClusters()))
 	}
 	for i := range in {
 		err := configureHeadersSingleDest(in[i].GetDestination(), &out.GetClusters()[i].RequestHeadersToAdd, headers)
