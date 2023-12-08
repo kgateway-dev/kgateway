@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink:  https://github.com/solo-io/gloo/issues/8946
+    description: >
+      Update bitnami/kubectl image to 1.27.8 to pick up fix for CVE-2023-39325
+    resolvesIssue: false
+
