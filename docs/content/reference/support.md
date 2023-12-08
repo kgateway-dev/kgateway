@@ -12,6 +12,7 @@ Gloo Edge Enterprise offers `n-3` patching support for bug and critical security
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio`†`    |
 |------|----------|---------|--------|-------------|
+| 1.16.x | 1.24 - 1.28 | v3 xDS API | >= 3.12 | 1.14 - 1.20 |
 | 1.15.x | 1.23 - 1.27 | v3 xDS API | >= 3.11 | 1.13 - 1.18 |
 | 1.14.x | 1.23 - 1.25 | v3 xDS API | >= 3.8 | 1.13 - 1.18 |
 | 1.13.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |

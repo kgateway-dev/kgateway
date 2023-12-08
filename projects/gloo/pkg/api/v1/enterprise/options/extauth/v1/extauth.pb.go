@@ -6016,6 +6016,9 @@ type UserSession_CipherConfig_KeyRef struct {
 func (*UserSession_CipherConfig_KeyRef) isUserSession_CipherConfig_Key() {}
 
 // Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+// Gloo Mesh products only: Note that if you want to clear the route cache to force the proxy to recalculate the
+// routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy,
+// and configure the `clearRouteCache` or `recalculateRoutingDestination` options.
 type OidcAuthorizationCode_AccessToken struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6240,24 +6243,27 @@ func (*OidcAuthorizationCode_Default) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth_v1_extauth_proto_rawDescGZIP(), []int{22, 6}
 }
 
-// Represents config specific to Azure Distributed Claims OIDC implementation
+// For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
 type OidcAuthorizationCode_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// client ID for the external auth service as registered with MS Entera. Note that this is
-	// NOT the same as the client ID for the service the AuthConfig will be applied to.
+	// The client ID for the ExtAuthService app that is registered in MS Entra,
+	// to access the Microsoft Graph API to retrieve distributed claims.
+	// This app is NOT the app that you want to configure external auth for.
 	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	// tenant ID where the ExtAuthService's client ID is registered with MS Entera.
-	// may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+	// The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
+	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// secret registered for the ExtAuthService to communciate with the Entera APIs
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
 	ClientSecret *core.ResourceRef `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	// Redis connection details for caching MS Entera groups resolved from distributed clains.
-	// Will not configure Redis session caching. If you would like to turn on Redis session
-	// caching, use the `userSessionConfig` field.
+	// Redis connection details to cache MS Entera claims.
+	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
+	// Note that this setting does NOT turn on Redis caching for the user session.
+	// To turn on Redis user session caching, use the `userSessionConfig` field.
 	ClaimsCachingOptions *RedisOptions `protobuf:"bytes,4,opt,name=claims_caching_options,json=claimsCachingOptions,proto3" json:"claims_caching_options,omitempty"`
 }
 
@@ -9848,24 +9854,27 @@ func (*ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Descriptor() ([]byte, 
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth_v1_extauth_proto_rawDescGZIP(), []int{42, 3, 6}
 }
 
-// Represents config specific to Azure Distributed Claims OIDC implementation
+// For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
 type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// client ID for the external auth service as registered with MS Entera. Note that this is
-	// NOT the same as the client ID for the service the AuthConfig will be applied to.
+	// The client ID for the ExtAuthService app that is registered in MS Entra,
+	// to access the Microsoft Graph API to retrieve distributed claims.
+	// This app is NOT the app that you want to configure external auth for.
 	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	// tenant ID where the ExtAuthService's client ID is registered with MS Entera.
-	// may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig,
+	// The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
+	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// secret registered for the ExtAuthService to communciate with the Entera APIs
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	// Redis connection details for caching MS Entera groups resolved from distributed clains.
-	// Will not configure Redis session caching. If you would like to turn on Redis session
-	// caching, use the `userSessionConfig` field.
+	// Redis connection details to cache MS Entera claims.
+	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
+	// Note that this setting does NOT turn on Redis caching for the user session.
+	// To turn on Redis user session caching, use the `userSessionConfig` field.
 	ClaimsCachingOptions *RedisOptions `protobuf:"bytes,4,opt,name=claims_caching_options,json=claimsCachingOptions,proto3" json:"claims_caching_options,omitempty"`
 }
 

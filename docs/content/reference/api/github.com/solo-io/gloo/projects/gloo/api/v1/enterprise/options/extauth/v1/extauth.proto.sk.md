@@ -1092,6 +1092,9 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 
  
 Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+Gloo Mesh products only: Note that if you want to clear the route cache to force the proxy to recalculate the
+routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy, 
+and configure the `clearRouteCache` or `recalculateRoutingDestination` options.
 
 ```yaml
 "claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
@@ -1203,7 +1206,8 @@ No-op, represents default OIDC behavior
 ### Azure
 
  
-Represents config specific to Azure Distributed Claims OIDC implementation
+For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -1215,10 +1219,10 @@ Represents config specific to Azure Distributed Claims OIDC implementation
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientId` | `string` | client ID for the external auth service as registered with MS Entera. Note that this is NOT the same as the client ID for the service the AuthConfig will be applied to. |
-| `tenantId` | `string` | tenant ID where the ExtAuthService's client ID is registered with MS Entera. may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig, depending on how your Azure account is provisioned. |
-| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | secret registered for the ExtAuthService to communciate with the Entera APIs. |
-| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details for caching MS Entera groups resolved from distributed clains. Will not configure Redis session caching. If you would like to turn on Redis session caching, use the `userSessionConfig` field. |
+| `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
+| `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
 
@@ -2357,7 +2361,8 @@ No-op, represents default OIDC behavior
 ### Azure
 
  
-Represents config specific to Azure Distributed Claims OIDC implementation
+For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -2369,10 +2374,10 @@ Represents config specific to Azure Distributed Claims OIDC implementation
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientId` | `string` | client ID for the external auth service as registered with MS Entera. Note that this is NOT the same as the client ID for the service the AuthConfig will be applied to. |
-| `tenantId` | `string` | tenant ID where the ExtAuthService's client ID is registered with MS Entera. may or may not be the same as the tenant ID in the parent OidcAuthorizationCodeConfig, depending on how your Azure account is provisioned. |
-| `clientSecret` | `string` | secret registered for the ExtAuthService to communciate with the Entera APIs. |
-| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details for caching MS Entera groups resolved from distributed clains. Will not configure Redis session caching. If you would like to turn on Redis session caching, use the `userSessionConfig` field. |
+| `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
+| `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
+| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
 

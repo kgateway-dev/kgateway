@@ -137,28 +137,28 @@ var _ = Describe("RawUtil", func() {
 			[]*gloorl.Action{
 				{
 					ActionSpecifier: &gloorl.Action_Metadata{
-						Metadata: &gloorl.Action_MetaData{
+						Metadata: &gloorl.MetaData{
 							DescriptorKey: "some-key",
-							MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+							MetadataKey: &gloorl.MetaData_MetadataKey{
 								Key: "io.solo.some.filter",
-								Path: []*gloorl.Action_MetaData_MetadataKey_PathSegment{
+								Path: []*gloorl.MetaData_MetadataKey_PathSegment{
 									{
-										Segment: &gloorl.Action_MetaData_MetadataKey_PathSegment_Key{
+										Segment: &gloorl.MetaData_MetadataKey_PathSegment_Key{
 											Key: "foo",
 										},
 									},
 								},
 							},
 							DefaultValue: "nothing",
-							Source:       gloorl.Action_MetaData_ROUTE_ENTRY,
+							Source:       gloorl.MetaData_ROUTE_ENTRY,
 						},
 					},
 				},
 				{
 					ActionSpecifier: &gloorl.Action_Metadata{
-						Metadata: &gloorl.Action_MetaData{
+						Metadata: &gloorl.MetaData{
 							DescriptorKey: "some-other-key",
-							MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+							MetadataKey: &gloorl.MetaData_MetadataKey{
 								Key: "io.solo.some.other.filter",
 								// no path here
 							},
@@ -212,19 +212,19 @@ var _ = Describe("RawUtil", func() {
 		Entry("Missing DescriptorKey in ActionMetadata",
 			[]*gloorl.Action{{
 				ActionSpecifier: &gloorl.Action_Metadata{
-					Metadata: &gloorl.Action_MetaData{
-						MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+					Metadata: &gloorl.MetaData{
+						MetadataKey: &gloorl.MetaData_MetadataKey{
 							Key: "io.solo.some.filter",
-							Path: []*gloorl.Action_MetaData_MetadataKey_PathSegment{
+							Path: []*gloorl.MetaData_MetadataKey_PathSegment{
 								{
-									Segment: &gloorl.Action_MetaData_MetadataKey_PathSegment_Key{
+									Segment: &gloorl.MetaData_MetadataKey_PathSegment_Key{
 										Key: "foo",
 									},
 								},
 							},
 						},
 						DefaultValue: "nothing",
-						Source:       gloorl.Action_MetaData_ROUTE_ENTRY,
+						Source:       gloorl.MetaData_ROUTE_ENTRY,
 					},
 				},
 			}},
@@ -232,19 +232,19 @@ var _ = Describe("RawUtil", func() {
 		Entry("Missing metadataKey_key in ActionMetadata",
 			[]*gloorl.Action{{
 				ActionSpecifier: &gloorl.Action_Metadata{
-					Metadata: &gloorl.Action_MetaData{
+					Metadata: &gloorl.MetaData{
 						DescriptorKey: "some-key",
-						MetadataKey: &gloorl.Action_MetaData_MetadataKey{
-							Path: []*gloorl.Action_MetaData_MetadataKey_PathSegment{
+						MetadataKey: &gloorl.MetaData_MetadataKey{
+							Path: []*gloorl.MetaData_MetadataKey_PathSegment{
 								{
-									Segment: &gloorl.Action_MetaData_MetadataKey_PathSegment_Key{
+									Segment: &gloorl.MetaData_MetadataKey_PathSegment_Key{
 										Key: "foo",
 									},
 								},
 							},
 						},
 						DefaultValue: "nothing",
-						Source:       gloorl.Action_MetaData_ROUTE_ENTRY,
+						Source:       gloorl.MetaData_ROUTE_ENTRY,
 					},
 				},
 			}}),

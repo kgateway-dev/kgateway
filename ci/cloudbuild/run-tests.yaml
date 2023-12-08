@@ -1,6 +1,6 @@
 steps:
 
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.7.0'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.8.1'
   id: 'prepare-workspace'
   args:
   - '--repo-name'
@@ -23,7 +23,7 @@ steps:
     cd /go/pkg
     gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.7.0'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.8.1'
   id: 'prepare-envoy'
   dir: *dir
   entrypoint: 'bash'
@@ -74,7 +74,7 @@ steps:
   waitFor:
   - 'prepare-gcr-zone'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.7.0'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.8.1'
   id: 'prepare-test-tools'
   dir: *dir
   args:
@@ -85,7 +85,7 @@ steps:
   - 'prepare-gcr-zone'
   - 'prepare-test-credentials'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.7.0'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.8.1'
   id: 'run-tests'
   dir: *dir
   entrypoint: 'make'
@@ -96,7 +96,7 @@ steps:
   secretEnv:
   - 'JWT_PRIVATE_KEY'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.7.0'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.8.1'
   id: 'run-e2e-tests'
   dir: *dir
   entrypoint: 'make'
@@ -107,7 +107,7 @@ steps:
   secretEnv:
   - 'JWT_PRIVATE_KEY'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.7.0'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.8.1'
   id: 'run-hashicorp-e2e-tests'
   dir: *dir
   entrypoint: 'make'
