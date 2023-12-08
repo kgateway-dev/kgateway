@@ -6016,6 +6016,9 @@ type UserSession_CipherConfig_KeyRef struct {
 func (*UserSession_CipherConfig_KeyRef) isUserSession_CipherConfig_Key() {}
 
 // Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+// Gloo Mesh products only: Note that if you want to clear the route cache to force the proxy to recalculate the
+// routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy,
+// and configure the `clearRouteCache` or `recalculateRoutingDestination` options.
 type OidcAuthorizationCode_AccessToken struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
