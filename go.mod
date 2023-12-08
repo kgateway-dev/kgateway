@@ -50,7 +50,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.24.6
-	github.com/solo-io/k8s-utils v0.5.1
+	github.com/solo-io/k8s-utils v0.5.2-0.20231207214450-1b75d2eb31ce
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.32.0
@@ -68,16 +68,16 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.15.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/tools v0.10.0
+	golang.org/x/tools v0.12.0
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.12.2
-	k8s.io/api v0.27.3
+	k8s.io/api v0.27.8
 	k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery v0.27.3
-	k8s.io/client-go v0.27.3
+	k8s.io/apimachinery v0.27.8
+	k8s.io/client-go v0.27.8
 	k8s.io/code-generator v0.27.3
 	k8s.io/component-base v0.27.3
 	k8s.io/kubectl v0.27.3
@@ -279,7 +279,7 @@ require (
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/mod v0.11.0 // indirect
+	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
@@ -299,7 +299,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.0 // indirect
 	k8s.io/apiserver v0.27.3 // indirect
-	k8s.io/cli-runtime v0.27.3 // indirect
+	k8s.io/cli-runtime v0.27.8 // indirect
 	k8s.io/component-helpers v0.27.3 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect

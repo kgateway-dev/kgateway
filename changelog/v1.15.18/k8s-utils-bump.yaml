@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: cloud-builders
+  dependencyTag: v0.5.1-patch0
+  description: >-
+    Use the latest cloud builders to match go version of builder to that of enterprise
+    This pulls in a go patch bump
+  issueLink: https://github.com/solo-io/gloo/issues/8946

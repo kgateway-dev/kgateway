@@ -49,7 +49,7 @@ Name|Version|License
 [x/crypto](https://golang.org/x/crypto)|v0.15.0|BSD 3-clause "New" or "Revised" License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20220921164117-439092de6870|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.3.0|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.10.0|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.12.0|BSD 3-clause "New" or "Revised" License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.59.0|Apache License 2.0
