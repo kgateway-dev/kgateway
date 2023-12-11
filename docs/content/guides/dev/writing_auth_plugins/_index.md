@@ -387,7 +387,7 @@ RUN chmod +x $VERIFY_SCRIPT
 RUN $VERIFY_SCRIPT -pluginDir plugins -manifest plugins/plugin_manifest.yaml
 
 # This stage builds the final image containing just the plugin .so files. It can really be any linux/amd64 image.
-FROM alpine:3.17.3
+FROM alpine:3.17.6
 
 # Copy compiled plugin file from previous stage
 RUN mkdir /compiled-auth-plugins

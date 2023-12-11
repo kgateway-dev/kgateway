@@ -1,6 +1,6 @@
-FROM bitnami/kubectl:1.24.7 as kubectl
+FROM bitnami/kubectl:1.24.16 as kubectl
 
-FROM alpine:3.17.3
+FROM alpine:3.17.6
 
 RUN apk upgrade --update-cache
 

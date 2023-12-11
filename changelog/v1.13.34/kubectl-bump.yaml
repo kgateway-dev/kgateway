@@ -1,0 +1,18 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink:  https://github.com/solo-io/gloo/issues/8946
+    description: >
+      Update bitnami/kubectl image to 1.24.16 to pick up fix for CVE-2023-39325
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: alpine
+    dependencyRepo: alpine
+    dependencyTag: 3.17.2
+    description: Update Alpine images to latest 3.17.6
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: cloud-builders
+    issueLink: https://github.com/solo-io/solo-projects/issues/5550
+    dependencyTag: 0.7.1
+    resolvesIssue: false
+    description: Update Go build version for https://nvd.nist.gov/vuln/detail/CVE-2023-39326 same as enterprise
