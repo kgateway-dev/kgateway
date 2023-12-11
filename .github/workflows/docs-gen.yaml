@@ -2,7 +2,7 @@ name: Docs
 
 env:
     SLACK_DEBUG_TESTING: false      # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
-    MIN_SCANNED_VERSION: 'v1.11.0'  # ⚠️ you should also change trivy-analysis-scheduled.yaml ⚠️
+    MIN_SCANNED_VERSION: 'v1.12.0'  # ⚠️ you should also change trivy-analysis-scheduled.yaml ⚠️
 on:
   push:
     branches:
