@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update the MIN_SCANNED_VERSION to v1.12 in docs-gen.yaml so v1.11 does not get scanned for vulnerabilities.
