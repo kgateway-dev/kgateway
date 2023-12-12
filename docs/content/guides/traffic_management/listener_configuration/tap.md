@@ -113,7 +113,7 @@ Traffic tapping is an Enterprise-only feature.
    EOF
    ```
 
-2. In a terminal window, tail the log of the TAP server. 
+2. In a terminal window, tail the logs of the TAP server. 
    ```sh
    kubectl -n gloo-system logs deployments/sample-tap-server-http -f
    ```
