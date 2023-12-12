@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Update golang/alpine docker images to pin alpine to 3.18 

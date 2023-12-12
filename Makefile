@@ -72,7 +72,7 @@ endif
 GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
-GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine
+GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine3.18
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
