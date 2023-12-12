@@ -834,6 +834,7 @@ var _ = Describe("Plugin", func() {
 					StagedTransformations: inputTransform,
 				},
 			}, out)
+			Expect(err).NotTo(HaveOccurred())
 			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{Ctx: ctx}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(filters)).To(Equal(2))
