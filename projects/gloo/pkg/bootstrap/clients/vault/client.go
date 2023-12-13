@@ -11,13 +11,8 @@ import (
 
 // NewAuthorizedClient returns a vault client that has been authenticated with the provided settings,
 // or an error if construction or authentication fails.
-func NewAuthorizedClient(ctx context.Context, vaultSettings *v1.Settings_VaultSecrets) (*vault.Client, error) {
+func NewAuthorizedClient(ctx context.Context, vaultSettings *v1.Settings_VaultSecrets, clientAuth ClientAuth) (*vault.Client, error) {
 	client, err := NewUnauthorizedClient(vaultSettings)
-	if err != nil {
-		return nil, err
-	}
-
-	clientAuth, err := NewClientAuth(vaultSettings)
 	if err != nil {
 		return nil, err
 	}

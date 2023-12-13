@@ -56,8 +56,8 @@ var _ = Describe("ClientAuth", func() {
 				Expect(err).To(MatchError(ErrEmptyToken))
 				Expect(secret).To(BeNil())
 
-				assertions.ExpectStatLastValueMatches(mLastLoginFailure, Not(BeZero()))
-				assertions.ExpectStatSumMatches(mLoginFailures, Equal(1))
+				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
+				assertions.ExpectStatSumMatches(MLoginFailures, Equal(1))
 			})
 
 			It("startRenewal should return nil", func() {
@@ -81,8 +81,8 @@ var _ = Describe("ClientAuth", func() {
 						ClientToken: "placeholder",
 					},
 				}))
-				assertions.ExpectStatLastValueMatches(mLastLoginSuccess, Not(BeZero()))
-				assertions.ExpectStatSumMatches(mLoginSuccesses, Equal(1))
+				assertions.ExpectStatLastValueMatches(MLastLoginSuccess, Not(BeZero()))
+				assertions.ExpectStatSumMatches(MLoginSuccesses, Equal(1))
 			})
 
 			It("startRenewal should return nil", func() {
@@ -112,8 +112,8 @@ var _ = Describe("ClientAuth", func() {
 				Expect(err).To(MatchError("unable to authenticate to vault: mocked error message"))
 				Expect(secret).To(BeNil())
 
-				assertions.ExpectStatLastValueMatches(mLastLoginFailure, Not(BeZero()))
-				assertions.ExpectStatSumMatches(mLoginFailures, Equal(3))
+				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
+				assertions.ExpectStatSumMatches(MLoginFailures, Equal(3))
 			})
 
 		})
@@ -138,10 +138,10 @@ var _ = Describe("ClientAuth", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(secret.Auth.ClientToken).To(Equal("a-client-token"))
 
-				assertions.ExpectStatLastValueMatches(mLastLoginFailure, Not(BeZero()))
-				assertions.ExpectStatLastValueMatches(mLastLoginSuccess, Not(BeZero()))
-				assertions.ExpectStatSumMatches(mLoginFailures, Equal(1))
-				assertions.ExpectStatSumMatches(mLoginSuccesses, Equal(1))
+				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
+				assertions.ExpectStatLastValueMatches(MLastLoginSuccess, Not(BeZero()))
+				assertions.ExpectStatSumMatches(MLoginFailures, Equal(1))
+				assertions.ExpectStatSumMatches(MLoginSuccesses, Equal(1))
 			})
 
 		})
@@ -171,9 +171,9 @@ var _ = Describe("ClientAuth", func() {
 				Expect(err).To(MatchError("Login canceled: context canceled"))
 				Expect(secret).To(BeNil())
 
-				assertions.ExpectStatLastValueMatches(mLastLoginFailure, Not(BeZero()))
-				assertions.ExpectStatLastValueMatches(mLastLoginSuccess, BeZero())
-				assertions.ExpectStatSumMatches(mLoginFailures, Equal(2))
+				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
+				assertions.ExpectStatLastValueMatches(MLastLoginSuccess, BeZero())
+				assertions.ExpectStatSumMatches(MLoginFailures, Equal(2))
 
 			})
 
@@ -187,7 +187,7 @@ var _ = Describe("ClientAuth", func() {
 
 		DescribeTable("should error on invalid inputs",
 			func(vaultSettings *v1.Settings_VaultSecrets, expectedError types.GomegaMatcher) {
-				clientAuth, err := NewClientAuth(vaultSettings)
+				clientAuth, err := ClientAuthFactory(vaultSettings)
 				Expect(err).To(expectedError)
 				Expect(clientAuth).To(BeNil())
 			},
@@ -203,7 +203,7 @@ var _ = Describe("ClientAuth", func() {
 
 		DescribeTable("should return the correct client auth",
 			func(vaultSettings *v1.Settings_VaultSecrets, expectedClientAuth ClientAuth) {
-				clientAuth, err := NewClientAuth(vaultSettings)
+				clientAuth, err := ClientAuthFactory(vaultSettings)
 				Expect(err).NotTo(HaveOccurred())
 
 				actualClientAuthType := reflect.ValueOf(clientAuth).Type()

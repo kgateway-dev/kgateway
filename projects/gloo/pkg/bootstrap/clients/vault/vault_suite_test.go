@@ -28,15 +28,15 @@ var _ = AfterSuite(func() {
 // or between this package and other packages
 func resetViews() {
 	views := []*view.View{
-		mLastLoginSuccessView,
-		mLoginFailuresView,
-		mLoginSuccessesView,
-		mLastLoginFailureView,
+		MLastLoginSuccessView,
+		MLoginFailuresView,
+		MLoginSuccessesView,
+		MLastLoginFailureView,
 	}
 	view.Unregister(views...)
 	_ = view.Register(views...)
-	assertions.ExpectStatLastValueMatches(mLastLoginSuccess, BeZero())
-	assertions.ExpectStatLastValueMatches(mLastLoginFailure, BeZero())
-	assertions.ExpectStatSumMatches(mLoginSuccesses, BeZero())
-	assertions.ExpectStatSumMatches(mLoginFailures, BeZero())
+	assertions.ExpectStatLastValueMatches(MLastLoginSuccess, BeZero())
+	assertions.ExpectStatLastValueMatches(MLastLoginFailure, BeZero())
+	assertions.ExpectStatSumMatches(MLoginSuccesses, BeZero())
+	assertions.ExpectStatSumMatches(MLoginFailures, BeZero())
 }
