@@ -17,7 +17,7 @@ Traffic tapping is an Enterprise-only feature.
 ## About traffic tapping in Gloo Edge
 
 * Traffic tapping can be applied to a listener in a `Gateway` resource. As such, traffic tapping is applied to all routes that the gateway serves. Tapping traffic for a specific route is not currently supported.
-* Users are responsible for writing their own tap servers. The tap server definitions can be found in the [`tap-extension-examples` repository](https://github.com/solo-io/tap-extension-examples). To receive tap traces, the tap server service must implement the [tap service protobuf definitions](https://github.com/solo-io/tap-extension-examples/tree/main/pkg/tap_service) and be configured to receive data over the gRPC or HTTP protocol.
+* Users are responsible for writing their own tap servers. The tap server definitions can be found in the [`tap-extension-examples` repository](https://github.com/solo-io/tap-extension-examples). To receive tap traces, the tap server must implement the [tap service protobuf definitions](https://github.com/solo-io/tap-extension-examples/tree/main/pkg/tap_service) and be configured to receive data over the gRPC or HTTP protocol.
   {{% notice note %}}
   The `tap-extension-examples` repository is provided as an implementation reference. The repository is **not intended to be used in production**.
   {{% /notice %}}
