@@ -29,8 +29,8 @@ type ClientAuth interface {
 	// StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret)
 }
 
-var _ ClientAuth = &staticTokenAuth{}
-var _ ClientAuth = &remoteTokenAuth{}
+var _ ClientAuth = &StaticTokenAuth{}
+var _ ClientAuth = &RemoteTokenAuth{}
 
 var (
 	ErrEmptyToken = errors.New("unable to authenticate to vault with empty token. check Settings configuration")
@@ -41,7 +41,7 @@ var (
 func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, error) {
 	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
 	case *v1.Settings_VaultSecrets_AccessToken:
-		return newStaticTokenAuth(tlsCfg.AccessToken), nil
+		return NewStaticTokenAuth(tlsCfg.AccessToken), nil
 
 	case *v1.Settings_VaultSecrets_Aws:
 		awsAuth, err := newAwsAuthMethod(tlsCfg.Aws)
@@ -54,26 +54,30 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 	default:
 		// AuthMethod is the preferred API to define the policy for authenticating to vault
 		// If one is not defined, we fall back to the deprecated API
-		return newStaticTokenAuth(vaultSettings.GetToken()), nil
+		return NewStaticTokenAuth(vaultSettings.GetToken()), nil
 	}
 }
 
-func newStaticTokenAuth(token string) ClientAuth {
-	return &staticTokenAuth{
+func NewStaticTokenAuth(token string) ClientAuth {
+	return &StaticTokenAuth{
 		token: token,
 	}
 }
 
-type staticTokenAuth struct {
+type StaticTokenAuth struct {
 	token string
 }
 
-// func (s *staticTokenAuth) StartRenewal(_ context.Context, client *vault.Client, _ *vault.Secret) {
+func (s *StaticTokenAuth) GetToken() string {
+	return s.token
+}
+
+// func (s *StaticTokenAuth) StartRenewal(_ context.Context, client *vault.Client, _ *vault.Secret) {
 // 	// static tokens do not support renewal
 // }
 
-func (s *staticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
-	if s.token == "" {
+func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
+	if s.GetToken() == "" {
 		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
 		utils.MeasureOne(ctx, MLoginFailures)
 		return nil, ErrEmptyToken
@@ -99,18 +103,18 @@ func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Optio
 	}
 	loginRetryOptions := append(defaultRetryOptions, retryOptions...)
 
-	return &remoteTokenAuth{
+	return &RemoteTokenAuth{
 		authMethod:        authMethod,
 		loginRetryOptions: loginRetryOptions,
 	}
 }
 
-type remoteTokenAuth struct {
+type RemoteTokenAuth struct {
 	authMethod        vault.AuthMethod
 	loginRetryOptions []retry.Option
 }
 
-func (r *remoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
+func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
 	var (
 		loginResponse *vault.Secret
 		loginErr      error
@@ -134,7 +138,7 @@ func (r *remoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vau
 	return loginResponse, loginErr
 }
 
-func (r *remoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
+func (r *RemoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
 	loginResponse, loginErr := r.authMethod.Login(ctx, client)
 	if loginErr != nil {
 		contextutils.LoggerFrom(ctx).Errorf("unable to authenticate to vault: %v", loginErr)
@@ -156,7 +160,7 @@ func (r *remoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (
 	return loginResponse, nil
 }
 
-// func (r *remoteTokenAuth) StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) {
+// func (r *RemoteTokenAuth) StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) {
 // 	// todo - implement renewal
 // }
 

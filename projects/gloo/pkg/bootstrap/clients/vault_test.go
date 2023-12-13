@@ -45,7 +45,7 @@ var _ = Describe("ClientAuth", func() {
 	})
 
 	Context("Access Token Auth", func() {
-		// These tests validate the behavior of the staticTokenAuth implementation of the ClientAuth interface
+		// These tests validate the behavior of the StaticTokenAuth implementation of the ClientAuth interface
 
 		When("token is empty", func() {
 
@@ -108,7 +108,7 @@ var _ = Describe("ClientAuth", func() {
 	})
 
 	Context("NewRemoteTokenAuth", func() {
-		// These tests validate the behavior of the remoteTokenAuth implementation of the ClientAuth interface
+		// These tests validate the behavior of the RemoteTokenAuth implementation of the ClientAuth interface
 
 		When("internal auth method always returns an error", func() {
 

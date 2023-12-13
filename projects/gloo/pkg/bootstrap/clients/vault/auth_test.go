@@ -1,4 +1,4 @@
-package vault
+package vault_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault/mocks"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 )
@@ -42,13 +43,13 @@ var _ = Describe("ClientAuth", func() {
 		cancel()
 	})
 
-	Context("newStaticTokenAuth", func() {
-		// These tests validate the behavior of the staticTokenAuth implementation of the ClientAuth interface
+	Context("NewStaticTokenAuth", func() {
+		// These tests validate the behavior of the StaticTokenAuth implementation of the ClientAuth interface
 
 		When("token is empty", func() {
 
 			BeforeEach(func() {
-				clientAuth = newStaticTokenAuth("")
+				clientAuth = NewStaticTokenAuth("")
 			})
 
 			It("login should return an error", func() {
@@ -65,7 +66,7 @@ var _ = Describe("ClientAuth", func() {
 		When("token is not empty", func() {
 
 			BeforeEach(func() {
-				clientAuth = newStaticTokenAuth("placeholder")
+				clientAuth = NewStaticTokenAuth("placeholder")
 			})
 
 			It("should return a vault.Secret", func() {
@@ -85,7 +86,7 @@ var _ = Describe("ClientAuth", func() {
 	})
 
 	Context("NewRemoteTokenAuth", func() {
-		// These tests validate the behavior of the remoteTokenAuth implementation of the ClientAuth interface
+		// These tests validate the behavior of the RemoteTokenAuth implementation of the ClientAuth interface
 
 		When("internal auth method always returns an error", func() {
 
@@ -200,22 +201,20 @@ var _ = Describe("ClientAuth", func() {
 				expectedClientAuthType := reflect.ValueOf(expectedClientAuth).Type()
 				Expect(expectedClientAuthType).To(Equal(actualClientAuthType))
 			},
-			Entry("nil", nil, &staticTokenAuth{}),
+			Entry("nil", nil, &StaticTokenAuth{}),
 			Entry("nil auth method", &v1.Settings_VaultSecrets{
 				AuthMethod: nil,
-			}, &staticTokenAuth{}),
+			}, &StaticTokenAuth{}),
 			Entry("access token auth method", &v1.Settings_VaultSecrets{
 				AuthMethod: &v1.Settings_VaultSecrets_AccessToken{
 					AccessToken: "access-token",
 				},
-			}, &staticTokenAuth{
-				token: "access-token",
-			}),
+			}, NewStaticTokenAuth("access-token")),
 			Entry("aws auth method", &v1.Settings_VaultSecrets{
 				AuthMethod: &v1.Settings_VaultSecrets_Aws{
 					Aws: &v1.Settings_VaultAwsAuth{},
 				},
-			}, &remoteTokenAuth{}),
+			}, &RemoteTokenAuth{}),
 		)
 
 	})
