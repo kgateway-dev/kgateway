@@ -94,7 +94,7 @@ func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Optio
 	defaultRetryOptions := []retry.Option{
 		retry.Delay(1 * time.Second),
 		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(10),
+		retry.Attempts(1),
 		retry.LastErrorOnly(true),
 	}
 	loginRetryOptions := append(defaultRetryOptions, retryOptions...)
