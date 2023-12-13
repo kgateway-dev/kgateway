@@ -94,7 +94,7 @@ var _ = Describe("ClientAuth", func() {
 
 	})
 
-	Context("newRemoteTokenAuth", func() {
+	Context("NewRemoteTokenAuth", func() {
 		// These tests validate the behavior of the remoteTokenAuth implementation of the ClientAuth interface
 
 		When("internal auth method always returns an error", func() {
@@ -104,7 +104,7 @@ var _ = Describe("ClientAuth", func() {
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("mocked error message")).AnyTimes()
 
-				clientAuth = newRemoteTokenAuth(internalAuthMethod, retry.Attempts(3))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(3))
 			})
 
 			It("should return the error", func() {
@@ -130,7 +130,7 @@ var _ = Describe("ClientAuth", func() {
 					},
 				}, nil).Times(1)
 
-				clientAuth = newRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
 			})
 
 			It("should return a secret", func() {
@@ -158,7 +158,7 @@ var _ = Describe("ClientAuth", func() {
 						ClientToken: "a-client-token",
 					},
 				}, nil).AnyTimes()
-				clientAuth = newRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
 			})
 
 			It("should return a context error", func() {

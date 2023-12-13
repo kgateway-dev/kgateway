@@ -46,7 +46,7 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 			return nil, err
 		}
 
-		return newRemoteTokenAuth(awsAuth), nil
+		return NewRemoteTokenAuth(awsAuth), nil
 
 	default:
 		// AuthMethod is the preferred API to define the policy for authenticating to vault
@@ -87,7 +87,7 @@ func (s *staticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Se
 	}, nil
 }
 
-func newRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Option) ClientAuth {
+func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Option) ClientAuth {
 	// Standard retry options, which can be overridden by the loginRetryOptions parameter
 	defaultRetryOptions := []retry.Option{
 		retry.Delay(1 * time.Second),
