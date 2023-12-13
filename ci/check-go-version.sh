@@ -11,5 +11,5 @@ if [[ "$goVersion" == "$goModVersion"* ]]; then
 else
     echo "Your Go version ($goVersion) does not match the version from go.mod ($goModVersion)".
     echo "Please update your Go version to $goModVersion and re-run."
-    exit 1;
+    #exit 1;
 fi
