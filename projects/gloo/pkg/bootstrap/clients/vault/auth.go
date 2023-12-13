@@ -41,7 +41,7 @@ var (
 func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, error) {
 	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
 	case *v1.Settings_VaultSecrets_AccessToken:
-		return NewStaticTokenAuth(tlsCfg.AccessToken), nil
+		return newStaticTokenAuth(tlsCfg.AccessToken), nil
 
 	case *v1.Settings_VaultSecrets_Aws:
 		awsAuth, err := newAwsAuthMethod(tlsCfg.Aws)
@@ -54,11 +54,11 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 	default:
 		// AuthMethod is the preferred API to define the policy for authenticating to vault
 		// If one is not defined, we fall back to the deprecated API
-		return NewStaticTokenAuth(vaultSettings.GetToken()), nil
+		return newStaticTokenAuth(vaultSettings.GetToken()), nil
 	}
 }
 
-func NewStaticTokenAuth(token string) ClientAuth {
+func newStaticTokenAuth(token string) ClientAuth {
 	return &staticTokenAuth{
 		token: token,
 	}

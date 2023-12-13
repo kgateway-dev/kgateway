@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault/mocks"
 	"github.com/solo-io/gloo/test/gomega/assertions"
@@ -43,13 +44,18 @@ var _ = Describe("ClientAuth", func() {
 		cancel()
 	})
 
-	Context("NewStaticTokenAuth", func() {
+	Context("Access Token Auth", func() {
 		// These tests validate the behavior of the staticTokenAuth implementation of the ClientAuth interface
 
 		When("token is empty", func() {
 
 			BeforeEach(func() {
-				clientAuth = vault.NewStaticTokenAuth("")
+				vaultSettings := &v1.Settings_VaultSecrets{
+					AuthMethod: &v1.Settings_VaultSecrets_AccessToken{
+						AccessToken: "",
+					},
+				}
+				clientAuth, _ = vault.ClientAuthFactory(vaultSettings)
 			})
 
 			It("login should return an error", func() {
@@ -71,7 +77,13 @@ var _ = Describe("ClientAuth", func() {
 		When("token is not empty", func() {
 
 			BeforeEach(func() {
-				clientAuth = vault.NewStaticTokenAuth("placeholder")
+				vaultSettings := &v1.Settings_VaultSecrets{
+					AuthMethod: &v1.Settings_VaultSecrets_AccessToken{
+						AccessToken: "placeholder",
+					},
+				}
+
+				clientAuth, _ = vault.ClientAuthFactory(vaultSettings)
 			})
 
 			It("should return a vault.Secret", func() {

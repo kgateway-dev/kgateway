@@ -42,13 +42,13 @@ var _ = Describe("ClientAuth", func() {
 		cancel()
 	})
 
-	Context("NewStaticTokenAuth", func() {
+	Context("newStaticTokenAuth", func() {
 		// These tests validate the behavior of the staticTokenAuth implementation of the ClientAuth interface
 
 		When("token is empty", func() {
 
 			BeforeEach(func() {
-				clientAuth = NewStaticTokenAuth("")
+				clientAuth = newStaticTokenAuth("")
 			})
 
 			It("login should return an error", func() {
@@ -65,7 +65,7 @@ var _ = Describe("ClientAuth", func() {
 		When("token is not empty", func() {
 
 			BeforeEach(func() {
-				clientAuth = NewStaticTokenAuth("placeholder")
+				clientAuth = newStaticTokenAuth("placeholder")
 			})
 
 			It("should return a vault.Secret", func() {
