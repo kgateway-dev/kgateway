@@ -1,0 +1,9 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: linux
+    dependencyRepo: alpine
+    dependencyTag: 3.17.6
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: cloud-builders
+    dependencyTag: 0.7.1
