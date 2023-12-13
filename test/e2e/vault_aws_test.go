@@ -19,8 +19,7 @@ const (
 	// If you want to run these tests locally, ensure that your local AWS credentials match,
 	// or use another role
 	// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
-	vaultAwsRole = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
-	// vaultAwsRole   = "arn:aws:iam::802411188784:user/sheidkamp"
+	vaultAwsRole   = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
 	vaultAwsRegion = "us-east-1"
 
 	vaultRole = "vault-role"

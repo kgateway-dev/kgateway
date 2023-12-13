@@ -43,57 +43,57 @@ var _ = Describe("ClientAuth", func() {
 		cancel()
 	})
 
-	// Context("newStaticTokenAuth", func() {
-	// 	// These tests validate the behavior of the staticTokenAuth implementation of the ClientAuth interface
+	Context("NewStaticTokenAuth", func() {
+		// These tests validate the behavior of the staticTokenAuth implementation of the ClientAuth interface
 
-	// 	When("token is empty", func() {
+		When("token is empty", func() {
 
-	// 		BeforeEach(func() {
-	// 			clientAuth = newStaticTokenAuth("")
-	// 		})
+			BeforeEach(func() {
+				clientAuth = vault.NewStaticTokenAuth("")
+			})
 
-	// 		It("login should return an error", func() {
-	// 			secret, err := clientAuth.Login(ctx, nil)
-	// 			Expect(err).To(MatchError(ErrEmptyToken))
-	// 			Expect(secret).To(BeNil())
+			It("login should return an error", func() {
+				secret, err := clientAuth.Login(ctx, nil)
+				Expect(err).To(MatchError(vault.ErrEmptyToken))
+				Expect(secret).To(BeNil())
 
-	// 			assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
-	// 			assertions.ExpectStatSumMatches(MLoginFailures, Equal(1))
-	// 		})
+				assertions.ExpectStatLastValueMatches(vault.MLastLoginFailure, Not(BeZero()))
+				assertions.ExpectStatSumMatches(vault.MLoginFailures, Equal(1))
+			})
 
-	// 		It("startRenewal should return nil", func() {
-	// 			err := clientAuth.StartRenewal(ctx, nil)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 		})
+			// It("startRenewal should return nil", func() {
+			// 	err := clientAuth.StartRenewal(ctx, nil)
+			// 	Expect(err).NotTo(HaveOccurred())
+			// })
 
-	// 	})
+		})
 
-	// 	When("token is not empty", func() {
+		When("token is not empty", func() {
 
-	// 		BeforeEach(func() {
-	// 			clientAuth = newStaticTokenAuth("placeholder")
-	// 		})
+			BeforeEach(func() {
+				clientAuth = vault.NewStaticTokenAuth("placeholder")
+			})
 
-	// 		It("should return a vault.Secret", func() {
-	// 			secret, err := clientAuth.Login(ctx, nil)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 			Expect(secret).To(Equal(&api.Secret{
-	// 				Auth: &api.SecretAuth{
-	// 					ClientToken: "placeholder",
-	// 				},
-	// 			}))
-	// 			assertions.ExpectStatLastValueMatches(MLastLoginSuccess, Not(BeZero()))
-	// 			assertions.ExpectStatSumMatches(MLoginSuccesses, Equal(1))
-	// 		})
+			It("should return a vault.Secret", func() {
+				secret, err := clientAuth.Login(ctx, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(secret).To(Equal(&api.Secret{
+					Auth: &api.SecretAuth{
+						ClientToken: "placeholder",
+					},
+				}))
+				assertions.ExpectStatLastValueMatches(vault.MLastLoginSuccess, Not(BeZero()))
+				assertions.ExpectStatSumMatches(vault.MLoginSuccesses, Equal(1))
+			})
 
-	// 		It("startRenewal should return nil", func() {
-	// 			err := clientAuth.StartRenewal(ctx, nil)
-	// 			Expect(err).NotTo(HaveOccurred())
-	// 		})
+			// It("startRenewal should return nil", func() {
+			// 	err := clientAuth.StartRenewal(ctx, nil)
+			// 	Expect(err).NotTo(HaveOccurred())
+			// })
 
-	// 	})
+		})
 
-	// })
+	})
 
 	Context("NewRemoteTokenAuth", func() {
 		// These tests validate the behavior of the remoteTokenAuth implementation of the ClientAuth interface

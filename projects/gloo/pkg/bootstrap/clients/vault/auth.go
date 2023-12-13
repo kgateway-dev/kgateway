@@ -26,7 +26,7 @@ type ClientAuth interface {
 	// Start Renewal should be called after a successful login to start the renewal process
 	// it starts a go routine that will renew the token at the appropriate time, and so it does
 	// not return a value, it just goes off and does its thing
-	StartRenewal(ctx context.Context, secret *vault.Secret)
+	// StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret)
 }
 
 var _ ClientAuth = &staticTokenAuth{}
@@ -41,7 +41,7 @@ var (
 func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, error) {
 	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
 	case *v1.Settings_VaultSecrets_AccessToken:
-		return newStaticTokenAuth(tlsCfg.AccessToken), nil
+		return NewStaticTokenAuth(tlsCfg.AccessToken), nil
 
 	case *v1.Settings_VaultSecrets_Aws:
 		awsAuth, err := newAwsAuthMethod(tlsCfg.Aws)
@@ -54,11 +54,11 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 	default:
 		// AuthMethod is the preferred API to define the policy for authenticating to vault
 		// If one is not defined, we fall back to the deprecated API
-		return newStaticTokenAuth(vaultSettings.GetToken()), nil
+		return NewStaticTokenAuth(vaultSettings.GetToken()), nil
 	}
 }
 
-func newStaticTokenAuth(token string) ClientAuth {
+func NewStaticTokenAuth(token string) ClientAuth {
 	return &staticTokenAuth{
 		token: token,
 	}
@@ -68,9 +68,9 @@ type staticTokenAuth struct {
 	token string
 }
 
-func (s *staticTokenAuth) StartRenewal(_ context.Context, _ *vault.Secret) {
-	// static tokens do not support renewal
-}
+// func (s *staticTokenAuth) StartRenewal(_ context.Context, client *vault.Client, _ *vault.Secret) {
+// 	// static tokens do not support renewal
+// }
 
 func (s *staticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
 	if s.token == "" {
@@ -156,9 +156,9 @@ func (r *remoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (
 	return loginResponse, nil
 }
 
-func (r *remoteTokenAuth) StartRenewal(ctx context.Context, secret *vault.Secret) {
-	// todo - implement renewal
-}
+// func (r *remoteTokenAuth) StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) {
+// 	// todo - implement renewal
+// }
 
 func newAwsAuthMethod(aws *v1.Settings_VaultAwsAuth) (*awsauth.AWSAuth, error) {
 	// The AccessKeyID and SecretAccessKey are not required in the case of using temporary credentials from assumed roles with AWS STS or IRSA.
