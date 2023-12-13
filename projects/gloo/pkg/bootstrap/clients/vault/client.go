@@ -17,10 +17,12 @@ func NewAuthorizedClient(ctx context.Context, vaultSettings *v1.Settings_VaultSe
 		return nil, err
 	}
 
-	err = AuthorizeClient(ctx, client, clientAuth)
+	secret, err := AuthorizeClient(ctx, client, clientAuth)
 	if err != nil {
 		return nil, err
 	}
+
+	clientAuth.StartRenewal(ctx, secret)
 
 	return client, nil
 }
@@ -36,13 +38,13 @@ func NewUnauthorizedClient(vaultSettings *v1.Settings_VaultSecrets) (*vault.Clie
 }
 
 // AuthorizeClient authenticates the provided vault client with the provided clientAuth.
-func AuthorizeClient(ctx context.Context, client *vault.Client, clientAuth ClientAuth) error {
+func AuthorizeClient(ctx context.Context, client *vault.Client, clientAuth ClientAuth) (*vault.Secret, error) {
 	secret, err := client.Auth().Login(ctx, clientAuth)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return clientAuth.StartRenewal(ctx, secret)
+	return secret, nil
 }
 
 func parseVaultSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Config, error) {

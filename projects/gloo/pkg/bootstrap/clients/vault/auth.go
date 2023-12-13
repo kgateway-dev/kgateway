@@ -23,7 +23,10 @@ import (
 
 type ClientAuth interface {
 	vault.AuthMethod
-	StartRenewal(ctx context.Context, secret *vault.Secret) error
+	// Start Renewal should be called after a successful login to start the renewal process
+	// it starts a go routine that will renew the token at the appropriate time, and so it does
+	// not return a value, it just goes off and does its thing
+	StartRenewal(ctx context.Context, secret *vault.Secret)
 }
 
 var _ ClientAuth = &staticTokenAuth{}
@@ -65,9 +68,8 @@ type staticTokenAuth struct {
 	token string
 }
 
-func (s *staticTokenAuth) StartRenewal(_ context.Context, _ *vault.Secret) error {
+func (s *staticTokenAuth) StartRenewal(_ context.Context, _ *vault.Secret) {
 	// static tokens do not support renewal
-	return nil
 }
 
 func (s *staticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
@@ -154,9 +156,8 @@ func (r *remoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (
 	return loginResponse, nil
 }
 
-func (r *remoteTokenAuth) StartRenewal(ctx context.Context, secret *vault.Secret) error {
+func (r *remoteTokenAuth) StartRenewal(ctx context.Context, secret *vault.Secret) {
 	// todo - implement renewal
-	return nil
 }
 
 func newAwsAuthMethod(aws *v1.Settings_VaultAwsAuth) (*awsauth.AWSAuth, error) {

@@ -60,11 +60,6 @@ var _ = Describe("ClientAuth", func() {
 				assertions.ExpectStatSumMatches(MLoginFailures, Equal(1))
 			})
 
-			It("startRenewal should return nil", func() {
-				err := clientAuth.StartRenewal(ctx, nil)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
 		})
 
 		When("token is not empty", func() {
@@ -83,11 +78,6 @@ var _ = Describe("ClientAuth", func() {
 				}))
 				assertions.ExpectStatLastValueMatches(MLastLoginSuccess, Not(BeZero()))
 				assertions.ExpectStatSumMatches(MLoginSuccesses, Equal(1))
-			})
-
-			It("startRenewal should return nil", func() {
-				err := clientAuth.StartRenewal(ctx, nil)
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 		})
