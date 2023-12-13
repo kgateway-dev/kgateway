@@ -1,10 +1,10 @@
 ---
 title: Traffic tapping
 weight: 100
-description: Copy contents of HTTP requests and responses to an external TAP server. 
+description: Copy contents of HTTP requests and responses to an external tap server. 
 ---
 
-Copy contents of HTTP or gRPC requests and responses to an external TAP server. A Test Access Point (TAP) server is a simple device that connects directly to your infrastructure and receives copies of actual traffic from your network so that this traffic can be further monitored, analyzed, or tested with. 
+Copy contents of HTTP or gRPC requests and responses to an external tap server. A tap server is a simple device that connects directly to your infrastructure and receives copies of actual traffic from your network so that this traffic can be further monitored, analyzed, or tested with. 
 
 {{% notice warning %}}
 Traffic tapping support in Gloo Edge is introduced as an **alpha feature**. Alpha features are likely to change, are not fully tested, and are not supported for production.
@@ -17,15 +17,15 @@ Traffic tapping is an Enterprise-only feature.
 ## About traffic tapping in Gloo Edge
 
 * Traffic tapping can be applied to a listener in a `Gateway` resource. As such, traffic tapping is applied to all routes that the gateway serves. Tapping traffic for a specific route is not currently supported.
-* Users are responsible for writing their own TAP servers. The TAP server definitions can be found in the [`tap-extension-examples` repository](https://github.com/solo-io/tap-extension-examples). To receive TAP traces, the TAP server service must implement the [TAP service protobuf definitions](https://github.com/solo-io/tap-extension-examples/tree/main/pkg/tap_service) and be configured to receive data over the gRPC or HTTP protocol.
+* Users are responsible for writing their own tap servers. The tap server definitions can be found in the [`tap-extension-examples` repository](https://github.com/solo-io/tap-extension-examples). To receive tap traces, the tap server service must implement the [tap service protobuf definitions](https://github.com/solo-io/tap-extension-examples/tree/main/pkg/tap_service) and be configured to receive data over the gRPC or HTTP protocol.
   {{% notice note %}}
   The `tap-extension-examples` repository is provided as an implementation reference. The repository is **not intended to be used in production**.
   {{% /notice %}}
-* In the current implementation, the data plane buffers all trace data in memory before sending it to the TAP server.
+* In the current implementation, the data plane buffers all trace data in memory before sending it to the tap server.
 * You cannot tap traffic to a local file. 
 
 {{% notice warning %}}
-Data that is tapped from the data plane might contain sensitive information, including credentials or Personal Identifiable Information (PII). Before using traffic tapping in your environment, make sure that all data is encrypted during transit and that sensitive data is masked or removed by the TAP server before it is written to permanent storage or forwarded to another service. For example, you might use a [Data Loss Prevention (DLP) policy]({{< versioned_link_path fromRoot="/guides/security/data_loss_prevention/" >}}) to mask sensitive information.
+Data that is tapped from the data plane might contain sensitive information, including credentials or Personal Identifiable Information (PII). Before using traffic tapping in your environment, make sure that all data is encrypted during transit and that sensitive data is masked or removed by the tap server before it is written to permanent storage or forwarded to another service. For example, you might use a [Data Loss Prevention (DLP) policy]({{< versioned_link_path fromRoot="/guides/security/data_loss_prevention/" >}}) to mask sensitive information.
 {{% /notice %}}
 
 ## Before you begin
@@ -33,9 +33,9 @@ Data that is tapped from the data plane might contain sensitive information, inc
 1. [Set up Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) in your cluster. During the Gloo Edge installation, a gateway resource is created for you that you later use to configure traffic tapping. 
 2. Follow the steps to [deploy and expose the Petstore sample app]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
 
-## Deploy a TAP server
+## Deploy a tap server
 
-1. Create the deployment, service, and upstream for the TAP server in your cluster. 
+1. Create the deployment, service, and upstream for the tap server in your cluster. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: apps/v1
@@ -91,14 +91,14 @@ Data that is tapped from the data plane might contain sensitive information, inc
    EOF
    ```
 
-2. Verify that the TAP server is up and running. 
+2. Verify that the tap server is up and running. 
    ```sh
    kubectl get pods -n gloo-system | grep tap
    ```
 
 ## Set up traffic tapping
 
-1. Configure the `gateway-proxy` gateway resource for traffic tapping. In the following example, you instruct Gloo Edge to tap all incoming traffic on the gateway and to send it to the TAP server that you previously configured by using the HTTP protocol. 
+1. Configure the `gateway-proxy` gateway resource for traffic tapping. In the following example, you instruct Gloo Edge to tap all incoming traffic on the gateway and to send it to the tap server that you previously configured by using the HTTP protocol. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -121,7 +121,7 @@ Data that is tapped from the data plane might contain sensitive information, inc
    EOF
    ```
 
-2. In a terminal window, tail the logs of the TAP server. 
+2. In a terminal window, tail the logs of the tap server. 
    ```sh
    kubectl -n gloo-system logs deployments/sample-tap-server-http -f
    ```
@@ -136,7 +136,7 @@ Data that is tapped from the data plane might contain sensitive information, inc
    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
    ```
 
-4. Go back to the logs of the TAP server and verify that you can see the request to the Petstore app. 
+4. Go back to the logs of the tap server and verify that you can see the request to the Petstore app. 
    
    Example output: 
    ```
