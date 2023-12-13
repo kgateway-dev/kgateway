@@ -16,9 +16,17 @@ Traffic tapping is an Enterprise-only feature.
 
 ## About traffic tapping in Gloo Edge
 
-* Traffic tapping can be applied to a listener in a `Gateway` and `MatchableHTTPGateway` resource. As such, traffic tapping is applied to all routes that the gateway serves. You cannot set up traffic tapping for a specific route. 
-* You can send traffic copies to the TAP server by using the HTTP or gRPC protocol. Traffic copies are buffered in memory before they are sent to the TAP server.
+* Traffic tapping can be applied to a listener in a `Gateway` resource. As such, traffic tapping is applied to all routes that the gateway serves. Tapping traffic for a specific route is not currently supported.
+* Users are responsible for writing their own TAP servers. The TAP server definitions can be found in the [`tap-extension-examples` repository](https://github.com/solo-io/tap-extension-examples). To receive TAP traces, the TAP server service must implement the [TAP service protobuf definitions](https://github.com/solo-io/tap-extension-examples/tree/main/pkg/tap_service) and be configured to receive data over the gRPC or HTTP protocol.
+  {{% notice note %}}
+  The `tap-extension-examples` repository is provided as an implementation reference. The repository is **not intended to be used in production**.
+  {{% /notice %}}
+* In the current implementation, the data plane buffers all trace data in memory before sending it to the TAP server.
 * You cannot tap traffic to a local file. 
+
+{{% notice warning %}}
+Data that is tapped from the data plane might contain sensitive information, including credentials or Personal Identifiable Information (PII). Before using traffic tapping in your environment, make sure that all data is encrypted during transit and that sensitive data is masked or removed by the TAP server before it is written to permanent storage or forwarded to another service. For example, you might use a [Data Loss Prevention (DLP) policy]({{< versioned_link_path fromRoot="/guides/security/data_loss_prevention/" >}}) to mask sensitive information.
+{{% /notice %}}
 
 ## Before you begin
 
