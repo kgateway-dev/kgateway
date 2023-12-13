@@ -25,7 +25,7 @@ Traffic tapping is an Enterprise-only feature.
 * You cannot tap traffic to a local file. 
 
 {{% notice warning %}}
-Data that is tapped from the data plane might contain sensitive information, including credentials or Personal Identifiable Information (PII). Before using traffic tapping in your environment, make sure that all data is encrypted during transit and that sensitive data is masked or removed by the tap server before it is written to permanent storage or forwarded to another service. For example, you might use a [Data Loss Prevention (DLP) policy]({{< versioned_link_path fromRoot="/guides/security/data_loss_prevention/" >}}) to mask sensitive information.
+Data that is tapped from the data plane might contain sensitive information, including credentials or Personal Identifiable Information (PII). Before using traffic tapping in your environment, make sure that all data is encrypted during transit and that sensitive data is masked or removed by the tap server before it is written to permanent storage or forwarded to another service. Note that you cannot use the Data Loss Preventation (DLP) plug-in to prevent sensitive data from being leaked via the tap filter. 
 {{% /notice %}}
 
 ## Before you begin
