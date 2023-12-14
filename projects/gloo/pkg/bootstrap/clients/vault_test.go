@@ -198,7 +198,6 @@ func resetViews() {
 		vault.MLastLoginSuccessView,
 		vault.MLoginFailuresView,
 		vault.MLoginSuccessesView,
-		vault.MLastLoginFailureView,
 	}
 	view.Unregister(views...)
 	_ = view.Register(views...)
