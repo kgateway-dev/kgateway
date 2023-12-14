@@ -8,8 +8,13 @@ goModVersion=$(grep -m 1 go go.mod | cut -d' ' -f2)
 
 if [[ "$goVersion" == "$goModVersion"* ]]; then
     echo "Using Go version $goVersion"
+elif [[ "$goModVersion" == "1.20"* ]] && [[ $goVersion == "1.21"* ]]; then
+  # We have upgraded the cloudbuilder environment to use go 1.21.5 to fix a security vulnerability.
+  # We build fine with 1.21.5, but the go.mod file still says 1.20 , so we'll add this logic to the support
+  # branch to allow the build to continue.
+  echo "Using Go version $goVersion with go.mod version $goModVersion for security vulnerability fix."
 else
     echo "Your Go version ($goVersion) does not match the version from go.mod ($goModVersion)".
     echo "Please update your Go version to $goModVersion and re-run."
-    #exit 1;
+    exit 1;
 fi
