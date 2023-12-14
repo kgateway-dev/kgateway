@@ -26,6 +26,7 @@ var _ = Describe("ClientAuth", func() {
 		cancel context.CancelFunc
 
 		clientAuth vault.ClientAuth
+		ctrl       *gomock.Controller
 	)
 
 	BeforeEach(func() {
@@ -33,11 +34,15 @@ var _ = Describe("ClientAuth", func() {
 
 		// The tests below will be responsible for assigning this variable
 		// We re-set it here, just to be safe
-		//clientAuth = nil
+		clientAuth = nil
 
 		// We should not have any metrics set before running the tests
 		// This ensures that we are no leaking metrics between tests
 		resetViews()
+	})
+
+	JustBeforeEach(func() {
+		Expect(clientAuth).NotTo(BeNil())
 	})
 
 	AfterEach(func() {
@@ -50,12 +55,14 @@ var _ = Describe("ClientAuth", func() {
 		When("token is empty", func() {
 
 			BeforeEach(func() {
+				var err error
 				vaultSettings := &v1.Settings_VaultSecrets{
 					AuthMethod: &v1.Settings_VaultSecrets_AccessToken{
 						AccessToken: "",
 					},
 				}
-				clientAuth, _ = vault.ClientAuthFactory(vaultSettings)
+				clientAuth, err = vault.ClientAuthFactory(vaultSettings)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("login should return an error", func() {
@@ -113,7 +120,7 @@ var _ = Describe("ClientAuth", func() {
 		When("internal auth method always returns an error", func() {
 
 			BeforeEach(func() {
-				ctrl := gomock.NewController(GinkgoT())
+				ctrl = gomock.NewController(GinkgoT())
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("mocked error message")).AnyTimes()
 
@@ -131,7 +138,7 @@ var _ = Describe("ClientAuth", func() {
 		When("internal auth method returns an error, and then a success", func() {
 
 			BeforeEach(func() {
-				ctrl := gomock.NewController(GinkgoT())
+				ctrl = gomock.NewController(GinkgoT())
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).Times(1)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(&api.Secret{
@@ -159,7 +166,7 @@ var _ = Describe("ClientAuth", func() {
 
 	When("context is cancelled before login succeeds", func() {
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
+			ctrl = gomock.NewController(GinkgoT())
 			internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 			// The auth method will return an error twice, and then a success
 			// but we plan on cancelling the context before the success

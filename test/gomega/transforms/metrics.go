@@ -5,6 +5,7 @@ import (
 	"go.opencensus.io/stats/view"
 )
 
+// Returns a function that takes a slice of view.Rows and returns the last value value or an errorß
 func WithLastValueTransform() func(rows []*view.Row) (int, error) {
 	return func(rows []*view.Row) (int, error) {
 		if len(rows) == 0 {
@@ -21,6 +22,8 @@ func WithLastValueTransform() func(rows []*view.Row) (int, error) {
 	}
 }
 
+// Returns a function that takes a slice of view.Rows and returns the sum value or an error.
+// Implemented to be used with counters to get the current total
 func WithSumValueTransform() func(rows []*view.Row) (int, error) {
 	return func(rows []*view.Row) (int, error) {
 		if len(rows) == 0 {

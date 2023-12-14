@@ -25,6 +25,7 @@ var _ = Describe("ClientAuth", func() {
 		cancel context.CancelFunc
 
 		clientAuth ClientAuth
+		ctrl       *gomock.Controller
 	)
 
 	BeforeEach(func() {
@@ -91,7 +92,7 @@ var _ = Describe("ClientAuth", func() {
 		When("internal auth method always returns an error", func() {
 
 			BeforeEach(func() {
-				ctrl := gomock.NewController(GinkgoT())
+				ctrl = gomock.NewController(GinkgoT())
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("mocked error message")).AnyTimes()
 
@@ -112,7 +113,7 @@ var _ = Describe("ClientAuth", func() {
 		When("internal auth method returns an error, and then a success", func() {
 
 			BeforeEach(func() {
-				ctrl := gomock.NewController(GinkgoT())
+				ctrl = gomock.NewController(GinkgoT())
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).Times(1)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(&api.Secret{
@@ -138,18 +139,14 @@ var _ = Describe("ClientAuth", func() {
 		})
 
 		When("context is cancelled before login succeeds", func() {
+			retryAttempts := uint(5)
 			BeforeEach(func() {
-				ctrl := gomock.NewController(GinkgoT())
+				ctrl = gomock.NewController(GinkgoT())
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				// The auth method will return an error twice, and then a success
 				// but we plan on cancelling the context before the success
-				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).Times(2)
-				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(&api.Secret{
-					Auth: &api.SecretAuth{
-						ClientToken: "a-client-token",
-					},
-				}, nil).AnyTimes()
-				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
+				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).AnyTimes()
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(retryAttempts))
 			})
 
 			It("should return a context error", func() {
@@ -164,7 +161,10 @@ var _ = Describe("ClientAuth", func() {
 
 				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
 				assertions.ExpectStatLastValueMatches(MLastLoginSuccess, BeZero())
-				assertions.ExpectStatSumMatches(MLoginFailures, Equal(2))
+				// Validate that the number of login failures is less than the number of retry attempts
+				// This means we stopped the login attempts before they were exhausted
+				assertions.ExpectStatSumMatches(MLoginFailures, BeNumerically("<", retryAttempts))
+				assertions.ExpectStatSumMatches(MLoginSuccesses, BeZero())
 
 			})
 
@@ -172,7 +172,7 @@ var _ = Describe("ClientAuth", func() {
 
 	})
 
-	Context("NewClientAuth", func() {
+	Context("ClientAuthFactory", func() {
 		// These tests validate that the constructor maps the Gloo Settings into the appropriate ClientAuth interface
 		// it does not test the underlying implementations, as those are handled in the above tests
 
@@ -190,6 +190,14 @@ var _ = Describe("ClientAuth", func() {
 					},
 				},
 			}, MatchError("only partial credentials were provided for AWS IAM auth: secret access key must be defined for AWS IAM auth")),
+			Entry("partial accessKey / secretAccessKey (reversed)", &v1.Settings_VaultSecrets{
+				AuthMethod: &v1.Settings_VaultSecrets_Aws{
+					Aws: &v1.Settings_VaultAwsAuth{
+						AccessKeyId:     "",
+						SecretAccessKey: "secret-access-key-id",
+					},
+				},
+			}, MatchError("only partial credentials were provided for AWS IAM auth: access key id must be defined for AWS IAM auth")),
 		)
 
 		DescribeTable("should return the correct client auth",

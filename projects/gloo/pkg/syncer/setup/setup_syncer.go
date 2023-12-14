@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -349,6 +350,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 				// The error is handled after we create the factory in getFactoryForSource
 				// for the multi client, and NewSecretResourceClientFactory for the
 				// traditional single client.
+				err = eris.Wrap(err, "check Settings configuration")
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
 			c, err := bootstrap_clients.VaultClientForSettings(ctx, vaultSettings, vaultAuth)

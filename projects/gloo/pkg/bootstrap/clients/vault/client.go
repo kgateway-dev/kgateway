@@ -9,15 +9,15 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-// NewAuthorizedClient returns a vault client that has been authenticated with the provided settings,
+// NewAuthenticatedClient returns a vault client that has been authenticated with the provided settings,
 // or an error if construction or authentication fails.
-func NewAuthorizedClient(ctx context.Context, vaultSettings *v1.Settings_VaultSecrets, clientAuth ClientAuth) (*vault.Client, error) {
-	client, err := NewUnauthorizedClient(vaultSettings)
+func NewAuthenticatedClient(ctx context.Context, vaultSettings *v1.Settings_VaultSecrets, clientAuth ClientAuth) (*vault.Client, error) {
+	client, err := NewUnauthenticatedClient(vaultSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = AuthorizeClient(ctx, client, clientAuth)
+	_, err = AuthenticateClient(ctx, client, clientAuth)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +27,8 @@ func NewAuthorizedClient(ctx context.Context, vaultSettings *v1.Settings_VaultSe
 	return client, nil
 }
 
-// NewUnauthorizedClient returns a vault client that has not yet been authenticated
-func NewUnauthorizedClient(vaultSettings *v1.Settings_VaultSecrets) (*vault.Client, error) {
+// NewUnauthenticatedClient returns a vault client that has not yet been authenticated
+func NewUnauthenticatedClient(vaultSettings *v1.Settings_VaultSecrets) (*vault.Client, error) {
 	cfg, err := parseVaultSettings(vaultSettings)
 	if err != nil {
 		return nil, err
@@ -37,8 +37,8 @@ func NewUnauthorizedClient(vaultSettings *v1.Settings_VaultSecrets) (*vault.Clie
 	return api.NewClient(cfg)
 }
 
-// AuthorizeClient authenticates the provided vault client with the provided clientAuth.
-func AuthorizeClient(ctx context.Context, client *vault.Client, clientAuth ClientAuth) (*vault.Secret, error) {
+// AuthenticateClient authenticates the provided vault client with the provided clientAuth.
+func AuthenticateClient(ctx context.Context, client *vault.Client, clientAuth ClientAuth) (*vault.Secret, error) {
 	secret, err := client.Auth().Login(ctx, clientAuth)
 	if err != nil {
 		return nil, err

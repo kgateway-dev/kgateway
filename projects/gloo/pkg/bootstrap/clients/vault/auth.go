@@ -18,33 +18,31 @@ import (
 
 // In an ideal world, we would re-use the mocks provided by an external library.
 // Since the vault.AuthMethod interface does not have corresponding mocks, we have to define our own.
-// todo - just mock the ClientAuth interface we define
 //go:generate mockgen -destination mocks/mock_auth.go -package mocks github.com/hashicorp/vault/api AuthMethod
 
 type ClientAuth interface {
 	vault.AuthMethod
 	// Start Renewal should be called after a successful login to start the renewal process
-	// it starts a go routine that will renew the token at the appropriate time, and so it does
-	// not return a value, it just goes off and does its thing
-	// StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret)
+	// This method may have many different types of implementation, from just a noop to spinning up a separate go routine
+	// StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) error
 }
 
 var _ ClientAuth = &StaticTokenAuth{}
 var _ ClientAuth = &RemoteTokenAuth{}
 
 var (
-	ErrEmptyToken = errors.New("unable to authenticate to vault with empty token. check Settings configuration")
+	ErrEmptyToken = errors.New("unable to authenticate to vault with empty token")
 	ErrNoAuthInfo = errors.New("no auth info was returned after login")
 )
 
 // ClientAuthFactory returns a vault ClientAuth based on the provided settings.
 func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, error) {
-	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
+	switch authMethod := vaultSettings.GetAuthMethod().(type) {
 	case *v1.Settings_VaultSecrets_AccessToken:
-		return NewStaticTokenAuth(tlsCfg.AccessToken), nil
+		return NewStaticTokenAuth(authMethod.AccessToken), nil
 
 	case *v1.Settings_VaultSecrets_Aws:
-		awsAuth, err := newAwsAuthMethod(tlsCfg.Aws)
+		awsAuth, err := newAwsAuthMethod(authMethod.Aws)
 		if err != nil {
 			return nil, err
 		}
@@ -58,6 +56,7 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 	}
 }
 
+// Constructor for StaticTokenAuth
 func NewStaticTokenAuth(token string) ClientAuth {
 	return &StaticTokenAuth{
 		token: token,
@@ -68,6 +67,7 @@ type StaticTokenAuth struct {
 	token string
 }
 
+// Return the value of the token field
 func (s *StaticTokenAuth) GetToken() string {
 	return s.token
 }
@@ -76,6 +76,7 @@ func (s *StaticTokenAuth) GetToken() string {
 // 	// static tokens do not support renewal
 // }
 
+// Log in to vault using a static token
 func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
 	if s.GetToken() == "" {
 		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
@@ -93,7 +94,9 @@ func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Se
 	}, nil
 }
 
+// Constructor for RemoteTokenAuth
 func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Option) ClientAuth {
+
 	// Standard retry options, which can be overridden by the loginRetryOptions parameter
 	defaultRetryOptions := []retry.Option{
 		retry.Delay(1 * time.Second),
@@ -101,6 +104,7 @@ func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Optio
 		retry.Attempts(1),
 		retry.LastErrorOnly(true),
 	}
+
 	loginRetryOptions := append(defaultRetryOptions, retryOptions...)
 
 	return &RemoteTokenAuth{
@@ -114,10 +118,27 @@ type RemoteTokenAuth struct {
 	loginRetryOptions []retry.Option
 }
 
+// Log into vault using the provided authMethod
 func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
 	var (
 		loginResponse *vault.Secret
 		loginErr      error
+	)
+
+	// Set the "retryIf" option here. We don't want this to be overridden, and the context isn't
+	// available in the contructor to configure this
+	retryOptions := append(
+		r.loginRetryOptions,
+		retry.RetryIf(func(err error) bool {
+			// if the parent context is cancelled,
+			// stop retrying.
+			select {
+			case <-ctx.Done():
+				return false
+			default:
+				return true
+			}
+		}),
 	)
 
 	loginErr = retry.Do(func() error {
@@ -128,7 +149,7 @@ func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vau
 		}
 		loginResponse, loginErr = r.loginOnce(ctx, client)
 		return loginErr
-	}, r.loginRetryOptions...)
+	}, retryOptions...)
 
 	// As noted above, we need to check the context here, because our retry function can not return errors
 	if ctx.Err() != nil {

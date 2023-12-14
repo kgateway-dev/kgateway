@@ -258,7 +258,8 @@ var _ = Describe("Bootstrap Clients", func() {
 
 		setVaultClientInitMap := func(idx int, vaultSettings *v1.Settings_VaultSecrets) {
 			vaultClientInitMap[idx] = func() *vaultapi.Client {
-				vaultAuth, _ := vault_client.ClientAuthFactory(vaultSettings)
+				vaultAuth, err := vault_client.ClientAuthFactory(vaultSettings)
+				Expect(err).NotTo(HaveOccurred())
 				c, err := clients.VaultClientForSettings(ctx, vaultSettings, vaultAuth)
 				Expect(err).NotTo(HaveOccurred())
 				return c
