@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/8983
+    resolvesIssue: true
+    description: Update glooctl inject for sds to not include v in the version
