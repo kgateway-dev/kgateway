@@ -231,14 +231,15 @@ func kubeList(namespace string, target string) ([]string, error) {
 // The dump includes:
 // - config dump
 // - stats
+// - clusters
 // - listeners
 func EnvoyDumpOnFail(out io.Writer, namespace string) func() {
 	return func() {
 		setupOutDir(envoyOutDir)
-
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "envoy-config.log")), "/config_dump", namespace)
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "envoy-stats.log")), "/stats", namespace)
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "envoy-clusters.log")), "/clusters", namespace)
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "config.log")), "/config_dump", namespace)
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "stats.log")), "/stats", namespace)
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "clusters.log")), "/clusters", namespace)
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "listeners.log")), "/listeners", namespace)
 	}
 }
 
