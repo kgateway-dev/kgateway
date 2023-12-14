@@ -112,7 +112,7 @@ fmt-changed:
 
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download: check-go-version
+mod-download:
 	go mod download all
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
@@ -155,7 +155,7 @@ TEST_PKG ?= ./... # Default to run all tests
 GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
-install-test-tools: check-go-version
+install-test-tools:
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
@@ -237,7 +237,7 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
+generated-code: clean-solo-kit-gen ## Run all codegen and formatting as required by CI
 generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
@@ -271,10 +271,6 @@ verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
 
-# makes sure you are running codegen with the correct Go version
-.PHONY: check-go-version
-check-go-version:
-	./ci/check-go-version.sh
 
 .PHONY: generated-code-apis
 generated-code-apis: clean-solo-kit-gen go-generate-apis fmt ## Executes the targets necessary to generate formatted code from all protos
@@ -670,7 +666,6 @@ docker-push-%:
 
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
-docker: check-go-version
 docker: gloo-docker
 docker: discovery-docker
 docker: gloo-envoy-wrapper-docker
