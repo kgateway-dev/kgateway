@@ -98,7 +98,7 @@ func GetEnvoyDump(opts *options.Options, path string, timeout time.Duration) (st
 }
 
 func getEnvoyCfgDump(opts *options.Options) (string, error) {
-	return getEnvoyDump(opts, "/config_dump", 5*time.Second)
+	return GetEnvoyDump(opts, "/config_dump", 5*time.Second)
 }
 
 func GetEnvoyCfgDump(opts *options.Options) (string, error) {
@@ -123,5 +123,5 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 }
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
-	return getEnvoyDump(opts, "/stats", 5*time.Second)
+	return GetEnvoyDump(opts, "/stats", 5*time.Second)
 }

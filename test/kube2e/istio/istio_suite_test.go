@@ -61,6 +61,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.EnvoyDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
 	Expect(err).NotTo(HaveOccurred())

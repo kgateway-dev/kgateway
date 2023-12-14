@@ -17,4 +17,5 @@ func TestHelm(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, namespace))
+	skhelpers.RegisterPreFailHandler(helpers.EnvoyDumpOnFail(GinkgoWriter, namespace))
 })

@@ -2,19 +2,25 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/skv2/codegen/util"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var (
-	outDir = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
+	kubeOutDir  = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
+	envoyOutDir = filepath.Join(util.GetModuleRoot(), "_output", "envoy-dump")
 )
 
 // KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.
@@ -28,11 +34,11 @@ var (
 // - yaml representations of all solo.io CRs in the given namespaces
 func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
-		setupOutDir()
+		setupOutDir(kubeOutDir)
 
-		recordDockerState(fileAtPath(filepath.Join(outDir, "docker-state.log")))
-		recordProcessState(fileAtPath(filepath.Join(outDir, "process-state.log")))
-		recordKubeState(fileAtPath(filepath.Join(outDir, "kube-state.log")))
+		recordDockerState(fileAtPath(filepath.Join(kubeOutDir, "docker-state.log")))
+		recordProcessState(fileAtPath(filepath.Join(kubeOutDir, "process-state.log")))
+		recordKubeState(fileAtPath(filepath.Join(kubeOutDir, "kube-state.log")))
 
 		recordKubeDump(namespaces...)
 	}
@@ -109,12 +115,12 @@ func recordKubeDump(namespaces ...string) {
 	// for each namespace, create a namespace directory that contains...
 	for _, ns := range namespaces {
 		// ...a pod logs subdirectoy
-		if err := recordPods(filepath.Join(outDir, ns, "_pods"), ns); err != nil {
+		if err := recordPods(filepath.Join(kubeOutDir, ns, "_pods"), ns); err != nil {
 			fmt.Printf("error recording pod logs: %f, \n", err)
 		}
 
 		// ...and a subdirectory for each solo.io CRD with non-zero resources
-		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
+		if err := recordCRs(filepath.Join(kubeOutDir, ns), ns); err != nil {
 			fmt.Printf("error recording pod logs: %f, \n", err)
 		}
 	}
@@ -219,18 +225,61 @@ func kubeList(namespace string, target string) ([]string, error) {
 	return toReturn, nil
 }
 
+// EnvoyDumpOnFail creates a small dump of the envoy configs when a test fails.
+// This is useful for debugging test failures.
+// The dump is written to _output/envoy-dump.
+// The dump includes:
+// - config dump
+// - stats
+// - listeners
+func EnvoyDumpOnFail(out io.Writer, namespace string) func() {
+	return func() {
+		setupOutDir(envoyOutDir)
+
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "envoy-config.log")), "/config_dump", namespace)
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "envoy-stats.log")), "/stats", namespace)
+		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "envoy-clusters.log")), "/clusters", namespace)
+	}
+}
+
+func recordEnvoyDump(f *os.File, path string, namespace string) {
+	defer f.Close()
+
+	contextWithCancel, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	opts := &options.Options{
+		Metadata: core.Metadata{
+			Namespace: namespace,
+		},
+		Top: options.Top{
+			Ctx: contextWithCancel,
+		},
+		Proxy: options.Proxy{
+			Name: "gateway-proxy",
+		},
+	}
+	cfg, err := gateway.GetEnvoyDump(opts, path, 30*time.Second)
+	if err != nil {
+		f.WriteString("*** Unable to get envoy " + path + " dump ***\n")
+		return
+	}
+	f.WriteString("*** Envoy " + path + " dump ***\n")
+	f.WriteString(cfg + "\n")
+	f.WriteString("*** End Envoy " + path + " dump ***\n")
+}
+
 // setupOutDir forcibly deletes/creates the output directory
-func setupOutDir() {
-	err := os.RemoveAll(outDir)
+func setupOutDir(outdir string) {
+	err := os.RemoveAll(outdir)
 	if err != nil {
 		fmt.Printf("error removing log directory: %f\n", err)
 	}
-	err = os.MkdirAll(outDir, os.ModePerm)
+	err = os.MkdirAll(outdir, os.ModePerm)
 	if err != nil {
 		fmt.Printf("error creating log directory: %f\n", err)
 	}
 
-	fmt.Println("kube dump artifacts will be stored at: " + outDir)
+	fmt.Println("kube dump artifacts will be stored at: " + outdir)
 }
 
 // fileAtPath creates a file at the given path, and returns the file object
