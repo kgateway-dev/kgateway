@@ -8,6 +8,7 @@ import (
 // GetSdsSidecar returns an SDS Sidecar of the given gloo
 // release version to run alongside istio and gateway-proxy
 // containers in the gateway-proxy pod
+// the version string passed should not contain a "v"
 func GetSdsSidecar(version string) corev1.Container {
 	return corev1.Container{
 		Name:            "sds",
