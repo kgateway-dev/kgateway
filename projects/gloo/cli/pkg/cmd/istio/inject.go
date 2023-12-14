@@ -166,7 +166,7 @@ func istioInject(args []string, opts *options.Options) error {
 
 // addSdsSidecar adds an SDS sidecar to the given deployment's containers
 func addSdsSidecar(ctx context.Context, deployment *appsv1.Deployment, glooNamespace string) error {
-	glooVersion, err := GetGlooVersion(ctx, glooNamespace)
+	glooVersion, err := GetGlooVersionWithoutV(ctx, glooNamespace)
 	if err != nil {
 		return ErrGlooVerUndetermined
 	}
