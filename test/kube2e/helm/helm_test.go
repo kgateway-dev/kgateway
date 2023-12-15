@@ -18,7 +18,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
@@ -29,7 +28,6 @@ import (
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	admission_v1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -788,21 +786,7 @@ func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
 }
 
 func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
-	contextWithCancel, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	opts := &options.Options{
-		Metadata: core.Metadata{
-			Namespace: testHelper.InstallNamespace,
-		},
-		Top: options.Top{
-			Ctx: contextWithCancel,
-		},
-		Proxy: options.Proxy{
-			Name: "gateway-proxy",
-		},
-	}
-
-	cfg, err := gateway.GetEnvoyCfgDump(opts)
+	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", testHelper.InstallNamespace, "/config_dump", 5*time.Second)
 	Expect(err).NotTo(HaveOccurred())
 	return cfg
 }

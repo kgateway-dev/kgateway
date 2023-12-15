@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -23,7 +24,7 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Use:   "dump",
 		Short: "dump Envoy config from one of the proxy instances",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgDump, err := getEnvoyCfgDump(opts)
+			cfgDump, err := GetEnvoyCfgDump(opts)
 			if err != nil {
 				return err
 			}
@@ -35,10 +36,11 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func GetEnvoyDump(opts *options.Options, path string, timeout time.Duration) (string, error) {
+// GetEnvoyAdminData returns the response from the envoy admin interface based on the `path` specified within the defined timeout
+func GetEnvoyAdminData(ctx context.Context, proxyName, namespace, path string, timeout time.Duration) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
-	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.GetNamespace(),
-		"deployment/"+opts.Proxy.Name, adminPort)
+	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
+		"deployment/"+proxyName, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	if err := portFwd.Start(); err != nil {
@@ -54,7 +56,7 @@ func GetEnvoyDump(opts *options.Options, path string, timeout time.Duration) (st
 	go func() {
 		for {
 			select {
-			case <-opts.Top.Ctx.Done():
+			case <-ctx.Done():
 				return
 			default:
 			}
@@ -85,7 +87,7 @@ func GetEnvoyDump(opts *options.Options, path string, timeout time.Duration) (st
 
 	for {
 		select {
-		case <-opts.Top.Ctx.Done():
+		case <-ctx.Done():
 			return "", errors.Errorf("cancelled")
 		case err := <-errs:
 			log.Printf("connecting to envoy failed with err %v", err.Error())
@@ -97,12 +99,8 @@ func GetEnvoyDump(opts *options.Options, path string, timeout time.Duration) (st
 	}
 }
 
-func getEnvoyCfgDump(opts *options.Options) (string, error) {
-	return GetEnvoyDump(opts, "/config_dump", 5*time.Second)
-}
-
 func GetEnvoyCfgDump(opts *options.Options) (string, error) {
-	return getEnvoyCfgDump(opts)
+	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, "/config_dump", 5*time.Second)
 }
 
 func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -123,5 +121,5 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 }
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
-	return GetEnvoyDump(opts, "/stats", 30*time.Second)
+	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, "/stats", 30*time.Second)
 }

@@ -13,15 +13,22 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/skv2/codegen/util"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var (
 	kubeOutDir  = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
 	envoyOutDir = filepath.Join(kubeOutDir, "envoy-dump")
 )
+
+// StandardGlooDumpOnFail creates adump of the kubernetes state and certain envoy data from the admin interface when a test fails
+// Look at `KubeDumpOnFail` && `EnvoyDumpOnFail` for more details
+func StandardGlooDumpOnFail(out io.Writer, namespaces ...string) func() {
+	return func() {
+		KubeDumpOnFail(out, namespaces...)
+		EnvoyDumpOnFail(out, namespaces...)
+	}
+}
 
 // KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.
 // This is useful for debugging test failures.
@@ -55,7 +62,7 @@ func recordDockerState(f *os.File) {
 	dockerCmd.Stderr = dockerState
 	err := dockerCmd.Run()
 	if err != nil {
-		f.WriteString("*** Unable to get docker state ***\n")
+		f.WriteString("*** Unable to get docker state ***. Reason: " + err.Error() + " \n")
 		return
 	}
 	f.WriteString("*** Docker state ***\n")
@@ -74,7 +81,7 @@ func recordProcessState(f *os.File) {
 	psCmd.Stderr = psState
 	err := psCmd.Run()
 	if err != nil {
-		f.WriteString("unable to get process state\n")
+		f.WriteString("unable to get process state. Reason: " + err.Error() + " \n")
 		return
 	}
 	f.WriteString("*** Process state ***\n")
@@ -96,12 +103,12 @@ func recordKubeState(f *os.File) {
 	// Ie: More context around the output of the previous command `kubectl get all -A`
 	kubeDescribe, err := kubeCli.KubectlOut(nil, "describe", "all", "-A")
 	if err != nil {
-		f.WriteString("*** Unable to get kube describe ***\n")
+		f.WriteString("*** Unable to get kube describe ***. Reason: " + err.Error() + " \n")
 		return
 	}
 	kubeEndpointsState, err := kubeCli.KubectlOut(nil, "get", "endpoints", "-A")
 	if err != nil {
-		f.WriteString("*** Unable to get endpoint state ***\n")
+		f.WriteString("*** Unable to get endpoint state ***. Reason: " + err.Error() + " \n")
 		return
 	}
 	f.WriteString("*** Kube state ***\n")
@@ -225,7 +232,7 @@ func kubeList(namespace string, target string) ([]string, error) {
 	return toReturn, nil
 }
 
-// EnvoyDumpOnFail creates a small dump of the envoy configs when a test fails.
+// EnvoyDumpOnFail creates a small dump of the envoy admin interface when a test fails.
 // This is useful for debugging test failures.
 // The dump is written to _output/envoy-dump.
 // The dump includes:
@@ -233,35 +240,24 @@ func kubeList(namespace string, target string) ([]string, error) {
 // - stats
 // - clusters
 // - listeners
-func EnvoyDumpOnFail(out io.Writer, namespace string) func() {
+func EnvoyDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
 		setupOutDir(envoyOutDir)
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "config.log")), "/config_dump", namespace)
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "stats.log")), "/stats", namespace)
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "clusters.log")), "/clusters", namespace)
-		recordEnvoyDump(fileAtPath(filepath.Join(envoyOutDir, "listeners.log")), "/listeners", namespace)
+		for _, ns := range namespaces {
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "config.log")), "/config_dump", ns)
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "stats.log")), "/stats", ns)
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "clusters.log")), "/clusters", ns)
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "listeners.log")), "/listeners", ns)
+		}
 	}
 }
 
-func recordEnvoyDump(f *os.File, path string, namespace string) {
+func recordEnvoyAdminData(f *os.File, path string, namespace string) {
 	defer f.Close()
 
-	contextWithCancel, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	opts := &options.Options{
-		Metadata: core.Metadata{
-			Namespace: namespace,
-		},
-		Top: options.Top{
-			Ctx: contextWithCancel,
-		},
-		Proxy: options.Proxy{
-			Name: "gateway-proxy",
-		},
-	}
-	cfg, err := gateway.GetEnvoyDump(opts, path, 30*time.Second)
+	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", namespace, "/config_dump", 30*time.Second)
 	if err != nil {
-		f.WriteString("*** Unable to get envoy " + path + " dump ***\n")
+		f.WriteString("*** Unable to get envoy " + path + " dump ***. Reason: " + err.Error() + " \n")
 		return
 	}
 	f.WriteString("*** Envoy " + path + " dump ***\n")
