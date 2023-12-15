@@ -165,18 +165,15 @@ var _ = Describe("ClientAuth", func() {
 	})
 
 	When("context is cancelled before login succeeds", func() {
+
+		retryAttempts := uint(5)
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
 			internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 			// The auth method will return an error twice, and then a success
 			// but we plan on cancelling the context before the success
-			internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).Times(2)
-			internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(&api.Secret{
-				Auth: &api.SecretAuth{
-					ClientToken: "a-client-token",
-				},
-			}, nil).AnyTimes()
-			clientAuth = vault.NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
+			internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).AnyTimes()
+			clientAuth = vault.NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(retryAttempts))
 		})
 
 		It("should return a context error", func() {
@@ -191,7 +188,10 @@ var _ = Describe("ClientAuth", func() {
 
 			assertions.ExpectStatLastValueMatches(vault.MLastLoginFailure, Not(BeZero()))
 			assertions.ExpectStatLastValueMatches(vault.MLastLoginSuccess, BeZero())
-			assertions.ExpectStatSumMatches(vault.MLoginFailures, Equal(2))
+			// Validate that the number of login failures is less than the number of retry attempts
+			// This means we stopped the login attempts before they were exhausted
+			assertions.ExpectStatSumMatches(vault.MLoginFailures, BeNumerically("<", retryAttempts))
+			assertions.ExpectStatSumMatches(vault.MLoginSuccesses, BeZero())
 
 		})
 
