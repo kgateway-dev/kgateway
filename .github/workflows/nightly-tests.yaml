@@ -12,8 +12,8 @@ on:
   # Day of the week ([0,6] with 0=Sunday)
   schedule:
     - cron: "0 5 * * 1-5" # weekdays @ 05:00 UTC, run tests against latest main
-    - cron: "0 6 * * 1"   # monday   @ 06:00 UTC, run expanded tests against v1.15.x
-    - cron: "0 7 * * 1"   # monday   @ 07:00 UTC, run expanded tests against v1.14.x
+    - cron: "0 6 * * 1"   # monday   @ 06:00 UTC, run expanded tests against v1.16.x
+    - cron: "0 7 * * 1"   # monday   @ 07:00 UTC, run expanded tests against v1.15.x
   workflow_dispatch:
     inputs:
       branch:
@@ -21,8 +21,8 @@ on:
         type: choice
         options:
           - main
+          - v1.16.x
           - v1.15.x
-          - v1.14.x
       run-regression:
         description: "Run regression tests"
         type: boolean
@@ -53,9 +53,26 @@ jobs:
         ref: main
     - uses: ./.github/workflows/composite-actions/regression-tests
 
+  regression_tests_16:
+    name: v1.16.x regression tests
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.16.x') || github.event.schedule == '0 6 * * 1' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
+        kube-version: [ { node: 'v1.24.15@sha256:7db4f8bea3e14b82d12e044e25e34bd53754b7f2b0e9d56df21774e6f66a70ab', kubectl: 'v1.24.17', kind: 'v0.20.0', helm: 'v3.12.2' },
+                        { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' }]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: v1.16.x
+      - uses: ./.github/workflows/composite-actions/regression-tests
+
   regression_tests_15:
     name: v1.15.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.15.x') || github.event.schedule == '0 7 * * 1' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
@@ -70,23 +87,6 @@ jobs:
           ref: v1.15.x
       - uses: ./.github/workflows/composite-actions/regression-tests
 
-  regression_tests_14:
-    name: v1.14.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.14.x') || github.event.schedule == '0 7 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.23.13@sha256:ef453bb7c79f0e3caba88d2067d4196f427794086a7d0df8df4f019d5e336b61', kubectl: 'v1.23.17', kind: 'v0.17.0', helm: 'v3.11.2' },
-                        { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8',  kind: 'v0.17.0', helm: 'v3.11.2' }]
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: v1.14.x
-    - uses: ./.github/workflows/composite-actions/regression-tests
-
   performance_tests_main:
     name: main performance tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
@@ -99,9 +99,9 @@ jobs:
       - uses: ./.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/performance-tests
 
-  performance_tests_15:
-    name: v1.15.x performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
+  performance_tests_16:
+    name: v1.16.x performance tests
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.16.x') || github.event.schedule == '0 6 * * 1' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
@@ -111,16 +111,17 @@ jobs:
       - uses: ./.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/performance-tests
 
-  performance_tests_14:
-    # There are no performance tests for v1.14.x.
-    # As a result, we don't use an 8core runner and don't include a schedule trigger
-    name: v1.14.x performance tests
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.14.x'}}
+  performance_tests_15:
+    name: v1.15.x performance tests
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 7 * * 1' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - run: echo "v1.14.x performance tests do not exist"
-        shell: bash
+      - uses: actions/checkout@v3
+        with:
+          ref: v1.15.x
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./.github/workflows/composite-actions/performance-tests
 
   publish_results:
     runs-on: ubuntu-22.04
@@ -129,10 +130,10 @@ jobs:
     needs:
       - regression_tests_main
       - regression_tests_15
-      - regression_tests_14
+      - regression_tests_16
       - performance_tests_main
       - performance_tests_15
-      - performance_tests_14
+      - performance_tests_16
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
@@ -146,10 +147,10 @@ jobs:
             echo "SLACK_CHANNEL=C0314KESVNV" >> $GITHUB_ENV   #slack-integration-testing if manually run
           elif [[ ${{github.event.schedule == '0 7 * * 1'}} = true ]]; then
             trigger="Gloo OSS weeklies"
-            branch="v1.14.x"
+            branch="v1.15.x"
           elif [[ ${{github.event.schedule == '0 6 * * 1'}} = true ]]; then
             trigger="Gloo OSS weeklies"
-            branch="v1.15.x"
+            branch="v1.16.x"
           elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
             trigger="Gloo OSS nightlies"
             branch="main"

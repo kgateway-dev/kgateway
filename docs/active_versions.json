@@ -2,6 +2,7 @@
   "latest": "v1.15.x",
   "versions": [
     "main",
+    "v1.16.x",
     "v1.15.x"
   ],
   "oldVersions": [
