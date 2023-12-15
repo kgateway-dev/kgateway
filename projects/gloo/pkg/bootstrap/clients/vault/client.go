@@ -102,12 +102,12 @@ func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 		addStringSetting(vaultSettings.GetTlsServerName(), setTlsServerName)
 		addBoolSetting(vaultSettings.GetInsecure(), setInsecure)
 	} else {
-		addStringSetting(vaultSettings.GetTlsConfig().GetCaCert(), setCaCert)
-		addStringSetting(vaultSettings.GetTlsConfig().GetCaPath(), setCaPath)
-		addStringSetting(vaultSettings.GetTlsConfig().GetClientCert(), setClientCert)
-		addStringSetting(vaultSettings.GetTlsConfig().GetClientKey(), setClientKey)
-		addStringSetting(vaultSettings.GetTlsConfig().GetTlsServerName(), setTlsServerName)
-		addBoolSetting(vaultSettings.GetTlsConfig().GetInsecure(), setInsecure)
+		addStringSetting(tlsSettings.GetCaCert(), setCaCert)
+		addStringSetting(tlsSettings.GetCaPath(), setCaPath)
+		addStringSetting(tlsSettings.GetClientCert(), setClientCert)
+		addStringSetting(tlsSettings.GetClientKey(), setClientKey)
+		addStringSetting(tlsSettings.GetTlsServerName(), setTlsServerName)
+		addBoolSetting(tlsSettings.GetInsecure(), setInsecure)
 	}
 
 	return tlsConfig

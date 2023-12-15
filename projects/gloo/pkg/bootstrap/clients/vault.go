@@ -16,6 +16,7 @@ const DefaultPathPrefix = "secret"
 
 type VaultClientInitFunc func() *api.Client
 
+// NoopVaultClientInitFunc returns the provided client without any modification
 func NoopVaultClientInitFunc(c *api.Client) VaultClientInitFunc {
 	return func() *api.Client {
 		return c
@@ -31,6 +32,7 @@ func NewVaultSecretClientFactory(clientInit VaultClientInitFunc, pathPrefix, roo
 	}
 }
 
+// VaultClientForSettings returns a vault client based on the provided settings.
 func VaultClientForSettings(ctx context.Context, vaultSettings *v1.Settings_VaultSecrets, vaultAuth vault.ClientAuth) (*api.Client, error) {
 	return vault.NewAuthenticatedClient(ctx, vaultSettings, vaultAuth)
 }

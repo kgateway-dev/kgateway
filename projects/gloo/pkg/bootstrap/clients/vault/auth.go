@@ -2,10 +2,10 @@ package vault
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/rotisserie/eris"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/awsutils"
 
 	"github.com/avast/retry-go"
@@ -31,8 +31,16 @@ var _ ClientAuth = &StaticTokenAuth{}
 var _ ClientAuth = &RemoteTokenAuth{}
 
 var (
-	ErrEmptyToken = errors.New("unable to authenticate to vault with empty token")
-	ErrNoAuthInfo = errors.New("no auth info was returned after login")
+	ErrEmptyToken          = errors.New("unable to authenticate to vault with empty token")
+	ErrNoAuthInfo          = errors.New("no auth info was returned after login")
+	ErrVaultAuthentication = func(err error) error {
+		return errors.Wrap(err, "unable to authenticate to vault")
+	}
+	ErrPartialCredentials = func(err error) error {
+		return eris.Wrap(err, "only partial credentials were provided for AWS IAM auth: ")
+	}
+	ErrAccessKeyId     = errors.New("access key id must be defined for AWS IAM auth")
+	ErrSecretAccessKey = errors.New("secret access key must be defined for AWS IAM auth")
 )
 
 // ClientAuthFactory returns a vault ClientAuth based on the provided settings.
@@ -56,7 +64,7 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 	}
 }
 
-// Constructor for StaticTokenAuth
+// NewStaticTokenAuth is a constructor for StaticTokenAuth
 func NewStaticTokenAuth(token string) ClientAuth {
 	return &StaticTokenAuth{
 		token: token,
@@ -67,7 +75,7 @@ type StaticTokenAuth struct {
 	token string
 }
 
-// Return the value of the token field
+// GetToken returns the value of the token field
 func (s *StaticTokenAuth) GetToken() string {
 	return s.token
 }
@@ -76,7 +84,7 @@ func (s *StaticTokenAuth) GetToken() string {
 // 	// static tokens do not support renewal
 // }
 
-// Log in to vault using a static token
+// Login logs in to vault using a static token
 func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
 	if s.GetToken() == "" {
 		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
@@ -94,7 +102,7 @@ func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Se
 	}, nil
 }
 
-// Constructor for RemoteTokenAuth
+// NewRemoteTokenAuth is a constructor for RemoteTokenAuth
 func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Option) ClientAuth {
 
 	// Standard retry options, which can be overridden by the loginRetryOptions parameter
@@ -118,7 +126,7 @@ type RemoteTokenAuth struct {
 	loginRetryOptions []retry.Option
 }
 
-// Log into vault using the provided authMethod
+// Login logs into vault using the provided authMethod
 func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
 	var (
 		loginResponse *vault.Secret
@@ -142,11 +150,6 @@ func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vau
 	)
 
 	loginErr = retry.Do(func() error {
-		// If the context is cancelled, we should not retry, but we also can't return an error or we will retry
-		// so we return nil and rely on the caller to check the context
-		if ctx.Err() != nil {
-			return nil
-		}
 		loginResponse, loginErr = r.loginOnce(ctx, client)
 		return loginErr
 	}, retryOptions...)
@@ -165,7 +168,7 @@ func (r *RemoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (
 		contextutils.LoggerFrom(ctx).Errorf("unable to authenticate to vault: %v", loginErr)
 		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
 		utils.MeasureOne(ctx, MLoginFailures)
-		return nil, eris.Wrapf(loginErr, "unable to authenticate to vault")
+		return nil, ErrVaultAuthentication(loginErr)
 	}
 
 	if loginResponse == nil {
@@ -189,22 +192,22 @@ func newAwsAuthMethod(aws *v1.Settings_VaultAwsAuth) (*awsauth.AWSAuth, error) {
 	// The AccessKeyID and SecretAccessKey are not required in the case of using temporary credentials from assumed roles with AWS STS or IRSA.
 	// STS: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html
 	// IRSA: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
-	var possibleErrStrings []string
+	var possibleErrors []error
 	if accessKeyId := aws.GetAccessKeyId(); accessKeyId != "" {
 		awsutils.SetAccessKeyEnv(accessKeyId)
 	} else {
-		possibleErrStrings = append(possibleErrStrings, "access key id must be defined for AWS IAM auth")
+		possibleErrors = append(possibleErrors, ErrAccessKeyId)
 	}
 
 	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey != "" {
 		awsutils.SetSecretAccessKeyEnv(secretAccessKey)
 	} else {
-		possibleErrStrings = append(possibleErrStrings, "secret access key must be defined for AWS IAM auth")
+		possibleErrors = append(possibleErrors, ErrSecretAccessKey)
 	}
 
 	// if we have only partial configuration set
-	if len(possibleErrStrings) == 1 {
-		return nil, errors.New("only partial credentials were provided for AWS IAM auth: " + possibleErrStrings[0])
+	if len(possibleErrors) == 1 {
+		return nil, ErrPartialCredentials(possibleErrors[0])
 	}
 
 	// At this point, we either have full auth configuration set, or are in an ec2 environment, where vault will infer the credentials.

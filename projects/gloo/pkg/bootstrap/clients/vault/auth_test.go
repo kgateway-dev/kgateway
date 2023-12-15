@@ -91,17 +91,39 @@ var _ = Describe("ClientAuth", func() {
 
 		When("internal auth method always returns an error", func() {
 
+			errMock := eris.New("mocked error message")
 			BeforeEach(func() {
 				ctrl = gomock.NewController(GinkgoT())
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
-				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("mocked error message")).AnyTimes()
+				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, errMock).AnyTimes()
 
 				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(3))
 			})
 
 			It("should return the error", func() {
 				secret, err := clientAuth.Login(ctx, nil)
-				Expect(err).To(MatchError("unable to authenticate to vault: mocked error message"))
+				Expect(err).To(MatchError(ErrVaultAuthentication(errMock)))
+				Expect(secret).To(BeNil())
+
+				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
+				assertions.ExpectStatSumMatches(MLoginFailures, Equal(3))
+			})
+
+		})
+
+		When("internal auth method always returns a nil response, but no error", func() {
+
+			BeforeEach(func() {
+				ctrl = gomock.NewController(GinkgoT())
+				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
+				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, nil).AnyTimes()
+
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(3))
+			})
+
+			It("should return the error", func() {
+				secret, err := clientAuth.Login(ctx, nil)
+				Expect(err).To(MatchError(ErrNoAuthInfo))
 				Expect(secret).To(BeNil())
 
 				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))
@@ -189,7 +211,7 @@ var _ = Describe("ClientAuth", func() {
 						SecretAccessKey: "",
 					},
 				},
-			}, MatchError("only partial credentials were provided for AWS IAM auth: secret access key must be defined for AWS IAM auth")),
+			}, MatchError(ErrPartialCredentials(ErrSecretAccessKey))),
 			Entry("partial accessKey / secretAccessKey (reversed)", &v1.Settings_VaultSecrets{
 				AuthMethod: &v1.Settings_VaultSecrets_Aws{
 					Aws: &v1.Settings_VaultAwsAuth{
@@ -197,7 +219,7 @@ var _ = Describe("ClientAuth", func() {
 						SecretAccessKey: "secret-access-key-id",
 					},
 				},
-			}, MatchError("only partial credentials were provided for AWS IAM auth: access key id must be defined for AWS IAM auth")),
+			}, MatchError(ErrPartialCredentials(ErrAccessKeyId))),
 		)
 
 		DescribeTable("should return the correct client auth",
