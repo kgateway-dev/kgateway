@@ -321,7 +321,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			return nil, InvalidTlsSecretError(nil, err)
 		}
 	} else if sslSds := cs.GetSds(); sslSds != nil {
-		tlsContext, err := s.handleSds(sslSds, VerifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
+		tlsContext, err := s.handleSds(sslSds, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
 			return nil, err
 		}
@@ -376,7 +376,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		return nil, eris.Errorf("both or none of cert chain and private key must be provided")
 	}
 
-	sanList := VerifySanListToMatchSanList(cs.GetVerifySubjectAltName())
+	sanList := verifySanListToMatchSanList(cs.GetVerifySubjectAltName())
 
 	if rootCaData != nil {
 		validationCtx := &envoyauth.CommonTlsContext_ValidationContext{
@@ -478,7 +478,7 @@ func convertVersion(v ssl.SslParameters_ProtocolVersion) (envoyauth.TlsParameter
 	return envoyauth.TlsParameters_TLS_AUTO, TlsVersionNotFoundError(v)
 }
 
-func VerifySanListToMatchSanList(sanList []string) []*envoymatcher.StringMatcher {
+func verifySanListToMatchSanList(sanList []string) []*envoymatcher.StringMatcher {
 	var matchSanList []*envoymatcher.StringMatcher
 	for _, san := range sanList {
 		matchSan := &envoymatcher.StringMatcher{
