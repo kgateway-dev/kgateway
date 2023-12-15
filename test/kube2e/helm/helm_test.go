@@ -198,7 +198,7 @@ var _ = Describe("Kube2e: helm", func() {
 				EventuallyWithOffset(1, func() []byte {
 					return getDeploymentChecksumAnnotation()
 				}, "30s", "1s").Should(
-					Equal(old))
+					Equal("abcdedf"))
 			}
 
 			expectDeploymentChecksumAnnotationChangedFrom := func(old []byte) {
