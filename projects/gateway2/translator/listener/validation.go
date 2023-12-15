@@ -3,7 +3,6 @@ package listener
 import (
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -12,13 +11,6 @@ import (
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
 const DefaultHostname = "*"
 const HTTPRouteKind = "HTTPRoute"
-
-// TODO: cross-listener validation
-// return valid for translation
-func ValidateGateway(gateway *gwv1.Gateway, inputs query.GatewayQueries, reporter reports.Reporter) bool {
-
-	return true
-}
 
 type portProtocol struct {
 	hostnames map[gwv1.Hostname]int
@@ -220,31 +212,3 @@ func getGroupName() *gwv1.Group {
 	g := gwv1.Group(gwv1.GroupName)
 	return &g
 }
-
-// func validateRoutes(
-// 	queries query.GatewayQueries,
-// 	reporter reports.Reporter,
-// 	routes []gwv1.HTTPRoute) {
-// 	for _, route := range routes {
-// 		for _, rule := range route.Spec.Rules {
-// 			for _, backendRef := range rule.BackendRefs {
-// 				_, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(&route), &backendRef)
-// 				if err != nil {
-// 					if err == query.ErrMissingReferenceGrant {
-// 						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
-// 							Type:   gwv1.RouteConditionResolvedRefs,
-// 							Status: metav1.ConditionFalse,
-// 							Reason: gwv1.RouteReasonRefNotPermitted,
-// 						})
-// 					} else if errors.IsNotFound(err) {
-// 						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
-// 							Type:   gwv1.RouteConditionResolvedRefs,
-// 							Status: metav1.ConditionFalse,
-// 							Reason: gwv1.RouteReasonBackendNotFound,
-// 						})
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
