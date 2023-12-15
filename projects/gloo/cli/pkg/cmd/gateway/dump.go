@@ -123,5 +123,5 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 }
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
-	return GetEnvoyDump(opts, "/stats", 5*time.Second)
+	return GetEnvoyDump(opts, "/stats", 30*time.Second)
 }
