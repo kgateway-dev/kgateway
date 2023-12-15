@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"go.opencensus.io/stats/view"
 )
@@ -15,7 +14,9 @@ import (
 // "the metric was never recorded" from "a value of 0 was recorded"
 func ReadMetricByLabel(metricName string, labelKey string, labelValue string) (int, error) {
 	rows, err := view.RetrieveData(metricName)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to retrieve data for %s", metricName)
+	}
 	for _, row := range rows {
 		for _, tag := range row.Tags {
 			if tag.Key.Name() == labelKey && tag.Value == labelValue {
