@@ -20,7 +20,7 @@ import (
 
 var (
 	kubeOutDir  = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
-	envoyOutDir = filepath.Join(util.GetModuleRoot(), "_output", "envoy-dump")
+	envoyOutDir = filepath.Join(kubeOutDir, "envoy-dump")
 )
 
 // KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.

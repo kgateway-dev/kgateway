@@ -1,4 +1,4 @@
-package utils
+package utils_test
 
 import (
 	"io"
@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 const (
@@ -16,13 +17,13 @@ var _ = Describe("Debug", func() {
 
 	It("should be able to parse out all logs", func() {
 		logs := io.NopCloser(strings.NewReader(testLogLevels))
-		filteredLogs := FilterLogLevel(logs, LogLevelAll)
+		filteredLogs := utils.FilterLogLevel(logs, utils.LogLevelAll)
 		Expect(filteredLogs.String()).To(Equal(testLogLevels + "\n"))
 	})
 
 	It("should be able to parse out error logs", func() {
 		logs := io.NopCloser(strings.NewReader(testLogLevels))
-		filteredLogs := FilterLogLevel(logs, LogLevelError)
+		filteredLogs := utils.FilterLogLevel(logs, utils.LogLevelError)
 		Expect(filteredLogs.String()).To(Equal("LOGS: {\"level\":\"error\",\"ts\":1}\n{\"level\":\"error\",\"ts\":1}\n"))
 	})
 
