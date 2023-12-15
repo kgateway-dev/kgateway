@@ -27,6 +27,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -105,7 +106,8 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", decorators.Vault
 		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
 		Expect(err).NotTo(HaveOccurred())
 
-		vaultClient, err = bootstrap.VaultClientForSettings(vaultSecretSource)
+		vaultAuth, _ := vault.ClientAuthFactory(vaultSecretSource)
+		vaultClient, err = bootstrap.VaultClientForSettings(ctx, vaultSecretSource, vaultAuth)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulResources = &factory.ConsulResourceClientFactory{

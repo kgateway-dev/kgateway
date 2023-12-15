@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5438
+    resolvesIssue: false
+    description: >-
+      Refactor the vault auth code to make token renewal easier to introduce in a follow-up PR.
+      Add retry logic when fetching the vault token from a remote source (AWS).

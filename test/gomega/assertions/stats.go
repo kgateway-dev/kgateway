@@ -6,6 +6,9 @@ import (
 	"regexp"
 	"time"
 
+	stats2 "go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+
 	"k8s.io/utils/pointer"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -132,4 +135,16 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 		previousStatValue = *currentStatValue
 		g.Expect(currentlyInARow).To(Equal(inARow))
 	}, "2m", SafeTimeToSyncStats), currentStatValue
+}
+
+func ExpectStatLastValueMatches(measure *stats2.Int64Measure, lastValueMatcher types.GomegaMatcher) {
+	rows, err := view.RetrieveData(measure.Name())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
+}
+
+func ExpectStatSumMatches(measure *stats2.Int64Measure, sumValueMatcher types.GomegaMatcher) {
+	rows, err := view.RetrieveData(measure.Name())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
 }
