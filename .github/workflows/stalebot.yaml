@@ -1,0 +1,35 @@
+name: Stalebot
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Everyday 6am EST
+    - cron: "0 10 * * *"
+
+env:
+  DAYS_BEFORE_ISSUE_STALE: 180
+  DAYS_BEFORE_ISSUE_CLOSE: 180
+
+jobs:
+  close-stale-issues:
+    name: Close Stale Issues
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/stale@v8 # https://github.com/actions/stale
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-issue-stale: ${{ env.DAYS_BEFORE_ISSUE_STALE }}
+          days-before-issue-close: ${{ env.DAYS_BEFORE_ISSUE_CLOSE }}
+          stale-issue-message: >
+            This issue has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_ISSUE_STALE }} days.
+            It will be closed in the next ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
+          close-issue-message: >
+            This issue has been closed due to no activity in the last 12 months.
+          stale-issue-label: 'stale' # https://github.com/solo-io/gloo/labels/stale
+          exempt-issue-labels: 'no stalebot' # https://github.com/solo-io/gloo/labels/no%20stalebot
+          enable-statistics: true
+          operations-per-run: 1000
+          ascending: true # asc means oldest first
+          # debug-only: true # dry-run for debugging
