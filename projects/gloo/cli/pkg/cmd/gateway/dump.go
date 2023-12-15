@@ -100,7 +100,7 @@ func GetEnvoyAdminData(ctx context.Context, proxyName, namespace, path string, t
 }
 
 func GetEnvoyCfgDump(opts *options.Options) (string, error) {
-	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, "/config_dump", 5*time.Second)
+	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.GetNamespace(), "/config_dump", 5*time.Second)
 }
 
 func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -121,5 +121,5 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 }
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
-	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, "/stats", 30*time.Second)
+	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.GetNamespace(), "/stats", 30*time.Second)
 }
