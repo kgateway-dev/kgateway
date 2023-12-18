@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/solo-io/go-utils/cliutils"
@@ -36,8 +37,12 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-// GetEnvoyAdminData returns the response from the envoy admin interface based on the `path` specified within the defined timeout
+// GetEnvoyAdminData returns the response from the envoy admin interface based on the `path` specified within the defined timeout.
+// Note that a `/` will be prepended to path if it does not exist.
 func GetEnvoyAdminData(ctx context.Context, proxyName, namespace, path string, timeout time.Duration) (string, error) {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 		"deployment/"+proxyName, adminPort)

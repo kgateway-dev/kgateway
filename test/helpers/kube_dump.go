@@ -240,7 +240,7 @@ func kubeList(namespace string, target string) ([]string, error) {
 // - stats
 // - clusters
 // - listeners
-func EnvoyDumpOnFail(out io.Writer, namespaces ...string) func() {
+func EnvoyDumpOnFail(_ io.Writer, namespaces ...string) func() {
 	return func() {
 		setupOutDir(envoyOutDir)
 		for _, ns := range namespaces {
