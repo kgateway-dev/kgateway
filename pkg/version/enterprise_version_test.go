@@ -16,7 +16,7 @@ var _ = Describe("LatestVersionFromRepo", func() {
 	BeforeEach(func() {
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -37,11 +37,11 @@ entries:
   - apiVersion: v1
     version: 0.8.1`
 		tmpFile, err := afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), version.GlooEE, true)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(enterpriseVersion).To(Equal("0.19.1"))
 	})
 
@@ -57,11 +57,11 @@ entries:
   - apiVersion: v1
     version: 0.20.1`
 		tmpFile, err := afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), version.GlooEE, true)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(enterpriseVersion).To(Equal("0.20.1"))
 	})
 
@@ -77,11 +77,11 @@ entries:
   - apiVersion: v1
     version: 0.20.1`
 		tmpFile, err := afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), version.GlooEE, false)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(enterpriseVersion).To(Equal("1.0.0-rc2"))
 	})
 
@@ -103,11 +103,11 @@ entries:
   - apiVersion: v1
     version: 0.20.1`
 		tmpFile, err := afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), version.GlooEE, true)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(enterpriseVersion).To(Equal("1.2.0"))
 	})
 
@@ -117,9 +117,9 @@ apiVersion: v1
 entries:
   gloo-ee:`
 		tmpFile, err := afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), version.GlooEE, false)
 		Expect(enterpriseVersion).To(Equal(""))
 		Expect(err).NotTo(BeNil())

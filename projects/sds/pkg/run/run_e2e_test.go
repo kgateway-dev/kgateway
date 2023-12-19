@@ -41,7 +41,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		fileString := []byte("test")
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		// Kubernetes mounts secrets as a symlink to a ..data directory, so we'll mimic that here
 		keyName = path.Join(dir, "/", "tls.key-0")
@@ -49,29 +49,29 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		caName = path.Join(dir, "/", "ca.crt-0")
 		ocspName = path.Join(dir, "/", "tls.ocsp-staple-0")
 		err = afero.WriteFile(fs, keyName, fileString, 0644)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = afero.WriteFile(fs, certName, fileString, 0644)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = afero.WriteFile(fs, caName, fileString, 0644)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		// This is a pre-generated DER-encoded OCSP response using `openssl` to better match actual ocsp staple/response data.
 		// This response isn't for the test certs as they are just random data, but it is a syntactically-valid OCSP response.
 		ocspResponse, err := os.ReadFile("certs/ocsp_response.der")
 		Expect(err).ToNot(HaveOccurred())
 		err = afero.WriteFile(fs, ocspName, ocspResponse, 0644)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		keyNameSymlink = path.Join(dir, "/", "tls.key")
 		certNameSymlink = path.Join(dir, "/", "tls.crt")
 		caNameSymlink = path.Join(dir, "/", "ca.crt")
 		ocspNameSymlink = path.Join(dir, "/", "tls.ocsp-staple")
 		err = os.Symlink(keyName, keyNameSymlink)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = os.Symlink(certName, certNameSymlink)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = os.Symlink(caName, caNameSymlink)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = os.Symlink(ocspName, ocspNameSymlink)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		secret = server.Secret{
 			ServerCert:        "test-cert",
@@ -95,14 +95,14 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 			defer GinkgoRecover()
 
 			if err := run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress); err != nil {
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 		}()
 
 		// Connect with the server
 		var conn *grpc.ClientConn
 		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
@@ -140,7 +140,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		// Connect with the server
 		var conn *grpc.ClientConn
 		conn, err = grpc.Dial(testServerAddress, grpc.WithInsecure())
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		defer conn.Close()
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
@@ -154,7 +154,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(snapshotVersion).To(Equal(expectedHashes[0]))
 
 		var resp *envoy_service_discovery_v3.DiscoveryResponse
@@ -171,9 +171,9 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 
 		// Cert rotation #1
 		err = os.Remove(keyName)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = afero.WriteFile(fs, keyName, []byte("tls.key-1"), 0644)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		// Re-read certs
 		certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
@@ -185,19 +185,19 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		}
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(snapshotVersion).To(Equal(expectedHashes[1]))
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
 
 		// Cert rotation #2
 		err = os.Remove(keyName)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		err = afero.WriteFile(fs, keyName, []byte("tls.key-2"), 0644)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		// Re-read certs again
 		certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
@@ -209,11 +209,11 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		}
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(snapshotVersion).To(Equal(expectedHashes[2]))
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
 	},

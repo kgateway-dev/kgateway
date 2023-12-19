@@ -371,11 +371,11 @@ var _ = Describe("Plugin", func() {
 		It("contains only the fields we expect", func() {
 			// read in expected HCM fields from file
 			expectedFieldsJsonFile, err := os.Open("testing/expected_hcm_fields.json")
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			defer expectedFieldsJsonFile.Close()
 
 			expectedFieldsJsonByteValue, err := io.ReadAll(expectedFieldsJsonFile)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 
 			var expectedFields []string
 			json.Unmarshal(expectedFieldsJsonByteValue, &expectedFields)

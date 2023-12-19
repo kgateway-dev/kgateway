@@ -90,7 +90,7 @@ func checkRolloutJobDeleted() {
 	EventuallyWithOffset(1, func() string {
 		cmd := exec.Command("kubectl", "-n", "gloo-system", "get", "jobs", "-A")
 		b, err := cmd.Output()
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		return string(b)
 	}, "60s", "10s").ShouldNot(
 		ContainSubstring("gloo-resource-rollout "))
@@ -104,7 +104,7 @@ func checkGlooHealthyAndSyncedInArgo() {
 		command := "argocd app get gloo --hard-refresh -o json | jq '.status.health.status'"
 		cmd := exec.Command("bash", "-c", command)
 		b, err := cmd.Output()
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		return string(b)
 	}).Should(
 		ContainSubstring("Healthy"))
@@ -114,7 +114,7 @@ func checkGlooHealthyAndSyncedInArgo() {
 		command := "argocd app get gloo --hard-refresh -o json | jq '.status.sync.status'"
 		cmd := exec.Command("bash", "-c", command)
 		b, err := cmd.Output()
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		return string(b)
 	}).Should(
 		ContainSubstring("Synced"))
@@ -130,7 +130,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 			fmt.Println("ExitError: ", v.Error())
 		}
 	}
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	cmd.Process.Kill()
 	cmd.Process.Release()
 	return b

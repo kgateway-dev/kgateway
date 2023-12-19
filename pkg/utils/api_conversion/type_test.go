@@ -37,7 +37,7 @@ var _ = Describe("Type conversion", func() {
 				},
 			}
 			headers, err := ToEnvoyHeaderValueOptionList(allowedHeaders, nil, HeaderSecretOptions{})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(headers).To(Equal(expectedHeaders))
 		})
 

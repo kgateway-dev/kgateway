@@ -842,7 +842,7 @@ var _ = Describe("Consul EDS", func() {
 			upstream2 := createTestFilteredUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"serf"}, []string{"dc-1", "dc-2"})
 
 			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
 				Metadata: &core.Metadata{
@@ -883,7 +883,7 @@ var _ = Describe("Consul EDS", func() {
 			}).Return(initialIps, nil).Times(1) // once for each consul service
 
 			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
 				Metadata: &core.Metadata{
@@ -927,7 +927,7 @@ var _ = Describe("Consul EDS", func() {
 
 			// Initial call should be successfull
 			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolverWithFallback, consulService, v1.UpstreamList{upstream})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
 				Metadata: &core.Metadata{
@@ -954,7 +954,7 @@ var _ = Describe("Consul EDS", func() {
 
 			// Following call should also be successfull despite the error
 			endpoints, err = buildEndpoints(context.TODO(), writeNamespace, mockDnsResolverWithFallback, consulService, v1.UpstreamList{upstream})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
 				Metadata: &core.Metadata{

@@ -277,7 +277,7 @@ var _ = Describe("UdsConvert", func() {
 					}
 
 					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					actualSslConfig := up.GetSslConfig()
 					Expect(actualSslConfig).NotTo(BeNil())
 
@@ -334,7 +334,7 @@ var _ = Describe("UdsConvert", func() {
 					}
 
 					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					actualSslConfig := up.GetSslConfig()
 					Expect(actualSslConfig).NotTo(BeNil())
 
@@ -399,7 +399,7 @@ var _ = Describe("UdsConvert", func() {
 					}
 
 					up, err := CreateUpstreamWithSpec(uc, context.TODO(), svc, port, us)
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					actualServiceSpec := up.GetKube()
 					Expect(actualServiceSpec).NotTo(BeNil())
 

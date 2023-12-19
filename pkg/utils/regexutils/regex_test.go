@@ -50,7 +50,7 @@ var _ = Describe("Regex", func() {
 			Pattern:      &subPattern,
 		}
 		out, err := ConvertRegexMatchAndSubstitute(ctx, &in)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(out.Pattern.Regex).To(Equal(in.Pattern.Regex))
 		Expect(out.Substitution).To(Equal(in.Substitution))
 	})

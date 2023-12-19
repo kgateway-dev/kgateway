@@ -287,7 +287,7 @@ func startRateLimitServer(service pb.RateLimitServiceServer, rlport uint32) *grp
 	reflection.Register(srv)
 	addr := fmt.Sprintf(":%d", rlport)
 	lis, err := net.Listen("tcp", addr)
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	go func() {
 		defer GinkgoRecover()
 		err := srv.Serve(lis)

@@ -35,26 +35,26 @@ var _ = Describe("SDS Server", func() {
 		fileString := `test`
 
 		keyFile, err = afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = keyFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		certFile, err = afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = certFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		caFile, err = afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = caFile.WriteString(fileString)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		ocspResponseFile, err = afero.TempFile(fs, dir, "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		ocspResp, err := os.ReadFile("certs/ocsp_response.der")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		_, err = ocspResponseFile.Write(ocspResp)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		secrets := []server.Secret{
 			{
 				ServerCert:        "test-server",
@@ -77,27 +77,27 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).NotTo(HaveOccurred())
 		if useOcsp {
 			ocspResponse, err := os.ReadFile(ocspResponseFile.Name())
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			certs = append(certs, ocspResponse)
 		}
 
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(snapshotVersion).To(Equal(expectedHashes[0]))
 
 		// Test that the snapshot version changes if the contents of the file changes
 		_, err = keyFile.WriteString(`newFileString`)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		certs, err = testutils.FilesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
 		Expect(err).NotTo(HaveOccurred())
 		if useOcsp {
 			ocspResponse, err := os.ReadFile(ocspResponseFile.Name())
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			certs = append(certs, ocspResponse)
 		}
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(snapshotVersion).To(Equal(expectedHashes[1]))
 	},
 		Entry("without ocsps", false, []string{"6730780456972595554", "4234248347190811569"}),
@@ -115,7 +115,7 @@ var _ = Describe("SDS Server", func() {
 			_, err = srv.Run(ctx)
 			// Give it a second to come up + read the certs
 			time.Sleep(time.Second * 1)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
@@ -128,7 +128,7 @@ var _ = Describe("SDS Server", func() {
 
 			// Initiate a connection with the server
 			conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			defer conn.Close()
 
 			client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
@@ -140,7 +140,7 @@ var _ = Describe("SDS Server", func() {
 			// After snapshot is set, expect to see the secrets
 			srv.UpdateSDSConfig(ctx)
 			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.GetResources()).To(HaveLen(2))
 			Expect(resp.Validate()).To(Succeed())
 

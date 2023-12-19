@@ -81,7 +81,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		err := processHcmNetworkFilter(cfg)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
 				CustomTags: []*envoytracing.CustomTag{
@@ -144,7 +144,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		err := processHcmNetworkFilter(cfg)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
 				ClientSampling:  &envoy_type.Percent{Value: 100},
@@ -167,7 +167,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 			err := processHcmNetworkFilter(cfg)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
 
@@ -227,7 +227,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
 					CollectorCluster:         "valid_default",
@@ -267,7 +267,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
 					CollectorCluster:         "zipkin-cluster-name",
@@ -342,7 +342,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "valid_default",
@@ -376,7 +376,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "datadog-cluster-name",
@@ -427,7 +427,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.OpenCensusConfig{
 					TraceConfig: &v12.TraceConfig{
@@ -505,7 +505,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.OpenCensusConfig{
 					TraceConfig: &v12.TraceConfig{
@@ -574,7 +574,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedEnvoyConfig := &envoytrace.OpenTelemetryConfig{
 					GrpcService: &envoy_config_core_v3.GrpcService{

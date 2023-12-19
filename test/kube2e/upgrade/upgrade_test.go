@@ -159,7 +159,7 @@ func updateSettingsWithoutErrors(ctx context.Context, crdDir string, testHelper 
 	By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 	client := helpers.MustSettingsClient(ctx)
 	settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
 
 	upgradeGloo(testHelper, chartUri, targetReleasedVersion, crdDir, strictValidation, []string{
@@ -170,7 +170,7 @@ func updateSettingsWithoutErrors(ctx context.Context, crdDir string, testHelper 
 
 	By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 	settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
 	Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
 }
@@ -249,7 +249,7 @@ func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClient
 // ===================================
 func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	Expect(glooVersion.GetServer()).To(HaveLen(1))
 	for _, container := range glooVersion.GetServer()[0].GetKubernetes().GetContainers() {
 		if v == "" {
@@ -418,7 +418,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 			fmt.Println("ExitError: ", string(v.Stderr))
 		}
 	}
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	cmd.Process.Kill() // This is *almost certainly* the reason a namespace deletion was able to hang without alerting us
 	cmd.Process.Release()
 	return b

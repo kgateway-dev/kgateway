@@ -970,10 +970,10 @@ var _ = Describe("Gateway", func() {
 
 					Eventually(func() (gatewayv1.VirtualServiceList, error) {
 						return testClients.VirtualServiceClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
-					}, "10s", "0.5s").Should(HaveLen(0))
+					}, "10s", "0.5s").Should(BeEmpty())
 					Consistently(func() (gatewayv1.VirtualServiceList, error) {
 						return testClients.VirtualServiceClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
-					}, "10s", "0.5s").Should(HaveLen(0))
+					}, "10s", "0.5s").Should(BeEmpty())
 				})
 
 				It("should work with no ssl and clean up the envoy config when the virtual service is deleted", func() {

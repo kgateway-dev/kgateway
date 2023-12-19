@@ -29,7 +29,7 @@ var _ = Describe("Plugin", func() {
 	BeforeEach(func() {
 		kube = fake.NewSimpleClientset()
 		kubeCoreCache, err := corecache.NewKubeCoreCache(context.Background(), kube)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		plugin = NewPlugin(kube, kubeCoreCache)
 		plugin.Init(plugins.InitParams{})
 		upstream = &v1.Upstream{
@@ -59,7 +59,7 @@ var _ = Describe("Plugin", func() {
 		It("should error upstream with nonexistent serviceNamespace", func() {
 			// Reset plugin to not watch all namespaces.
 			kubeCoreCache, err := corecache.NewKubeCoreCacheWithOptions(context.Background(), kube, time.Duration(1), []string{"ns"})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			plugin = NewPlugin(kube, kubeCoreCache)
 			plugin.Init(plugins.InitParams{})
 			upstream.UpstreamType = &v1.Upstream_Kube{

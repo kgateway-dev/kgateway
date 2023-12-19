@@ -449,7 +449,7 @@ func makeReviewRequestWithProxies(url string, crd crd.Crd, gvk schema.GroupVersi
 	switch typedResource := resource.(type) {
 	case unstructured.UnstructuredList:
 		jsonBytes, err := typedResource.MarshalJSON()
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		return makeReviewRequestRawJsonEncoded(url, gvk, operation, "name", "namespace", jsonBytes, returnProxies)
 	case resources.InputResource:
 		resourceCrd, err := crd.KubeResource(typedResource)

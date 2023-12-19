@@ -530,7 +530,7 @@ var _ = Describe("Validation Server", func() {
 						Expect(st.Code()).To(Equal(state))
 						continue
 					} else {
-						Expect(err).To(BeNil())
+						Expect(err).NotTo(HaveOccurred())
 					}
 
 					l.Lock()

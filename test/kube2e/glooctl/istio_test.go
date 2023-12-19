@@ -65,7 +65,7 @@ var _ = Describe("Istio", Ordered, func() {
 				Ctx: ctx,
 			})
 			g.Expect(err).NotTo(HaveOccurred(), "should be able to list virtual services")
-			g.Expect(virtualServices).To(HaveLen(0), "should have no virtual services")
+			g.Expect(virtualServices).To(BeEmpty(), "should have no virtual services")
 		}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
 	})
 
