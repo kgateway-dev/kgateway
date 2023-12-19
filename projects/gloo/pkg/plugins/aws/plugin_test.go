@@ -589,8 +589,8 @@ var _ = Describe("Plugin", func() {
 			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
 			Expect(err).Should(BeNil())
 			cfg := msg.(*AWSLambdaPerRoute)
-			Expect(cfg.UnwrapAsAlb).Should(Equal(true))
-			Expect(cfg.Async).Should(Equal(true))
+			Expect(cfg.UnwrapAsAlb).To(BeTrue())
+			Expect(cfg.Async).To(BeTrue())
 		})
 
 		When("unwrapping response", func() {
@@ -604,7 +604,7 @@ var _ = Describe("Plugin", func() {
 				msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
 				Expect(err).Should(BeNil())
 				cfg := msg.(*AWSLambdaPerRoute)
-				Expect(cfg.UnwrapAsAlb).Should(Equal(true))
+				Expect(cfg.UnwrapAsAlb).To(BeTrue())
 				Expect(cfg.GetTransformerConfig()).Should(BeNil())
 			})
 		})
