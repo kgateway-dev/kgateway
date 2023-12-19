@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Refactor getting dumps from the proxy. Also export this new method which is quite useful in debugging failures, especially in CI.
+

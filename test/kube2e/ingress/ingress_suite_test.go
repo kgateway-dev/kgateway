@@ -40,7 +40,7 @@ var _ = BeforeSuite(func() {
 	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = kube2e.GetTestHelper(ctx, "ingress-test-"+fmt.Sprintf("%d-%d", randomNumber, parallel.GetParallelProcessCount()))
 	Expect(err).NotTo(HaveOccurred())
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
 	// Define helm overrides
