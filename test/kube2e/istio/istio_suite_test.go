@@ -60,7 +60,7 @@ var _ = BeforeSuite(func() {
 	testHelper, err = kube2e.GetTestHelper(ctx, installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
 	Expect(err).NotTo(HaveOccurred())

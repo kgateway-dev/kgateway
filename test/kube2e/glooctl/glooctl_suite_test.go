@@ -51,7 +51,7 @@ func StartTestHelper() {
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 	// Register additional fail handlers
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "istio-system", testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, "istio-system", testHelper.InstallNamespace))
 
 	if !testutils.ShouldSkipInstall() {
 		installGloo()
