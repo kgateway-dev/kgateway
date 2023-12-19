@@ -352,8 +352,8 @@ var _ = Describe("StatusSyncer", func() {
 				// As of k8s 1.26+, Ingresses have a status of IngressLoadBalancerStatus, differing from the service's type.
 				ingIngress := ing.Status.LoadBalancer.Ingress
 				svcIngress := svc.Status.LoadBalancer.Ingress
-				g.Expect(len(ingIngress)).ToNot(BeZero())
-				g.Expect(len(ingIngress)).To(Equal(len(svcIngress)))
+				g.Expect(ingIngress).ToNot(BeEmpty())
+				g.Expect(ingIngress).To(HaveLen(len(svcIngress)))
 				g.Expect(ingIngress[0].Hostname).To(Equal(svcIngress[0].Hostname))
 				g.Expect(ingIngress[0].IP).To(Equal(svcIngress[0].IP))
 				// `BeEquivalentTo` did not work here even when the values matched, so checking "equality" by ensuring both are nil.
