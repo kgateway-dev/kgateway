@@ -130,6 +130,9 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golang/mock/gomock
 	go install github.com/golang/mock/mockgen
 	go install github.com/saiskee/gettercheck
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
+	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
+
 
 .PHONY: check-format
 check-format:
@@ -139,6 +142,15 @@ check-format:
 check-spelling:
 	./ci/spell.sh check
 
+
+#----------------------------------------------------------------------------
+# Analyze
+#----------------------------------------------------------------------------
+
+.PHONY: analyze
+ANALYZE_OPTIONS ?= --fast --timeout=5m --tests=true --verbose --concurrency=4
+analyze:
+	$(DEPSGOBIN)/golangci-lint run $(ANALYZE_OPTIONS) ./...
 
 #----------------------------------------------------------------------------------
 # Tests

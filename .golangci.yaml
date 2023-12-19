@@ -1,0 +1,67 @@
+# Configuration for make analyze
+#
+# For reference, consider:
+#
+# * https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+# * https://golangci-lint.run/usage/configuration/
+#
+linters:
+  enable:
+    #- errcheck
+    #- errorlint
+    #- exportloopref
+    - gocritic
+    #- gosimple
+    #- govet
+    #- ineffassign
+    #- staticcheck
+    #- typecheck
+    #- unused
+    - ginkgolinter
+
+# Settings dedicated to specific linters.
+linters-settings:
+  gocritic:
+    enabled-checks:
+      - ruleguard
+    enabled-tags:
+      - diagnostic
+      - performance
+    disabled-tags:
+      - style
+      - experimental
+      - opinionated
+      - security
+    settings:
+      hugeParam:
+        # Default; 80
+        sizeThreshold: 2048
+      ruleguard:
+        rules: '${configDir}/test/rules/*.go'
+      rangeValCopy:
+        # Size in bytes that makes the warning trigger.
+        # Default: 128
+        sizeThreshold: 2048
+        # Whether to check test functions.
+        # Default: true
+        skipTestFuncs: true
+
+  errcheck:
+    exclude-functions:
+      - (net/http.ResponseWriter).Write
+
+  staticcheck:
+    checks: ["all", "-SA1019"]
+
+run:
+  # In the past we have found performance to be better when using a subset of total CPUs.
+  concurrency: 4
+  # test code shouldn't follow same rules, if we find tests are failing a lot we can revisit.
+  tests: false
+
+  skip-dirs:
+    # don't lint ruleguard files
+    - test/rules
+
+    # don't lint gomock intermediate files
+    - 'gomock_reflect_\d*'
