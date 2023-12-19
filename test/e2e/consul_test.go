@@ -277,7 +277,7 @@ var _ = Describe("Consul e2e", decorators.Consul, func() {
 				Fail("err chan closed prematurely")
 			case svcsReceived := <-svcsChan:
 				// the default consul svc in dc1 does not show up in our watch because of service tag filtering
-				Expect(svcsReceived).To(HaveLen(0))
+				Expect(svcsReceived).To(BeEmpty())
 			case <-time.After(5 * time.Second):
 				Fail("timeout waiting for services")
 			}
@@ -289,7 +289,7 @@ var _ = Describe("Consul e2e", decorators.Consul, func() {
 					return errors.New("err chan closed prematurely")
 				case svcsReceived := <-svcsChan:
 					// happy path, continue
-					ExpectWithOffset(1, svcsReceived).To(HaveLen(0))
+					ExpectWithOffset(1, svcsReceived).To(BeEmpty())
 				case <-time.After(100 * time.Millisecond):
 					// happy path, continue
 				}
@@ -303,7 +303,7 @@ var _ = Describe("Consul e2e", decorators.Consul, func() {
 					ExpectWithOffset(1, err).NotTo(HaveOccurred())
 					return errors.New("err chan closed prematurely")
 				case svcsReceived := <-svcsChan:
-					ExpectWithOffset(1, svcsReceived).To(HaveLen(0)) // we actually expect len(0) if anything; this is just here to get a nice output / diff before we fail regardless
+					ExpectWithOffset(1, svcsReceived).To(BeEmpty()) // we actually expect len(0) if anything; this is just here to get a nice output / diff before we fail regardless
 					Fail("did not expect to receive empty services")
 				case <-time.After(100 * time.Millisecond):
 					// happy path, continue
@@ -361,7 +361,7 @@ var _ = Describe("Consul e2e", decorators.Consul, func() {
 					ExpectWithOffset(1, err).NotTo(HaveOccurred())
 					return errors.New("err chan closed prematurely")
 				case svcsReceived := <-svcsChan:
-					ExpectWithOffset(1, svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
+					ExpectWithOffset(1, svcsReceived).To(BeEmpty()) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
 					Fail("did not expect to receive services")
 				case <-time.After(100 * time.Millisecond):
 					// happy path, continue
@@ -427,7 +427,7 @@ var _ = Describe("Consul e2e", decorators.Consul, func() {
 					ExpectWithOffset(1, err).NotTo(HaveOccurred())
 					return errors.New("err chan closed prematurely")
 				case svcsReceived := <-svcsChan:
-					ExpectWithOffset(1, svcsReceived).To(HaveLen(0)) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
+					ExpectWithOffset(1, svcsReceived).To(BeEmpty()) // we actually expect len(1) if anything; this is just here to get a nice output / diff before we fail regardless
 					Fail("did not expect to receive services")
 				case <-time.After(100 * time.Millisecond):
 					// happy path, continue

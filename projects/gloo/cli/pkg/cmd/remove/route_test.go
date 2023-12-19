@@ -46,6 +46,6 @@ var _ = Describe("Remove Route", func() {
 
 		vs, err = helpers.MustVirtualServiceClient(ctx).Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(vs.VirtualHost.Routes).To(HaveLen(0))
+		Expect(vs.VirtualHost.Routes).To(BeEmpty())
 	})
 })

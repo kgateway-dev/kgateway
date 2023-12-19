@@ -370,7 +370,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err).Should(MatchError(expectedError))
 
-				Expect(accessLogConfigs).To(HaveLen(0))
+				Expect(accessLogConfigs).To(BeEmpty())
 			},
 			Entry(
 				"Bad Denominator in RuntimeFilter",

@@ -58,7 +58,7 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessListener(params, in, out)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(out.ListenerFilters).To(HaveLen(0))
+			Expect(out.ListenerFilters).To(BeEmpty())
 		})
 
 		When("use deprecated and not-deprecated config", func() {
@@ -116,7 +116,7 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessListener(params, in, out)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(out.ListenerFilters).To(HaveLen(0))
+			Expect(out.ListenerFilters).To(BeEmpty())
 		})
 
 	})

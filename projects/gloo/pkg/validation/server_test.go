@@ -284,7 +284,7 @@ var _ = Describe("Validation Server", func() {
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
 				warnings := validation.GetProxyWarning(proxyReport)
 				errors := validation.GetProxyError(proxyReport)
-				Expect(warnings).To(HaveLen(0))
+				Expect(warnings).To(BeEmpty())
 				Expect(errors).NotTo(HaveOccurred())
 			}
 
@@ -368,7 +368,7 @@ var _ = Describe("Validation Server", func() {
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
 				warnings := validation.GetProxyWarning(proxyReport)
 				errors := validation.GetProxyError(proxyReport)
-				Expect(warnings).To(HaveLen(0))
+				Expect(warnings).To(BeEmpty())
 				Expect(errors).NotTo(HaveOccurred())
 			}
 

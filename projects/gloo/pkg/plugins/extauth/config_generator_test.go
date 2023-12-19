@@ -60,7 +60,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 				It("does not return any filter", func() {
 					filters, err := extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(nil, nil)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(filters).To(HaveLen(0))
+					Expect(filters).To(BeEmpty())
 				})
 			})
 

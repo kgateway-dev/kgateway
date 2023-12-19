@@ -2763,7 +2763,7 @@ var _ = Describe("Translator", func() {
 		It("can properly create a tcp listener", func() {
 			translate()
 			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
-			Expect(listeners).NotTo(HaveLen(0))
+			Expect(listeners).NotTo(BeEmpty())
 			val, found := listeners["tcp-listener"]
 			Expect(found).To(BeTrue())
 			listener, ok := val.ResourceProto().(*envoy_config_listener_v3.Listener)
@@ -2791,7 +2791,7 @@ var _ = Describe("Translator", func() {
 		It("can properly create a hybrid listener", func() {
 			translate()
 			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
-			Expect(listeners).NotTo(HaveLen(0))
+			Expect(listeners).NotTo(BeEmpty())
 			val, found := listeners["hybrid-listener"]
 			Expect(found).To(BeTrue())
 			listener, ok := val.ResourceProto().(*envoy_config_listener_v3.Listener)
@@ -2829,7 +2829,7 @@ var _ = Describe("Translator", func() {
 			settings.Gloo = &v1.GlooOptions{RemoveUnusedFilters: &wrappers.BoolValue{Value: true}}
 			translate()
 			listeners := snapshot.GetResources(types.ListenerTypeV3).Items
-			Expect(listeners).NotTo(HaveLen(0))
+			Expect(listeners).NotTo(BeEmpty())
 			val, found := listeners["hybrid-listener"]
 			Expect(found).To(BeTrue())
 			listener, ok := val.ResourceProto().(*envoy_config_listener_v3.Listener)

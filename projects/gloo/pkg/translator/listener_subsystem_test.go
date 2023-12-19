@@ -131,8 +131,8 @@ var _ = Describe("Listener Subsystem", func() {
 				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{},
 			},
 			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
-				ExpectWithOffset(1, listener.GetFilterChains()).To(HaveLen(0))
-				ExpectWithOffset(1, routeConfigs).To(HaveLen(0))
+				ExpectWithOffset(1, listener.GetFilterChains()).To(BeEmpty())
+				ExpectWithOffset(1, routeConfigs).To(BeEmpty())
 			},
 		),
 		Entry(

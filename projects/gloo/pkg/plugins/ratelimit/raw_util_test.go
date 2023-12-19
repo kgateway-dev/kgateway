@@ -170,7 +170,7 @@ var _ = Describe("RawUtil", func() {
 	)
 	DescribeTable("Errors on missing required fields", func(actions []*gloorl.Action) {
 		envoyActions, err := ConvertActions(nil, actions)
-		Expect(envoyActions).To(HaveLen(0))
+		Expect(envoyActions).To(BeEmpty())
 		Expect(err).To(MatchError(ContainSubstring("Missing required field in ratelimit action")))
 	},
 		Entry("Missing descriptorValue in genericKey",
