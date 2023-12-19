@@ -380,7 +380,7 @@ spec:
 								foundTestValue = true
 							}
 						}
-						ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						ExpectWithOffset(1, foundTestValue).To(BeTrue(), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
@@ -420,7 +420,7 @@ spec:
 								foundTestValue = true
 							}
 						}
-						ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						ExpectWithOffset(1, foundTestValue).To(BeTrue(), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
@@ -461,7 +461,7 @@ spec:
 									" value %s. Found value %s", job.GetName(), expectedValue, jobLabels[label]))
 								foundTestValue = true
 							}
-							ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in job %s", job.GetName()))
+							ExpectWithOffset(1, foundTestValue).To(BeTrue(), fmt.Sprintf("Coundn't find test label 'foo' in job %s", job.GetName()))
 
 							// check the annotations
 							jobAnnotations := structuredJob.Spec.Template.Annotations
@@ -471,7 +471,7 @@ spec:
 									" value %s. Found value %s", job.GetName(), expectedValue, jobAnnotations[label]))
 								foundTestValue = true
 							}
-							ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test annotation 'foo2' in job %s", job.GetName()))
+							ExpectWithOffset(1, foundTestValue).To(BeTrue(), fmt.Sprintf("Coundn't find test annotation 'foo2' in job %s", job.GetName()))
 						})
 					}
 
@@ -6709,7 +6709,7 @@ metadata:
 							}
 						}
 
-						Expect(foundDevModePort).To(Equal(true), "should have found the dev mode port")
+						Expect(foundDevModePort).To(BeTrue(), "should have found the dev mode port")
 						return foundDevModePort
 					}
 					// Check the Settigns
