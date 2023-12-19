@@ -1,0 +1,156 @@
+/Users/samheilbron/go/src/github.com/solo-io/gloo/_output/.bin/golangci-lint run --fast --timeout=5m --tests=true --verbose --concurrency=4 ./...
+projects/gloo/pkg/utils/ssl_test.go:314:6: ginkgo-linter: wrong length assertion; consider using `Expect(cfg.TlsCertificates).To(HaveLen(1))` instead (ginkgolinter)
+					Expect(len(cfg.TlsCertificates)).To(Equal(1))
+					^
+projects/gloo/pkg/utils/ssl_test.go:618:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).ToNot(HaveOccurred())` instead (ginkgolinter)
+			Expect(err).To(BeNil())
+			^
+projects/gloo/pkg/utils/ssl_test.go:631:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).ToNot(HaveOccurred())` instead (ginkgolinter)
+			Expect(err).To(BeNil())
+			^
+projects/gloo/pkg/utils/ssl_test.go:649:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).To(HaveOccurred())` instead (ginkgolinter)
+			Expect(err).NotTo(BeNil())
+			^
+test/kube2e/gateway/gateway_test.go:864:4: ginkgo-linter: "Eventually": missing assertion method. Expected "Should()" or "ShouldNot()" (ginkgolinter)
+			Eventually(func(g Gomega) {
+			^
+test/kube2e/gateway/gateway_test.go:1023:4: ginkgo-linter: "Eventually": missing assertion method. Expected "Should()" or "ShouldNot()" (ginkgolinter)
+			Eventually(func(g Gomega) {
+			^
+test/kube2e/gateway/gateway_test.go:2275:6: ginkgo-linter: "Eventually": missing assertion method. Expected "Should()" or "ShouldNot()" (ginkgolinter)
+					Eventually(func(g Gomega) {
+					^
+test/kube2e/gateway/robustness_test.go:242:4: ginkgo-linter: wrong length assertion; consider using `Eventually(func() []string {
+	initialEndpointIPs = endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
+	return initialEndpointIPs
+}, 20*time.Second, 1*time.Second).ShouldNot(BeEmpty())` instead (ginkgolinter)
+			Eventually(func() []string {
+			^
+projects/gloo/pkg/syncer/sanitizer/route_replacing_sanitizer_test.go:334:3: ginkgo-linter: wrong error assertion; consider using `Expect(reports[proxy].Errors).ToNot(HaveOccurred())` instead (ginkgolinter)
+		Expect(reports[proxy].Errors).To(BeNil())
+		^
+projects/knative/pkg/translator/translator_syncer_test.go:94:3: ginkgo-linter: wrong length assertion; consider using `Expect(proxies[0].Listeners).To(BeEmpty())` instead (ginkgolinter)
+		Expect(proxies[0].Listeners).To(HaveLen(0))
+		^
+projects/sds/pkg/server/server_test.go:34:3: ginkgo-linter: wrong error assertion; consider using `Expect(err).ToNot(HaveOccurred())` instead (ginkgolinter)
+		Expect(err).To(BeNil())
+		^
+projects/sds/pkg/server/server_test.go:138:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).To(HaveOccurred())` instead (ginkgolinter)
+			Expect(err).NotTo(BeNil())
+			^
+projects/sds/pkg/server/server_test.go:144:4: ginkgo-linter: wrong length assertion; consider using `Expect(resp.GetResources()).To(HaveLen(2))` instead (ginkgolinter)
+			Expect(len(resp.GetResources())).To(Equal(2))
+			^
+projects/sds/pkg/server/server_test.go:145:4: ginkgo-linter: wrong error assertion; consider using `Expect(resp.Validate()).To(Succeed())` instead (ginkgolinter)
+			Expect(resp.Validate()).To(BeNil())
+			^
+pkg/cliutil/testutil/testutil.go:113:2: ginkgo-linter: wrong comparison assertion; consider using `Expect(k.Next).To(BeNumerically("<", len(k.Expected)))` instead (ginkgolinter)
+	Expect(k.Next < len(k.Expected)).To(BeTrue())
+	^
+pkg/cliutil/testutil/testutil.go:122:2: ginkgo-linter: wrong comparison assertion; consider using `Expect(k.Next).To(BeNumerically("<", len(k.Expected)), "MockKubectl did not have a next command for KubectlOut")` instead (ginkgolinter)
+	Expect(k.Next < len(k.Expected)).To(BeTrue(), "MockKubectl did not have a next command for KubectlOut")
+	^
+pkg/cliutil/testutil/testutil.go:127:2: ginkgo-linter: wrong comparison assertion; consider using `Expect(k.StdoutLineIndex).To(BeNumerically("<", len(k.StdoutLines)), "Mock kubectl has run out of stdout lines on command "+cmd)` instead (ginkgolinter)
+	Expect(k.StdoutLineIndex < len(k.StdoutLines)).To(BeTrue(), "Mock kubectl has run out of stdout lines on command "+cmd)
+	^
+projects/gloo/pkg/syncer/setup/proxy_cleanup_test.go:69:3: ginkgo-linter: wrong length assertion; consider using `Expect(remainingProxies).To(HaveLen(1))` instead (ginkgolinter)
+		Expect(len(remainingProxies)).To(Equal(1))
+		^
+projects/gloo/pkg/syncer/setup/proxy_cleanup_test.go:86:3: ginkgo-linter: wrong length assertion; consider using `Expect(remainingProxies).To(HaveLen(1))` instead (ginkgolinter)
+		Expect(len(remainingProxies)).To(Equal(1))
+		^
+projects/gloo/pkg/plugins/dynamic_forward_proxy/plugin_test.go:145:4: ginkgo-linter: wrong boolean assertion; consider using `Expect(caresCfg.DnsResolverOptions.UseTcpForDnsLookups).To(BeTrue())` instead (ginkgolinter)
+			Expect(caresCfg.DnsResolverOptions.UseTcpForDnsLookups).To(Equal(true))
+			^
+projects/gloo/pkg/plugins/dynamic_forward_proxy/plugin_test.go:146:4: ginkgo-linter: wrong boolean assertion; consider using `Expect(caresCfg.DnsResolverOptions.NoDefaultSearchDomain).To(BeTrue())` instead (ginkgolinter)
+			Expect(caresCfg.DnsResolverOptions.NoDefaultSearchDomain).To(Equal(true))
+			^
+projects/gloo/pkg/syncer/validation/validation_test.go:62:4: ginkgo-linter: wrong length assertion; consider using `Expect(reports).To(HaveLen(1))` instead (ginkgolinter)
+			Expect(len(reports)).To(Equal(1))
+			^
+projects/gloo/pkg/syncer/validation/validation_test.go:76:4: ginkgo-linter: wrong length assertion; consider using `Expect(reports).To(HaveLen(1))` instead (ginkgolinter)
+			Expect(len(reports)).To(Equal(1))
+			^
+projects/gloo/pkg/syncer/validation/validation_test.go:92:4: ginkgo-linter: wrong length assertion; consider using `Expect(reports).To(HaveLen(1))` instead (ginkgolinter)
+			Expect(len(reports)).To(Equal(1))
+			^
+projects/gateway/pkg/translator/aggregate_translator_test.go:147:4: ginkgo-linter: "Expect": missing assertion method. Expected "Should()", "To()", "ShouldNot()", "ToNot()" or "NotTo()" (ginkgolinter)
+			Expect(l.GetAggregateListener())
+			^
+projects/gateway/pkg/translator/aggregate_translator_test.go:196:4: ginkgo-linter: "Expect": missing assertion method. Expected "Should()", "To()", "ShouldNot()", "ToNot()" or "NotTo()" (ginkgolinter)
+			Expect(l.GetAggregateListener())
+			^
+projects/gateway/pkg/translator/converter_test.go:520:5: ginkgo-linter: wrong length assertion; consider using `Expect(rpt).To(BeEmpty())` instead (ginkgolinter)
+				Expect(rpt).To(HaveLen(0))
+				^
+projects/gateway/pkg/translator/converter_test.go:584:5: ginkgo-linter: wrong length assertion; consider using `Expect(rpt).To(BeEmpty())` instead (ginkgolinter)
+				Expect(rpt).To(HaveLen(0))
+				^
+projects/gateway/pkg/translator/converter_test.go:630:5: ginkgo-linter: wrong length assertion; consider using `Expect(rpt).To(BeEmpty())` instead (ginkgolinter)
+				Expect(rpt).To(HaveLen(0))
+				^
+projects/gateway/pkg/translator/converter_test.go:1501:5: ginkgo-linter: wrong error assertion; consider using `Expect(vsReport.Errors).ToNot(HaveOccurred())` instead (ginkgolinter)
+				Expect(vsReport.Errors).To(BeNil())
+				^
+projects/gateway/pkg/translator/converter_test.go:1807:6: ginkgo-linter: wrong error assertion; consider using `Expect(vsReport.Errors).ToNot(HaveOccurred())` instead (ginkgolinter)
+					Expect(vsReport.Errors).To(BeNil())
+					^
+projects/gateway/pkg/translator/gateway_selector_test.go:65:4: ginkgo-linter: wrong length assertion; consider using `Expect(selected).To(BeEmpty())` instead (ginkgolinter)
+			Expect(selected).To(HaveLen(0))
+			^
+projects/gateway/pkg/translator/gateway_selector_test.go:293:4: ginkgo-linter: wrong length assertion; consider using `Expect(selected).To(BeEmpty())` instead (ginkgolinter)
+			Expect(selected).To(HaveLen(0))
+			^
+projects/gateway/pkg/translator/hybrid_translator_test.go:271:6: ginkgo-linter: wrong length assertion; consider using `Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(BeEmpty())` instead (ginkgolinter)
+					Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(0))
+					^
+projects/gateway/pkg/translator/hybrid_translator_test.go:597:7: ginkgo-linter: wrong boolean assertion; consider using `Expect(hcm_after.GetSkipXffAppend().GetValue()).To(BeFalse())` instead (ginkgolinter)
+						Expect(hcm_after.GetSkipXffAppend().GetValue()).To(Equal(false))
+						^
+projects/gateway/pkg/translator/hybrid_translator_test.go:600:7: ginkgo-linter: wrong boolean assertion; consider using `Expect(hcm_after.GetUseRemoteAddress().GetValue()).To(BeTrue())` instead (ginkgolinter)
+						Expect(hcm_after.GetUseRemoteAddress().GetValue()).To(Equal(true))
+						^
+projects/gateway/pkg/translator/hybrid_translator_test.go:604:7: ginkgo-linter: wrong boolean assertion; consider using `Expect(hcm_after.GetProperCaseHeaderKeyFormat().GetValue()).To(BeTrue())` instead (ginkgolinter)
+						Expect(hcm_after.GetProperCaseHeaderKeyFormat().GetValue()).To(Equal(true))
+						^
+projects/gateway/pkg/translator/hybrid_translator_test.go:605:7: ginkgo-linter: wrong boolean assertion; consider using `Expect(hcm_after.GetPreserveCaseHeaderKeyFormat().GetValue()).To(BeFalse())` instead (ginkgolinter)
+						Expect(hcm_after.GetPreserveCaseHeaderKeyFormat().GetValue()).To(Equal(false))
+						^
+projects/gateway/pkg/translator/route_table_selector_test.go:27:4: ginkgo-linter: wrong length assertion; consider using `Expect(list).To(BeEmpty())` instead (ginkgolinter)
+			Expect(list).To(HaveLen(0))
+			^
+projects/gateway/pkg/translator/route_table_selector_test.go:42:4: ginkgo-linter: wrong length assertion; consider using `Expect(list).To(BeEmpty())` instead (ginkgolinter)
+			Expect(list).To(HaveLen(0))
+			^
+projects/gateway/pkg/translator/route_table_selector_test.go:71:4: ginkgo-linter: wrong length assertion; consider using `Expect(list).To(BeEmpty())` instead (ginkgolinter)
+			Expect(list).To(HaveLen(0))
+			^
+projects/gloo/pkg/utils/aws/session_test.go:48:3: ginkgo-linter: comparing a pointer to a value will always fail. consider using `Expect(session.Config.Region).NotTo(HaveValue(Equal("us-east-1")))` instead (ginkgolinter)
+		Expect(session.Config.Region).NotTo(Equal("us-east-1"))
+		^
+test/aws_credentials/ec2_test.go:128:3: ginkgo-linter: wrong length assertion; consider using `Expect(instances).ToNot(BeEmpty())` instead (ginkgolinter)
+		Expect(len(instances)).To(BeNumerically(">", 0))
+		^
+test/aws_credentials/ec2_test.go:136:3: ginkgo-linter: wrong length assertion; consider using `Expect(instances).ToNot(BeEmpty())` instead (ginkgolinter)
+		Expect(len(instances)).To(BeNumerically(">", 0))
+		^
+projects/gateway/pkg/validation/validator_test.go:383:5: ginkgo-linter: wrong length assertion; consider using `Expect(*(reports.ProxyReports)).To(BeEmpty())` instead (ginkgolinter)
+				Expect(*(reports.ProxyReports)).To(HaveLen(0))
+				^
+projects/gateway/pkg/validation/validator_test.go:568:5: ginkgo-linter: wrong length assertion; consider using `Expect(*(reports.ProxyReports)).To(BeEmpty())` instead (ginkgolinter)
+				Expect(*(reports.ProxyReports)).To(HaveLen(0))
+				^
+projects/gateway/pkg/validation/validator_test.go:691:5: ginkgo-linter: wrong length assertion; consider using `Expect(*(reports.ProxyReports)).To(BeEmpty())` instead (ginkgolinter)
+				Expect(*(reports.ProxyReports)).To(HaveLen(0))
+				^
+projects/gateway/pkg/validation/validator_test.go:1162:4: ginkgo-linter: wrong length assertion; consider using `Expect(errMessages).To(HaveLen(numberOfWorkers - 1))` instead (ginkgolinter)
+			Expect(len(errMessages)).To(Equal(numberOfWorkers - 1))
+			^
+test/kube2e/upgrade/upgrade_test.go:253:2: ginkgo-linter: wrong length assertion; consider using `Expect(glooVersion.GetServer()).To(HaveLen(1))` instead (ginkgolinter)
+	Expect(len(glooVersion.GetServer())).To(Equal(1))
+	^
+projects/discovery/pkg/fds/syncer/discovery_syncer_test.go:159:4: ginkgo-linter: wrong length assertion; consider using `Expect(GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryFactorySliceFunc, Extensions{
+	DiscoveryFactoryFuncs: []func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory{discoveryFactoryFunc},
+})).To(BeEmpty())` instead (ginkgolinter)
+			Expect(GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryFactorySliceFunc, Extensions{
+			^
