@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org
+    dependencyRepo: crypto
+    dependencyTag: v0.17.0
+    description: >
+      bump golang.org/x/crypto to v0.17.0 to address GO-2023-2402
