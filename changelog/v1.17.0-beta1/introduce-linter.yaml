@@ -5,3 +5,6 @@ changelog:
     description: >-
       Introduce linter with minimal set of rules to start with. This is intended to introduce the linter
       so that future devs can easily expand its usage.
+      
+      skipCI-kube-tests: true
+      skipCI-docs-build: true
