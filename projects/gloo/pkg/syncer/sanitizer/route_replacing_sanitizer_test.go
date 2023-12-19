@@ -331,7 +331,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 
 		// Verify that errors have been turned into warnings
-		Expect(reports[proxy].Errors).To(BeNil())
+		Expect(reports[proxy].Errors).NotTo(HaveOccurred())
 		Expect(reports[proxy].Warnings).To(Equal([]string{multiErr.Errors[0].Error()}))
 	})
 })

@@ -91,7 +91,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxies, err := proxyClient.List(namespace, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(2))
-		Expect(proxies[0].Listeners).To(HaveLen(0))
+		Expect(proxies[0].Listeners).To(BeEmpty())
 
 		ingress.Annotations = map[string]string{
 			ingressClassAnnotation: glooIngressClass,

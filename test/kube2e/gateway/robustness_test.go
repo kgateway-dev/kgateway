@@ -242,7 +242,7 @@ var _ = Describe("Robustness tests", func() {
 			Eventually(func() []string {
 				initialEndpointIPs = endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
 				return initialEndpointIPs
-			}, 20*time.Second, 1*time.Second).Should(Not(HaveLen(0)))
+			}, 20*time.Second, 1*time.Second).ShouldNot(BeEmpty())
 
 			By("force an update of the service endpoints")
 			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 0)

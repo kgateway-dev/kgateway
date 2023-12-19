@@ -915,7 +915,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				// properly and should fail
 				helpers.EventuallyResourceAccepted(getProxy)
 
-			})
+			}).Should(Succeed())
 		})
 	})
 
@@ -1075,7 +1075,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				// If the Proxy has the necessary values, but the resource has been rejected, this test is not behaving
 				// properly and should fail
 				helpers.EventuallyResourceAccepted(getProxy)
-			})
+			}).Should(Succeed())
 		})
 	})
 
@@ -2279,7 +2279,7 @@ spec:
 							clients.ReadOpts{Ctx: ctx})
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(vs.GetVirtualHost().GetOptions().GetTransformations()).To(gloo_matchers.MatchProto(invalidTransformation))
-					})
+					}).Should(Succeed())
 
 				})
 			})

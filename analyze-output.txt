@@ -1,58 +1,6 @@
-/Users/samheilbron/go/src/github.com/solo-io/gloo/_output/.bin/golangci-lint run --fast --timeout=5m --tests=true --verbose --concurrency=4 ./...
-projects/gloo/pkg/utils/ssl_test.go:314:6: ginkgo-linter: wrong length assertion; consider using `Expect(cfg.TlsCertificates).To(HaveLen(1))` instead (ginkgolinter)
-					Expect(len(cfg.TlsCertificates)).To(Equal(1))
-					^
-projects/gloo/pkg/utils/ssl_test.go:618:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).ToNot(HaveOccurred())` instead (ginkgolinter)
-			Expect(err).To(BeNil())
-			^
-projects/gloo/pkg/utils/ssl_test.go:631:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).ToNot(HaveOccurred())` instead (ginkgolinter)
-			Expect(err).To(BeNil())
-			^
-projects/gloo/pkg/utils/ssl_test.go:649:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).To(HaveOccurred())` instead (ginkgolinter)
-			Expect(err).NotTo(BeNil())
-			^
-test/kube2e/gateway/gateway_test.go:864:4: ginkgo-linter: "Eventually": missing assertion method. Expected "Should()" or "ShouldNot()" (ginkgolinter)
-			Eventually(func(g Gomega) {
-			^
-test/kube2e/gateway/gateway_test.go:1023:4: ginkgo-linter: "Eventually": missing assertion method. Expected "Should()" or "ShouldNot()" (ginkgolinter)
-			Eventually(func(g Gomega) {
-			^
-test/kube2e/gateway/gateway_test.go:2275:6: ginkgo-linter: "Eventually": missing assertion method. Expected "Should()" or "ShouldNot()" (ginkgolinter)
-					Eventually(func(g Gomega) {
-					^
-test/kube2e/gateway/robustness_test.go:242:4: ginkgo-linter: wrong length assertion; consider using `Eventually(func() []string {
-	initialEndpointIPs = endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
-	return initialEndpointIPs
-}, 20*time.Second, 1*time.Second).ShouldNot(BeEmpty())` instead (ginkgolinter)
-			Eventually(func() []string {
-			^
-projects/gloo/pkg/syncer/sanitizer/route_replacing_sanitizer_test.go:334:3: ginkgo-linter: wrong error assertion; consider using `Expect(reports[proxy].Errors).ToNot(HaveOccurred())` instead (ginkgolinter)
-		Expect(reports[proxy].Errors).To(BeNil())
-		^
-projects/knative/pkg/translator/translator_syncer_test.go:94:3: ginkgo-linter: wrong length assertion; consider using `Expect(proxies[0].Listeners).To(BeEmpty())` instead (ginkgolinter)
-		Expect(proxies[0].Listeners).To(HaveLen(0))
-		^
-projects/sds/pkg/server/server_test.go:34:3: ginkgo-linter: wrong error assertion; consider using `Expect(err).ToNot(HaveOccurred())` instead (ginkgolinter)
-		Expect(err).To(BeNil())
-		^
-projects/sds/pkg/server/server_test.go:138:4: ginkgo-linter: wrong error assertion; consider using `Expect(err).To(HaveOccurred())` instead (ginkgolinter)
-			Expect(err).NotTo(BeNil())
-			^
-projects/sds/pkg/server/server_test.go:144:4: ginkgo-linter: wrong length assertion; consider using `Expect(resp.GetResources()).To(HaveLen(2))` instead (ginkgolinter)
-			Expect(len(resp.GetResources())).To(Equal(2))
-			^
-projects/sds/pkg/server/server_test.go:145:4: ginkgo-linter: wrong error assertion; consider using `Expect(resp.Validate()).To(Succeed())` instead (ginkgolinter)
-			Expect(resp.Validate()).To(BeNil())
-			^
-pkg/cliutil/testutil/testutil.go:113:2: ginkgo-linter: wrong comparison assertion; consider using `Expect(k.Next).To(BeNumerically("<", len(k.Expected)))` instead (ginkgolinter)
-	Expect(k.Next < len(k.Expected)).To(BeTrue())
-	^
-pkg/cliutil/testutil/testutil.go:122:2: ginkgo-linter: wrong comparison assertion; consider using `Expect(k.Next).To(BeNumerically("<", len(k.Expected)), "MockKubectl did not have a next command for KubectlOut")` instead (ginkgolinter)
-	Expect(k.Next < len(k.Expected)).To(BeTrue(), "MockKubectl did not have a next command for KubectlOut")
-	^
-pkg/cliutil/testutil/testutil.go:127:2: ginkgo-linter: wrong comparison assertion; consider using `Expect(k.StdoutLineIndex).To(BeNumerically("<", len(k.StdoutLines)), "Mock kubectl has run out of stdout lines on command "+cmd)` instead (ginkgolinter)
-	Expect(k.StdoutLineIndex < len(k.StdoutLines)).To(BeTrue(), "Mock kubectl has run out of stdout lines on command "+cmd)
-	^
+
+
+
 projects/gloo/pkg/syncer/setup/proxy_cleanup_test.go:69:3: ginkgo-linter: wrong length assertion; consider using `Expect(remainingProxies).To(HaveLen(1))` instead (ginkgolinter)
 		Expect(len(remainingProxies)).To(Equal(1))
 		^

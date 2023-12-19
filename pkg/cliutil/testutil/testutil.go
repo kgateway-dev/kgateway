@@ -110,7 +110,7 @@ func NewMockKubectl(cmds []string, stdoutLines []string) *MockKubectl {
 
 func (k *MockKubectl) Kubectl(stdin io.Reader, args ...string) error {
 	// If this fails then the CLI tried to run commands we didn't account for in the mock
-	Expect(k.Next < len(k.Expected)).To(BeTrue())
+	Expect(k.Next).To(BeNumerically("<", len(k.Expected)))
 	Expect(stdin).To(BeNil())
 	cmd := strings.Join(args, " ")
 	Expect(cmd).To(BeEquivalentTo(k.Expected[k.Next]))
@@ -119,12 +119,12 @@ func (k *MockKubectl) Kubectl(stdin io.Reader, args ...string) error {
 }
 
 func (k *MockKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
-	Expect(k.Next < len(k.Expected)).To(BeTrue(), "MockKubectl did not have a next command for KubectlOut")
+	Expect(k.Next).To(BeNumerically("<", len(k.Expected)), "MockKubectl did not have a next command for KubectlOut")
 	Expect(stdin).To(BeNil(), "Should have passed nil to MockKubectl.KubectlOut")
 	cmd := strings.Join(args, " ")
 	Expect(cmd).To(BeEquivalentTo(k.Expected[k.Next]), "Wrong next command for MockKubectl.KubectlOut")
 	k.Next = k.Next + 1
-	Expect(k.StdoutLineIndex < len(k.StdoutLines)).To(BeTrue(), "Mock kubectl has run out of stdout lines on command "+cmd)
+	Expect(k.StdoutLineIndex).To(BeNumerically("<", len(k.StdoutLines)), "Mock kubectl has run out of stdout lines on command "+cmd)
 	stdOutLine := k.StdoutLines[k.StdoutLineIndex]
 	k.StdoutLineIndex = k.StdoutLineIndex + 1
 	return []byte(stdOutLine), nil

@@ -31,7 +31,7 @@ var _ = Describe("SDS Server", func() {
 	BeforeEach(func() {
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		fileString := `test`
 
 		keyFile, err = afero.TempFile(fs, dir, "")
@@ -135,14 +135,14 @@ var _ = Describe("SDS Server", func() {
 
 			// Before any snapshot is set, expect an error when fetching secrets
 			resp, err := client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
-			Expect(err).NotTo(BeNil())
+			Expect(err).To(HaveOccurred())
 
 			// After snapshot is set, expect to see the secrets
 			srv.UpdateSDSConfig(ctx)
 			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
-			Expect(len(resp.GetResources())).To(Equal(2))
-			Expect(resp.Validate()).To(BeNil())
+			Expect(resp.GetResources()).To(HaveLen(2))
+			Expect(resp.Validate()).To(Succeed())
 
 			// Check that the resources contain the expected data
 			for _, resource := range resp.GetResources() {
