@@ -587,7 +587,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
-			Expect(err).Should(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			cfg := msg.(*AWSLambdaPerRoute)
 			Expect(cfg.UnwrapAsAlb).To(BeTrue())
 			Expect(cfg.Async).To(BeTrue())
@@ -602,7 +602,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
-				Expect(err).Should(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				cfg := msg.(*AWSLambdaPerRoute)
 				Expect(cfg.UnwrapAsAlb).To(BeTrue())
 				Expect(cfg.GetTransformerConfig()).Should(BeNil())
@@ -821,7 +821,7 @@ var _ = Describe("Plugin", func() {
 			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 			msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
-			Expect(err).Should(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			cfg := msg.(*AWSLambdaPerRoute)
 
 			Expect(cfg.Name).Should(Equal(url.QueryEscape("arn:aws:lambda:us-east1:222222222222:function:foo")))
