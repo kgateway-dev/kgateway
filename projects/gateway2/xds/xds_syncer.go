@@ -359,8 +359,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	}
 
 	for _, route := range rl.Items {
-		// Pike
-		route := route
+		route := route // pike
 		route.Status = rm.BuildRouteStatus(ctx, route, s.controllerName)
 		if err := s.cli.Status().Update(ctx, &route); err != nil {
 			logger.Error(err)

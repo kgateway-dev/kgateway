@@ -13,8 +13,9 @@ type ReportMap struct {
 }
 
 type GatewayReport struct {
-	conditions []metav1.Condition
-	listeners  map[string]*ListenerReport
+	conditions         []metav1.Condition
+	listeners          map[string]*ListenerReport
+	observedGeneration int64
 }
 
 type ListenerReport struct {
@@ -22,7 +23,8 @@ type ListenerReport struct {
 }
 
 type RouteReport struct {
-	parents map[ParentRefKey]*ParentRefReport
+	parents            map[ParentRefKey]*ParentRefReport
+	observedGeneration int64
 }
 
 type ParentRefReport struct {
@@ -50,6 +52,7 @@ func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	gr := r.gateways[key]
 	if gr == nil {
 		gr = &GatewayReport{}
+		gr.observedGeneration = gateway.Generation
 		r.gateways[key] = gr
 	}
 	return gr
@@ -60,6 +63,7 @@ func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
 	rr := r.routes[key]
 	if rr == nil {
 		rr = &RouteReport{}
+		rr.observedGeneration = route.Generation
 		r.routes[key] = rr
 	}
 	return rr
@@ -192,7 +196,6 @@ type Reporter interface {
 }
 
 type GatewayReporter interface {
-	// report an error on the given listener
 	Listener(listener *gwv1.Listener) ListenerReporter
 	SetCondition(condition GatewayCondition)
 }
