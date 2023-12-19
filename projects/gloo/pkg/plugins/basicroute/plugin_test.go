@@ -701,7 +701,7 @@ var _ = Describe("upgrades", func() {
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(2))
+		Expect(routeAction.GetUpgradeConfigs()).To(HaveLen(2))
 		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
 		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(BeTrue())
 		Expect(routeAction.GetUpgradeConfigs()[1].UpgradeType).To(Equal("CONNECT"))

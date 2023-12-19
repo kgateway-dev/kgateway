@@ -193,7 +193,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(typedConfigOutput).To(MatchProto(settings.UuidRequestIdConfig))
 
-		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
+		Expect(cfg.UpgradeConfigs).To(HaveLen(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
 		Expect(cfg.UpgradeConfigs[0].Enabled.GetValue()).To(BeTrue())
 
@@ -318,7 +318,7 @@ var _ = Describe("Plugin", func() {
 			err := processHcmNetworkFilter(cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
+			Expect(cfg.GetUpgradeConfigs()).To(HaveLen(1))
 			Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
 		})
 
@@ -326,7 +326,7 @@ var _ = Describe("Plugin", func() {
 			err := processHcmNetworkFilter(cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
+			Expect(cfg.GetUpgradeConfigs()).To(HaveLen(1))
 			Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
 		})
 

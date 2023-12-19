@@ -112,7 +112,7 @@ var _ = Describe("linkerd plugin", func() {
 		It("doesn't change output if route action doesn't exist", func() {
 			out.Action = &envoy_config_route_v3.Route_DirectResponse{DirectResponse: &envoy_config_route_v3.DirectResponseAction{}}
 			outCopy := proto.Clone(out)
-			Expect(configForMultiDestination(nil, nil, out)).To(BeNil())
+			Expect(configForMultiDestination(nil, nil, out)).To(Succeed())
 			Expect(out).To(matchers.MatchProto(outCopy))
 		})
 		It("doesn't change output if route action exists, but weighted clusters do not", func() {
@@ -124,7 +124,7 @@ var _ = Describe("linkerd plugin", func() {
 				},
 			}
 			outCopy := proto.Clone(out)
-			Expect(configForMultiDestination(nil, nil, out)).To(BeNil())
+			Expect(configForMultiDestination(nil, nil, out)).To(Succeed())
 			Expect(out).To(matchers.MatchProto(outCopy))
 		})
 		It("does not change output if no kube upstreams exist", func() {
@@ -148,7 +148,7 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			upstreams := createUpstream(usRf, nil)
 			outCopy := proto.Clone(out)
-			Expect(configForMultiDestination([]*v1.WeightedDestination{destinations}, v1.UpstreamList{upstreams}, out)).To(BeNil())
+			Expect(configForMultiDestination([]*v1.WeightedDestination{destinations}, v1.UpstreamList{upstreams}, out)).To(Succeed())
 			Expect(out).To(matchers.MatchProto(outCopy))
 		})
 		It("properly adds the header to existing weighted clusters with kube upstreams", func() {
@@ -175,7 +175,7 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			upstreams := createUpstreamList(upstreamRefs, kubeSpecs)
 			outCopy := proto.Clone(out)
-			Expect(configForMultiDestination(destinations, upstreams, out)).To(BeNil())
+			Expect(configForMultiDestination(destinations, upstreams, out)).To(Succeed())
 			Expect(out).NotTo(BeEquivalentTo(outCopy))
 			routeAction := out.GetRoute()
 			Expect(routeAction).NotTo(BeNil())
@@ -211,7 +211,7 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			upstreams := createUpstreamList(upstreamRefs, kubeSpecs)
 			outCopy := proto.Clone(out)
-			Expect(configForMultiDestination(destinations, upstreams, out)).To(BeNil())
+			Expect(configForMultiDestination(destinations, upstreams, out)).To(Succeed())
 			Expect(out).NotTo(BeEquivalentTo(outCopy))
 			routeAction := out.GetRoute()
 			Expect(routeAction).NotTo(BeNil())

@@ -168,7 +168,7 @@ var _ = Describe("Plugin", func() {
 				Expect(cfg.TunnelingConfig.GetHostname()).To(Equal(tcps.TunnelingConfig.GetHostname()))
 
 				hta := cfg.TunnelingConfig.HeadersToAdd
-				Expect(len(hta)).To(Equal(1))
+				Expect(hta).To(HaveLen(1))
 
 				tcpHeaders := tcps.TunnelingConfig.HeadersToAdd[0]
 				Expect(hta[0].Header.Key).To(Equal(tcpHeaders.Header.Key))

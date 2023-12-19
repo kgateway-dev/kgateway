@@ -190,7 +190,7 @@ var _ = Describe("Plugin", func() {
 			// We expect the entire string to match since this is what the matching code in
 			// https://github.com/solo-io/envoy-transformation/blob/289d945b0a85c9df92918c478caa016020bbe981/source/extensions/filters/http/transformation/transformer.cc#L50
 			// expects as well.
-			Expect(len(subMatches[0])).To(Equal(len(matchablePath)))
+			Expect(subMatches[0]).To(HaveLen(len(matchablePath)))
 			Expect(subMatches[extrs["what"].Subgroup]).To(Equal("first_value"))
 			Expect(subMatches[extrs["ever"].Subgroup]).To(Equal("second%34value"))
 			Expect(subMatches[extrs["nested.field"].Subgroup]).To(Equal("third-value"))

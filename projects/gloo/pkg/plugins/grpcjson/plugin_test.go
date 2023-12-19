@@ -151,7 +151,7 @@ var _ = Describe("GrpcJson", func() {
 		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{vhost}}
 		f, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(f)).To(Equal(0))
+		Expect(f).To(BeEmpty())
 	})
 	It("Doesn't create empty filters on listeners when gRPC upstreams are configured but not referenced by routes on that listener", func() {
 		us := &v1.Upstream{
@@ -177,7 +177,7 @@ var _ = Describe("GrpcJson", func() {
 		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{}}
 		f, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(f)).To(Equal(0))
+		Expect(f).To(BeEmpty())
 	})
 	Context("proto descriptor configmap", func() {
 		var (

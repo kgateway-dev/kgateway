@@ -196,7 +196,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).NotTo(BeNil())
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("references valid upstream", func() {
@@ -315,7 +315,7 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				err := processHcmNetworkFilter(cfg)
-				Expect(err).NotTo(BeNil())
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("references valid upstream", func() {
