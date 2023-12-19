@@ -74,7 +74,8 @@ func MustStopAndRemoveContainer(containerName string) {
 	// CI host may be extremely CPU-bound as it's often building test assets in tandem with other tests,
 	// as well as other CI builds running in parallel. When that happens, the tests can run much slower,
 	// thus they need a longer timeout. see https://github.com/solo-io/solo-projects/issues/1701#issuecomment-620873754
-	Eventually(ContainerExistsWithName(containerName), "30s", "2s").Should(BeEmpty())
+	Eventually(ContainerExistsWithName, "30s", "2s").WithArguments(containerName).Should(BeEmpty())
+
 }
 
 func StopContainer(containerName string) {
