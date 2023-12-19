@@ -98,7 +98,7 @@ var _ = Describe("Hashing Benchmarks", decorators.Performance, Label(labels.Perf
 				Expect(err).NotTo(HaveOccurred())
 				val, ok := present[hash]
 				if ok {
-					Expect(v.Equal(val))
+					Expect(v).To(Equal(val))
 				}
 				present[hash] = v
 			}
