@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/solo-io/go-utils/cliutils"
@@ -23,7 +25,7 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Use:   "dump",
 		Short: "dump Envoy config from one of the proxy instances",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgDump, err := getEnvoyCfgDump(opts)
+			cfgDump, err := GetEnvoyCfgDump(opts)
 			if err != nil {
 				return err
 			}
@@ -35,10 +37,15 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func getEnvoyCfgDump(opts *options.Options) (string, error) {
+// GetEnvoyAdminData returns the response from the envoy admin interface based on the `path` specified within the defined timeout.
+// Note that a `/` will be prepended to path if it does not exist.
+func GetEnvoyAdminData(ctx context.Context, proxyName, namespace, path string, timeout time.Duration) (string, error) {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
-	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.GetNamespace(),
-		"deployment/"+opts.Proxy.Name, adminPort)
+	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
+		"deployment/"+proxyName, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	if err := portFwd.Start(); err != nil {
@@ -54,11 +61,11 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 	go func() {
 		for {
 			select {
-			case <-opts.Top.Ctx.Done():
+			case <-ctx.Done():
 				return
 			default:
 			}
-			res, err := http.Get("http://localhost:" + adminPort + "/config_dump")
+			res, err := http.Get("http://localhost:" + adminPort + path)
 			if err != nil {
 				errs <- err
 				time.Sleep(time.Millisecond * 250)
@@ -81,11 +88,11 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 		}
 	}()
 
-	timer := time.Tick(time.Second * 5)
+	timer := time.Tick(timeout)
 
 	for {
 		select {
-		case <-opts.Top.Ctx.Done():
+		case <-ctx.Done():
 			return "", errors.Errorf("cancelled")
 		case err := <-errs:
 			log.Printf("connecting to envoy failed with err %v", err.Error())
@@ -95,11 +102,10 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 			return "", errors.Errorf("timed out trying to connect to Envoy admin port")
 		}
 	}
-
 }
 
 func GetEnvoyCfgDump(opts *options.Options) (string, error) {
-	return getEnvoyCfgDump(opts)
+	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.GetNamespace(), "/config_dump", 5*time.Second)
 }
 
 func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -120,62 +126,5 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 }
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
-	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
-	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.GetNamespace(),
-		"deployment/"+opts.Proxy.Name, adminPort)
-	portFwd.Stdout = os.Stderr
-	portFwd.Stderr = os.Stderr
-	if err := portFwd.Start(); err != nil {
-		return "", errors.Wrapf(err, "failed to start port-forward")
-	}
-	defer func() {
-		if portFwd.Process != nil {
-			portFwd.Process.Kill()
-		}
-	}()
-	result := make(chan string)
-	errs := make(chan error)
-	go func() {
-		for {
-			select {
-			case <-opts.Top.Ctx.Done():
-				return
-			default:
-			}
-			res, err := http.Get("http://localhost:" + adminPort + "/stats")
-			if err != nil {
-				errs <- err
-				time.Sleep(time.Millisecond * 250)
-				continue
-			}
-			if res.StatusCode != 200 {
-				errs <- errors.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
-				time.Sleep(time.Millisecond * 250)
-				continue
-			}
-			b, err := io.ReadAll(res.Body)
-			if err != nil {
-				errs <- err
-				time.Sleep(time.Millisecond * 250)
-				continue
-			}
-			res.Body.Close()
-			result <- string(b)
-			return
-		}
-	}()
-
-	for {
-		select {
-		case <-opts.Top.Ctx.Done():
-			return "", errors.Errorf("cancelled")
-		case err := <-errs:
-			log.Printf("connecting to envoy failed with err %v", err.Error())
-		case res := <-result:
-			return res, nil
-		case <-time.After(time.Second * 30):
-			return "", errors.Errorf("timed out trying to connect to Envoy admin port")
-		}
-	}
-
+	return GetEnvoyAdminData(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.GetNamespace(), "/stats", 30*time.Second)
 }
