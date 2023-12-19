@@ -57,7 +57,7 @@ var _ = Describe("Route Configs", func() {
 		}
 		// sub-delims
 		subDelims := "!$&'()*+,;="
-		Expect(len(subDelims)).To(Equal(11))
+		Expect(subDelims).To(HaveLen(11))
 		for _, c := range subDelims {
 			Expect(translator.ValidateRoutePath(string(c))).ToNot(HaveOccurred())
 		}

@@ -1104,7 +1104,7 @@ var _ = Describe("Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			_, errs, _ := translator.Translate(params, proxy)
 			_, usReport := errs.Find("*v1.Upstream", upstream.Metadata.Ref())
-			Expect(usReport.Errors).To(Not(BeNil()))
+			Expect(usReport.Errors).To(HaveOccurred())
 			Expect(usReport.Errors.Error()).To(ContainSubstring("method CONNECT is not allowed on http health checkers"))
 		})
 
@@ -3663,7 +3663,7 @@ var _ = Describe("Translator", func() {
 					return
 				}
 				Expect(snap).NotTo(BeNil())
-				Expect(errs.Validate()).To(BeNil())
+				Expect(errs.Validate()).To(Succeed())
 
 				clusters := snap.GetResources(types.ClusterTypeV3)
 				clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
