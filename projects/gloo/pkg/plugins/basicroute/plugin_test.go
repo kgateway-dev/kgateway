@@ -532,7 +532,7 @@ var _ = Describe("host rewrite", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/foo"))
-		Expect(routeAction.GetAppendXForwardedHost()).To(Equal(true))
+		Expect(routeAction.GetAppendXForwardedHost()).To(BeTrue())
 	})
 	It("distinguishes between empty string and nil", func() {
 		p := NewPlugin()
@@ -590,7 +590,7 @@ var _ = Describe("host rewrite", func() {
 			Action: &v1.Route_RouteAction{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
+		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(BeTrue())
 	})
 
 	It("rewrites using regex", func() {
@@ -703,9 +703,9 @@ var _ = Describe("upgrades", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(2))
 		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
-		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(Equal(true))
+		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(BeTrue())
 		Expect(routeAction.GetUpgradeConfigs()[1].UpgradeType).To(Equal("CONNECT"))
-		Expect(routeAction.GetUpgradeConfigs()[1].Enabled.Value).To(Equal(true))
+		Expect(routeAction.GetUpgradeConfigs()[1].Enabled.Value).To(BeTrue())
 	})
 	It("fails on double config", func() {
 		p := NewPlugin()

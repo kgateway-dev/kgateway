@@ -70,7 +70,7 @@ rate_limits:
 		ext := rateLimitExtension(0)
 		Expect(ext.RateLimits).To(HaveLen(1))
 		Expect(ext.RateLimits[0].Actions).To(HaveLen(1))
-		Expect(ext.IncludeVhRateLimits).To(Equal(true))
+		Expect(ext.IncludeVhRateLimits).To(BeTrue())
 	})
 
 })

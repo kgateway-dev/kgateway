@@ -31,8 +31,8 @@ var _ = Describe("AttemptCount Plugin", func() {
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetIncludeRequestAttemptCount()).To(Equal(true))
-		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(false))
+		Expect(out.GetIncludeRequestAttemptCount()).To(BeTrue())
+		Expect(out.GetIncludeAttemptCountInResponse()).To(BeFalse())
 
 		err = acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
@@ -46,8 +46,8 @@ var _ = Describe("AttemptCount Plugin", func() {
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetIncludeRequestAttemptCount()).To(Equal(false))
-		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(true))
+		Expect(out.GetIncludeRequestAttemptCount()).To(BeFalse())
+		Expect(out.GetIncludeAttemptCountInResponse()).To(BeTrue())
 	})
 
 	It("still causes both values to default to false", func() {
@@ -57,8 +57,8 @@ var _ = Describe("AttemptCount Plugin", func() {
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetIncludeRequestAttemptCount()).To(Equal(false))
-		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(false))
+		Expect(out.GetIncludeRequestAttemptCount()).To(BeFalse())
+		Expect(out.GetIncludeAttemptCountInResponse()).To(BeFalse())
 
 		err = acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
@@ -68,7 +68,7 @@ var _ = Describe("AttemptCount Plugin", func() {
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetIncludeRequestAttemptCount()).To(Equal(false))
-		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(false))
+		Expect(out.GetIncludeRequestAttemptCount()).To(BeFalse())
+		Expect(out.GetIncludeAttemptCountInResponse()).To(BeFalse())
 	})
 })

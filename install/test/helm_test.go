@@ -6993,7 +6993,7 @@ func getContainer(t TestManifest, kind string, resourceName string, containerNam
 			}
 		}
 
-		Expect(foundExpected).To(Equal(true))
+		Expect(foundExpected).To(BeTrue())
 	})
 
 	return &foundContainer

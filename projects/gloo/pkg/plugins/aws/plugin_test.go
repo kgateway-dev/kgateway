@@ -784,7 +784,7 @@ var _ = Describe("Plugin", func() {
 			initParams.Settings.Gloo.AwsOptions.CredentialRefreshDelay = &duration.Duration{Seconds: 1}
 
 			process()
-			Expect(cfg.PropagateOriginalRouting).To(Equal(true))
+			Expect(cfg.PropagateOriginalRouting).To(BeTrue())
 			Expect(*cfg.CredentialRefreshDelay).To(Equal(duration.Duration{Seconds: 1}))
 		})
 
@@ -805,7 +805,7 @@ var _ = Describe("Plugin", func() {
 			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
 			Expect(lpe.SessionToken).To(Equal(sessionTokenValue))
 			Expect(lpe.RoleArn).To(Equal(roleArn))
-			Expect(lpe.DisableRoleChaining).To(Equal(true))
+			Expect(lpe.DisableRoleChaining).To(BeTrue())
 		})
 
 	})

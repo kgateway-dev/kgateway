@@ -603,7 +603,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
 			Expect(fooRoute.Match.GetPrefix()).To(Equal("/foo"))
-			Expect(fooRoute.Match.CaseSensitive.Value).To(Equal(true))
+			Expect(fooRoute.Match.CaseSensitive.Value).To(BeTrue())
 		})
 
 		It("should translate path matcher with case insensitive", func() {
@@ -785,7 +785,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
-			Expect(headerMatch.InvertMatch).To(Equal(false))
+			Expect(headerMatch.InvertMatch).To(BeFalse())
 			presentMatch := headerMatch.GetPresentMatch()
 			Expect(presentMatch).To(BeTrue())
 		})
@@ -802,7 +802,7 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
-			Expect(headerMatch.InvertMatch).To(Equal(false))
+			Expect(headerMatch.InvertMatch).To(BeFalse())
 			exactMatch := headerMatch.GetExactMatch()
 			Expect(exactMatch).To(Equal("testvalue"))
 		})
@@ -820,7 +820,7 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
-			Expect(headerMatch.InvertMatch).To(Equal(false))
+			Expect(headerMatch.InvertMatch).To(BeFalse())
 			regex := headerMatch.GetSafeRegexMatch().GetRegex()
 			Expect(regex).To(Equal("testvalue"))
 		})
@@ -845,7 +845,7 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
-			Expect(headerMatch.InvertMatch).To(Equal(false))
+			Expect(headerMatch.InvertMatch).To(BeFalse())
 			regex := headerMatch.GetSafeRegexMatch().GetRegex()
 			Expect(regex).To(Equal("testvalue"))
 			maxsize := headerMatch.GetSafeRegexMatch().GetGoogleRe2().GetMaxProgramSize().GetValue()
@@ -863,7 +863,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
-			Expect(headerMatch.InvertMatch).To(Equal(true))
+			Expect(headerMatch.InvertMatch).To(BeTrue())
 		})
 
 		It("should default to '/' prefix matcher if none is provided", func() {

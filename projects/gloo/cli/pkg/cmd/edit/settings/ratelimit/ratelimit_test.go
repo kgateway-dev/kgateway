@@ -67,14 +67,14 @@ var _ = Describe("RateLimit", func() {
 	It("should set fail mode deny", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
 		rlSettings := readRateLimitSettings(ctx, settingsClient)
-		Expect(rlSettings.DenyOnFail).To(Equal(true))
+		Expect(rlSettings.DenyOnFail).To(BeTrue())
 	})
 
 	It("should not reset fail mode deny set fail mode deny", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
 		Run("edit settings --name default --namespace gloo-system ratelimit --request-timeout=1s")
 		rlSettings := readRateLimitSettings(ctx, settingsClient)
-		Expect(rlSettings.DenyOnFail).To(Equal(true))
+		Expect(rlSettings.DenyOnFail).To(BeTrue())
 	})
 
 	It("should not reset timeout change changing other things", func() {
@@ -88,7 +88,7 @@ var _ = Describe("RateLimit", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=false")
 		rlSettings := readRateLimitSettings(ctx, settingsClient)
-		Expect(rlSettings.DenyOnFail).To(Equal(false))
+		Expect(rlSettings.DenyOnFail).To(BeFalse())
 	})
 
 	Context("Interactive tests", func() {

@@ -64,7 +64,7 @@ var _ = Describe("Plugin", func() {
 		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetDisabled()).To(Equal(true))
+		Expect(cfg.GetDisabled()).To(BeTrue())
 	})
 
 	It("allows route specific buffer config", func() {
@@ -108,7 +108,7 @@ var _ = Describe("Plugin", func() {
 		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetDisabled()).To(Equal(true))
+		Expect(cfg.GetDisabled()).To(BeTrue())
 	})
 
 	It("allows vhost specific buffer config", func() {
@@ -152,7 +152,7 @@ var _ = Describe("Plugin", func() {
 		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetDisabled()).To(Equal(true))
+		Expect(cfg.GetDisabled()).To(BeTrue())
 	})
 
 	It("allows weighted destination specific buffer config", func() {

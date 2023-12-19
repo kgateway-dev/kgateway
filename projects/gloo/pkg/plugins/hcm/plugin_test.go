@@ -195,7 +195,7 @@ var _ = Describe("Plugin", func() {
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
-		Expect(cfg.UpgradeConfigs[0].Enabled.GetValue()).To(Equal(true))
+		Expect(cfg.UpgradeConfigs[0].Enabled.GetValue()).To(BeTrue())
 
 		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.HttpConnectionManager_APPEND_FORWARD))
 
