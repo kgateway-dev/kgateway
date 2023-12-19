@@ -127,7 +127,7 @@ var _ = Describe("Kube2e: helm", func() {
 			By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 			client := helpers.MustSettingsClient(ctx)
 			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
 			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
 
@@ -142,7 +142,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 			By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 			settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
 			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
 		})
@@ -590,7 +590,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	Expect(len(glooVersion.GetServer())).To(Equal(1))
 	for _, container := range glooVersion.GetServer()[0].GetKubernetes().GetContainers() {
 		if v == "" {
@@ -772,7 +772,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 			fmt.Println("ExitError: ", string(v.Stderr))
 		}
 	}
-	Expect(err).To(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 	cmd.Process.Kill()
 	cmd.Process.Release()
 	return b
