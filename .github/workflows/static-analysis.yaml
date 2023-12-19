@@ -47,6 +47,6 @@ jobs:
         version: v1.54.2
         # We temporarily do not lint tests.  This is because there are so many lint errors in the tests.
         # We will fix these errors in smaller PRs, and once it is clean, we will re-enable linting of tests.
-        args: --timeout=17m --verbose --modules-download-mode=readonly --allow-parallel-runners --tests=false
+        args: --verbose --modules-download-mode=readonly --allow-parallel-runners --tests=false
         skip-pkg-cache: true
         only-new-issues: false
