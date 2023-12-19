@@ -90,6 +90,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}
 		if shouldMatch {
+			// TODO: Fix these tests
+			// As part of introducing a linter, we updated the tests. However, they were failing with the changes, so we rolled them back here:
+			// https://github.com/solo-io/gloo/pull/9005/commits/6f3e18d37a81679c39cf0654b37677b8c48bf97e
+			// This could be a signal that the tests are not correct
 			EventuallyWithOffset(1, func(g Gomega) {
 				g.Expect(resp).Should(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
 			}, 5, 1).Should(Succeed())
