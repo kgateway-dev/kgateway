@@ -211,7 +211,7 @@ var _ = Describe("Route", func() {
 			Expect(opts.Add.Route.Destination.Upstream.Namespace).To(Equal("gloo-system"))
 			Expect(opts.Add.Route.Destination.Upstream.Name).To(Equal("gloo-system.some-ns-test-svc-5678"))
 			Expect(opts.Add.Route.Destination.DestinationSpec.Aws.LogicalName).To(Equal(NoneOfTheAbove))
-			Expect(opts.Add.Route.Plugins.PrefixRewrite.Value).NotTo(Equal(nil))
+			Expect(opts.Add.Route.Plugins.PrefixRewrite.Value).NotTo(BeNil())
 
 		})
 	})

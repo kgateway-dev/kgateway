@@ -589,7 +589,7 @@ var _ = Describe("Listener Subsystem", func() {
 			li := listenerTranslator.ComputeListener(params)
 			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
-			Expect(len(li.GetFilterChains())).To(BeZero())
+			Expect(li.GetFilterChains()).To(BeEmpty())
 
 		})
 	})

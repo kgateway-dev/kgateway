@@ -55,7 +55,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 		resp, err := proxyEndpointServer.GetProxies(ctx, req)
 		Expect(err).NotTo(HaveOccurred())
 		proxyList := resp.GetProxies()
-		Expect(len(proxyList)).To(Equal(1))
+		Expect(proxyList).To(HaveLen(1))
 		Expect(proxyList[0].GetMetadata().GetName()).To(Equal("proxy1"))
 	})
 	It("Returns all proxies from the provided namespace", func() {
@@ -73,7 +73,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 		resp, err := proxyEndpointServer.GetProxies(ctx, req)
 		Expect(err).NotTo(HaveOccurred())
 		proxyList := resp.GetProxies()
-		Expect(len(proxyList)).To(Equal(2))
+		Expect(proxyList).To(HaveLen(2))
 	})
 	It("Can return proxies from all namespaces", func() {
 		ns2 := "other namespace"
@@ -88,6 +88,6 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 		resp, err := proxyEndpointServer.GetProxies(ctx, req)
 		Expect(err).NotTo(HaveOccurred())
 		proxyList := resp.GetProxies()
-		Expect(len(proxyList)).To(Equal(3))
+		Expect(proxyList).To(HaveLen(3))
 	})
 })

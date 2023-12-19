@@ -56,7 +56,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		translator.Sync(ctx, apiSnapshot, settings, &syncer.MockXdsCache{}, reports)
 
 		err := reports.ValidateStrict()
-		ExpectWithOffset(1, err).To(BeNil())
+		ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	}
 
 	Context("Listener contains ExtAuthExtension.ConfigRef", func() {

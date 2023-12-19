@@ -122,6 +122,6 @@ entries:
 		Expect(err).NotTo(HaveOccurred())
 		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), version.GlooEE, false)
 		Expect(enterpriseVersion).To(Equal(""))
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 	})
 })

@@ -524,7 +524,7 @@ var _ = Describe("Validation Server", func() {
 
 					}
 					if state != 0 {
-						Expect(err).NotTo(BeNil())
+						Expect(err).To(HaveOccurred())
 						st, ok := status.FromError(err)
 						Expect(ok).To(BeTrue())
 						Expect(st.Code()).To(Equal(state))

@@ -69,7 +69,7 @@ func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDel
 	// Check that we have the expected number of DELETEs
 	m2 := regexp.MustCompile(`DELETE`)
 	deletes := m2.FindAllStringIndex(rules, -1)
-	Expect(len(deletes)).To(Equal(expectedDeletes))
+	Expect(deletes).To(HaveLen(expectedDeletes))
 
 	return makeUnstructured(`
 
