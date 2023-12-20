@@ -24,8 +24,7 @@ linters-settings: {}
 run:
   # In the past we have found performance to be better when using a subset of total CPUs.
   concurrency: 4
-  # test code shouldn't follow same rules, if we find tests are failing a lot we can revisit.
-  tests: false
+  tests: true
 
   skip-dirs:
     # don't lint ruleguard files
