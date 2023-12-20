@@ -199,6 +199,8 @@ var _ = Describe("Route", func() {
 			c.ExpectString("which function should this route invoke?")
 			c.SendLine(NoneOfTheAbove)
 			c.ExpectString("do you wish to add a prefix-rewrite transformation to the route")
+			c.SendLine("y")
+			c.ExpectString("rewrite the matched portion of HTTP requests with this prefix")
 			c.SendLine("/api/pets")
 			c.ExpectEOF()
 		}, func() {
@@ -211,10 +213,7 @@ var _ = Describe("Route", func() {
 			Expect(opts.Add.Route.Destination.Upstream.Namespace).To(Equal("gloo-system"))
 			Expect(opts.Add.Route.Destination.Upstream.Name).To(Equal("gloo-system.some-ns-test-svc-5678"))
 			Expect(opts.Add.Route.Destination.DestinationSpec.Aws.LogicalName).To(Equal(NoneOfTheAbove))
-			// During the development of https://github.com/solo-io/gloo/pull/9005, we attempt to change this assertion to
-			// use `BeNil()`, but it fails. This is a test assertion we will need to fix.
-			// https://github.com/solo-io/gloo/issues/6686
-			Expect(opts.Add.Route.Plugins.PrefixRewrite.Value).NotTo(BeNil())
+			Expect(opts.Add.Route.Plugins.PrefixRewrite.Value).To(HaveValue(Equal("/api/pets")))
 
 		})
 	})
