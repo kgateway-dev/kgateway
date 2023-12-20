@@ -5820,6 +5820,7 @@ metadata:
 						// During the development of https://github.com/solo-io/gloo/pull/9005, we found that
 						// these tests do not work as expected. We should be asserting that the pointer references a
 						// non-nil value.
+						// https://github.com/solo-io/gloo/issues/6686
 
 						podLevelSecurity := false
 						// Check for root at the pod level

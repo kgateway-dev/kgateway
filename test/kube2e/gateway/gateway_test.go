@@ -872,6 +872,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			//      <string>: request_headers_to_remove:"header-from-vhost"
 			//  In [It] at: /home/runner/work/gloo/gloo/test/kube2e/gateway/gateway_test.go:918 @ 12/19/23 21:16:08.13
 			// This will need to be addressed in the future. For now we leave the test as is, but we should revisit
+			// https://github.com/solo-io/gloo/issues/6686
 			Eventually(func(g Gomega) {
 				// https://onsi.github.io/gomega/#category-3-making-assertions-eminem-the-function-passed-into-codeeventuallycode
 				getProxy := func() (resources.InputResource, error) {

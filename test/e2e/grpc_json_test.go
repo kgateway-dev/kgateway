@@ -94,7 +94,8 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			// As part of introducing a linter, we updated the tests. However, they were failing with the changes, so we rolled them back here:
 			// https://github.com/solo-io/gloo/pull/9005/commits/6f3e18d37a81679c39cf0654b37677b8c48bf97e
 			// https://github.com/solo-io/gloo/pull/9005/commits/66ec3360ba50634347d101be2fbfd124358c7dac
-			// This could be a signal that the tests are not correct as they are currently written.
+			// This is a signal that the tests are not correct as they are currently written.
+			// https://github.com/solo-io/gloo/issues/6686
 			EventuallyWithOffset(1, func(g Gomega) {
 				g.Expect(resp).Should(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
 			}, 5, 1)
