@@ -5825,7 +5825,7 @@ metadata:
 						podLevelSecurity := false
 						// Check for root at the pod level
 						if deploy.Spec.Template.Spec.SecurityContext != nil {
-							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).NotTo(Equal(0))
+							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).NotTo(HaveValue(Equal(0)))
 							podLevelSecurity = true
 						}
 
@@ -5834,10 +5834,10 @@ metadata:
 							if !podLevelSecurity {
 								// If pod level security is not set, containers need to explicitly not be run as root
 								Expect(container.SecurityContext).NotTo(BeNil())
-								Expect(container.SecurityContext.RunAsUser).NotTo(Equal(0))
+								Expect(container.SecurityContext.RunAsUser).NotTo(HaveValue(Equal(0)))
 							} else if container.SecurityContext != nil {
 								// If podLevel security is set to non-root, make sure containers don't override it:
-								Expect(container.SecurityContext.RunAsUser).NotTo(Equal(0))
+								Expect(container.SecurityContext.RunAsUser).NotTo(HaveValue(Equal(0)))
 							}
 						}
 					})
