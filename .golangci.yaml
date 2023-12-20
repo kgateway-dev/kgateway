@@ -22,9 +22,17 @@ linters:
 linters-settings: {}
 
 run:
-  # In the past we have found performance to be better when using a subset of total CPUs.
+  # Number of CPUs to use when running golangci-lint.
+  # Default: the number of logical CPUs in the machine
   concurrency: 4
+
+  # Include test files or not.
+  # Default: true
   tests: true
+
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
+  timeout: 5m
 
   skip-dirs:
     # don't lint ruleguard files
