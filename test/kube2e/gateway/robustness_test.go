@@ -380,7 +380,7 @@ var _ = Describe("Robustness tests", func() {
 						return testHelper.Curl(secondRouteCurlOpts())
 					}, "5s", "1s").Should(ContainSubstring(invalidRouteResponse))
 
-				}, "30s")
+				}, "30s").Should(Succeed())
 			}
 
 			It("works", func() {
