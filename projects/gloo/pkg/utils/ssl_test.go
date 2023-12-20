@@ -647,7 +647,7 @@ var _ = Describe("Ssl", func() {
 			}
 			tlsParams, err := configTranslator.ResolveSslParamsConfig(sslParameters)
 
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 			Expect(tlsParams).To(BeNil())
 		})
 
