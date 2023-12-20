@@ -5797,7 +5797,7 @@ metadata:
 				})
 			})
 
-			Describe("Deployment Privileges Test", func() {
+			FDescribe("Deployment Privileges Test", func() {
 
 				// Helper func for testing pod & container root privileges logic
 				expectNonRoot := func(testManifest TestManifest) {
@@ -5814,30 +5814,24 @@ metadata:
 						deploy := appsv1.Deployment{}
 						err = json.Unmarshal(rawDeploy, &deploy)
 						Expect(err).NotTo(HaveOccurred(), "json.Unmarshall error")
+						Expect(deploy.Spec.Template).NotTo(BeNil(), "generated spec template is non-nil")
 
-						Expect(deploy.Spec.Template).NotTo(BeNil())
-
-						// During the development of https://github.com/solo-io/gloo/pull/9005, we found that
-						// these tests do not work as expected. We should be asserting that the pointer references a
-						// non-nil value.
-						// https://github.com/solo-io/gloo/issues/6686
-
+						matchDefaultRunAsUser := HaveValue(Equal(int64(10101)))
 						podLevelSecurity := false
+
 						// Check for root at the pod level
 						if deploy.Spec.Template.Spec.SecurityContext != nil {
-							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).NotTo(HaveValue(Equal(0)))
+							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).To(matchDefaultRunAsUser, "pod level security context should be set to non-root")
 							podLevelSecurity = true
 						}
 
 						// Check for root at the container level
 						for _, container := range deploy.Spec.Template.Spec.Containers {
 							if !podLevelSecurity {
-								// If pod level security is not set, containers need to explicitly not be run as root
 								Expect(container.SecurityContext).NotTo(BeNil())
-								Expect(container.SecurityContext.RunAsUser).NotTo(HaveValue(Equal(0)))
+								Expect(container.SecurityContext.RunAsUser).To(matchDefaultRunAsUser, "If pod level security is not set, containers need to explicitly not be run as root")
 							} else if container.SecurityContext != nil {
-								// If podLevel security is set to non-root, make sure containers don't override it:
-								Expect(container.SecurityContext.RunAsUser).NotTo(HaveValue(Equal(0)))
+								Expect(container.SecurityContext.RunAsUser).To(matchDefaultRunAsUser, "If podLevel security is set to non-root, make sure containers don't override it")
 							}
 						}
 					})
