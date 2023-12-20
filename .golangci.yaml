@@ -8,7 +8,7 @@
 linters:
   # Disable all linters.
   disable-all: true
-  # Enable specific linter
+  # Enable specific linters
   # https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
     # Given that we have not had linting enabled in this repository, it would be a large change to turn on all linters immediately.
@@ -28,12 +28,18 @@ issues:
 run:
   # Number of CPUs to use when running golangci-lint.
   # Default: the number of logical CPUs in the machine
+  # The GME team found performance to be better when using a subset of total CPUs, so we chose 4, like they did.
   concurrency: 4
 
   # Include test files or not.
+  # We have found that tests which break the linter are often symptomatic of a poorly written test.
+  # To avoid unintentionally introducing tests that don't do what we expect, we run the linter against them.
   tests: true
 
   # Timeout for analysis, e.g. 30s, 5m.
+  # We select 5 minutes somewhat arbitrarily.
+  # The idea is that we want a timeout that is long enough to allow the job to run.
+  # If we find that the job is timing out, we can explore ways to make this job run faster, or increase the timeout.
   timeout: 5m
 
   skip-dirs:
