@@ -173,6 +173,7 @@ type KnativeProxy struct {
 	HttpPort                            *int                  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
 	HttpsPort                           *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
 	Tracing                             *string               `json:"tracing,omitempty" desc:"tracing configuration"`
+	RunAsUser                           *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
 	LoopBackAddress                     *string               `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Stats                               *bool                 `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
 	ExtraClusterIngressProxyLabels      map[string]string     `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`

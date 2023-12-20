@@ -64,6 +64,9 @@ spec:
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          {{- if .Values.ingressProxy.deployment.runAsUser }}
+          runAsUser: {{ printf "%.0f" (float64 .Values.ingressProxy.deployment.runAsUser) }}
+          {{- end }}
           capabilities:
             drop:
             - ALL

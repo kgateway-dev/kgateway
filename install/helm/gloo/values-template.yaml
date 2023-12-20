@@ -23,6 +23,7 @@ settings:
         httpPort: 8080
         httpsPort: 8443
         replicas: 1
+        runAsUser: 10101
         service:
           type: LoadBalancer
           extraAnnotations: {}
@@ -199,6 +200,7 @@ ingressProxy:
     httpPort: 8080
     httpsPort: 8443
     replicas: 1
+    runAsUser: 10101
   service:
     type: LoadBalancer
     extraAnnotations: {}

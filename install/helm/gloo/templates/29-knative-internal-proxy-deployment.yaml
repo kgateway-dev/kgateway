@@ -61,6 +61,9 @@ spec:
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          {{- if .Values.settings.integrations.knative.proxy.runAsUser }}
+          runAsUser: {{ printf "%.0f" (float64 .Values.settings.integrations.knative.proxy.runAsUser) }}
+          {{- end }}
           capabilities:
             drop:
             - ALL

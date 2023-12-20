@@ -103,6 +103,9 @@ spec:
         {{- if .Values.discovery.deployment.fsGroup }}
         fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
         {{- end}}
+        {{- if .Values.discovery.deployment.runAsUser }}
+        runAsUser: {{ printf "%.0f" (float64 .Values.discovery.deployment.runAsUser) }}
+        {{- end }}
       {{- end}}
 {{- end }}
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}

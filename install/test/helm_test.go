@@ -5797,7 +5797,7 @@ metadata:
 				})
 			})
 
-			FDescribe("Deployment Privileges Test", func() {
+			Describe("Deployment Privileges Test", func() {
 
 				// Helper func for testing pod & container root privileges logic
 				expectNonRoot := func(testManifest TestManifest) {
@@ -5816,12 +5816,13 @@ metadata:
 						Expect(err).NotTo(HaveOccurred(), "json.Unmarshall error")
 						Expect(deploy.Spec.Template).NotTo(BeNil(), "generated spec template is non-nil")
 
-						matchDefaultRunAsUser := HaveValue(Equal(int64(10101)))
+						By(fmt.Sprintf("Validating Deployment %s", deploy.GetName()))
+
 						podLevelSecurity := false
 
 						// Check for root at the pod level
 						if deploy.Spec.Template.Spec.SecurityContext != nil {
-							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).To(matchDefaultRunAsUser, "pod level security context should be set to non-root")
+							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).To(HaveValue(Equal(int64(10101))), "pod level security context should be set to non-root")
 							podLevelSecurity = true
 						}
 
@@ -5829,9 +5830,9 @@ metadata:
 						for _, container := range deploy.Spec.Template.Spec.Containers {
 							if !podLevelSecurity {
 								Expect(container.SecurityContext).NotTo(BeNil())
-								Expect(container.SecurityContext.RunAsUser).To(matchDefaultRunAsUser, "If pod level security is not set, containers need to explicitly not be run as root")
+								Expect(container.SecurityContext.RunAsUser).To(HaveValue(Equal(int64(10101))), fmt.Sprintf("If pod level security is not set, container %s need to explicitly not be run as root", container.Name))
 							} else if container.SecurityContext != nil {
-								Expect(container.SecurityContext.RunAsUser).To(matchDefaultRunAsUser, "If podLevel security is set to non-root, make sure containers don't override it")
+								Expect(container.SecurityContext.RunAsUser).To(HaveValue(Equal(int64(10101))), "If podLevel security is set to non-root, make sure containers don't override it")
 							}
 						}
 					})
@@ -5851,7 +5852,6 @@ metadata:
 								valuesArgs: []string{
 									"gateway.enabled=false",
 									"settings.integrations.knative.enabled=true",
-									"settings.integrations.knative.version=v0.10.0",
 									"accessLogger.enabled=true",
 									"ingress.enabled=true",
 									"global.glooMtls.enabled=true",
