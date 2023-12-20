@@ -97,7 +97,6 @@ spec:
             containerPort: 9091
         {{- end }}
       # Pod security context
-      # TODO: Fix this logic, so that the helm tests pass
       {{- if .Values.discovery.deployment.enablePodSecurityContext }}
       securityContext:
         {{- if .Values.discovery.deployment.fsGroup }}

@@ -4984,7 +4984,8 @@ metadata:
 						deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
 						user := int64(10101)
 						deploy.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
-							FSGroup: &user,
+							FSGroup:   &user,
+							RunAsUser: &user,
 						}
 						discoveryDeployment = deploy
 					})
@@ -5084,6 +5085,7 @@ metadata:
 							valuesArgs: []string{"discovery.deployment.runAsUser=10102"},
 						})
 						uid := int64(10102)
+						discoveryDeployment.Spec.Template.Spec.SecurityContext.RunAsUser = &uid
 						discoveryDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
