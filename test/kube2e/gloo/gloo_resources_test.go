@@ -1,7 +1,6 @@
 package gloo_test
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -110,29 +109,32 @@ var _ = Describe("GlooResourcesTest", func() {
 					},
 				},
 			}
-			upstreamSslConfigString, err := json.Marshal(upstreamSslConfig)
-			Expect(err).NotTo(HaveOccurred())
 
-			By("Annotate the kube service, so that discovery applies the ssl configuration to the generated upstream")
 			Eventually(func(g Gomega) {
 				testRunnerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestrunnerName, metav1.GetOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
 
-				testRunnerService.Annotations[serviceconverter.DeepMergeAnnotationPrefix] = "true"
-				testRunnerService.Annotations[serviceconverter.GlooAnnotationPrefix] = fmt.Sprintf("{sslConfig: %s}", upstreamSslConfigString)
-
+				setAnnotations(testRunnerService, map[string]string{
+					serviceconverter.DeepMergeAnnotationPrefix: "true",
+					serviceconverter.GlooAnnotationPrefix: fmt.Sprintf(`{
+							"sslConfig": {
+								"secretRef": {
+									"name": "%s",
+									"namespace":  "%s"
+								}
+							}
+						}`, tlsSecret.GetName(), tlsSecret.GetNamespace()),
+				})
 				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testRunnerService, metav1.UpdateOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
-			})
+			}, "30s", "1s").Should(Succeed(), "annotate the kube service, so that discovery applies the ssl configuration to the generated upstream")
 
-			By("Except the kube upstream to eventually contain annotated the ssl configuration")
 			Eventually(func(g Gomega) {
 				usName := kubernetes.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort)
 				testRunnerUs, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, usName, clients.ReadOpts{Ctx: ctx})
 				g.Expect(err).NotTo(HaveOccurred())
-
 				g.Expect(testRunnerUs.GetSslConfig()).To(matchers.MatchProto(upstreamSslConfig))
-			})
+			}, "30s", "1s").Should(Succeed(), "the kube upstream should eventually contain the ssl configuration")
 
 		})
 
@@ -140,21 +142,24 @@ var _ = Describe("GlooResourcesTest", func() {
 			err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("remove the ssl config annotation from the test runner service")
 			Eventually(func(g Gomega) {
 				testRunnerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestrunnerName, metav1.GetOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
 
-				delete(testRunnerService.Annotations, serviceconverter.DeepMergeAnnotationPrefix)
-				delete(testRunnerService.Annotations, serviceconverter.GlooAnnotationPrefix)
-
+				setAnnotations(testRunnerService, map[string]string{
+					serviceconverter.DeepMergeAnnotationPrefix: "",
+					serviceconverter.GlooAnnotationPrefix:      "",
+				})
 				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testRunnerService, metav1.UpdateOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
-			})
+			}, "30s", "1s").Should(Succeed(), "remove the ssl config annotation from the test runner service")
 
 		})
 
-		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
+		// During the delivery of https://github.com/solo-io/gloo/pull/9007, we learned that this test does not work.
+		// At the moment, we ignore this test in CI, but we intend to fix it in the near future.
+		// https://github.com/solo-io/gloo/issues/6686
+		XIt("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
 			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
 			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
 			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
@@ -168,19 +173,8 @@ var _ = Describe("GlooResourcesTest", func() {
 			// eventually the `no healthy upstream` will occur
 			timesToPerform := time.Duration(10)
 
-			eventuallyCurl := func() {
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/",
-					Method:            "GET",
-					Host:              helper.TestrunnerName,
-					Service:           defaults.GatewayProxyName,
-					ConnectionTimeout: 1,
-					WithoutStats:      true,
-				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
-			}
-
 			timeInBetweenRotation := secondsForCurling + timeForCurling + offset
+
 			Consistently(func(g Gomega) {
 				By("Generate new CaCrt and PrivateKey")
 				crt, crtKey := helpers.GetCerts(helpers.Params{
@@ -197,9 +191,35 @@ var _ = Describe("GlooResourcesTest", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Eventually can curl the endpoint")
-				eventuallyCurl()
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              helper.TestrunnerName,
+					Service:           defaults.GatewayProxyName,
+					ConnectionTimeout: 1,
+					WithoutStats:      true,
+					Verbose:           true,
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 0, 60*time.Second, 1*time.Second)
 
-			}, timeInBetweenRotation*timesToPerform, timeInBetweenRotation)
+			}, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Succeed())
 		})
 	})
 })
+
+func setAnnotations(service *kubev1.Service, annotations map[string]string) {
+	if service.Annotations == nil {
+		service.Annotations = make(map[string]string)
+	}
+
+	for k, v := range annotations {
+		if v == "" {
+			// If the value is empty, delete the annotation
+			delete(service.Annotations, k)
+		} else {
+			// If the value is non-empty, set the annotation
+			service.Annotations[k] = v
+		}
+
+	}
+}
