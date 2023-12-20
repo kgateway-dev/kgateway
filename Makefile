@@ -149,10 +149,9 @@ check-spelling:
 #----------------------------------------------------------------------------
 
 # The analyze target runs a suite of static analysis tools against the codebase.
-# The options used in this target are slightly different from those run in CI.
-# We do this to enable developers to analyze what they want, even though in CI we don't analyze tests
+# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_OPTIONS variable.
 .PHONY: analyze
-ANALYZE_OPTIONS ?= --fast --timeout=5m --tests=true --verbose --concurrency=4
+ANALYZE_OPTIONS ?= --fast --verbose
 analyze:
 	$(DEPSGOBIN)/golangci-lint run $(ANALYZE_OPTIONS) ./...
 
