@@ -66,11 +66,15 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(envoyInstance.RunWith(envoy.RunConfig{
+			Context:     ctx,
+			Role:        writeNamespace + "~" + gwdefaults.GatewayProxyName,
+			Port:        uint32(testClients.GlooPort),
+			RestXdsPort: uint32(testClients.RestXdsPort),
+		})).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
-		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
+		_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -80,8 +84,8 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	})
 
 	testRequest := func(path string, shouldMatch bool) {
-		body := "foo" // this is valid JSON because of the quotes
-		resp := func() (*http.Response, error) {
+		body := fmt.Sprintf("%q", "foo") // this is valid JSON because the final encoded bytestring includes quote characters.
+		sendReq := func() (*http.Response, error) {
 			// send a request with a body
 			return http.Post(fmt.Sprintf("http://%s:%d/%s", "localhost", defaults.HttpPort, path), "application/json", bytes.NewBufferString(body))
 		}
@@ -90,26 +94,19 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}
 		if shouldMatch {
-			// TODO: Fix these tests
-			// As part of introducing a linter, we updated the tests. However, they were failing with the changes, so we rolled them back here:
-			// https://github.com/solo-io/gloo/pull/9005/commits/6f3e18d37a81679c39cf0654b37677b8c48bf97e
-			// https://github.com/solo-io/gloo/pull/9005/commits/66ec3360ba50634347d101be2fbfd124358c7dac
-			// This is a signal that the tests are not correct as they are currently written.
-			// https://github.com/solo-io/gloo/issues/6686
 			EventuallyWithOffset(1, func(g Gomega) {
-				g.Expect(resp).Should(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
-			}, 5, 1)
+				g.Expect(sendReq()).Should(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
+			}, 5, 1).Should(Succeed())
 			EventuallyWithOffset(1, func(g Gomega) {
 				g.Expect(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
-			})
-			//tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
+			}).Should(Succeed())
 		} else {
 			EventuallyWithOffset(1, func(g Gomega) {
-				g.Expect(resp).ShouldNot(testmatchers.HaveExactResponseBody(expectedResp), "Got unexpected response")
-			}, 5, 1)
+				g.Expect(sendReq()).ShouldNot(testmatchers.HaveExactResponseBody(expectedResp), "Got unexpected response")
+			}, 5, 1).Should(Succeed())
 			EventuallyWithOffset(1, func(g Gomega) {
 				g.Expect(tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream recorded unexpected request")
-			})
+			}).Should(Succeed())
 		}
 	}
 
