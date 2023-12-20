@@ -156,10 +156,12 @@ var _ = Describe("GlooResourcesTest", func() {
 
 		})
 
-		// During the delivery of https://github.com/solo-io/gloo/pull/9007, we learned that this test does not work.
-		// At the moment, we ignore this test in CI, but we intend to fix it in the near future.
-		// https://github.com/solo-io/gloo/issues/6686
-		XIt("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
+		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
+			// During the delivery of https://github.com/solo-io/gloo/pull/9007, we learned that this test does not work.
+			// At the moment, we ignore this test in CI, but we intend to fix it in the near future.
+			// https://github.com/solo-io/gloo/issues/6686
+			Skip("Auto-skipping broken test")
+
 			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
 			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
 			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
