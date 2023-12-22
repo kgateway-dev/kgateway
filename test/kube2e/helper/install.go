@@ -86,7 +86,7 @@ type TestConfig struct {
 
 type SoloTestHelper struct {
 	*TestConfig
-	TestRunner
+	TestUpstreamServer
 }
 
 // NewSoloTestHelper is meant to provide a standard way of deploying Gloo/GlooE to a k8s cluster during tests.
@@ -144,7 +144,7 @@ func NewSoloTestHelper(configFunc TestConfigFunc) (*SoloTestHelper, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "initializing testrunner")
 		}
-		testHelper.TestRunner = testRunnerImpl
+		testHelper.TestUpstreamServer = testRunnerImpl
 	}
 
 	return testHelper, nil
@@ -201,11 +201,11 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, deploymentType string,
 		return errors.Wrapf(err, "error running glooctl install command")
 	}
 
-	if h.TestRunner != nil {
+	if h.TestUpstreamServer != nil {
 		if err := waitForDefaultServiceAccount(ctx, h.InstallNamespace); err != nil {
 			return errors.Wrapf(err, "waiting for default service account")
 		}
-		if err := h.Deploy(timeout); err != nil {
+		if err := h.DeployServer(timeout); err != nil {
 			return errors.Wrapf(err, "deploying testrunner")
 		}
 	}
@@ -233,7 +233,6 @@ func glooctlInstallWithTimeout(rootDir string, io *InstallOptions, timeout time.
 	case <-time.After(timeout):
 		return errors.New("timeout - did something go wrong fetching the docker images?")
 	}
-	return nil
 }
 
 func waitForDefaultServiceAccount(ctx context.Context, installNamespace string) error {
@@ -256,9 +255,9 @@ func (h *SoloTestHelper) UninstallGloo() error {
 }
 
 func (h *SoloTestHelper) uninstallGloo(all bool) error {
-	if h.TestRunner != nil {
+	if conc := h.TestUpstreamServer.(*testRunner); conc != nil {
 		log.Debugf("terminating %s...", TestrunnerName)
-		if err := h.Terminate(); err != nil {
+		if err := h.TerminatePod(); err != nil {
 			// Just log a warning, we don't want to fail
 			log.Warnf("error terminating %s", TestrunnerName)
 		}

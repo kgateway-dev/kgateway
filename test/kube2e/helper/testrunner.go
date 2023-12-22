@@ -2,13 +2,15 @@ package helper
 
 import (
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 )
 
 const (
-	defaultTestRunnerImage = "quay.io/solo-io/testrunner:v1.7.0-beta17"
+	defaultTestServerImage = "quay.io/solo-io/testrunner:v1.7.0-beta17"
 	TestrunnerName         = "testrunner"
 	TestRunnerPort         = 1234
 
@@ -45,8 +47,8 @@ const (
 </html>`
 )
 
-func NewTestRunner(namespace string) (*testRunner, error) {
-	testContainer, err := newTestContainer(namespace, defaultTestRunnerImage, TestrunnerName, TestRunnerPort)
+func NewTestRunner(namespace string) (TestUpstreamServer, error) {
+	testContainer, err := newTestContainer(namespace, defaultTestServerImage, TestrunnerName, TestRunnerPort)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +63,7 @@ type testRunner struct {
 	*testContainer
 }
 
-func (t *testRunner) Deploy(timeout time.Duration) error {
+func (t *testRunner) DeployServer(timeout time.Duration) error {
 	err := t.deploy(timeout)
 	if err != nil {
 		return err
@@ -74,6 +76,60 @@ func (t *testRunner) Deploy(timeout time.Duration) error {
 			// if an error happened after 5 seconds, it's probably not an error.. just the pod terminating.
 			if time.Now().Sub(start).Seconds() < 5.0 {
 				log.Warnf("failed to start HTTP Server in Test Runner: %v", err)
+			}
+		}
+	}()
+	return nil
+}
+
+// DeployTLS deletes the running server pod and its service, then redeploys using a server
+// which serves HTTPS with the cert and key provided.
+func (t *testRunner) DeployServerTls(timeout time.Duration, crt, key []byte) error {
+	if err := t.TerminatePodAndDeleteService(); err != nil {
+		return errors.Wrap(err, "terminating pod and deleting service")
+	}
+	if err := t.testContainer.DeployResources(timeout); err != nil {
+		return errors.Wrap(err, "deploying pod")
+	}
+
+	certFname := "/tmp/testrunner_tls/cert.pem"
+	keyFname := "/tmp/testrunner_tls/key.pem"
+	scriptFname := "/tmp/testrunner_tls/server.py"
+	os.MkdirAll("/tmp/testrunner_tls", os.ModePerm)
+	defer os.RemoveAll("/tmp/testrunner_tls")
+
+	if err := os.WriteFile(certFname, crt, os.ModePerm); err != nil {
+		return errors.Wrap(err, "writing cert")
+	}
+	if err := os.WriteFile(keyFname, key, os.ModePerm); err != nil {
+		return errors.Wrap(err, "writing key")
+	}
+	if err := os.WriteFile(scriptFname, []byte(fmt.Sprintf(`
+import BaseHTTPServer, SimpleHTTPServer
+import ssl
+
+httpd = BaseHTTPServer.HTTPServer(('0.0.0.0', %d), SimpleHTTPServer.SimpleHTTPRequestHandler)
+httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='/tmp/key.pem', certfile='/tmp/cert.pem', server_side=True)
+httpd.serve_forever()
+`, TestRunnerPort)), os.ModePerm); err != nil {
+		return errors.Wrap(err, "writing server")
+	}
+	if err := t.Cp(map[string]string{
+		certFname:   "/tmp/cert.pem",
+		keyFname:    "/tmp/key.pem",
+		scriptFname: "/tmp/server.py",
+	}); err != nil {
+		return errors.Wrap(err, "kubectl cp")
+	}
+
+	go func() {
+		start := time.Now()
+		log.Debugf("starting https server listening on port %v", TestRunnerPort)
+		// This command starts an https SimpleHttpServer and blocks until the server terminates
+		if _, err := t.Exec("python", "/tmp/server.py"); err != nil {
+			// if an error happened after 5 seconds, it's probably not an error.. just the pod terminating.
+			if time.Now().Sub(start).Seconds() < 5.0 {
+				log.Warnf("failed to start HTTPS Server in Test Runner: %v", err)
 			}
 		}
 	}()

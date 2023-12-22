@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -65,6 +64,10 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 	tick := time.Tick(currentTimeout / 8)
 
 	gomega.EventuallyWithOffset(ginkgoOffset+1, func() string {
+		if !t.CanCurl() {
+			return ""
+		}
+
 		var res string
 
 		bufChan, done, err := t.CurlAsyncChan(opts)
@@ -84,7 +87,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 				buf = r
 			}
 		}
-		byt, err := ioutil.ReadAll(buf)
+		byt, err := io.ReadAll(buf)
 		if err != nil {
 			res = err.Error()
 		} else {
@@ -103,6 +106,9 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string
 	tick := time.Tick(currentTimeout / 8)
 
 	gomega.EventuallyWithOffset(ginkgoOffset+1, func() string {
+		if !t.CanCurl() {
+			return ""
+		}
 		res, err := t.Curl(opts)
 		if err != nil {
 			res = err.Error()
@@ -184,16 +190,28 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 }
 
 func (t *testContainer) Curl(opts CurlOpts) (string, error) {
+	if !t.CanCurl() {
+		return "", fmt.Errorf("testContainer from image %s:%s cannot curl", t.containerImageName, t.imageTag)
+	}
+
 	args := t.buildCurlArgs(opts)
 	return t.Exec(args...)
 }
 
 func (t *testContainer) CurlAsync(opts CurlOpts) (io.Reader, chan struct{}, error) {
+	if !t.CanCurl() {
+		return nil, nil, fmt.Errorf("testContainer from image %s:%s cannot curl", t.containerImageName, t.imageTag)
+	}
+
 	args := t.buildCurlArgs(opts)
-	return t.TestRunnerAsync(args...)
+	return t.ExecAsync(args...)
 }
 
 func (t *testContainer) CurlAsyncChan(opts CurlOpts) (<-chan io.Reader, chan struct{}, error) {
+	if !t.CanCurl() {
+		return nil, nil, fmt.Errorf("testContainer from image %s:%s cannot curl", t.containerImageName, t.imageTag)
+	}
+
 	args := t.buildCurlArgs(opts)
 	return t.TestRunnerChan(&bytes.Buffer{}, args...)
 }

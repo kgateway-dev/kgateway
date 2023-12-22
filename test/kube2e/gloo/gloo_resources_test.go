@@ -102,7 +102,7 @@ var _ = Describe("GlooResourcesTest", func() {
 				Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 				IsCA:  true,
 			})
-			err := testHelper.DeployTLS(time.Second*600, []byte(crt), []byte(crtKey))
+			err := testHelper.TestUpstreamServer.DeployServerTls(time.Second*600, []byte(crt), []byte(crtKey))
 			Expect(err).NotTo(HaveOccurred())
 
 			tlsSecret = helpers.GetKubeSecret("secret", testHelper.InstallNamespace)

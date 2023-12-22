@@ -2,7 +2,9 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,16 +18,33 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type TestRunner interface {
-	Deploy(timeout time.Duration) error
-	Terminate() error
-	Exec(command ...string) (string, error)
-	TestRunnerAsync(args ...string) (io.Reader, chan struct{}, error)
+var _ TestUpstreamServer = &testRunner{}
+var _ TestContainer = &testRunner{}
+var _ TestContainer = &testContainer{}
+
+// A TestContainer is a general-purpose abstraction over a container in which we might
+// execute cURL or other, arbitrary commands via kubectl.
+type TestContainer interface {
+	DeployResources(timeout time.Duration) error
+	TerminatePod() error
+	DeleteService() error
+	TerminatePodAndDeleteService() error
+	CanCurl() bool
 	// Checks the response of the request
 	CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
-	// CHecks all of the output of the curl command
+	// Checks all of the output of the curl command
 	CurlEventuallyShouldOutput(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
 	Curl(opts CurlOpts) (string, error)
+	Exec(command ...string) (string, error)
+	ExecAsync(args ...string) (io.Reader, chan struct{}, error)
+}
+
+// A TestRunner is an extension of a TestContainer which is typically run with the defaultTestRunnerImage.
+// It is used to deploy test http/https services
+type TestUpstreamServer interface {
+	TestContainer
+	DeployServer(timeout time.Duration) error
+	DeployServerTls(timeout time.Duration, crt, key []byte) error
 }
 
 func newTestContainer(namespace, imageTag, echoName string, port int32) (*testContainer, error) {
@@ -58,6 +77,10 @@ type testContainer struct {
 	imageTag string
 	echoName string
 	port     int32
+}
+
+func (t *testContainer) DeployResources(timeout time.Duration) error {
+	return t.deploy(timeout)
 }
 
 // Deploys the http echo to the kubernetes cluster the kubeconfig is pointing to and waits for the given time for the
@@ -117,12 +140,28 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 	return nil
 }
 
-func (t *testContainer) Terminate() error {
+func (t *testContainer) TerminatePod() error {
 	if err := testutils.Kubectl("delete", "pod", "-n", t.namespace, t.echoName, "--grace-period=0"); err != nil {
 		return errors.Wrapf(err, "deleting %s pod", t.echoName)
 	}
 	return nil
+}
 
+func (t *testContainer) DeleteService() error {
+	if err := testutils.Kubectl("delete", "service", "-n", t.namespace, t.echoName, "--grace-period=0"); err != nil {
+		return errors.Wrapf(err, "deleting %s service", t.echoName)
+	}
+	return nil
+}
+
+func (t *testContainer) TerminatePodAndDeleteService() error {
+	if err := t.TerminatePod(); err != nil {
+		return err
+	}
+	if err := t.DeleteService(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // testContainer executes a command inside the testContainer container
@@ -131,9 +170,19 @@ func (t *testContainer) Exec(command ...string) (string, error) {
 	return testutils.KubectlOut(args...)
 }
 
-// TestContainerAsync executes a command inside the testContainer container
+// Cp copies files into the testContainer container
+func (t *testContainer) Cp(files map[string]string) error {
+	for k, v := range files {
+		if err := testutils.Kubectl("cp", k, fmt.Sprintf("%s/%s:%s", t.namespace, t.echoName, v)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ExecAsync executes a command inside the testContainer container
 // returning a buffer that can be read from as it executes
-func (t *testContainer) TestRunnerAsync(args ...string) (io.Reader, chan struct{}, error) {
+func (t *testContainer) ExecAsync(args ...string) (io.Reader, chan struct{}, error) {
 	args = append([]string{"exec", "-i", t.echoName, "-n", t.namespace, "--"}, args...)
 	return testutils.KubectlOutAsync(args...)
 }
@@ -141,4 +190,11 @@ func (t *testContainer) TestRunnerAsync(args ...string) (io.Reader, chan struct{
 func (t *testContainer) TestRunnerChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
 	args = append([]string{"exec", "-i", t.echoName, "-n", t.namespace, "--"}, args...)
 	return testutils.KubectlOutChan(r, args...)
+}
+
+func (t *testContainer) CanCurl() bool {
+	if out, err := t.Exec("curl", "--version"); err != nil || !strings.HasPrefix(out, "curl") {
+		return false
+	}
+	return true
 }

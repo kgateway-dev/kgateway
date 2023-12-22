@@ -5,11 +5,6 @@ go 1.21
 // Note for developers: upgrading go will also require upgrading go in the following files:
 // ./cloudbuild-cache.yaml,
 
-// DO_NOT_SUBMIT pinning for tls testrunner hack
-replace github.com/solo-io/k8s-utils => github.com/solo-io/k8s-utils v0.6.1-0.20231222162538-2d1869fdf359
-
-// replace github.com/solo-io/k8s-utils => ../k8s-utils
-
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
