@@ -376,7 +376,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Context("linkerd enabled updates routes with appended headers", func() {
 
 			var (
-				httpEcho helper.TestRunner
+				httpEcho helper.TestContainer
 			)
 
 			BeforeEach(func() {
@@ -1248,7 +1248,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tcp", func() {
 
 		var (
-			httpEcho            helper.TestRunner
+			httpEcho            helper.TestContainer
 			httpEchoClusterName string
 			clusterIp           string
 			tcpPort             = corev1.ServicePort{
@@ -2126,7 +2126,8 @@ spec:
 							Name:      testRunnerVs.GetMetadata().Name,
 						},
 						func(resource resources.Resource) resources.Resource {
-							vs := resource.(*gatewayv1.VirtualService)
+							vs, ok := resource.(*gatewayv1.VirtualService)
+							Expect(ok).To(BeTrue())
 							vs.SslConfig = nil
 							return vs
 						},
