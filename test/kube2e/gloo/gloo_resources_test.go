@@ -96,9 +96,18 @@ var _ = Describe("GlooResourcesTest", func() {
 		)
 
 		BeforeEach(func() {
+			// Gen crt and key for python server to use, doens't matter that it will be discarded
+			// because validation is off by default
+			crt, crtKey := helpers.GetCerts(helpers.Params{
+				Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+				IsCA:  true,
+			})
+			err := testHelper.DeployTLS(time.Second*600, []byte(crt), []byte(crtKey))
+			Expect(err).NotTo(HaveOccurred())
+
 			tlsSecret = helpers.GetKubeSecret("secret", testHelper.InstallNamespace)
 
-			_, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+			_, err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			upstreamSslConfig := &ssl.UpstreamSslConfig{
@@ -160,7 +169,7 @@ var _ = Describe("GlooResourcesTest", func() {
 			// During the delivery of https://github.com/solo-io/gloo/pull/9007, we learned that this test does not work.
 			// At the moment, we ignore this test in CI, but we intend to fix it in the near future.
 			// https://github.com/solo-io/gloo/issues/6686
-			Skip("Auto-skipping broken test")
+			// Skip("Auto-skipping broken test")
 
 			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
 			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
@@ -199,9 +208,11 @@ var _ = Describe("GlooResourcesTest", func() {
 					Method:            "GET",
 					Host:              helper.TestrunnerName,
 					Service:           defaults.GatewayProxyName,
+					Port:              80,
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
 					Verbose:           true,
+					SelfSigned:        true,
 				}, kube2e.GetSimpleTestRunnerHttpResponse(), 0, 60*time.Second, 1*time.Second)
 
 			}, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Succeed())
