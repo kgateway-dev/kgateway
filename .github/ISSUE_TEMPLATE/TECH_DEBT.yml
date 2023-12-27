@@ -2,24 +2,6 @@ name: Tech Debt/Code Improvement
 description: Track existing technical debt or suggest ideas for code improvement.
 labels: ["Type: Tech Debt"]
 body:
-  - type: dropdown
-    id: product
-    attributes:
-      label: Gloo Edge Product
-      description: Which Edge product are you using?
-      options:
-        - Open Source
-        - Enterprise
-    validations:
-      required: true
-  - type: input
-    id: version
-    attributes:
-      label: Gloo Edge Version
-      description: What version of your product are you using? Please specify a specific patch version
-      placeholder: eg v1.14.2
-    validations:
-      required: true
   - type: textarea
     id: problem-details
     attributes:
