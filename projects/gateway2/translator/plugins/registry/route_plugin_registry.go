@@ -2,8 +2,11 @@ package registry
 
 import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 )
 
 type RoutePluginRegistry struct {
@@ -17,10 +20,12 @@ func (h *RoutePluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
 func NewRoutePluginRegistry(
 	queries query.GatewayQueries,
 ) *RoutePluginRegistry {
-	filter := filterplugins.NewRouteFilterPlugin(queries)
 	return &RoutePluginRegistry{
 		routePlugins: []plugins.RoutePlugin{
-			&filter,
+			headermodifier.NewPlugin(),
+			mirror.NewPlugin(queries),
+			redirect.NewPlugin(),
+			urlrewrite.NewPlugin(),
 		},
 	}
 }

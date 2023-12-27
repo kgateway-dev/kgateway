@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
@@ -18,19 +19,29 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-func (p *Plugin) ApplyFilter(
+func (p *Plugin) ApplyPlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-	filter gwv1.HTTPRouteFilter,
 	outputRoute *v1.Route,
 ) error {
-	if filter.Type == gwv1.HTTPRouteFilterRequestHeaderModifier {
-		return p.applyRequestFilter(filter.RequestHeaderModifier, outputRoute)
+	filtersToApply := utils.FindAppliedRouteFilters(
+		routeCtx,
+		gwv1.HTTPRouteFilterRequestHeaderModifier,
+		gwv1.HTTPRouteFilterResponseHeaderModifier,
+	)
+	for _, filter := range filtersToApply {
+		var err error
+		if filter.Type == gwv1.HTTPRouteFilterRequestHeaderModifier {
+			err = p.applyRequestFilter(filter.RequestHeaderModifier, outputRoute)
+		}
+		if filter.Type == gwv1.HTTPRouteFilterResponseHeaderModifier {
+			err = p.applyResponseFilter(filter.ResponseHeaderModifier, outputRoute)
+		}
+		if err != nil {
+			return err
+		}
 	}
-	if filter.Type == gwv1.HTTPRouteFilterResponseHeaderModifier {
-		return p.applyResponseFilter(filter.ResponseHeaderModifier, outputRoute)
-	}
-	return errors.Errorf("unsupported filter type: %v", filter.Type)
+	return nil
 }
 
 func (p *Plugin) applyRequestFilter(

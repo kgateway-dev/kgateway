@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/mirror"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/mirror/mocks"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -21,10 +21,7 @@ func TestSingleMirror(t *testing.T) {
 	g := gomega.NewWithT(t)
 	ctrl := gomock.NewController(t)
 	queries := mocks.NewMockGatewayQueries(ctrl)
-	rt := &gwv1.HTTPRoute{}
-	routeCtx := &plugins.RouteContext{
-		Route: rt,
-	}
+
 	filter := gwv1.HTTPRouteFilter{
 		Type: gwv1.HTTPRouteFilterRequestMirror,
 		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
@@ -34,12 +31,22 @@ func TestSingleMirror(t *testing.T) {
 			},
 		},
 	}
+	rt := &gwv1.HTTPRoute{}
+	routeCtx := &plugins.RouteContext{
+		Route: rt,
+		Rule: &gwv1.HTTPRouteRule{
+			Filters: []gwv1.HTTPRouteFilter{
+				filter,
+			},
+		},
+	}
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "bar",
 		},
 	}
+
 	queries.EXPECT().ObjToFrom(rt).Return(nil)
 	queries.EXPECT().GetBackendForRef(context.Background(), gomock.Any(), &filter.RequestMirror.BackendRef).Return(svc, nil)
 	plugin := mirror.NewPlugin(queries)
@@ -47,7 +54,7 @@ func TestSingleMirror(t *testing.T) {
 		Action:  &v1.Route_RouteAction{},
 		Options: &v1.RouteOptions{},
 	}
-	plugin.ApplyFilter(context.Background(), routeCtx, filter, outputRoute)
+	plugin.ApplyPlugin(context.Background(), routeCtx, outputRoute)
 
 	shadowing := outputRoute.GetOptions().GetShadowing()
 	g.Expect(shadowing).ToNot(gomega.BeNil())

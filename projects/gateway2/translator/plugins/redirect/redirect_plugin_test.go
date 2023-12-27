@@ -2,9 +2,9 @@ package redirect_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/api"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/filtertests"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/redirect"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -16,15 +16,15 @@ func ptr[T any](i T) *T {
 var _ = DescribeTable(
 	"RedirectPlugin",
 	func(
-		plugin api.HTTPFilterPlugin,
+		plugin plugins.RoutePlugin,
 		filter gwv1.HTTPRouteFilter,
 		expectedRoute *v1.Route,
 	) {
 		filtertests.AssertExpectedRoute(
 			plugin,
-			filter,
 			expectedRoute,
 			false,
+			filter,
 		)
 	},
 	Entry(

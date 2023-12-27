@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -22,12 +23,16 @@ func NewPlugin(queries query.GatewayQueries) *plugin {
 	}
 }
 
-func (p *plugin) ApplyFilter(
+func (p *plugin) ApplyPlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-	filter gwv1.HTTPRouteFilter,
 	outputRoute *v1.Route,
 ) error {
+	filter := utils.FindAppliedRouteFilter(routeCtx, gwv1.HTTPRouteFilterRequestMirror)
+	if filter == nil {
+		return nil
+	}
+
 	config := filter.RequestMirror
 	if config == nil {
 		return errors.Errorf("RequestMirror filter supplied does not define requestMirror config")

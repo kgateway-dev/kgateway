@@ -3,9 +3,9 @@ package headermodifier_test
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/api"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/filtertests"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/headermodifier"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
@@ -15,15 +15,15 @@ import (
 var _ = DescribeTable(
 	"HeaderModifierPlugin",
 	func(
-		plugin api.HTTPFilterPlugin,
+		plugin plugins.RoutePlugin,
 		filter gwv1.HTTPRouteFilter,
 		expectedRoute *v1.Route,
 	) {
 		filtertests.AssertExpectedRoute(
 			plugin,
-			filter,
 			expectedRoute,
 			true,
+			filter,
 		)
 	},
 	Entry(
