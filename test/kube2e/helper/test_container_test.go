@@ -40,32 +40,30 @@ var _ = Describe("test container tests", func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
-	Context("test runner", func() {
+	Context("test server", func() {
 		var (
-			testRunner TestUpstreamServer
+			testServer TestUpstreamServer
 		)
 		BeforeEach(func() {
 			var err error
-			testRunner, err = NewTestRunner(namespace)
+			testServer, err = NewTestServer(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = testRunner.DeployResources(time.Minute * 2)
+			err = testServer.DeployResources(time.Minute * 2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
-			err := testRunner.TerminatePodAndDeleteService()
+			err := testServer.TerminatePodAndDeleteService()
 			Expect(err).NotTo(HaveOccurred())
 		})
-		It("can install and uninstall the testrunner", func() {
-			// responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,
-			// 	linkerd.HeaderKey, helper.HttpEchoName, testHelper.InstallNamespace, helper.HttpEchoPort)
-			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", TestrunnerName, namespace, TestRunnerPort)
-			testRunner.CurlEventuallyShouldRespond(CurlOpts{
+		It("can install and uninstall the testserver", func() {
+			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", TestServerName, namespace, TestServerPort)
+			testServer.CurlEventuallyShouldRespond(CurlOpts{
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
 				Host:              host,
-				Service:           TestrunnerName,
-				Port:              TestRunnerPort,
+				Service:           TestServerName,
+				Port:              TestServerPort,
 				ConnectionTimeout: 10,
 			}, SimpleHttpResponse, 1, 120*time.Second)
 		})

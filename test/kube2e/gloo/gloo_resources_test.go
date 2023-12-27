@@ -34,41 +34,41 @@ import (
 var _ = Describe("GlooResourcesTest", func() {
 
 	var (
-		testRunnerDestination *gloov1.Destination
-		testRunnerVs          *gatewayv1.VirtualService
+		testServerDestination *gloov1.Destination
+		testServerVs          *gatewayv1.VirtualService
 
 		glooResources *gloosnapshot.ApiSnapshot
 	)
 
 	BeforeEach(func() {
-		// Create a VirtualService routing directly to the testrunner kubernetes service
-		testRunnerDestination = &gloov1.Destination{
+		// Create a VirtualService routing directly to the testserver kubernetes service
+		testServerDestination = &gloov1.Destination{
 			DestinationType: &gloov1.Destination_Kube{
 				Kube: &gloov1.KubernetesServiceDestination{
 					Ref: &core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      helper.TestrunnerName,
+						Name:      helper.TestServerName,
 					},
-					Port: uint32(helper.TestRunnerPort),
+					Port: uint32(helper.TestServerPort),
 				},
 			},
 		}
-		testRunnerVs = helpers.NewVirtualServiceBuilder().
-			WithName(helper.TestrunnerName).
+		testServerVs = helpers.NewVirtualServiceBuilder().
+			WithName(helper.TestServerName).
 			WithNamespace(testHelper.InstallNamespace).
 			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
-			WithDomain(helper.TestrunnerName).
-			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
-			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
+			WithDomain(helper.TestServerName).
+			WithRoutePrefixMatcher(helper.TestServerName, "/").
+			WithRouteActionToSingleDestination(helper.TestServerName, testServerDestination).
 			Build()
 
 		// The set of resources that these tests will generate
 		glooResources = &gloosnapshot.ApiSnapshot{
 			VirtualServices: gatewayv1.VirtualServiceList{
-				// many tests route to the TestRunner Service so it makes sense to just
+				// many tests route to the TestServer Service so it makes sense to just
 				// always create it
 				// the other benefit is this ensures that all tests start with a valid Proxy CR
-				testRunnerVs,
+				testServerVs,
 			},
 		}
 	})
@@ -120,10 +120,10 @@ var _ = Describe("GlooResourcesTest", func() {
 			}
 
 			Eventually(func(g Gomega) {
-				testRunnerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestrunnerName, metav1.GetOptions{})
+				testServerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestServerName, metav1.GetOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
 
-				setAnnotations(testRunnerService, map[string]string{
+				setAnnotations(testServerService, map[string]string{
 					serviceconverter.DeepMergeAnnotationPrefix: "true",
 					serviceconverter.GlooAnnotationPrefix: fmt.Sprintf(`{
 							"sslConfig": {
@@ -134,15 +134,15 @@ var _ = Describe("GlooResourcesTest", func() {
 							}
 						}`, tlsSecret.GetName(), tlsSecret.GetNamespace()),
 				})
-				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testRunnerService, metav1.UpdateOptions{})
+				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testServerService, metav1.UpdateOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
 			}, "30s", "1s").Should(Succeed(), "annotate the kube service, so that discovery applies the ssl configuration to the generated upstream")
 
 			Eventually(func(g Gomega) {
-				usName := kubernetes.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort)
-				testRunnerUs, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, usName, clients.ReadOpts{Ctx: ctx})
+				usName := kubernetes.UpstreamName(testHelper.InstallNamespace, helper.TestServerName, helper.TestServerPort)
+				testServerUs, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, usName, clients.ReadOpts{Ctx: ctx})
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(testRunnerUs.GetSslConfig()).To(matchers.MatchProto(upstreamSslConfig))
+				g.Expect(testServerUs.GetSslConfig()).To(matchers.MatchProto(upstreamSslConfig))
 			}, "30s", "1s").Should(Succeed(), "the kube upstream should eventually contain the ssl configuration")
 
 		})
@@ -152,39 +152,32 @@ var _ = Describe("GlooResourcesTest", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				testRunnerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestrunnerName, metav1.GetOptions{})
+				testServerService, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, helper.TestServerName, metav1.GetOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
 
-				setAnnotations(testRunnerService, map[string]string{
+				setAnnotations(testServerService, map[string]string{
 					serviceconverter.DeepMergeAnnotationPrefix: "",
 					serviceconverter.GlooAnnotationPrefix:      "",
 				})
-				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testRunnerService, metav1.UpdateOptions{})
+				_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, testServerService, metav1.UpdateOptions{})
 				g.Expect(err).NotTo(HaveOccurred())
-			}, "30s", "1s").Should(Succeed(), "remove the ssl config annotation from the test runner service")
+			}, "30s", "1s").Should(Succeed(), "remove the ssl config annotation from the test server service")
 
 		})
 
 		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
-			// During the delivery of https://github.com/solo-io/gloo/pull/9007, we learned that this test does not work.
-			// At the moment, we ignore this test in CI, but we intend to fix it in the near future.
-			// https://github.com/solo-io/gloo/issues/6686
-			// Skip("Auto-skipping broken test")
-
 			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
 			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
 			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
 
-			// 22 seconds between rotation with the offset added as well
+			// 22 seconds between rotation allows 150% expected delay
 			secondsForCurling := 22 * time.Second
-			// offset to add for longer curls, this might make the number of times performed increase
-			offset := 2 * time.Second
-			// time given for a single curl
-			timeForCurling := 5 * time.Second
+			// time given for a single curl, also used as the ConnectionTimeout in the CurlOpts
+			timeForCurling := 1 * time.Second
 			// eventually the `no healthy upstream` will occur
-			timesToPerform := time.Duration(10)
+			timesToPerform := time.Duration(5)
 
-			timeInBetweenRotation := secondsForCurling + timeForCurling + offset
+			timeInBetweenRotation := secondsForCurling + timeForCurling
 
 			Consistently(func(g Gomega) {
 				By("Generate new CaCrt and PrivateKey")
@@ -206,14 +199,13 @@ var _ = Describe("GlooResourcesTest", func() {
 					Protocol:          "http",
 					Path:              "/",
 					Method:            "GET",
-					Host:              helper.TestrunnerName,
+					Host:              helper.TestServerName,
 					Service:           defaults.GatewayProxyName,
-					Port:              80,
-					ConnectionTimeout: 1,
+					Port:              gatewayPort,
+					ConnectionTimeout: int(timeForCurling / time.Second),
 					WithoutStats:      true,
 					Verbose:           true,
-					SelfSigned:        true,
-				}, kube2e.GetSimpleTestRunnerHttpResponse(), 0, 60*time.Second, 1*time.Second)
+				}, kube2e.TestServerHttpResponse(), 0, 60*time.Second, timeForCurling)
 
 			}, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Succeed())
 		})

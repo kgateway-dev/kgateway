@@ -18,8 +18,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var _ TestUpstreamServer = &testRunner{}
-var _ TestContainer = &testRunner{}
+var _ TestUpstreamServer = &testServer{}
+var _ TestContainer = &testServer{}
 var _ TestContainer = &testContainer{}
 
 // A TestContainer is a general-purpose abstraction over a container in which we might
@@ -39,7 +39,7 @@ type TestContainer interface {
 	ExecAsync(args ...string) (io.Reader, chan struct{}, error)
 }
 
-// A TestRunner is an extension of a TestContainer which is typically run with the defaultTestRunnerImage.
+// A TestUpstreamServer is an extension of a TestContainer which is typically run with the defaultTestServerImage.
 // It is used to deploy test http/https services
 type TestUpstreamServer interface {
 	TestContainer
@@ -187,7 +187,7 @@ func (t *testContainer) ExecAsync(args ...string) (io.Reader, chan struct{}, err
 	return testutils.KubectlOutAsync(args...)
 }
 
-func (t *testContainer) TestRunnerChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
+func (t *testContainer) TestServerChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
 	args = append([]string{"exec", "-i", t.echoName, "-n", t.namespace, "--"}, args...)
 	return testutils.KubectlOutChan(r, args...)
 }

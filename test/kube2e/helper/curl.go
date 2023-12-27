@@ -74,7 +74,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 		if err != nil {
 			res = err.Error()
 			// trigger an early exit if the pod has been deleted
-			gomega.Expect(res).NotTo(gomega.ContainSubstring(`pods "testrunner" not found`))
+			gomega.Expect(res).NotTo(gomega.ContainSubstring(`pods "testserver" not found`))
 			return res
 		}
 		defer close(done)
@@ -113,7 +113,7 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string
 		if err != nil {
 			res = err.Error()
 			// trigger an early exit if the pod has been deleted
-			gomega.Expect(res).NotTo(gomega.ContainSubstring(`pods "testrunner" not found`))
+			gomega.Expect(res).NotTo(gomega.ContainSubstring(`pods "testserver" not found`))
 		}
 		select {
 		default:
@@ -213,5 +213,5 @@ func (t *testContainer) CurlAsyncChan(opts CurlOpts) (<-chan io.Reader, chan str
 	}
 
 	args := t.buildCurlArgs(opts)
-	return t.TestRunnerChan(&bytes.Buffer{}, args...)
+	return t.TestServerChan(&bytes.Buffer{}, args...)
 }

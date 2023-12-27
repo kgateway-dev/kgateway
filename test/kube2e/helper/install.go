@@ -30,7 +30,7 @@ var defaults = TestConfig{
 	TestAssetDir:          "_test",
 	BuildAssetDir:         "_output",
 	HelmRepoIndexFileName: "index.yaml",
-	DeployTestRunner:      true,
+	DeployTestServer:      true,
 }
 
 // supportedArchs is represents the list of architectures we build glooctl for
@@ -67,14 +67,14 @@ type TestConfig struct {
 	HelmChartName string
 	// Name of the helm index file name
 	HelmRepoIndexFileName string
-	// The namespace gloo (and the test runner) will be installed to. If empty, will use the helm chart version.
+	// The namespace gloo (and the test server) will be installed to. If empty, will use the helm chart version.
 	InstallNamespace string
 	// Name of the glooctl executable
 	GlooctlExecName string
 	// If provided, the licence key to install the enterprise version of Gloo
 	LicenseKey string
-	// Determines whether the test runner pod gets deployed
-	DeployTestRunner bool
+	// Determines whether the test server pod gets deployed
+	DeployTestServer bool
 	// Install a released version of gloo. This is the value of the github tag that may have a leading 'v'
 	ReleasedVersion string
 	// If true, glooctl will be run with a -v flag
@@ -138,13 +138,13 @@ func NewSoloTestHelper(configFunc TestConfigFunc) (*SoloTestHelper, error) {
 		TestConfig: &testConfig,
 	}
 
-	// Optionally, initialize a test runner
-	if testConfig.DeployTestRunner {
-		testRunnerImpl, err := NewTestRunner(testConfig.InstallNamespace)
+	// Optionally, initialize a test server
+	if testConfig.DeployTestServer {
+		testServer, err := NewTestServer(testConfig.InstallNamespace)
 		if err != nil {
-			return nil, errors.Wrapf(err, "initializing testrunner")
+			return nil, errors.Wrapf(err, "initializing testserver")
 		}
-		testHelper.TestUpstreamServer = testRunnerImpl
+		testHelper.TestUpstreamServer = testServer
 	}
 
 	return testHelper, nil
@@ -168,7 +168,7 @@ func ExtraArgs(args ...string) func(*InstallOptions) {
 	}
 }
 
-// Installs Gloo (and, optionally, the test runner)
+// Installs Gloo (and, optionally, the test server)
 func (h *SoloTestHelper) InstallGloo(ctx context.Context, deploymentType string, timeout time.Duration, options ...InstallOption) error {
 	log.Printf("installing gloo in [%s] mode to namespace [%s]", deploymentType, h.InstallNamespace)
 	glooctlCommand := []string{
@@ -206,7 +206,7 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, deploymentType string,
 			return errors.Wrapf(err, "waiting for default service account")
 		}
 		if err := h.DeployServer(timeout); err != nil {
-			return errors.Wrapf(err, "deploying testrunner")
+			return errors.Wrapf(err, "deploying testserver")
 		}
 	}
 	return nil
@@ -255,11 +255,11 @@ func (h *SoloTestHelper) UninstallGloo() error {
 }
 
 func (h *SoloTestHelper) uninstallGloo(all bool) error {
-	if conc := h.TestUpstreamServer.(*testRunner); conc != nil {
-		log.Debugf("terminating %s...", TestrunnerName)
+	if conc := h.TestUpstreamServer.(*testServer); conc != nil {
+		log.Debugf("terminating %s...", TestServerName)
 		if err := h.TerminatePod(); err != nil {
 			// Just log a warning, we don't want to fail
-			log.Warnf("error terminating %s", TestrunnerName)
+			log.Warnf("error terminating %s", TestServerName)
 		}
 	}
 
