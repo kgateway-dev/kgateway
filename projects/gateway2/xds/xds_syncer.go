@@ -157,8 +157,8 @@ func (s *XdsSyncer) Start(
 			return
 		}
 		queries := query.NewData(s.cli, s.scheme)
-		routePlugins := registry.NewRoutePluginRegistry(queries)
-		t := gloot.NewTranslator(*routePlugins)
+		pluginRegistry := registry.NewPluginRegistry(queries)
+		t := gloot.NewTranslator(*pluginRegistry)
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)

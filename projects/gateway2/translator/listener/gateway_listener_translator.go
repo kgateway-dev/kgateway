@@ -26,7 +26,7 @@ import (
 func TranslateListeners(
 	ctx context.Context,
 	queries query.GatewayQueries,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	gateway *gwv1.Gateway,
 	routesForGw query.RoutesForGwResult,
 	reporter reports.Reporter,
@@ -34,7 +34,7 @@ func TranslateListeners(
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
 	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter.Gateway(gateway))
-	translatedListeners := mergedListeners.translateListeners(ctx, routePlugins, queries, reporter)
+	translatedListeners := mergedListeners.translateListeners(ctx, pluginRegistry, queries, reporter)
 	return translatedListeners
 }
 
@@ -169,12 +169,12 @@ func (ml *mergedListeners) appendHttpsListener(
 
 func (ml *mergedListeners) translateListeners(
 	ctx context.Context,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
-		listener := mergedListener.translateListener(ctx, routePlugins, queries, reporter)
+		listener := mergedListener.translateListener(ctx, pluginRegistry, queries, reporter)
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -192,7 +192,7 @@ type mergedListener struct {
 
 func (ml *mergedListener) translateListener(
 	ctx context.Context,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Listener {
@@ -206,7 +206,7 @@ func (ml *mergedListener) translateListener(
 			ctx,
 			ml.name,
 			ml.gatewayNamespace,
-			routePlugins,
+			pluginRegistry,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
@@ -223,7 +223,7 @@ func (ml *mergedListener) translateListener(
 		// to prevent collisions because the vhosts have to be re-computed for each set
 		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
 			ctx,
-			routePlugins,
+			pluginRegistry,
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
 			queries,
@@ -282,7 +282,7 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
 	gatewayNamespace string,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
@@ -294,7 +294,7 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 			parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
 			routes := httproute.TranslateGatewayHTTPRouteRules(
 				ctx,
-				routePlugins,
+				pluginRegistry,
 				mfc.queries,
 				routeWithHosts.Route,
 				parentRefReporter,
@@ -352,7 +352,7 @@ type httpsFilterChain struct {
 
 func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	ctx context.Context,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	parentName string,
 	gatewayNamespace string,
 	queries query.GatewayQueries,
@@ -367,7 +367,7 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
 		routes := httproute.TranslateGatewayHTTPRouteRules(
 			ctx,
-			routePlugins,
+			pluginRegistry,
 			mfc.queries,
 			routeWithHosts.Route,
 			parentRefReporter,

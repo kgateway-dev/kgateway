@@ -9,6 +9,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+type Plugin = interface{}
+
 type RouteContext struct {
 	// top-level HTTPRoute
 	Route *gwv1.HTTPRoute

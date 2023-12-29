@@ -18,7 +18,7 @@ import (
 
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
@@ -34,7 +34,7 @@ func TranslateGatewayHTTPRouteRules(
 
 		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
-			routePlugins,
+			pluginRegistry,
 			queries,
 			&route,
 			rule,
@@ -55,7 +55,7 @@ func TranslateGatewayHTTPRouteRules(
 
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
@@ -84,7 +84,7 @@ func translateGatewayHTTPRouteRule(
 			Match:    &match,
 			Reporter: reporter,
 		}
-		for _, plugin := range routePlugins.GetRoutePlugins() {
+		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyPlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
 				// TODO Log
