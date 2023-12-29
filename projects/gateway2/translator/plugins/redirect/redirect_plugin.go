@@ -1,10 +1,12 @@
 package redirect
 
 import (
+	"context"
 	"strings"
 
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -15,11 +17,16 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-func (p *Plugin) ApplyFilter(
-	ctx *filterplugins.RouteContext,
-	filter gwv1.HTTPRouteFilter,
+func (p *Plugin) ApplyPlugin(
+	ctx context.Context,
+	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,
 ) error {
+	filter := utils.FindAppliedRouteFilter(routeCtx, gwv1.HTTPRouteFilterRequestRedirect)
+	if filter == nil {
+		return nil
+	}
+
 	config := filter.RequestRedirect
 	if config == nil {
 		return errors.Errorf("RequestRedirect filter supplied does not define requestRedirect config")

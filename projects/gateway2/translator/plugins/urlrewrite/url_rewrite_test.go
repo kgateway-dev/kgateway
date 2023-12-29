@@ -2,9 +2,9 @@ package urlrewrite_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/filtertests"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/urlrewrite"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -18,19 +18,19 @@ func ptr[T any](i T) *T {
 var _ = DescribeTable(
 	"UrlRewritePlugin",
 	func(
-		plugin filterplugins.FilterPlugin,
+		plugin plugins.RoutePlugin,
 		filter gwv1.HTTPRouteFilter,
 		outputRoute *v1.Route,
 		expectedRoute *v1.Route,
 		match *gwv1.HTTPRouteMatch,
 	) {
-		filtertests.AssertExpectedRouteWith(
+		filtertests.AssertExpectedRouteWithMatch(
 			plugin,
-			filter,
 			outputRoute,
 			expectedRoute,
 			match,
 			true,
+			filter,
 		)
 	},
 	Entry(

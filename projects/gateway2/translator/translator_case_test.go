@@ -8,6 +8,7 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -74,9 +75,9 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		}
 		reportsMap := reports.NewReportMap()
 		reporter := reports.NewReporter(&reportsMap)
-
+		routePlugins := registry.NewRoutePluginRegistry(queries)
 		// translate gateway
-		proxy := NewTranslator().TranslateProxy(
+		proxy := NewTranslator(*routePlugins).TranslateProxy(
 			ctx,
 			gw,
 			queries,

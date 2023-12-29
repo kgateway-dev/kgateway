@@ -56,6 +56,21 @@ func (mr *MockGatewayQueriesMockRecorder) GetBackendForRef(arg0, arg1, arg2 any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackendForRef", reflect.TypeOf((*MockGatewayQueries)(nil).GetBackendForRef), arg0, arg1, arg2)
 }
 
+// GetLocalObjRef mocks base method.
+func (m *MockGatewayQueries) GetLocalObjRef(arg0 context.Context, arg1 query.From, arg2 v1.LocalObjectReference) (client.Object, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLocalObjRef", arg0, arg1, arg2)
+	ret0, _ := ret[0].(client.Object)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLocalObjRef indicates an expected call of GetLocalObjRef.
+func (mr *MockGatewayQueriesMockRecorder) GetLocalObjRef(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLocalObjRef", reflect.TypeOf((*MockGatewayQueries)(nil).GetLocalObjRef), arg0, arg1, arg2)
+}
+
 // GetRoutesForGw mocks base method.
 func (m *MockGatewayQueries) GetRoutesForGw(arg0 context.Context, arg1 *v1.Gateway) (query.RoutesForGwResult, error) {
 	m.ctrl.T.Helper()

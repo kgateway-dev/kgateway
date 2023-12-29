@@ -7,10 +7,9 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins/registry"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -19,7 +18,7 @@ import (
 
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
-	plugins registry.HTTPFilterPluginRegistry,
+	routePlugins registry.RoutePluginRegistry,
 	queries query.GatewayQueries,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
@@ -35,7 +34,7 @@ func TranslateGatewayHTTPRouteRules(
 
 		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
-			plugins,
+			routePlugins,
 			queries,
 			&route,
 			rule,
@@ -56,7 +55,7 @@ func TranslateGatewayHTTPRouteRules(
 
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
-	plugins registry.HTTPFilterPluginRegistry,
+	routePlugins registry.RoutePluginRegistry,
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
@@ -78,29 +77,21 @@ func translateGatewayHTTPRouteRule(
 				reporter,
 			)
 		}
-		rtCtx := &filterplugins.RouteContext{
-			Ctx:      ctx,
+
+		rtCtx := &plugins.RouteContext{
 			Route:    gwroute,
 			Rule:     &rule,
 			Match:    &match,
-			Queries:  queries,
 			Reporter: reporter,
 		}
-		if err := applyFilters(
-			rtCtx,
-			plugins,
-			rule.Filters,
-			outputRoute,
-		); err != nil {
-			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionPartiallyInvalid,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.RouteReasonIncompatibleFilters,
-			})
-			continue // drop route
+		for _, plugin := range routePlugins.GetRoutePlugins() {
+			err := plugin.ApplyPlugin(ctx, rtCtx, outputRoute)
+			if err != nil {
+				// TODO Log
+			}
 		}
+
 		if outputRoute.Action == nil {
-			// TODO: maybe? report error; maybe move this to setRouteAction()
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,
@@ -224,7 +215,6 @@ func setRouteAction(
 
 		// get backend for ref - we must do it to make sure we have permissions to access it.
 		// also we need the service so we can translate its name correctly.
-
 		weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
@@ -259,44 +249,4 @@ func setRouteAction(
 			},
 		}
 	}
-}
-
-func applyFilters(
-	ctx *filterplugins.RouteContext,
-	plugins registry.HTTPFilterPluginRegistry,
-	filters []gwv1.HTTPRouteFilter,
-	outputRoute *v1.Route,
-) error {
-	for _, filter := range filters {
-		if err := applyFilterPlugin(ctx, plugins, filter, outputRoute); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func applyFilterPlugin(
-	ctx *filterplugins.RouteContext,
-	plugins registry.HTTPFilterPluginRegistry,
-	filter gwv1.HTTPRouteFilter,
-	outputRoute *v1.Route,
-) error {
-	var (
-		plugin filterplugins.FilterPlugin
-		err    error
-	)
-	if filter.Type == gwv1.HTTPRouteFilterExtensionRef {
-		plugin, err = plugins.GetExtensionPlugin(filter.ExtensionRef)
-	} else {
-		plugin, err = plugins.GetStandardPlugin(filter.Type)
-	}
-	if err != nil {
-		return err
-	}
-
-	return plugin.ApplyFilter(
-		ctx,
-		filter,
-		outputRoute,
-	)
 }

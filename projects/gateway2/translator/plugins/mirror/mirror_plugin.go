@@ -1,26 +1,38 @@
 package mirror
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute/filterplugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-type Plugin struct{}
-
-func NewPlugin() *Plugin {
-	return &Plugin{}
+type plugin struct {
+	queries query.GatewayQueries
 }
 
-func (p *Plugin) ApplyFilter(
-	ctx *filterplugins.RouteContext,
-	filter gwv1.HTTPRouteFilter,
+func NewPlugin(queries query.GatewayQueries) *plugin {
+	return &plugin{
+		queries,
+	}
+}
+
+func (p *plugin) ApplyPlugin(
+	ctx context.Context,
+	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,
 ) error {
+	filter := utils.FindAppliedRouteFilter(routeCtx, gwv1.HTTPRouteFilterRequestMirror)
+	if filter == nil {
+		return nil
+	}
+
 	config := filter.RequestMirror
 	if config == nil {
 		return errors.Errorf("RequestMirror filter supplied does not define requestMirror config")
@@ -31,11 +43,11 @@ func (p *Plugin) ApplyFilter(
 		return errors.Errorf("RequestMirror must have destinations")
 	}
 
-	obj, err := ctx.Queries.GetBackendForRef(ctx.Ctx, ctx.Queries.ObjToFrom(ctx.Route), &config.BackendRef)
+	obj, err := p.queries.GetBackendForRef(ctx, p.queries.ObjToFrom(routeCtx.Route), &config.BackendRef)
 	clusterName := query.ProcessBackendRef(
 		obj,
 		err,
-		ctx.Reporter,
+		routeCtx.Reporter,
 		config.BackendRef,
 	)
 	if clusterName == nil {
