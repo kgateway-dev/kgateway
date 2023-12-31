@@ -9,6 +9,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// Empty type for base plugins, currently no base methods.
 type Plugin = interface{}
 
 type RouteContext struct {

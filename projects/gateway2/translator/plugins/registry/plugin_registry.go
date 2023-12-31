@@ -33,7 +33,7 @@ func NewPluginRegistry(queries query.GatewayQueries) *PluginRegistry {
 }
 
 // This function returns the full set of plugins to be registered.
-// Add new plugins to this list.
+// New plugins should be added to this list (and only this list).
 // If modification of this list is needed for testing etc,
 // we can add a new registry constructor that accepts this function
 func buildPlugins(queries query.GatewayQueries) []plugins.Plugin {
