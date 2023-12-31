@@ -11,6 +11,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+var _ plugins.RoutePlugin = &Plugin{}
+
 type Plugin struct{}
 
 func NewPlugin() *Plugin {
