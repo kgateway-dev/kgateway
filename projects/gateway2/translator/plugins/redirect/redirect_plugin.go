@@ -19,7 +19,7 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-func (p *Plugin) ApplyPlugin(
+func (p *Plugin) ApplyRoutePlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,

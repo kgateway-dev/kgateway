@@ -25,7 +25,7 @@ func NewPlugin(queries query.GatewayQueries) *plugin {
 	}
 }
 
-func (p *plugin) ApplyPlugin(
+func (p *plugin) ApplyRoutePlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,

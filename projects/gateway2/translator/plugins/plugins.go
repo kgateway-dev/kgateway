@@ -25,7 +25,7 @@ type RouteContext struct {
 
 type RoutePlugin interface {
 	// called for each Match in a given Rule
-	ApplyPlugin(
+	ApplyRoutePlugin(
 		ctx context.Context,
 		routeCtx *RouteContext,
 		outputRoute *v1.Route,

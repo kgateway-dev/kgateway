@@ -85,7 +85,7 @@ func translateGatewayHTTPRouteRule(
 			Reporter: reporter,
 		}
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
-			err := plugin.ApplyPlugin(ctx, rtCtx, outputRoute)
+			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
 				// TODO Log
 			}

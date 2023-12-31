@@ -54,7 +54,7 @@ func TestSingleMirror(t *testing.T) {
 		Action:  &v1.Route_RouteAction{},
 		Options: &v1.RouteOptions{},
 	}
-	plugin.ApplyPlugin(context.Background(), routeCtx, outputRoute)
+	plugin.ApplyRoutePlugin(context.Background(), routeCtx, outputRoute)
 
 	shadowing := outputRoute.GetOptions().GetShadowing()
 	g.Expect(shadowing).ToNot(gomega.BeNil())
