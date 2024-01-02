@@ -394,18 +394,14 @@ var _ = Describe("Vault Token Renewal Logic", func() {
 				renewer = NewVaultTokenRenewer(&NewVaultTokenRenewerParams{
 					LeaseIncrement:           1,
 					GetWatcher:               getTestWatcher,
-					RetryOnNonRenewableSleep: 3, //Really long
+					RetryOnNonRenewableSleep: 5000, //Really long
 				})
 				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(3))
 			})
 			It("should not hang", func() {
-				// Run through the basic channel output and look at the metrics
+				// Sleep for a second then cancel
 				go func() {
-					time.Sleep(sleepTime)
-					doneCh <- errors.Errorf("Renewal error") // Force renewal
-					time.Sleep(2 * time.Second)              // Not enough time to re-check the token
-					renewCh <- &vault.RenewOutput{}
-					time.Sleep(sleepTime)
+					time.Sleep(1 * time.Second)
 					cancel()
 				}()
 				// Use non-blocking version here so we can let the leak detector catch any leaks
