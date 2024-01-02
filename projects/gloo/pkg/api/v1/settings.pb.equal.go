@@ -1147,6 +1147,10 @@ func (m *Settings_VaultAwsAuth) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetLeaseIncrement() != target.GetLeaseIncrement() {
+		return false
+	}
+
 	return true
 }
 

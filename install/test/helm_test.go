@@ -4061,6 +4061,7 @@ spec:
 								"settings.secretOptions.sources[0].vault.aws.mountPath=aws",
 								"settings.secretOptions.sources[0].vault.aws.region=us-east-1",
 								"settings.secretOptions.sources[0].vault.pathPrefix=dev",
+								"settings.secretOptions.sources[0].vault.aws.leaseIncrement=10",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))

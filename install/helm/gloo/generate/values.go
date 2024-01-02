@@ -253,13 +253,14 @@ type VaultTlsConfig struct {
 }
 
 type VaultAwsAuth struct {
-	VaultRole         string `json:"vaultRole,omitempty" desc:"The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured."`
-	Region            string `json:"region,omitempty" desc:"The AWS region to use for the login attempt."`
-	IamServerIdHeader string `json:"iamServerIdHeader,omitempty" desc:"The IAM Server ID Header required to be included in the request."`
-	MountPath         string `json:"mountPath,omitempty" desc:"The Vault path on which the AWS auth is mounted."`
-	AccessKeyID       string `json:"accessKeyID,omitempty" desc:"Optional. The Access Key ID as provided by the security credentials on the AWS IAM resource. In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences."`
-	SecretAccessKey   string `json:"secretAccessKey,omitempty" desc:"Optional. The Secret Access Key as provided by the security credentials on the AWS IAM resource. In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences."`
-	SessionToken      string `json:"sessionToken,omitempty" desc:"The Session Token as provided by the security credentials on the AWS IAM resource."`
+	VaultRole         string  `json:"vaultRole,omitempty" desc:"The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured."`
+	Region            string  `json:"region,omitempty" desc:"The AWS region to use for the login attempt."`
+	IamServerIdHeader string  `json:"iamServerIdHeader,omitempty" desc:"The IAM Server ID Header required to be included in the request."`
+	MountPath         string  `json:"mountPath,omitempty" desc:"The Vault path on which the AWS auth is mounted."`
+	AccessKeyID       string  `json:"accessKeyID,omitempty" desc:"Optional. The Access Key ID as provided by the security credentials on the AWS IAM resource. In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences."`
+	SecretAccessKey   string  `json:"secretAccessKey,omitempty" desc:"Optional. The Secret Access Key as provided by the security credentials on the AWS IAM resource. In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences."`
+	SessionToken      string  `json:"sessionToken,omitempty" desc:"The Session Token as provided by the security credentials on the AWS IAM resource."`
+	LeaseIncrement    *uint32 `json:"leaseIncrement,omitempty" desc:"The time increment, in seconds, used in renewing the lease of the Vault token. See: https://developer.hashicorp.com/vault/docs/concepts/lease#lease-durations-and-renewal. Defaults to 0, which causes the default TTL to be used."`
 }
 
 type Directory struct {

@@ -884,6 +884,9 @@ spec:
                                   type: string
                                 iamServerIdHeader:
                                   type: string
+                                leaseIncrement:
+                                  format: int32
+                                  type: integer
                                 mountPath:
                                   type: string
                                 region:
@@ -970,6 +973,9 @@ spec:
                         type: string
                       iamServerIdHeader:
                         type: string
+                      leaseIncrement:
+                        format: int32
+                        type: integer
                       mountPath:
                         type: string
                       region:

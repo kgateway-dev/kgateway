@@ -1,6 +1,8 @@
 package prerun
 
 import (
+	"context"
+
 	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -25,13 +27,13 @@ func EnableConsulClients(opts *options.Options) error {
 	return nil
 }
 
-func EnableVaultClients(vault options.Vault) error {
+func EnableVaultClients(ctx context.Context, vault options.Vault) error {
 	if vault.UseVault {
 		client, err := vault.Client()
 		if err != nil {
 			return eris.Wrapf(err, "creating Vault client")
 		}
-		helpers.UseVaultClients(client, vault.PathPrefix, vault.RootKey)
+		helpers.UseVaultClients(ctx, client, vault.PathPrefix, vault.RootKey)
 	}
 	return nil
 }

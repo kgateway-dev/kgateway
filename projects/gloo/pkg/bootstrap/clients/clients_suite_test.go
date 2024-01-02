@@ -3,6 +3,7 @@ package clients_test
 import (
 	"testing"
 
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -10,6 +11,8 @@ import (
 )
 
 func TestBootstrapClients(t *testing.T) {
+	leakDetector := helpers.DeferredGoroutineLeakDetector(t)
+	defer leakDetector()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Bootstrap Clients Suite")
 }

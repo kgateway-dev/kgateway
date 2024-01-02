@@ -181,6 +181,8 @@ message Settings {
         string secret_access_key = 6;
         // The Session Token as provided by the security credentials on the AWS IAM resource
         string session_token = 7;
+        // The time increment, in seconds, used in renewing the lease of the Vault token. See: https://developer.hashicorp.com/vault/docs/concepts/lease#lease-durations-and-renewal. Defaults to 0, which causes the default TTL to be used.
+        int32 lease_increment = 8;
     }
 
     // Settings to configure TLS-enabled Vault as a secret store

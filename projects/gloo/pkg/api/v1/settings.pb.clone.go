@@ -700,6 +700,8 @@ func (m *Settings_VaultAwsAuth) Clone() proto.Message {
 
 	target.SessionToken = m.GetSessionToken()
 
+	target.LeaseIncrement = m.GetLeaseIncrement()
+
 	return target
 }
 
