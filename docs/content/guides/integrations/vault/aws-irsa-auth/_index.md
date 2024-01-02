@@ -66,7 +66,7 @@ cat <<EOF > trust-relationship.json
 EOF
 
 export VAULT_AUTH_ROLE_NAME="dev-role-iam-${CLUSTER_NAME}"
-export VAULT_AUTH_ROLE_ARN=$([[ $(aws iam list-roles --query "Roles[?RoleName=='${VAULT_AUTH_ROLE_NAME}'].Arn" --output text) = "" ]] \
+export VAULT_AUTH_ROLE_ARN=$([[ $(aws iam list-roles --query "Roles[?RoleName=='${VAULT_AUTH_ROLE_NAME}'].Arn" --output text) == "" ]] \
 	&& aws iam create-role \
 		--role-name $VAULT_AUTH_ROLE_NAME \
 		--assume-role-policy-document file://trust-relationship.json \
@@ -106,7 +106,7 @@ cat <<EOF > gloo-vault-auth-policy.json
 }
 EOF
 
-export VAULT_AUTH_POLICY_ARN=$([[ $(aws iam list-policies --query "Policies[?PolicyName=='${VAULT_AUTH_POLICY_NAME}'].Arn" --output text) = "" ]] \
+export VAULT_AUTH_POLICY_ARN=$([[ $(aws iam list-policies --query "Policies[?PolicyName=='${VAULT_AUTH_POLICY_NAME}'].Arn" --output text) == "" ]] \
     && aws iam create-policy \
         --region=${AWS_REGION} \
         --policy-name="${VAULT_AUTH_POLICY_NAME}" \
@@ -147,7 +147,7 @@ kubectl exec -n vault  vault-0 -- vault status
 Open a shell on the vault pod for steps 2-4:
 
 ```shell
-k exec -n vault -it vault-0 -- sh
+kubectl exec -n vault -it vault-0 -- sh
 ```
 Then:
 

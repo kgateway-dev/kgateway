@@ -374,6 +374,57 @@ var _ = Describe("Vault Token Renewal Logic", func() {
 
 	})
 
+	// This test is very similar to the previous test, but we are using a much longer sleep interval and we are calling
+	// the non-blocking version of RenewToken. The sleep is long enough to ensure that the test has completed before the
+	// timer expires, ensuring that if a go routine is leaked it won't closer before the test is done.
+	When("There is a non-renewable token with a long RetryOnNonRenewableSleep", func() {
+		var (
+			ctx    context.Context
+			cancel context.CancelFunc
+		)
+		When("We have a very large RetryOnNonRenewableSleep", func() {
+			BeforeEach(func() {
+				ctx, cancel = context.WithCancel(context.Background())
+				ctrl = gomock.NewController(GinkgoT())
+				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
+				client = &vault.Client{}
+				gomock.InOrder(
+					internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Times(0).Return(nonRenewableSecret(), nil),
+				)
+				renewer = NewVaultTokenRenewer(&NewVaultTokenRenewerParams{
+					LeaseIncrement:           1,
+					GetWatcher:               getTestWatcher,
+					RetryOnNonRenewableSleep: 5000, //Really long
+				})
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(3))
+			})
+			It("should not hang", func() {
+				// Run through the basic channel output and look at the metrics
+				go func() {
+					time.Sleep(sleepTime)
+					doneCh <- errors.Errorf("Renewal error") // Force renewal
+					time.Sleep(2 * time.Second)              // Not enough time to re-check the token
+					renewCh <- &vault.RenewOutput{}
+					time.Sleep(sleepTime)
+					cancel()
+				}()
+				// Use non-blocking version here so we can let the leak detector catch any leaks
+				renewer.ManageTokenRenewal(ctx, client, clientAuth, nonRenewableSecret())
+				time.Sleep(3*sleepTime + 2*time.Second)
+				// The login never fails, it just returns an non-renewable secret
+				assertions.ExpectStatLastValueMatches(MLastLoginFailure, BeZero())
+				assertions.ExpectStatLastValueMatches(MLastLoginSuccess, BeZero())
+				assertions.ExpectStatSumMatches(MLoginFailures, BeZero())
+				// We never get past the 'sleep' in the check for renewability so don't trigger any metrics
+				assertions.ExpectStatSumMatches(MLoginSuccesses, BeZero())
+				assertions.ExpectStatLastValueMatches(MLastRenewFailure, BeZero())
+				assertions.ExpectStatLastValueMatches(MLastRenewSuccess, BeZero())
+				assertions.ExpectStatSumMatches(MRenewFailures, BeZero())
+				assertions.ExpectStatSumMatches(MRenewSuccesses, BeZero())
+			})
+		})
+	})
+
 	When("Initializing the watcher returns an error", func() {
 		var (
 			ctx context.Context
