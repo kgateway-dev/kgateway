@@ -37,10 +37,10 @@ var (
 		return errors.Wrap(err, "unable to authenticate to vault")
 	}
 	ErrPartialCredentials = func(err error) error {
-		return errors.Wrap(err, "only partial credentials were provided for AWS IAM auth: ")
+		return errors.Wrap(err, "only partial credentials were provided for vault authorization with AWS IAM auth: ")
 	}
-	ErrAccessKeyId       = errors.New("access key id must be defined for AWS IAM auth")
-	ErrSecretAccessKey   = errors.New("secret access key must be defined for AWS IAM auth")
+	ErrAccessKeyId       = errors.New("access key id must be defined for vault authorization with AWS IAM auth")
+	ErrSecretAccessKey   = errors.New("secret access key must be defined for vault authorization with AWS IAM auth")
 	ErrInitializeWatcher = func(err error) error {
 		return errors.Wrap(err, "unable to initialize new lifetime watcher for renewing auth token.")
 	}
