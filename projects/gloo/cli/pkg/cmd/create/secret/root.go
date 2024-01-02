@@ -24,7 +24,7 @@ func CreateCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobr
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableVaultClients(opts.Create.Vault); err != nil {
+			if err := prerun.EnableVaultClients(opts.Top.Ctx, opts.Create.Vault); err != nil {
 				return err
 			}
 			return nil

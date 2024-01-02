@@ -14,6 +14,7 @@ import (
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault/mocks"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 )
@@ -97,7 +98,7 @@ var _ = Describe("ClientAuth", func() {
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, errMock).AnyTimes()
 
-				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(3))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(3))
 			})
 
 			It("should return the error", func() {
@@ -118,7 +119,7 @@ var _ = Describe("ClientAuth", func() {
 				internalAuthMethod := mocks.NewMockAuthMethod(ctrl)
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, nil).AnyTimes()
 
-				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(3))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(3))
 			})
 
 			It("should return the error", func() {
@@ -144,7 +145,7 @@ var _ = Describe("ClientAuth", func() {
 					},
 				}, nil).Times(1)
 
-				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(5))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(5))
 			})
 
 			It("should return a secret", func() {
@@ -168,7 +169,7 @@ var _ = Describe("ClientAuth", func() {
 				// The auth method will return an error twice, and then a success
 				// but we plan on cancelling the context before the success
 				internalAuthMethod.EXPECT().Login(ctx, gomock.Any()).Return(nil, eris.New("error")).AnyTimes()
-				clientAuth = NewRemoteTokenAuth(internalAuthMethod, retry.Attempts(retryAttempts))
+				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(retryAttempts))
 			})
 
 			It("should return a context error", func() {
@@ -178,7 +179,7 @@ var _ = Describe("ClientAuth", func() {
 				}()
 
 				secret, err := clientAuth.Login(ctx, nil)
-				Expect(err).To(MatchError("Login canceled: context canceled"))
+				Expect(err).To(MatchError("login canceled: context canceled"))
 				Expect(secret).To(BeNil())
 
 				assertions.ExpectStatLastValueMatches(MLastLoginFailure, Not(BeZero()))

@@ -99,7 +99,7 @@ func NewSecretResourceClientFactory(ctx context.Context, params SecretFactoryPar
 		vaultClientFunc := params.VaultClientInitMap[SecretSourceAPIVaultClientInitIndex]
 		// We do not error upon creating a vault ResourceClientFactory, but we can
 		// check for a nil API client here before returning it and error appropriately.
-		f := NewVaultSecretClientFactory(vaultClientFunc, pathPrefix, rootKey)
+		f := NewVaultSecretClientFactory(ctx, vaultClientFunc, pathPrefix, rootKey)
 		if vaultClientFactory, ok := f.(*factory.VaultSecretClientFactory); ok && vaultClientFactory.Vault == nil {
 			return nil, errors.New("resource client creation failed due to nil vault API client")
 		}
@@ -243,7 +243,7 @@ func (m *MultiSecretResourceClientFactory) getFactoryForSource(ctx context.Conte
 			// We do not error upon creating a ResourceClientFactory, but we can
 			// check for a nil API client when attempting to use the factory to
 			// create a ResourceClient and error here.
-			f := NewVaultSecretClientFactory(vaultInitFunc, pathPrefix, rootKey)
+			f := NewVaultSecretClientFactory(ctx, vaultInitFunc, pathPrefix, rootKey)
 			if vaultClientFactory, ok := f.(*factory.VaultSecretClientFactory); ok && vaultClientFactory.Vault == nil {
 				return nil, errors.New("resource client creation failed due to nil vault API client")
 			}

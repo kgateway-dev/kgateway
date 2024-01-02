@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/test/gomega/assertions"
+	"github.com/solo-io/gloo/test/helpers"
 	"go.opencensus.io/stats/view"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,6 +13,9 @@ import (
 )
 
 func TestVaultClient(t *testing.T) {
+	leakDetector := helpers.DeferredGoroutineLeakDetector(t)
+	defer leakDetector()
+
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Vault Client Suite")
 }
@@ -33,6 +37,10 @@ func resetViews() {
 		MLoginFailuresView,
 		MLoginSuccessesView,
 		MLastLoginFailureView,
+		MLastRenewFailureView,
+		MLastRenewSuccessView,
+		MRenewFailuresView,
+		MRenewSuccessesView,
 	}
 	view.Unregister(views...)
 	_ = view.Register(views...)
@@ -40,4 +48,8 @@ func resetViews() {
 	assertions.ExpectStatLastValueMatches(MLastLoginFailure, BeZero())
 	assertions.ExpectStatSumMatches(MLoginSuccesses, BeZero())
 	assertions.ExpectStatSumMatches(MLoginFailures, BeZero())
+	assertions.ExpectStatLastValueMatches(MLastRenewFailure, BeZero())
+	assertions.ExpectStatLastValueMatches(MLastRenewSuccess, BeZero())
+	assertions.ExpectStatSumMatches(MRenewFailures, BeZero())
+	assertions.ExpectStatSumMatches(MRenewSuccesses, BeZero())
 }

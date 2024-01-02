@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/rotisserie/eris"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/awsutils"
 
@@ -21,10 +20,11 @@ import (
 //go:generate mockgen -destination mocks/mock_auth.go -package mocks github.com/hashicorp/vault/api AuthMethod
 
 type ClientAuth interface {
+	// vault.AuthMethod provides Login(ctx context.Context, client *Client) (*Secret, error)
 	vault.AuthMethod
-	// Start Renewal should be called after a successful login to start the renewal process
+	// ManageTokenRenewal should be called after a successful login to start the renewal process
 	// This method may have many different types of implementation, from just a noop to spinning up a separate go routine
-	// StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) error
+	ManageTokenRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret)
 }
 
 var _ ClientAuth = &StaticTokenAuth{}
@@ -37,10 +37,13 @@ var (
 		return errors.Wrap(err, "unable to authenticate to vault")
 	}
 	ErrPartialCredentials = func(err error) error {
-		return eris.Wrap(err, "only partial credentials were provided for AWS IAM auth: ")
+		return errors.Wrap(err, "only partial credentials were provided for vault authorization with AWS IAM auth: ")
 	}
-	ErrAccessKeyId     = errors.New("access key id must be defined for AWS IAM auth")
-	ErrSecretAccessKey = errors.New("secret access key must be defined for AWS IAM auth")
+	ErrAccessKeyId       = errors.New("access key id must be defined for vault authorization with AWS IAM auth")
+	ErrSecretAccessKey   = errors.New("secret access key must be defined for vault authorization with AWS IAM auth")
+	ErrInitializeWatcher = func(err error) error {
+		return errors.Wrap(err, "unable to initialize new lifetime watcher for renewing auth token.")
+	}
 )
 
 // ClientAuthFactory returns a vault ClientAuth based on the provided settings.
@@ -55,7 +58,12 @@ func ClientAuthFactory(vaultSettings *v1.Settings_VaultSecrets) (ClientAuth, err
 			return nil, err
 		}
 
-		return NewRemoteTokenAuth(awsAuth), nil
+		tokenRenewer := NewVaultTokenRenewer(&NewVaultTokenRenewerParams{
+			LeaseIncrement: int(authMethod.Aws.GetLeaseIncrement()),
+			GetWatcher:     vaultGetWatcher,
+		})
+
+		return NewRemoteTokenAuth(awsAuth, tokenRenewer), nil
 
 	default:
 		// AuthMethod is the preferred API to define the policy for authenticating to vault
@@ -80,9 +88,9 @@ func (s *StaticTokenAuth) GetToken() string {
 	return s.token
 }
 
-// func (s *StaticTokenAuth) StartRenewal(_ context.Context, client *vault.Client, _ *vault.Secret) {
-// 	// static tokens do not support renewal
-// }
+// ManageTokenRenewal for StaticTokenAuth is a no-op
+func (*StaticTokenAuth) ManageTokenRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) {
+}
 
 // Login logs in to vault using a static token
 func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
@@ -103,13 +111,13 @@ func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Se
 }
 
 // NewRemoteTokenAuth is a constructor for RemoteTokenAuth
-func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Option) ClientAuth {
+func NewRemoteTokenAuth(authMethod vault.AuthMethod, t TokenRenewer, retryOptions ...retry.Option) ClientAuth {
 
 	// Standard retry options, which can be overridden by the loginRetryOptions parameter
 	defaultRetryOptions := []retry.Option{
 		retry.Delay(1 * time.Second),
 		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(1),
+		retry.Attempts(3),
 		retry.LastErrorOnly(true),
 	}
 
@@ -118,15 +126,21 @@ func NewRemoteTokenAuth(authMethod vault.AuthMethod, retryOptions ...retry.Optio
 	return &RemoteTokenAuth{
 		authMethod:        authMethod,
 		loginRetryOptions: loginRetryOptions,
+		tokenRenewer:      t,
 	}
 }
 
 type RemoteTokenAuth struct {
 	authMethod        vault.AuthMethod
+	tokenRenewer      TokenRenewer
 	loginRetryOptions []retry.Option
 }
 
-// Login logs into vault using the provided authMethod
+func (r *RemoteTokenAuth) ManageTokenRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) {
+	r.tokenRenewer.ManageTokenRenewal(ctx, client, r, secret)
+}
+
+// Login wraps the low-level login with retry logic
 func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
 	var (
 		loginResponse *vault.Secret
@@ -156,10 +170,14 @@ func (r *RemoteTokenAuth) Login(ctx context.Context, client *vault.Client) (*vau
 
 	// As noted above, we need to check the context here, because our retry function can not return errors
 	if ctx.Err() != nil {
-		return nil, eris.Wrap(ctx.Err(), "Login canceled")
+		return nil, errors.Wrap(ctx.Err(), "login canceled")
 	}
 
-	return loginResponse, loginErr
+	if loginErr != nil {
+		return nil, loginErr
+	}
+
+	return loginResponse, nil
 }
 
 func (r *RemoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (*vault.Secret, error) {
@@ -183,10 +201,6 @@ func (r *RemoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (
 	utils.MeasureOne(ctx, MLoginSuccesses)
 	return loginResponse, nil
 }
-
-// func (r *RemoteTokenAuth) StartRenewal(ctx context.Context, client *vault.Client, secret *vault.Secret) {
-// 	// todo - implement renewal
-// }
 
 func newAwsAuthMethod(aws *v1.Settings_VaultAwsAuth) (*awsauth.AWSAuth, error) {
 	// The AccessKeyID and SecretAccessKey are not required in the case of using temporary credentials from assumed roles with AWS STS or IRSA.

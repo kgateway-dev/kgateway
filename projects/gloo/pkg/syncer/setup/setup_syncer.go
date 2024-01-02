@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -51,7 +50,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
@@ -342,21 +340,15 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 
 	getVaultInit := func(vaultSettings *v1.Settings_VaultSecrets) bootstrap_clients.VaultClientInitFunc {
-		return func() *vaultapi.Client {
-			vaultAuth, err := vault.ClientAuthFactory(vaultSettings)
+		return func(initCtx context.Context) *vaultapi.Client {
+			c, err := bootstrap_clients.VaultClientForSettings(initCtx, vaultSettings)
 			if err != nil {
 				// We log this error here, but we do not have a feasible way to raise
 				// it when this function is called in NewVaultSecretClientFactory.
 				// The error is handled after we create the factory in getFactoryForSource
 				// for the multi client, and NewSecretResourceClientFactory for the
 				// traditional single client.
-				err = eris.Wrap(err, "check Settings configuration")
-				contextutils.LoggerFrom(ctx).Error(err)
-			}
-			c, err := bootstrap_clients.VaultClientForSettings(ctx, vaultSettings, vaultAuth)
-			if err != nil {
-				// We log this error here, but see above notes
-				contextutils.LoggerFrom(ctx).Error(err)
+				contextutils.LoggerFrom(initCtx).Error(err)
 			}
 			return c
 		}

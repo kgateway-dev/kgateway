@@ -198,12 +198,20 @@ func (i *VaultInstance) addAdminPolicy() error {
 	return err
 }
 
-func (i *VaultInstance) addAuthRole(awsAuthRole string) error {
-	_, err := i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", awsAuthRole), "policies=admin")
+func (i *VaultInstance) addAuthRole(awsAuthRole string, extraParams ...string) error {
+	command := append([]string{
+		"write",
+		"auth/aws/role/vault-role",
+		"auth_type=iam",
+		fmt.Sprintf("bound_iam_principal_arn=%s", awsAuthRole),
+		"policies=admin"},
+		extraParams...,
+	)
+	_, err := i.Exec(command...)
 	return err
 }
 
-func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string) error {
+func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string, extraAuthParams []string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
 	if err != nil {
@@ -223,7 +231,7 @@ func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_Vau
 	}
 
 	// Configure the Vault role to align with the provided AWS role
-	err = i.addAuthRole(awsAuthRole)
+	err = i.addAuthRole(awsAuthRole, extraAuthParams...)
 	if err != nil {
 		return err
 	}

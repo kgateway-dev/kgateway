@@ -27,7 +27,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -106,8 +105,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", decorators.Vault
 		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
 		Expect(err).NotTo(HaveOccurred())
 
-		vaultAuth, _ := vault.ClientAuthFactory(vaultSecretSource)
-		vaultClient, err = bootstrap.VaultClientForSettings(ctx, vaultSecretSource, vaultAuth)
+		vaultClient, err = bootstrap.VaultClientForSettings(ctx, vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulResources = &factory.ConsulResourceClientFactory{
@@ -121,7 +119,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", decorators.Vault
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(bootstrap.NoopVaultClientInitFunc(vaultClient), customSecretEngine, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(ctx, bootstrap.NoopVaultClientInitFunc(vaultClient), customSecretEngine, bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
