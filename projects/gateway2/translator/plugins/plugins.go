@@ -10,7 +10,7 @@ import (
 )
 
 // Empty type for base plugins, currently no base methods.
-type Plugin = interface{}
+type Plugin interface{}
 
 type RouteContext struct {
 	// top-level HTTPRoute
