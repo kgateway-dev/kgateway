@@ -28,15 +28,15 @@ type K8sGwTranslator interface {
 }
 
 func NewTranslator(
-	routePlugins registry.RoutePluginRegistry,
+	pluginRegistry registry.PluginRegistry,
 ) K8sGwTranslator {
 	return &translator{
-		routePlugins,
+		pluginRegistry,
 	}
 }
 
 type translator struct {
-	routePlugins registry.RoutePluginRegistry
+	pluginRegistry registry.PluginRegistry
 }
 
 func (t *translator) TranslateProxy(
@@ -75,7 +75,7 @@ func (t *translator) TranslateProxy(
 	listeners := listener.TranslateListeners(
 		ctx,
 		queries,
-		t.routePlugins,
+		t.pluginRegistry,
 		gateway,
 		routesForGw,
 		reporter,

@@ -9,6 +9,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// Empty type for base plugins, currently no base methods.
+type Plugin interface{}
+
 type RouteContext struct {
 	// top-level HTTPRoute
 	Route *gwv1.HTTPRoute
@@ -22,7 +25,7 @@ type RouteContext struct {
 
 type RoutePlugin interface {
 	// called for each Match in a given Rule
-	ApplyPlugin(
+	ApplyRoutePlugin(
 		ctx context.Context,
 		routeCtx *RouteContext,
 		outputRoute *v1.Route,

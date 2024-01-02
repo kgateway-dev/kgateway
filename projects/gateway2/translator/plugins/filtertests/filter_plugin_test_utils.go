@@ -53,7 +53,7 @@ func assertExpectedRoute(
 		Match:    match,
 		Reporter: nil,
 	}
-	err := plugin.ApplyPlugin(
+	err := plugin.ApplyRoutePlugin(
 		context.Background(),
 		rtCtx,
 		outputRoute,

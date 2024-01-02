@@ -13,6 +13,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+var _ plugins.RoutePlugin = &plugin{}
+
 type plugin struct {
 	queries query.GatewayQueries
 }
@@ -23,7 +25,7 @@ func NewPlugin(queries query.GatewayQueries) *plugin {
 	}
 }
 
-func (p *plugin) ApplyPlugin(
+func (p *plugin) ApplyRoutePlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,

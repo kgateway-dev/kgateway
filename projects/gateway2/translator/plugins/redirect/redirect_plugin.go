@@ -11,13 +11,15 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+var _ plugins.RoutePlugin = &Plugin{}
+
 type Plugin struct{}
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-func (p *Plugin) ApplyPlugin(
+func (p *Plugin) ApplyRoutePlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,
