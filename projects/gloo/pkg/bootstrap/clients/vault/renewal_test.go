@@ -394,7 +394,7 @@ var _ = Describe("Vault Token Renewal Logic", func() {
 				renewer = NewVaultTokenRenewer(&NewVaultTokenRenewerParams{
 					LeaseIncrement:           1,
 					GetWatcher:               getTestWatcher,
-					RetryOnNonRenewableSleep: 5000, //Really long
+					RetryOnNonRenewableSleep: 3, //Really long
 				})
 				clientAuth = NewRemoteTokenAuth(internalAuthMethod, nil, retry.Attempts(3))
 			})
