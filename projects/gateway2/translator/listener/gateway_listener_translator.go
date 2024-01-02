@@ -61,7 +61,7 @@ func mergeGWListeners(
 		if result != nil {
 			routes = result.Routes
 		}
-		ml.append(listener, routes, listenerReporter)
+		ml.appendListener(listener, routes, listenerReporter)
 	}
 	return ml
 }
@@ -72,7 +72,7 @@ type mergedListeners struct {
 	queries          query.GatewayQueries
 }
 
-func (ml *mergedListeners) append(
+func (ml *mergedListeners) appendListener(
 	listener gwv1.Listener,
 	routes []*query.ListenerRouteResult,
 	reporter reports.ListenerReporter,
@@ -97,7 +97,7 @@ func (ml *mergedListeners) appendHttpListener(
 ) {
 	parent := httpFilterChainParent{
 		gatewayListenerName: string(listener.Name),
-		routes:              routesWithHosts,
+		routesWithHosts:     routesWithHosts,
 	}
 
 	fc := &httpFilterChain{
@@ -275,10 +275,10 @@ type httpFilterChain struct {
 
 type httpFilterChainParent struct {
 	gatewayListenerName string
-	routes              []*query.ListenerRouteResult
+	routesWithHosts     []*query.ListenerRouteResult
 }
 
-func (mfc *httpFilterChain) translateHttpFilterChain(
+func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
 	gatewayNamespace string,
@@ -286,34 +286,16 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
-	var (
-		routesByHost = map[string]routeutils.SortableRoutes{}
-	)
-	for _, parent := range mfc.parents {
-		for _, routeWithHosts := range parent.routes {
-			parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
-			routes := httproute.TranslateGatewayHTTPRouteRules(
-				ctx,
-				pluginRegistry,
-				mfc.queries,
-				routeWithHosts.Route,
-				parentRefReporter,
-			)
-
-			if len(routes) == 0 {
-				// TODO report
-				continue
-			}
-
-			hostnames := routeWithHosts.Hostnames
-			if len(hostnames) == 0 {
-				hostnames = []string{"*"}
-			}
-
-			for _, host := range hostnames {
-				routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
-			}
-		}
+	var routesByHost = map[string]routeutils.SortableRoutes{}
+	for _, parent := range httpFilterChain.parents {
+		buildRoutesPerHost(
+			ctx,
+			routesByHost,
+			parent.routesWithHosts,
+			pluginRegistry,
+			httpFilterChain.queries,
+			reporter,
+		)
 	}
 
 	var (
@@ -340,8 +322,6 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 	}, virtualHosts
 }
 
-// httpFilterChain each one represents a GW Listener that has been merged into a single Gloo Listener (with distinct filter chains).
-// In the case where no GW Listener merging takes place, every listener will use a Gloo AggregatedListeener with 1 HTTP filter chain.
 type httpsFilterChain struct {
 	gatewayListenerName string
 	sniDomain           *gwv1.Hostname
@@ -350,7 +330,7 @@ type httpsFilterChain struct {
 	queries             query.GatewayQueries
 }
 
-func (mfc *httpsFilterChain) translateHttpsFilterChain(
+func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	parentName string,
@@ -360,34 +340,39 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	listenerReporter reports.ListenerReporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 	// process routes first, so any route related errors are reported on the httproute.
-	var (
-		routesByHost = map[string]routeutils.SortableRoutes{}
+	var routesByHost = map[string]routeutils.SortableRoutes{}
+	buildRoutesPerHost(
+		ctx,
+		routesByHost,
+		httpsFilterChain.routesWithHosts,
+		pluginRegistry,
+		httpsFilterChain.queries,
+		reporter,
 	)
-	for _, routeWithHosts := range mfc.routesWithHosts {
-		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
-		routes := httproute.TranslateGatewayHTTPRouteRules(
-			ctx,
-			pluginRegistry,
-			mfc.queries,
-			routeWithHosts.Route,
-			parentRefReporter,
-		)
 
-		if len(routes) == 0 {
-			// TODO report
-			continue
+	var (
+		virtualHostRefs []string
+		virtualHosts    = map[string]*v1.VirtualHost{}
+	)
+	for host, vhostRoutes := range routesByHost {
+		sort.Stable(vhostRoutes)
+		vhostName := makeVhostName(parentName, host)
+		virtualHosts[vhostName] = &v1.VirtualHost{
+			Name:    vhostName,
+			Domains: []string{host},
+			Routes:  vhostRoutes.ToRoutes(),
+			Options: nil,
 		}
 
-		for _, host := range routeWithHosts.Hostnames {
-			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
-		}
+		virtualHostRefs = append(virtualHostRefs, vhostName)
 	}
+	sort.Strings(virtualHostRefs)
 
 	sslConfig, err := translateSslConfig(
 		ctx,
 		gatewayNamespace,
-		mfc.sniDomain,
-		mfc.tls,
+		httpsFilterChain.sniDomain,
+		httpsFilterChain.tls,
 		queries,
 	)
 	if err != nil {
@@ -410,28 +395,44 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	}
 	matcher := &v1.Matcher{SslConfig: sslConfig, SourcePrefixRanges: nil, PassthroughCipherSuites: nil}
 
-	var (
-		virtualHostRefs []string
-		virtualHosts    = map[string]*v1.VirtualHost{}
-	)
-	for host, vhostRoutes := range routesByHost {
-		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(parentName, host)
-		virtualHosts[vhostName] = &v1.VirtualHost{
-			Name:    vhostName,
-			Domains: []string{host},
-			Routes:  vhostRoutes.ToRoutes(),
-			Options: nil,
-		}
-
-		virtualHostRefs = append(virtualHostRefs, vhostName)
-	}
-	sort.Strings(virtualHostRefs)
-
 	return &v1.AggregateListener_HttpFilterChain{
 		Matcher:         matcher,
 		VirtualHostRefs: virtualHostRefs,
 	}, virtualHosts
+}
+
+func buildRoutesPerHost(
+	ctx context.Context,
+	routesByHost map[string]routeutils.SortableRoutes,
+	routes []*query.ListenerRouteResult,
+	pluginRegistry registry.PluginRegistry,
+	queries query.GatewayQueries,
+	reporter reports.Reporter,
+) {
+	for _, routeWithHosts := range routes {
+		parentRefReporter := reporter.Route(&routeWithHosts.Route).ParentRef(&routeWithHosts.ParentRef)
+		routes := httproute.TranslateGatewayHTTPRouteRules(
+			ctx,
+			pluginRegistry,
+			queries,
+			routeWithHosts.Route,
+			parentRefReporter,
+		)
+
+		if len(routes) == 0 {
+			// TODO report
+			continue
+		}
+
+		hostnames := routeWithHosts.Hostnames
+		if len(hostnames) == 0 {
+			hostnames = []string{"*"}
+		}
+
+		for _, host := range hostnames {
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.Route, routes)...)
+		}
+	}
 }
 
 func translateSslConfig(
