@@ -290,7 +290,7 @@ To resolve this issue, add the `iam:GetRole` action to a policy attached to the 
 
 One way to do this is via the console:
 * Log into the AWS console and go to the IAM dashboard
-* Search for and select the IAM user, in this example `dev-role-iam`
+* Search for and select the role, in this example `foo-role`
 * Go to the `Permissions` tab, which should be the first/default tab
 * Find the `Add Permissions` dropdown and select `Create Inline Policy`
 * It will ask you to choose a service. Pick `IAM`
