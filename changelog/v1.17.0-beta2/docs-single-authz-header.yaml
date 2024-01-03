@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/13744
+    resolvesIssue: false
+    description: Document the limitation of supporting only one authorization header in the BasicAuth provider.
+    skipCI-kube-tests: true
