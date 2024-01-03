@@ -21,6 +21,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should build all positive conditions with an empty report", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
 			status := rm.BuildGWStatus(context.Background(), *gw)
 
 			Expect(status).NotTo(BeNil())
@@ -72,6 +77,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
 			status := rm.BuildGWStatus(context.Background(), *gw)
 
 			Expect(status).NotTo(BeNil())
@@ -103,6 +113,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should build all positive route conditions with an empty report", func() {
 			route := route()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
+			reporter.Route(&route)
 
 			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 
@@ -159,6 +173,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
 			route := route()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
+			reporter.Route(&route)
 
 			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 

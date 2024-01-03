@@ -5,13 +5,30 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+var (
+	missingGatewayReportErr = "building status for Gateway '%s' (namespace: '%s') but no GatewayReport was present"
+	missingRouteReportErr   = "building status for HTTPRoute '%s' (namespace: '%s') but no RouteReport was present"
+)
+
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.GatewayStatus {
 	gwReport := r.Gateway(&gw)
+	if gwReport == nil {
+		// If the gwReport for a gateway we translated is missing, something is not correct in the reporting flow.
+		// We assume/expect every Gateway translated has initialized a report (including the Generation of the resource),
+		// by getting a GatewayReporter via Reporter.Gateway(). This is currently necessary because we must track the generation
+		// we have translated to accurate update the GatewayStatus observedGeneration.
+		// If we hit this DPanic() we need to understand what has changed in the flow where we are translating Gateways but
+		// not initializing a report for it.
+		contextutils.LoggerFrom(ctx).DPanicf(missingGatewayReportErr, gw.Name, gw.Namespace)
+		return gwv1.GatewayStatus{}
+	}
+
 	//TODO(Law): deterministic sorting
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
@@ -58,6 +75,17 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 
 func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) gwv1.HTTPRouteStatus {
 	routeReport := r.route(&route)
+	if routeReport == nil {
+		// If the routeReport for a HTTPRoute we translated is missing, something is not correct in the reporting flow.
+		// We assume/expect every HTTPRoute translated has initialized a report (including the Generation of the resource),
+		// by getting a HTTPRouteReporter via Reporter.Route(). This is currently necessary because we must track the generation
+		// we have translated to accurate update the HTTPRouteStatus observedGeneration.
+		// If we hit this DPanic() we need to understand what has changed in the flow where we are translating HTTPRoutes but
+		// not initializing a report for it.
+		contextutils.LoggerFrom(ctx).DPanicf(missingRouteReportErr, route.Name, route.Namespace)
+		return gwv1.HTTPRouteStatus{}
+	}
+
 	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range route.Spec.ParentRefs {
 		parentStatusReport := routeReport.parentRef(&parentRef)

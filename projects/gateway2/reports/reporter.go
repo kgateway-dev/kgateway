@@ -46,26 +46,37 @@ func NewReportMap() ReportMap {
 	}
 }
 
-// Exported for unit test, validation_test.go can be refactored to reduce this visibility
+// Returns a GatewayReport for the provided Gateway, nil if there is not a report present.
+// This is different than the Reporter.Gateway() method, as we need to understand when
+// reports are not generated for a Gateway that has been translated.
+//
+// NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
 func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	key := client.ObjectKeyFromObject(gateway)
-	gr := r.gateways[key]
-	if gr == nil {
-		gr = &GatewayReport{}
-		gr.observedGeneration = gateway.Generation
-		r.gateways[key] = gr
-	}
+	return r.gateways[key]
+}
+
+func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
+	gr := &GatewayReport{}
+	gr.observedGeneration = gateway.Generation
+	key := client.ObjectKeyFromObject(gateway)
+	r.gateways[key] = gr
 	return gr
 }
 
+// Returns a RouteReport for the provided HTTPRoute, nil if there is not a report present.
+// This is different than the Reporter.Route() method, as we need to understand when
+// reports are not generated for a HTTPRoute that has been translated.
 func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
 	key := client.ObjectKeyFromObject(route)
-	rr := r.routes[key]
-	if rr == nil {
-		rr = &RouteReport{}
-		rr.observedGeneration = route.Generation
-		r.routes[key] = rr
-	}
+	return r.routes[key]
+}
+
+func (r *ReportMap) newRouteReport(route *gwv1.HTTPRoute) *RouteReport {
+	rr := &RouteReport{}
+	rr.observedGeneration = route.Generation
+	key := client.ObjectKeyFromObject(route)
+	r.routes[key] = rr
 	return rr
 }
 
@@ -131,11 +142,19 @@ type reporter struct {
 }
 
 func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
-	return r.report.Gateway(gateway)
+	gr := r.report.Gateway(gateway)
+	if gr == nil {
+		gr = r.report.newGatewayReport(gateway)
+	}
+	return gr
 }
 
 func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
-	return r.report.route(route)
+	rr := r.report.route(route)
+	if rr == nil {
+		rr = r.report.newRouteReport(route)
+	}
+	return rr
 }
 
 func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
