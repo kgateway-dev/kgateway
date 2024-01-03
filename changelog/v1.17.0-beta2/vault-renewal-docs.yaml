@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Update the AWS IRSA guide
