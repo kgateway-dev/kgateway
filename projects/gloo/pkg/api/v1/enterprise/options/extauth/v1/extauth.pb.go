@@ -943,6 +943,11 @@ func (x *AuthPlugin) GetConfig() *_struct.Struct {
 	return nil
 }
 
+// This is the legacy/simple basic auth config. It supports the APR and SHA-1 hashing algorithms.
+//
+// When using basic auth, requests can pass only one `Authorization` header. You cannot use basic auth config in
+// conjunction with other auth configs that rely on the `Authorization` header as well. In case of such a conflict,
+// use a different type of auth config or configure a different header, such as `X-Auth`.
 type BasicAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5291,7 +5296,6 @@ func (x *HttpService_Response) GetAllowedUpstreamHeadersToAppend() []string {
 	return nil
 }
 
-// This is the legacy/simple basic auth config. It supports the APR hashing algorithm and an inline userlist.
 // If 'apr' is defined, 'encryption' and 'user_source' must not be defined or the config will fail validation
 type BasicAuth_Apr struct {
 	state         protoimpl.MessageState
