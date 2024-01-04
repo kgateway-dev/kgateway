@@ -16,17 +16,14 @@ var (
 	missingRouteReportErr   = "building status for HTTPRoute '%s' (namespace: '%s') but no RouteReport was present"
 )
 
-func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.GatewayStatus {
+func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.GatewayStatus {
 	gwReport := r.Gateway(&gw)
 	if gwReport == nil {
 		// If the gwReport for a gateway we translated is missing, something is not correct in the reporting flow.
-		// We assume/expect every Gateway translated has initialized a report (including the Generation of the resource),
-		// by getting a GatewayReporter via Reporter.Gateway(). This is currently necessary because we must track the generation
-		// we have translated to accurate update the GatewayStatus observedGeneration.
 		// If we hit this DPanic() we need to understand what has changed in the flow where we are translating Gateways but
 		// not initializing a report for it.
 		contextutils.LoggerFrom(ctx).DPanicf(missingGatewayReportErr, gw.Name, gw.Namespace)
-		return gwv1.GatewayStatus{}
+		return nil
 	}
 
 	//TODO(Law): deterministic sorting
@@ -70,20 +67,19 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 	finalGwStatus := gwv1.GatewayStatus{}
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
-	return finalGwStatus
+	return &finalGwStatus
 }
 
-func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) gwv1.HTTPRouteStatus {
+func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) *gwv1.HTTPRouteStatus {
 	routeReport := r.route(&route)
 	if routeReport == nil {
-		// If the routeReport for a HTTPRoute we translated is missing, something is not correct in the reporting flow.
-		// We assume/expect every HTTPRoute translated has initialized a report (including the Generation of the resource),
-		// by getting a HTTPRouteReporter via Reporter.Route(). This is currently necessary because we must track the generation
-		// we have translated to accurate update the HTTPRouteStatus observedGeneration.
-		// If we hit this DPanic() we need to understand what has changed in the flow where we are translating HTTPRoutes but
-		// not initializing a report for it.
-		contextutils.LoggerFrom(ctx).DPanicf(missingRouteReportErr, route.Name, route.Namespace)
-		return gwv1.HTTPRouteStatus{}
+		// a route report may be missing because of the disconnect between when routes are retrieved for translation,
+		// which the query engine performs inside gateway_translator.go/TranslateProxy(), and when the list of routes
+		// for status syncing is retrieved, which happens in xds_syncer.go/syncRouteStatus().
+		// Since there may have been additions/deletions in that window, a missing route report will just be treated
+		// as informational and we will return an empty status
+		contextutils.LoggerFrom(ctx).Infof(missingRouteReportErr, route.Name, route.Namespace)
+		return nil
 	}
 
 	routeStatus := gwv1.RouteStatus{}
@@ -118,7 +114,7 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 		}
 		routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
 	}
-	return gwv1.HTTPRouteStatus{
+	return &gwv1.HTTPRouteStatus{
 		RouteStatus: routeStatus,
 	}
 }

@@ -92,7 +92,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			acceptedCond := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
 			oldTransitionTime := acceptedCond.LastTransitionTime
 
-			gw.Status = status
+			gw.Status = *status
 			status = rm.BuildGWStatus(context.Background(), *gw)
 
 			Expect(status).NotTo(BeNil())
@@ -187,7 +187,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 			oldTransitionTime := resolvedRefs.LastTransitionTime
 
-			route.Status = status
+			route.Status = *status
 			status = rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 
 			Expect(status).NotTo(BeNil())

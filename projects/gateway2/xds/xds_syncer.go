@@ -360,9 +360,11 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 
 	for _, route := range rl.Items {
 		route := route // pike
-		route.Status = rm.BuildRouteStatus(ctx, route, s.controllerName)
-		if err := s.cli.Status().Update(ctx, &route); err != nil {
-			logger.Error(err)
+		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
+			route.Status = *status
+			if err := s.cli.Status().Update(ctx, &route); err != nil {
+				logger.Error(err)
+			}
 		}
 	}
 }
@@ -370,13 +372,13 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl apiv1.GatewayList) {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	//TODO(Law): bail out early if possible
-	//TODO(Law): do another Get on the gw?
-	//TODO(Law): add generation changed predicate
 	for _, gw := range gwl.Items {
-		gw.Status = rm.BuildGWStatus(ctx, gw)
-		if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
-			logger.Error(err)
+		gw := gw // pike
+		if status := rm.BuildGWStatus(ctx, gw); status != nil {
+			gw.Status = *status
+			if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
+				logger.Error(err)
+			}
 		}
 	}
 }
