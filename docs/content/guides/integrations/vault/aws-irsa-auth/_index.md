@@ -259,6 +259,8 @@ If you use Gloo Edge Enterprise, nest these Helm settings within the `gloo` sect
 
 ### Step 2: Install Gloo using Helm
 
+This example uses Edge version `v1.15.3`, but you can use any version later than this.
+
 ```shell
 export EDGE_VERSION=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
 
