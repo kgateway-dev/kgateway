@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/9022
+  resolvesIssue: false
+  description: Introduces a new `observabilityOptions.grafanaIntegration.dashboardPrefix` setting. This allows users to specify the prefix for the title and UID of Grafana Dashboards created. This is useful when the data is aggregated to a central grafana instance so they do not conflict across multiple Gloo environments. Note that any dashboard created without a prefix or with a different prefix will need to be manually removed on changing this value.
+

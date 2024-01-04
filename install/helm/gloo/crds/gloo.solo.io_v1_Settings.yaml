@@ -795,6 +795,8 @@ spec:
                     type: object
                   grafanaIntegration:
                     properties:
+                      dashboardPrefix:
+                        type: string
                       defaultDashboardFolderId:
                         maximum: 4294967295
                         minimum: 0

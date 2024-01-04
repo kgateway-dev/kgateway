@@ -1901,6 +1901,10 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Equal(that interface{
 		}
 	}
 
+	if strings.Compare(m.GetDashboardPrefix(), target.GetDashboardPrefix()) != 0 {
+		return false
+	}
+
 	return true
 }
 
