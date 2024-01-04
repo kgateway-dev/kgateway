@@ -15,7 +15,7 @@ Start by creating the necessary permissions in AWS.
 
 ### Step 1: Create a cluster with OIDC
 
-To configure IRSA, create or use an EKS cluster with an associated OpenID Provider (OIDC). Be sure to use a cluster that you have not yet installed Gloo Edge into.
+To configure IRSA, create or use an EKS cluster with an associated OpenID Provider (OIDC). Be sure to use a cluster name that has not previously been used to create the AWS vault permissions in this guide.
 
 1. Save the following details in environment variables.
    ```shell
@@ -292,7 +292,7 @@ Code: 400. Errors:
 
 To create and associate the necessary policy:
 
-1. Set an environment variable with the assumed role. You can find the value in your error message.
+1. Set an environment variable with the assumed role. You can find the value in your error message. In the example above, the `<role-name>` would be `foo-role`
    ```shell
    export VAULT_ASSUMED_ROLE=<role>
    ```
