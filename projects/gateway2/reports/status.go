@@ -75,9 +75,9 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 	if routeReport == nil {
 		// a route report may be missing because of the disconnect between when routes are retrieved for translation,
 		// which the query engine performs inside gateway_translator.go/TranslateProxy(), and when the list of routes
-		// for status syncing is retrieved, which happens in xds_syncer.go/syncRouteStatus().
+		// for status syncing is retrieved after translation, separately in xds_syncer.go/syncRouteStatus().
 		// Since there may have been additions/deletions in that window, a missing route report will just be treated
-		// as informational and we will return an empty status
+		// as informational and we will return nil, signaling to status syncer to not touch this Routes status.
 		contextutils.LoggerFrom(ctx).Infof(missingRouteReportErr, route.Name, route.Namespace)
 		return nil
 	}
