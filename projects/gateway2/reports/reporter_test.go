@@ -21,6 +21,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should build all positive conditions with an empty report", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
 			status := rm.BuildGWStatus(context.Background(), *gw)
 
 			Expect(status).NotTo(BeNil())
@@ -72,6 +77,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
 			status := rm.BuildGWStatus(context.Background(), *gw)
 
 			Expect(status).NotTo(BeNil())
@@ -82,7 +92,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			acceptedCond := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
 			oldTransitionTime := acceptedCond.LastTransitionTime
 
-			gw.Status = status
+			gw.Status = *status
 			status = rm.BuildGWStatus(context.Background(), *gw)
 
 			Expect(status).NotTo(BeNil())
@@ -103,6 +113,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should build all positive route conditions with an empty report", func() {
 			route := route()
 			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
+			reporter.Route(&route)
 
 			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 
@@ -160,6 +174,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 			route := route()
 			rm := reports.NewReportMap()
 
+			reporter := reports.NewReporter(&rm)
+			// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
+			reporter.Route(&route)
+
 			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 
 			Expect(status).NotTo(BeNil())
@@ -169,7 +187,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 			oldTransitionTime := resolvedRefs.LastTransitionTime
 
-			route.Status = status
+			route.Status = *status
 			status = rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
 
 			Expect(status).NotTo(BeNil())

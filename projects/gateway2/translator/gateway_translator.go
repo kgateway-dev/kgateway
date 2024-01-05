@@ -45,9 +45,6 @@ func (t *translator) TranslateProxy(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Proxy {
-	if !listener.ValidateGateway(gateway, queries, reporter) {
-		return nil
-	}
 
 	routesForGw, err := queries.GetRoutesForGw(ctx, gateway)
 	if err != nil {

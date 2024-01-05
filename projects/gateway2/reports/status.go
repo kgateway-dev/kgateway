@@ -5,13 +5,27 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.GatewayStatus {
+var (
+	missingGatewayReportErr = "building status for Gateway '%s' (namespace: '%s') but no GatewayReport was present"
+	missingRouteReportErr   = "building status for HTTPRoute '%s' (namespace: '%s') but no RouteReport was present"
+)
+
+func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.GatewayStatus {
 	gwReport := r.Gateway(&gw)
+	if gwReport == nil {
+		// If the gwReport for a gateway we translated is missing, something is not correct in the reporting flow.
+		// If we hit this DPanic() we need to understand what has changed in the flow where we are translating Gateways but
+		// not initializing a report for it.
+		contextutils.LoggerFrom(ctx).DPanicf(missingGatewayReportErr, gw.Name, gw.Namespace)
+		return nil
+	}
+
 	//TODO(Law): deterministic sorting
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
@@ -23,9 +37,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 			return l.Name == lis.Name
 		})
 		for _, lisCondition := range lisReport.Status.Conditions {
-			// the report was generated over a single pass of translation, safe to set generation here
-			// assuming statuses are synced and reported in the same pass
-			lisCondition.ObservedGeneration = gw.Generation
+			lisCondition.ObservedGeneration = gwReport.observedGeneration
 
 			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 			if oldLisStatusIndex != -1 {
@@ -43,9 +55,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, gwCondition := range gwReport.GetConditions() {
-		// the report was generated over a single pass of translation, safe to set generation here
-		// assuming statuses are synced and reported in the same pass
-		gwCondition.ObservedGeneration = gw.Generation
+		gwCondition.ObservedGeneration = gwReport.observedGeneration
 
 		// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 		if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
@@ -57,11 +67,21 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) gwv1.Gat
 	finalGwStatus := gwv1.GatewayStatus{}
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
-	return finalGwStatus
+	return &finalGwStatus
 }
 
-func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) gwv1.HTTPRouteStatus {
+func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) *gwv1.HTTPRouteStatus {
 	routeReport := r.route(&route)
+	if routeReport == nil {
+		// a route report may be missing because of the disconnect between when routes are retrieved for translation,
+		// which the query engine performs inside gateway_translator.go/TranslateProxy(), and when the list of routes
+		// for status syncing is retrieved after translation, separately in xds_syncer.go/syncRouteStatus().
+		// Since there may have been additions/deletions in that window, a missing route report will just be treated
+		// as informational and we will return nil, signaling to status syncer to not touch this Routes status.
+		contextutils.LoggerFrom(ctx).Infof(missingRouteReportErr, route.Name, route.Namespace)
+		return nil
+	}
+
 	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range route.Spec.ParentRefs {
 		parentStatusReport := routeReport.parentRef(&parentRef)
@@ -78,9 +98,7 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 
 		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
 		for _, pCondition := range parentStatusReport.Conditions {
-			// the report was generated over a single pass of translation, safe to set generation here
-			// assuming statuses are synced and reported in the same pass
-			pCondition.ObservedGeneration = route.Generation
+			pCondition.ObservedGeneration = routeReport.observedGeneration
 
 			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 			if cond := meta.FindStatusCondition(currentParentRefConditions, pCondition.Type); cond != nil {
@@ -96,7 +114,7 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 		}
 		routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
 	}
-	return gwv1.HTTPRouteStatus{
+	return &gwv1.HTTPRouteStatus{
 		RouteStatus: routeStatus,
 	}
 }
