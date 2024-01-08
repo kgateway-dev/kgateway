@@ -1346,6 +1346,10 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 		}
 	}
 
+	target.ConnectionQueueSize = m.GetConnectionQueueSize()
+
+	target.LimitConnectionsToQueueSize = m.GetLimitConnectionsToQueueSize()
+
 	switch m.CommitLevel.(type) {
 
 	case *AerospikeApiKeyStorage_CommitAll:

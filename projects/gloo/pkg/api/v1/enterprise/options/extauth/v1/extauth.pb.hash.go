@@ -2609,6 +2609,16 @@ func (m *AerospikeApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetConnectionQueueSize())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetLimitConnectionsToQueueSize())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.CommitLevel.(type) {
 
 	case *AerospikeApiKeyStorage_CommitAll:

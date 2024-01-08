@@ -1190,6 +1190,15 @@ message AerospikeApiKeyStorage {
     // Identify the set of required labels (key/value) which an Aerospike secret must contain
     // If a secret contains the provided set of labels, it will be considered valid when authorizing an ApiKey provided in a request
     map<string, string> label_selector = 17;
+
+    // ConnectionQueueSize specifies the size of the Connection Queue cache PER NODE.
+    // Note: One connection per node is reserved for tend operations and is not used for transactions.
+    int32 connection_queue_size = 18;
+
+    // If set to true, will not create a new connection
+    // to the node if there are already `ConnectionQueueSize` active connections.
+    // Note: One connection per node is reserved for tend operations and is not used for transactions.
+    bool limit_connections_to_queue_size = 19;
 }
 
 message ApiKey {
