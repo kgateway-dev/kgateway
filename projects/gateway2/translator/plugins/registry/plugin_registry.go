@@ -6,6 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 )
 
@@ -41,6 +42,7 @@ func buildPlugins(queries query.GatewayQueries) []plugins.Plugin {
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),
 		redirect.NewPlugin(),
+		routeoptions.NewPlugin(queries),
 		urlrewrite.NewPlugin(),
 	}
 }

@@ -1,7 +1,14 @@
 package utils
 
 import (
+	"context"
+	"fmt"
+	"reflect"
+
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -34,5 +41,42 @@ func FindAppliedRouteFilter(
 			return &filter
 		}
 	}
+	return nil
+}
+
+func FindExtensionRefFilter(
+	routeCtx *plugins.RouteContext,
+	gk schema.GroupKind,
+) *gwv1.HTTPRouteFilter {
+	// TODO: check full Filter list for duplicates and error?
+	for _, filter := range routeCtx.Rule.Filters {
+		if filter.Type == gwv1.HTTPRouteFilterExtensionRef {
+			if filter.ExtensionRef.Group == gwv1.Group(gk.Group) && filter.ExtensionRef.Kind == gwv1.Kind(gk.Kind) {
+				return &filter
+			}
+		}
+	}
+	return nil
+}
+
+func GetExtensionRefObj(
+	ctx context.Context,
+	routeCtx *plugins.RouteContext,
+	queries query.GatewayQueries,
+	extensionRef *gwv1.LocalObjectReference,
+	obj client.Object,
+) error {
+	localObj, err := queries.GetLocalObjRef(ctx, queries.ObjToFrom(routeCtx.Route), *extensionRef)
+	if err != nil {
+		return err
+	}
+	if reflect.TypeOf(obj) != reflect.TypeOf(localObj) {
+		return fmt.Errorf("types not equal")
+	}
+	elem := reflect.ValueOf(obj).Elem()
+	if !elem.CanSet() {
+		return fmt.Errorf("can't set value")
+	}
+	elem.Set(reflect.ValueOf(localObj).Elem())
 	return nil
 }

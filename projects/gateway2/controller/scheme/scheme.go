@@ -3,6 +3,7 @@ package scheme
 import (
 	"os"
 
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -13,7 +14,7 @@ import (
 func NewScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
-		apiv1.AddToScheme, apiv1beta1.AddToScheme, corev1.AddToScheme, appsv1.AddToScheme,
+		apiv1.AddToScheme, apiv1beta1.AddToScheme, corev1.AddToScheme, appsv1.AddToScheme, sologatewayv1.AddToScheme,
 	} {
 		if err := f(scheme); err != nil {
 			os.Exit(1)

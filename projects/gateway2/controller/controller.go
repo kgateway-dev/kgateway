@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	corev1 "k8s.io/api/core/v1"
@@ -52,6 +53,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchHttpRoute,
 		controllerBuilder.watchReferenceGrant,
 		controllerBuilder.watchNamespaces,
+		controllerBuilder.watchRouteOptions,
 		controllerBuilder.addIndexes,
 	)
 
@@ -179,10 +181,27 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
+func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&sologatewayv1.RouteOption{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileRouteOptions))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
 	kick   func(ctx context.Context)
+}
+
+func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected routes/listeners etc
+	log.FromContext(ctx).Info("LAW: triggering reconcile for RouteOptions")
+	r.kick(ctx)
+	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
