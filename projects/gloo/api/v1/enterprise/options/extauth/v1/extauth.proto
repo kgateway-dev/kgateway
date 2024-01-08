@@ -1193,12 +1193,12 @@ message AerospikeApiKeyStorage {
 
     // ConnectionQueueSize specifies the size of the Connection Queue cache PER NODE.
     // Note: One connection per node is reserved for tend operations and is not used for transactions.
-    int32 connection_queue_size = 18;
+    google.protobuf.Int32Value connection_queue_size = 18;
 
     // If set to true, will not create a new connection
     // to the node if there are already `ConnectionQueueSize` active connections.
     // Note: One connection per node is reserved for tend operations and is not used for transactions.
-    bool limit_connections_to_queue_size = 19;
+    google.protobuf.BoolValue limit_connections_to_queue_size = 19;
 }
 
 message ApiKey {

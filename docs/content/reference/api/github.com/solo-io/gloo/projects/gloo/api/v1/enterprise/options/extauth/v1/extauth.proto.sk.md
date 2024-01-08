@@ -1561,8 +1561,8 @@ For the Aerospike backend, this data is stored as bins on the key's record
 "tlsVersion": string
 "tlsCurveGroups": []enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID
 "labelSelector": map<string, string>
-"connectionQueueSize": int
-"limitConnectionsToQueueSize": bool
+"connectionQueueSize": .google.protobuf.Int32Value
+"limitConnectionsToQueueSize": .google.protobuf.BoolValue
 
 ```
 
@@ -1585,8 +1585,8 @@ For the Aerospike backend, this data is stored as bins on the key's record
 | `tlsVersion` | `string` | The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3. |
 | `tlsCurveGroups` | [[]enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID](../extauth.proto.sk/#tlscurveid) | The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8). |
 | `labelSelector` | `map<string, string>` | Identify the set of required labels (key/value) which an Aerospike secret must contain If a secret contains the provided set of labels, it will be considered valid when authorizing an ApiKey provided in a request. |
-| `connectionQueueSize` | `int` | ConnectionQueueSize specifies the size of the Connection Queue cache PER NODE. Note: One connection per node is reserved for tend operations and is not used for transactions. |
-| `limitConnectionsToQueueSize` | `bool` | If set to true, will not create a new connection to the node if there are already `ConnectionQueueSize` active connections. Note: One connection per node is reserved for tend operations and is not used for transactions. |
+| `connectionQueueSize` | [.google.protobuf.Int32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/int-32-value) | ConnectionQueueSize specifies the size of the Connection Queue cache PER NODE. Note: One connection per node is reserved for tend operations and is not used for transactions. |
+| `limitConnectionsToQueueSize` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, will not create a new connection to the node if there are already `ConnectionQueueSize` active connections. Note: One connection per node is reserved for tend operations and is not used for transactions. |
 
 
 

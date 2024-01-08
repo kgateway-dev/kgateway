@@ -2609,14 +2609,44 @@ func (m *AerospikeApiKeyStorage) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetConnectionQueueSize())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetConnectionQueueSize()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ConnectionQueueSize")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetConnectionQueueSize(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ConnectionQueueSize")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetLimitConnectionsToQueueSize())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetLimitConnectionsToQueueSize()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LimitConnectionsToQueueSize")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetLimitConnectionsToQueueSize(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("LimitConnectionsToQueueSize")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	switch m.CommitLevel.(type) {

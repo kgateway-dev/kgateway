@@ -1346,9 +1346,17 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 		}
 	}
 
-	target.ConnectionQueueSize = m.GetConnectionQueueSize()
+	if h, ok := interface{}(m.GetConnectionQueueSize()).(clone.Cloner); ok {
+		target.ConnectionQueueSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+	} else {
+		target.ConnectionQueueSize = proto.Clone(m.GetConnectionQueueSize()).(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+	}
 
-	target.LimitConnectionsToQueueSize = m.GetLimitConnectionsToQueueSize()
+	if h, ok := interface{}(m.GetLimitConnectionsToQueueSize()).(clone.Cloner); ok {
+		target.LimitConnectionsToQueueSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.LimitConnectionsToQueueSize = proto.Clone(m.GetLimitConnectionsToQueueSize()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	switch m.CommitLevel.(type) {
 
