@@ -22,7 +22,7 @@ func LogLevelAssertion(logLevel zapcore.Level) types.AsyncAssertion {
 
 	return Eventually(func(g Gomega) {
 		resp, err := http.DefaultClient.Do(loggingRequest)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
 		g.Expect(resp).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusOK,

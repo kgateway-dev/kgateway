@@ -303,7 +303,7 @@ func EventuallyOk(hostname string, port uint32) {
 	time.Sleep(3 * time.Second)
 	EventuallyWithOffset(1, func(g Gomega) {
 		resp, err := get(hostname, port)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
 		g.Expect(resp).To(matchers.HaveOkResponse())
 	}, "5s", ".1s").Should(Succeed())
@@ -315,7 +315,7 @@ func ConsistentlyNotRateLimited(hostname string, port uint32) {
 
 	ConsistentlyWithOffset(1, func(g Gomega) {
 		resp, err := get(hostname, port)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
 		g.Expect(resp).To(matchers.HaveOkResponse())
 	}, "5s", ".1s").Should(Succeed())
@@ -324,7 +324,7 @@ func ConsistentlyNotRateLimited(hostname string, port uint32) {
 func EventuallyRateLimited(hostname string, port uint32) {
 	EventuallyWithOffset(1, func(g Gomega) {
 		resp, err := get(hostname, port)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
 		g.Expect(resp).To(matchers.HaveStatusCode(http.StatusTooManyRequests))
 	}, "5s", ".1s").Should(Succeed())

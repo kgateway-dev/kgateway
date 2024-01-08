@@ -82,7 +82,7 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 	EventuallyWithOffset(offset+1, func(g Gomega) {
 		resp, err := http.DefaultClient.Do(statsRequest)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
 		g.Expect(resp).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -122,7 +122,7 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 
 	return Eventually(func(g Gomega) {
 		resp, err := http.DefaultClient.Do(metricsRequest)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
 		g.Expect(resp).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
