@@ -127,6 +127,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 			errs = multierror.Append(errs, errors.Wrapf(err, "could not perform HTTP GET on resolved addr: %v", url))
 			continue
 		}
+		defer res.Body.Close()
 		// might have found a swagger service
 		if res.StatusCode == http.StatusOK {
 			if _, err := RetrieveSwaggerDocFromUrl(ctx, url); err != nil {
