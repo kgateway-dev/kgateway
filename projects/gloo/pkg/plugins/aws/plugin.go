@@ -143,14 +143,9 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// If static secret is set retrieve the information needed
 	var derivedSecret staticSecretDerivation
 	if upstreamSpec.Aws.GetSecretRef() != nil {
-		derivedSecretPtr, err := deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
+		derivedSecret, err = deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
 		if err != nil {
 			return err
-		}
-		// derivedSecretPtr should always be non-nil if err is nil, but checking
-		// anyway to be extra cautious against NPE
-		if derivedSecretPtr != nil {
-			derivedSecret = *derivedSecretPtr
 		}
 	}
 
@@ -441,20 +436,20 @@ type staticSecretDerivation struct {
 
 // deriveStaticSecret from ingest if we are using a kubernetes secretref
 // Named returns with the derived string contents or an error due to retrieval or format.
-func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (*staticSecretDerivation, error) {
+func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (staticSecretDerivation, error) {
 	glooSecret, err := params.Snapshot.Secrets.Find(secretRef.Strings())
 	if err != nil {
 		err = errors.Wrapf(err, "retrieving aws secret")
-		return nil, err
+		return staticSecretDerivation{}, err
 	}
 
 	awsSecrets, ok := glooSecret.GetKind().(*v1.Secret_Aws)
 	if !ok {
 		err = errors.Errorf("secret (%s.%s) is not an AWS secret",
 			glooSecret.GetMetadata().GetName(), glooSecret.GetMetadata().GetNamespace())
-		return nil, err
+		return staticSecretDerivation{}, err
 	}
-	derived := &staticSecretDerivation{
+	derived := staticSecretDerivation{
 		access:  awsSecrets.Aws.GetAccessKey(),
 		session: awsSecrets.Aws.GetSessionToken(),
 		secret:  awsSecrets.Aws.GetSecretKey(),
@@ -471,5 +466,5 @@ func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (*st
 	if derived.session != "" && !utf8.Valid([]byte(derived.session)) {
 		err = multierror.Append(err, errors.Errorf("session_key is not a valid string"))
 	}
-	return derived, nil
+	return derived, err
 }
