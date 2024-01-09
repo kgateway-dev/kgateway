@@ -158,7 +158,7 @@ func (m *HaveHttpResponseMatcher) NegatedFailureMessage(actual interface{}) (mes
 // To help developers, we print more details in this function.
 // NOTE: Printing the actual http.Response is challenging (since the body has already been read), so for now
 // we do not print it.
-func informativeComparison(expected, actual interface{}) string {
+func informativeComparison(expected, _ interface{}) string {
 	expectedJson, _ := json.MarshalIndent(expected, "", "  ")
 
 	return fmt.Sprintf("\nexpected: %s", expectedJson)

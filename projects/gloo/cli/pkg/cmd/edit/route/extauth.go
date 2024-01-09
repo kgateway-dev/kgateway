@@ -55,7 +55,7 @@ func ExtAuthConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliutil
 	return cmd
 }
 
-func editRoute(opts *editRouteOptions.RouteEditInput, input *authEditInput, args []string) error {
+func editRoute(opts *editRouteOptions.RouteEditInput, input *authEditInput, _ []string) error {
 	return editRouteOptions.UpdateRoute(opts, func(route *gatewayv1.Route) error {
 		if route.GetOptions() == nil {
 			route.Options = &gloov1.RouteOptions{}

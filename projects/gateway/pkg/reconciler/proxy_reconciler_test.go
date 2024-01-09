@@ -93,6 +93,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
+		//nolint:unparam // error is always nil; need error return val to satisfy signature
 		validationClient = func(_ context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 			return &validation.GlooValidationServiceResponse{
 				ValidationReports: []*validation.ValidationReport{

@@ -373,6 +373,7 @@ func makeUnstructured(yam string) *unstructured.Unstructured {
 	return runtimeObj.(*unstructured.Unstructured)
 }
 
+//nolint:unparam // TODO(jbohanon) unravel usage and see if values can be replaces with `gloo-system`
 func makeUnstructureFromTemplateFile(fixtureName string, values interface{}) *unstructured.Unstructured {
 	tmpl, err := template.ParseFiles(fixtureName)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())

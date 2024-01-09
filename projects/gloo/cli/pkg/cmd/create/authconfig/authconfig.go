@@ -77,7 +77,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 	return cmd
 }
 
-func createAuthConfig(opts *options.Options, args []string) error {
+func createAuthConfig(opts *options.Options, _ []string) error {
 	ac, err := authConfigFromOpts(&opts.Metadata, opts.Create.AuthConfig)
 	if err != nil {
 		return err

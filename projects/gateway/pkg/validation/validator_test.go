@@ -25,7 +25,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.opencensus.io/stats/view"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syamlutil "sigs.k8s.io/yaml"
 )
@@ -1112,7 +1111,8 @@ var _ = Describe("Validator", func() {
 			numberOfWorkers = 100
 		})
 
-		ValidateModifiedGvkWorker := func(vsToDuplicate *v1.VirtualService, name string) error {
+		validateModifiedGvkWorker := func(vsToDuplicate *v1.VirtualService, name string, wg *sync.WaitGroup) {
+			defer GinkgoRecover()
 			// duplicate the vs with a different name
 			workerVirtualService := &v1.VirtualService{}
 			vsToDuplicate.DeepCopyInto(workerVirtualService)
@@ -1123,8 +1123,7 @@ var _ = Describe("Validator", func() {
 				// worker errors are stored in the resultMap
 				resultMap.Store(name, err.Error())
 			}
-
-			return nil
+			wg.Done()
 		}
 
 		It("accepts only 1 vs when multiple are written concurrently", func() {
@@ -1138,18 +1137,17 @@ var _ = Describe("Validator", func() {
 			vsToDuplicate := snap.VirtualServices[1]
 
 			// start workers
-			errorGroup := errgroup.Group{}
+			wg := sync.WaitGroup{}
+			wg.Add(numberOfWorkers)
 			for i := 0; i < numberOfWorkers; i++ {
 				workerName := fmt.Sprintf("worker #%d", i)
-				errorGroup.Go(func() error {
-					defer GinkgoRecover()
-					return ValidateModifiedGvkWorker(vsToDuplicate, workerName)
-				})
+				// validateModifiedGvkWorker handles its own GinkgoRecover and
+				// stores errors in resultMap where we aggregate them later
+				go validateModifiedGvkWorker(vsToDuplicate, workerName, &wg)
 			}
 
 			// wait for all workers to complete
-			err = errorGroup.Wait()
-			Expect(err).NotTo(HaveOccurred())
+			wg.Wait()
 
 			// aggregate the error messages from all the workers
 			var errMessages []string

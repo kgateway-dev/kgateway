@@ -68,10 +68,7 @@ func addRoute(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	plugins, err := pluginsFromInput(opts.Add.Route.Plugins)
-	if err != nil {
-		return err
-	}
+	plugins := pluginsFromInput(opts.Add.Route.Plugins)
 
 	v1Route := &gatewayv1.Route{
 		Matchers: []*matchers.Matcher{match}, // currently we only support adding a single matcher via glooctl
@@ -234,10 +231,8 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 	if dest.Upstream.GetName() == "" {
 		return nil, errors.Errorf("must provide destination name")
 	}
-	spec, err := destSpecFromInput(dest.DestinationSpec)
-	if err != nil {
-		return nil, err
-	}
+	spec := destSpecFromInput(dest.DestinationSpec)
+
 	a.RouteAction.Destination = &v1.RouteAction_Single{
 		Single: &v1.Destination{
 			DestinationType: &v1.Destination_Upstream{
@@ -250,16 +245,16 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 	return a, nil
 }
 
-func pluginsFromInput(input options.RoutePlugins) (*v1.RouteOptions, error) {
+func pluginsFromInput(input options.RoutePlugins) *v1.RouteOptions {
 	if input.PrefixRewrite.Value == nil {
-		return nil, nil
+		return nil
 	}
 	return &v1.RouteOptions{
 		PrefixRewrite: &wrappers.StringValue{Value: *input.PrefixRewrite.Value},
-	}, nil
+	}
 }
 
-func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, error) {
+func destSpecFromInput(input options.DestinationSpec) *v1.DestinationSpec {
 	switch {
 	case input.Aws.LogicalName != "" && input.Aws.LogicalName != surveyutils.NoneOfTheAbove:
 		return &v1.DestinationSpec{
@@ -269,7 +264,7 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 					ResponseTransformation: input.Aws.ResponseTransformation,
 				},
 			},
-		}, nil
+		}
 	case input.Rest.FunctionName != "" && input.Rest.FunctionName != surveyutils.NoneOfTheAbove:
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Rest{
@@ -280,7 +275,7 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 					},
 				},
 			},
-		}, nil
+		}
 	}
-	return nil, nil
+	return nil
 }

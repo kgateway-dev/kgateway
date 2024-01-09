@@ -217,7 +217,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromInline(ctx context.Context
 	return f.detectFunctionsFromSpec(ctx, spec, in, updatecb)
 }
 
-func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, swaggerSpec *openapi.Swagger, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
+func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(_ context.Context, swaggerSpec *openapi.Swagger, _ *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
 	var consumesJson bool
 	if len(swaggerSpec.Consumes) == 0 {
 		consumesJson = true
