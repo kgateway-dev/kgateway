@@ -61,6 +61,11 @@ func FindExtensionRefFilter(
 	return nil
 }
 
+var (
+	ErrTypesNotEqual = fmt.Errorf("types not equal")
+	ErrNotSettable   = fmt.Errorf("can't set value")
+)
+
 // Uses the provided query engine to retrieve an ExtensionRef object and set the value of `obj` to point to it.
 // The type of `obj` must match the type referenced in the extensionRef and must be a pointer.
 // An error will be returned if the Get was unsuccessful or if the type passed is not valid.
@@ -77,11 +82,16 @@ func GetExtensionRefObj(
 		return err
 	}
 	if reflect.TypeOf(obj) != reflect.TypeOf(localObj) {
-		return fmt.Errorf("types not equal")
+		return fmt.Errorf(
+			"%w: passed Obj typeOf: '%v' localObj typeOf: '%v'",
+			ErrTypesNotEqual,
+			reflect.TypeOf(obj),
+			reflect.TypeOf(localObj),
+		)
 	}
 	elem := reflect.ValueOf(obj).Elem()
 	if !elem.CanSet() {
-		return fmt.Errorf("can't set value")
+		return ErrNotSettable
 	}
 	elem.Set(reflect.ValueOf(localObj).Elem())
 	return nil

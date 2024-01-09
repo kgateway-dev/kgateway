@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -20,7 +21,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func TestExtensionRefUtils(t *testing.T) {
+func TestExtensionRef(t *testing.T) {
 	g := NewWithT(t)
 	deps := []client.Object{routeOption()}
 	queries := testutils.BuildGatewayQueries(deps)
@@ -37,6 +38,25 @@ func TestExtensionRefUtils(t *testing.T) {
 	err := utils.GetExtensionRefObj(context.Background(), &rtCtx, queries, filter.ExtensionRef, routeOption)
 	g.Expect(err).To(BeNil())
 	g.Expect(routeOption.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeEquivalentTo(1))
+}
+
+func TestExtensionRefWrongObject(t *testing.T) {
+	g := NewWithT(t)
+	deps := []client.Object{routeOption()}
+	queries := testutils.BuildGatewayQueries(deps)
+
+	rtCtx := routeContext()
+	gk := schema.GroupKind{
+		Group: sologatewayv1.RouteOptionGVK.Group,
+		Kind:  sologatewayv1.RouteOptionGVK.Kind,
+	}
+	filter := utils.FindExtensionRefFilter(&rtCtx, gk)
+	g.Expect(filter).ToNot(BeNil())
+
+	vhostOption := &solokubev1.VirtualHostOption{}
+	err := utils.GetExtensionRefObj(context.Background(), &rtCtx, queries, filter.ExtensionRef, vhostOption)
+	g.Expect(err).ToNot(BeNil())
+	g.Expect(errors.Is(err, utils.ErrTypesNotEqual)).To(BeTrue())
 }
 
 func routeOption() *solokubev1.RouteOption {
