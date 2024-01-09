@@ -44,6 +44,8 @@ func FindAppliedRouteFilter(
 	return nil
 }
 
+// Finds the first instance of an ExtensionRef filter that references the supplied GroupKind in the Rule being processed.
+// Returns nil if the Rule doesn't contain a matching ExtensionRef filter
 func FindExtensionRefFilter(
 	routeCtx *plugins.RouteContext,
 	gk schema.GroupKind,
@@ -59,6 +61,10 @@ func FindExtensionRefFilter(
 	return nil
 }
 
+// Uses the provided query engine to retrieve an ExtensionRef object and set the value of `obj` to point to it.
+// The type of `obj` must match the type referenced in the extensionRef and must be a pointer.
+// An error will be returned if the Get was unsuccessful or if the type passed is not valid.
+// A nil error indicates success and `obj` should be usable as normal.
 func GetExtensionRefObj(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
