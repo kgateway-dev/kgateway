@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/6686
+  resolvesIssue: false
+  description: >-
+    Add usestdlibvars linter
+    skipCI-docs-build:true
