@@ -217,7 +217,7 @@ func buildDeprecatedSDS(name string, sslSecrets *ssl.SDSConfig) *envoyauth.SdsSe
 		},
 		HeaderKey: sslSecrets.GetCallCredentials().GetFileCredentialSource().GetHeader(),
 	}
-	any, _ := MessageToAny(config)
+	anyPb, _ := MessageToAny(config)
 
 	gRPCConfig := &envoycore.GrpcService_GoogleGrpc{
 		TargetUri:  sslSecrets.GetTargetUri(),
@@ -234,7 +234,7 @@ func buildDeprecatedSDS(name string, sslSecrets *ssl.SDSConfig) *envoyauth.SdsSe
 					FromPlugin: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
 						Name: MetadataPluginName,
 						ConfigType: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-							TypedConfig: any},
+							TypedConfig: anyPb},
 					},
 				},
 			},
