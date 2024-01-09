@@ -454,6 +454,12 @@ func (m *GlooOptions) Clone() proto.Message {
 		target.TransformationEscapeCharacters = proto.Clone(m.GetTransformationEscapeCharacters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetAppendIstioXff()).(clone.Cloner); ok {
+		target.AppendIstioXff = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AppendIstioXff = proto.Clone(m.GetAppendIstioXff()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

@@ -31,8 +31,8 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) {
-	if params.Settings.Gloo.AppendIstioXff != nil {
-		p.AppendXForwardedHost = params.Settings.Gloo.AppendIstioXff.Value
+	if params.Settings.GetGloo().GetAppendIstioXff() != nil {
+		p.AppendXForwardedHost = params.Settings.GetGloo().GetAppendIstioXff().GetValue()
 	}
 }
 

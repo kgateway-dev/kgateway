@@ -681,6 +681,16 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAppendIstioXff()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAppendIstioXff()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAppendIstioXff(), target.GetAppendIstioXff()) {
+			return false
+		}
+	}
+
 	return true
 }
 
