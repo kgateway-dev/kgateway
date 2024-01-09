@@ -1,4 +1,7 @@
 changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Update the AWS IRSA guide
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/5438
+    resolvesIssue: true
+    description: >-
+      There are certain situations, where re-writing the X-Forwarded-For header in combination with the istio integration
+      might not be neccesary anymore. There is now a toggle to control that behaviour.
