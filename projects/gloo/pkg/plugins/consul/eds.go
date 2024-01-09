@@ -711,7 +711,7 @@ func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
 	return true
 }
 
-func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
+func getUniqueUpstreamTags(upstreams []*v1.Upstream) []string {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
 		if len(us.GetConsul().GetSubsetTags()) != 0 {
@@ -724,23 +724,25 @@ func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 			}
 		}
 	}
+	tags := make([]string, 0, len(tagMap))
 	for tag := range tagMap {
 		tags = append(tags, tag)
 	}
-	return
+	return tags
 }
 
-func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []string) {
+func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) []string {
 	dcMap := make(map[string]bool)
 	for _, us := range upstreams {
 		for _, dc := range us.GetConsul().GetDataCenters() {
 			dcMap[dc] = true
 		}
 	}
+	dataCenters := make([]string, 0, len(dcMap))
 	for dc := range dcMap {
 		dataCenters = append(dataCenters, dc)
 	}
-	return
+	return dataCenters
 }
 
 type specCollector interface {
