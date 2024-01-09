@@ -141,14 +141,16 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	// If static secret is set retrieve the information needed
-	var derivedSecret *staticSecretDerivation
+	var derivedSecret staticSecretDerivation
 	if upstreamSpec.Aws.GetSecretRef() != nil {
-		derivedSecret, err = deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
+		derivedSecretPtr, err := deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
 		if err != nil {
 			return err
 		}
-		if derivedSecret == nil {
-			return errors.Errorf("failed to get secret information needed")
+		// derivedSecretPtr should always be non-nil if err is nil, but checking
+		// anyway to be extra cautious against NPE
+		if derivedSecretPtr != nil {
+			derivedSecret = *derivedSecretPtr
 		}
 	}
 
