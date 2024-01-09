@@ -9,7 +9,7 @@ package v1
 import (
 	reflect "reflect"
 	sync "sync"
-	
+
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	aws "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
