@@ -674,14 +674,15 @@ func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[strin
 }
 
 // endpointTags come from a consul catalog service
-func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*core.ResourceRef) {
+func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) []*core.ResourceRef {
+	out := make([]*core.ResourceRef, 0, len(upstreams))
 	for _, us := range upstreams {
 		upstreamTags := us.GetConsul().GetInstanceTags()
 		if shouldAddToUpstream(endpointTags, upstreamTags) {
 			out = append(out, us.GetMetadata().Ref())
 		}
 	}
-	return
+	return out
 }
 
 // are there no upstream tags = return true.
