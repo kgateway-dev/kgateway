@@ -1,5 +1,3 @@
-set -x
-
 kind create cluster
 
 SCRIPTPATH=$( cd "$(dirname "$0")" && pwd -P )

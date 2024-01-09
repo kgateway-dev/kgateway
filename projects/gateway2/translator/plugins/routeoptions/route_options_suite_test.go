@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHeadermodifier(t *testing.T) {
+func TestRouteOptionsPlugin(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "RouteOptions Suite")
+	RunSpecs(t, "RouteOptions Plugin Suite")
 }

@@ -12,6 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var gk = schema.GroupKind{
+	Group: sologatewayv1.RouteOptionGVK.Group,
+	Kind:  sologatewayv1.RouteOptionGVK.Kind,
+}
+
 type plugin struct {
 	queries query.GatewayQueries
 }
@@ -27,17 +32,11 @@ func (p *plugin) ApplyRoutePlugin(
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,
 ) error {
-	gk := schema.GroupKind{
-		Group: sologatewayv1.RouteOptionGVK.Group,
-		Kind:  sologatewayv1.RouteOptionGVK.Kind,
-	}
-	// contextutils.LoggerFrom(ctx).Debugf("LAW: looking for RouteOption filter with gk: %+v", gk)
 	filter := utils.FindExtensionRefFilter(routeCtx, gk)
 	if filter == nil {
 		return nil
 	}
 
-	// contextutils.LoggerFrom(ctx).Debugf("LAW: found RouteOptions filter: %+v", filter)
 	routeOption := &solokubev1.RouteOption{}
 	err := utils.GetExtensionRefObj(context.Background(), routeCtx, p.queries, filter.ExtensionRef, routeOption)
 	if err != nil {

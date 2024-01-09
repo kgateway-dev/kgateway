@@ -20,7 +20,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func TestValidate(t *testing.T) {
+func TestExtensionRefUtils(t *testing.T) {
 	g := NewWithT(t)
 	deps := []client.Object{routeOption()}
 	queries := testutils.BuildGatewayQueries(deps)
