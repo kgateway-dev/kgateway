@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.26.5-patch2
+    description: >-
+      Bump envoy-gloo to v1.26.5-patch2, pulling in updates to extensions_build_config.bzl which
+      allow gloo to configure REST EDS
