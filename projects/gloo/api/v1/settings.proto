@@ -715,6 +715,12 @@ message GlooOptions {
     // Set escapeCharacters for all TransformationTemplates on all vhosts and routes.
     // This setting can be overridden in individual TransformationTemplates
     google.protobuf.BoolValue transformation_escape_characters = 17;
+
+    // Previously, we added the xff header in case of the istio integration by default
+    // However, since there is the enable mtls command now this is not needed anymore
+    // However, there might be cases where users rely on that.
+    // Defaults to false
+    google.protobuf.BoolValue append_istio_xff = 18;
 }
 
 

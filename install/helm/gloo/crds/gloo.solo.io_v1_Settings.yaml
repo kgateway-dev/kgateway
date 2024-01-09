@@ -559,6 +559,9 @@ spec:
                 type: object
               gloo:
                 properties:
+                  appendIstioXff:
+                    nullable: true
+                    type: boolean
                   awsOptions:
                     properties:
                       credentialRefreshDelay:

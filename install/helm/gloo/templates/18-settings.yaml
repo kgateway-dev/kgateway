@@ -20,6 +20,9 @@ spec:
 {{- toYaml .Values.settings.secretOptions.sources | nindent 6 }}
 {{- end }}
   gloo:
+{{- if .Values.global.istioIntegration.appendIstioXff }}
+    appendIstioXff: true
+{{- end }}
 {{- if .Values.global.glooMtls.enabled }}
     xdsBindAddr: "127.0.0.1:9999"
     restXdsBindAddr: "127.0.0.1:9998"
