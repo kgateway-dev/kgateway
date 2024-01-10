@@ -1,6 +1,8 @@
 package loadbalancer
 
 import (
+	"fmt"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -137,7 +139,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func configureRoundRobinLb(out *envoy_config_cluster_v3.Cluster, cfg *v1.LoadBalancerConfig_RoundRobin_) {
 	out.LbPolicy = envoy_config_cluster_v3.Cluster_ROUND_ROBIN
 
-	slowStartConfig := toSlowStartConfig(cfg.RoundRobin.GetSlowStartConfig())
+	slowStartConfig := toSlowStartConfig(out, cfg.RoundRobin.GetSlowStartConfig())
 	if slowStartConfig != nil {
 		out.LbConfig = &envoy_config_cluster_v3.Cluster_RoundRobinLbConfig_{
 			RoundRobinLbConfig: &envoy_config_cluster_v3.Cluster_RoundRobinLbConfig{
@@ -156,7 +158,7 @@ func configureLeastRequestLb(out *envoy_config_cluster_v3.Cluster, cfg *v1.LoadB
 		}
 	}
 
-	slowStartConfig := toSlowStartConfig(cfg.LeastRequest.GetSlowStartConfig())
+	slowStartConfig := toSlowStartConfig(out, cfg.LeastRequest.GetSlowStartConfig())
 	if choiceCount != nil || slowStartConfig != nil {
 		out.LbConfig = &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig_{
 			LeastRequestLbConfig: &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig{
@@ -167,7 +169,7 @@ func configureLeastRequestLb(out *envoy_config_cluster_v3.Cluster, cfg *v1.LoadB
 	}
 }
 
-func toSlowStartConfig(cfg *v1.LoadBalancerConfig_SlowStartConfig) *envoy_config_cluster_v3.Cluster_SlowStartConfig {
+func toSlowStartConfig(clusterInfo *envoy_config_cluster_v3.Cluster, cfg *v1.LoadBalancerConfig_SlowStartConfig) *envoy_config_cluster_v3.Cluster_SlowStartConfig {
 	if cfg == nil {
 		return nil
 	}
@@ -175,8 +177,15 @@ func toSlowStartConfig(cfg *v1.LoadBalancerConfig_SlowStartConfig) *envoy_config
 		SlowStartWindow: cfg.GetSlowStartWindow(),
 	}
 	if cfg.GetAggression() != nil {
+		runtimeKeyPrefix := "upstream"
+
+		if clusterInfo.GetName() != "" {
+			runtimeKeyPrefix = fmt.Sprintf("%s.%s", runtimeKeyPrefix, clusterInfo.GetName())
+		}
+
 		out.Aggression = &envoy_config_core_v3.RuntimeDouble{
 			DefaultValue: cfg.GetAggression().GetValue(),
+			RuntimeKey:   fmt.Sprintf("%s.slowStart.aggression", runtimeKeyPrefix),
 		}
 	}
 	if cfg.GetMinWeightPercent() != nil {
