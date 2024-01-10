@@ -559,7 +559,7 @@ spec:
                 type: object
               gloo:
                 properties:
-                  appendIstioXff:
+                  appendIstioXfh:
                     nullable: true
                     type: boolean
                   awsOptions:

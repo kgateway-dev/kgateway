@@ -704,7 +704,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "proxyDebugBindAddr": string
 "logTransformationRequestResponseInfo": .google.protobuf.BoolValue
 "transformationEscapeCharacters": .google.protobuf.BoolValue
-"appendIstioXff": .google.protobuf.BoolValue
+"appendIstioXfh": .google.protobuf.BoolValue
 
 ```
 
@@ -727,7 +727,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `proxyDebugBindAddr` | `string` | Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`. |
 | `logTransformationRequestResponseInfo` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When enabled, log the request/response body and headers before and after any transformations are applied. May be useful in the case where many transformations are applied and it is difficult to determine which are causing issues. Defaults to false. |
 | `transformationEscapeCharacters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set escapeCharacters for all TransformationTemplates on all vhosts and routes. This setting can be overridden in individual TransformationTemplates. |
-| `appendIstioXff` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Previously, we added the xff header in case of the istio integration by default However, since there is the enable mtls command now this is not needed anymore However, there might be cases where users rely on that. Defaults to false. |
+| `appendIstioXfh` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Previously, we added the xff header in case of the istio integration by default However, since there is the enable mtls command now this is not needed anymore However, there might be cases where users rely on that. Defaults to true. |
 
 
 
