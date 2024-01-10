@@ -59,7 +59,7 @@ Explore basic GraphQL service discovery with the Pet Store sample application.
    EOF
    ```
 
-3. Optional: Check the unfiltered JSON output for the Pet Store service.
+2. Optional: Check the unfiltered JSON output for the Pet Store service.
    1. Create a route for the service.
       ```sh
       glooctl add route --name default --namespace gloo-system --path-prefix / --dest-name default-petstore-8080 --dest-namespace gloo-system
@@ -74,7 +74,7 @@ Explore basic GraphQL service discovery with the Pet Store sample application.
       {"id":10,"category":{"id":3,"name":"Rabbits"},"name":"Rabbit 1","photoUrls":["url1","url2"],"tags":[{"id":1,"name":"tag3"},{"id":2,"name":"tag4"}],"status":"available"}
       ```
 
-4. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
+3. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
    ```sh
    kubectl get graphqlapis -n gloo-system
    ```
@@ -85,12 +85,12 @@ Explore basic GraphQL service discovery with the Pet Store sample application.
    default-petstore-8080   2m58s
    ```
 
-5. Optional: Check out the generated GraphQL schema. 
+4. Optional: Check out the generated GraphQL schema. 
    ```sh
    kubectl get graphqlapis default-petstore-8080 -o yaml -n gloo-system
    ```
 
-6. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
+5. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
    {{< highlight yaml "hl_lines=12-16" >}}
 cat << EOF | kubectl apply -f -
 apiVersion: gateway.solo.io/v1
