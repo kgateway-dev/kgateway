@@ -5,4 +5,5 @@ changelog:
   description: >-
     Add linters:
       - goimports
+      - exportloopref
     skipCI-docs-build:true
