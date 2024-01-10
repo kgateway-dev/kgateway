@@ -237,7 +237,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 				time.Sleep(retryInterval)
 				continue
 			}
-			if res.StatusCode != 200 {
+			if res.StatusCode != http.StatusOK {
 				errs <- errors.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
 				time.Sleep(retryInterval)
 				continue
