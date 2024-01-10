@@ -4,5 +4,7 @@ changelog:
   resolvesIssue: false
   description: >-
     Add linters:
+      - exportloopref
+      - goimports
       - usestdlibvars
     skipCI-docs-build:true
