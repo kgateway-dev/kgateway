@@ -84,7 +84,8 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 	default:
 		for _, p := range svc.Spec.Ports {
 			if p.Name == proxyPort {
-				svcPort = &p
+				pDurable := p
+				svcPort = &pDurable
 				break
 			}
 		}
