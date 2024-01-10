@@ -78,9 +78,7 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
    2. Verify that the Gloo resource is rejected. You see an error message similar to the following.
       ```noop
       Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.VirtualService failed: 1 error occurred:
-	* Validating *v1.VirtualService failed: validating *v1.VirtualService name:"reject-me"  namespace:"gloo-system": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.does-not-exist } not found
-
-      ]
+	    * Validating *v1.VirtualService failed: validating *v1.VirtualService name:"reject-me"  namespace:"gloo-system": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.does-not-exist } not found
       ```
 
       {{< notice tip >}}
