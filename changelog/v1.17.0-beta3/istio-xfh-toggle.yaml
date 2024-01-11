@@ -3,5 +3,5 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8855
     resolvesIssue: true
     description: >-
-      There are certain situations, where re-writing the X-Forwarded-For header in combination with the istio integration
+      There are certain situations, where re-writing the X-Forwarded-Host header in combination with the istio integration
       might not be neccesary anymore. There is now a toggle to control that behaviour.
