@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5654
+    resolvesIssue: false
+    description: >-
+      Update changelog folder to a full release folder.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
