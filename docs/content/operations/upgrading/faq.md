@@ -69,7 +69,7 @@ The following lists consist of the changes that were initially introduced with t
 
 **New or improved features**:
 
-* **Renewal of HashiCorp Vault tokens**: You can now use the `settings.secretOptions.sources[].vault.aws.leaseIncrement` Helm value to specify the lease increment to use for the HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp vault API. For more information about the Vault integration, see [Securing secrets in HashiCorp Vault using AWS IAM Roles for Service Accounts (IRSA)]({{% versioned_link_path fromRoot="/guides/integrations/vault/aws-irsa-auth/" %}}). 
+* **Renewal of HashiCorp Vault tokens**: You can now use the `settings.secretOptions.sources[].vault.aws.leaseIncrement` Helm value to specify the lease increment to use for the HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp Vault API. For more information about the Vault integration, see [Securing secrets in HashiCorp Vault using AWS IAM Roles for Service Accounts (IRSA)]({{% versioned_link_path fromRoot="/guides/integrations/vault/aws-irsa-auth/" %}}). 
 * **Rotate TLS certificates in stages**: Use the `gateway.certGenJob.rotationDuration` Helm value to configure the duration for Gloo Edge to wait during each stage of the certificate renewal process when mTLS is enabled. For more information, see [Cert Rotation]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/#cert-rotation" %}}). 
 * **Validate Kubernetes secrets on removal**: Fixed an issue in the validation webhook where Kubernetes secrets were not validated on deletions. You can opt out of secret validation by using the `gateway.validation.webhook.skipDeleteValidationResources` Helm value. 
 * **Local rate limiting**: Limit the number of requests to your gateway or upstream services before the requests reach the rate limiting server in your cluster. Local rate limiting can protect your rate limit servers from being overloaded and help optimize their resource utilization. For more information, see [Local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/" %}}). 
@@ -89,7 +89,7 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 **New and updated Helm fields**:
 
-* `settings.secretOptions.sources[].vault.aws.leaseIncrement`: Specify the lease increment to use for HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp vault API.
+* `settings.secretOptions.sources[].vault.aws.leaseIncrement`: Specify the lease increment to use for HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp Vault API.
 * `gatewayproxy.proxyName.disableExtauthSidecar`: Disable the extauth sidecar on a gateway proxy when `global.extensions.extAuth.envoySidecar` is set in a Gloo Edge Enterprise installation. The defaut value is `false`. 
 * `global.extraCustomResources`: Deploy all custom resources during the Gloo Edge installation. The default value is `false` for Gloo Edge Open Source, and `true` in Gloo Edge Enterprise. 
 * `gateway.certGenJob.rotationDuration`: Configure the duration for Gloo Edge to wait during each stage of the certificate renewal process when mTLS is enabled. For more information, see [Cert Rotation]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/#cert-rotation" %}}).
