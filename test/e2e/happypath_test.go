@@ -81,7 +81,7 @@ var _ = Describe("Happy path", func() {
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						EnableRestEds: &wrappers.BoolValue{
-							Value: true,
+							Value: false,
 						},
 					},
 				},
