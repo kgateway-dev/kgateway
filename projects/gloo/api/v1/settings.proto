@@ -719,8 +719,8 @@ message GlooOptions {
     // Previously, we added the xff header in case of the istio integration by default
     // However, since there is the enable mtls command now this is not needed anymore
     // However, there might be cases where users rely on that.
-    // Defaults to false
-    google.protobuf.BoolValue append_istio_xff = 18;
+    // Defaults to true
+    google.protobuf.BoolValue append_istio_xfh = 18;
 }
 
 
