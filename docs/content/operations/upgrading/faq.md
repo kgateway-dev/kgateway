@@ -91,7 +91,7 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 * `settings.secretOptions.sources[].vault.aws.leaseIncrement`: Specify the lease increment to use for HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp vault API.
 * `gatewayproxy.proxyName.disableExtauthSidecar`: Disable the extauth sidecar on a gateway proxy when `global.extensions.extAuth.envoySidecar` is set in a Gloo Edge Enterprise installation. The defaut value is `false`. 
-* `global.extraCustomResources`: Deploys all custom resources during the Gloo Edge installation. The default value is `false` for Gloo Edge Open Source, and `true` in Gloo Edge Enterprise. 
+* `global.extraCustomResources`: Deploy all custom resources during the Gloo Edge installation. The default value is `false` for Gloo Edge Open Source, and `true` in Gloo Edge Enterprise. 
 * `gateway.certGenJob.rotationDuration`: Configure the duration for Gloo Edge to wait during each stage of the certificate renewal process when mTLS is enabled. For more information, see [Cert Rotation]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/#cert-rotation" %}}).
 * `gloo.gateway.certGenJob.forceRotation`: Force the renewal of TLS certificates, even if they are not expired yet.
 * `gateway.rolloutJob.timeout`: Specifiy the timeout to wait for the resource rollout job to complete. The default value is 120s. 
