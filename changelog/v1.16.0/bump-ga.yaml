@@ -3,6 +3,6 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/5654
     resolvesIssue: false
     description: >-
-      Update changelog folder to a full release folder.
+      Update changelog folder to a full release folder for v1.16.0.
       skipCI-kube-tests:true
       skipCI-docs-build:true
