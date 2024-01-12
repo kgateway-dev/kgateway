@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issue: https://github.com/solo-io/gloo/issues/8909
+    resolvesIssue: false
+    description: >-
+      Refactoring sds "main" code into module for reuse by solo-project for building fips container.
+
