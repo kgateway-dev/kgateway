@@ -80,15 +80,17 @@ var _ = Describe("EDS", func() {
 		})
 
 		It("should not warn when REST EDS is configured", func() {
-			// Get envoy logs from gateway-proxy deployment
-			logsCmd := exec.Command("kubectl", "logs", "-n", testHelper.InstallNamespace,
-				"deployment/gateway-proxy")
-			logsOut, err := logsCmd.Output()
-			Expect(err).NotTo(HaveOccurred())
+			Consistently(func(g Gomega) {
+				// Get envoy logs from gateway-proxy deployment
+				logsCmd := exec.Command("kubectl", "logs", "-n", testHelper.InstallNamespace,
+					"deployment/gateway-proxy")
+				logsOut, err := logsCmd.Output()
+				g.Expect(err).NotTo(HaveOccurred())
 
-			// ensure that the logs do not contain any presence of the text:
-			// Didn't find a registered config subscription factory implementation for name: 'envoy.config_subscription.rest'
-			Expect(string(logsOut)).NotTo(ContainSubstring("Didn't find a registered config subscription factory implementation for name: 'envoy.config_subscription.rest'"))
+				// ensure that the logs do not contain any presence of the text:
+				// Didn't find a registered config subscription factory implementation for name: 'envoy.config_subscription.rest'
+				g.Expect(string(logsOut)).NotTo(ContainSubstring("Didn't find a registered config subscription factory implementation for name: 'envoy.config_subscription.rest'"))
+			}, "10s", "1s").Should(Succeed())
 		})
 	})
 })
