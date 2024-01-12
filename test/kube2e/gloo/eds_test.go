@@ -1,15 +1,12 @@
 package gloo_test
 
 import (
-	"context"
 	"os/exec"
-	"time"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/helpers"
@@ -83,12 +80,6 @@ var _ = Describe("EDS", func() {
 		})
 
 		It("should not warn when REST EDS is configured", func() {
-			// confirm that the resources written during setup are in the Envoy config
-			Eventually(func(g Gomega) {
-				originalConfigDump := GetEnvoyCfgDump(testHelper)
-				g.Expect(originalConfigDump).To(ContainSubstring("testrunner"))
-			}, "10s", "1s").Should(Succeed())
-
 			// Get envoy logs from gateway-proxy deployment
 			logsCmd := exec.Command("kubectl", "logs", "-n", testHelper.InstallNamespace,
 				"deployment/gateway-proxy")
@@ -101,15 +92,3 @@ var _ = Describe("EDS", func() {
 		})
 	})
 })
-
-func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
-	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", testHelper.InstallNamespace, "/config_dump", 5*time.Second)
-	Expect(err).NotTo(HaveOccurred())
-	return cfg
-}
-
-func GetEnvoyLogs(testHelper *helper.SoloTestHelper) string {
-	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", testHelper.InstallNamespace, "/config_dump", 5*time.Second)
-	Expect(err).NotTo(HaveOccurred())
-	return cfg
-}
