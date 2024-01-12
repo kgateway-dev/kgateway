@@ -82,7 +82,7 @@ var _ = Describe("EDS", func() {
 			kube2e.UpdateRestEdsSetting(ctx, true, testHelper.InstallNamespace)
 		})
 
-		It("should update Envoy config after modifying resources", func() {
+		It("should not warn when REST EDS is configured", func() {
 			// confirm that the resources written during setup are in the Envoy config
 			Eventually(func(g Gomega) {
 				originalConfigDump := GetEnvoyCfgDump(testHelper)
