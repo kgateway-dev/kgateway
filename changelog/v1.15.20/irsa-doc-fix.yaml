@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    description: >-
+      The IRSA docs did not get merged properly in https://github.com/solo-io/gloo/pull/9029. Updating.
+      skipCI-kube-tests:true

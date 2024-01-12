@@ -221,18 +221,12 @@ If this fails see [Access denied due to identity-based policies – implicit den
 
 ## Gloo Edge
 
-<<<<<<< HEAD
-Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching.
-=======
 Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching. This guide has only been verfied with Vault installed in the same EKS cluster we created in the [AWS section](#aws).
 
->>>>>>> ecdfba773 (Vault renewal with refactor (#9009))
 ### Step 1: Prepare Helm overrides
 
 Override the default settings to use Vault as a source for managing secrets. To allow for IRSA, add the `eks.amazonaws.com/role-arn` annotations, which reference the roles to assume, to the `gloo` and `discovery` service accounts.
 
-<<<<<<< HEAD
-=======
 Note that you must adjust the `pathPrefix` options when you use a custom `kv` secrets engine. The value of `root_key` is `gloo` by default and is the correct value for this example. Update `VAULT_ADDRESS` if appropriate.
 
 >>>>>>> ecdfba773 (Vault renewal with refactor (#9009))
@@ -240,18 +234,6 @@ Note that you must adjust the `pathPrefix` options when you use a custom `kv` se
 export VAULT_ADDRESS=http://vault-internal.vault:8200
 cat <<EOF > helm-overrides.yaml
 settings:
-<<<<<<< HEAD
-	secretOptions:
-		sources:
-		- vault:
-			# set to address for the Vault instance
-			address: http://vault-internal.vault:8200
-			aws:
-				iamServerIdHeader: ${IAM_SERVER_ID_HEADER_VALUE}
-				mountPath: aws
-				region: ${AWS_REGION}
-			pathPrefix: dev
-=======
   secretOptions:
     sources:
       - vault:
@@ -264,7 +246,6 @@ settings:
           # assumes kv store is mounted on 'dev'
           pathPrefix: dev
       - kubernetes: {}
->>>>>>> ecdfba773 (Vault renewal with refactor (#9009))
 gloo:
   serviceAccount:
     extraAnnotations: 
@@ -291,8 +272,6 @@ helm repo update
 helm install gloo gloo/gloo --namespace gloo-system --create-namespace --version $EDGE_VERSION --values helm-overrides.yaml
 ```
 
-<<<<<<< HEAD
-=======
 ## Troubleshooting
 
 ### Access denied due to identity-based policies – implicit denial
@@ -325,7 +304,6 @@ One way to do this is via the console:
 * Done!
 
 
->>>>>>> ecdfba773 (Vault renewal with refactor (#9009))
 ## Summary
 
 Now, Gloo Edge securely accesses Vault secrets using temporary credentials obtained through AWS IAM Roles for Service Accounts (IRSA).
