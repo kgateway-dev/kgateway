@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8968
+    resolvesIssue: false
+    description: >
+      Add kube2e tests against REST EDS behavior.
