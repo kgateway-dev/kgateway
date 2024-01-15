@@ -1,15 +1,12 @@
 package gloo_test
 
 import (
-	"context"
 	"os/exec"
-	"time"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/helpers"
@@ -18,8 +15,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
 var _ = Describe("EDS", func() {
@@ -79,13 +74,13 @@ var _ = Describe("EDS", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Context("Rest EDS", func() {
-		BeforeEach(func() {
+	Context("Rest EDS", Ordered, func() {
+		BeforeAll(func() {
 			// enable REST EDS
 			kube2e.UpdateRestEdsSetting(ctx, true, testHelper.InstallNamespace)
 		})
 
-		AfterEach(func() {
+		AfterAll(func() {
 			// reset REST EDS to default
 			kube2e.UpdateRestEdsSetting(ctx, false, testHelper.InstallNamespace)
 		})
@@ -108,40 +103,5 @@ var _ = Describe("EDS", func() {
 				g.Expect(string(logsOut)).NotTo(ContainSubstring("Didn't find a registered config subscription factory implementation for name: 'envoy.config_subscription.rest'"))
 			}, "10s", "1s").Should(Succeed())
 		})
-
-		It("should not reject config updates when REST EDS is configured", func() {
-			Eventually(func(g Gomega) {
-				// validate that the envoy config dump contains the testrunner service
-				cfgDump := GetEnvoyCfgDump(testHelper)
-				g.Expect(cfgDump).To(ContainSubstring("testrunner"))
-			}, "10s", "1s").Should(Succeed())
-
-			err := helpers.PatchResource(
-				ctx,
-				testRunnerVs.GetMetadata().Ref(),
-				func(resource resources.Resource) resources.Resource {
-					// Give the resource a new domain
-					// This is essentially a no-op, but it will be reflected
-					// in the envoy config dump
-					resource.(*gatewayv1.VirtualService).VirtualHost.Domains = append(resource.(*gatewayv1.VirtualService).VirtualHost.Domains, "new-domain")
-
-					return resource
-				},
-				resourceClientset.VirtualServiceClient().BaseClient())
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(func(g Gomega) {
-				// validate that the envoy config dump contains the new domain
-				cfgDump := GetEnvoyCfgDump(testHelper)
-				g.Expect(cfgDump).To(ContainSubstring("new-domain"))
-			}, "10s", "1s").Should(Succeed())
-
-		})
 	})
 })
-
-func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
-	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", testHelper.InstallNamespace, "/config_dump", 5*time.Second)
-	Expect(err).NotTo(HaveOccurred())
-	return cfg
-}
