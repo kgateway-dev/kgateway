@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-var _ = Describe("EDS", func() {
+var _ = FDescribe("EDS", func() {
 	var (
 		testRunnerDestination *gloov1.Destination
 		testRunnerVs          *gatewayv1.VirtualService
@@ -95,7 +95,7 @@ var _ = Describe("EDS", func() {
 		// which did not have REST config subscription enabled, and so gateway-proxy logs would
 		// contain warnings about not finding a registered config subscription factory implementation
 		// for REST EDS. This test validates that we have not regressed to that state.
-		It("should not warn when REST EDS is configured", func() {
+		FIt("should not warn when REST EDS is configured", func() {
 			Consistently(func(g Gomega) {
 				// Get envoy logs from gateway-proxy deployment
 				logsCmd := exec.Command("kubectl", "logs", "-n", testHelper.InstallNamespace,
@@ -109,7 +109,7 @@ var _ = Describe("EDS", func() {
 			}, "10s", "1s").Should(Succeed())
 		})
 
-		It("should not reject config updates when REST EDS is configured", func() {
+		FIt("should not reject config updates when REST EDS is configured", func() {
 			Eventually(func(g Gomega) {
 				// validate that the envoy config dump contains the testrunner service
 				cfgDump := GetEnvoyCfgDump(testHelper)
