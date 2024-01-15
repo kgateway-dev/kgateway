@@ -263,7 +263,7 @@ If you use Gloo Edge Enterprise, nest these Helm settings within the `gloo` sect
 ### Step 2: Install Gloo using Helm
 
 ```shell
-export EDGE_VERSION=v1.15.3
+export EDGE_VERSION=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
 
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 helm repo update
