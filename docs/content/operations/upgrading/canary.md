@@ -33,9 +33,6 @@ Now you're ready to upgrade. The steps vary depending on your Gloo Edge installa
    ```sh
    export CANARY_VERSION=<version>
    ```
-   {{% notice note %}}
-   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
-   {{% /notice %}}
 
 2. Update and pull the Gloo Edge Helm chart for the canary version.
    {{< tabs >}} 
@@ -122,9 +119,6 @@ In the canary upgrade model for Gloo Edge Federation, you start with an existing
    ```sh
    export CANARY_VERSION=<version>
    ```
-   {{% notice note %}}
-   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
-   {{% /notice %}}
 
 3. Update and pull the Gloo Edge Federation Helm chart for the canary version.
    ```shell
@@ -157,7 +151,7 @@ In the canary upgrade model for Gloo Edge Federation, you start with an existing
 
 8. Check the [Feature changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) for any changes or new capabilities in {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. In your management cluster, [create or modify any federated custom resources]({{< versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" >}}) with these changes to test your canary version of Gloo Edge Federation. Because Gloo Edge Federation scans all federated resources on the management cluster, you might want to reuse the existing federated resources in the `gloo-system` namespace. <!--If applicable, add steps to walk users though updating crs for any breaking changes--> 
    {{% expand "Expand for an example federated virtual service configuration" %}}
-   This example configuration creates a federated virtual service with different features across versions 1.12 and 1.13.<!--IF POSSIBLE UPDATE for something that is new in 1.15 instead-->
+   This example configuration creates a federated virtual service with different features across versions 1.12 and 1.13.<!--IF POSSIBLE UPDATE for something that is new in 1.16 instead-->
    * Creates a shared `gloo-fed` namespace to show that both the existing and canary Gloo Edge Federation instances can watch for changes to a resource in the same namespace.
    * Places the federated virtual service resource in both the `remote1` existing version cluster (1.12) and the `remote2` canary version cluster (1.13).
    * Configures settings such as `numRetries: 10` that are shared across versions.
@@ -228,7 +222,7 @@ status:
             gloo-system:
               state: PLACED
       {{< /highlight >}}
-   1. In the remote clusters, confirm that the federated resources are created. The following commands are based on the previous step's example.<!--If step 8 was updated for 1.15, update this step as well for the 1.15 feature-->
+   1. In the remote clusters, confirm that the federated resources are created. The following commands are based on the previous step's example.<!--If step 8 was updated for 1.16, update this step as well for the 1.16 feature-->
       * In the existing version's remote cluster, verify that the resource is federated with only the existing version's configuration. In the example, the existing 1.12 version has an updated `numRetries: 10`, but no `retryBackOff` section, which is available only in version 1.13 or later.
         {{< highlight yaml "hl_lines=5" >}}
 kubectl get virtualservices -n gloo-system --context remote1 -o yaml
