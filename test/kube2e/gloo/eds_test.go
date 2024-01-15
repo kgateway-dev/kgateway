@@ -76,9 +76,20 @@ var _ = Describe("EDS", func() {
 
 	Context("Rest EDS", func() {
 		BeforeEach(func() {
+			// enable REST EDS
 			kube2e.UpdateRestEdsSetting(ctx, true, testHelper.InstallNamespace)
 		})
 
+		AfterEach(func() {
+			// reset REST EDS to default
+			kube2e.UpdateRestEdsSetting(ctx, false, testHelper.InstallNamespace)
+		})
+
+		// This test is inspired by the issue here: https://github.com/solo-io/gloo/issues/8968
+		// There were some versions of Gloo Edge 1.15.x which depended on versions of envoy-gloo
+		// which did not have REST config subscription enabled, and so gateway-proxy logs would
+		// contain warnings about not finding a registered config subscription factory implementation
+		// for REST EDS. This test validates that we have not regressed to that state.
 		It("should not warn when REST EDS is configured", func() {
 			Consistently(func(g Gomega) {
 				// Get envoy logs from gateway-proxy deployment
