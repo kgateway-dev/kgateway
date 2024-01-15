@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:9e42933853e7de459aecd0ad7057d5bd90018a3a
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.27.2-patch1
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -207,16 +207,7 @@ run-hashicorp-e2e-tests: test
 
 .PHONY: run-kube-e2e-tests
 run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-run-kube-e2e-tests: kube-e2e-test-prep test
-
-.PHONY: kube-e2e-test-prep
-kube-e2e-test-prep:
-	# attempt to uninstall gloo
-	helm uninstall gloo -n gloo-system || true
-	# delete testrunner svc if it exists
-	kubectl delete svc testrunner -n gloo-system || true
-	# delete testrunner pod if it exists
-	kubectl delete pod testrunner -n gloo-system || true
+run-kube-e2e-tests: test
 
 #----------------------------------------------------------------------------------
 # Clean
