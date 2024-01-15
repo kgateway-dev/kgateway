@@ -229,7 +229,6 @@ Override the default settings to use Vault as a source for managing secrets. To 
 
 Note that you must adjust the `pathPrefix` options when you use a custom `kv` secrets engine. The value of `root_key` is `gloo` by default and is the correct value for this example. Update `VAULT_ADDRESS` if appropriate.
 
->>>>>>> ecdfba773 (Vault renewal with refactor (#9009))
 ```shell
 export VAULT_ADDRESS=http://vault-internal.vault:8200
 cat <<EOF > helm-overrides.yaml
