@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Clarify commentary when fetching envoy binaries in run-tests.yaml
+
