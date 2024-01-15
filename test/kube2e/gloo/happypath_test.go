@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/gloo/test/services/envoy"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,27 +33,6 @@ var _ = Describe("Happy path", func() {
 		testClients   services.TestClients
 		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
-
-		testCases = []struct {
-			Title               string
-			RestEdsEnabled      *wrappers.BoolValue
-			TransportApiVersion envoy_config_core_v3.ApiVersion
-		}{
-			{
-				Title: "Rest Eds Enabled",
-				RestEdsEnabled: &wrappers.BoolValue{
-					Value: true,
-				},
-				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
-			},
-			{
-				Title: "Rest Eds Disabled",
-				RestEdsEnabled: &wrappers.BoolValue{
-					Value: false,
-				},
-				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
-			},
-		}
 	)
 
 	BeforeEach(func() {
@@ -71,222 +49,218 @@ var _ = Describe("Happy path", func() {
 		v1helpers.TestUpstreamReachableWithOffset(3, envoyInstance.HttpPort, tu, nil)
 	}
 
-	for _, testCase := range testCases {
+	Describe("kubernetes happy path", func() {
 
-		Describe(fmt.Sprintf("%s: (%s)", testCase.Title, testCase.TransportApiVersion.String()), func() {
+		var (
+			testNamespace  string
+			writeNamespace string
+			cfg            *rest.Config
+			kubeClient     kubernetes.Interface
+			svc            *kubev1.Service
+		)
 
-			Describe("kubernetes happy path", func() {
+		BeforeEach(func() {
+			testNamespace = ""
+			writeNamespace = ""
+			var err error
+			svc = nil
+			cfg, err = kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kubeClient, err = kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+		})
 
-				var (
-					testNamespace  string
-					writeNamespace string
-					cfg            *rest.Config
-					kubeClient     kubernetes.Interface
-					svc            *kubev1.Service
-				)
+		AfterEach(func() {
+			if testNamespace != "" {
+				err := kubeClient.CoreV1().Namespaces().Delete(ctx, testNamespace, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
 
-				BeforeEach(func() {
-					testNamespace = ""
-					writeNamespace = ""
-					var err error
-					svc = nil
-					cfg, err = kubeutils.GetConfig("", "")
-					Expect(err).NotTo(HaveOccurred())
-					kubeClient, err = kubernetes.NewForConfig(cfg)
-					Expect(err).NotTo(HaveOccurred())
-				})
+		prepNamespace := func() {
+			if testNamespace == "" {
+				testNamespace = "gloo-e2e-" + helpers.RandString(8)
+			}
 
-				AfterEach(func() {
-					if testNamespace != "" {
-						err := kubeClient.CoreV1().Namespaces().Delete(ctx, testNamespace, metav1.DeleteOptions{})
-						Expect(err).NotTo(HaveOccurred())
-					}
-				})
+			_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: testNamespace,
+				},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
-				prepNamespace := func() {
-					if testNamespace == "" {
-						testNamespace = "gloo-e2e-" + helpers.RandString(8)
-					}
-
-					_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: testNamespace,
+			svc, err = kubeClient.CoreV1().Services(testNamespace).Create(ctx, &kubev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+					Name:      "headlessservice",
+				},
+				Spec: kubev1.ServiceSpec{
+					Ports: []kubev1.ServicePort{
+						{
+							Name: "foo",
+							Port: int32(tu.Port),
 						},
-					}, metav1.CreateOptions{})
-					Expect(err).NotTo(HaveOccurred())
+					},
+				},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
-					svc, err = kubeClient.CoreV1().Services(testNamespace).Create(ctx, &kubev1.Service{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: testNamespace,
-							Name:      "headlessservice",
-						},
-						Spec: kubev1.ServiceSpec{
-							Ports: []kubev1.ServicePort{
-								{
-									Name: "foo",
-									Port: int32(tu.Port),
-								},
+			_, err = kubeClient.CoreV1().Endpoints(testNamespace).Create(ctx, &kubev1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNamespace,
+					Name:      svc.Name,
+				},
+				Subsets: []kubev1.EndpointSubset{{
+					Addresses: []kubev1.EndpointAddress{{
+						IP:       getNonSpecialIP(envoyInstance),
+						Hostname: "localhost",
+					}},
+					Ports: []kubev1.EndpointPort{{
+						Port: int32(tu.Port),
+					}},
+				}},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		getUpstream := func() (*gloov1.Upstream, error) {
+			l, err := testClients.UpstreamClient.List(writeNamespace, clients.ListOpts{})
+			if err != nil {
+				return nil, err
+			}
+			for _, u := range l {
+				if strings.Contains(u.Metadata.Name, svc.Name) && strings.Contains(u.Metadata.Name, svc.Namespace) {
+					return u, nil
+				}
+			}
+			return nil, fmt.Errorf("not found")
+		}
+
+		Context("specific namespace", func() {
+
+			BeforeEach(func() {
+				prepNamespace()
+				writeNamespace = testNamespace
+				ro := &services.RunOptions{
+					NsToWrite: writeNamespace,
+					NsToWatch: []string{testNamespace},
+					WhatToRun: services.What{
+						DisableGateway: true,
+					},
+					KubeClient: kubeClient,
+					Settings: &gloov1.Settings{
+						Gloo: &gloov1.GlooOptions{
+							EnableRestEds: &wrappers.BoolValue{
+								Value: false,
 							},
 						},
-					}, metav1.CreateOptions{})
-					Expect(err).NotTo(HaveOccurred())
-
-					_, err = kubeClient.CoreV1().Endpoints(testNamespace).Create(ctx, &kubev1.Endpoints{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: testNamespace,
-							Name:      svc.Name,
-						},
-						Subsets: []kubev1.EndpointSubset{{
-							Addresses: []kubev1.EndpointAddress{{
-								IP:       getNonSpecialIP(envoyInstance),
-								Hostname: "localhost",
-							}},
-							Ports: []kubev1.EndpointPort{{
-								Port: int32(tu.Port),
-							}},
-						}},
-					}, metav1.CreateOptions{})
-					Expect(err).NotTo(HaveOccurred())
+					},
 				}
 
-				getUpstream := func() (*gloov1.Upstream, error) {
-					l, err := testClients.UpstreamClient.List(writeNamespace, clients.ListOpts{})
-					if err != nil {
-						return nil, err
-					}
-					for _, u := range l {
-						if strings.Contains(u.Metadata.Name, svc.Name) && strings.Contains(u.Metadata.Name, svc.Namespace) {
-							return u, nil
-						}
-					}
-					return nil, fmt.Errorf("not found")
+				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+				role := testNamespace + "~" + gatewaydefaults.GatewayProxyName
+				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
+				Expect(err).NotTo(HaveOccurred())
+
+				testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return getUpstream()
+				}, "20s", ".5s")
+			})
+
+			It("should discover service", func() {
+				up, err := getUpstream()
+				Expect(err).NotTo(HaveOccurred())
+
+				proxycli := testClients.ProxyClient
+				proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
+				var opts clients.WriteOpts
+				_, err = proxycli.Write(proxy, opts)
+				Expect(err).NotTo(HaveOccurred())
+
+				TestUpstreamReachable()
+			})
+
+			It("should create appropriate config for discovered service", func() {
+				up, err := getUpstream()
+				Expect(err).NotTo(HaveOccurred())
+
+				svc.Annotations = map[string]string{
+					"gloo.solo.io/upstream_config": "{\"initial_stream_window_size\": 2048}",
 				}
+				svc, err = kubeClient.CoreV1().Services(testNamespace).Update(ctx, svc, metav1.UpdateOptions{})
+				Expect(err).NotTo(HaveOccurred())
 
-				Context("specific namespace", func() {
+				proxycli := testClients.ProxyClient
+				proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
+				var opts clients.WriteOpts
+				_, err = proxycli.Write(proxy, opts)
+				Expect(err).NotTo(HaveOccurred())
 
-					BeforeEach(func() {
-						prepNamespace()
-						writeNamespace = testNamespace
-						ro := &services.RunOptions{
-							NsToWrite: writeNamespace,
-							NsToWatch: []string{testNamespace},
-							WhatToRun: services.What{
-								DisableGateway: true,
-							},
-							KubeClient: kubeClient,
-							Settings: &gloov1.Settings{
-								Gloo: &gloov1.GlooOptions{
-									EnableRestEds: testCase.RestEdsEnabled,
-								},
-							},
-						}
+				TestUpstreamReachable()
+				upstream, err := getUpstream()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(int(upstream.GetInitialStreamWindowSize().GetValue())).To(Equal(2048))
+			})
 
-						testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-						role := testNamespace + "~" + gatewaydefaults.GatewayProxyName
-						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
-						Expect(err).NotTo(HaveOccurred())
+			It("correctly routes requests to a service destination", func() {
+				svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
+				svcPort := svc.Spec.Ports[0].Port
+				proxy := getTrivialProxyForService(testNamespace, envoyInstance.HttpPort, svcRef, uint32(svcPort))
 
-						testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-							return getUpstream()
-						}, "20s", ".5s")
-					})
+				_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
 
-					It("should discover service", func() {
-						up, err := getUpstream()
-						Expect(err).NotTo(HaveOccurred())
-
-						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
-						var opts clients.WriteOpts
-						_, err = proxycli.Write(proxy, opts)
-						Expect(err).NotTo(HaveOccurred())
-
-						TestUpstreamReachable()
-					})
-
-					It("should create appropriate config for discovered service", func() {
-						up, err := getUpstream()
-						Expect(err).NotTo(HaveOccurred())
-
-						svc.Annotations = map[string]string{
-							"gloo.solo.io/upstream_config": "{\"initial_stream_window_size\": 2048}",
-						}
-						svc, err = kubeClient.CoreV1().Services(testNamespace).Update(ctx, svc, metav1.UpdateOptions{})
-						Expect(err).NotTo(HaveOccurred())
-
-						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
-						var opts clients.WriteOpts
-						_, err = proxycli.Write(proxy, opts)
-						Expect(err).NotTo(HaveOccurred())
-
-						TestUpstreamReachable()
-						upstream, err := getUpstream()
-						Expect(err).NotTo(HaveOccurred())
-						Expect(int(upstream.GetInitialStreamWindowSize().GetValue())).To(Equal(2048))
-					})
-
-					It("correctly routes requests to a service destination", func() {
-						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
-						svcPort := svc.Spec.Ports[0].Port
-						proxy := getTrivialProxyForService(testNamespace, envoyInstance.HttpPort, svcRef, uint32(svcPort))
-
-						_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
-						Expect(err).NotTo(HaveOccurred())
-
-						TestUpstreamReachable()
-					})
-				})
-
-				Context("all namespaces", func() {
-					BeforeEach(func() {
-						testNamespace = "gloo-e2e-" + helpers.RandString(8)
-						prepNamespace()
-
-						writeNamespace = testNamespace
-						ro := &services.RunOptions{
-							NsToWrite: writeNamespace,
-							NsToWatch: []string{},
-							WhatToRun: services.What{
-								DisableGateway: true,
-							},
-							KubeClient: kubeClient,
-							Settings: &gloov1.Settings{
-								Gloo: &gloov1.GlooOptions{
-									EnableRestEds: testCase.RestEdsEnabled,
-								},
-							},
-						}
-
-						testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-						role := testNamespace + "~" + gatewaydefaults.GatewayProxyName
-						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
-						Expect(err).NotTo(HaveOccurred())
-
-					})
-
-					It("watch all namespaces", func() {
-						testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-							return getUpstream()
-						})
-
-						up, err := getUpstream()
-						Expect(err).NotTo(HaveOccurred())
-
-						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
-						var opts clients.WriteOpts
-						_, err = proxycli.Write(proxy, opts)
-						Expect(err).NotTo(HaveOccurred())
-
-						TestUpstreamReachable()
-					})
-				})
+				TestUpstreamReachable()
 			})
 		})
 
-	}
+		Context("all namespaces", func() {
+			BeforeEach(func() {
+				testNamespace = "gloo-e2e-" + helpers.RandString(8)
+				prepNamespace()
 
+				writeNamespace = testNamespace
+				ro := &services.RunOptions{
+					NsToWrite: writeNamespace,
+					NsToWatch: []string{},
+					WhatToRun: services.What{
+						DisableGateway: true,
+					},
+					KubeClient: kubeClient,
+					Settings: &gloov1.Settings{
+						Gloo: &gloov1.GlooOptions{
+							EnableRestEds: &wrappers.BoolValue{
+								Value: false,
+							},
+						},
+					},
+				}
+
+				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+				role := testNamespace + "~" + gatewaydefaults.GatewayProxyName
+				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
+				Expect(err).NotTo(HaveOccurred())
+
+			})
+
+			It("watch all namespaces", func() {
+				testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return getUpstream()
+				})
+
+				up, err := getUpstream()
+				Expect(err).NotTo(HaveOccurred())
+
+				proxycli := testClients.ProxyClient
+				proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
+				var opts clients.WriteOpts
+				_, err = proxycli.Write(proxy, opts)
+				Expect(err).NotTo(HaveOccurred())
+
+				TestUpstreamReachable()
+			})
+		})
+	})
 })
 
 func getTrivialProxyForUpstream(ns string, bindPort uint32, upstream *core.ResourceRef) *gloov1.Proxy {
