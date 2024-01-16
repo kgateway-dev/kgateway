@@ -65,9 +65,9 @@ func ExecuteCliOut(command *cobra.Command, args string) (string, error) {
 }
 
 func Make(dir, args string) error {
-	make := exec.Command("make", strings.Split(args, " ")...)
-	make.Dir = dir
-	out, err := make.CombinedOutput()
+	makeCmd := exec.Command("make", strings.Split(args, " ")...)
+	makeCmd.Dir = dir
+	out, err := makeCmd.CombinedOutput()
 	if err != nil {
 		return errors.Errorf("make failed with err: %s", out)
 	}

@@ -36,16 +36,16 @@ func PrintKube(crd crd.Crd, ress ...resources.InputResource) error {
 	return nil
 }
 
-func PrintAny(any ...interface{}) {
-	for _, res := range any {
+func PrintAny(anyVals ...interface{}) {
+	for _, res := range anyVals {
 		yam, _ := yaml.Marshal(res)
 		log.Printf("%s", yam)
 	}
 }
 
-func SprintAny(any ...interface{}) string {
+func SprintAny(anyVals ...interface{}) string {
 	var yams []string
-	for _, res := range any {
+	for _, res := range anyVals {
 		yam, _ := yaml.Marshal(res)
 		yams = append(yams, string(yam))
 	}

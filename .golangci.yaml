@@ -18,6 +18,7 @@ linters:
     - exportloopref
     - ginkgolinter
     - goimports
+    - predeclared
     - usestdlibvars
 
 # Settings dedicated to specific linters.
