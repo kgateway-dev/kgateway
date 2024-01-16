@@ -1905,6 +1905,10 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Equal(that interface{
 		return false
 	}
 
+	if strings.Compare(m.GetExtraMetricQueryParameters(), target.GetExtraMetricQueryParameters()) != 0 {
+		return false
+	}
+
 	return true
 }
 

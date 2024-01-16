@@ -2423,6 +2423,10 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Hash(hasher hash.Hash
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetExtraMetricQueryParameters())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

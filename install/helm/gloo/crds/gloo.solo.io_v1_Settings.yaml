@@ -802,6 +802,8 @@ spec:
                         minimum: 0
                         nullable: true
                         type: integer
+                      extraMetricQueryParameters:
+                        type: string
                     type: object
                 type: object
               ratelimit:

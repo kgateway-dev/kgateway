@@ -1106,6 +1106,8 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Clone() proto.Message
 
 	target.DashboardPrefix = m.GetDashboardPrefix()
 
+	target.ExtraMetricQueryParameters = m.GetExtraMetricQueryParameters()
+
 	return target
 }
 
