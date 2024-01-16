@@ -688,6 +688,7 @@ message GlooOptions {
 
     // Whether or not to use rest xds for all EDS by default.
     // Rest XDS, as opposed to grpc, uses http polling rather than streaming
+    // It is strongly recommended that this field be set to false, due to the superior performance of GRPC XDS
     google.protobuf.BoolValue enable_rest_eds = 12;
 
     // The polling interval for the DNS server if upstream failover is configured.

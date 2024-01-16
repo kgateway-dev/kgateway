@@ -745,6 +745,7 @@ type GlooOptions struct {
 	RestXdsBindAddr string `protobuf:"bytes,11,opt,name=rest_xds_bind_addr,json=restXdsBindAddr,proto3" json:"rest_xds_bind_addr,omitempty"`
 	// Whether or not to use rest xds for all EDS by default.
 	// Rest XDS, as opposed to grpc, uses http polling rather than streaming
+	// It is strongly recommended that this field be set to false, due to the superior performance of GRPC XDS
 	EnableRestEds *wrappers.BoolValue `protobuf:"bytes,12,opt,name=enable_rest_eds,json=enableRestEds,proto3" json:"enable_rest_eds,omitempty"`
 	// The polling interval for the DNS server if upstream failover is configured.
 	// If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the
