@@ -125,9 +125,9 @@ func Matcher(m *matchers.Matcher) (string, string, string, string) {
 		builder := bytes.Buffer{}
 		for _, v := range m.GetHeaders() {
 			header := *v
-			builder.WriteString(string(header.GetName()))
+			builder.WriteString(header.GetName())
 			builder.WriteString(":")
-			builder.WriteString(string(header.GetValue()))
+			builder.WriteString(header.GetValue())
 			builder.WriteString("; ")
 		}
 		headers = builder.String()
