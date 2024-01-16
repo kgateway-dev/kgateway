@@ -15,7 +15,7 @@ import (
 )
 
 var _ = Describe("Grpcweb", func() {
-	any, _ := utils.MessageToAny(&envoygrpcweb.GrpcWeb{})
+	anyPb, _ := utils.MessageToAny(&envoygrpcweb.GrpcWeb{})
 	var (
 		initParams     plugins.InitParams
 		expectedFilter = []plugins.StagedHttpFilter{
@@ -23,7 +23,7 @@ var _ = Describe("Grpcweb", func() {
 				HttpFilter: &envoyhttp.HttpFilter{
 					Name: wellknown.GRPCWeb,
 					ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-						TypedConfig: any,
+						TypedConfig: anyPb,
 					},
 				},
 				Stage: plugins.AfterStage(plugins.AuthZStage),

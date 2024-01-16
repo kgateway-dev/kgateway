@@ -93,7 +93,7 @@ type Validator interface {
 }
 
 type GlooValidatorFunc = func(ctx context.Context, proxy *gloov1.Proxy,
-	resource resources.Resource, delete bool,
+	resource resources.Resource, shouldDelete bool,
 ) ([]*gloovalidation.GlooValidationReport, error)
 
 type validator struct {

@@ -18,7 +18,7 @@ const GlooGroup = "gloo.solo.io"
 
 // GlooValidator is used to validate solo.io.gloo resources
 type GlooValidator interface {
-	Validate(ctx context.Context, proxy *gloov1.Proxy, snapshot *gloosnapshot.ApiSnapshot, delete bool) []*GlooValidationReport
+	Validate(ctx context.Context, proxy *gloov1.Proxy, snapshot *gloosnapshot.ApiSnapshot, shouldDelete bool) []*GlooValidationReport
 }
 
 type GlooValidatorConfig struct {
@@ -45,7 +45,7 @@ type GlooValidationReport struct {
 	ResourceReports reporter.ResourceReports
 }
 
-func (gv glooValidator) Validate(ctx context.Context, proxy *gloov1.Proxy, snapshot *gloosnapshot.ApiSnapshot, delete bool) []*GlooValidationReport {
+func (gv glooValidator) Validate(ctx context.Context, proxy *gloov1.Proxy, snapshot *gloosnapshot.ApiSnapshot, shouldDelete bool) []*GlooValidationReport {
 	ctx = contextutils.WithLogger(ctx, "proxy-validator")
 
 	var validationReports []*GlooValidationReport
