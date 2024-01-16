@@ -1163,7 +1163,7 @@ var _ = Describe("Validator", func() {
 	})
 })
 
-func ValidateAccept(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, delete bool) ([]*gloovalidation.GlooValidationReport, error) {
+func ValidateAccept(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	var proxies []*gloov1.Proxy
 	if proxy != nil {
 		proxies = []*gloov1.Proxy{proxy}
@@ -1183,7 +1183,7 @@ func ValidateAccept(ctx context.Context, proxy *gloov1.Proxy, resource resources
 	return validationReports, nil
 }
 
-func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, delete bool) ([]*gloovalidation.GlooValidationReport, error) {
+func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	var proxies []*gloov1.Proxy
 	if proxy != nil {
 		proxies = []*gloov1.Proxy{proxy}
@@ -1204,7 +1204,7 @@ func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.R
 	return validationReports, nil
 }
 
-func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, delete bool) ([]*gloovalidation.GlooValidationReport, error) {
+func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	var proxies []*gloov1.Proxy
 	if proxy != nil {
 		proxies = []*gloov1.Proxy{proxy}
