@@ -88,9 +88,9 @@ func NewAccessLogWithConfig(name string, config proto.Message) (envoyal.AccessLo
 }
 
 func ParseTypedConfig(c typedConfigObject, config proto.Message) error {
-	any := c.GetTypedConfig()
-	if any != nil {
-		return ptypes.UnmarshalAny(any, config)
+	anyPb := c.GetTypedConfig()
+	if anyPb != nil {
+		return ptypes.UnmarshalAny(anyPb, config)
 	}
 	return nil
 }
