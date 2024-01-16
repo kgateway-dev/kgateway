@@ -17,6 +17,7 @@ linters:
     # See: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/.golangci.yaml for a reference
     - ginkgolinter
     - nakedret
+    - predeclared
 
 # Settings dedicated to specific linters.
 linters-settings:
