@@ -75,7 +75,7 @@ func (s *virtualServiceSelector) SelectOrBuildVirtualService(ctx context.Context
 	return s.build(ctx, ref)
 }
 
-func (s *virtualServiceSelector) build(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
+func (s *virtualServiceSelector) build(_ context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
 	virtualService := &gatewayv1.VirtualService{
 		Metadata: &core.Metadata{
 			Namespace: ref.GetNamespace(),

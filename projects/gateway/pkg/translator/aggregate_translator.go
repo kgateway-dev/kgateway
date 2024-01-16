@@ -257,7 +257,7 @@ func (a *AggregateTranslator) computeListenerFromDelegatedGateway(
 	// 5. Process each matchable tcp gateway which creates a tcp impl that by default
 	// knows how to make multiple filter chains
 	matchableTcpGateways.Each(func(tcpGw *v1.MatchableTcpGateway) {
-		a.processMatchableTcpGateway(params, proxyName, gateway, tcpGw, builder)
+		a.processMatchableTcpGateway(params, gateway, tcpGw, builder)
 	})
 
 	// 5. Build the listener from all the accumulated resources
@@ -321,7 +321,6 @@ func (a *AggregateTranslator) processMatchableHttpGateway(
 // For example in hybrid a similar function is called computeMatchedTcpListener
 func (a *AggregateTranslator) processMatchableTcpGateway(
 	params Params,
-	proxyName string,
 	parentGateway *v1.Gateway,
 	matchableTcpGateway *v1.MatchableTcpGateway,
 	builder *aggregateListenerBuilder,

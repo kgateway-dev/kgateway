@@ -998,6 +998,7 @@ func createTestFilteredUpstream(usptreamName, svcName string, tags, instancetags
 	}
 }
 
+//nolint:unparam // lastIndex always receives 100
 func createTestService(address, dc, name, id string, tags []string, port int, lastIndex uint64) *consulapi.CatalogService {
 	return &consulapi.CatalogService{
 		ServiceName: name,
@@ -1010,6 +1011,7 @@ func createTestService(address, dc, name, id string, tags []string, port int, la
 	}
 }
 
+//nolint:unparam // version always receives 100
 func createExpectedEndpoint(name, usname, hostname, ipAddress, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
 	var healthCheckConfig *v1.HealthCheckConfig
 	if hostname != "" {

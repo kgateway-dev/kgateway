@@ -157,7 +157,7 @@ func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.Ap
 	return multiErr.ErrorOrNil()
 }
 
-func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
+func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) {
 	var retryChan <-chan time.Time
 
 	doSync := func() {
@@ -173,7 +173,7 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case <-retryChan:
 			doSync()
 		case <-s.syncNeeded:

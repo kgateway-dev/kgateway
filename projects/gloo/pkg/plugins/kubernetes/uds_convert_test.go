@@ -164,7 +164,7 @@ var _ = Describe("UdsConvert", func() {
 
 			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, upstream *v1.Upstream) (*v1.Upstream, error) {
 				for _, sc := range uc.serviceConverters {
-					if err := sc.ConvertService(context.TODO(), svc, port, upstream); err != nil {
+					if err := sc.ConvertService(ctx, svc, port, upstream); err != nil {
 						return nil, err
 					}
 				}

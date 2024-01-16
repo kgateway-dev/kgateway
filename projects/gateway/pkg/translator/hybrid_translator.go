@@ -208,7 +208,7 @@ func (t *HybridTranslator) computeHybridListenerFromDelegatedGateways(
 		}
 	})
 	matchableTcpGateways.Each(func(tcpGw *v1.MatchableTcpGateway) {
-		matchedListener := t.computeMatchedTcpListener(params, proxyName, gateway, tcpGw)
+		matchedListener := t.computeMatchedTcpListener(params, gateway, tcpGw)
 		if matchedListener != nil {
 			hybridListener.MatchedListeners = append(hybridListener.GetMatchedListeners(), matchedListener)
 		}
@@ -269,7 +269,6 @@ func (t *HybridTranslator) computeMatchedHttpListener(
 // to copy it to more locations.
 func (t *HybridTranslator) computeMatchedTcpListener(
 	params Params,
-	proxyName string,
 	parentGateway *v1.Gateway,
 	matchableTcpGateway *v1.MatchableTcpGateway,
 
