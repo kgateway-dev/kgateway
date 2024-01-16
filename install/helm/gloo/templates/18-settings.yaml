@@ -185,11 +185,6 @@ spec:
 {{- end }}
 {{- end }}
 
-{{- if .Values.settings.observabilityOptions }}
-  observabilityOptions:
-{{ toYaml .Values.settings.observabilityOptions | indent 4}}
-{{- end }}
-
 {{- end }} {{/* if .Values.settings.create  */}}
 {{- end }} {{/* define "settings.settingsSpec" */}}
 
