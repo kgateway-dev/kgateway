@@ -112,7 +112,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 
 	for _, uri := range f.swaggerUrisToTry {
 		url := baseUrl.ResolveReference(&url.URL{Path: uri}).String()
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid url for request")
 		}
@@ -282,7 +282,7 @@ func LoadFromFileOrHTTP(ctx context.Context, url string) ([]byte, error) {
 
 func loadHTTPBytes(ctx context.Context) func(path string) ([]byte, error) {
 	return func(path string) ([]byte, error) {
-		req, err := http.NewRequest("GET", path, nil)
+		req, err := http.NewRequest(http.MethodGet, path, nil)
 		if err != nil {
 			return nil, err
 		}
