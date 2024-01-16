@@ -40,11 +40,11 @@ const (
 // According to gloo
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
 
-	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
+	xdsPort := strconv.Itoa(defaults.GlooXdsPort)
 	// If gloo is in MTLS mode
 	glooMtlsCheck := exec.Command("kubectl", "get", "configmap", envoySidecarConfig, "-n", namespace)
 	if err := glooMtlsCheck.Run(); err == nil {
-		xdsPort = strconv.Itoa(int(defaults.GlooMtlsModeXdsPort))
+		xdsPort = strconv.Itoa(defaults.GlooMtlsModeXdsPort)
 	}
 	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 		"deployment/gloo", xdsPort)
