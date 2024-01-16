@@ -201,9 +201,9 @@ var _ = Describe("HeaderManipulation", func() {
 			requestHeader  = "Request-Header"
 		)
 
-		rtWithOptions := func(append bool) *v1.RouteTable {
+		rtWithOptions := func(shouldAppend bool) *v1.RouteTable {
 			rtName := "append"
-			if !append {
+			if !shouldAppend {
 				rtName = "overwrite"
 			}
 
@@ -213,11 +213,11 @@ var _ = Describe("HeaderManipulation", func() {
 						HeaderOption: &envoycore_sk.HeaderValueOption_Header{
 							Header: &envoycore_sk.HeaderValue{Key: requestHeader, Value: "route-header"},
 						},
-						Append: &wrappers.BoolValue{Value: append},
+						Append: &wrappers.BoolValue{Value: shouldAppend},
 					}},
 					ResponseHeadersToAdd: []*headers.HeaderValueOption{{
 						Header: &headers.HeaderValue{Key: responseHeader, Value: "route-header"},
-						Append: &wrappers.BoolValue{Value: append},
+						Append: &wrappers.BoolValue{Value: shouldAppend},
 					}},
 				},
 			}
@@ -235,9 +235,9 @@ var _ = Describe("HeaderManipulation", func() {
 				Build()
 		}
 
-		vsWithOptions := func(append bool, rtRef []*coreV1.ResourceRef) *v1.VirtualService {
+		vsWithOptions := func(shouldAppend bool, rtRef []*coreV1.ResourceRef) *v1.VirtualService {
 			vsName := "append"
-			if !append {
+			if !shouldAppend {
 				vsName = "overwrite"
 			}
 
@@ -246,11 +246,11 @@ var _ = Describe("HeaderManipulation", func() {
 					HeaderOption: &envoycore_sk.HeaderValueOption_Header{
 						Header: &envoycore_sk.HeaderValue{Key: requestHeader, Value: "vs-header"},
 					},
-					Append: &wrappers.BoolValue{Value: append},
+					Append: &wrappers.BoolValue{Value: shouldAppend},
 				}},
 				ResponseHeadersToAdd: []*headers.HeaderValueOption{{
 					Header: &headers.HeaderValue{Key: responseHeader, Value: "vs-header"},
-					Append: &wrappers.BoolValue{Value: append},
+					Append: &wrappers.BoolValue{Value: shouldAppend},
 				}},
 			}}
 			vsBuilder := helpers.NewVirtualServiceBuilder().
