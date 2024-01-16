@@ -4093,6 +4093,7 @@ spec:
     regexMaxProgramSize: 1024
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
+	appendIstioXfh: true
     proxyDebugBindAddr: "0.0.0.0:9966"
     enableRestEds: false
     disableKubernetesDestinations: false
