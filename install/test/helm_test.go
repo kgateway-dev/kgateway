@@ -3410,14 +3410,14 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(v1.Volume{Name: "workload-certs", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
 					})
 
-					It("can use the sds-ee-fips image", func() {
+					DescribeTable("Uses the correct image for the sds-ee container", func(fipsValue string, expectedImageRepo string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
 								"global.glooMtls.sds.image.registry=my-sds-reg",
 								"global.glooMtls.sds.image.tag=my-sds-tag",
 								"global.glooMtls.sds.image.repository=sds-ee",
-								"global.image.fips=true",
+								"global.image.fips=" + fipsValue,
 							},
 						})
 
@@ -3430,10 +3430,13 @@ spec:
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
 						Expect(sdsContainer.Name).To(Equal("sds"))
-						Expect(sdsContainer.Image).To(Equal("my-sds-reg/sds-ee-fips:my-sds-tag"))
+						Expect(sdsContainer.Image).To(Equal("my-sds-reg/" + expectedImageRepo + ":my-sds-tag"))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(v1.PullIfNotPresent))
 
-					})
+					},
+						Entry("fips is true", "true", "sds-ee-fips"),
+						Entry("fips is false", "false", "sds-ee"),
+					)
 
 					It("adds readConfig annotations", func() {
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-stats"] = "/stats"
