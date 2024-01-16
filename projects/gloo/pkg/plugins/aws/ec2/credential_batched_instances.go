@@ -25,10 +25,8 @@ func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v
 	// we need to make sure we maintain the association between those unique creds and the upstreams that share them
 	// so that when we get the instances associated with the creds, we will know which upstreams have access to those
 	// instances.
-	credGroups, err := getCredGroupsFromUpstreams(upstreamList)
-	if err != nil {
-		return nil, err
-	}
+	credGroups := getCredGroupsFromUpstreams(upstreamList)
+
 	// call the EC2 DescribeInstances once for each set of credentials and apply the output to the credential groups
 	if err := getInstancesForCredentialGroups(ctx, lister, secrets, credGroups); err != nil {
 		return nil, err
@@ -65,7 +63,7 @@ type credentialGroup struct {
 // Credential groups are returned as a map to enforce the "one credentialGroup per unique credential" property that is
 // required in order to realize the benefits of batched AWS API calls.
 // NOTE: assumes that upstreams are EC2 upstreams
-func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) (map[CredentialKey]*credentialGroup, error) {
+func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) map[CredentialKey]*credentialGroup {
 	credGroups := make(map[CredentialKey]*credentialGroup)
 	for _, upstream := range upstreams {
 		cred := NewCredentialSpecFromEc2UpstreamSpec(upstream.GetAwsEc2())
@@ -79,7 +77,7 @@ func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) (map[CredentialKey]*c
 			}
 		}
 	}
-	return credGroups, nil
+	return credGroups
 }
 
 // calls the AWS API and attaches the output to the the provided list of credentialGroups. Modifications include:

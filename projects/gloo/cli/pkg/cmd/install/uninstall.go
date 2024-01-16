@@ -56,7 +56,7 @@ func (u *uninstaller) Uninstall(ctx context.Context, cliArgs *options.HelmUninst
 	return nil
 }
 
-func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUninstall, mode Mode) error {
+func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUninstall, _ Mode) error {
 	namespace := cliArgs.Namespace
 	releaseName := cliArgs.HelmReleaseName
 

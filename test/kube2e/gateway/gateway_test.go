@@ -1697,7 +1697,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 		)
 
-		exposePortOnGwProxyService := func(servicePort corev1.ServicePort) {
+		exposePortOnGwProxyService := func() {
 			gwSvc, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, gatewayProxy, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -1718,7 +1718,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		BeforeEach(func() {
-			exposePortOnGwProxyService(hybridProxyServicePort)
+			exposePortOnGwProxyService()
 
 			// Create a MatchableHttpGateway
 			matchableHttpGateway := &gatewayv1.MatchableHttpGateway{
@@ -1798,7 +1798,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 		)
 
-		exposePortOnGwProxyService := func(servicePort corev1.ServicePort) {
+		exposePortOnGwProxyService := func() {
 			gwSvc, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, gatewayProxy, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -1819,7 +1819,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		BeforeEach(func() {
-			exposePortOnGwProxyService(hybridProxyServicePort)
+			exposePortOnGwProxyService()
 
 			// Create a MatchableHttpGateway
 			matchableHttpGateway := &gatewayv1.MatchableHttpGateway{
