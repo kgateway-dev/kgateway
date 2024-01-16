@@ -32,9 +32,6 @@ Each minor version might add custom resource definitions (CRDs) or otherwise hav
    ```sh
    export NEW_VERSION=<version>
    ```
-   {{% notice note %}}
-   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
-   {{% /notice %}}
 
 3. Check the [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) to see which CRDs are new, deprecated, or removed in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
    1. Delete any removed CRDs. <!--If applicable, add commands to kubectl delete the removed CRDs-->
