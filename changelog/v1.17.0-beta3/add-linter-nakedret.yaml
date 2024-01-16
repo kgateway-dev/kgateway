@@ -4,8 +4,5 @@ changelog:
   resolvesIssue: false
   description: >-
     Add linters:
-      - exportloopref
-      - goimports
       - nakedret
-      - usestdlibvars
     skipCI-docs-build:true
