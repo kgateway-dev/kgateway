@@ -2825,6 +2825,8 @@ type Settings_ObservabilityOptions_GrafanaIntegration struct {
 	DashboardPrefix string `protobuf:"bytes,2,opt,name=dashboard_prefix,json=dashboardPrefix,proto3" json:"dashboard_prefix,omitempty"`
 	// Extra parameters when querying metrics from Grafana dashboards.
 	// This string will be appended to every query for metrics in the definition of all gloo managed dashboards.
+	// It can consist of multiple query parameters separated by a comma.
+	// For example `cluster="some-cluster",gateway_proxy_id="proxy-2"`
 	ExtraMetricQueryParameters string `protobuf:"bytes,3,opt,name=extra_metric_query_parameters,json=extraMetricQueryParameters,proto3" json:"extra_metric_query_parameters,omitempty"`
 }
 

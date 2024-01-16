@@ -519,6 +519,8 @@ message Settings {
 
             // Extra parameters when querying metrics from Grafana dashboards.
             // This string will be appended to every query for metrics in the definition of all gloo managed dashboards.
+            // It can consist of multiple query parameters separated by a comma.
+            // For example `cluster="some-cluster",gateway_proxy_id="proxy-2"`
             string extra_metric_query_parameters = 3;
         }
 
