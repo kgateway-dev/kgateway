@@ -146,7 +146,9 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
 // See https://github.com/fsnotify/fsnotify/pull/252 for more context
-func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error) {
+//
+//nolint:unparam // currently error is always nil but there is a todo to change that
+func readAndVerifyCert(_ context.Context, certFilePath string) ([]byte, error) {
 	var err error
 	var fileBytes []byte
 	var validCerts bool

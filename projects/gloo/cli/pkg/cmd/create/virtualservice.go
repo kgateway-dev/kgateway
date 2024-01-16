@@ -72,7 +72,7 @@ func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 	return cmd
 }
 
-func createVirtualService(opts *options.Options, args []string) error {
+func createVirtualService(opts *options.Options, _ []string) error {
 	vs, err := virtualServiceFromOpts(&opts.Metadata, opts.Create.VirtualService)
 	if err != nil {
 		return err
@@ -124,12 +124,8 @@ func virtualServiceFromOpts(meta *core.Metadata, input options.InputVirtualServi
 		vs.GetVirtualHost().GetOptions().RatelimitBasic = ingressRateLimit
 	}
 
-	return vs, authFromOpts(vs, input)
-}
-
-func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) error {
 	if input.AuthConfig.Name == "" || input.AuthConfig.Namespace == "" {
-		return nil
+		return vs, nil
 	}
 
 	acRef := &core.ResourceRef{
@@ -143,5 +139,5 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		vs.GetVirtualHost().GetOptions().Extauth = &extauthv1.ExtAuthExtension{}
 	}
 	vs.GetVirtualHost().GetOptions().GetExtauth().Spec = &extauthv1.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
-	return nil
+	return vs, nil
 }

@@ -6881,6 +6881,7 @@ func getFieldFromUnstructured(uns *unstructured.Unstructured, fieldPath ...strin
 	return obj
 }
 
+//nolint:unparam // jobNamespace always receives "gloo-system"
 func getJob(testManifest TestManifest, jobNamespace string, jobName string) *jobsv1.Job {
 	jobUns := testManifest.ExpectCustomResource("Job", jobNamespace, jobName)
 	jobObj, err := kuberesource.ConvertUnstructured(jobUns)
@@ -6889,6 +6890,7 @@ func getJob(testManifest TestManifest, jobNamespace string, jobName string) *job
 	return jobObj.(*jobsv1.Job)
 }
 
+//nolint:unparam // jobNamespace always receives "gloo-system"
 func getConfigMap(testManifest TestManifest, namespace string, name string) *v1.ConfigMap {
 	configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, name)
 	configMapObj, err := kuberesource.ConvertUnstructured(configMapUns)
@@ -6972,6 +6974,7 @@ func securityContextFieldsStripeGroupB(securityRoot string, extraArgs ...string)
 	}
 }
 
+//nolint:unparam // kind always receives "Deployment"
 func getContainer(t TestManifest, kind string, resourceName string, containerName string) *v1.Container {
 	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
 		if u.GetKind() == kind && u.GetName() == resourceName {
@@ -7021,6 +7024,7 @@ func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deploy
 	return structuredDeployment
 }
 
+//nolint:unparam // namespace always receives "gloo-system"
 func makeUnstructuredGateway(namespace string, name string, ssl bool) *unstructured.Unstructured {
 	port := "8080"
 	gwName := name

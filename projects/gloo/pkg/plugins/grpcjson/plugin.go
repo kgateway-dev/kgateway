@@ -206,7 +206,7 @@ func translateGlooToEnvoyPrintOptions(options *grpc_json.GrpcJsonTranscoder_Prin
 }
 
 // get the proto descriptor data from a ConfigMap
-func translateConfigMapToProtoBin(ctx context.Context, snap *gloosnapshot.ApiSnapshot, configRef *grpc_json.GrpcJsonTranscoder_DescriptorConfigMap) ([]byte, error) {
+func translateConfigMapToProtoBin(_ context.Context, snap *gloosnapshot.ApiSnapshot, configRef *grpc_json.GrpcJsonTranscoder_DescriptorConfigMap) ([]byte, error) {
 	if configRef.GetConfigMapRef() == nil {
 		return nil, NoConfigMapRefError()
 	}

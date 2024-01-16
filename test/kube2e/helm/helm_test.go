@@ -661,7 +661,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 // CRDs are applied to a cluster when performing a `helm install` operation
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
-func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir string) {
+func upgradeCrds(_ *helper.SoloTestHelper, fromRelease string, crdDir string) {
 	fmt.Printf("Upgrading crds release %s, crdDir %s\n", fromRelease, crdDir)
 	// if we're just upgrading within the same release, no need to reapply crds
 	if fromRelease == "" {

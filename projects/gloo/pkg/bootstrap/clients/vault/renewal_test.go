@@ -69,10 +69,12 @@ var _ = Describe("Vault Token Renewal Logic", func() {
 		}
 	)
 
+	//nolint:unparam // required for signature
 	var getTestWatcher = func(_ *vault.Client, _ *vault.Secret, _ int) (TokenWatcher, error) {
 		return tw, nil
 	}
 
+	//nolint:unparam // required for signature
 	var getErrorWatcher = func(_ *vault.Client, _ *vault.Secret, _ int) (TokenWatcher, error) {
 		return nil, errMock
 	}

@@ -394,6 +394,7 @@ var _ = Describe("Happy path", func() {
 
 })
 
+//nolint:unparam // ns always receives "gloo-system"
 func getTrivialProxyForUpstream(ns string, bindPort uint32, upstream *core.ResourceRef) *gloov1.Proxy {
 	proxy := getTrivialProxy(ns, bindPort)
 	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
