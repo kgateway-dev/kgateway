@@ -107,7 +107,7 @@ func toEnvoyAbort(abort *fault.RouteAbort) (*envoyhttpfault.FaultAbort, error) {
 	}
 	percentage := common.ToEnvoyPercentage(abort.GetPercentage())
 	errorType := &envoyhttpfault.FaultAbort_HttpStatus{
-		HttpStatus: uint32(abort.GetHttpStatus()),
+		HttpStatus: abort.GetHttpStatus(),
 	}
 	return &envoyhttpfault.FaultAbort{
 		Percentage: percentage,
