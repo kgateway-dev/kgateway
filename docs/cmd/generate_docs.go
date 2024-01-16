@@ -98,7 +98,7 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 	return app
 }
 
-func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
+func enterpriseHelmValuesMdFromGithubCmd(_ *options) *cobra.Command {
 	app := &cobra.Command{
 		Use:   "get-enterprise-helm-values",
 		Short: "Get documentation of valid helm values from Gloo Enterprise github",
@@ -443,7 +443,7 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 	return BuildSecurityScanReportGlooE(versionsToScan)
 }
 
-func fetchEnterpriseHelmValues(args []string) error {
+func fetchEnterpriseHelmValues(_ []string) error {
 	ctx := context.Background()
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {

@@ -49,7 +49,7 @@ func RateLimitConfig(opts *editOptions.EditOptions, optionsFunc ...cliutils.Opti
 	return cmd
 }
 
-func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, args []string) error {
+func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, _ []string) error {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
