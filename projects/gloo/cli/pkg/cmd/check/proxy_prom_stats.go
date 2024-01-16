@@ -112,7 +112,7 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 		fmt.Println(errMessage)
 		return err
 	}
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		err := fmt.Errorf(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the "+deploymentName+" deployment")
 		return err
 	}

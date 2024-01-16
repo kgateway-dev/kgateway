@@ -329,7 +329,7 @@ func get(hostname string, port uint32) (*http.Response, error) {
 		path = parts[1]
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/"+path, "localhost", port), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/"+path, "localhost", port), nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	// remove password part if exists
