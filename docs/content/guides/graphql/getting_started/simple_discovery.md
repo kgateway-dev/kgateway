@@ -7,6 +7,11 @@ description: Explore basic GraphQL service discovery with the Pet Store sample a
 Explore basic GraphQL service discovery with the Pet Store sample application.
 
 1. Start by deploying the Pet Store sample application, which you will expose behind a GraphQL server embedded in Envoy.
+
+   {{% notice note %}}
+   The Pet Store sample app does not work properly on machines with an Apple M1 or M2 chip.
+   {{% /notice %}}
+   
    ```sh
    kubectl apply -f - <<EOF
    apiVersion: apps/v1
