@@ -56,7 +56,7 @@ func UnmarshalBytes(data []byte, into proto.Message) error {
 }
 
 func UnmarshalYaml(data []byte, into proto.Message) error {
-	jsn, err := yaml.YAMLToJSON([]byte(data))
+	jsn, err := yaml.YAMLToJSON(data)
 	if err != nil {
 		return err
 	}
