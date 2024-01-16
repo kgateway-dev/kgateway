@@ -283,7 +283,7 @@ func getManifestForInstallation(url string) (string, error) {
 		if err != nil {
 			return err
 		}
-		if response.StatusCode != 200 {
+		if response.StatusCode != http.StatusOK {
 			return eris.Errorf("returned non-200 status code: %v %v", response.StatusCode, response.Status)
 		}
 		return nil

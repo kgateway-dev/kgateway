@@ -517,7 +517,7 @@ func makeReviewRequestFromAdmissionReview(url string, admissionReview AdmissionR
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url+"/validation", bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPost, url+"/validation", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}

@@ -220,7 +220,7 @@ var _ = Describe("Happy path", func() {
 
 			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].Routes[0].Action = &gloov1.Route_DirectResponseAction{
 				DirectResponseAction: &gloov1.DirectResponseAction{
-					Status: 400,
+					Status: http.StatusBadRequest,
 					Body:   "only health checks work on me. sorry!",
 				},
 			}
@@ -232,7 +232,7 @@ var _ = Describe("Happy path", func() {
 				if err != nil {
 					return err
 				}
-				if res.StatusCode != 200 {
+				if res.StatusCode != http.StatusOK {
 					return errors.Errorf("bad status code: %v", res.StatusCode)
 				}
 				return nil
@@ -240,14 +240,14 @@ var _ = Describe("Happy path", func() {
 
 			res, err := http.Post(fmt.Sprintf("http://localhost:%v/healthcheck/fail", envoyInstance.AdminPort), "", nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(res.StatusCode).To(Equal(200))
+			Expect(res.StatusCode).To(Equal(http.StatusOK))
 
 			Eventually(func() error {
 				res, err := http.Get(fmt.Sprintf("http://%s:%d/healthy", "localhost", envoyPort))
 				if err != nil {
 					return err
 				}
-				if res.StatusCode != 503 {
+				if res.StatusCode != http.StatusServiceUnavailable {
 					return errors.Errorf("bad status code: %v", res.StatusCode)
 				}
 				return nil
