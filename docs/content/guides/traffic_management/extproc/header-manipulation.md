@@ -122,7 +122,7 @@ EOF
    |`grpcService`| The configuration of the external processing server that you created earlier.|
    |`grpcService.exProcServerRef.name`| The name of the upstream that was created for the extProc server.|
    |`grpcService.exProcServerRef.namespace`| The namespace of the upstream that was created for the extProc server.|
-   |`filterStage`|Where in the filter chain do you want to apply the external processing.|
+   |`filterStage`|Where in the filter chain you want to apply the external processing.|
    |`failureModeAllow`|Allow the extProc server to continue when an error is detected during external processing. If set to `true`, the extProc server continues. If set to `false`, external processing is stopped and an error is returned to the Envoy proxy. |
    |`allowModeOverride`|Allow the extProc server to override the processing mode settings that you set. Default value is `false`. |
    |`processingMode`|Decide how you want the extProc server to process request and response information. |
