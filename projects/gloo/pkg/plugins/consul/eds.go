@@ -674,14 +674,15 @@ func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[strin
 }
 
 // endpointTags come from a consul catalog service
-func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*core.ResourceRef) {
+func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) []*core.ResourceRef {
+	out := make([]*core.ResourceRef, 0, len(upstreams))
 	for _, us := range upstreams {
 		upstreamTags := us.GetConsul().GetInstanceTags()
 		if shouldAddToUpstream(endpointTags, upstreamTags) {
 			out = append(out, us.GetMetadata().Ref())
 		}
 	}
-	return
+	return out
 }
 
 // are there no upstream tags = return true.
@@ -710,7 +711,7 @@ func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
 	return true
 }
 
-func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
+func getUniqueUpstreamTags(upstreams []*v1.Upstream) []string {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
 		if len(us.GetConsul().GetSubsetTags()) != 0 {
@@ -723,23 +724,25 @@ func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 			}
 		}
 	}
+	tags := make([]string, 0, len(tagMap))
 	for tag := range tagMap {
 		tags = append(tags, tag)
 	}
-	return
+	return tags
 }
 
-func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []string) {
+func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) []string {
 	dcMap := make(map[string]bool)
 	for _, us := range upstreams {
 		for _, dc := range us.GetConsul().GetDataCenters() {
 			dcMap[dc] = true
 		}
 	}
+	dataCenters := make([]string, 0, len(dcMap))
 	for dc := range dcMap {
 		dataCenters = append(dataCenters, dc)
 	}
-	return
+	return dataCenters
 }
 
 type specCollector interface {
