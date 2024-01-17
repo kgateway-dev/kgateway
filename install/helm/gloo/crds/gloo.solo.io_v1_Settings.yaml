@@ -795,11 +795,15 @@ spec:
                     type: object
                   grafanaIntegration:
                     properties:
+                      dashboardPrefix:
+                        type: string
                       defaultDashboardFolderId:
                         maximum: 4294967295
                         minimum: 0
                         nullable: true
                         type: integer
+                      extraMetricQueryParameters:
+                        type: string
                     type: object
                 type: object
               ratelimit:

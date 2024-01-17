@@ -632,12 +632,16 @@ Provides settings related to the observability pod's interactions with grafana
 
 ```yaml
 "defaultDashboardFolderId": .google.protobuf.UInt32Value
+"dashboardPrefix": string
+"extraMetricQueryParameters": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `defaultDashboardFolderId` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Grafana allows dashboards to be added to specific folders by specifying that folder's ID If unset, automatic upstream dashboards are generated in the general folder (folderId: 0). If set, the observability deployment will try to create/move all upstreams without their own folderId to the folder specified here, after verifying that a folder with such an ID exists. Be aware that grafana requires a folders ID, which should not be confused with the similarly-named and more easily accessible folder UID value. If individual upstream dashboards need to be placed specific granafa folders, they can be given their own folder IDs by annotating the upstreams. The annotation key must be 'observability.solo.io/dashboard_folder_id' and the value must be the folder ID. Folder IDs can be retrieved from grafana with a pair of terminal commands: 1. Port forward the grafana deployment to surface its API: kubectl -n gloo-system port-forward deployment/glooe-grafana 3000 2. Request all folder data (after admin:admin is replaced with the correct credentials): curl http://admin:admin@localhost:3000/api/folders. |
+| `dashboardPrefix` | `string` | The prefix of the UIDs and Titles for all dashboards created on grafana. This is restricted to 20 characters. |
+| `extraMetricQueryParameters` | `string` | Extra parameters when querying metrics from Grafana dashboards. This string will be appended to every query for metrics in the definition of all gloo managed dashboards. It can consist of multiple query parameters separated by a comma. For example `cluster="some-cluster",gateway_proxy_id="proxy-2"`. |
 
 
 
