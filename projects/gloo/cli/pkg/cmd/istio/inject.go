@@ -76,7 +76,7 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 }
 
 // Add SDS & istio-proxy sidecars
-func istioInject(args []string, opts *options.Options) error {
+func istioInject(_ []string, opts *options.Options) error {
 	glooNS := opts.Metadata.GetNamespace()
 	istioNS := opts.Istio.Namespace
 	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)

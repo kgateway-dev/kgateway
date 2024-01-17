@@ -43,7 +43,7 @@ func EnableMTLS(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 	return cmd
 }
 
-func istioEnableMTLS(args []string, opts *options.Options) error {
+func istioEnableMTLS(_ []string, opts *options.Options) error {
 	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	up, err := upClient.Read(opts.Metadata.GetNamespace(), opts.Istio.Upstream, clients.ReadOpts{})
 	if err != nil {

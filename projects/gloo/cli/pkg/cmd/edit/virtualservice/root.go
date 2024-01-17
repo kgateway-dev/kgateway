@@ -72,7 +72,7 @@ func addEditVirtualServiceInteractiveFlags(opts *EditVirtualService) error {
 	return nil
 }
 
-func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, args []string) error {
+func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, _ []string) error {
 	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	vs, err := vsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {

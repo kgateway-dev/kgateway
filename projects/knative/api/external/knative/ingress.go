@@ -24,8 +24,8 @@ func (p *Ingress) Equal(that interface{}) bool {
 
 func (p *Ingress) Clone() *Ingress {
 	ing := v1alpha1.Ingress(*p)
-	copy := ing.DeepCopy()
-	newIng := Ingress(*copy)
+	ingCopy := ing.DeepCopy()
+	newIng := Ingress(*ingCopy)
 	return &newIng
 }
 

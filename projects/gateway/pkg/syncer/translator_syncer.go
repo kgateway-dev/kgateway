@@ -306,7 +306,7 @@ func (s *statusSyncer) forceSync() {
 	s.syncNeeded <- struct{}{}
 }
 
-func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
+func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) {
 	var retryChan <-chan time.Time
 
 	doSync := func() {
@@ -322,7 +322,7 @@ func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case <-retryChan:
 			doSync()
 		case <-s.syncNeeded:

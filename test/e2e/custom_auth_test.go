@@ -119,7 +119,7 @@ var _ = Describe("CustomAuth", func() {
 		client := &http.Client{}
 
 		getRequest := func(prefix string) *http.Request {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/%s", "localhost", envoyInstance.HttpPort, prefix), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/%s", "localhost", envoyInstance.HttpPort, prefix), nil)
 			Expect(err).NotTo(HaveOccurred())
 			return req
 		}

@@ -61,7 +61,7 @@ func applyUpstreamConfig(upstreamConfigJson string, performShallowMerge bool, us
 
 	var err error
 	if performShallowMerge {
-		err = shallowMergeUpstreams(&upstreamConfig, us)
+		shallowMergeUpstreams(&upstreamConfig, us)
 	} else {
 		err = deepMergeUpstreams(&upstreamConfig, us)
 	}
@@ -73,14 +73,14 @@ func applyUpstreamConfig(upstreamConfigJson string, performShallowMerge bool, us
 }
 
 // Merges the fields of src into dst.
-func shallowMergeUpstreams(src, dst *v1.Upstream) error {
+func shallowMergeUpstreams(src, dst *v1.Upstream) {
 	if src == nil {
-		return nil
+		return
 	}
 
 	if dst == nil {
 		dst = proto.Clone(src).(*v1.Upstream)
-		return nil
+		return
 	}
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
@@ -97,7 +97,6 @@ func shallowMergeUpstreams(src, dst *v1.Upstream) error {
 			}
 		}
 	}
-	return nil
 }
 
 // Deep merges the fields of src into dst.

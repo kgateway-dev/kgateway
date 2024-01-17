@@ -246,10 +246,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func mutateSni(in *envoy_config_core_v3.TransportSocket, sni string) (*envoy_config_core_v3.TransportSocket, error) {
-	copy := *in
+	transportSocketCopy := *in
 
 	// copy the sni
-	cfg, err := utils.AnyToMessage(copy.GetTypedConfig())
+	cfg, err := utils.AnyToMessage(transportSocketCopy.GetTypedConfig())
 	if err != nil {
 		return nil, err
 	}
@@ -263,9 +263,9 @@ func mutateSni(in *envoy_config_core_v3.TransportSocket, sni string) (*envoy_con
 	if err != nil {
 		return nil, err
 	}
-	copy.ConfigType = &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig}
+	transportSocketCopy.ConfigType = &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig}
 
-	return &copy, nil
+	return &transportSocketCopy, nil
 }
 
 func sniAddr(spec *v1static.UpstreamSpec, in *v1static.Host) string {

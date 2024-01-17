@@ -123,7 +123,7 @@ func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace stri
 	}, nil
 }
 
-func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1alpha1.IngressSpec) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*ssl.SslConfig, error) {
+func routingConfig(_ context.Context, ingresses map[*core.Metadata]knativev1alpha1.IngressSpec) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*ssl.SslConfig, error) {
 
 	var virtualHostsHttp, virtualHostsHttps []*gloov1.VirtualHost
 	var sslConfigs []*ssl.SslConfig
