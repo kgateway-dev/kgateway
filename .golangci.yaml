@@ -18,11 +18,31 @@ linters:
     - exportloopref
     - ginkgolinter
     - goimports
+    - nakedret
     - predeclared
     - usestdlibvars
 
 # Settings dedicated to specific linters.
-linters-settings: {}
+linters-settings:
+  nakedret:
+    # The team consensus is that naked returns hinder the readability of the code.
+    # However, named return values can still be useful as documentation for certain scenarios.
+    # By setting this to 0 in lieu of the default 30, we will effectively allow named return
+    # values as long as they are included in the return statement(s) e.g.
+    # func foo() (a, b int) {
+    #     a = 1
+    #     b = 2
+    #     c := 3
+    #     d := 4
+    #     // These are allowed
+    #     return a, b
+    #     return c, d
+    #     return d, c
+    #     // This is NOT allowed
+    #     return
+    #     // This is allowed but really, really bad. DO NOT do this.
+    #     return b, a
+    max-func-lines: 0
 
 issues:
   # Maximum count of issues with the same text.

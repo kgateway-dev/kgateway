@@ -126,21 +126,19 @@ var _ = Describe("certificateProvider", func() {
 
 })
 
-func createCertificate() (certFile, keyFile string, err error) {
-	err = nil
-	var file *os.File
-	file, err = os.CreateTemp("", "cert")
+func createCertificate() (string, string, error) {
+	file, err := os.CreateTemp("", "cert")
 	if err != nil {
-		return
+		return "", "", err
 	}
-	certFile = file.Name()
+	certFile := file.Name()
 	file, err = os.CreateTemp("", "key")
 	if err != nil {
-		return
+		return "", "", err
 	}
-	keyFile = file.Name()
+	keyFile := file.Name()
 	err = createNewCertificate(certFile, keyFile)
-	return
+	return certFile, keyFile, nil
 }
 
 func createNewCertificate(certFile, keyFile string) error {
