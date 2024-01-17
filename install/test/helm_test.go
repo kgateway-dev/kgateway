@@ -3410,6 +3410,34 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(v1.Volume{Name: "workload-certs", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
 					})
 
+					DescribeTable("Uses the correct image for the sds-ee container", func(fipsValue string, expectedImageRepo string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.glooMtls.sds.image.registry=my-sds-reg",
+								"global.glooMtls.sds.image.tag=my-sds-tag",
+								"global.glooMtls.sds.image.repository=sds-ee",
+								"global.image.fips=" + fipsValue,
+							},
+						})
+
+						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
+						gwpObj, err := kuberesource.ConvertUnstructured(gwpUns)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(gwpObj).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+						gwpDepl := *gwpObj.(*appsv1.Deployment)
+						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(2))
+
+						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
+						Expect(sdsContainer.Name).To(Equal("sds"))
+						Expect(sdsContainer.Image).To(Equal("my-sds-reg/" + expectedImageRepo + ":my-sds-tag"))
+						Expect(sdsContainer.ImagePullPolicy).To(Equal(v1.PullIfNotPresent))
+
+					},
+						Entry("fips is true", "true", "sds-ee-fips"),
+						Entry("fips is false", "false", "sds-ee"),
+					)
+
 					It("adds readConfig annotations", func() {
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-stats"] = "/stats"
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-ready"] = "/ready"
@@ -5044,7 +5072,7 @@ metadata:
 
 					})
 
-					It("supports deploying the fips envoy image", func() {
+					It("supports deploying the fips discovery-ee image", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/discovery-ee-fips:" + version
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -6881,6 +6909,7 @@ func getFieldFromUnstructured(uns *unstructured.Unstructured, fieldPath ...strin
 	return obj
 }
 
+//nolint:unparam // jobNamespace always receives "gloo-system"
 func getJob(testManifest TestManifest, jobNamespace string, jobName string) *jobsv1.Job {
 	jobUns := testManifest.ExpectCustomResource("Job", jobNamespace, jobName)
 	jobObj, err := kuberesource.ConvertUnstructured(jobUns)
@@ -6889,6 +6918,7 @@ func getJob(testManifest TestManifest, jobNamespace string, jobName string) *job
 	return jobObj.(*jobsv1.Job)
 }
 
+//nolint:unparam // jobNamespace always receives "gloo-system"
 func getConfigMap(testManifest TestManifest, namespace string, name string) *v1.ConfigMap {
 	configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, name)
 	configMapObj, err := kuberesource.ConvertUnstructured(configMapUns)
@@ -6972,6 +7002,7 @@ func securityContextFieldsStripeGroupB(securityRoot string, extraArgs ...string)
 	}
 }
 
+//nolint:unparam // kind always receives "Deployment"
 func getContainer(t TestManifest, kind string, resourceName string, containerName string) *v1.Container {
 	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
 		if u.GetKind() == kind && u.GetName() == resourceName {
@@ -7021,6 +7052,7 @@ func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deploy
 	return structuredDeployment
 }
 
+//nolint:unparam // namespace always receives "gloo-system"
 func makeUnstructuredGateway(namespace string, name string, ssl bool) *unstructured.Unstructured {
 	port := "8080"
 	gwName := name

@@ -149,7 +149,7 @@ var _ = Describe("tunneling", func() {
 			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), bytes.NewBuffer(json))
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedResponseStatusCode,
@@ -400,8 +400,8 @@ func isEof(r *bufio.Reader) bool {
 }
 
 func connectProxy(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "CONNECT" {
-		http.Error(w, "not connect", 400)
+	if r.Method != http.MethodConnect {
+		http.Error(w, "not connect", http.StatusBadRequest)
 		return
 	}
 
@@ -428,7 +428,7 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 
 	targetConn, err := net.Dial("tcp", host)
 	if err != nil {
-		http.Error(w, "can't connect", 500)
+		http.Error(w, "can't connect", http.StatusInternalServerError)
 		return
 	}
 	defer targetConn.Close()

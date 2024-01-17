@@ -69,7 +69,7 @@ func getEnvoyLogs(opts *options.Options) error {
 					continue
 				}
 				defer res.Body.Close()
-				if res.StatusCode != 200 {
+				if res.StatusCode != http.StatusOK {
 					errs <- errors.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
 					time.Sleep(time.Millisecond * 250)
 					continue

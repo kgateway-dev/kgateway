@@ -70,7 +70,7 @@ func addEditUpstreamInteractiveFlags(opts *EditUpstream) error {
 	return nil
 }
 
-func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, args []string) error {
+func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, _ []string) error {
 	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	up, err := upClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {

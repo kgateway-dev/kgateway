@@ -84,7 +84,8 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 	default:
 		for _, p := range svc.Spec.Ports {
 			if p.Name == proxyPort {
-				svcPort = &p
+				pDurable := p
+				svcPort = &pDurable
 				break
 			}
 		}
@@ -236,7 +237,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 				time.Sleep(retryInterval)
 				continue
 			}
-			if res.StatusCode != 200 {
+			if res.StatusCode != http.StatusOK {
 				errs <- errors.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
 				time.Sleep(retryInterval)
 				continue

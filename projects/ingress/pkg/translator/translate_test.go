@@ -481,6 +481,7 @@ func getFirstPort(svc *kubev1.Service) int32 {
 	return svc.Spec.Ports[0].Port
 }
 
+//nolint:unparam // namespace always receives "ns"
 func makeIng(name, namespace, ingressClass, host string, svcName string, servicePort intstr.IntOrString) *v1.Ingress {
 	backendPort := networkingv1.ServiceBackendPort{}
 	if servicePort.Type == intstr.Int {

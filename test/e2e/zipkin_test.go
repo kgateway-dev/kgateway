@@ -487,7 +487,7 @@ func startCancellableTracingServer(serverContext context.Context, address string
 
 func createRequestWithTracingEnabled(address string, port uint32) func() (string, error) {
 	return func() (string, error) {
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", address, port), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", address, port), nil)
 		if err != nil {
 			return "", err
 		}

@@ -141,9 +141,9 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	// If static secret is set retrieve the information needed
-	var accessKey, sessionToken, secretKey string
+	var derivedSecret staticSecretDerivation
 	if upstreamSpec.Aws.GetSecretRef() != nil {
-		accessKey, sessionToken, secretKey, err = deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
+		derivedSecret, err = deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
 		if err != nil {
 			return err
 		}
@@ -152,9 +152,9 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	lpe := &AWSLambdaProtocolExtension{
 		Host:                lambdaHostname,
 		Region:              upstreamSpec.Aws.GetRegion(),
-		AccessKey:           accessKey,
-		SecretKey:           secretKey,
-		SessionToken:        sessionToken,
+		AccessKey:           derivedSecret.access,
+		SecretKey:           derivedSecret.secret,
+		SessionToken:        derivedSecret.session,
 		RoleArn:             upstreamSpec.Aws.GetRoleArn(),
 		DisableRoleChaining: upstreamSpec.Aws.GetDisableRoleChaining(),
 	}
@@ -430,35 +430,41 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 
 }
 
+type staticSecretDerivation struct {
+	access, session, secret string
+}
+
 // deriveStaticSecret from ingest if we are using a kubernetes secretref
 // Named returns with the derived string contents or an error due to retrieval or format.
-func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (access, session, secret string, err error) {
+func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (staticSecretDerivation, error) {
 	glooSecret, err := params.Snapshot.Secrets.Find(secretRef.Strings())
 	if err != nil {
 		err = errors.Wrapf(err, "retrieving aws secret")
-		return
+		return staticSecretDerivation{}, err
 	}
 
 	awsSecrets, ok := glooSecret.GetKind().(*v1.Secret_Aws)
 	if !ok {
 		err = errors.Errorf("secret (%s.%s) is not an AWS secret",
 			glooSecret.GetMetadata().GetName(), glooSecret.GetMetadata().GetNamespace())
-		return
+		return staticSecretDerivation{}, err
+	}
+	derived := staticSecretDerivation{
+		access:  awsSecrets.Aws.GetAccessKey(),
+		session: awsSecrets.Aws.GetSessionToken(),
+		secret:  awsSecrets.Aws.GetSecretKey(),
 	}
 	// validate that the secret has field in string format and has an access_key and secret_key
-	access = awsSecrets.Aws.GetAccessKey()
-	secret = awsSecrets.Aws.GetSecretKey()
-	session = awsSecrets.Aws.GetSessionToken()
-	if access == "" || !utf8.Valid([]byte(access)) {
+	if derived.access == "" || !utf8.Valid([]byte(derived.access)) {
 		// err is nil here but this is still safe
 		err = multierror.Append(err, errors.Errorf("access_key is not a valid string"))
 	}
-	if secret == "" || !utf8.Valid([]byte(secret)) {
+	if derived.secret == "" || !utf8.Valid([]byte(derived.secret)) {
 		err = multierror.Append(err, errors.Errorf("secret_key is not a valid string"))
 	}
 	// Session key is optional
-	if session != "" && !utf8.Valid([]byte(session)) {
+	if derived.session != "" && !utf8.Valid([]byte(derived.session)) {
 		err = multierror.Append(err, errors.Errorf("session_key is not a valid string"))
 	}
-	return
+	return derived, err
 }
