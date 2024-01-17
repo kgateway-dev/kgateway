@@ -6,7 +6,7 @@ description: Learn about what external processing is, how it works, and how to e
 
 Envoy offers multiple filters that you can use to manage, monitor, and secure traffic to your apps. Although Envoy is extensible via C++ and WebAssembly modules, it might not be practical to implement these extensions for all of your apps. You might also have very specific requirements for how to process a request or response to allow traffic routing between different types of apps, such as adding specific headers to new and legacy apps. 
 
-With external processing, you can implement an external processing server that can read and modify all aspects of an HTTP request or response, such as headers, body, and trailers giving you the flexibility to apply your requirements to all types of apps without the need to run WebAssembly or other custom scripts.  
+With external processing, you can implement an external processing server that can read and modify all aspects of an HTTP request or response, such as headers, body, and trailers. This gives you the flexibility to apply your requirements to all types of apps, without the need to run WebAssembly or other custom scripts. 
 
 {{% notice note %}}
 External processing is an Enterprise-only feature. 
