@@ -187,15 +187,23 @@ func (ei *Instance) DisablePanicMode() error {
 }
 
 func (ei *Instance) setRuntimeConfiguration(queryParameters string) error {
-	_, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?%s", ei.AdminPort, queryParameters), "", nil)
-	return err
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?%s", ei.AdminPort, queryParameters), "", nil)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
 }
 
 func (ei *Instance) Clean() {
 	if ei == nil {
 		return
 	}
-	http.Post(fmt.Sprintf("http://localhost:%d/quitquitquit", ei.AdminPort), "", nil)
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/quitquitquit", ei.AdminPort), "", nil)
+	if err == nil {
+		resp.Body.Close()
+	}
+
 	if ei.cmd != nil {
 		ei.cmd.Process.Kill()
 		ei.cmd.Wait()

@@ -15,6 +15,7 @@ linters:
     # We are aiming to progressively enable linters.
     # If you see a linter that can be added, please do so.
     # See: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/.golangci.yaml for a reference
+    - bodyclose
     - exportloopref
     - ginkgolinter
     - goimports

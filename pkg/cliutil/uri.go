@@ -36,8 +36,8 @@ func GetResource(uri string) (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
 			return nil, errors.Errorf("http GET returned status %d for resource %s", resp.StatusCode, uri)
 		}
 
