@@ -11,7 +11,7 @@ External processing is an Enterprise-only feature.
 {{% /notice %}}
 
 {{% notice warning %}}
-Envoy's external processing filter is considered a work in progress and has an unknown security posture. Do not use this feature in production environments. 
+Envoy's external processing filter is considered a work in progress and has an unknown security posture. Do not use this feature in production environments. For more information, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter#external-processing).
 {{% /notice %}}
 
 1. Before you begin, install [Gloo Edge Enterprise]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}) in your cluster. 
@@ -128,7 +128,8 @@ EOF
    |`processingMode`|Decide how you want the extProc server to process request and response information. |
    |`processingMode.requestHeaderMode`|Send (`SEND`) or skip sending (`SKIP`) request header information to the extProc server. |
    |`processingMode.responseHeaderMode`|Send (`SEND`) or skip sending (`SKIP`) response header information to the extProc server. |
-   |`processingMode.requestBodyMode` </br>`processingMode.requestBodyMode`|Decide how to provide body information from the request or response to the extProc server. Available settings are <ul><li> `NONE`: Do not send the body. This is the default value. </li><li> `STREAMED`: Stream the body to the extProc server in pieces as they arrive at the proxy. </li><li> `BUFFERED`: Buffer the body in memory and send the entire body at once. If the body exceeds the maximum buffer limit, an error is sent to the downstream service. </li><li> `BUFFERED_PARTIAL`: Buffer the body in memory and send the entire body at once. If the body exceeds the buffer limit, the body content is sent in pieces up to the buffer limit. </li></ul>|
+   |`processingMode.requestBodyMode` </br>`processingMode.responseBodyMode`|Decide how to provide body information from the request or response to the extProc server. Available settings are: <ul><li> `NONE`: Do not send the body. This is the default value. </li><li> `STREAMED`: Stream the body to the extProc server in pieces as they arrive at the proxy. </li><li> `BUFFERED`: Buffer the body in memory and send the entire body at once. If the body exceeds the maximum buffer limit, an error is sent to the downstream service. </li><li> `BUFFERED_PARTIAL`: Buffer the body in memory and send the entire body at once. If the body exceeds the buffer limit, the body content is sent in pieces up to the buffer limit. </li></ul>|
+   |`processingMode.requestTrailerMode` </br>`processingMode.responseTrailerMode`|Send (`SEND`) or skip sending (`SKIP`) request and response trailer information to the extProc server.|
    
 5. Deploy the `httpbin` sample app. 
    {{< tabs >}}
