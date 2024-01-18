@@ -302,7 +302,10 @@ func EventuallyOk(hostname string, port uint32) {
 	// (gloo resyncs once per second)
 	time.Sleep(3 * time.Second)
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(get(hostname, port)).To(matchers.HaveOkResponse())
+		resp, err := get(hostname, port)
+		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		g.Expect(resp).To(matchers.HaveOkResponse())
 	}, "5s", ".1s").Should(Succeed())
 }
 
@@ -311,13 +314,19 @@ func ConsistentlyNotRateLimited(hostname string, port uint32) {
 	EventuallyOk(hostname, port)
 
 	ConsistentlyWithOffset(1, func(g Gomega) {
-		g.Expect(get(hostname, port)).To(matchers.HaveOkResponse())
+		resp, err := get(hostname, port)
+		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		g.Expect(resp).To(matchers.HaveOkResponse())
 	}, "5s", ".1s").Should(Succeed())
 }
 
 func EventuallyRateLimited(hostname string, port uint32) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(get(hostname, port)).To(matchers.HaveStatusCode(http.StatusTooManyRequests))
+		resp, err := get(hostname, port)
+		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		g.Expect(resp).To(matchers.HaveStatusCode(http.StatusTooManyRequests))
 	}, "5s", ".1s").Should(Succeed())
 }
 
