@@ -441,7 +441,10 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 			req.Header.Set(headerName, headerValue)
 		}
 
-		g.Expect(client.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+		resp, err := client.Do(req)
+		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		g.Expect(resp).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: expectedResponse.Status,
 			Body:       expectedResponse.Message,
 		}))

@@ -277,8 +277,12 @@ func (i *VaultInstance) WriteSecret(secret *v1.Secret) error {
 		WithPort(i.port).
 		WithHeader("X-Vault-Token", i.token)
 
-	_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
-	return err
+	resp, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
 }
 
 // getVaultSecretPayload converts a Gloo secret into a string representing the data that will be pushed to Vault

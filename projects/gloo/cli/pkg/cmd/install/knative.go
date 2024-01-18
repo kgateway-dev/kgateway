@@ -274,31 +274,32 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 
 func getManifestForInstallation(url string) (string, error) {
 	var (
-		err      error
-		response *http.Response
+		err          error
+		responseBody []byte
 	)
 
 	err = retry.Do(func() error {
-		response, err = http.Get(url)
-		if err != nil {
-			return err
+		response, tryErr := http.Get(url)
+		if tryErr != nil {
+			return tryErr
 		}
+		defer response.Body.Close()
 		if response.StatusCode != http.StatusOK {
 			return eris.Errorf("returned non-200 status code: %v %v", response.StatusCode, response.Status)
 		}
+
+		responseBody, tryErr = io.ReadAll(response.Body)
+		if tryErr != nil {
+			return tryErr
+		}
+
 		return nil
 	})
 	if err != nil {
 		return "", err
 	}
 
-	raw, err := io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-
-	return removeIstioResources(string(raw))
+	return removeIstioResources(string(responseBody))
 }
 
 func removeIstioResources(manifest string) (string, error) {

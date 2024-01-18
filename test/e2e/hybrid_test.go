@@ -94,6 +94,7 @@ func (gt *GwTester) configureEnvoy(requestMatchers map[string]*v1.Matcher) {
 	Eventually(func(g Gomega) {
 		resp, err := gt.makeARequest(gt.testContext, net.ParseIP("127.0.0.1"), magicServerName)
 		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
 		g.Expect(resp).To(matchers.HaveOkResponse())
 	}, "5s", "0.1s").Should(Succeed())
 }

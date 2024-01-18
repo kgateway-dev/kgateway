@@ -292,7 +292,10 @@ func buildRequestFromOrigin(origin string) func() (*http.Response, error) {
 
 func EventuallyAllowedOriginResponse(request func() (*http.Response, error), envoyInstance *envoy.Instance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(request()).Should(matchers.HaveOkResponse())
+		resp, err := request()
+		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		g.Expect(resp).Should(matchers.HaveOkResponse())
 
 		if validateStatistics {
 			statistics, err := envoyInstance.Statistics()
@@ -305,7 +308,10 @@ func EventuallyAllowedOriginResponse(request func() (*http.Response, error), env
 
 func EventuallyInvalidOriginResponse(request func() (*http.Response, error), envoyInstance *envoy.Instance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(request()).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+		resp, err := request()
+		g.Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		g.Expect(resp).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusForbidden,
 			Body:       "Invalid origin",
 		}))
