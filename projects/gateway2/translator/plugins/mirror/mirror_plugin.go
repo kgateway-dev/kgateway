@@ -56,7 +56,7 @@ func (p *plugin) ApplyRoutePlugin(
 		return nil //TODO https://github.com/solo-io/gloo/pull/8890/files#r1391523183
 	}
 
-	outputRoute.Options.Shadowing = &shadowing.RouteShadowing{
+	outputRoute.GetOptions().Shadowing = &shadowing.RouteShadowing{
 		Upstream: &core.ResourceRef{
 			Name:      *clusterName,
 			Namespace: obj.GetNamespace(),

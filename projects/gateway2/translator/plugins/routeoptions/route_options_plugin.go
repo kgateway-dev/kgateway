@@ -65,10 +65,10 @@ func (p *plugin) ApplyRoutePlugin(
 		return err
 	}
 
-	if routeOption.Spec.Options != nil {
+	if routeOption.Spec.GetOptions() != nil {
 		// set options from RouteOptions resource and clobber any existing options
 		// should be revisited if/when we support merging options from e.g. other HTTPRouteFilters
-		outputRoute.Options = routeOption.Spec.Options
+		outputRoute.Options = routeOption.Spec.GetOptions()
 	}
 	return nil
 }

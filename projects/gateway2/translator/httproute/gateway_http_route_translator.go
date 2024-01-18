@@ -91,7 +91,7 @@ func translateGatewayHTTPRouteRule(
 			}
 		}
 
-		if outputRoute.Action == nil {
+		if outputRoute.GetAction() == nil {
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,

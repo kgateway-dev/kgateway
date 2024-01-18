@@ -48,7 +48,7 @@ func (p *plugin) ApplyRoutePlugin(
 			if config.Path.ReplaceFullPath == nil {
 				return errors.Errorf("UrlRewrite filter supplied with Full Path rewrite type, but no Full Path supplied")
 			}
-			outputRoute.Options.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
+			outputRoute.GetOptions().RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
 				Pattern: &matcherv3.RegexMatcher{
 					Regex: ".*",
 				},
@@ -63,14 +63,14 @@ func (p *plugin) ApplyRoutePlugin(
 			// a regex match and replace instead
 			// Remove this workaround once https://github.com/envoyproxy/envoy/issues/26055 is fixed
 			if routeCtx.Match.Path != nil && routeCtx.Match.Path.Value != nil && *config.Path.ReplacePrefixMatch == "/" {
-				outputRoute.Options.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
+				outputRoute.GetOptions().RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
 					Pattern: &matcherv3.RegexMatcher{
 						Regex: "^" + *routeCtx.Match.Path.Value + `\/*`,
 					},
 					Substitution: "/",
 				}
 			} else {
-				outputRoute.Options.PrefixRewrite = &wrapperspb.StringValue{
+				outputRoute.GetOptions().PrefixRewrite = &wrapperspb.StringValue{
 					Value: *config.Path.ReplacePrefixMatch,
 				}
 			}
