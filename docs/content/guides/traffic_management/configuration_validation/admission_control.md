@@ -40,7 +40,7 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
          xdsBindAddr: 0.0.0.0:9977
        gateway:
          validation:
-           alwaysAcceptResources: false
+           alwaysAccept: false
        kubernetesArtifactSource: {}
        kubernetesConfigSource: {}
        kubernetesSecretSource: {}
@@ -77,8 +77,8 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
 
    2. Verify that the Gloo resource is rejected. You see an error message similar to the following.
       ```noop
-      Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo Edge snapshot: [Route 
-      Error: InvalidMatcherError. Reason: no path specifier provided]
+      Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.VirtualService failed: 1 error occurred:
+	    * Validating *v1.VirtualService failed: validating *v1.VirtualService name:"reject-me"  namespace:"gloo-system": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.does-not-exist } not found
       ```
 
       {{< notice tip >}}
@@ -260,7 +260,8 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 
    Example output if the virtual service does not exist:
    ```
-   virtualservice.gateway.solo.io/default created (server dry run)
+   Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.VirtualService failed: 1 error occurred:
+	* Validating *v1.VirtualService failed: validating *v1.VirtualService name:"default"  namespace:"gloo-system": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.default-petstore-8080 } not found
    ```
 
    </br>
@@ -343,7 +344,7 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 
 ### Send requests to the validation API directly {#validation-api}
 
-Send a curl request to the validation API to test your resource configurations. 
+Send a curl request to the validation API to test your resource configurations. For an overview of the fields that you must include as part of your request, see [Validation API reference](#validation-api-reference). 
 
 {{< notice tip >}}
 If an empty response <code>{}</code> is returned from the validation API, you might need to add or remove a bracket from your request. This response is returned also if the wrong bracket type is used, such as when you used <code>{}</code> instead of <code>[]</code>. 
@@ -502,6 +503,48 @@ The validation API currently assumes that all configuration that is sent to the 
 
    {{% /tab %}}
    {{< /tabs >}}
+
+### Validation API reference {#validation-api-reference}
+
+The Gloo Edge validation API is implemented as a validating admission webhook in Kubernetes with the following sample JSON structure:
+
+```json
+{
+  "request": {
+    "uid": "12345",
+    "kind": {
+      "group": "gateway.solo.io",
+      "version": "v1",
+      "kind": "VirtualService"
+    },
+    "resource": {
+      "group": "",
+      "version": "",
+      "resource": ""
+    },
+    "name": "vs-dry-run",
+    "namespace": "gloo-system",
+    "operation": "CREATE",
+    "userInfo": {
+      "username": "system:serviceaccount:kube-system:my-serviceaccount",
+      "uid": "system:serviceaccount:kube-system:my-serviceaccount"
+    },
+    "object": {
+      // The resource configuration that you want to validate in JSON format.
+    }
+  
+```
+
+|Parameter|Type|Required|Description|
+|--|--|--|--|
+|`request.uid`|String|No|A unique identifier for the validation request. You can use this field to find the validation output for a specific resource more easily.|
+|`request.kind` |Object|Yes|Information about the type of Kubernetes object that is involved in the validation request. The following fields can be defined: <ul><li> `request.kind.group` (string): The API group of the resource that you want to validate, such as `gateway.solo.io`. </li><li>`request.kind.version` (string): The API version of the resource that you want to validate, such as `v1`. </li><li>`request.kind.kind` (string): The kind of resource that you want to validate, such as `VirtualService`. </li></ul> To find a list of supported group, version, and kind combinations, see the `rules` section in the Gloo Edge [validating admission webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml).|
+|`request.resource`|Object|Yes|Information about the resource that is admitted to the webhook. In most cases, the resource defined in `request.kind` and `request.resource` is the same. They might differ only when changes in API versions or variations in resource naming were introduced, or if the resource that you admit belongs to a subresource. If this is the case, you must include the `request.resource` field in your request to the validation API. If `request.kind` and `request.resource` are the same, the `request.resource` section can be omitted. </br></br>  The following fields can be defined: <ul><li> `request.resource.group` (string): The API group of the resource that you admit to the validation API. </li><li>`request.resource.version` (string): The API version of the resource that you want to admit. </li><li>`request.resource.kind` (string): The type of resource that you want to admit. </li></ul> |
+|`request.name`|String|No|The name of the resource that you want to validate.|
+|`request.namespace`|String|No|The namespace where you want to create, update, or delete the resource. |
+|`request.operation`|String|Yes|The operation in Kubernetes that you want to use for your resource. The operation that you can set depends on the resource that you want to validate. You can find supported operations in the `rules` section in the Gloo Edge [validating admission webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml).  |
+|`request.userInfo`|Object|No|Information about the user that sends the validation request. The following fields can be provided: <ul><li>`request.userInfo.username` (string): The name of the user that sends the validation request, such as `my-serviceaccount`. </li><li>`request.userInfo.uid` (string): The unique identifier of the user. </li><li>`request.userInfo.groups` (array of strings): A list of groups that the user belongs to.</li></ul> 
+|`request.object`|Object|Yes|The resource configuration that you want to validate, such as an upstream, gateway, or virtual service, in JSON format. Refer to the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/) for more information about the fields that you can set for each resource.|
 
    
 ## Disable resource validation in Gloo Edge
