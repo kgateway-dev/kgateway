@@ -20,9 +20,9 @@ metadata:
     app: gloo
   name: gateway-proxy
   namespace: gloo-system
-proxyNames:
-- gateway-proxy
 spec:
+  proxyNames:
+  - gateway-proxy
   bindAddress: '::'
   bindPort: 8080
   httpGateway: {}
