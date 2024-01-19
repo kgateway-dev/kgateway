@@ -112,7 +112,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 
 	for _, uri := range f.swaggerUrisToTry {
 		url := baseUrl.ResolveReference(&url.URL{Path: uri}).String()
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid url for request")
 		}
@@ -127,6 +127,7 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 			errs = multierror.Append(errs, errors.Wrapf(err, "could not perform HTTP GET on resolved addr: %v", url))
 			continue
 		}
+		defer res.Body.Close()
 		// might have found a swagger service
 		if res.StatusCode == http.StatusOK {
 			if _, err := RetrieveSwaggerDocFromUrl(ctx, url); err != nil {
@@ -217,7 +218,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromInline(ctx context.Context
 	return f.detectFunctionsFromSpec(ctx, spec, in, updatecb)
 }
 
-func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, swaggerSpec *openapi.Swagger, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
+func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(_ context.Context, swaggerSpec *openapi.Swagger, _ *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
 	var consumesJson bool
 	if len(swaggerSpec.Consumes) == 0 {
 		consumesJson = true
@@ -282,7 +283,7 @@ func LoadFromFileOrHTTP(ctx context.Context, url string) ([]byte, error) {
 
 func loadHTTPBytes(ctx context.Context) func(path string) ([]byte, error) {
 	return func(path string) ([]byte, error) {
-		req, err := http.NewRequest("GET", path, nil)
+		req, err := http.NewRequest(http.MethodGet, path, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -45,7 +45,7 @@ func ExtAuthConfig(opts *editOptions.EditOptions, optionsFunc ...cliutils.Option
 	return cmd
 }
 
-func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, args []string) error {
+func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, _ []string) error {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {

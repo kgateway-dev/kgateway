@@ -65,10 +65,11 @@ func init() {
 	}
 }
 
-func LabelsToFlagString(labelMap map[string]string) (labelString string) {
+func LabelsToFlagString(labelMap map[string]string) string {
+	labelString := ""
 	for k, v := range labelMap {
 		labelString += fmt.Sprintf("%s in %s,", k, v)
 	}
 	labelString = strings.TrimSuffix(labelString, ",")
-	return
+	return labelString
 }

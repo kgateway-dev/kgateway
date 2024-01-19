@@ -149,7 +149,7 @@ func processEnvoyTracingProvider(
 		return processEnvoyOpenTelemetryTracing(snapshot, typed)
 
 	case *tracing.ListenerTracingSettings_OpenCensusConfig:
-		return processEnvoyOpenCensusTracing(snapshot, typed)
+		return processEnvoyOpenCensusTracing(typed)
 
 	default:
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
@@ -272,7 +272,6 @@ func processEnvoyOpenTelemetryTracing(
 }
 
 func processEnvoyOpenCensusTracing(
-	snapshot *v1snap.ApiSnapshot,
 	openCensusTracingSettings *tracing.ListenerTracingSettings_OpenCensusConfig,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	envoyConfig, err := api_conversion.ToEnvoyOpenCensusConfiguration(openCensusTracingSettings.OpenCensusConfig)

@@ -79,14 +79,14 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	kubeFactory := func(namespaces []string) KubePluginSharedFactory {
 		return getInformerFactory(opts.Ctx, p.kube, namespaces)
 	}
-	watcher, err := newEndpointWatcherForUpstreams(kubeFactory, p.kubeCoreCache, writeNamespace, upstreamsToTrack, opts, p.settings)
+	watcher, err := newEndpointWatcherForUpstreams(kubeFactory, p.kubeCoreCache, upstreamsToTrack, opts, p.settings)
 	if err != nil {
 		return nil, nil, err
 	}
 	return watcher.watch(writeNamespace, opts)
 }
 
-func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePluginSharedFactory, kubeCoreCache corecache.KubeCoreCache, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts, settings *v1.Settings) (*edsWatcher, error) {
+func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePluginSharedFactory, kubeCoreCache corecache.KubeCoreCache, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts, settings *v1.Settings) (*edsWatcher, error) {
 	var namespaces []string
 
 	if settingsutil.IsAllNamespacesFromSettings(settings) {

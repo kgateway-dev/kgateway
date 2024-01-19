@@ -485,7 +485,7 @@ var _ = Describe("AWS Lambda", func() {
 		waitForLambdaAndGetBody := func() error {
 			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", envoyInstance.HttpPort, path), bytes.NewBufferString(`"test"`))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", envoyInstance.HttpPort, path), bytes.NewBufferString(`"test"`))
 			Expect(err).NotTo(HaveOccurred())
 			req.Header.Set("Content-Type", "application/octet-stream")
 			req.Host = "test"
