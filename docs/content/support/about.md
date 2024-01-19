@@ -49,11 +49,11 @@ For guidance on what products may be right for you, to request a demo, and to le
 
 ## Support for Istio
 
-Solo Support offers technical assistance for Istio in English for Solo-supported images of Istio only. Support for upstream Istio images is not included. For more information, see [Solo Istio](https://docs.solo.io/gloo-mesh-enterprise/main/reference/version/gloo_mesh_istio/).
+Solo Support offers technical assistance for Istio in English for Solo-supported images of Istio only. Support for upstream Istio images is not included. For more information, see [Solo distribution of Istio](https://docs.solo.io/gloo-mesh-enterprise/main/reference/version/gloo_mesh_istio/).
 
 We are committed to helping you successfully utilize Istio by: 
 
-* Addressing specific questions and concerns related to the installation and maintenance of Solo Istio images.
+* Addressing specific questions and concerns related to the installation and maintenance of Solo distributions of Istio.
 * Assisting with break/fix troubleshooting.
 * Helping resolve errors or failures encountered during installation or use of our products.
 * Identifying and documenting reported bugs, as well as providing workaround solutions when possible.
