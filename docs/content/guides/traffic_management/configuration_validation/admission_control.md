@@ -544,7 +544,7 @@ The Gloo Edge validation API is implemented as a validating admission webhook in
 |`request.namespace`|String|No|The namespace where you want to create, update, or delete the resource. |
 |`request.operation`|String|Yes|The operation in Kubernetes that you want to use for your resource. The operation that you can set depends on the resource that you want to validate. You can find supported operations in the `rules` section in the Gloo Edge [validating admission webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml).  |
 |`request.userInfo`|Object|No|Information about the user that sends the validation request. The following fields can be provided: <ul><li>`request.userInfo.username` (string): The name of the user that sends the validation request, such as `my-serviceaccount`. </li><li>`request.userInfo.uid` (string): The unique identifier of the user. </li><li>`request.userInfo.groups` (array of strings): A list of groups that the user belongs to.</li></ul> 
-|`request.object`|Object|Yes|The resource configuration that you want to validate, such as an upstream, gateway, or virtual service, in JSON format. Refer to the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/}) for more information about the fields that you can set for each resource.|
+|`request.object`|Object|Yes|The resource configuration that you want to validate, such as an upstream, gateway, or virtual service, in JSON format. Refer to the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/) for more information about the fields that you can set for each resource.|
 
    
 ## Disable resource validation in Gloo Edge
