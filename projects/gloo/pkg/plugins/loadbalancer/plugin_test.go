@@ -136,6 +136,42 @@ status: {}
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LEAST_REQUEST))
 			Expect(out.GetLeastRequestLbConfig()).NotTo(BeNil())
+
+			slowStartConfig := out.GetLeastRequestLbConfig().GetSlowStartConfig()
+			err = slowStartConfig.Validate()
+			Expect(err).ToNot(HaveOccurred())
+
+			aggression := slowStartConfig.GetAggression()
+			Expect(aggression).ToNot(BeNil())
+			Expect(aggression.GetRuntimeKey()).To(Equal("upstream.slowStart.aggression"))
+		})
+		It("should set lb policy p2c with slow start config for cluster", func() {
+			out.Name = "testCluster"
+			upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+				Type: &v1.LoadBalancerConfig_LeastRequest_{
+					LeastRequest: &v1.LoadBalancerConfig_LeastRequest{
+						ChoiceCount: 5,
+						SlowStartConfig: &v1.LoadBalancerConfig_SlowStartConfig{
+							SlowStartWindow:  prototime.DurationToProto(time.Minute),
+							Aggression:       &wrappers.DoubleValue{Value: 2},
+							MinWeightPercent: &wrappers.DoubleValue{Value: 20},
+						},
+					},
+				},
+			}
+
+			err := plugin.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LEAST_REQUEST))
+			Expect(out.GetLeastRequestLbConfig()).NotTo(BeNil())
+
+			slowStartConfig := out.GetLeastRequestLbConfig().GetSlowStartConfig()
+			err = slowStartConfig.Validate()
+			Expect(err).ToNot(HaveOccurred())
+
+			aggression := slowStartConfig.GetAggression()
+			Expect(aggression).ToNot(BeNil())
+			Expect(aggression.GetRuntimeKey()).To(Equal("upstream.testCluster.slowStart.aggression"))
 		})
 	})
 
@@ -188,6 +224,14 @@ status: {}
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_ROUND_ROBIN))
 		Expect(out.GetRoundRobinLbConfig()).NotTo(BeNil())
+
+		slowStartConfig := out.GetRoundRobinLbConfig().GetSlowStartConfig()
+		err = slowStartConfig.Validate()
+		Expect(err).ToNot(HaveOccurred())
+
+		aggression := slowStartConfig.GetAggression()
+		Expect(aggression).ToNot(BeNil())
+		Expect(aggression.GetRuntimeKey()).To(Equal("upstream.slowStart.aggression"))
 	})
 
 	It("should set lb policy ring hash - basic config", func() {
