@@ -512,6 +512,16 @@ message Settings {
             // 2. Request all folder data (after admin:admin is replaced with the correct credentials):
             // curl http://admin:admin@localhost:3000/api/folders
             google.protobuf.UInt32Value default_dashboard_folder_id = 1;
+
+            // The prefix of the UIDs and Titles for all dashboards created on grafana.
+            // This is restricted to 20 characters.
+            string dashboard_prefix = 2;
+
+            // Extra parameters when querying metrics from Grafana dashboards.
+            // This string will be appended to every query for metrics in the definition of all gloo managed dashboards.
+            // It can consist of multiple query parameters separated by a comma.
+            // For example `cluster="some-cluster",gateway_proxy_id="proxy-2"`
+            string extra_metric_query_parameters = 3;
         }
 
         // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
