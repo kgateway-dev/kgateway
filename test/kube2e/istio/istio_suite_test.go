@@ -19,8 +19,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/go-utils/testutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
