@@ -15,7 +15,7 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/k8s-utils/testutils/helper"
+	"github.com/solo-io/gloo/test/kube2e/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"

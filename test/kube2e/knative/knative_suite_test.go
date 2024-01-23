@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/k8s-utils/testutils/helper"
+	"github.com/solo-io/gloo/test/kube2e/helper"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
