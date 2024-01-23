@@ -32,13 +32,13 @@ The following diagram shows an example for how request header manipulation works
 
 ## ExtProc server considerations
 
-The extProc server is a gRPC interface that must be able to respond to events in the lifecycle of an HTTP request. When the extProc filter is enabled in Gloo Edge and a request or response is received on the gateway, the filter communicates with the extProc server by using bidirectional gRPC streams.
+The ExtProc server is a gRPC interface that must be able to respond to events in the lifecycle of an HTTP request. When the ExtProc filter is enabled in Gloo Edge and a request or response is received on the gateway, the filter communicates with the ExtProc server by using bidirectional gRPC streams.
 
-To implement your own extProc server, make sure that you follow [Envoy's technical specification for an external processor](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#extensions-filters-http-ext-proc-v3-externalprocessor). You can also follow the [Header manipulation example]({{% versioned_link_path fromRoot="/guides/traffic_management/extproc/header-manipulation/" %}}) to try out extProc in Gloo Edge with a sample extProc server.
+To implement your own ExtProc server, make sure that you follow [Envoy's technical specification for an external processor](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#extensions-filters-http-ext-proc-v3-externalprocessor). You can also follow the [Header manipulation example]({{% versioned_link_path fromRoot="/guides/traffic_management/extproc/header-manipulation/" %}}) to try out ExtProc in Gloo Edge with a sample ExtProc server.
 
-## Enable extProc in Gloo Edge
+## Enable ExtProc in Gloo Edge
 
-You can enable extProc for all requests and responses that the gateway processes by using the [Settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/" %}}) custom resource. Alternatively, you can enable extProc for a specific gateway listener, virtual host, or route. 
+You can enable ExtProc for all requests and responses that the gateway processes by using the [Settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/" %}}) custom resource. Alternatively, you can enable ExtProc for a specific gateway listener, virtual host, or route. 
 
 Example configuration to add to the `default` Settings resource: 
 
@@ -56,9 +56,5 @@ extProc:
   processingMode: 
     requestHeaderMode: SEND
     responseHeaderMode: SKIP
-    requestBodyMode: BUFFERED
-    responseBodyMode: NONE
-    requestTrailerMode: SKIP
-    responseTrailerMode: SKIP
 ```
 
