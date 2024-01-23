@@ -33,7 +33,7 @@ type CurlOpts struct {
 	SelfSigned bool
 }
 
-func getTimeouts(timeout ...time.Duration) (currentTimeout time.Duration, pollingInterval time.Duration) {
+func getTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
 	defaultTimeout := time.Second * 20
 	defaultPollingTimeout := time.Second * 5
 	switch len(timeout) {
@@ -55,7 +55,7 @@ func getTimeouts(timeout ...time.Duration) (currentTimeout time.Duration, pollin
 			currentTimeout = defaultTimeout
 		}
 	}
-	return
+	return currentTimeout, pollingInterval
 }
 
 func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
