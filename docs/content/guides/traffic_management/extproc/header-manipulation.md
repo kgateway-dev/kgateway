@@ -1,10 +1,10 @@
 ---
 title: Header manipulation
 weight: 40
-description: Walk through an example for how to manipulate request headers by using an extProc server. 
+description: Walk through an example for how to manipulate request headers by using an ExtProc server. 
 ---
 
-Set up an external processing (extProc) server that manipulates request headers for a sample app.
+Set up an external processing (ExtProc) server that manipulates request headers for a sample app.
 
 {{% notice note %}}
 External processing is an Enterprise-only feature. 
@@ -16,7 +16,7 @@ Envoy's external processing filter is considered a work in progress and has an u
 
 1. Before you begin, install [Gloo Edge Enterprise]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}) in your cluster. 
 
-2. Set up the extProc server. This example uses a prebuilt extProc server that manipulates request and response headers based on instructions that are sent in an `instructions` header. 
+2. Set up the ExtProc server. This example uses a prebuilt ExtProc server that manipulates request and response headers based on instructions that are sent in an `instructions` header. 
    
    {{< tabs >}}
 {{% tab %}}
@@ -72,15 +72,11 @@ EOF
        "header2": "value2"
      },
      "removeHeaders": [ "header3", "header4" ],
-     "setBody": "This is the new body",
-     "setTrailers": {
-       "trailer1": "value1",
-       "trailer2": "value2"
      }
    }
    ```
    
-3. Verify that the extProc server is up and running. 
+3. Verify that the ExtProc server is up and running. 
    ```sh
    kubectl get pods 
    ```
@@ -91,12 +87,12 @@ EOF
    ext-proc-grpc-59d44ddf76-42q2x   1/1     Running   0          24m
    ```
    
-4. Edit the default `Settings` custom resource to enable extProc in Gloo Edge. 
+4. Edit the default `Settings` custom resource to enable ExtProc in Gloo Edge. 
    ```
    kubectl edit settings default -n gloo-system
    ```
    
-   Add the following extProc settings to the `spec` section: 
+   Add the following ExtProc settings to the `spec` section: 
    ```yaml
    extProc: 
      grpcService: 
@@ -111,25 +107,19 @@ EOF
      processingMode: 
        requestHeaderMode: SEND
        responseHeaderMode: SKIP
-       requestBodyMode: BUFFERED
-       responseBodyMode: NONE
-       requestTrailerMode: SKIP
-       responseTrailerMode: SKIP
    ```
    
    |Setting|Description|
    |--|--|
    |`grpcService`| The configuration of the external processing server that you created earlier.|
-   |`grpcService.exProcServerRef.name`| The name of the upstream that was created for the extProc server.|
-   |`grpcService.exProcServerRef.namespace`| The namespace of the upstream that was created for the extProc server.|
+   |`grpcService.exProcServerRef.name`| The name of the upstream that was created for the ExtProc server.|
+   |`grpcService.exProcServerRef.namespace`| The namespace of the upstream that was created for the ExtProc server.|
    |`filterStage`|Where in the filter chain you want to apply the external processing.|
-   |`failureModeAllow`|Allow the extProc server to continue when an error is detected during external processing. If set to `true`, the extProc server continues. If set to `false`, external processing is stopped and an error is returned to the Envoy proxy. |
-   |`allowModeOverride`|Allow the extProc server to override the processing mode settings that you set. Default value is `false`. |
-   |`processingMode`|Decide how you want the extProc server to process request and response information. |
-   |`processingMode.requestHeaderMode`|Send (`SEND`) or skip sending (`SKIP`) request header information to the extProc server. |
-   |`processingMode.responseHeaderMode`|Send (`SEND`) or skip sending (`SKIP`) response header information to the extProc server. |
-   |`processingMode.requestBodyMode` </br>`processingMode.responseBodyMode`|Decide how to provide body information from the request or response to the extProc server. Available settings are: <ul><li> `NONE`: Do not send the body. This is the default value. </li><li> `STREAMED`: Stream the body to the extProc server in pieces as they arrive at the proxy. </li><li> `BUFFERED`: Buffer the body in memory and send the entire body at once. If the body exceeds the maximum buffer limit, an error is sent to the downstream service. </li><li> `BUFFERED_PARTIAL`: Buffer the body in memory and send the entire body at once. If the body exceeds the buffer limit, the body content is sent in pieces up to the buffer limit. </li></ul>|
-   |`processingMode.requestTrailerMode` </br>`processingMode.responseTrailerMode`|Send (`SEND`) or skip sending (`SKIP`) request and response trailer information to the extProc server.|
+   |`failureModeAllow`|Allow the ExtProc server to continue when an error is detected during external processing. If set to `true`, the ExtProc server continues. If set to `false`, external processing is stopped and an error is returned to the Envoy proxy. |
+   |`allowModeOverride`|Allow the ExtProc server to override the processing mode settings that you set. Default value is `false`. |
+   |`processingMode`|Decide how you want the ExtProc server to process request and response information. |
+   |`processingMode.requestHeaderMode`|Send (`SEND`) or skip sending (`SKIP`) request header information to the ExtProc server. |
+   |`processingMode.responseHeaderMode`|Send (`SEND`) or skip sending (`SKIP`) response header information to the ExtProc server. |
    
 5. Deploy the `httpbin` sample app. 
    {{< tabs >}}
@@ -236,7 +226,7 @@ EOF
    }
    ```
 
-9. Send another request to the httpbin app. This time, you pass along instructions for the extProc server in an `instruction` header. In this example, you use the extProc server to add the `header3` header, and to remove `header2`. 
+9. Send another request to the httpbin app. This time, you pass along instructions for the ExtProc server in an `instruction` header. In this example, you use the ExtProc server to add the `header3` header, and to remove `header2`. 
    ```sh
    curl -vik $(glooctl proxy url)/get -H "header1: value1" -H "header2: value2" -H 'instructions: {"addHeaders":{"header3":"value3","header4":"value4"},"removeHeaders":["instructions", "header2"]}'
    ```
@@ -259,12 +249,12 @@ EOF
    }
    ```
    
-10. Edit the `Settings` resource again and set `requestHeaderMode: SKIP`. This setting instructs the extProc filter to not send any request headers to the extProc server. 
+10. Edit the `Settings` resource again and set `requestHeaderMode: SKIP`. This setting instructs the ExtProc filter to not send any request headers to the ExtProc server. 
     ```sh
     kubectl edit settings default -n gloo-system
     ```
     
-11. Send the same request to the httpbin app. Note that this time, `header2` is not removed and `header3` and `header4` are not added to the request, because the request headers are not sent to the extProc server. 
+11. Send the same request to the httpbin app. Note that this time, `header2` is not removed and `header3` and `header4` are not added to the request, because the request headers are not sent to the ExtProc server. 
     ```sh
     curl -vik $(glooctl proxy url)/get -H "header1: value1" -H "header2: value2" -H 'instructions: {"addHeaders":{"header3":"value3","header4":"value4"},"removeHeaders":["instructions", "header2"]}'
     ```
