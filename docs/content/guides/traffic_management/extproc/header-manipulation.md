@@ -63,7 +63,7 @@ EOF
 {{% /tab %}}
    {{< /tabs >}}
 
-   The `instruction` headers must be provided as a JSON string in the following format: 
+   The `instructions` header must be provided as a JSON string in the following format: 
   
    ```json 
    {
