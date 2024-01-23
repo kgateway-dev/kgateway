@@ -11,7 +11,7 @@ External processing is an Enterprise-only feature.
 {{% /notice %}}
 
 {{% notice warning %}}
-Envoy's external processing filter is considered a work in progress and has an unknown security posture. Do not use this feature in production environments. For more information, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter#external-processing).
+Envoy's external processing filter is considered a work in progress and has an unknown security posture. Use caution when using this feature in production environments. For more information, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter#external-processing).
 {{% /notice %}}
 
 1. Before you begin, install [Gloo Edge Enterprise]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}) in your cluster. 
