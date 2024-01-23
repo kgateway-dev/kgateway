@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/9031
+    resolvesIssue: false
+    description: Add missing required runtime key for aggression in slow start config.
