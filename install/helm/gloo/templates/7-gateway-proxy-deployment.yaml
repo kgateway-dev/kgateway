@@ -374,8 +374,6 @@ spec:
         - $(POD_NAMESPACE).svc.cluster.local
         - --configPath
         - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
         - --serviceCluster
         - istio-proxy-prometheus
         - --drainDuration
@@ -386,14 +384,10 @@ spec:
         - --proxyComponentLogLevel=misc:error
         - --connectTimeout
         - 10s
-        - --proxyAdminPort
-        - "15000"
         - --controlPlaneAuthPolicy
         - NONE
         - --dnsRefreshRate
         - 300s
-        - --statusPort
-        - "15021"
         - --trust-domain=cluster.local
         - --controlPlaneBootstrap=false
         env:
@@ -442,16 +436,8 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /healthz/ready
-            port: 15021
-            scheme: HTTP
-          initialDelaySeconds: 3
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
+          - name: DISABLE_ENVOY
+            value: "true"
         volumeMounts:
         - mountPath: /var/run/secrets/istio
           name: istiod-ca-cert
