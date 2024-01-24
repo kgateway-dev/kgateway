@@ -380,7 +380,7 @@ spec:
         - 45s
         - --parentShutdownDuration
         - 1m0s
-        - --proxyLogLevel=warning
+        - --proxyLogLevel={{ $global.glooMtls.istioProxy.logLevel }}
         - --proxyComponentLogLevel=misc:error
         - --connectTimeout
         - 10s
