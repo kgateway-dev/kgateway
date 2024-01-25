@@ -308,9 +308,9 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 		err = v.getErrorsFromGlooValidation(glooReports)
 		if err != nil {
 			//fmt.Printf("SAH - getErrorsFromGlooValidation : %v\n", err)
-			//err = errors.Wrapf(err, failedResourceReports)
+			err = errors.Wrapf(err, failedResourceReports)
 			//printUnwrappedMultiError(err, "SAH - Returned from getErrorsFromGlooValidation")
-			err = multiErrorWrap(err, failedResourceReports)
+			//err = multiErrorWrap(err, failedResourceReports)
 			errs = multierror.Append(errs, err)
 			if !getAllErrors {
 				continue
@@ -335,25 +335,25 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 	return proxies, proxyReports, errs
 }
 
-func multiErrorWrap(err error, s string) error {
-	if err == nil {
-		return nil
-	}
+// func multiErrorWrap(err error, s string) error {
+// 	if err == nil {
+// 		return nil
+// 	}
 
-	var retErrs error
-	if merr, ok := err.(*multierror.Error); ok {
-		for _, err := range merr.WrappedErrors() {
-			errors.Wrapf(err, s)
-			fmt.Println("SAH - wrapped up error: ", err)
-			retErrs = multierror.Append(retErrs, err)
-		}
-	} else {
-		retErrs = errors.Wrapf(err, s)
-	}
+// 	var retErrs error
+// 	if merr, ok := err.(*multierror.Error); ok {
+// 		for _, err := range merr.WrappedErrors() {
+// 			errors.Wrapf(err, s)
+// 			fmt.Println("SAH - wrapped up error: ", err)
+// 			retErrs = multierror.Append(retErrs, err)
+// 		}
+// 	} else {
+// 		retErrs = errors.Wrapf(err, s)
+// 	}
 
-	return retErrs
+// 	return retErrs
 
-}
+// }
 
 // func printUnwrappedMultiError(err error, s string) {
 
@@ -414,141 +414,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	proxies, proxyReports, errs := v.translateProxies(ctx, snapshotClone, opts)
 
-	//printUnwrappedMultiError(errs, "SAH - All validation errors")
-
-	// if merr, ok := errs.(*multierror.Error); ok {
-	// 	errList := merr.WrappedErrors()
-
-	// 	fmt.Println("SAH - Unwrapped errors: ")
-	// 	for _, e := range errList {
-	// 		if merr2, ok := errs.(*multierror.Error); ok {
-	// 			errList2 := merr2.WrappedErrors()
-
-	// 			for _, e2 := range errList2 {
-	// 				fmt.Printf("+++2 deep\n%+v\n+++\n", e2)
-	// 			}
-	// 		} else {
-	// 			fmt.Printf("+++no unwrapping\n%+v\n+++\n", e)
-	// 		}
-	// 	}
-	// } else {
-	// 	fmt.Println("SAH - unable to cast to multierror")
-	// }
-
-	//fmt.Println("SAH - proxyReports: ", proxyReports)
-	//fmt.Println("SAH -- errors: ", errs)
 	// // If we're deleting a secret and run into an error, try to revaldiate
-	okToDeleteSecret := false
+	deleteDespiteErrors := false
 	if errs != nil && opts.Delete && opts.Gvk.Kind == "Secret" {
-		fmt.Println("SAH - revalidating secret delete")
-
-		opts.SkipDelete = true
-		// fmt.Println("Adding back to resource list")
-		// if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
-		// 	return nil, err
-		// }
-
-		snapshotCloneUnmodified, err := v.copySnapshotNonThreadSafe(ctx, opts.DryRun)
-		if err != nil {
-			// allow writes if storage is already broken
-			return nil, nil
-		}
-
-		origProxies, origProxyReports, origErrs := v.translateProxies(ctx, snapshotCloneUnmodified, opts)
-
-		fmt.Println("SAH - compare errors")
-
-		// Check errors
-		var errList []error
-		var errListOrig []error
-
-		if merr, ok := errs.(*multierror.Error); ok {
-			errList = merr.WrappedErrors()
-		} else {
-			errList = []error{errs}
-		}
-
-		if merr, ok := origErrs.(*multierror.Error); ok {
-			errListOrig = merr.WrappedErrors()
-		} else {
-			errListOrig = []error{origErrs}
-		}
-
-		sameErrors := len(errList) == len(errListOrig)
-
-		if sameErrors {
-			origErrMap := make(map[string]bool)
-			for _, e := range errList {
-				fmt.Printf("SAH - origErr: +++\n%s\n+++ \n", e.Error())
-				origErrMap[e.Error()] = true
-			}
-
-			for _, e := range errListOrig {
-				if _, ok := origErrMap[e.Error()]; !ok {
-					fmt.Printf("SAH - error not in origErrMap:\n+++\n%+v\n++++\n", e)
-					sameErrors = false
-					break
-				}
-			}
-		}
-
-		//fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
-		//fmt.Println("SAH -- origErrors-2: ", origErrs)
-		// Compare proxies - move to a function
-		sameProxies := len(origProxies) == len(proxies)
-		if sameProxies {
-			proxyHashes := make(map[string]uint64)
-			///origProxyhashes = make(map[string]uint64)
-			for _, proxy := range proxies {
-				// Need better key, put in function
-				proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
-				proxyHashes[proxyKey] = proxy.MustHash()
-			}
-
-			for _, proxy := range origProxies {
-				proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
-				origHash := proxy.MustHash()
-				fmt.Printf("SAH - proxy %s hash with delete: %d, original hash %d\n", proxyKey, proxyHashes[proxyKey], origHash)
-				if proxyHashes[proxyKey] != origHash {
-					sameProxies = false
-					break
-				}
-			}
-		}
-
-		fmt.Printf("SAH Proxies are the same? %t\n", sameProxies)
-
-		sameReports := len(origProxyReports) == len(proxyReports)
-		if sameReports {
-			proxyReportMap := make(map[string]bool)
-			for _, proxyReport := range proxyReports {
-				proxyReportMap[proxyReport.String()] = true
-			}
-
-			// Check each report against the map
-			for _, proxyReport := range origProxyReports {
-				if _, ok := proxyReportMap[proxyReport.String()]; !ok {
-					sameReports = false
-					//break
-				}
-			}
-		}
-
-		fmt.Printf("SAH Reports are the same? %t\n", sameReports)
-
-		if !sameReports {
-			fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
-			fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
-		}
-		// fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
-		// fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
-
-		// fmt.Printf("SAH - origErrors: %v\n", origErrs)
-		// fmt.Printf("SAH - errors: %v\n", errs)
-
-		if sameProxies && sameErrors && sameReports {
-			okToDeleteSecret = true
-		}
+		deleteDespiteErrors = v.secretDeleteOverride(ctx, proxies, proxyReports, opts, errs)
 	}
 
 	if errs != nil {
@@ -556,7 +425,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
 
-		if okToDeleteSecret {
+		if deleteDespiteErrors {
 			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but deleting secret: %T %v: %v", opts.Resource, ref, errs)
 		} else {
 			contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
@@ -569,7 +438,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", opts.Resource, ref)
-	if !opts.DryRun && !okToDeleteSecret {
+	if !opts.DryRun && !deleteDespiteErrors {
 		utils2.MeasureOne(ctx, mValidConfig)
 	}
 
@@ -589,6 +458,157 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	}
 
 	return reports, nil
+}
+
+func (v *validator) secretDeleteOverride(ctx context.Context, proxies []*gloov1.Proxy, proxyReports ProxyReports, opts *validationOptions, errs error) bool {
+	fmt.Println("SAH - revalidating secret delete")
+
+	deleteSecret := false
+	opts.SkipDelete = true
+	// fmt.Println("Adding back to resource list")
+	// if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
+	// 	return nil, err
+	// }
+
+	snapshotCloneUnmodified, err := v.copySnapshotNonThreadSafe(ctx, opts.DryRun)
+	if err != nil {
+		// allow writes if storage is already broken
+		return false
+	}
+
+	origProxies, origProxyReports, origErrs := v.translateProxies(ctx, snapshotCloneUnmodified, opts)
+
+	sameErrors := compareErrors(origErrs, errs)
+	// Check errors
+
+	fmt.Printf("SAH Errors are the same? %t\n", sameErrors)
+
+	naiveCheck := origErrs.Error() == errs.Error()
+
+	fmt.Printf("SAH -simple error check: %t\n", naiveCheck)
+
+	if !naiveCheck {
+		fmt.Printf("SAH- these don't ==\n")
+		fmt.Printf("SAH - origErrs:---\n%v\n---\n", origErrs)
+		fmt.Printf("SAH - errs:---\n%v\n---\n", errs)
+	}
+
+	//fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
+	//fmt.Println("SAH -- origErrors-2: ", origErrs)
+	// Compare proxies - move to a function
+	sameProxies := compareProxies(origProxies, proxies)
+	fmt.Printf("SAH Proxies are the same? %t\n", sameProxies)
+
+	sameReports := compareReports(origProxyReports, proxyReports)
+
+	fmt.Printf("SAH Reports are the same? %t\n", sameReports)
+
+	if !sameReports {
+		fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
+		fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
+	}
+	// fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
+	// fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
+
+	// fmt.Printf("SAH - origErrors: %v\n", origErrs)
+	// fmt.Printf("SAH - errors: %v\n", errs)
+
+	if sameProxies && sameErrors && sameReports {
+		deleteSecret = true
+	}
+
+	return deleteSecret
+}
+
+func compareErrors(error1, error2 error) bool {
+	var errList []error
+	var errListOrig []error
+
+	if merr, ok := error1.(*multierror.Error); ok {
+		errList = merr.WrappedErrors()
+	} else {
+		errList = []error{error1}
+	}
+
+	if merr, ok := error2.(*multierror.Error); ok {
+		errListOrig = merr.WrappedErrors()
+	} else {
+		errListOrig = []error{error2}
+	}
+
+	sameErrors := len(errList) == len(errListOrig)
+
+	if sameErrors {
+		origErrMap := make(map[string]bool)
+		for _, e := range errList {
+			fmt.Printf("SAH - origErr: +++\n%s\n+++ \n", e.Error())
+			origErrMap[e.Error()] = true
+		}
+
+		for _, e := range errListOrig {
+			if _, ok := origErrMap[e.Error()]; !ok {
+				fmt.Printf("SAH - error not in error1:\n+++\n%+v\n++++\n", e)
+				sameErrors = false
+				break
+			} else {
+				origErrMap[e.Error()] = false
+			}
+		}
+
+		for k, v := range origErrMap {
+			// The fields were set up as true and set to false as they were matched.
+			// Fields that are still true are not in other list
+			if v {
+				fmt.Printf("SAH - error not in error2:\n+++\n%s\n++++\n", k)
+				break
+			}
+		}
+	}
+	return sameErrors
+}
+
+func compareReports(origProxyReports, proxyReports ProxyReports) bool {
+	sameReports := len(origProxyReports) == len(proxyReports)
+	if sameReports {
+		proxyReportMap := make(map[string]bool)
+		for _, proxyReport := range proxyReports {
+			proxyReportMap[proxyReport.String()] = true
+		}
+
+		// Check each report against the map
+		for _, proxyReport := range origProxyReports {
+			if _, ok := proxyReportMap[proxyReport.String()]; !ok {
+				sameReports = false
+				//break
+			}
+		}
+	}
+	return sameReports
+}
+
+func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
+	sameProxies := len(proxy1) == len(proxy2)
+	if sameProxies {
+		proxyHashes := make(map[string]uint64)
+		///origProxyhashes = make(map[string]uint64)
+		for _, proxy := range proxy1 {
+			// Need better key, put in function
+			proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
+			proxyHashes[proxyKey] = proxy.MustHash()
+		}
+
+		for _, proxy := range proxy2 {
+			proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
+			origHash := proxy.MustHash()
+			fmt.Printf("SAH - proxy %s hash with delete: %d, original hash %d\n", proxyKey, proxyHashes[proxyKey], origHash)
+			if proxyHashes[proxyKey] != origHash {
+				sameProxies = false
+				break
+			}
+		}
+	}
+
+	return sameProxies
 }
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
