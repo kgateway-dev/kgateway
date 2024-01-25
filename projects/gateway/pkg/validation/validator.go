@@ -28,7 +28,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	skProtoUtils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -113,6 +112,7 @@ type validationOptions struct {
 	AcquireLock bool
 	DryRun      bool
 	Delete      bool
+	SkipDelete  bool
 	Resource    resources.Resource
 	Gvk         schema.GroupVersionKind
 }
@@ -153,7 +153,7 @@ func (v *validator) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) erro
 			validate = reports.Validate
 		}
 		if err := validate(); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = multierror.Append(errs, err)
 		}
 	}
 
@@ -233,7 +233,7 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 		proxies      []*gloov1.Proxy
 	)
 
-	getAllErrors := true // opts.Delete && opts.Gvk.Kind == "Secret" // We're overriding `delete` so need another way to check
+	getAllErrors := opts.Delete && opts.Gvk.Kind == "Secret" // We're overriding `delete` so need another way to check
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
 	// translate all the proxies
 	for proxyName, gatewayList := range gatewaysByProxy {
@@ -244,12 +244,15 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 		}
 		if err := validate(); err != nil {
 			fmt.Printf("SAH - error translating proxy: %v\n", err)
-			errs = multierr.Append(errs, errors.Wrapf(err, couldNotRenderProxy))
+			//err = errors.Wrapf(err, couldNotRenderProxy)
+			errs = multierror.Append(errs, err)
 
 			if !getAllErrors {
 				continue
 			}
 		}
+
+		//printUnwrappedMultiError(errs, "SAH - After translating proxy")
 
 		// a nil proxy may have been returned if 0 listeners were created
 		if proxy == nil {
@@ -258,67 +261,114 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 
 		proxies = append(proxies, proxy)
 
-		fmt.Println("SAH - v.glooValidator")
+		//fmt.Println("SAH - v.glooValidator")
 		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/validator.go
-		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
+		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, (opts.Delete && !opts.SkipDelete))
 		if err != nil {
-			fmt.Printf("SAH - glooValidator error : %v\n", err)
-			err = errors.Wrapf(err, failedGlooValidation)
-			errs = multierr.Append(errs, err)
+			//fmt.Printf("SAH - glooValidator error : %v\n", err)
+			//err = errors.Wrapf(err, failedGlooValidation)
+			err = multiErrorWrap(err, failedGlooValidation)
+			errs = multierror.Append(errs, err)
 			if !getAllErrors {
 				continue
 			}
+
+			//printUnwrappedMultiError(errs, "SAH - After glooValidator")
 		}
 
 		if len(glooReports) != 1 {
 			// This was likely caused by a development error
 			err := GlooValidationResponseLengthError(glooReports)
-			fmt.Printf("SAH - GlooValidationResponseLengthError error : %v\n", err)
-			errs = multierr.Append(errs, err)
+			//fmt.Printf("SAH - GlooValidationResponseLengthError error : %v\n", err)
+			errs = multierror.Append(errs, err)
 			//continue
 		}
 
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
-			errs = multierr.Append(errs, proxyFailedGlooValidation(err, proxy))
-			fmt.Printf("SAH - proxyReports error : %v\n", err)
+			errs = multierror.Append(errs, proxyFailedGlooValidation(err, proxy))
+			//fmt.Printf("SAH - proxyReports error : %v\n", err)
 			if !getAllErrors {
 				continue
 			}
 		}
 		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
 			for _, warning := range warnings {
-				fmt.Printf("SAH - GetProxyWarning : %v\n", err)
-				errs = multierr.Append(errs, errors.New(warning))
+				//fmt.Printf("SAH - GetProxyWarning : %v\n", err)
+				errs = multierror.Append(errs, errors.New(warning))
 			}
 			if !getAllErrors {
 				continue
 			}
 		}
 
+		//printUnwrappedMultiError(errs, "SAH - After GetProxyWarning")
+
 		err = v.getErrorsFromGlooValidation(glooReports)
 		if err != nil {
-			fmt.Printf("SAH - getErrorsFromGlooValidation : %v\n", err)
-			err = errors.Wrapf(err, failedResourceReports)
-			errs = multierr.Append(errs, err)
+			//fmt.Printf("SAH - getErrorsFromGlooValidation : %v\n", err)
+			//err = errors.Wrapf(err, failedResourceReports)
+			//printUnwrappedMultiError(err, "SAH - Returned from getErrorsFromGlooValidation")
+			err = multiErrorWrap(err, failedResourceReports)
+			errs = multierror.Append(errs, err)
 			if !getAllErrors {
 				continue
 			}
 		}
+
+		//printUnwrappedMultiError(errs, "SAH - After getErrorsFromGlooValidation")
 	}
 
 	extensionReports := v.extensionValidator.Validate(ctx, snapshot)
 	if len(extensionReports) > 0 {
 		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
 			fmt.Printf("SAH - extensionReports errors : %v\n", err)
-			err = errors.Wrapf(err, failedExtensionResourceReports)
-			errs = multierr.Append(errs, err)
+			//err = errors.Wrapf(err, failedExtensionResourceReports)
+			err = multiErrorWrap(err, failedExtensionResourceReports)
+			errs = multierror.Append(errs, err)
 		}
 	}
 
+	//printUnwrappedMultiError(errs, "SAH - Before return from translateProxies")
+
 	return proxies, proxyReports, errs
 }
+
+func multiErrorWrap(err error, s string) error {
+	if err == nil {
+		return nil
+	}
+
+	var retErrs error
+	if merr, ok := err.(*multierror.Error); ok {
+		for _, err := range merr.WrappedErrors() {
+			errors.Wrapf(err, s)
+			fmt.Println("SAH - wrapped up error: ", err)
+			retErrs = multierror.Append(retErrs, err)
+		}
+	} else {
+		retErrs = errors.Wrapf(err, s)
+	}
+
+	return retErrs
+
+}
+
+// func printUnwrappedMultiError(err error, s string) {
+
+// 	if merr, ok := err.(*multierror.Error); ok {
+// 		unwrapped := merr.WrappedErrors()
+
+// 		fmt.Println("SAH - Unwrapped errors: ", s)
+// 		for _, err := range unwrapped {
+// 			fmt.Println("+++\n", err, "\n+++")
+// 		}
+// 	} else {
+// 		fmt.Println(s, "not a multierror")
+// 	}
+
+// }
 
 func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) {
 	fmt.Println("SAH - validateSnapshot")
@@ -364,6 +414,27 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	proxies, proxyReports, errs := v.translateProxies(ctx, snapshotClone, opts)
 
+	//printUnwrappedMultiError(errs, "SAH - All validation errors")
+
+	// if merr, ok := errs.(*multierror.Error); ok {
+	// 	errList := merr.WrappedErrors()
+
+	// 	fmt.Println("SAH - Unwrapped errors: ")
+	// 	for _, e := range errList {
+	// 		if merr2, ok := errs.(*multierror.Error); ok {
+	// 			errList2 := merr2.WrappedErrors()
+
+	// 			for _, e2 := range errList2 {
+	// 				fmt.Printf("+++2 deep\n%+v\n+++\n", e2)
+	// 			}
+	// 		} else {
+	// 			fmt.Printf("+++no unwrapping\n%+v\n+++\n", e)
+	// 		}
+	// 	}
+	// } else {
+	// 	fmt.Println("SAH - unable to cast to multierror")
+	// }
+
 	//fmt.Println("SAH - proxyReports: ", proxyReports)
 	//fmt.Println("SAH -- errors: ", errs)
 	// // If we're deleting a secret and run into an error, try to revaldiate
@@ -371,8 +442,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	if errs != nil && opts.Delete && opts.Gvk.Kind == "Secret" {
 		fmt.Println("SAH - revalidating secret delete")
 
-		opts.Delete = false
-		defer func() { opts.Delete = true }()
+		opts.SkipDelete = true
 		// fmt.Println("Adding back to resource list")
 		// if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
 		// 	return nil, err
@@ -385,6 +455,42 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 
 		origProxies, origProxyReports, origErrs := v.translateProxies(ctx, snapshotCloneUnmodified, opts)
+
+		fmt.Println("SAH - compare errors")
+
+		// Check errors
+		var errList []error
+		var errListOrig []error
+
+		if merr, ok := errs.(*multierror.Error); ok {
+			errList = merr.WrappedErrors()
+		} else {
+			errList = []error{errs}
+		}
+
+		if merr, ok := origErrs.(*multierror.Error); ok {
+			errListOrig = merr.WrappedErrors()
+		} else {
+			errListOrig = []error{origErrs}
+		}
+
+		sameErrors := len(errList) == len(errListOrig)
+
+		if sameErrors {
+			origErrMap := make(map[string]bool)
+			for _, e := range errList {
+				fmt.Printf("SAH - origErr: +++\n%s\n+++ \n", e.Error())
+				origErrMap[e.Error()] = true
+			}
+
+			for _, e := range errListOrig {
+				if _, ok := origErrMap[e.Error()]; !ok {
+					fmt.Printf("SAH - error not in origErrMap:\n+++\n%+v\n++++\n", e)
+					sameErrors = false
+					break
+				}
+			}
+		}
 
 		//fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
 		//fmt.Println("SAH -- origErrors-2: ", origErrs)
@@ -411,14 +517,6 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 
 		fmt.Printf("SAH Proxies are the same? %t\n", sameProxies)
-
-		sameErrors := origErrs.Error() == errs.Error()
-		fmt.Printf("SAH Errors are the same? %t\n", sameErrors)
-
-		if !sameErrors {
-			fmt.Println("SAH -- errs with delete: ", errs)
-			fmt.Println("SAH -- origErrors: ", origErrs)
-		}
 
 		sameReports := len(origProxyReports) == len(proxyReports)
 		if sameReports {
@@ -615,21 +713,23 @@ func (v *validator) validateResource(opts *validationOptions) (*Reports, error) 
 // allowWarnings is not set.
 func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooValidationReport) error {
 	var errs error
+
 	for _, report := range reports {
 		if err := v.getErrorsFromResourceReports(report.ResourceReports); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = multierror.Append(errs, err)
 		}
 		if proxyReport := report.ProxyReport; proxyReport != nil {
 			if err := validationutils.GetProxyError(proxyReport); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
+				errs = multierror.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			}
 			if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
 				for _, warning := range warnings {
-					errs = multierr.Append(errs, errors.New(warning))
+					errs = multierror.Append(errs, errors.New(warning))
 				}
 			}
 		}
 	}
+
 	return errs
 }
 
