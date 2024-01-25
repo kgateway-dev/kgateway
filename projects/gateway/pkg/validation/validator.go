@@ -244,7 +244,7 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 		}
 		if err := validate(); err != nil {
 			fmt.Printf("SAH - error translating proxy: %v\n", err)
-			//err = errors.Wrapf(err, couldNotRenderProxy)
+			err = errors.Wrapf(err, couldNotRenderProxy)
 			errs = multierror.Append(errs, err)
 
 			if !getAllErrors {
@@ -266,8 +266,8 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, (opts.Delete && !opts.SkipDelete))
 		if err != nil {
 			//fmt.Printf("SAH - glooValidator error : %v\n", err)
-			//err = errors.Wrapf(err, failedGlooValidation)
-			err = multiErrorWrap(err, failedGlooValidation)
+			err = errors.Wrapf(err, failedGlooValidation)
+			//err = multiErrorWrap(err, failedGlooValidation)
 			errs = multierror.Append(errs, err)
 			if !getAllErrors {
 				continue
@@ -324,8 +324,8 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 	if len(extensionReports) > 0 {
 		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
 			fmt.Printf("SAH - extensionReports errors : %v\n", err)
-			//err = errors.Wrapf(err, failedExtensionResourceReports)
-			err = multiErrorWrap(err, failedExtensionResourceReports)
+			err = errors.Wrapf(err, failedExtensionResourceReports)
+			//err = multiErrorWrap(err, failedExtensionResourceReports)
 			errs = multierror.Append(errs, err)
 		}
 	}
