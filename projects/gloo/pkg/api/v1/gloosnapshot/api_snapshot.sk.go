@@ -357,9 +357,10 @@ func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 		}
 		return nil
 	case *gloo_solo_io.Secret:
-
+		//fmt.Println("SAH - Looping over secrets")
 		for i, res := range s.Secrets {
 			if refKey == res.GetMetadata().Ref().Key() {
+				//fmt.Println("SAH - found secret, removing", refKey)
 				s.Secrets = append(s.Secrets[:i], s.Secrets[i+1:]...)
 				break
 			}
