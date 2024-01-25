@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bsm/gomega"
+	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 
