@@ -111,7 +111,20 @@ var _ = Describe("Translator", func() {
 		ctrl = gomock.NewController(T)
 
 		cluster = nil
-		settings = &v1.Settings{}
+		settings = &v1.Settings{
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					// To validate transformations, we call out to an Envoy binary running in validate mode
+					// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
+					// This binary is present in our CI/CD pipeline. But when running locally it is not, so we fallback to the Upstream Envoy binary
+					// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
+					// and the logs will contain:
+					//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
+					// We do not perform transformation validation as part of our translator tests, so we explicitly disable this
+					DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+				},
+			},
+		}
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
