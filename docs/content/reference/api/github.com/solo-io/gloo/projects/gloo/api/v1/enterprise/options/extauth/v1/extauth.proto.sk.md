@@ -1097,7 +1097,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
  
 Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
 Gloo Mesh products only: Note that if you want to clear the route cache to force the proxy to recalculate the
-routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy, 
+routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy,
 and configure the `clearRouteCache` or `recalculateRoutingDestination` options.
 
 ```yaml
@@ -1876,6 +1876,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 "address": string
 "connectionTimeout": .google.protobuf.Duration
 "tlsConfig": .enterprise.gloo.solo.io.PassThroughGrpcTLSConfig
+"retryPolicy": .solo.io.envoy.config.core.v3.RetryPolicy
 
 ```
 
@@ -1884,6 +1885,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 | `address` | `string` | Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`. |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
 | `tlsConfig` | [.enterprise.gloo.solo.io.PassThroughGrpcTLSConfig](../extauth.proto.sk/#passthroughgrpctlsconfig) | TLS config for the Grpc passthrough, if not configured the connection will use insecure. |
+| `retryPolicy` | [.solo.io.envoy.config.core.v3.RetryPolicy](../../../../../../external/envoy/config/core/v3/base.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream This field is optional. If max interval is not provided, it will be set to ten times the provided base interval. If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied. |
 
 
 

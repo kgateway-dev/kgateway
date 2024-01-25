@@ -21,6 +21,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -1627,6 +1629,12 @@ func (m *PassThroughGrpc) Clone() proto.Message {
 		target.TlsConfig = h.Clone().(*PassThroughGrpcTLSConfig)
 	} else {
 		target.TlsConfig = proto.Clone(m.GetTlsConfig()).(*PassThroughGrpcTLSConfig)
+	}
+
+	if h, ok := interface{}(m.GetRetryPolicy()).(clone.Cloner); ok {
+		target.RetryPolicy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RetryPolicy)
+	} else {
+		target.RetryPolicy = proto.Clone(m.GetRetryPolicy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RetryPolicy)
 	}
 
 	return target

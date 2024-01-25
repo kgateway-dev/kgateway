@@ -2738,6 +2738,16 @@ func (m *PassThroughGrpc) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetRetryPolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRetryPolicy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRetryPolicy(), target.GetRetryPolicy()) {
+			return false
+		}
+	}
+
 	return true
 }
 
