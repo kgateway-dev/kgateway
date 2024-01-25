@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bsm/gomega"
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 
@@ -32,6 +33,9 @@ type TestContainer interface {
 	CanCurl() bool
 	// Checks the response of the request eventually meets expectation
 	CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
+	// DO_NOT_SUBMIT this naming is terrible
+	// Checks the response of the request eventually meets expectation
+	CurlEventuallyShouldRespondWithGomega(g gomega.Gomega, opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
 	// Checks all of the output of the curl command eventually meets expectation
 	CurlEventuallyShouldOutput(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
 	Curl(opts CurlOpts) (string, error)

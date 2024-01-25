@@ -182,7 +182,7 @@ var _ = Describe("GlooResourcesTest", func() {
 			// This nested async assertion will make sure that the rotation happens numAttempts times,
 			// and that each time we eventually reach a good state. The maximum timeout for this should be
 			// numAttempts*rotationInterval.
-			Eventually(func() {
+			Eventually(func(g Gomega) {
 				By("Generate new CaCrt and PrivateKey")
 				crt, crtKey := helpers.GetCerts(helpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
@@ -195,10 +195,10 @@ var _ = Describe("GlooResourcesTest", func() {
 					kubev1.TLSPrivateKeyKey: []byte(crtKey),
 				}
 				_, err := resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 
 				By("Eventually can curl the endpoint")
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				testHelper.CurlEventuallyShouldRespondWithGomega(g, helper.CurlOpts{
 					Protocol:          "http",
 					Path:              "/",
 					Method:            "GET",

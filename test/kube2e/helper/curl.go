@@ -100,12 +100,12 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 	}, currentTimeout, pollingInterval).Should(gomega.ContainSubstring(substr))
 }
 
-func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
+func (t *testContainer) CurlEventuallyShouldRespondWithGomega(g gomega.Gomega, opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
 	currentTimeout, pollingInterval := getTimeouts(timeout...)
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
 
-	gomega.EventuallyWithOffset(ginkgoOffset+1, func() string {
+	g.EventuallyWithOffset(ginkgoOffset+1, func() string {
 		if !t.CanCurl() {
 			return ""
 		}
@@ -128,6 +128,10 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string
 		}
 		return res
 	}, currentTimeout, pollingInterval).Should(gomega.ContainSubstring(substr))
+}
+
+func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
+	t.CurlEventuallyShouldRespondWithGomega(gomega.Default, opts, substr, ginkgoOffset, timeout...)
 }
 
 func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
