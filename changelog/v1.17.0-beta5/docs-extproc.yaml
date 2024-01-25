@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    description: Adds documentation for external processing. 
+    skipCI-kube-tests: true
