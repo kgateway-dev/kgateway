@@ -247,7 +247,7 @@ var _ = Describe("Validator", func() {
 				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
 				Expect(err).To(HaveOccurred())
 			})
-			FIt("accepts a secret deletion when there is a validation warning and allowWarnings is true", func() {
+			It("accepts a secret deletion when there is a validation warning and allowWarnings is true", func() {
 				v.glooValidator = ValidateWarn
 				v.allowWarnings = true
 
