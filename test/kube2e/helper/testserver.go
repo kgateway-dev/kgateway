@@ -97,8 +97,13 @@ type testServer struct {
 }
 
 func (t *testServer) DeployServer(timeout time.Duration) error {
-	err := t.deploy(timeout)
-	if err != nil {
+	// DO_NOT_SUBMIT
+	// I think this will return an error if the pod/service is "not found"
+	// which it should be at the outset. Might need to handle that.
+	if err := t.TerminatePodAndDeleteService(); err != nil {
+		return errors.Wrap(err, "terminating pod and deleting service")
+	}
+	if err := t.DeployResources(timeout); err != nil {
 		return err
 	}
 	go func() {

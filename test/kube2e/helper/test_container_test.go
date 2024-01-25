@@ -1,4 +1,4 @@
-package helper
+package helper_test
 
 import (
 	"context"
@@ -6,12 +6,15 @@ import (
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/solo-io/gloo/test/kube2e/helper"
+
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	kube2 "github.com/solo-io/k8s-utils/testutils/kube"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -40,6 +43,7 @@ var _ = Describe("test container tests", func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
 	Context("test server", func() {
 		var (
 			testServer TestUpstreamServer
@@ -77,7 +81,7 @@ var _ = Describe("test container tests", func() {
 			var err error
 			httpEcho, err = NewEchoHttp(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = httpEcho.(*testContainer).deploy(time.Minute)
+			err = httpEcho.DeployResources(time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -109,7 +113,7 @@ var _ = Describe("test container tests", func() {
 			var err error
 			tcpEcho, err = NewEchoTcp(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = tcpEcho.(*testContainer).deploy(time.Minute)
+			err = tcpEcho.DeployResources(time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {

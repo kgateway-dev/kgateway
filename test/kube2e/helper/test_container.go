@@ -30,9 +30,9 @@ type TestContainer interface {
 	DeleteService() error
 	TerminatePodAndDeleteService() error
 	CanCurl() bool
-	// Checks the response of the request
+	// Checks the response of the request eventually meets expectation
 	CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
-	// Checks all of the output of the curl command
+	// Checks all of the output of the curl command eventually meets expectation
 	CurlEventuallyShouldOutput(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
 	Curl(opts CurlOpts) (string, error)
 	Exec(command ...string) (string, error)
@@ -95,7 +95,7 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 	}
 
 	// Create http echo pod
-	if _, err := t.kube.CoreV1().Pods(t.namespace).Create(context.TODO(), &corev1.Pod{
+	if _, err := t.kube.CoreV1().Pods(t.namespace).Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metadata,
 		Spec: corev1.PodSpec{
 			TerminationGracePeriodSeconds: &zero,
@@ -128,6 +128,11 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 		return err
 	}
 
+	// DO_NOT_SUBMIT
+	// added to check the time it takes to deploy the pods. This will allow us to
+	// comment on the caller why we selected the timeout and what to troubleshoot
+	// if it is exceeded.
+	tStart := time.Now()
 	// Wait until the http echo pod is running
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -135,7 +140,7 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 		return err
 	}
 
-	log.Printf("deployed %s", t.echoName)
+	log.Printf("deployed %s in %s", t.echoName, time.Now().Sub(tStart))
 
 	return nil
 }

@@ -165,21 +165,24 @@ var _ = Describe("GlooResourcesTest", func() {
 
 		})
 
+		// Make repeated requests against the upstream and confirm that the response from Envoy is not `no healthy upstream`.
+		// The sslConfig should be rotated and given time for the change to be reflected in the upstream.
+		// It can take 15 seconds, sometimes longer, for the rotation to occur and the upstream request to fail.
+		// The failure occurs randomly, so the curl must happen multiple times.
 		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
-			// this test will call the upstream multiple times and confirm that the response from the upstream is not `no healthy upstream`
-			// the sslConfig should be rotated and given time to rotate in the upstream. There is a 15 second delay, that sometimes takes longer,
-			// for the upstream to fail. The fail happens randomly so the curl must happen multiple times.
+			// This failure occurs randomly. As such we want to make sure we attempt multiple times to increase confidence.
+			numAttempts := 10
 
 			// 22 seconds between rotation allows 150% expected delay
-			secondsForCurling := 22 * time.Second
+			rotationInterval := 22 * time.Second
+
 			// time given for a single curl, also used as the ConnectionTimeout in the CurlOpts
 			timeForCurling := 1 * time.Second
-			// eventually the `no healthy upstream` will occur
-			timesToPerform := time.Duration(5)
 
-			timeInBetweenRotation := secondsForCurling + timeForCurling
-
-			Consistently(func(g Gomega) {
+			// This nested async assertion will make sure that the rotation happens numAttempts times,
+			// and that each time we eventually reach a good state. The maximum timeout for this should be
+			// numAttempts*rotationInterval.
+			Eventually(func() {
 				By("Generate new CaCrt and PrivateKey")
 				crt, crtKey := helpers.GetCerts(helpers.Params{
 					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
@@ -205,9 +208,9 @@ var _ = Describe("GlooResourcesTest", func() {
 					ConnectionTimeout: int(timeForCurling / time.Second),
 					WithoutStats:      true,
 					Verbose:           true,
-				}, kube2e.TestServerHttpResponse(), 0, 60*time.Second, timeForCurling)
-
-			}, timeInBetweenRotation*timesToPerform, timeInBetweenRotation).Should(Succeed())
+				}, kube2e.TestServerHttpResponse(), 1, rotationInterval, timeForCurling)
+			}, rotationInterval*time.Duration(numAttempts),
+				rotationInterval).MustPassRepeatedly(numAttempts).Should(Succeed())
 		})
 	})
 })
