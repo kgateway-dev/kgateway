@@ -327,6 +327,10 @@ spec:
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
 {{- end }}
+        {{- if .Values.global.glooMtls.sds.logLevel }}
+          - name: LOG_LEVEL
+            value: {{ .Values.global.glooMtls.sds.logLevel }}
+        {{- end}}
         volumeMounts:
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl

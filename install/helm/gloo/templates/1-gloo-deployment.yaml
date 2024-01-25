@@ -126,10 +126,6 @@ spec:
         {{- $securityDefaults := dict "runAsNonRoot" true }}
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
-       {{- if .Values.global.glooMtls.sds.logLevel }}
-        - name: LOG_LEVEL
-          value: {{ .Values.global.glooMtls.sds.logLevel }}
-       {{- end}}
         {{- end -}}
 {{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults) | nindent 8 }}
         ports:

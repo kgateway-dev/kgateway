@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
@@ -18,6 +19,7 @@ import (
 var (
 	// The NodeID of the envoy server reading from this SDS
 	sdsClientDefault = "sds_client"
+	sdsComponentName = "sds_server"
 )
 
 type Config struct {
@@ -39,9 +41,10 @@ type Config struct {
 }
 
 func RunMain() {
-	ctx := contextutils.WithLogger(context.Background(), "sds_server")
+	ctx := contextutils.WithLogger(context.Background(), sdsComponentName)
 	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
 
+	setuputils.SetupLogging(ctx, sdsComponentName)
 	contextutils.LoggerFrom(ctx).Info("initializing config")
 
 	var c = setup(ctx)
