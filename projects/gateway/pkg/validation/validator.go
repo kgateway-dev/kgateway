@@ -364,8 +364,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	proxies, proxyReports, errs := v.translateProxies(ctx, snapshotClone, opts)
 
-	fmt.Println("SAH - proxyReports: ", proxyReports)
-	fmt.Println("SAH -- errors: ", errs)
+	//fmt.Println("SAH - proxyReports: ", proxyReports)
+	//fmt.Println("SAH -- errors: ", errs)
 	// // If we're deleting a secret and run into an error, try to revaldiate
 	okToDeleteSecret := false
 	if errs != nil && opts.Delete && opts.Gvk.Kind == "Secret" {
@@ -386,8 +386,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		origProxies, origProxyReports, origErrs := v.translateProxies(ctx, snapshotCloneUnmodified, opts)
 
-		fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
-		fmt.Println("SAH -- origErrors-2: ", origErrs)
+		//fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
+		//fmt.Println("SAH -- origErrors-2: ", origErrs)
 		// Compare proxies - move to a function
 		sameProxies := len(origProxies) == len(proxies)
 		if sameProxies {
@@ -405,7 +405,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 				fmt.Printf("SAH - proxy %s hash with delete: %d, original hash %d\n", proxyKey, proxyHashes[proxyKey], origHash)
 				if proxyHashes[proxyKey] != origHash {
 					sameProxies = false
-					//break
+					break
 				}
 			}
 		}
@@ -414,6 +414,11 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		sameErrors := origErrs.Error() == errs.Error()
 		fmt.Printf("SAH Errors are the same? %t\n", sameErrors)
+
+		if !sameErrors {
+			fmt.Println("SAH -- errs with delete: ", errs)
+			fmt.Println("SAH -- origErrors: ", origErrs)
+		}
 
 		sameReports := len(origProxyReports) == len(proxyReports)
 		if sameReports {
@@ -433,6 +438,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		fmt.Printf("SAH Reports are the same? %t\n", sameReports)
 
+		if !sameReports {
+			fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
+			fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
+		}
 		// fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
 		// fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
 
