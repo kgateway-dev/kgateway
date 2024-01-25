@@ -3,6 +3,7 @@ package validation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -215,6 +216,7 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 	s.lock.Unlock()
 	if resource != nil {
 		if shouldDelete {
+			fmt.Println("SAH - removing from resource list in ValidateGloo")
 			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
 				return nil, err
 			}

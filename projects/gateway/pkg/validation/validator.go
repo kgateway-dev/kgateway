@@ -3,6 +3,7 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -217,7 +218,110 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 	return v.validateSnapshot(opts)
 }
 
+// type proxyTranslationResponse struct {
+// 	Proxies      []*gloov1.Proxy
+// 	ProxyReports ProxyReports
+// 	Error        error
+// 	ExtraError   error
+// }
+
+func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) ([]*gloov1.Proxy, ProxyReports, error) {
+	var (
+		errs         error
+		err          error
+		proxyReports ProxyReports
+		proxies      []*gloov1.Proxy
+	)
+
+	getAllErrors := true // opts.Delete && opts.Gvk.Kind == "Secret" // We're overriding `delete` so need another way to check
+	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
+	// translate all the proxies
+	for proxyName, gatewayList := range gatewaysByProxy {
+		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
+		validate := reports.ValidateStrict
+		if v.allowWarnings {
+			validate = reports.Validate
+		}
+		if err := validate(); err != nil {
+			fmt.Printf("SAH - error translating proxy: %v\n", err)
+			errs = multierr.Append(errs, errors.Wrapf(err, couldNotRenderProxy))
+
+			if !getAllErrors {
+				continue
+			}
+		}
+
+		// a nil proxy may have been returned if 0 listeners were created
+		if proxy == nil {
+			continue
+		}
+
+		proxies = append(proxies, proxy)
+
+		fmt.Println("SAH - v.glooValidator")
+		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/validator.go
+		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
+		if err != nil {
+			fmt.Printf("SAH - glooValidator error : %v\n", err)
+			err = errors.Wrapf(err, failedGlooValidation)
+			errs = multierr.Append(errs, err)
+			if !getAllErrors {
+				continue
+			}
+		}
+
+		if len(glooReports) != 1 {
+			// This was likely caused by a development error
+			err := GlooValidationResponseLengthError(glooReports)
+			fmt.Printf("SAH - GlooValidationResponseLengthError error : %v\n", err)
+			errs = multierr.Append(errs, err)
+			//continue
+		}
+
+		proxyReport := glooReports[0].ProxyReport
+		proxyReports = append(proxyReports, proxyReport)
+		if err := validationutils.GetProxyError(proxyReport); err != nil {
+			errs = multierr.Append(errs, proxyFailedGlooValidation(err, proxy))
+			fmt.Printf("SAH - proxyReports error : %v\n", err)
+			if !getAllErrors {
+				continue
+			}
+		}
+		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
+			for _, warning := range warnings {
+				fmt.Printf("SAH - GetProxyWarning : %v\n", err)
+				errs = multierr.Append(errs, errors.New(warning))
+			}
+			if !getAllErrors {
+				continue
+			}
+		}
+
+		err = v.getErrorsFromGlooValidation(glooReports)
+		if err != nil {
+			fmt.Printf("SAH - getErrorsFromGlooValidation : %v\n", err)
+			err = errors.Wrapf(err, failedResourceReports)
+			errs = multierr.Append(errs, err)
+			if !getAllErrors {
+				continue
+			}
+		}
+	}
+
+	extensionReports := v.extensionValidator.Validate(ctx, snapshot)
+	if len(extensionReports) > 0 {
+		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
+			fmt.Printf("SAH - extensionReports errors : %v\n", err)
+			err = errors.Wrapf(err, failedExtensionResourceReports)
+			errs = multierr.Append(errs, err)
+		}
+	}
+
+	return proxies, proxyReports, errs
+}
+
 func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) {
+	fmt.Println("SAH - validateSnapshot")
 	// validate that a snapshot can be modified
 	// should be called within a lock
 	//
@@ -244,98 +348,121 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		return nil, nil
 	}
 
+	//var secretToSave gloov1.Secret
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
+		fmt.Println("SAH - removing from resource list")
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
 	} else {
+		fmt.Println("SAH - upserting resource list")
 		if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
 	}
 
-	var (
-		errs         error
-		proxyReports ProxyReports
-		proxies      []*gloov1.Proxy
-	)
-	gatewaysByProxy := utils.GatewaysByProxyName(snapshotClone.Gateways)
-	// translate all the proxies
-	for proxyName, gatewayList := range gatewaysByProxy {
-		proxy, reports := v.translator.Translate(ctx, proxyName, snapshotClone, gatewayList)
-		validate := reports.ValidateStrict
-		if v.allowWarnings {
-			validate = reports.Validate
-		}
-		if err := validate(); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, couldNotRenderProxy))
-			continue
-		}
+	proxies, proxyReports, errs := v.translateProxies(ctx, snapshotClone, opts)
 
-		// a nil proxy may have been returned if 0 listeners were created
-		if proxy == nil {
-			continue
-		}
+	fmt.Println("SAH - proxyReports: ", proxyReports)
+	fmt.Println("SAH -- errors: ", errs)
+	// // If we're deleting a secret and run into an error, try to revaldiate
+	okToDeleteSecret := false
+	if errs != nil && opts.Delete && opts.Gvk.Kind == "Secret" {
+		fmt.Println("SAH - revalidating secret delete")
 
-		proxies = append(proxies, proxy)
-		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/gloo_validator.go
-		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
+		opts.Delete = false
+		defer func() { opts.Delete = true }()
+		// fmt.Println("Adding back to resource list")
+		// if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
+		// 	return nil, err
+		// }
+
+		snapshotCloneUnmodified, err := v.copySnapshotNonThreadSafe(ctx, opts.DryRun)
 		if err != nil {
-			err = errors.Wrapf(err, failedGlooValidation)
-			errs = multierr.Append(errs, err)
-			continue
+			// allow writes if storage is already broken
+			return nil, nil
 		}
 
-		if len(glooReports) != 1 {
-			// This was likely caused by a development error
-			err := GlooValidationResponseLengthError(glooReports)
-			errs = multierr.Append(errs, err)
-			continue
-		}
+		origProxies, origProxyReports, origErrs := v.translateProxies(ctx, snapshotCloneUnmodified, opts)
 
-		proxyReport := glooReports[0].ProxyReport
-		proxyReports = append(proxyReports, proxyReport)
-		if err := validationutils.GetProxyError(proxyReport); err != nil {
-			errs = multierr.Append(errs, proxyFailedGlooValidation(err, proxy))
-			continue
-		}
-		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
-			for _, warning := range warnings {
-				errs = multierr.Append(errs, errors.New(warning))
+		fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
+		fmt.Println("SAH -- origErrors-2: ", origErrs)
+		// Compare proxies - move to a function
+		sameProxies := len(origProxies) == len(proxies)
+		if sameProxies {
+			proxyHashes := make(map[string]uint64)
+			///origProxyhashes = make(map[string]uint64)
+			for _, proxy := range proxies {
+				// Need better key, put in function
+				proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
+				proxyHashes[proxyKey] = proxy.MustHash()
 			}
-			continue
+
+			for _, proxy := range origProxies {
+				proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
+				origHash := proxy.MustHash()
+				fmt.Printf("SAH - proxy %s hash with delete: %d, original hash %d\n", proxyKey, proxyHashes[proxyKey], origHash)
+				if proxyHashes[proxyKey] != origHash {
+					sameProxies = false
+					//break
+				}
+			}
 		}
 
-		err = v.getErrorsFromGlooValidation(glooReports)
-		if err != nil {
-			err = errors.Wrapf(err, failedResourceReports)
-			errs = multierr.Append(errs, err)
-			continue
-		}
-	}
+		fmt.Printf("SAH Proxies are the same? %t\n", sameProxies)
 
-	extensionReports := v.extensionValidator.Validate(ctx, snapshotClone)
-	if len(extensionReports) > 0 {
-		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
-			err = errors.Wrapf(err, failedExtensionResourceReports)
-			errs = multierr.Append(errs, err)
+		sameErrors := origErrs.Error() == errs.Error()
+		fmt.Printf("SAH Errors are the same? %t\n", sameErrors)
+
+		sameReports := len(origProxyReports) == len(proxyReports)
+		if sameReports {
+			proxyReportMap := make(map[string]bool)
+			for _, proxyReport := range proxyReports {
+				proxyReportMap[proxyReport.String()] = true
+			}
+
+			// Check each report against the map
+			for _, proxyReport := range origProxyReports {
+				if _, ok := proxyReportMap[proxyReport.String()]; !ok {
+					sameReports = false
+					//break
+				}
+			}
+		}
+
+		fmt.Printf("SAH Reports are the same? %t\n", sameReports)
+
+		// fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
+		// fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
+
+		// fmt.Printf("SAH - origErrors: %v\n", origErrs)
+		// fmt.Printf("SAH - errors: %v\n", errs)
+
+		if sameProxies && sameErrors && sameReports {
+			okToDeleteSecret = true
 		}
 	}
 
 	if errs != nil {
-		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
 		if !opts.DryRun {
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
-		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs,
-			"validating %T %v",
-			opts.Resource,
-			ref)
+
+		if okToDeleteSecret {
+			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but deleting secret: %T %v: %v", opts.Resource, ref, errs)
+		} else {
+			contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
+
+			return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs,
+				"validating %T %v",
+				opts.Resource,
+				ref)
+		}
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", opts.Resource, ref)
-	if !opts.DryRun {
+	if !opts.DryRun && !okToDeleteSecret {
 		utils2.MeasureOne(ctx, mValidConfig)
 	}
 
@@ -343,6 +470,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	if !opts.DryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
 		if opts.Delete {
+			fmt.Println("SAH - removing from resource list for real delete")
 			if err = v.latestSnapshot.RemoveFromResourceList(opts.Resource); err != nil {
 				return reports, err
 			}
@@ -358,6 +486,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
 func (v *validator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
+	fmt.Println("SAH - ValidateDeletedGvk")
 	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: true, DryRun: dryRun, AcquireLock: true})
 	return err
 }
