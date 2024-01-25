@@ -743,7 +743,7 @@ type EnvoySidecarContainer struct {
 type IstioProxyContainer struct {
 	Image           *Image           `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
-	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Default is 'warning'."`
+	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
 }
 
 type IstioSDS struct {
