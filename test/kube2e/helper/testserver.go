@@ -94,18 +94,24 @@ func NewTestServer(namespace string) (TestUpstreamServer, error) {
 // This object represents a container that gets deployed to the cluster to support testing.
 type testServer struct {
 	*testContainer
+	deployed bool
 }
 
+// DeployServer deletes any running server pod and its service if it exists, then
+// deploys a server which serves HTTP traffic.
 func (t *testServer) DeployServer(timeout time.Duration) error {
-	// DO_NOT_SUBMIT
-	// I think this will return an error if the pod/service is "not found"
-	// which it should be at the outset. Might need to handle that.
-	if err := t.TerminatePodAndDeleteService(); err != nil {
-		return errors.Wrap(err, "terminating pod and deleting service")
+	if t.deployed {
+		if err := t.TerminatePodAndDeleteService(); err != nil {
+			return errors.Wrap(err, "terminating pod and deleting service")
+		}
+		t.deployed = false
 	}
+
 	if err := t.DeployResources(timeout); err != nil {
 		return err
 	}
+	t.deployed = true
+
 	go func() {
 		start := time.Now()
 		log.Debugf("starting http server listening on port %v", TestServerPort)
@@ -120,15 +126,20 @@ func (t *testServer) DeployServer(timeout time.Duration) error {
 	return nil
 }
 
-// DeployTLS deletes the running server pod and its service, then redeploys using a server
-// which serves HTTPS with the cert and key provided.
+// DeployServerTls deletes any running server pod and its service if it exists, then
+// deploys a server which serves HTTPS traffic with the cert and key provided.
 func (t *testServer) DeployServerTls(timeout time.Duration, crt, key []byte) error {
-	if err := t.TerminatePodAndDeleteService(); err != nil {
-		return errors.Wrap(err, "terminating pod and deleting service")
+	if t.deployed {
+		if err := t.TerminatePodAndDeleteService(); err != nil {
+			return errors.Wrap(err, "terminating pod and deleting service")
+		}
+		t.deployed = false
 	}
+
 	if err := t.testContainer.DeployResources(timeout); err != nil {
 		return errors.Wrap(err, "deploying pod")
 	}
+	t.deployed = true
 
 	certFname := "/tmp/testserver_tls/cert.pem"
 	keyFname := "/tmp/testserver_tls/key.pem"
