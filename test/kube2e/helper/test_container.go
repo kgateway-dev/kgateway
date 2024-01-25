@@ -2,9 +2,13 @@ package helper
 
 import (
 	"context"
+<<<<<<< HEAD
 	"fmt"
 	"io"
 	"strings"
+=======
+	"io"
+>>>>>>> main
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+<<<<<<< HEAD
 var _ TestUpstreamServer = &testServer{}
 var _ TestContainer = &testServer{}
 var _ TestContainer = &testContainer{}
@@ -45,6 +50,18 @@ type TestUpstreamServer interface {
 	TestContainer
 	DeployServer(timeout time.Duration) error
 	DeployServerTls(timeout time.Duration, crt, key []byte) error
+=======
+type TestRunner interface {
+	Deploy(timeout time.Duration) error
+	Terminate() error
+	Exec(command ...string) (string, error)
+	TestRunnerAsync(args ...string) (io.Reader, chan struct{}, error)
+	// Checks the response of the request
+	CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
+	// CHecks all of the output of the curl command
+	CurlEventuallyShouldOutput(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
+	Curl(opts CurlOpts) (string, error)
+>>>>>>> main
 }
 
 func newTestContainer(namespace, imageTag, echoName string, port int32) (*testContainer, error) {
