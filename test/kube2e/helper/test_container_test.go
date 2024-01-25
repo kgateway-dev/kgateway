@@ -52,7 +52,11 @@ var _ = Describe("test container tests", func() {
 			var err error
 			testServer, err = NewTestServer(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = testServer.DeployResources(time.Minute * 2)
+
+			// Currently this DeployResources call takes 4 seconds in CI. If this
+			// timeout is exceeded, we should look into why the http echo pod is
+			// taking so long to spin up.
+			err = testServer.DeployResources(time.Second * 30)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {

@@ -33,7 +33,8 @@ type TestContainer interface {
 	CanCurl() bool
 	// Checks the response of the request eventually meets expectation
 	CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
-	// DO_NOT_SUBMIT this naming is terrible
+	// TODO(jbohanon) remove this function in a follow-up PR by changing the signature of
+	// CurlEventuallyShouldRespond to include the gomega
 	// Checks the response of the request eventually meets expectation
 	CurlEventuallyShouldRespondWithGomega(g gomega.Gomega, opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
 	// Checks all of the output of the curl command eventually meets expectation
@@ -132,10 +133,10 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 		return err
 	}
 
-	// DO_NOT_SUBMIT
 	// added to check the time it takes to deploy the pods. This will allow us to
 	// comment on the caller why we selected the timeout and what to troubleshoot
 	// if it is exceeded.
+	// Currently this is at ~4 seconds in CI.
 	tStart := time.Now()
 	// Wait until the http echo pod is running
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -144,7 +145,7 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 		return err
 	}
 
-	log.Printf("deployed %s in %s", t.echoName, time.Now().Sub(tStart))
+	log.Printf("deployed %s in %s", t.echoName, time.Now().Sub(tStart)/time.Second)
 
 	return nil
 }
@@ -196,7 +197,7 @@ func (t *testContainer) ExecAsync(args ...string) (io.Reader, chan struct{}, err
 	return testutils.KubectlOutAsync(args...)
 }
 
-func (t *testContainer) TestServerChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
+func (t *testContainer) ExecChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
 	args = append([]string{"exec", "-i", t.echoName, "-n", t.namespace, "--"}, args...)
 	return testutils.KubectlOutChan(r, args...)
 }
