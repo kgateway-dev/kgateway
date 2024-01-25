@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/avast/retry-go"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/avast/retry-go"
-	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 )
@@ -44,7 +42,11 @@ func RunMain() {
 	ctx := contextutils.WithLogger(context.Background(), sdsComponentName)
 	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
 
-	setuputils.SetupLogging(ctx, sdsComponentName)
+	// if log level is set in env, use that
+	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
+		contextutils.SetLogLevelFromString(envLogLevel)
+	}
+
 	contextutils.LoggerFrom(ctx).Info("initializing config")
 
 	var c = setup(ctx)
