@@ -16,7 +16,7 @@ Note that the preflight request is optional. Web browsers can also be configured
 
 CORS policies are typically implemented to limit access to server resources for JavaScripts that are embedded in a web page, such as:
 * A JavaScript on a web page at `example.com` tries to access a different domain, such as `api.com`.
-* A JavaScript on a web page at `example.com` tries to access a different subdomain, such as `api.exampl.com`.
+* A JavaScript on a web page at `example.com` tries to access a different subdomain, such as `api.example.com`.
 * A JavaScript on a web page at `example.com` tries to access a different port, such as `example.com:3001`.
 * A JavaScript on a web page at `https://example.com` tries to access the resources by using a different protocol, such as `http://example.com`. 
 
