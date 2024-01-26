@@ -503,7 +503,7 @@ type GatewayProxyPodTemplate struct {
 	RunAsUser                     *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	FsGroup                       *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
+	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#istio-lifecycle) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
 	CustomLivenessProbe           *appsv1.Probe         `json:"customLivenessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
