@@ -35,7 +35,8 @@ func TestGloo(t *testing.T) {
 }
 
 const (
-	namespace = defaults.GlooSystem
+	namespace   = defaults.GlooSystem
+	gatewayPort = int(80)
 )
 
 var (

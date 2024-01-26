@@ -2,7 +2,9 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,16 +18,33 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type TestRunner interface {
-	Deploy(timeout time.Duration) error
-	Terminate() error
-	Exec(command ...string) (string, error)
-	TestRunnerAsync(args ...string) (io.Reader, chan struct{}, error)
-	// Checks the response of the request
+var _ TestUpstreamServer = &testServer{}
+var _ TestContainer = &testServer{}
+var _ TestContainer = &testContainer{}
+
+// A TestContainer is a general-purpose abstraction over a container in which we might
+// execute cURL or other, arbitrary commands via kubectl.
+type TestContainer interface {
+	DeployResources(timeout time.Duration) error
+	TerminatePod() error
+	DeleteService() error
+	TerminatePodAndDeleteService() error
+	CanCurl() bool
+	// Checks the response of the request eventually meets expectation
 	CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
-	// CHecks all of the output of the curl command
+	// Checks all of the output of the curl command eventually meets expectation
 	CurlEventuallyShouldOutput(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration)
 	Curl(opts CurlOpts) (string, error)
+	Exec(command ...string) (string, error)
+	ExecAsync(args ...string) (io.Reader, chan struct{}, error)
+}
+
+// A TestUpstreamServer is an extension of a TestContainer which is typically run with the defaultTestServerImage.
+// It is used to deploy test http/https services
+type TestUpstreamServer interface {
+	TestContainer
+	DeployServer(timeout time.Duration) error
+	DeployServerTls(timeout time.Duration, crt, key []byte) error
 }
 
 func newTestContainer(namespace, imageTag, echoName string, port int32) (*testContainer, error) {
@@ -60,6 +79,10 @@ type testContainer struct {
 	port     int32
 }
 
+func (t *testContainer) DeployResources(timeout time.Duration) error {
+	return t.deploy(timeout)
+}
+
 // Deploys the http echo to the kubernetes cluster the kubeconfig is pointing to and waits for the given time for the
 // http-echo pod to be running.
 func (t *testContainer) deploy(timeout time.Duration) error {
@@ -72,7 +95,7 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 	}
 
 	// Create http echo pod
-	if _, err := t.kube.CoreV1().Pods(t.namespace).Create(context.TODO(), &corev1.Pod{
+	if _, err := t.kube.CoreV1().Pods(t.namespace).Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metadata,
 		Spec: corev1.PodSpec{
 			TerminationGracePeriodSeconds: &zero,
@@ -105,6 +128,11 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 		return err
 	}
 
+	// added to check the time it takes to deploy the pods. This will allow us to
+	// comment on the caller why we selected the timeout and what to troubleshoot
+	// if it is exceeded.
+	// Currently this is at ~4 seconds in CI.
+	tStart := time.Now()
 	// Wait until the http echo pod is running
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -112,17 +140,33 @@ func (t *testContainer) deploy(timeout time.Duration) error {
 		return err
 	}
 
-	log.Printf("deployed %s", t.echoName)
+	log.Printf("deployed %s in %s", t.echoName, time.Now().Sub(tStart)/time.Second)
 
 	return nil
 }
 
-func (t *testContainer) Terminate() error {
+func (t *testContainer) TerminatePod() error {
 	if err := testutils.Kubectl("delete", "pod", "-n", t.namespace, t.echoName, "--grace-period=0"); err != nil {
 		return errors.Wrapf(err, "deleting %s pod", t.echoName)
 	}
 	return nil
+}
 
+func (t *testContainer) DeleteService() error {
+	if err := testutils.Kubectl("delete", "service", "-n", t.namespace, t.echoName, "--grace-period=0"); err != nil {
+		return errors.Wrapf(err, "deleting %s service", t.echoName)
+	}
+	return nil
+}
+
+func (t *testContainer) TerminatePodAndDeleteService() error {
+	if err := t.TerminatePod(); err != nil {
+		return err
+	}
+	if err := t.DeleteService(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // testContainer executes a command inside the testContainer container
@@ -131,14 +175,31 @@ func (t *testContainer) Exec(command ...string) (string, error) {
 	return testutils.KubectlOut(args...)
 }
 
-// TestContainerAsync executes a command inside the testContainer container
+// Cp copies files into the testContainer container
+func (t *testContainer) Cp(files map[string]string) error {
+	for k, v := range files {
+		if err := testutils.Kubectl("cp", k, fmt.Sprintf("%s/%s:%s", t.namespace, t.echoName, v)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ExecAsync executes a command inside the testContainer container
 // returning a buffer that can be read from as it executes
-func (t *testContainer) TestRunnerAsync(args ...string) (io.Reader, chan struct{}, error) {
+func (t *testContainer) ExecAsync(args ...string) (io.Reader, chan struct{}, error) {
 	args = append([]string{"exec", "-i", t.echoName, "-n", t.namespace, "--"}, args...)
 	return testutils.KubectlOutAsync(args...)
 }
 
-func (t *testContainer) TestRunnerChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
+func (t *testContainer) ExecChan(r io.Reader, args ...string) (<-chan io.Reader, chan struct{}, error) {
 	args = append([]string{"exec", "-i", t.echoName, "-n", t.namespace, "--"}, args...)
 	return testutils.KubectlOutChan(r, args...)
+}
+
+func (t *testContainer) CanCurl() bool {
+	if out, err := t.Exec("curl", "--version"); err != nil || !strings.HasPrefix(out, "curl") {
+		return false
+	}
+	return true
 }

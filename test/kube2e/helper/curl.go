@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 )
 
@@ -32,6 +32,13 @@ type CurlOpts struct {
 	Sni        string
 	SelfSigned bool
 }
+
+var (
+	ErrCannotCurl = errors.New("cannot curl")
+	errCannotCurl = func(imageName, imageTag string) error {
+		return errors.Wrapf(ErrCannotCurl, "testContainer from image %s:%s", imageName, imageTag)
+	}
+)
 
 func getTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
 	defaultTimeout := time.Second * 20
@@ -64,15 +71,20 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
 
-	gomega.EventuallyWithOffset(ginkgoOffset+1, func() string {
+	gomega.EventuallyWithOffset(ginkgoOffset+1, func() (string, error) {
+		gomega.Expect(t.CanCurl()).To(gomega.BeTrue())
+
 		var res string
 
 		bufChan, done, err := t.CurlAsyncChan(opts)
 		if err != nil {
-			res = err.Error()
 			// trigger an early exit if the pod has been deleted
-			gomega.Expect(res).NotTo(gomega.ContainSubstring(`pods "testrunner" not found`))
-			return res
+			// if we return an error here, the Eventually will continue. By making an
+			// assertion with the outer context's Gomega, we can trigger a failure at
+			// that outer scope.
+			gomega.Expect(err.Error()).NotTo(gomega.ContainSubstring(`pods "testserver" not found`))
+
+			return "", err
 		}
 		defer close(done)
 		var buf io.Reader
@@ -84,7 +96,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 				buf = r
 			}
 		}
-		byt, err := ioutil.ReadAll(buf)
+		byt, err := io.ReadAll(buf)
 		if err != nil {
 			res = err.Error()
 		} else {
@@ -93,7 +105,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 		if strings.Contains(res, substr) {
 			log.GreyPrintf("success: %v", res)
 		}
-		return res
+		return res, nil
 	}, currentTimeout, pollingInterval).Should(gomega.ContainSubstring(substr))
 }
 
@@ -102,12 +114,18 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
 
-	gomega.EventuallyWithOffset(ginkgoOffset+1, func() string {
+	gomega.EventuallyWithOffset(ginkgoOffset+1, func() (string, error) {
+		gomega.Expect(t.CanCurl()).To(gomega.BeTrue())
+
 		res, err := t.Curl(opts)
 		if err != nil {
-			res = err.Error()
-			// trigger an early exit if the pod has been deleted
-			gomega.Expect(res).NotTo(gomega.ContainSubstring(`pods "testrunner" not found`))
+			// trigger an early exit if the pod has been deleted.
+			// if we return an error here, the Eventually will continue. By making an
+			// assertion with the outer context's Gomega, we can trigger a failure at
+			// that outer scope.
+			gomega.Expect(err.Error()).NotTo(gomega.ContainSubstring(`pods "testserver" not found`))
+
+			return "", err
 		}
 		select {
 		default:
@@ -120,7 +138,7 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string
 		if strings.Contains(res, substr) && opts.LogResponses {
 			log.GreyPrintf("success: %v", res)
 		}
-		return res
+		return res, nil
 	}, currentTimeout, pollingInterval).Should(gomega.ContainSubstring(substr))
 }
 
@@ -184,16 +202,28 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 }
 
 func (t *testContainer) Curl(opts CurlOpts) (string, error) {
+	if !t.CanCurl() {
+		return "", errCannotCurl(t.containerImageName, t.imageTag)
+	}
+
 	args := t.buildCurlArgs(opts)
 	return t.Exec(args...)
 }
 
 func (t *testContainer) CurlAsync(opts CurlOpts) (io.Reader, chan struct{}, error) {
+	if !t.CanCurl() {
+		return nil, nil, errCannotCurl(t.containerImageName, t.imageTag)
+	}
+
 	args := t.buildCurlArgs(opts)
-	return t.TestRunnerAsync(args...)
+	return t.ExecAsync(args...)
 }
 
 func (t *testContainer) CurlAsyncChan(opts CurlOpts) (<-chan io.Reader, chan struct{}, error) {
+	if !t.CanCurl() {
+		return nil, nil, errCannotCurl(t.containerImageName, t.imageTag)
+	}
+
 	args := t.buildCurlArgs(opts)
-	return t.TestRunnerChan(&bytes.Buffer{}, args...)
+	return t.ExecChan(&bytes.Buffer{}, args...)
 }
