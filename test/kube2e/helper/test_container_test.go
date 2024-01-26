@@ -1,4 +1,4 @@
-package helper
+package helper_test
 
 import (
 	"context"
@@ -6,12 +6,15 @@ import (
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/solo-io/gloo/test/kube2e/helper"
+
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	kube2 "github.com/solo-io/k8s-utils/testutils/kube"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -40,50 +43,53 @@ var _ = Describe("test container tests", func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
-	Context("test runner", func() {
+
+	Context("test server", func() {
 		var (
-			testRunner *testRunner
+			testServer TestUpstreamServer
 		)
 		BeforeEach(func() {
 			var err error
-			testRunner, err = NewTestRunner(namespace)
+			testServer, err = NewTestServer(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = testRunner.Deploy(time.Minute * 2)
+
+			// Currently this DeployResources call takes 4 seconds in CI. If this
+			// timeout is exceeded, we should look into why the http echo pod is
+			// taking so long to spin up.
+			err = testServer.DeployResources(time.Second * 30)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
-			err := testRunner.Terminate()
+			err := testServer.TerminatePodAndDeleteService()
 			Expect(err).NotTo(HaveOccurred())
 		})
-		It("can install and uninstall the testrunner", func() {
-			// responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,
-			// 	linkerd.HeaderKey, helper.HttpEchoName, testHelper.InstallNamespace, helper.HttpEchoPort)
-			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", TestrunnerName, namespace, TestRunnerPort)
-			testRunner.CurlEventuallyShouldRespond(CurlOpts{
+		It("can install and uninstall the testserver", func() {
+			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", TestServerName, namespace, TestServerPort)
+			testServer.CurlEventuallyShouldRespond(CurlOpts{
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
 				Host:              host,
-				Service:           TestrunnerName,
-				Port:              TestRunnerPort,
+				Service:           TestServerName,
+				Port:              TestServerPort,
 				ConnectionTimeout: 10,
 			}, SimpleHttpResponse, 1, 120*time.Second)
 		})
 	})
 
-	Context("http ehco", func() {
+	Context("http echo", func() {
 		var (
-			httpEcho *echoPod
+			httpEcho TestContainer
 		)
 		BeforeEach(func() {
 			var err error
 			httpEcho, err = NewEchoHttp(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = httpEcho.deploy(time.Minute)
+			err = httpEcho.DeployResources(time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
-			err := httpEcho.Terminate()
+			err := httpEcho.TerminatePodAndDeleteService()
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can install and uninstall the http echo pod", func() {
@@ -105,17 +111,17 @@ var _ = Describe("test container tests", func() {
 
 	Context("tcp ehco", func() {
 		var (
-			tcpEcho *echoPod
+			tcpEcho TestContainer
 		)
 		BeforeEach(func() {
 			var err error
 			tcpEcho, err = NewEchoTcp(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			err = tcpEcho.deploy(time.Minute)
+			err = tcpEcho.DeployResources(time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
-			err := tcpEcho.Terminate()
+			err := tcpEcho.TerminatePodAndDeleteService()
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can install and uninstall the tcp echo pod", func() {
