@@ -4,3 +4,5 @@ changelog:
       Update the MIN_SCANNED_VERSION to v1.13 in docs-gen.yaml so v1.12 does not get scanned for vulnerabilities.
       skipCI-kube-tests:true
       skipCI-docs-build:true
+    issueLink: https://github.com/solo-io/solo-projects/issues/5703
+    resolvesIssue: true
