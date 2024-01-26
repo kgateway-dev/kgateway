@@ -22,7 +22,7 @@ CORS policies are typically implemented to limit access to server resources for 
 
 For more details, see [this article](https://medium.com/@baphemot/understanding-cors-18ad6b478e2b).
 
-## How to configure a VirtualService for CORS? 
+## How to configure a VirtualService for CORS
 
 In order to allow your `VirtualService` to work with CORS, you need to add a new set of configuration options in
 the `VirtualHost` part of your `VirtualService`
