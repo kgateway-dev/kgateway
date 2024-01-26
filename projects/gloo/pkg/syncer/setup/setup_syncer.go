@@ -451,6 +451,7 @@ func RunGloo(opts bootstrap.Opts) error {
 }
 
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
+	fmt.Printf("SHGREP: RunGlooWithExtensions\n")
 	// Validate Extensions
 	if extensions.ApiEmitterChannel == nil {
 		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
@@ -835,8 +836,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	syncerValidatorExtensions := []syncer.TranslatorSyncerExtension{}
 	for _, ext := range syncerExtensions {
 		// currently only supporting ratelimit extension in validation
+		fmt.Printf("SHGREP: validator - %s\n", ext.ID())
 		if ext.ID() == ratelimitExt.ServerRole {
+			fmt.Printf("SHGREP: using validator - %s\n", ext.ID())
 			syncerValidatorExtensions = append(syncerValidatorExtensions, ext)
+		} else {
+			fmt.Printf("SHGREP: NOT using validator - %s\n", ext.ID())
 		}
 	}
 	// create a validator to validate extensions
