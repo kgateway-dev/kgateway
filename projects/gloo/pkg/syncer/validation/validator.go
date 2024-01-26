@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -36,6 +37,7 @@ type validator struct {
 func (v *validator) Validate(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) reporter.ResourceReports {
 	reports := reporter.ResourceReports{}
 	for _, ex := range v.extensions {
+		fmt.Printf("SAH - in gloo/pkg/validation/validator.go, in Validate() for %s", ex.ID())
 		intermediateReports := make(reporter.ResourceReports)
 		ex.Sync(ctx, snapshot, v.settings, v.snapshotSetter, intermediateReports)
 		reports.Merge(intermediateReports)
