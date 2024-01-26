@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    description: Backports weekly doc-fixes changes. 
+    skipCI-kube-tests: true
