@@ -40,9 +40,9 @@ var _ = Describe("Kube2e: Ingress", func() {
 
 		backend := &networkingv1.IngressBackend{
 			Service: &networkingv1.IngressServiceBackend{
-				Name: helper.TestrunnerName,
+				Name: helper.TestServerName,
 				Port: networkingv1.ServiceBackendPort{
-					Number: helper.TestRunnerPort,
+					Number: helper.TestServerPort,
 				},
 			},
 		}
@@ -84,6 +84,6 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Service:           ingressProxy,
 			Port:              ingressPort,
 			ConnectionTimeout: 1,
-		}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, time.Minute*2, 1*time.Second)
+		}, kube2e.TestServerHttpResponse(), 1, time.Minute*2, 1*time.Second)
 	})
 })

@@ -80,41 +80,41 @@ import (
 var _ = Describe("Kube2e: gateway", func() {
 
 	var (
-		testRunnerDestination *gloov1.Destination
-		testRunnerVs          *gatewayv1.VirtualService
+		testServerDestination *gloov1.Destination
+		testServerVs          *gatewayv1.VirtualService
 
 		glooResources *gloosnapshot.ApiSnapshot
 	)
 
 	BeforeEach(func() {
-		// Create a VirtualService routing directly to the testrunner kubernetes service
-		testRunnerDestination = &gloov1.Destination{
+		// Create a VirtualService routing directly to the testserver kubernetes service
+		testServerDestination = &gloov1.Destination{
 			DestinationType: &gloov1.Destination_Kube{
 				Kube: &gloov1.KubernetesServiceDestination{
 					Ref: &core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      helper.TestrunnerName,
+						Name:      helper.TestServerName,
 					},
-					Port: uint32(helper.TestRunnerPort),
+					Port: uint32(helper.TestServerPort),
 				},
 			},
 		}
-		testRunnerVs = helpers.NewVirtualServiceBuilder().
-			WithName(helper.TestrunnerName).
+		testServerVs = helpers.NewVirtualServiceBuilder().
+			WithName(helper.TestServerName).
 			WithNamespace(testHelper.InstallNamespace).
 			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
-			WithDomain(helper.TestrunnerName).
-			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
-			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
+			WithDomain(helper.TestServerName).
+			WithRoutePrefixMatcher(helper.TestServerName, "/").
+			WithRouteActionToSingleDestination(helper.TestServerName, testServerDestination).
 			Build()
 
 		// The set of resources that these tests will generate
 		glooResources = &gloosnapshot.ApiSnapshot{
 			VirtualServices: gatewayv1.VirtualServiceList{
-				// many tests route to the TestRunner Service so it makes sense to just
+				// many tests route to the TestServer Service so it makes sense to just
 				// always create it
 				// the other benefit is this ensures that all tests start with a valid Proxy CR
-				testRunnerVs,
+				testServerVs,
 			},
 		}
 	})
@@ -158,19 +158,19 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	Context("Proxy reconciliation", func() {
 
-		// This function parses a Proxy and determines how many routes are configured to point to the testrunner service
-		getRoutesToTestRunner := func(proxy *gloov1.Proxy) int {
-			routesToTestRunner := 0
+		// This function parses a Proxy and determines how many routes are configured to point to the testserver service
+		getRoutesToTestServer := func(proxy *gloov1.Proxy) int {
+			routesToTestServer := 0
 			for _, l := range proxy.Listeners {
 				for _, vh := range utils.GetVirtualHostsForListener(l) {
 					for _, r := range vh.Routes {
 						if action := r.GetRouteAction(); action != nil {
 							if single := action.GetSingle(); single != nil {
 								if svcDest := single.GetKube(); svcDest != nil {
-									if svcDest.Ref.Name == helper.TestrunnerName &&
+									if svcDest.Ref.Name == helper.TestServerName &&
 										svcDest.Ref.Namespace == testHelper.InstallNamespace &&
-										svcDest.Port == uint32(helper.TestRunnerPort) {
-										routesToTestRunner += 1
+										svcDest.Port == uint32(helper.TestServerPort) {
+										routesToTestServer += 1
 									}
 								}
 							}
@@ -178,7 +178,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 				}
 			}
-			return routesToTestRunner
+			return routesToTestServer
 		}
 
 		It("should process proxy with deprecated label", func() {
@@ -189,11 +189,11 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil, err
 				}
 
-				expectedRoutesToTestRunner := 1 // we created a virtual service, with a single route to the testrunner service
-				actualRoutesToTestRunner := getRoutesToTestRunner(proxy)
+				expectedRoutesToTestServer := 1 // we created a virtual service, with a single route to the testserver service
+				actualRoutesToTestServer := getRoutesToTestServer(proxy)
 
-				if expectedRoutesToTestRunner != actualRoutesToTestRunner {
-					return nil, eris.Errorf("Expected %d routes to test runner service, but found %d", expectedRoutesToTestRunner, actualRoutesToTestRunner)
+				if expectedRoutesToTestServer != actualRoutesToTestServer {
+					return nil, eris.Errorf("Expected %d routes to test server service, but found %d", expectedRoutesToTestServer, actualRoutesToTestServer)
 				}
 				return proxy, nil
 			})
@@ -222,7 +222,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				ctx,
 				&core.ResourceRef{
 					Namespace: testHelper.InstallNamespace,
-					Name:      helper.TestrunnerName,
+					Name:      helper.TestServerName,
 				},
 				func(resource resources.Resource) resources.Resource {
 					vs := resource.(*gatewayv1.VirtualService)
@@ -239,11 +239,11 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil, err
 				}
 
-				expectedRoutesToTestRunner := 2 // we duplicated the route to the testrunner service
-				actualRoutesToTestRunner := getRoutesToTestRunner(proxy)
+				expectedRoutesToTestServer := 2 // we duplicated the route to the testserver service
+				actualRoutesToTestServer := getRoutesToTestServer(proxy)
 
-				if expectedRoutesToTestRunner != actualRoutesToTestRunner {
-					return nil, eris.Errorf("Expected %d routes to test runner service, but found %d", expectedRoutesToTestRunner, actualRoutesToTestRunner)
+				if expectedRoutesToTestServer != actualRoutesToTestServer {
+					return nil, eris.Errorf("Expected %d routes to test server service, but found %d", expectedRoutesToTestServer, actualRoutesToTestServer)
 				}
 				return proxy, nil
 			})
@@ -285,7 +285,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				// No-op patch on a resource to ensure translation re-sync's
 				err = helpers.PatchResource(
 					ctx,
-					testRunnerVs.GetMetadata().Ref(),
+					testServerVs.GetMetadata().Ref(),
 					func(resource resources.Resource) resources.Resource {
 						resource.GetMetadata().Annotations = map[string]string{
 							"gloo-edge-test": "value",
@@ -316,13 +316,13 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "http",
 					Path:              "/",
 					Method:            "GET",
-					Host:              helper.TestrunnerName,
+					Host:              helper.TestServerName,
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
 					Verbose:           true,
-				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+				}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			},
 				EntryDescription("can route to upstreams, compressedProxySpec = %v"),
 				Entry(nil, false),
@@ -341,7 +341,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				glooResources.Secrets = gloov1.SecretList{tlsSecret}
 
 				// Modify the VirtualService to include the necessary SslConfig
-				testRunnerVs.SslConfig = &ssl.SslConfig{
+				testServerVs.SslConfig = &ssl.SslConfig{
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
 							Name:      tlsSecret.GetMetadata().GetName(),
@@ -356,27 +356,27 @@ var _ = Describe("Kube2e: gateway", func() {
 				//goland:noinspection GoUnhandledErrorResult
 				defer os.Remove(caFile)
 
-				err := setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testrunner:/tmp/ca.crt")
+				err := setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testserver:/tmp/ca.crt")
 				Expect(err).NotTo(HaveOccurred())
 
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "https",
 					Path:              "/",
 					Method:            "GET",
-					Host:              helper.TestrunnerName,
+					Host:              helper.TestServerName,
 					Service:           defaults.GatewayProxyName,
 					Port:              443,
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+				}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
 		Context("linkerd enabled updates routes with appended headers", func() {
 
 			var (
-				httpEcho helper.TestRunner
+				httpEcho helper.TestContainer
 			)
 
 			BeforeEach(func() {
@@ -390,7 +390,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				httpEcho, err = helper.NewEchoHttp(testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = httpEcho.Deploy(2 * time.Minute)
+				err = httpEcho.DeployResources(2 * time.Minute)
 				Expect(err).NotTo(HaveOccurred())
 
 				httpEchoDestination := &gloov1.Destination{
@@ -418,7 +418,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					settings.Linkerd = true
 				}, testHelper.InstallNamespace)
 
-				err := httpEcho.Terminate()
+				err := httpEcho.TerminatePod()
 				Expect(err).NotTo(HaveOccurred())
 
 				// TODO: Terminate() should do this as part of its cleanup
@@ -447,9 +447,9 @@ var _ = Describe("Kube2e: gateway", func() {
 			Context("route destination is nonexistent upstream", func() {
 
 				BeforeEach(func() {
-					// Add an invalid route to the testRunner VirtualService
+					// Add an invalid route to the testServer VirtualService
 					// Prepend the route, since the other route is a catch all
-					testRunnerVs.VirtualHost.Routes = append([]*gatewayv1.Route{
+					testServerVs.VirtualHost.Routes = append([]*gatewayv1.Route{
 						{
 							Name: "invalid-route",
 							Matchers: []*matchers.Matcher{{
@@ -470,7 +470,7 @@ var _ = Describe("Kube2e: gateway", func() {
 								},
 							},
 						},
-					}, testRunnerVs.VirtualHost.Routes...)
+					}, testServerVs.VirtualHost.Routes...)
 				})
 
 				It("serves a direct response for the invalid route response", func() {
@@ -479,19 +479,19 @@ var _ = Describe("Kube2e: gateway", func() {
 						Protocol:          "http",
 						Path:              "/",
 						Method:            "GET",
-						Host:              helper.TestrunnerName,
+						Host:              helper.TestServerName,
 						Service:           gatewayProxy,
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 					// the invalid route should respond with the direct response
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 						Protocol:          "http",
 						Path:              "/invalid-route",
 						Method:            "GET",
-						Host:              helper.TestrunnerName,
+						Host:              helper.TestServerName,
 						Service:           gatewayProxy,
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
@@ -738,7 +738,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tests with route tables", func() {
 
 		BeforeEach(func() {
-			rt2 := getRouteTable("rt2", nil, getRouteWithDest(testRunnerDestination, "/root/rt1/rt2"))
+			rt2 := getRouteTable("rt2", nil, getRouteWithDest(testServerDestination, "/root/rt1/rt2"))
 			rt1 := getRouteTable("rt1", nil, getRouteWithDelegateRef(rt2.Metadata.Name, "/root/rt1"))
 
 			vs := helpers.NewVirtualServiceBuilder().
@@ -771,7 +771,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 	})
 
@@ -829,7 +829,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				},
 				VirtualHost: &gatewayv1.VirtualHost{
 					Domains: []string{"*"},
-					Routes:  []*gatewayv1.Route{getRouteWithDest(testRunnerDestination, "/")},
+					Routes:  []*gatewayv1.Route{getRouteWithDest(testServerDestination, "/")},
 					Options: &gloov1.VirtualHostOptions{
 						HeaderManipulation: &headers.HeaderManipulation{
 							RequestHeadersToRemove: []string{"header-from-vhost"},
@@ -982,7 +982,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							Action: &gatewayv1.Route_RouteAction{
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
-										Single: testRunnerDestination,
+										Single: testServerDestination,
 									},
 								},
 							},
@@ -1120,7 +1120,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						"gloo": svcName,
 					},
 					Ports: []corev1.ServicePort{{
-						Port: helper.TestRunnerPort,
+						Port: helper.TestServerPort,
 					}},
 				},
 			}
@@ -1130,7 +1130,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		getUpstream := func(svcname string) (*gloov1.Upstream, error) {
-			upstreamName := kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
+			upstreamName := kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svcname, helper.TestServerPort)
 			return resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 		}
 
@@ -1158,7 +1158,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// This has only caused this test, which depends on discovery to flake, so in the meantime, we are adding
 			// a flake decorator
 
-			createServicesForPod(helper.TestrunnerName, helper.TestRunnerPort)
+			createServicesForPod(helper.TestServerName, helper.TestServerPort)
 
 			for _, svc := range createdServices {
 				Eventually(func() (*gloov1.Upstream, error) {
@@ -1170,7 +1170,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					ctx,
 					&core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svc, helper.TestRunnerPort),
+						Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svc, helper.TestServerPort),
 					},
 					func(resource resources.Resource) resources.Resource {
 						upstream := resource.(*gloov1.Upstream)
@@ -1248,7 +1248,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tcp", func() {
 
 		var (
-			httpEcho            helper.TestRunner
+			httpEcho            helper.TestContainer
 			httpEchoClusterName string
 			clusterIp           string
 			tcpPort             = corev1.ServicePort{
@@ -1265,7 +1265,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			httpEcho, err = helper.NewEchoHttp(testHelper.InstallNamespace)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = httpEcho.Deploy(time.Minute)
+			err = httpEcho.DeployResources(time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			gwSvc, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, gatewayProxy, metav1.GetOptions{})
@@ -1305,7 +1305,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Update(ctx, gwSvc, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			err = httpEcho.Terminate()
+			err = httpEcho.TerminatePod()
 			Expect(err).NotTo(HaveOccurred())
 
 			err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, helper.HttpEchoName, metav1.DeleteOptions{})
@@ -1765,24 +1765,24 @@ var _ = Describe("Kube2e: gateway", func() {
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
-				Host:              helper.TestrunnerName,
+				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 			// destination reachable via HybridGateway
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
-				Host:              helper.TestrunnerName,
+				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              int(hybridProxyServicePort.Port),
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})
@@ -1866,24 +1866,24 @@ var _ = Describe("Kube2e: gateway", func() {
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
-				Host:              helper.TestrunnerName,
+				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 			// destination reachable via HybridGateway
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
-				Host:              helper.TestrunnerName,
+				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              int(hybridProxyServicePort.Port),
 				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})
@@ -2098,7 +2098,7 @@ spec:
 					glooResources.Secrets = gloov1.SecretList{tlsSecret}
 
 					// Modify the VirtualService to include the created SslConfig
-					testRunnerVs.SslConfig = &ssl.SslConfig{
+					testServerVs.SslConfig = &ssl.SslConfig{
 						SslSecrets: &ssl.SslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{
 								Name:      tlsSecret.GetMetadata().GetName(),
@@ -2123,17 +2123,18 @@ spec:
 						ctx,
 						&core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
-							Name:      testRunnerVs.GetMetadata().Name,
+							Name:      testServerVs.GetMetadata().Name,
 						},
 						func(resource resources.Resource) resources.Resource {
-							vs := resource.(*gatewayv1.VirtualService)
+							vs, ok := resource.(*gatewayv1.VirtualService)
+							Expect(ok).To(BeTrue())
 							vs.SslConfig = nil
 							return vs
 						},
 						resourceClientset.VirtualServiceClient().BaseClient())
 					Expect(err).NotTo(HaveOccurred())
 					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 					})
 
 					// Although these tests delete the secret handled by our SnapshotWriter, because we set `IgnoreNotFound` when deleting snapshot resources, this won't cause an issue.
@@ -2228,12 +2229,12 @@ spec:
 			})
 
 			It("rejects invalid inja template in transformation", func() {
-				// update the test runner vs
+				// update the test server vs
 				err := helpers.PatchResource(
 					ctx,
 					&core.ResourceRef{
-						Namespace: testRunnerVs.GetMetadata().GetNamespace(),
-						Name:      testRunnerVs.GetMetadata().GetName(),
+						Namespace: testServerVs.GetMetadata().GetNamespace(),
+						Name:      testServerVs.GetMetadata().GetName(),
 					},
 					func(resource resources.Resource) resources.Resource {
 						vs := resource.(*gatewayv1.VirtualService)
@@ -2260,8 +2261,8 @@ spec:
 					err := helpers.PatchResource(
 						ctx,
 						&core.ResourceRef{
-							Namespace: testRunnerVs.GetMetadata().GetNamespace(),
-							Name:      testRunnerVs.GetMetadata().GetName(),
+							Namespace: testServerVs.GetMetadata().GetNamespace(),
+							Name:      testServerVs.GetMetadata().GetName(),
 						},
 						func(resource resources.Resource) resources.Resource {
 							vs := resource.(*gatewayv1.VirtualService)
@@ -2273,8 +2274,8 @@ spec:
 					Expect(err).NotTo(HaveOccurred())
 					Eventually(func(g Gomega) {
 						vs, err := resourceClientset.VirtualServiceClient().Read(
-							testRunnerVs.GetMetadata().GetNamespace(),
-							testRunnerVs.GetMetadata().GetName(),
+							testServerVs.GetMetadata().GetNamespace(),
+							testServerVs.GetMetadata().GetName(),
 							clients.ReadOpts{Ctx: ctx})
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(vs.GetVirtualHost().GetOptions().GetTransformations()).To(gloo_matchers.MatchProto(invalidTransformation))
@@ -2324,7 +2325,7 @@ spec:
 						WithRoutePrefixMatcher("route", "/").
 						WithRouteActionToUpstreamRef("route",
 							&core.ResourceRef{
-								Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+								Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.TestServerName, helper.TestServerPort),
 								Namespace: testHelper.InstallNamespace,
 							}).
 						Build()
@@ -2362,7 +2363,7 @@ spec:
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 						Protocol:          "http",
 						Path:              "/",
@@ -2405,7 +2406,7 @@ spec:
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
 					// the fixed virtual service should also work
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -2417,7 +2418,7 @@ spec:
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 				})
 
 				Context("adds the invalid virtual services back into the proxy", func() {
