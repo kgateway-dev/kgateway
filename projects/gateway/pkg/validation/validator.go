@@ -113,9 +113,13 @@ type validationOptions struct {
 	AcquireLock bool
 	DryRun      bool
 	Delete      bool
-	SkipDelete  bool
 	Resource    resources.Resource
 	Gvk         schema.GroupVersionKind
+	// This flag is used when re-validating a snapshot in the cases where we want to ignore 'allow_warnings=true'
+	// and is used to set the 'shouldDelete' parameter passed to the glooValidator, which will remove the resource if it is present
+	validateUnmodified bool
+	// When we may be comparing the output of validation with the original validation output, we want to collect all errors instead of returning on the first error
+	collectAllErrors bool
 }
 
 type ValidatorConfig struct {
@@ -226,7 +230,7 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 // 	ExtraError   error
 // }
 
-func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) ([]*gloov1.Proxy, ProxyReports, error) {
+func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) ([]*gloov1.Proxy, ProxyReports, error) {
 	var (
 		errs         error
 		err          error
@@ -234,7 +238,7 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 		proxies      []*gloov1.Proxy
 	)
 
-	getAllErrors := opts.Delete && opts.Gvk.Kind == "Secret" // We're overriding `delete` so need another way to check
+	//getAllErrors := opts.Delete && opts.Gvk.Kind == "Secret"
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
 	// translate all the proxies
 	for proxyName, gatewayList := range gatewaysByProxy {
@@ -244,16 +248,13 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 			validate = reports.Validate
 		}
 		if err := validate(); err != nil {
-			fmt.Printf("SAH - error translating proxy: %v\n", err)
 			err = errors.Wrapf(err, couldNotRenderProxy)
 			errs = multierror.Append(errs, err)
 
-			if !getAllErrors {
+			if !opts.collectAllErrors {
 				continue
 			}
 		}
-
-		//printUnwrappedMultiError(errs, "SAH - After translating proxy")
 
 		// a nil proxy may have been returned if 0 listeners were created
 		if proxy == nil {
@@ -262,114 +263,68 @@ func (v *validator) translateProxies(ctx context.Context, snapshot *gloov1snap.A
 
 		proxies = append(proxies, proxy)
 
-		//fmt.Println("SAH - v.glooValidator")
 		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/validator.go
-		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, (opts.Delete && !opts.SkipDelete))
+		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, (opts.Delete && !opts.validateUnmodified))
 		if err != nil {
-			//fmt.Printf("SAH - glooValidator error : %v\n", err)
 			err = errors.Wrapf(err, failedGlooValidation)
-			//err = multiErrorWrap(err, failedGlooValidation)
 			errs = multierror.Append(errs, err)
-			if !getAllErrors {
+			if !opts.collectAllErrors {
 				continue
 			}
 
-			//printUnwrappedMultiError(errs, "SAH - After glooValidator")
 		}
 
 		if len(glooReports) != 1 {
 			// This was likely caused by a development error
 			err := GlooValidationResponseLengthError(glooReports)
-			//fmt.Printf("SAH - GlooValidationResponseLengthError error : %v\n", err)
 			errs = multierror.Append(errs, err)
-			//continue
+			if !opts.collectAllErrors {
+				continue
+			}
 		}
 
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierror.Append(errs, proxyFailedGlooValidation(err, proxy))
-			//fmt.Printf("SAH - proxyReports error : %v\n", err)
-			if !getAllErrors {
+			if !opts.collectAllErrors {
 				continue
 			}
 		}
 		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
 			for _, warning := range warnings {
-				//fmt.Printf("SAH - GetProxyWarning : %v\n", err)
 				errs = multierror.Append(errs, errors.New(warning))
 			}
-			if !getAllErrors {
+			if !opts.collectAllErrors {
 				continue
 			}
 		}
-
-		//printUnwrappedMultiError(errs, "SAH - After GetProxyWarning")
 
 		err = v.getErrorsFromGlooValidation(glooReports)
 		if err != nil {
-			//fmt.Printf("SAH - getErrorsFromGlooValidation : %v\n", err)
 			err = errors.Wrapf(err, failedResourceReports)
-			//printUnwrappedMultiError(err, "SAH - Returned from getErrorsFromGlooValidation")
-			//err = multiErrorWrap(err, failedResourceReports)
 			errs = multierror.Append(errs, err)
-			if !getAllErrors {
+			if !opts.collectAllErrors {
 				continue
 			}
 		}
 
-		//printUnwrappedMultiError(errs, "SAH - After getErrorsFromGlooValidation")
 	}
 
 	extensionReports := v.extensionValidator.Validate(ctx, snapshot)
+	fmt.Println("SAH - extensionReports: ", extensionReports)
 	if len(extensionReports) > 0 {
 		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
 			fmt.Printf("SAH - extensionReports errors : %v\n", err)
 			err = errors.Wrapf(err, failedExtensionResourceReports)
-			//err = multiErrorWrap(err, failedExtensionResourceReports)
 			errs = multierror.Append(errs, err)
 		}
 	}
 
-	//printUnwrappedMultiError(errs, "SAH - Before return from translateProxies")
+	//printUnwrappedMultiError(errs, "SAH - Before return from validateProxiesAndExtensions")
 
 	return proxies, proxyReports, errs
 }
-
-// func multiErrorWrap(err error, s string) error {
-// 	if err == nil {
-// 		return nil
-// 	}
-
-// 	var retErrs error
-// 	if merr, ok := err.(*multierror.Error); ok {
-// 		for _, err := range merr.WrappedErrors() {
-// 			errors.Wrapf(err, s)
-// 			fmt.Println("SAH - wrapped up error: ", err)
-// 			retErrs = multierror.Append(retErrs, err)
-// 		}
-// 	} else {
-// 		retErrs = errors.Wrapf(err, s)
-// 	}
-
-// 	return retErrs
-
-// }
-
-// func printUnwrappedMultiError(err error, s string) {
-
-// 	if merr, ok := err.(*multierror.Error); ok {
-// 		unwrapped := merr.WrappedErrors()
-
-// 		fmt.Println("SAH - Unwrapped errors: ", s)
-// 		for _, err := range unwrapped {
-// 			fmt.Println("+++\n", err, "\n+++")
-// 		}
-// 	} else {
-// 		fmt.Println(s, "not a multierror")
-// 	}
-
-// }
 
 func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) {
 	fmt.Println("SAH - validateSnapshot")
@@ -399,35 +354,38 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		return nil, nil
 	}
 
-	//var secretToSave gloov1.Secret
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
-		fmt.Println("SAH - removing from resource list")
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
 	} else {
-		fmt.Println("SAH - upserting resource list")
 		if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
 	}
 
-	proxies, proxyReports, errs := v.translateProxies(ctx, snapshotClone, opts)
-
-	// // If we're deleting a secret and run into an error, try to revaldiate
-	deleteDespiteErrors := false
-	if errs != nil && opts.Delete && opts.Gvk.Kind == "Secret" {
-		deleteDespiteErrors = v.secretDeleteOverride(ctx, proxies, proxyReports, opts, errs)
+	// If we may be using the output of validation to confirm an update, we need to collect all the errors for comparison
+	if retryValidationOnErrors(ctx, opts) {
+		opts.collectAllErrors = true
 	}
 
+	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
+
+	updateDespiteErrors := false
 	if errs != nil {
 		if !opts.DryRun {
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
 
-		if deleteDespiteErrors {
-			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but deleting secret: %T %v: %v", opts.Resource, ref, errs)
+		// In some cases we want to be able to update resources despite errors, for example secrets
+		// In these cases we will rerun validation and compare the output to the original validation
+		if errs != nil && retryValidationOnErrors(ctx, opts) {
+			updateDespiteErrors = v.compareValidationWithoutDelete(ctx, opts, proxies, proxyReports, errs)
+		}
+
+		if updateDespiteErrors {
+			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but deleting resource: %T %v: %v", opts.Resource, ref, errs)
 		} else {
 			contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
 
@@ -439,7 +397,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", opts.Resource, ref)
-	if !opts.DryRun && !deleteDespiteErrors {
+	if !opts.DryRun && !updateDespiteErrors {
 		utils2.MeasureOne(ctx, mValidConfig)
 	}
 
@@ -461,152 +419,60 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-func (v *validator) secretDeleteOverride(ctx context.Context, proxies []*gloov1.Proxy, proxyReports ProxyReports, opts *validationOptions, errs error) bool {
+func retryValidationOnErrors(ctx context.Context, opts *validationOptions) bool {
+	if opts.Delete && opts.Gvk.Kind == "Secret" {
+		return true
+	}
+	return false
+}
+
+// compareValidationWithoutDelete is used to
+// It returns true if the validation output is the same as the original validation output
+func (v *validator) compareValidationWithoutDelete(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error) bool {
 	fmt.Println("SAH - revalidating secret delete")
 
-	deleteSecret := false
-	opts.SkipDelete = true
-	// fmt.Println("Adding back to resource list")
-	// if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
-	// 	return nil, err
-	// }
+	// Set the 'validateUnmodified' flag to true to ensure that the resource is not deleted
+	opts.validateUnmodified = true
 
 	snapshotCloneUnmodified, err := v.copySnapshotNonThreadSafe(ctx, opts.DryRun)
 	if err != nil {
-		// allow writes if storage is already broken
+		// If storage is broken default to to disallowing the update.
+		// Don't override the initial errors without being confident that the update is valid
 		return false
 	}
 
-	origProxies, origProxyReports, origErrs := v.translateProxies(ctx, snapshotCloneUnmodified, opts)
+	// Get the validation output without the delete
+	proxiesWithoutDelete, proxyReportsWithoutDelete, errsWithoutDelete := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
 
-	sameErrors := compareErrors(origErrs, errs)
-	// Check errors
+	sameErrors := compareErrors(errsWithoutDelete, errs)
+	sameProxies := compareProxies(proxiesWithoutDelete, proxies)
+	sameReports := compareReports(proxyReportsWithoutDelete, proxyReports)
 
-	fmt.Printf("SAH Errors are the same? %t\n", sameErrors)
-
-	naiveCheck := origErrs.Error() == errs.Error()
-
-	fmt.Printf("SAH -simple error check: %t\n", naiveCheck)
-
-	if !naiveCheck {
-		fmt.Printf("SAH- these don't ==\n")
-		fmt.Printf("SAH - origErrs:---\n%v\n---\n", origErrs)
-		fmt.Printf("SAH - errs:---\n%v\n---\n", errs)
-	}
-
-	//fmt.Println("SAH - origProxyReports-2: ", origProxyReports)
-	//fmt.Println("SAH -- origErrors-2: ", origErrs)
-	// Compare proxies - move to a function
-	sameProxies := compareProxies(origProxies, proxies)
-	fmt.Printf("SAH Proxies are the same? %t\n", sameProxies)
-
-	sameReports := compareReports(origProxyReports, proxyReports)
-
-	fmt.Printf("SAH Reports are the same? %t\n", sameReports)
-
-	if !sameReports {
-		fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
-		fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
-	}
-	// fmt.Printf("SAH - origProxyReports: %v\n", origProxyReports)
-	// fmt.Printf("SAH - ProxyReports with delete: %v\n", proxyReports)
-
-	// fmt.Printf("SAH - origErrors: %v\n", origErrs)
-	// fmt.Printf("SAH - errors: %v\n", errs)
-
+	fmt.Printf("sameProxies, sameErrors, sameReports: %t, %t, %t", sameProxies, sameErrors, sameReports)
+	sameValidationOutput := false
 	if sameProxies && sameErrors && sameReports {
-		deleteSecret = true
+		sameValidationOutput = true
 	}
 
-	return deleteSecret
+	return sameValidationOutput
 }
 
+// compareErrors compares two lists of errors and returns true if they are the same
+// TODO: explain why are we using this approach
 func compareErrors(error1, error2 error) bool {
-	//	return error1 == error2
-	var errList []error
-	var errListOrig []error
-
-	if merr, ok := error1.(*multierror.Error); ok {
-		errList = merr.WrappedErrors()
-	} else {
-		errList = []error{error1}
-	}
-
-	if merr, ok := error2.(*multierror.Error); ok {
-		errListOrig = merr.WrappedErrors()
-	} else {
-		errListOrig = []error{error2}
-	}
-
-	sameErrors := len(errList) == len(errListOrig)
-
-	if sameErrors {
-		origErrMap := make(map[string]bool)
-		for _, e := range errList {
-			fmt.Printf("SAH - origErr: +++\n%s\n+++ \n", e.Error())
-			origErrMap[e.Error()] = true
-		}
-
-		for _, e := range errListOrig {
-			if _, ok := origErrMap[e.Error()]; !ok {
-				fmt.Printf("SAH - error not in error1:\n+++\n%+v\n++++\n", e)
-				sameErrors = false
-				break
-			} else {
-				origErrMap[e.Error()] = false
-			}
-		}
-
-		for k, v := range origErrMap {
-			// The fields were set up as true and set to false as they were matched.
-			// Fields that are still true are not in other list
-			if v {
-				fmt.Printf("SAH - error not in error2:\n+++\n%s\n++++\n", k)
-				break
-			}
-		}
-	}
-	return sameErrors
+	return error1.Error() == error2.Error()
 }
 
 func compareReports(origProxyReports, proxyReports ProxyReports) bool {
 	return reflect.DeepEqual(origProxyReports, proxyReports)
-	// sameReports := len(origProxyReports) == len(proxyReports)
-	// if sameReports {
-	// 	proxyReportMap := make(map[string]bool)
-	// 	for _, proxyReport := range proxyReports {
-	// 		proxyReportMap[proxyReport.String()] = true
-	// 	}
-
-	// 	// Check each report against the map
-	// 	for _, proxyReport := range origProxyReports {
-	// 		if _, ok := proxyReportMap[proxyReport.String()]; !ok {
-	// 			sameReports = false
-	// 			//break
-	// 		}
-	// 	}
-	// }
-	// return sameReports
 }
 
 func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
 	sameProxies := len(proxy1) == len(proxy2)
 	if sameProxies {
-		proxyHashes := make(map[string]uint64)
-		///origProxyhashes = make(map[string]uint64)
-		for _, proxy := range proxy1 {
-			// Need better key, put in function
-			proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
-			proxyHashes[proxyKey] = proxy.MustHash()
-		}
-
-		for _, proxy := range proxy2 {
-			proxyKey := fmt.Sprintf("%s-%s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName())
-			origHash := proxy.MustHash()
-			fmt.Printf("SAH - proxy %s hash with delete: %d, original hash %d\n", proxyKey, proxyHashes[proxyKey], origHash)
-			if proxyHashes[proxyKey] != origHash {
-				sameProxies = false
-				break
+		for i := range proxy1 {
+			if proxy1[i].MustHash() != proxy2[i].MustHash() {
+				return false
 			}
 		}
 	}
