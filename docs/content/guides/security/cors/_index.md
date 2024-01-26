@@ -14,7 +14,7 @@ When CORS is enabled in a web browser and a request for a different domain comes
 
 Note that the preflight request is optional. Web browsers can also be configured to send the cross-origin directly. However, access to the request resource is granted only if CORS headers were returned in the response. If no headers are returned during the preflight request, the web browser denies access to the resource in the other domain. 
 
-CORS policies are typically implemented to limit access to server resources for JavaScripts that are embedded in a web page, such as 
+CORS policies are typically implemented to limit access to server resources for JavaScripts that are embedded in a web page, such as:
 * A JavaScript on a web page at `example.com` tries to access a different domain, such as `api.com`.
 * A JavaScript on a web page at `example.com` tries to access a different subdomain, such as `api.exampl.com`.
 * A JavaScript on a web page at `example.com` tries to access a different port, such as `example.com:3001`.
