@@ -109,13 +109,13 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, substr string,
 	}, currentTimeout, pollingInterval).Should(gomega.ContainSubstring(substr))
 }
 
-func (t *testContainer) CurlEventuallyShouldRespondWithGomega(g gomega.Gomega, opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
+func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
 	currentTimeout, pollingInterval := getTimeouts(timeout...)
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
 
-	g.EventuallyWithOffset(ginkgoOffset+1, func() (string, error) {
-		g.Expect(t.CanCurl()).To(gomega.BeTrue())
+	gomega.EventuallyWithOffset(ginkgoOffset+1, func() (string, error) {
+		gomega.Expect(t.CanCurl()).To(gomega.BeTrue())
 
 		res, err := t.Curl(opts)
 		if err != nil {
@@ -123,7 +123,7 @@ func (t *testContainer) CurlEventuallyShouldRespondWithGomega(g gomega.Gomega, o
 			// if we return an error here, the Eventually will continue. By making an
 			// assertion with the outer context's Gomega, we can trigger a failure at
 			// that outer scope.
-			g.Expect(err.Error()).NotTo(gomega.ContainSubstring(`pods "testserver" not found`))
+			gomega.Expect(err.Error()).NotTo(gomega.ContainSubstring(`pods "testserver" not found`))
 
 			return "", err
 		}
@@ -140,10 +140,6 @@ func (t *testContainer) CurlEventuallyShouldRespondWithGomega(g gomega.Gomega, o
 		}
 		return res, nil
 	}, currentTimeout, pollingInterval).Should(gomega.ContainSubstring(substr))
-}
-
-func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, substr string, ginkgoOffset int, timeout ...time.Duration) {
-	t.CurlEventuallyShouldRespondWithGomega(gomega.Default, opts, substr, ginkgoOffset, timeout...)
 }
 
 func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {

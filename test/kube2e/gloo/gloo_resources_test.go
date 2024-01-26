@@ -169,48 +169,44 @@ var _ = Describe("GlooResourcesTest", func() {
 		// The sslConfig should be rotated and given time for the change to be reflected in the upstream.
 		// It can take 15 seconds, sometimes longer, for the rotation to occur and the upstream request to fail.
 		// The failure occurs randomly, so the curl must happen multiple times.
-		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", func() {
-			// This failure occurs randomly. As such we want to make sure we attempt multiple times to increase confidence.
-			numAttempts := 10
-
+		It("Should be able to rotate a secret referenced on a sslConfig on a kube upstream", MustPassRepeatedly(10), func() {
 			// 22 seconds between rotation allows 150% expected delay
-			rotationInterval := 22 * time.Second
+			rotationDelay := 22 * time.Second
 
 			// time given for a single curl, also used as the ConnectionTimeout in the CurlOpts
 			timeForCurling := 1 * time.Second
 
-			// This nested async assertion will make sure that the rotation happens numAttempts times,
-			// and that each time we eventually reach a good state. The maximum timeout for this should be
-			// numAttempts*rotationInterval.
-			Eventually(func(g Gomega) {
-				By("Generate new CaCrt and PrivateKey")
-				crt, crtKey := helpers.GetCerts(helpers.Params{
-					Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
-					IsCA:  true,
-				})
+			By("Generate new CaCrt and PrivateKey")
+			crt, crtKey := helpers.GetCerts(helpers.Params{
+				Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
+				IsCA:  true,
+			})
 
-				By("Update the kube secret with the new values")
-				tlsSecret.Data = map[string][]byte{
-					kubev1.TLSCertKey:       []byte(crt),
-					kubev1.TLSPrivateKeyKey: []byte(crtKey),
-				}
-				_, err := resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
-				g.Expect(err).NotTo(HaveOccurred())
+			By("Update the kube secret with the new values")
+			tlsSecret.Data = map[string][]byte{
+				kubev1.TLSCertKey:       []byte(crt),
+				kubev1.TLSPrivateKeyKey: []byte(crtKey),
+			}
+			_, err := resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Eventually can curl the endpoint")
-				testHelper.CurlEventuallyShouldRespondWithGomega(g, helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/",
-					Method:            "GET",
-					Host:              helper.TestServerName,
-					Service:           defaults.GatewayProxyName,
-					Port:              gatewayPort,
-					ConnectionTimeout: int(timeForCurling / time.Second),
-					WithoutStats:      true,
-					Verbose:           true,
-				}, kube2e.TestServerHttpResponse(), 1, rotationInterval, timeForCurling)
-			}, rotationInterval*time.Duration(numAttempts),
-				rotationInterval).MustPassRepeatedly(numAttempts).Should(Succeed())
+			By("Eventually can curl the endpoint")
+			opts := helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/",
+				Method:            "GET",
+				Host:              helper.TestServerName,
+				Service:           defaults.GatewayProxyName,
+				Port:              gatewayPort,
+				ConnectionTimeout: int(timeForCurling / time.Second),
+				WithoutStats:      true,
+				Verbose:           true,
+			}
+
+			offset := 1
+			testHelper.CurlEventuallyShouldRespond(opts,
+				kube2e.TestServerHttpResponse(), offset,
+				rotationDelay, timeForCurling)
 		})
 	})
 })
