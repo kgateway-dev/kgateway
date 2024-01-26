@@ -60,7 +60,7 @@ The following fields are available when specifying CORS on your `VirtualService`
 | `exposeHeaders`    | `[]string` | Specifies the content for the *access-control-expose-headers* header.                                                                                            |         |
 | `maxAge`           | `string`   | Specifies the content for the *access-control-max-age* header.                                                                                                   |         |
 | `allowCredentials` | `bool`     | Specifies whether the resource allows credentials.                                                                                                               |         |
-| `disableForRoute` | `bool` | If set, the CORS Policy (specified on the virtual host) will be disabled for this route. | false |
+| `disableForRoute` | `bool` | If set, the CORS Policy (specified on the virtual host) is disabled for this route. | false |
 
 For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/" %}}). 
 
