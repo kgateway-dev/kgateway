@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -521,6 +522,7 @@ func (v *validator) secretDeleteOverride(ctx context.Context, proxies []*gloov1.
 }
 
 func compareErrors(error1, error2 error) bool {
+	//	return error1 == error2
 	var errList []error
 	var errListOrig []error
 
@@ -568,22 +570,23 @@ func compareErrors(error1, error2 error) bool {
 }
 
 func compareReports(origProxyReports, proxyReports ProxyReports) bool {
-	sameReports := len(origProxyReports) == len(proxyReports)
-	if sameReports {
-		proxyReportMap := make(map[string]bool)
-		for _, proxyReport := range proxyReports {
-			proxyReportMap[proxyReport.String()] = true
-		}
+	return reflect.DeepEqual(origProxyReports, proxyReports)
+	// sameReports := len(origProxyReports) == len(proxyReports)
+	// if sameReports {
+	// 	proxyReportMap := make(map[string]bool)
+	// 	for _, proxyReport := range proxyReports {
+	// 		proxyReportMap[proxyReport.String()] = true
+	// 	}
 
-		// Check each report against the map
-		for _, proxyReport := range origProxyReports {
-			if _, ok := proxyReportMap[proxyReport.String()]; !ok {
-				sameReports = false
-				//break
-			}
-		}
-	}
-	return sameReports
+	// 	// Check each report against the map
+	// 	for _, proxyReport := range origProxyReports {
+	// 		if _, ok := proxyReportMap[proxyReport.String()]; !ok {
+	// 			sameReports = false
+	// 			//break
+	// 		}
+	// 	}
+	// }
+	// return sameReports
 }
 
 func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
