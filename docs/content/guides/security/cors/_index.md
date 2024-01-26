@@ -4,23 +4,25 @@ weight: 70
 description: Enforce client-side access controls by specifying external domains to access certain routes of your domain
 ---
 
-### Understanding CORS
+Cross-Origin Resource Sharing (CORS) is a security feature that is implemented by web browsers and that controls how web pages in one domain can request and interact with resources that are hosted on a different domain. 
 
-Cross-Origin Resource Sharing (CORS) is a method of enforcing client-side access controls on resources by specifying
-external domains that are able to access certain or all routes of your domain. Browsers use the presence of HTTP headers
-to determine if a response from a different origin is allowed.
+## How does CORS work? 
 
-It is a mechanism which aims to allow requests made on behalf of you and at the same time block requests made by rogue
-JS. As an example, it is triggered whenever scenarios like the ones below occur:
+By default, web browsers only allow requests to resources that are hosted on the same domain as the web page that served the original request. Access to web pages or resources that are hosted on a different domain is restricted to prevent potential security vulnerabilities, such as cross-site request forgery (CRSF).
 
-- a different domain (eg. site at example.com calls api.com)
-- a different sub domain (eg. site at example.com calls api.example.com)
-- a different port (eg. site at example.com calls example.com:3001)
-- a different protocol (eg. site at `https://example.com` calls `http://example.com`)
+When CORS is enabled in a web browser and a request for a different domain comes in, the web browser checks whether this request is allowed or not. To do that, it typically sends a preflight request (HTTP `OPTIONS` method) to the server or service that serves the requested resource to get back the methods that are allowed to use when sending the actual cross-origin request, such as `GET`, `POST`, etc. If the request to the different domain is allowed, the response includes CORS-specific headers that instruct the web browser how to make the cross-origin request. For example, the CORS headers typically include the origin that is allowed to access the resource, and the credentials or headers that must be included in the cross-origin request. 
+
+Note that the preflight request is optional. Web browsers can also be configured to send the cross-origin directly. However, access to the request resource is granted only if CORS headers were returned in the response. If no headers are returned during the preflight request, the web browser denies access to the resource in the other domain. 
+
+CORS policies are typically implemented to limit access to server resources for JavaScripts that are embedded in a web page, such as:
+* A JavaScript on a web page at `example.com` tries to access a different domain, such as `api.com`.
+* A JavaScript on a web page at `example.com` tries to access a different subdomain, such as `api.example.com`.
+* A JavaScript on a web page at `example.com` tries to access a different port, such as `example.com:3001`.
+* A JavaScript on a web page at `https://example.com` tries to access the resources by using a different protocol, such as `http://example.com`. 
 
 For more details, see [this article](https://medium.com/@baphemot/understanding-cors-18ad6b478e2b).
 
-### Where to Use It
+## How to configure a VirtualService for CORS
 
 In order to allow your `VirtualService` to work with CORS, you need to add a new set of configuration options in
 the `VirtualHost` part of your `VirtualService`
@@ -41,7 +43,9 @@ spec:
     - '*'
 {{< /highlight >}}
 
-{{< notice note >}} Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configured in Gloo Edge.  {{< /notice >}}
+{{% notice note %}} 
+Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Edge. 
+{{% /notice %}}
 
 ### Available Fields
 
@@ -50,54 +54,126 @@ The following fields are available when specifying CORS on your `VirtualService`
 | Field              | Type       | Description                                                                                                                                                      | Default |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `allowOrigin`      | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match.                       |         |
-| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |         |
+| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either `allow_origin` or `allow_origin_regex` match. Note that Gloo Edge uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar. For example, to match all subdomains `https://example.com`, do not use `https://*.example.com`, but instead use `https://[a-zA-Z0-9]*.example.com`.   |         |
 | `allowMethods`     | `[]string` | Specifies the content for the *access-control-allow-methods* header.                                                                                             |         |
 | `allowHeaders`     | `[]string` | Specifies the content for the *access-control-allow-headers* header.                                                                                             |         |
 | `exposeHeaders`    | `[]string` | Specifies the content for the *access-control-expose-headers* header.                                                                                            |         |
 | `maxAge`           | `string`   | Specifies the content for the *access-control-max-age* header.                                                                                                   |         |
 | `allowCredentials` | `bool`     | Specifies whether the resource allows credentials.                                                                                                               |         |
+| `disableForRoute` | `bool` | If set, the CORS Policy (specified on the virtual host) is disabled for this route. | false |
+
+For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/" %}}). 
+
+## Try out an example
+
+1. Follow the steps to [deploy the Petstore Hello World app]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) in your cluster. 
+2. Edit the virtual service that exposes the Petstore app to add in a CORS policy. 
+   ```sh
+   kubectl edit virtualservice default -n gloo-system
+   ```
+   
+3. Add the following CORS configuration to the `spec.virtualHostoptions` section of your virtual service. The CORS policy in this example configures the Petstore to allow cross-origin requests for the `https://example.com` and `https://*.gloo.dev` domains. With this setup, you can host scripts or other resources on the `https://*.gloo.dev` or `https://solo.io` domains, even if your application is not being served from that location.
+   ```yaml
+   ...
+   spec:
+     virtualHost:
+       domains:
+       - '*'
+       options:
+         cors:
+           allowCredentials: true
+           allowHeaders:
+           - origin
+           allowMethods:
+           - GET
+           - POST
+           - OPTIONS
+           allowOrigin:
+           - https://example.com
+           allowOriginRegex:
+           - https://[a-zA-Z0-9]*.example.com
+           exposeHeaders:
+           - origin
+           maxAge: 1d
+   ```
+
+4. Send a request to the Petstore app for the origin `https://example.com` and verify that the CORS headers are returned. The presence of these CORS headers instruct a web browser to grant access to the remote resource. 
+   {{% notice note %}}
+   A preflight request to the Petstore sample app cannot be simulated as part of this guide because the Petstore app does not support the `OPTIONS` method. 
+   {{% /notice %}}
+   ```
+   curl -vik -H "Origin: https://example.com" \
+   -H "Access-Control-Request-Method: GET" \
+   -X GET $(glooctl proxy url)/all-pets  
+   ```
+   
+   Example output: 
+   ```
+   > GET /all-pets HTTP/1.1
+   > User-Agent: curl/7.77.0
+   > Accept: */*
+   > Origin: https://example.com
+   > Access-Control-Request-Method: GET
+   > 
+   * Mark bundle as not supporting multiuse
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
+   < access-control-allow-origin: https://example.com
+   access-control-allow-origin: https://example.com
+   < access-control-allow-credentials: true
+   access-control-allow-credentials: true
+   < access-control-expose-headers: origin
+   access-control-expose-headers: origin
+   < server: envoy
+   server: envoy
+
+   < 
+   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+   ```
+   
+5. Send another request to the Petstore app. This time, include the origin `https://notallowed.com` that is not configured in your virtual service. Verify that no CORS headers are returned for the provided origin. 
+
+   {{% notice note %}}
+   The request still returns a 200 HTTP response code, because a curl client is used to make the request in this example. However, CORS policies are enforced in a web browser. If this type of request is sent through a web browser and no CORS headers are returned in the response, the web browser denies access to the requested resource as the cross-origin instructions are missing. 
+   {{% /notice %}}
+
+   ```
+   curl -vik -H "Origin: https://notallowed.com" \
+   -H "Access-Control-Request-Method: GET" \
+   -X GET $(glooctl proxy url)/all-pets 
+   ``` 
+   
+   Example output: 
+   ```
+   GET /all-pets HTTP/1.1
+   > Host: ab2e5d3c1c8f0466b9cee8494e87a90d-1027513527.us-east-1.elb.amazonaws.com
+   > User-Agent: curl/7.77.0
+   > Accept: */*
+   > Origin: https://notallowed.com
+   > Access-Control-Request-Method: GET
+   > 
+   * Mark bundle as not supporting multiuse
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
+   < content-type: text/xml
+   content-type: text/xml   
+   < content-length: 86
+   content-length: 86
+   < x-envoy-upstream-service-time: 1
+   x-envoy-upstream-service-time: 1
+   < server: envoy
+   server: envoy
+
+   < 
+   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+   ```
 
 
-#### Regex Grammar
 
-Note that Gloo Edge uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar.
 
-For example, in order to match all subdomains:
 
-  - Do not use: `https://*.example.com`
-  - Instead, use: `https://[a-zA-Z0-9]*.example.com`
 
-### Example
 
-In the example below, the virtual service, through CORS parameters, will inform your browser that it should also allow
-`GET` and `POST` calls from services located on `https://*.gloo.dev` (or `https://solo.io`). This could allow you to host scripts or
-other needed resources on the `'https://*.gloo.dev'` (or `https://solo.io`), even if your application is not being server from that location.
 
-{{< highlight yaml "hl_lines=9-24" >}}
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: corsexample
-  namespace: gloo-system
-spec:
-  displayName: corsexample
-  virtualHost:
-    options:
-      cors:
-        allowCredentials: true
-        allowHeaders:
-        - origin
-        allowMethods:
-        - GET
-        - POST
-        allowOrigin:
-        # The scheme portion of the URL is required
-        - 'https://solo.io'
-        allowOriginRegex:
-        - 'https://[a-zA-Z0-9]*.gloo.dev'
-        exposeHeaders:
-        - origin
-        maxAge: 1d
-    domains:
-    - '*'
-{{< /highlight >}}
+
+
