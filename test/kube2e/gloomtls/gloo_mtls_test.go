@@ -30,31 +30,31 @@ var _ = Describe("Kube2e: mTLS", func() {
 	)
 
 	BeforeEach(func() {
-		// Create a VirtualService routing directly to the testrunner kubernetes service
-		testRunnerDestination := &gloov1.Destination{
+		// Create a VirtualService routing directly to the testserver kubernetes service
+		testServerDestination := &gloov1.Destination{
 			DestinationType: &gloov1.Destination_Kube{
 				Kube: &gloov1.KubernetesServiceDestination{
 					Ref: &core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      helper.TestrunnerName,
+						Name:      helper.TestServerName,
 					},
-					Port: uint32(helper.TestRunnerPort),
+					Port: uint32(helper.TestServerPort),
 				},
 			},
 		}
-		testRunnerVs := helpers.NewVirtualServiceBuilder().
-			WithName(helper.TestrunnerName).
+		testServerVs := helpers.NewVirtualServiceBuilder().
+			WithName(helper.TestServerName).
 			WithNamespace(testHelper.InstallNamespace).
 			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
-			WithDomain(helper.TestrunnerName).
-			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
-			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
+			WithDomain(helper.TestServerName).
+			WithRoutePrefixMatcher(helper.TestServerName, "/").
+			WithRouteActionToSingleDestination(helper.TestServerName, testServerDestination).
 			Build()
 
 		// The set of resources that these tests will generate
 		glooResources = &gloosnapshot.ApiSnapshot{
 			VirtualServices: gatewayv1.VirtualServiceList{
-				testRunnerVs,
+				testServerVs,
 			},
 		}
 	})
@@ -80,11 +80,11 @@ var _ = Describe("Kube2e: mTLS", func() {
 			Protocol:          "http",
 			Path:              "/",
 			Method:            "GET",
-			Host:              helper.TestrunnerName,
+			Host:              helper.TestServerName,
 			Service:           defaults.GatewayProxyName,
 			Port:              gatewayPort,
 			ConnectionTimeout: 1, // this is important, as the first curl call sometimes hangs indefinitely
-		}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, time.Second*60, time.Second*1)
+		}, kube2e.TestServerHttpResponse(), 1, time.Second*60, time.Second*1)
 	})
 
 })
