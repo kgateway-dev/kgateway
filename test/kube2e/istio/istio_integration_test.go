@@ -41,14 +41,14 @@ const (
 var _ = Describe("Gloo + Istio integration tests", func() {
 	var (
 		upstreamRef       core.ResourceRef
-		serviceRef        = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
-		virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
+		serviceRef        = core.ResourceRef{Name: helper.TestServerName, Namespace: "gloo-system"}
+		virtualServiceRef = core.ResourceRef{Name: helper.TestServerName, Namespace: "gloo-system"}
 	)
 
 	Context("port settings", func() {
 		BeforeEach(func() {
-			serviceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: defaults.GlooSystem}
-			virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: defaults.GlooSystem}
+			serviceRef = core.ResourceRef{Name: helper.TestServerName, Namespace: defaults.GlooSystem}
+			virtualServiceRef = core.ResourceRef{Name: helper.TestServerName, Namespace: defaults.GlooSystem}
 		})
 
 		AfterEach(func() {
@@ -90,7 +90,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      serviceRef.Name,
 					Namespace: serviceRef.Namespace,
-					Labels:    map[string]string{"gloo": helper.TestrunnerName},
+					Labels:    map[string]string{"gloo": helper.TestServerName},
 				},
 				Spec: corev1.ServiceSpec{
 					Ports: []corev1.ServicePort{
@@ -101,7 +101,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 							Protocol:   corev1.ProtocolTCP,
 						},
 					},
-					Selector: map[string]string{"gloo": helper.TestrunnerName},
+					Selector: map[string]string{"gloo": helper.TestServerName},
 				},
 			}
 			var err error
@@ -117,7 +117,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 
 			// the upstream should be created by discovery service
 			upstreamRef = core.ResourceRef{
-				Name:      kubernetesplugin.UpstreamName(defaults.GlooSystem, helper.TestrunnerName, port),
+				Name:      kubernetesplugin.UpstreamName(defaults.GlooSystem, helper.TestServerName, port),
 				Namespace: defaults.GlooSystem,
 			}
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -130,7 +130,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 					Namespace: virtualServiceRef.Namespace,
 				},
 				VirtualHost: &v1.VirtualHost{
-					Domains: []string{helper.TestrunnerName},
+					Domains: []string{helper.TestServerName},
 					Routes: []*v1.Route{{
 						Action: &v1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{
@@ -167,7 +167,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
-				Host:              helper.TestrunnerName,
+				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
@@ -176,11 +176,11 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				ReturnHeaders:     true,
 			}, fmt.Sprintf("HTTP/1.1 %d", expected), 1, time.Minute*1)
 		},
-			Entry("with non-matching, yet valid, port and target (app) port", int32(helper.TestRunnerPort+1), helper.TestRunnerPort, http.StatusOK),
-			Entry("with matching port and target port", int32(helper.TestRunnerPort), helper.TestRunnerPort, http.StatusOK),
-			Entry("without target port, and port matching pod's port", int32(helper.TestRunnerPort), -1, http.StatusOK),
-			Entry("without target port, and port not matching app's port", int32(helper.TestRunnerPort+1), -1, http.StatusServiceUnavailable),
-			Entry("pointing to the wrong target port", int32(8000), helper.TestRunnerPort+1, http.StatusServiceUnavailable),
+			Entry("with non-matching, yet valid, port and target (app) port", int32(helper.TestServerPort+1), helper.TestServerPort, http.StatusOK),
+			Entry("with matching port and target port", int32(helper.TestServerPort), helper.TestServerPort, http.StatusOK),
+			Entry("without target port, and port matching pod's port", int32(helper.TestServerPort), -1, http.StatusOK),
+			Entry("without target port, and port not matching app's port", int32(helper.TestServerPort+1), -1, http.StatusServiceUnavailable),
+			Entry("pointing to the wrong target port", int32(8000), helper.TestServerPort+1, http.StatusServiceUnavailable),
 		)
 	})
 
@@ -189,7 +189,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 			serviceRef = core.ResourceRef{Name: "headless-svc", Namespace: "gloo-system"}
 			virtualServiceRef = core.ResourceRef{Name: "headless-vs", Namespace: "gloo-system"}
 
-			// create a headless service routed to testrunner
+			// create a headless service routed to testserver
 			service := corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      serviceRef.Name,
@@ -199,11 +199,11 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 					ClusterIP: "None",
 					Ports: []corev1.ServicePort{
 						{
-							Port:     helper.TestRunnerPort,
+							Port:     helper.TestServerPort,
 							Protocol: corev1.ProtocolTCP,
 						},
 					},
-					Selector: map[string]string{"gloo": "testrunner"},
+					Selector: map[string]string{"gloo": "testserver"},
 				},
 			}
 			var err error
@@ -219,7 +219,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 
 			// the upstream should be created by discovery service
 			upstreamRef = core.ResourceRef{
-				Name:      kubernetesplugin.UpstreamName(serviceRef.Namespace, serviceRef.Name, helper.TestRunnerPort),
+				Name:      kubernetesplugin.UpstreamName(serviceRef.Namespace, serviceRef.Name, helper.TestServerPort),
 				Namespace: defaults.GlooSystem,
 			}
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {

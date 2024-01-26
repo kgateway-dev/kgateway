@@ -79,11 +79,11 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("apply", "-n", httpbinNamespace, "-f", filepath.Join(cwd, "artifacts", "httpbin.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
-	// delete test-runner Service, as the tests create and manage their own
-	err = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", installNamespace)
+	// delete testserver Service, as the tests create and manage their own
+	err = testutils.Kubectl("delete", "service", helper.TestServerName, "-n", installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", installNamespace)
+		return testutils.Kubectl("get", "service", helper.TestServerName, "-n", installNamespace)
 	}, "60s", "1s").Should(HaveOccurred())
 
 	expectIstioInjected()
@@ -107,7 +107,7 @@ func installGloo() {
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// Install Gloo
-	// this helper function also applies the testrunner pod and service
+	// this helper function also applies the testserver pod and service
 	err := testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -132,15 +132,15 @@ func uninstallGloo() {
 	}, "60s", "1s").Should(HaveOccurred())
 }
 
-// expects gateway-proxy and httpbin to have the istio-proxy sidecar, testrunner should not
+// expects gateway-proxy and httpbin to have the istio-proxy sidecar, testserver should not
 func expectIstioInjected() {
 	// Check for istio-proxy sidecar
 	istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
 	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on gateway-proxy due to IstioSDS being enabled")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestrunnerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
-	ExpectWithOffset(1, istioContainer).To(Equal("''"), "istio-proxy container should not be present on the testrunner")
+	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestServerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
+	ExpectWithOffset(1, istioContainer).To(Equal("''"), "istio-proxy container should not be present on the testserver")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", httpbinNamespace, "pods", "-l", "app=httpbin", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
