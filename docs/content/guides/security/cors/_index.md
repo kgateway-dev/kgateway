@@ -44,7 +44,7 @@ spec:
 {{< /highlight >}}
 
 {{% notice note %}} 
-Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configured in Gloo Edge.  
+Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Edge. 
 {{% /notice %}}
 
 ### Available Fields
