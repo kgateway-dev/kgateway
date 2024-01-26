@@ -526,7 +526,7 @@
 |gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
-|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info.|
+|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#istio-lifecycle) for more info.|
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.exec.command[]|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.path|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int64|||
@@ -771,7 +771,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
-|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info.|
+|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#istio-lifecycle) for more info.|
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.exec.command[]|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int64|||
