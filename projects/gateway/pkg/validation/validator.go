@@ -116,7 +116,7 @@ type validationOptions struct {
 	Resource    resources.Resource
 	Gvk         schema.GroupVersionKind
 	// This flag is used when re-validating a snapshot in the cases where we want to ignore 'allow_warnings=true'
-	// and is used to set the 'shouldDelete' parameter passed to the glooValidator, which will remove the resource if it is present
+	// and is used in setting the 'shouldDelete' parameter passed to the glooValidator, which will remove the resource if it is present
 	validateUnmodified bool
 	// When we may be comparing the output of validation with the original validation output, we want to collect all errors instead of returning on the first error
 	collectAllErrors bool
@@ -223,13 +223,6 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 	return v.validateSnapshot(opts)
 }
 
-// type proxyTranslationResponse struct {
-// 	Proxies      []*gloov1.Proxy
-// 	ProxyReports ProxyReports
-// 	Error        error
-// 	ExtraError   error
-// }
-
 func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) ([]*gloov1.Proxy, ProxyReports, error) {
 	var (
 		errs         error
@@ -238,7 +231,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxies      []*gloov1.Proxy
 	)
 
-	//getAllErrors := opts.Delete && opts.Gvk.Kind == "Secret"
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
 	// translate all the proxies
 	for proxyName, gatewayList := range gatewaysByProxy {
@@ -321,13 +313,10 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 	}
 
-	//printUnwrappedMultiError(errs, "SAH - Before return from validateProxiesAndExtensions")
-
 	return proxies, proxyReports, errs
 }
 
 func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) {
-	fmt.Println("SAH - validateSnapshot")
 	// validate that a snapshot can be modified
 	// should be called within a lock
 	//
@@ -340,6 +329,15 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	//		during a dry run, we don't want to actually apply the change, since this will modify the internal
 	//		state of the validator, which is shared across requests. Therefore, only if we are not in a dry run,
 	//		we apply the mutation.
+	//
+	//	There is a variation on this process if the requested mutation is a delete, and the resource is a secret,
+	//	and `allow_warnings` is set to false.
+	//	In this case deletion of the secret is allowed if not in use by the snapshot.
+	//	This is done by running validation on (a clone of) the original snapshot without the secret removed.
+	//	If the output is the same, as the run with the secret removed, then the secret is not in use and can be deleted.
+	//	Otherwise, the secret is in use and cannot be deleted.
+	//	This logic is gated in <subroutine> and other types of resources may be added in the future.
+
 	ctx := opts.Ctx
 	if !v.ready() {
 		return nil, NotReadyErr
@@ -365,11 +363,13 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 	}
 
-	// If we may be using the output of validation to confirm an update, we need to collect all the errors for comparison
-	if retryValidationOnErrors(ctx, opts) {
+	// In some cases, validation should be retried if there are error. In those cases, all errors are collected and returned
+	retryValidationOnErrors := shouldRetryValidationOnErrors(ctx, opts)
+	if retryValidationOnErrors {
 		opts.collectAllErrors = true
 	}
 
+	// Run the validation
 	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
 
 	updateDespiteErrors := false
@@ -380,12 +380,12 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		// In some cases we want to be able to update resources despite errors, for example secrets
 		// In these cases we will rerun validation and compare the output to the original validation
-		if errs != nil && retryValidationOnErrors(ctx, opts) {
+		if retryValidationOnErrors {
 			updateDespiteErrors = v.compareValidationWithoutDelete(ctx, opts, proxies, proxyReports, errs)
 		}
 
 		if updateDespiteErrors {
-			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but deleting resource: %T %v: %v", opts.Resource, ref, errs)
+			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but updating resource: %T %v: %v", opts.Resource, ref, errs)
 		} else {
 			contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
 
@@ -405,7 +405,6 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	if !opts.DryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
 		if opts.Delete {
-			fmt.Println("SAH - removing from resource list for real delete")
 			if err = v.latestSnapshot.RemoveFromResourceList(opts.Resource); err != nil {
 				return reports, err
 			}
@@ -419,7 +418,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-func retryValidationOnErrors(ctx context.Context, opts *validationOptions) bool {
+func shouldRetryValidationOnErrors(ctx context.Context, opts *validationOptions) bool {
 	if opts.Delete && opts.Gvk.Kind == "Secret" {
 		return true
 	}
