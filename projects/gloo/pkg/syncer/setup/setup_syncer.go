@@ -847,10 +847,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// create a validator to validate extensions
 	extensionValidator := syncerValidation.NewValidator(syncerValidatorExtensions, opts.Settings)
 
+	// allow by default
+	optionatedAllowWarnings := os.Getenv("OPINIONATED_ALLOW_WARNINGS") != "false"
 	validationConfig := gwvalidation.ValidatorConfig{
-		Translator:         gatewayTranslator,
-		GlooValidator:      validator.ValidateGloo,
-		ExtensionValidator: extensionValidator,
+		Translator:                     gatewayTranslator,
+		GlooValidator:                  validator.ValidateGloo,
+		ExtensionValidator:             extensionValidator,
+		EnableOpinionatedAllowWarnings: optionatedAllowWarnings,
 	}
 	if gwOpts.Validation != nil {
 		valOpts := gwOpts.Validation

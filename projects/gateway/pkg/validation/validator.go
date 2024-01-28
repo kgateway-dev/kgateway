@@ -103,9 +103,10 @@ type validator struct {
 	latestSnapshotErr error
 	translator        translator.Translator
 	// This function replaces a grpc client from when gloo and gateway pods were separate.
-	glooValidator      GlooValidatorFunc
-	extensionValidator syncerValidation.Validator
-	allowWarnings      bool
+	glooValidator                  GlooValidatorFunc
+	extensionValidator             syncerValidation.Validator
+	allowWarnings                  bool
+	enableOpinionatedAllowWarnings bool
 }
 
 type validationOptions struct {
@@ -123,18 +124,20 @@ type validationOptions struct {
 }
 
 type ValidatorConfig struct {
-	Translator         translator.Translator
-	GlooValidator      GlooValidatorFunc
-	ExtensionValidator syncerValidation.Validator
-	AllowWarnings      bool
+	Translator                     translator.Translator
+	GlooValidator                  GlooValidatorFunc
+	ExtensionValidator             syncerValidation.Validator
+	AllowWarnings                  bool
+	EnableOpinionatedAllowWarnings bool
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
-		glooValidator:      cfg.GlooValidator,
-		extensionValidator: cfg.ExtensionValidator,
-		translator:         cfg.Translator,
-		allowWarnings:      cfg.AllowWarnings,
+		glooValidator:                  cfg.GlooValidator,
+		extensionValidator:             cfg.ExtensionValidator,
+		translator:                     cfg.Translator,
+		allowWarnings:                  cfg.AllowWarnings,
+		enableOpinionatedAllowWarnings: cfg.EnableOpinionatedAllowWarnings,
 	}
 }
 
@@ -364,12 +367,12 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	}
 
 	// In some cases, validation should be retried if there are error. In those cases, all errors are collected and returned
-	retryValidationOnErrors := shouldRetryValidationOnErrors(ctx, opts)
+	retryValidationOnErrors := v.shouldRetryValidationOnErrors(ctx, opts)
 	if retryValidationOnErrors {
 		opts.collectAllErrors = true
 	}
 
-	// Run the validation
+	// Run the validation.
 	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
 
 	updateDespiteErrors := false
@@ -381,7 +384,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		// In some cases we want to be able to update resources despite errors, for example secrets
 		// In these cases we will rerun validation and compare the output to the original validation
 		if retryValidationOnErrors {
-			updateDespiteErrors = v.compareValidationWithoutDelete(ctx, opts, proxies, proxyReports, errs)
+			updateDespiteErrors = v.compareValidationWithoutModification(ctx, opts, proxies, proxyReports, errs)
 		}
 
 		if updateDespiteErrors {
@@ -418,16 +421,21 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-func shouldRetryValidationOnErrors(ctx context.Context, opts *validationOptions) bool {
+func (v *validator) shouldRetryValidationOnErrors(ctx context.Context, opts *validationOptions) bool {
+	// If the resource is a secret, and the delete flag is set, and the 'allow_warnings' flag is set to false.
+	if v.allowWarnings || !v.enableOpinionatedAllowWarnings {
+		return false
+
+	}
 	if opts.Delete && opts.Gvk.Kind == "Secret" {
 		return true
 	}
 	return false
 }
 
-// compareValidationWithoutDelete is used to
+// compareValidationWithoutModification is used to
 // It returns true if the validation output is the same as the original validation output
-func (v *validator) compareValidationWithoutDelete(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error) bool {
+func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error) bool {
 	fmt.Println("SAH - revalidating secret delete")
 
 	// Set the 'validateUnmodified' flag to true to ensure that the resource is not deleted
@@ -462,8 +470,8 @@ func compareErrors(error1, error2 error) bool {
 	return error1.Error() == error2.Error()
 }
 
-func compareReports(origProxyReports, proxyReports ProxyReports) bool {
-	return reflect.DeepEqual(origProxyReports, proxyReports)
+func compareReports(proxyReports1, proxReports1 ProxyReports) bool {
+	return reflect.DeepEqual(proxyReports1, proxReports1)
 }
 
 func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
