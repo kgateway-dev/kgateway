@@ -391,7 +391,7 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 	admissionRequest *v1beta1.AdmissionRequest,
 ) (*validation.Reports, *multierror.Error) {
 
-	fmt.Printf("SAH - in validateAdmissionRequest")
+	fmt.Printf("SAH - in validateAdmissionRequest\n")
 	isDelete := admissionRequest.Operation == v1beta1.Delete
 	dryRun := isDryRun(admissionRequest)
 

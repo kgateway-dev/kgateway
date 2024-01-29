@@ -213,7 +213,7 @@ var _ = Describe("Validator", func() {
 			})
 		})
 
-		Context("secrets", func() {
+		FContext("secrets", func() {
 
 			It("accepts a secret deletion when validation succeeds", func() {
 				v.glooValidator = ValidateAccept
@@ -266,8 +266,7 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			FDescribeTable(
-				"handles secret deletion when there is a validation warning and allowWarnings is false",
+			DescribeTable("handles secret deletion when there is a validation warning and allowWarnings is false",
 				func(enableOpinionatedAllowWarnings bool, errExpected bool) {
 					v.glooValidator = ValidateWarn
 					v.allowWarnings = false
@@ -293,6 +292,33 @@ var _ = Describe("Validator", func() {
 				},
 				Entry("If enableOpinionatedAllowWarnings is false, delete should error", false, true),
 				Entry("If enableOpinionatedAllowWarnings is false, delete should succeed", true, false),
+			)
+
+			DescribeTable("handles secret deletion when there is a validation warning and allowWarnings is false and the error changes",
+				// For the unit tests we are not doing full validation, so we need to make sure that the error message changes
+				func(enableOpinionatedAllowWarnings bool, errExpected bool) {
+					// We aren't doign full v
+					gloovalidator := gloovalidation.NewValidator(gloovalidation.ValidatorConfig{})
+
+					v.glooValidator = gloovalidator.ValidateGloo
+					v.allowWarnings = false
+					v.enableOpinionatedAllowWarnings = enableOpinionatedAllowWarnings
+
+					snap := samples.SimpleGlooSnapshot(ns)
+					err := v.Sync(context.TODO(), snap)
+					Expect(err).NotTo(HaveOccurred())
+
+					secret := samples.SimpleSecret()
+					err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
+					if errExpected {
+						Expect(err).To(HaveOccurred())
+					} else {
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+				},
+				Entry("If enableOpinionatedAllowWarnings is false, delete should error", false, true),
+				Entry("If enableOpinionatedAllowWarnings is false, delete should error", true, true),
 			)
 		})
 	})
@@ -1218,6 +1244,10 @@ func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.R
 }
 
 func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return ValidateWarnWithString(ctx, proxy, resource, shouldDelete, "")
+}
+
+func ValidateWarnWithString(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool, addToWarning string) ([]*gloovalidation.GlooValidationReport, error) {
 	var proxies []*gloov1.Proxy
 	if proxy != nil {
 		proxies = []*gloov1.Proxy{proxy}
@@ -1228,7 +1258,7 @@ func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.R
 	var validationReports []*gloovalidation.GlooValidationReport
 	for _, proxy := range proxies {
 		proxyReport := validationutils.MakeReport(proxy)
-		validationutils.AppendRouteWarning(proxyReport.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time")
+		validationutils.AppendRouteWarning(proxyReport.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time"+addToWarning)
 
 		validationReports = append(validationReports, &gloovalidation.GlooValidationReport{
 			Proxy:       proxy,
@@ -1236,4 +1266,11 @@ func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.R
 		})
 	}
 	return validationReports, nil
+}
+
+var validateChangeWarningCnt = 0
+
+func ValidateChangeWarning(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	validateChangeWarningCnt++
+	return ValidateWarnWithString(ctx, proxy, resource, shouldDelete, "-"+fmt.Sprintf("%d", validateChangeWarningCnt))
 }

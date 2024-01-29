@@ -7,7 +7,9 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -60,6 +62,31 @@ func UpstreamWithSecret(secret *v1.Secret) *v1.Upstream {
 	}
 }
 
+func InvalidUpstreamWithSecret(secret *v1.Secret) *v1.Upstream {
+	return &v1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "test",
+			Namespace: "gloo-system",
+		},
+		UpstreamType: &v1.Upstream_Kube{
+			Kube: &kubernetes.UpstreamSpec{
+				ServiceName:      "Test",
+				ServiceNamespace: "gloo-system",
+				ServicePort:      18001,
+				ServiceSpec:      &options.ServiceSpec{},
+			},
+		},
+		SslConfig: &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
+				SecretRef: &core.ResourceRef{
+					Name:      secret.GetMetadata().GetName(),
+					Namespace: secret.GetMetadata().GetNamespace(),
+				},
+			},
+		},
+	}
+}
+
 func SimpleSecret() *v1.Secret {
 	return &v1.Secret{
 		Metadata: &core.Metadata{
@@ -78,7 +105,7 @@ func SimpleSecret() *v1.Secret {
 
 func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 	secret := SimpleSecret()
-	us := UpstreamWithSecret(secret)
+	us := InvalidUpstreamWithSecret(secret)
 	routes := []*v1.Route{{
 		Action: &v1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{

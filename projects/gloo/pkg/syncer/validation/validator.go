@@ -35,10 +35,10 @@ type validator struct {
 // Validate will sync the extensions with the snapshot. This uses a no-op snapshot setter, so that no changes to the
 // snapshot occur.
 func (v *validator) Validate(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) reporter.ResourceReports {
-	fmt.Printf("SAH - in gloo/pkg/validation/validator.go, in Validate() for %d extensions", len(v.extensions))
+	fmt.Printf("SAH - in gloo/pkg/validation/validator.go, in Validate() for %d extensions\n", len(v.extensions))
 	reports := reporter.ResourceReports{}
 	for _, ex := range v.extensions {
-		fmt.Printf("SAH - in gloo/pkg/validation/validator.go, in Validate() for %s", ex.ID())
+		fmt.Printf("SAH - in gloo/pkg/validation/validator.go, in Validate() for %s\n	", ex.ID())
 		intermediateReports := make(reporter.ResourceReports)
 		ex.Sync(ctx, snapshot, v.settings, v.snapshotSetter, intermediateReports)
 		reports.Merge(intermediateReports)

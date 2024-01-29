@@ -237,7 +237,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
 	// translate all the proxies
 	for proxyName, gatewayList := range gatewaysByProxy {
-		fmt.Printf("Valdiating proxy %s\n", proxyName)
+		fmt.Printf("Validiating proxy %s\n", proxyName)
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
@@ -329,6 +329,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 	}
 
+	fmt.Printf("SAH - errors from validation %+v\n", errs)
 	return proxies, proxyReports, errs
 }
 
@@ -629,13 +630,16 @@ func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooVa
 
 	for _, report := range reports {
 		if err := v.getErrorsFromResourceReports(report.ResourceReports); err != nil {
+			fmt.Printf("SAH - getErrorsFromGlooValidation::getErrorsFromResourceReports errors: %+v\n", err)
 			errs = multierror.Append(errs, err)
 		}
 		if proxyReport := report.ProxyReport; proxyReport != nil {
 			if err := validationutils.GetProxyError(proxyReport); err != nil {
-				errs = multierror.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
+				fmt.Printf("SAH - GetProxyError: %+v\n", err)
+				errs = multierror.Append(errs, errors.Wrapf(err, "getErrorsFromGlooValidation failed to validate Proxy with Gloo validation server"))
 			}
 			if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
+				fmt.Printf("SAH - getErrorsFromGlooValidation::GetProxyWarning: %+v\n", warnings)
 				for _, warning := range warnings {
 					errs = multierror.Append(errs, errors.New(warning))
 				}
