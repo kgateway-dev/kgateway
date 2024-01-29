@@ -237,6 +237,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
 	// translate all the proxies
 	for proxyName, gatewayList := range gatewaysByProxy {
+		fmt.Printf("Valdiating proxy %s\n", proxyName)
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
@@ -246,9 +247,12 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			err = errors.Wrapf(err, couldNotRenderProxy)
 			errs = multierror.Append(errs, err)
 
+			fmt.Printf("SAH - proxy translation error: %+v\n", err)
 			if !opts.collectAllErrors {
 				continue
 			}
+		} else {
+			fmt.Printf("SAH - No proxy translation error: %+v\n", err)
 		}
 
 		// a nil proxy may have been returned if 0 listeners were created
@@ -258,8 +262,14 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 
 		proxies = append(proxies, proxy)
 
-		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/validator.go
-		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, (opts.Delete && !opts.validateUnmodified))
+		// validate the proxy with the Gloo validator
+		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot a nil resource is passed in so no modifications are made
+		resourceToModify := opts.Resource
+		if opts.validateUnmodified {
+			resourceToModify = nil
+		}
+		glooReports, err := v.glooValidator(ctx, proxy, resourceToModify, opts.Delete)
+		fmt.Printf("SAH - glooValidator error: %+v\n", err)
 		if err != nil {
 			err = errors.Wrapf(err, failedGlooValidation)
 			errs = multierror.Append(errs, err)
@@ -281,12 +291,14 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
+			fmt.Printf("SAH - proxyReport error: %+v\n", err)
 			errs = multierror.Append(errs, proxyFailedGlooValidation(err, proxy))
 			if !opts.collectAllErrors {
 				continue
 			}
 		}
 		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
+			fmt.Printf("SAH - proxyReport warning: %+v\n", err)
 			for _, warning := range warnings {
 				errs = multierror.Append(errs, errors.New(warning))
 			}
@@ -296,6 +308,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 
 		err = v.getErrorsFromGlooValidation(glooReports)
+		fmt.Printf("SAH - getErrorsFromGlooValidation errors: %+v\n", err)
 		if err != nil {
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierror.Append(errs, err)
@@ -367,6 +380,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	}
 
 	// In some cases, validation should be retried if there are error. In those cases, all errors are collected and returned
+	// so they can be compared against the result of a second validation run of the original, unmodified snapshot
 	retryValidationOnErrors := v.shouldRetryValidationOnErrors(ctx, opts)
 	if retryValidationOnErrors {
 		opts.collectAllErrors = true
@@ -375,6 +389,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	// Run the validation.
 	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
 
+	//
 	updateDespiteErrors := false
 	if errs != nil {
 		if !opts.DryRun {
@@ -388,7 +403,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 
 		if updateDespiteErrors {
-			contextutils.LoggerFrom(ctx).Debugf("Found Errors, but updating resource: %T %v: %v", opts.Resource, ref, errs)
+			contextutils.LoggerFrom(ctx).Debugf("No new errors, but updating resource: %T %v: %v", opts.Resource, ref, errs)
 		} else {
 			contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
 
@@ -421,12 +436,14 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
+// shouldRetryValidationOnErrors contains the logic to determine if validation should be retried on errors.
 func (v *validator) shouldRetryValidationOnErrors(ctx context.Context, opts *validationOptions) bool {
-	// If the resource is a secret, and the delete flag is set, and the 'allow_warnings' flag is set to false.
+	// Global settings
 	if v.allowWarnings || !v.enableOpinionatedAllowWarnings {
 		return false
-
 	}
+
+	// If the resource is a secret, and the delete flag is set, and the 'allow_warnings' flag is set to false.
 	if opts.Delete && opts.Gvk.Kind == "Secret" {
 		return true
 	}
@@ -436,7 +453,7 @@ func (v *validator) shouldRetryValidationOnErrors(ctx context.Context, opts *val
 // compareValidationWithoutModification is used to
 // It returns true if the validation output is the same as the original validation output
 func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error) bool {
-	fmt.Println("SAH - revalidating secret delete")
+	fmt.Println("SAH - valiating without modification")
 
 	// Set the 'validateUnmodified' flag to true to ensure that the resource is not deleted
 	opts.validateUnmodified = true
@@ -448,14 +465,15 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 		return false
 	}
 
-	// Get the validation output without the delete
-	proxiesWithoutDelete, proxyReportsWithoutDelete, errsWithoutDelete := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
+	// Get the validation output without the modification
+	proxiesWithoutModification, proxyReportsWithoutModification, errsWithoutDelete := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
 
 	sameErrors := compareErrors(errsWithoutDelete, errs)
-	sameProxies := compareProxies(proxiesWithoutDelete, proxies)
-	sameReports := compareReports(proxyReportsWithoutDelete, proxyReports)
+	sameProxies := compareProxies(proxiesWithoutModification, proxies)
+	sameReports := compareReports(proxyReportsWithoutModification, proxyReports)
 
 	fmt.Printf("sameProxies, sameErrors, sameReports: %t, %t, %t", sameProxies, sameErrors, sameReports)
+	contextutils.LoggerFrom(ctx).Debugf("sameProxies, sameErrors, sameReports: %t, %t, %t", sameProxies, sameErrors, sameReports)
 	sameValidationOutput := false
 	if sameProxies && sameErrors && sameReports {
 		sameValidationOutput = true
@@ -489,7 +507,6 @@ func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
 func (v *validator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
-	fmt.Println("SAH - ValidateDeletedGvk")
 	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: true, DryRun: dryRun, AcquireLock: true})
 	return err
 }
