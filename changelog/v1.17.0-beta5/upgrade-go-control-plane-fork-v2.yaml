@@ -3,6 +3,8 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: go-control-plane-fork-v2
     dependencyTag: v0.0.0-20240129203551-f05ab145d22d
+    issueLink: https://github.com/solo-io/solo-projects/issues/5670
+    resolvesIssue: false
   - type: DEPENDENCY_BUMP
     dependencyOwner: google.golang.org
     dependencyRepo: protobuf
