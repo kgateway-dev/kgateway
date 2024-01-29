@@ -3,3 +3,7 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: go-control-plane-fork-v2
     dependencyTag: v0.0.0-20240129203551-f05ab145d22d
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: google.golang.org
+    dependencyRepo: protobuf
+    dependencyTag: v1.32.0
