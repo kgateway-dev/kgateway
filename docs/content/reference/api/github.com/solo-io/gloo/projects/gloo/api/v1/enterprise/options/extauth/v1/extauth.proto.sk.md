@@ -84,6 +84,8 @@ weight: 5
 - [ConnectionPool](#connectionpool)
 - [LdapServiceAccount](#ldapserviceaccount)
 - [PassThroughAuth](#passthroughauth)
+- [BackoffStrategy](#backoffstrategy)
+- [RetryPolicy](#retrypolicy)
 - [PassThroughGrpc](#passthroughgrpc)
 - [PassThroughGrpcTLSConfig](#passthroughgrpctlsconfig)
 - [PassThroughHttp](#passthroughhttp)
@@ -1865,6 +1867,46 @@ Authorizes requests by querying a custom extauth server.
 
 
 ---
+### BackoffStrategy
+
+ 
+Configuration defining an exponential back off strategy.
+
+```yaml
+"baseInterval": .google.protobuf.Duration
+"maxInterval": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The base interval to be used for the next back off computation. |
+| `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum delay between retries. |
+
+
+
+
+---
+### RetryPolicy
+
+ 
+The message specifies the retry policy of the external gRPC service when unable to initally connect.
+
+```yaml
+"retryBackOff": .enterprise.gloo.solo.io.BackoffStrategy
+"numRetries": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `retryBackOff` | [.enterprise.gloo.solo.io.BackoffStrategy](../extauth.proto.sk/#backoffstrategy) | Specifies parameters that control the backoff strategy. This parameter is optional, in which case the default base interval is 1000 milliseconds. The default maximum interval is 10 times the base interval. |
+| `numRetries` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Specifies the allowed number of retries. This parameter is optional and defaults to 1. |
+
+
+
+
+---
 ### PassThroughGrpc
 
  
@@ -1876,7 +1918,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 "address": string
 "connectionTimeout": .google.protobuf.Duration
 "tlsConfig": .enterprise.gloo.solo.io.PassThroughGrpcTLSConfig
-"retryPolicy": .solo.io.envoy.config.core.v3.RetryPolicy
+"retryPolicy": .enterprise.gloo.solo.io.RetryPolicy
 
 ```
 
@@ -1885,7 +1927,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 | `address` | `string` | Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`. |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
 | `tlsConfig` | [.enterprise.gloo.solo.io.PassThroughGrpcTLSConfig](../extauth.proto.sk/#passthroughgrpctlsconfig) | TLS config for the Grpc passthrough, if not configured the connection will use insecure. |
-| `retryPolicy` | [.solo.io.envoy.config.core.v3.RetryPolicy](../../../../../../external/envoy/config/core/v3/base.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream This field is optional. If max interval is not provided, it will be set to ten times the provided base interval. If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied. |
+| `retryPolicy` | [.enterprise.gloo.solo.io.RetryPolicy](../extauth.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream This field is optional. If max interval is not provided, it will be set to ten times the provided base interval. If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied. |
 
 
 

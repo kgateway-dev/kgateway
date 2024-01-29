@@ -21,8 +21,6 @@ import (
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -1610,6 +1608,52 @@ func (m *PassThroughAuth) Clone() proto.Message {
 }
 
 // Clone function
+func (m *BackoffStrategy) Clone() proto.Message {
+	var target *BackoffStrategy
+	if m == nil {
+		return target
+	}
+	target = &BackoffStrategy{}
+
+	if h, ok := interface{}(m.GetBaseInterval()).(clone.Cloner); ok {
+		target.BaseInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetMaxInterval()).(clone.Cloner); ok {
+		target.MaxInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *RetryPolicy) Clone() proto.Message {
+	var target *RetryPolicy
+	if m == nil {
+		return target
+	}
+	target = &RetryPolicy{}
+
+	if h, ok := interface{}(m.GetRetryBackOff()).(clone.Cloner); ok {
+		target.RetryBackOff = h.Clone().(*BackoffStrategy)
+	} else {
+		target.RetryBackOff = proto.Clone(m.GetRetryBackOff()).(*BackoffStrategy)
+	}
+
+	if h, ok := interface{}(m.GetNumRetries()).(clone.Cloner); ok {
+		target.NumRetries = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.NumRetries = proto.Clone(m.GetNumRetries()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *PassThroughGrpc) Clone() proto.Message {
 	var target *PassThroughGrpc
 	if m == nil {
@@ -1632,9 +1676,9 @@ func (m *PassThroughGrpc) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetRetryPolicy()).(clone.Cloner); ok {
-		target.RetryPolicy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RetryPolicy)
+		target.RetryPolicy = h.Clone().(*RetryPolicy)
 	} else {
-		target.RetryPolicy = proto.Clone(m.GetRetryPolicy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RetryPolicy)
+		target.RetryPolicy = proto.Clone(m.GetRetryPolicy()).(*RetryPolicy)
 	}
 
 	return target

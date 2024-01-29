@@ -14,7 +14,6 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
@@ -1349,6 +1348,28 @@ message PassThroughAuth {
     bool failure_mode_allow = 5;
 }
 
+// Configuration defining an exponential back off strategy.
+message BackoffStrategy {
+    // The base interval to be used for the next back off computation.
+    google.protobuf.Duration base_interval = 1;
+
+    // Specifies the maximum delay between retries.
+    google.protobuf.Duration max_interval = 2;
+}
+
+
+// The message specifies the retry policy of the external gRPC service when unable to initally connect.
+message RetryPolicy {
+    // Specifies parameters that control the backoff strategy.
+    // This parameter is optional, in which case the default base interval is 1000 milliseconds. The
+    // default maximum interval is 10 times the base interval.
+    BackoffStrategy retry_back_off = 1;
+
+    // Specifies the allowed number of retries. This parameter is optional and
+    // defaults to 1.
+    google.protobuf.UInt32Value num_retries = 2;
+}
+
 // Authorizes requests by querying a custom extauth grpc server
 // Assumes that the server implements the envoy external authorization spec:
 // https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b0309/api/envoy/service/auth/v3/external_auth.proto#L29
@@ -1366,7 +1387,7 @@ message PassThroughGrpc {
     // Indicates the retry policy for re-establishing the gRPC stream
     // This field is optional. If max interval is not provided, it will be set to ten times the provided base interval.
     // If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied.
-    .solo.io.envoy.config.core.v3.RetryPolicy retry_policy = 4;
+    RetryPolicy retry_policy = 4;
 }
 // TLS configuration for the extauth grpc passthrough connection
 message PassThroughGrpcTLSConfig {
