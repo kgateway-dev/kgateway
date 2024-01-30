@@ -836,24 +836,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	syncerValidatorExtensions := []syncer.TranslatorSyncerExtension{}
 	for _, ext := range syncerExtensions {
 		// currently only supporting ratelimit extension in validation
-		fmt.Printf("SHGREP: validator - %s\n", ext.ID())
 		if ext.ID() == ratelimitExt.ServerRole {
-			fmt.Printf("SHGREP: using validator - %s\n", ext.ID())
 			syncerValidatorExtensions = append(syncerValidatorExtensions, ext)
-		} else {
-			fmt.Printf("SHGREP: NOT using validator - %s\n", ext.ID())
 		}
 	}
 	// create a validator to validate extensions
 	extensionValidator := syncerValidation.NewValidator(syncerValidatorExtensions, opts.Settings)
 
 	// allow by default
-	optionatedAllowWarnings := os.Getenv("OPINIONATED_ALLOW_WARNINGS") != "false"
+	enableValidationAgainstSnapshot := os.Getenv("ENABLE_VALIDATION_AGAINST_SNAPSHOT") != "false"
 	validationConfig := gwvalidation.ValidatorConfig{
-		Translator:                     gatewayTranslator,
-		GlooValidator:                  validator.ValidateGloo,
-		ExtensionValidator:             extensionValidator,
-		EnableOpinionatedAllowWarnings: optionatedAllowWarnings,
+		Translator:                      gatewayTranslator,
+		GlooValidator:                   validator.ValidateGloo,
+		ExtensionValidator:              extensionValidator,
+		EnableValidationAgainstSnapshot: enableValidationAgainstSnapshot,
 	}
 	if gwOpts.Validation != nil {
 		valOpts := gwOpts.Validation

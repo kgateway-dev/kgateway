@@ -213,7 +213,7 @@ var _ = Describe("Validator", func() {
 			})
 		})
 
-		FContext("secrets", func() {
+		Context("secrets", func() {
 
 			It("accepts a secret deletion when validation succeeds", func() {
 				v.glooValidator = ValidateAccept
@@ -267,10 +267,10 @@ var _ = Describe("Validator", func() {
 			})
 
 			DescribeTable("handles secret deletion when there is a validation warning and allowWarnings is false",
-				func(enableOpinionatedAllowWarnings bool, errExpected bool) {
+				func(enableValidationAgainstSnapshot bool, errExpected bool) {
 					v.glooValidator = ValidateWarn
 					v.allowWarnings = false
-					v.enableOpinionatedAllowWarnings = enableOpinionatedAllowWarnings
+					v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
 
 					snap := samples.SimpleGlooSnapshot(ns)
 					err := v.Sync(context.TODO(), snap)
@@ -290,19 +290,20 @@ var _ = Describe("Validator", func() {
 					}
 
 				},
-				Entry("If enableOpinionatedAllowWarnings is false, delete should error", false, true),
-				Entry("If enableOpinionatedAllowWarnings is false, delete should succeed", true, false),
+				Entry("If enableValidationAgainstSnapshot is false, delete should error", false, true),
+				Entry("If enableValidationAgainstSnapshot is true, delete should succeed", true, false),
 			)
 
 			DescribeTable("handles secret deletion when there is a validation warning and allowWarnings is false and the error changes",
 				// For the unit tests we are not doing full validation, so we need to make sure that the error message changes
-				func(enableOpinionatedAllowWarnings bool, errExpected bool) {
+				func(enableValidationAgainstSnapshot bool, errExpected bool) {
 					// We aren't doign full v
-					gloovalidator := gloovalidation.NewValidator(gloovalidation.ValidatorConfig{})
+					//gloovalidator := gloovalidation.NewValidator(gloovalidation.ValidatorConfig{})
+					//gloovalidator := ValidateChangeWarning
 
-					v.glooValidator = gloovalidator.ValidateGloo
+					v.glooValidator = ValidateChangeWarning
 					v.allowWarnings = false
-					v.enableOpinionatedAllowWarnings = enableOpinionatedAllowWarnings
+					v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
 
 					snap := samples.SimpleGlooSnapshot(ns)
 					err := v.Sync(context.TODO(), snap)
@@ -317,8 +318,8 @@ var _ = Describe("Validator", func() {
 					}
 
 				},
-				Entry("If enableOpinionatedAllowWarnings is false, delete should error", false, true),
-				Entry("If enableOpinionatedAllowWarnings is false, delete should error", true, true),
+				Entry("If enableValidationAgainstSnapshot is false, delete should error", false, true),
+				Entry("If enableValidationAgainstSnapshot is true, delete should error", true, true),
 			)
 		})
 	})
@@ -641,38 +642,36 @@ var _ = Describe("Validator", func() {
 				Expect(rows).NotTo(BeEmpty())
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
 			})
-			It("returns 0 when there are validation warnings and allowWarnings is false", func() {
-				v.allowWarnings = false
+
+			DescribeTable("validation with warnings", func(allowWarnings, allowOpinionatedWarnings bool, expectedMetric int) {
+				v.allowWarnings = allowWarnings
+				v.enableValidationAgainstSnapshot = allowOpinionatedWarnings
 				v.glooValidator = ValidateWarn
 
 				snap := samples.SimpleGlooSnapshot(ns)
-				err := v.Sync(context.TODO(), snap)
+				err := v.Sync(context.Background(), snap)
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = v.ValidateModifiedGvk(context.TODO(), v1.VirtualServiceGVK, snap.VirtualServices[0], false)
-				Expect(err).To(HaveOccurred())
+				_, err = v.ValidateModifiedGvk(context.Background(), v1.VirtualServiceGVK, snap.VirtualServices[0], false)
+				if expectedMetric == 1 {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
 
 				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rows).NotTo(BeEmpty())
-				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
-			})
-			It("returns 1 when there are validation warnings and allowWarnings is true", func() {
-				v.allowWarnings = true
-				v.glooValidator = ValidateWarn
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(expectedMetric))
 
-				snap := samples.SimpleGlooSnapshot(ns)
-				err := v.Sync(context.TODO(), snap)
-				Expect(err).NotTo(HaveOccurred())
+			},
+				// allowOpinionatedWarnings should not affect anything other than secrets
+				Entry("allowWarnings=false, allowOpinionatedWarnings=false", false, false, 0),
+				Entry("allowWarnings=true, allowOpinionatedWarnings=false", true, false, 1),
+				Entry("allowWarnings=false, allowOpinionatedWarnings=true", false, true, 0),
+				Entry("allowWarnings=true, allowOpinionatedWarnings=true", true, true, 1),
+			)
 
-				_, err = v.ValidateModifiedGvk(context.TODO(), v1.VirtualServiceGVK, snap.VirtualServices[0], false)
-				Expect(err).NotTo(HaveOccurred())
-
-				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(rows).NotTo(BeEmpty())
-				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
-			})
 			It("does not affect metrics when dryRun is true", func() {
 				v.glooValidator = ValidateFail
 

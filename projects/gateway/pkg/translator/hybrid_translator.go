@@ -52,6 +52,7 @@ func (t *HybridTranslator) ComputeListener(params Params, proxyName string, gate
 			return nil
 		}
 	} else {
+		fmt.Println("SAH - in translator/hybrid_translator.go, in ComputeListener(), matchedGateways == nil")
 		// DelegatedHttpGateways/DelegatedTcpGateways are only processed if there are no MatchedGateways defined
 		hybridListener = t.computeHybridListenerFromDelegatedGateways(params, proxyName, gateway, delegatedHttpGateways, delegatedTcpGateways)
 		if len(hybridListener.GetMatchedListeners()) == 0 {

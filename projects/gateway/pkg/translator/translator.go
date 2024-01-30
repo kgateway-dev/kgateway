@@ -212,7 +212,7 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
 	// they are invalid.
 	for _, gw := range gateways {
-		fmt.Printf("SAH - in gloo/pkg/translator/translator.go, in validateGateways() for gateway %s\n", gw.GetMetadata().Name)
+		fmt.Printf("SAH - in gloo/pkg/translator/translator.go, in validateGateways() for gateway %s\n", gw.GetMetadata().GetName())
 		bindAddress := fmt.Sprintf("%s:%d", gw.GetBindAddress(), gw.GetBindPort())
 		bindAddresses[bindAddress] = append(bindAddresses[bindAddress], gw)
 
