@@ -7,7 +7,7 @@ Name|Version|License
 [census-instrumentation/opencensus-proto](https://github.com/census-instrumentation/opencensus-proto)|v0.2.0|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20230607035331-e9ce68804cb4|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.0.0-20231026174848-be784d54c527|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v1.29.0-patch1|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v1.0.2|Apache License 2.0
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.5+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.6.0|BSD 3-clause "New" or "Revised" License
@@ -54,7 +54,7 @@ Name|Version|License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.59.0|Apache License 2.0
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.31.0|BSD 3-clause "New" or "Revised" License
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.32.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.13.2|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.28.3|Apache License 2.0
