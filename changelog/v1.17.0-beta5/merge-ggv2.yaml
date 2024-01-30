@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Merge v2.0.x Gloo Gateway branch into main
