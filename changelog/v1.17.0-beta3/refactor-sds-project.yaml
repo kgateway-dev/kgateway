@@ -1,0 +1,11 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/8909
+  resolvesIssue: false
+  description: >-
+    Lifted and shifted the `main()` function of the `sds` project into a package for reuse in the Gloo EE to build FIPS compliant images.
+- type: HELM
+  issueLink: https://github.com/solo-io/gloo/issues/8909
+  resolvesIssue: false
+  description: >-
+    Updates to helper functions to recognize `sds-ee` images as fips-suppported

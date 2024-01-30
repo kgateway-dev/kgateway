@@ -1,0 +1,6 @@
+changelog:
+- type: HELM
+  issueLink: https://github.com/solo-io/gloo/issues/8430
+  resolvesIssue: false
+  description: Adds the new helm value `gatewayproxy.proxyName.disableExtauthSidecar` to disable the extauth sidecar on a given gateway proxy when `global.extensions.extAuth.envoySidecar` is set. Defaults to false. This is used with enterprise extauth deployments.
+

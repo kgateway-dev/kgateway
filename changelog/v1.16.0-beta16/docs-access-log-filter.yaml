@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Adds in an example for how to use the access log filter capability.  
+      skipCI-kube-tests:true

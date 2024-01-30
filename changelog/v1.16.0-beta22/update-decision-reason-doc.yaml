@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updated the explanation of `returnDecisionReason` to inform the recommended approach of `dynamic_metadata`.

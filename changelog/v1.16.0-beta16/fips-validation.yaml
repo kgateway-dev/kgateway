@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Add documentation around validating FIPS-compliant images
+      
+      skipCI-kube-tests:true

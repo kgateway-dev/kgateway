@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/dev-portal/issues/2753
+    resolvesIssue: false
+    description: >-
+      Update internal extauth API, to ensure the labelSelector defined on the user-facing AuthConfig
+      is passed down to the ext-auth-service, so that decisions can be made based on the labelSelector.
+      
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

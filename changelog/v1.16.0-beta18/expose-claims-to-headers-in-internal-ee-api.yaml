@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Expose `claimsToHeaders` in internal ExtAuth API.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
+    issueLink: https://github.com/solo-io/gloo/issues/8737
+    resolvesIssue: false

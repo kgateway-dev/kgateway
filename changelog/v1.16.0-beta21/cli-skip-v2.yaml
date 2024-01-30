@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/0000
+    description: >-
+      Avoid allowing glooctl to install v2 variants without an explicit call for it.
+      This may be reverted later once we have a better understanding of upgrade path.
+      
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

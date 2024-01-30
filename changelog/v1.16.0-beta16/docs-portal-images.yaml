@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Hosting petstore images in the Gloo public repo for use in dev-portal.  
+      skipCI-kube-tests:true
