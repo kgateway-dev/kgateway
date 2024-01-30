@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo-private/issues/55
-    resolvesIssue: false
-    description: >-
-      Add no-op stubs to discovery translation
