@@ -72,6 +72,9 @@ spec:
       fallbackToFirstFunction: {{ .Values.settings.aws.fallbackToFirstFunction }}
   {{- end }}
 {{- end }}
+  {{- if .Values.global.istioIntegration }}
+    appendIstioXfh: {{ .Values.global.istioIntegration.appendXForwardedHost | default true }}
+  {{- end }}
 
   {{- if .Values.settings.integrations.consul }}
   consul:
