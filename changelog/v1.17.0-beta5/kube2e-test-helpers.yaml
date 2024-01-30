@@ -1,0 +1,9 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/9014
+  resolvesIssue: true
+  description: >-
+    Fix test bug uncovered by adding proper assertion per linter. This bug had no
+    user-facing effects.
+
+    skipCI-docs-build:true
