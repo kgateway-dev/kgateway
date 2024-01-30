@@ -1934,8 +1934,8 @@ github.com/solo-io/anyvendor v0.0.4 h1:9nI7o7Srml2uaOpT5HJSru06IHUZpzSCU/dEkseiG
 github.com/solo-io/anyvendor v0.0.4/go.mod h1:+TTkDGd11u8ugXccqtukBEWvkZkODaBbeWgdH/F/IWY=
 github.com/solo-io/cue v0.4.7 h1:X65mDmyBrS3ODvDvAgzIt9aTxbwBtdt+ayg4w9XKoaA=
 github.com/solo-io/cue v0.4.7/go.mod h1:P1tN9y6nBPAMoEK5aJxI8kn0VUcjVcRc+8esieRzQ7M=
-github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20240129203551-f05ab145d22d h1:h+cONl6FtT2h70lVlbBfjG1qFY00fF+y1Cvw8sGGdSA=
-github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20240129203551-f05ab145d22d/go.mod h1:ZBTaoJ23lqITozF0M6G4/IragXCQKCnYbmlmtHvwRG0=
+github.com/solo-io/go-control-plane-fork-v2 v1.29.0-patch1 h1:BYbgvHnPZaiEYXUB/78NDJMR0WvPpfVgMsu5uCBSbvw=
+github.com/solo-io/go-control-plane-fork-v2 v1.29.0-patch1/go.mod h1:ZBTaoJ23lqITozF0M6G4/IragXCQKCnYbmlmtHvwRG0=
 github.com/solo-io/go-list-licenses v0.1.4 h1:u4xh1OUORT4iSWuAp3Q4NsfHcDaeUV8QRDH8ACQqbxw=
 github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=

@@ -13,7 +13,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/envoyproxy/go-control-plane v0.11.1
+	github.com/envoyproxy/go-control-plane v0.12.0
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 	github.com/fsnotify/fsnotify v1.6.0
@@ -329,7 +329,7 @@ replace (
 	github.com/docker/docker => github.com/moby/moby v24.0.7+incompatible
 
 	// Remove once we get to a version with extproc changes in upstream envoy (currently targeted 1.30)
-	github.com/envoyproxy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20240129203551-f05ab145d22d
+	github.com/envoyproxy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v1.29.0-patch1
 
 	// Newer versions result in changes to the names of generated metrics
 	// remove this when we fix https://github.com/solo-io/solo-kit/issues/516
