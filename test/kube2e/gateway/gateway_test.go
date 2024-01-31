@@ -2109,6 +2109,12 @@ spec:
 				// The reason is still unknown, so we retry on flakes in the meantime.
 				It("should act as expected with secret validation", func() {
 					verifyGlooValidationWorks()
+
+					By("waiting for the modified VS to be accepted")
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					})
+
 					By("failing to delete a secret that is in use")
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 					Expect(err).To(HaveOccurred())
@@ -2133,8 +2139,10 @@ spec:
 						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 					})
 
-					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					Expect(err).NotTo(HaveOccurred())
+					// Although these tests delete the secret handled by our SnapshotWriter, because we set `IgnoreNotFound` when deleting snapshot resources, this won't cause an issue.
+					Eventually(func() error {
+						return resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					}).WithPolling(500 * time.Millisecond).WithTimeout(30 * time.Second).ShouldNot(HaveOccurred())
 				})
 
 				It("can delete a secret that is not in use", func() {
