@@ -1,5 +1,5 @@
 changelog:
-  - type: FIX
+  - type: BREAKING_CHANGE
     issueLink: https://github.com/solo-io/solo-projects/issues/5711
     resolvesIssue: true
     description: Disable Istio Envoy proxy from running by default and only rely on proxyless Istio agent mtls integration.
