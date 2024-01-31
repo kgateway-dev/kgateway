@@ -150,6 +150,19 @@ message Transformation {
 // Extractions can be used to extract information from the request/response.
 // The extracted information can then be referenced in template fields.
 message Extraction {
+  // The mode of operation for the extraction.
+  enum Mode {
+    // Default mode. Extract the value of the subgroup-th capturing group.
+    EXTRACT = 0; 
+    // Replace the value of the subgroup-th capturing group with the replacement_text.
+    // Note: replacement_text must be set for this mode.
+    SINGLE_REPLACE = 1;
+    // Replace all matches of the regex in the source with the replacement_text.
+    // Note: replacement_text must be set for this mode.
+    // Note: subgroup is ignored for this mode. configuration will fail if subgroup is set.
+    // Note: restrictions on the regex are different for this mode. See the regex field for more details.
+    REPLACE_ALL = 2;
+  }
 
   // The source of the extraction
   oneof source {
@@ -159,16 +172,31 @@ message Extraction {
     google.protobuf.Empty body = 4;
   }
 
-  // Only strings matching this regular expression will be part of the
-  // extraction. This regex **must match the entire source** in order for a value to be extracted.
-  // The most simple value for this field is '.*', which matches the
-  // whole source. The field is required. If extraction fails the result is an
-  // empty value.
+  // The regex field specifies the regular expression used for matching against the source content.
+  // - In EXTRACT mode, the entire source must match the regex. The subgroup-th capturing group,
+  //   if specified, determines which part of the match is extracted.
+  // - In SINGLE_REPLACE mode, the regex also needs to match the entire source. The subgroup-th capturing group
+  //   is targeted for replacement with the replacement_text.
+  // - In REPLACE_ALL mode, the regex is applied repeatedly to find all occurrences within the source that match.
+  //   Each matching occurrence is replaced with the replacement_text, and the subgroup field is not used.
+  // This field is required, and if the regex does not match the source as per the selected mode, the result of
+  // the extraction will be an empty value.
   string regex = 2;
 
   // If your regex contains capturing groups, use this field to determine which
   // group should be selected.
+  // For EXTRACT and SINGLE_REPLACE, refers to the portion of the text
+  // to extract/replace.
+  // Config will be rejected if this is specified in REPLACE_ALL mode.
   uint32 subgroup = 3;
+
+  // The string to replace the matched portion of the source with.
+  // Used in SINGLE_REPLACE and REPLACE_ALL modes.
+  google.protobuf.StringValue replacement_text = 5;
+
+  // The mode of operation for the extraction.
+  // Defaults to EXTRACT.
+  Mode mode = 6;
 }
 
 // Defines a transformation template.
