@@ -462,6 +462,170 @@ var _ = Describe("Plugin", func() {
 
 		})
 
+		Context("Extractors", func() {
+			var (
+				inputExtraction           *transformation.Extraction
+				outputExtraction          *envoytransformation.Extraction
+				inputTransformationStages *transformation.TransformationStages
+				expectedOutput            *envoytransformation.RouteTransformations
+				inputTransform            *transformation.Transformation
+				outputTransform           *envoytransformation.Transformation
+			)
+
+			type transformationPlugin interface {
+				plugins.Plugin
+				ConvertTransformation(
+					ctx context.Context,
+					t *transformation.Transformations,
+					stagedTransformations *transformation.TransformationStages,
+				) (*envoytransformation.RouteTransformations, error)
+			}
+
+			BeforeEach(func() {
+				inputExtraction = &transformation.Extraction{
+					Regex: "abc",
+					Source: &transformation.Extraction_Header{
+						Header: "foo",
+					},
+				}
+
+				outputExtraction = &envoytransformation.Extraction{
+					Regex: "abc",
+					Source: &envoytransformation.Extraction_Header{
+						Header: "foo",
+					},
+				}
+
+				inputTransform = &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Extractors: map[string]*transformation.Extraction{
+								"foo": inputExtraction,
+							},
+						},
+					},
+				}
+				outputTransform = &envoytransformation.Transformation{
+					TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoytransformation.TransformationTemplate{
+							Extractors: map[string]*envoytransformation.Extraction{
+								"foo": outputExtraction,
+							},
+						},
+					},
+				}
+				inputTransformationStages = &transformation.TransformationStages{
+					Regular: &transformation.RequestResponseTransformations{
+						RequestTransforms: []*transformation.RequestMatch{{
+							RequestTransformation: inputTransform,
+						}},
+					},
+				}
+
+				expectedOutput = &envoytransformation.RouteTransformations{
+					Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{{
+						Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+								RequestTransformation: outputTransform,
+							},
+						},
+					}},
+				}
+			})
+
+			It("Defaults to Extract mode", func() {
+				// Note that mode is unset in inputExtraction
+				outputExtraction.Mode = envoytransformation.Extraction_EXTRACT
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			Describe("Extract mode", func() {})
+			Describe("Single Replace mode", func() {
+				It("Can set mode to SingleReplace", func() {
+					inputExtraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					inputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+					outputExtraction.Mode = envoytransformation.Extraction_SINGLE_REPLACE
+					outputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(output).To(Equal(expectedOutput))
+				})
+
+				It("Errors if replacement_text is not set", func() {
+					inputExtraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					inputExtraction.ReplacementText = nil
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).To(HaveOccurred())
+					Expect(output).To(BeNil())
+				})
+			})
+			Describe("Replace All mode", func() {
+				It("Can set mode to ReplaceAll", func() {
+					inputExtraction.Mode = transformation.Extraction_REPLACE_ALL
+					inputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+					outputExtraction.Mode = envoytransformation.Extraction_REPLACE_ALL
+					outputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(output).To(Equal(expectedOutput))
+				})
+
+				It("Errors if subgroup is set", func() {
+					inputExtraction.Mode = transformation.Extraction_REPLACE_ALL
+					inputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+					inputExtraction.Subgroup = 1
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).To(HaveOccurred())
+					Expect(output).To(BeNil())
+				})
+
+				It("Errors if replacement_text is not set", func() {
+					inputExtraction.Mode = transformation.Extraction_REPLACE_ALL
+					inputExtraction.ReplacementText = nil
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).To(HaveOccurred())
+					Expect(output).To(BeNil())
+				})
+			})
+		})
 	})
 
 	Context("deprecated transformations", func() {

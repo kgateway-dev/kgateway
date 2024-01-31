@@ -331,7 +331,12 @@ func TranslateTransformation(glooTransform *transformation.Transformation,
 			}
 			typedTransformation.TransformationTemplate.EscapeCharacters = escapeCharacters
 
-			out.TransformationType = translateTransformationTemplate(typedTransformation)
+			transformationType, err := translateTransformationTemplate(typedTransformation)
+			if err != nil {
+				// TODO: create a typed error for this
+				return nil, err
+			}
+			out.TransformationType = transformationType
 		}
 	default:
 		return nil, UnknownTransformationType(typedTransformation)
@@ -353,7 +358,7 @@ func translateHeaderBodyTransform(in *transformation.Transformation_HeaderBodyTr
 	return out
 }
 
-func translateTransformationTemplate(in *transformation.Transformation_TransformationTemplate) *envoytransformation.Transformation_TransformationTemplate {
+func translateTransformationTemplate(in *transformation.Transformation_TransformationTemplate) (*envoytransformation.Transformation_TransformationTemplate, error) {
 	out := &envoytransformation.Transformation_TransformationTemplate{}
 	inTemplate := in.TransformationTemplate
 	outTemplate := &envoytransformation.TransformationTemplate{
@@ -367,21 +372,11 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	if len(inTemplate.GetExtractors()) > 0 {
 		outTemplate.Extractors = make(map[string]*envoytransformation.Extraction)
 		for k, v := range inTemplate.GetExtractors() {
-			outExtraction := &envoytransformation.Extraction{
-				Regex:    v.GetRegex(),
-				Subgroup: v.GetSubgroup(),
+			extractor, err := translateExtractor(v, k)
+			if err != nil {
+				return nil, err
 			}
-			switch src := v.GetSource().(type) {
-			case *transformation.Extraction_Body:
-				outExtraction.Source = &envoytransformation.Extraction_Body{
-					Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
-				}
-			case *transformation.Extraction_Header:
-				outExtraction.Source = &envoytransformation.Extraction_Header{
-					Header: src.Header,
-				}
-			}
-			outTemplate.GetExtractors()[k] = outExtraction
+			outTemplate.GetExtractors()[k] = extractor
 		}
 	}
 
@@ -438,7 +433,60 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	}
 
 	out.TransformationTemplate = outTemplate
-	return out
+	return out, nil
+}
+
+func translateExtractor(extractor *transformation.Extraction, name string) (*envoytransformation.Extraction, error) {
+	out := &envoytransformation.Extraction{
+		// TODO: could log an error if this is an empty string
+		Regex: extractor.GetRegex(),
+	}
+
+	switch src := extractor.GetSource().(type) {
+	case *transformation.Extraction_Body:
+		out.Source = &envoytransformation.Extraction_Body{
+			Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
+		}
+	case *transformation.Extraction_Header:
+		out.Source = &envoytransformation.Extraction_Header{
+			Header: src.Header,
+		}
+	}
+
+	switch extractor.GetMode() {
+	case transformation.Extraction_EXTRACT:
+		out.Mode = envoytransformation.Extraction_EXTRACT
+		out.Subgroup = extractor.GetSubgroup()
+
+		// error if replacement_text is set
+		if extractor.GetReplacementText().GetValue() != "" {
+			return nil, eris.Errorf("replacement_text is set for extractor %s, but must not be set for mode EXTRACT", name)
+		}
+	case transformation.Extraction_SINGLE_REPLACE:
+		out.Mode = envoytransformation.Extraction_SINGLE_REPLACE
+		out.Subgroup = extractor.GetSubgroup()
+		out.ReplacementText = extractor.GetReplacementText()
+
+		// error if replacement_text is not set
+		if extractor.GetReplacementText() == nil {
+			return nil, eris.Errorf("replacement_text is not set for extractor %s, but must be set for mode SINGLE_REPLACE", name)
+		}
+	case transformation.Extraction_REPLACE_ALL:
+		out.Mode = envoytransformation.Extraction_REPLACE_ALL
+		out.ReplacementText = extractor.GetReplacementText()
+
+		// error if subgroup is set
+		if extractor.GetSubgroup() != 0 {
+			return nil, eris.Errorf("subgroup is set for extractor %s, but must not be set for mode REPLACE_ALL", name)
+		}
+
+		// error if replacement_text is not set
+		if extractor.GetReplacementText() == nil {
+			return nil, eris.Errorf("replacement_text is not set for extractor %s, but must be set for mode REPLACE_ALL", name)
+		}
+	}
+
+	return out, nil
 }
 
 func (p *Plugin) validateTransformation(
