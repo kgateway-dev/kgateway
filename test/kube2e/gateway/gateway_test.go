@@ -2148,8 +2148,9 @@ spec:
 					})
 
 					// Although these tests delete the secret handled by our SnapshotWriter, because we set `IgnoreNotFound` when deleting snapshot resources, this won't cause an issue.
-					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						return resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					}).WithPolling(500 * time.Millisecond).WithTimeout(30 * time.Second).ShouldNot(HaveOccurred())
 				})
 
 				It("can delete a secret that is not in use", func() {
