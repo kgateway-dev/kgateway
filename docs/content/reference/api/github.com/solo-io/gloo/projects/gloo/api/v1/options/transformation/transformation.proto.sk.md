@@ -18,6 +18,7 @@ weight: 5
 - [TransformationStages](#transformationstages)
 - [Transformation](#transformation)
 - [Extraction](#extraction)
+- [Mode](#mode)
 - [TransformationTemplate](#transformationtemplate)
 - [HeaderToAppend](#headertoappend)
 - [DynamicMetadataValue](#dynamicmetadatavalue)
@@ -181,6 +182,8 @@ The extracted information can then be referenced in template fields.
 "body": .google.protobuf.Empty
 "regex": string
 "subgroup": int
+"replacementText": .google.protobuf.StringValue
+"mode": .transformation.options.gloo.solo.io.Extraction.Mode
 
 ```
 
@@ -188,8 +191,25 @@ The extracted information can then be referenced in template fields.
 | ----- | ---- | ----------- | 
 | `header` | `string` | Extract information from headers. Only one of `header` or `body` can be set. |
 | `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Extract information from the request/response body. Only one of `body` or `header` can be set. |
-| `regex` | `string` | Only strings matching this regular expression will be part of the extraction. This regex **must match the entire source** in order for a value to be extracted. The most simple value for this field is '.*', which matches the whole source. The field is required. If extraction fails the result is an empty value. |
-| `subgroup` | `int` | If your regex contains capturing groups, use this field to determine which group should be selected. |
+| `regex` | `string` | The regex field specifies the regular expression used for matching against the source content. - In EXTRACT mode, the entire source must match the regex. The subgroup-th capturing group, if specified, determines which part of the match is extracted. - In SINGLE_REPLACE mode, the regex also needs to match the entire source. The subgroup-th capturing group is targeted for replacement with the replacement_text. - In REPLACE_ALL mode, the regex is applied repeatedly to find all occurrences within the source that match. Each matching occurrence is replaced with the replacement_text, and the subgroup field is not used. This field is required, and if the regex does not match the source as per the selected mode, the result of the extraction will be an empty value. |
+| `subgroup` | `int` | If your regex contains capturing groups, use this field to determine which group should be selected. For EXTRACT and SINGLE_REPLACE, refers to the portion of the text to extract/replace. TODO: confirm the validity of the following statement: Config will be rejected if this is specified in REPLACE_ALL mode. |
+| `replacementText` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The string to replace the matched portion of the source with. Used in SINGLE_REPLACE and REPLACE_ALL modes. |
+| `mode` | [.transformation.options.gloo.solo.io.Extraction.Mode](../transformation.proto.sk/#mode) | The mode of operation for the extraction. Defaults to EXTRACT. |
+
+
+
+
+---
+### Mode
+
+ 
+The mode of operation for the extraction.
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXTRACT` | Default mode. Extract the value of the subgroup-th capturing group. |
+| `SINGLE_REPLACE` | Replace the value of the subgroup-th capturing group with the replacement_text. Note: replacement_text must be set for this mode. |
+| `REPLACE_ALL` | Replace all matches of the regex in the source with the replacement_text. Note: replacement_text must be set for this mode. Note: subgroup is ignored for this mode. configuration will fail if subgroup is set. Note: restrictions on the regex are different for this mode. See the regex field for more details. |
 
 
 
