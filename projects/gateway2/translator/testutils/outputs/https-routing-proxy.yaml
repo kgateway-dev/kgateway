@@ -1,0 +1,34 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher:
+        sslConfig:
+          secretRef:
+            name: https
+            namespace: default
+      virtualHostRefs:
+      - https~example.com
+    httpResources:
+      virtualHosts:
+        https~example.com:
+          domains:
+          - example.com
+          name: https~example.com
+          routes:
+          - matchers:
+            - prefix: /
+            options: {}
+            routeAction:
+              single:
+                upstream:
+                  name: default-example-svc-80
+                  namespace: default
+  bindAddress: '::'
+  bindPort: 8443
+  name: https
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api-translator
+  name: example-gateway
+  namespace: default

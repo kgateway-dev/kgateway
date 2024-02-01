@@ -127,8 +127,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golang/protobuf/protoc-gen-go
 	go install golang.org/x/tools/cmd/goimports
 	go install github.com/cratonica/2goarray
-	go install github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+	go install go.uber.org/mock/mockgen
 	go install github.com/saiskee/gettercheck
 	# This version must stay in sync with the version used in CI: .github/workflows/static-analysis.yaml
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
@@ -187,7 +186,7 @@ test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 .PHONY: run-tests
-run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += -skip-package=e2e,gateway2 ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 

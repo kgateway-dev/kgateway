@@ -78,17 +78,6 @@ func UpstreamName(serviceNamespace, serviceName string, servicePort int32) strin
 	return sanitizer.SanitizeNameV2(fmt.Sprintf("%s-%s-%v", serviceNamespace, serviceName, servicePort))
 }
 
-// TODO: move to a utils package
-
-func containsString(s string, slice []string) bool {
-	for _, s2 := range slice {
-		if s2 == s {
-			return true
-		}
-	}
-	return false
-}
-
 func skip(svc *kubev1.Service, opts discovery.Opts) bool {
 	// ilackarms: allow user to override the skip with an annotation
 	// force discovery for a service with no selector
