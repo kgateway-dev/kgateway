@@ -472,6 +472,36 @@ var _ = Describe("Plugin", func() {
 				outputTransform           *envoytransformation.Transformation
 			)
 
+			// we need to do this because pb strings can't be compared directly -- we need to compare the values
+			validateExtractionMatch := func(expected, actual *envoytransformation.RouteTransformations) {
+				getTransformation := func(rt *envoytransformation.RouteTransformations) *envoytransformation.Transformation {
+					return rt.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation()
+				}
+
+				getExtractor := func(t *envoytransformation.Transformation, key string) *envoytransformation.Extraction {
+					return t.GetTransformationTemplate().GetExtractors()[key]
+				}
+
+				expectedTransformation := getTransformation(expected)
+				actualTransformation := getTransformation(actual)
+				expectedExtraction := getExtractor(expectedTransformation, "foo")
+				actualExtraction := getExtractor(actualTransformation, "foo")
+
+				// Validate each field with proper nil checks
+				Expect(actualExtraction.GetSource()).To(Equal(expectedExtraction.GetSource()), "Source mismatch")
+				Expect(actualExtraction.GetRegex()).To(Equal(expectedExtraction.GetRegex()), "Regex mismatch")
+				Expect(actualExtraction.GetSubgroup()).To(Equal(expectedExtraction.GetSubgroup()), "Subgroup mismatch")
+				Expect(actualExtraction.GetMode()).To(Equal(expectedExtraction.GetMode()), "Mode mismatch")
+
+				// Handle nil replacement text gracefully
+				if expectedExtraction.GetReplacementText() != nil {
+					Expect(actualExtraction.GetReplacementText()).NotTo(BeNil(), "Expected replacement text not to be nil")
+					Expect(actualExtraction.GetReplacementText().GetValue()).To(Equal(expectedExtraction.GetReplacementText().GetValue()), "Replacement text value mismatch")
+				} else {
+					Expect(actualExtraction.GetReplacementText()).To(BeNil(), "Expected replacement text to be nil")
+				}
+			}
+
 			type transformationPlugin interface {
 				plugins.Plugin
 				ConvertTransformation(
@@ -533,18 +563,77 @@ var _ = Describe("Plugin", func() {
 				}
 			})
 
-			It("Defaults to Extract mode", func() {
-				// Note that mode is unset in inputExtraction
-				outputExtraction.Mode = envoytransformation.Extraction_EXTRACT
+			AfterEach(func() {
+				inputExtraction = nil
+				outputExtraction = nil
+				inputTransformationStages = nil
+				expectedOutput = nil
+				inputTransform = nil
+				outputTransform = nil
+			})
 
-				output, err := p.(transformationPlugin).ConvertTransformation(
-					ctx,
-					&transformation.Transformations{},
-					inputTransformationStages,
-				)
+			Describe("Default behavior", func() {
+				It("Defaults to Extract mode", func() {
+					// Note that mode is unset in inputExtraction
+					outputExtraction.Mode = envoytransformation.Extraction_EXTRACT
 
-				Expect(err).NotTo(HaveOccurred())
-				Expect(output).To(Equal(expectedOutput))
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(output).To(Equal(expectedOutput))
+				})
+
+				It("Can set subgroup in default case", func() {
+					// Note that mode is unset in inputExtraction
+					// Note that we need to ensure that the regex has a capture group
+					inputExtraction.Regex = "(abc)"
+					inputExtraction.Subgroup = 1
+					outputExtraction.Regex = "(abc)"
+					outputExtraction.Subgroup = 1
+					outputExtraction.Mode = envoytransformation.Extraction_EXTRACT
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(output).To(Equal(expectedOutput))
+				})
+
+				It("Errors if subgroup is larger than the number of capture groups in the regex", func() {
+					// Note that mode is unset in inputExtraction
+					// Note that we need to ensure that the regex has a capture group
+					inputExtraction.Regex = "(abc)"
+					inputExtraction.Subgroup = 2
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).To(HaveOccurred())
+					Expect(output).To(BeNil())
+				})
+
+				It("Errors if replacement_text is set", func() {
+					inputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).To(HaveOccurred())
+					Expect(output).To(BeNil())
+				})
 			})
 
 			Describe("Extract mode", func() {})
@@ -562,12 +651,27 @@ var _ = Describe("Plugin", func() {
 					)
 
 					Expect(err).NotTo(HaveOccurred())
-					Expect(output).To(Equal(expectedOutput))
+					validateExtractionMatch(expectedOutput, output)
 				})
 
 				It("Errors if replacement_text is not set", func() {
 					inputExtraction.Mode = transformation.Extraction_SINGLE_REPLACE
 					inputExtraction.ReplacementText = nil
+
+					output, err := p.(transformationPlugin).ConvertTransformation(
+						ctx,
+						&transformation.Transformations{},
+						inputTransformationStages,
+					)
+
+					Expect(err).To(HaveOccurred())
+					Expect(output).To(BeNil())
+				})
+
+				It("Errors if subgroup is larger than the number of capture groups in the regex", func() {
+					inputExtraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					inputExtraction.ReplacementText = &wrapperspb.StringValue{Value: "foo"}
+					inputExtraction.Subgroup = 1
 
 					output, err := p.(transformationPlugin).ConvertTransformation(
 						ctx,
@@ -593,7 +697,7 @@ var _ = Describe("Plugin", func() {
 					)
 
 					Expect(err).NotTo(HaveOccurred())
-					Expect(output).To(Equal(expectedOutput))
+					validateExtractionMatch(expectedOutput, output)
 				})
 
 				It("Errors if subgroup is set", func() {
