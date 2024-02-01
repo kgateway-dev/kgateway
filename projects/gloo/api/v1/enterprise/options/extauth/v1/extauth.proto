@@ -492,7 +492,7 @@ message UserSession {
     }
     // the cipher config is used to encrypt session cookie values.  This is currently only available for OIDC.
     message CipherConfig {
-        // to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in 
+        // to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in
         // length for the authconfig to not be rejected.
         oneof key {
             // The key reference used for the cipher. The reference must be a Kubernetes Secret of type `gloo.solo.io.EncryptionKeySecret`.
@@ -738,8 +738,8 @@ message OidcAuthorizationCode {
 
     // Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
     // Gloo Mesh products only: Note that if you want to clear the route cache to force the proxy to recalculate the
-    // routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy, 
-    // and configure the `clearRouteCache` or `recalculateRoutingDestination` options. 
+    // routing destination after adding the claims, you must create an additional JwtPolicy or TransformationPolicy,
+    // and configure the `clearRouteCache` or `recalculateRoutingDestination` options.
     message AccessToken {
 
         // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
@@ -1248,6 +1248,33 @@ message PassThroughAuth {
     bool failure_mode_allow = 5;
 }
 
+// Configuration defining an exponential back off strategy.
+message BackoffStrategy {
+    // The base interval to be used for the next back off computation.
+    // Defaults to 1000 milliseconds
+    google.protobuf.Duration base_interval = 1;
+
+    // Specifies the maximum delay between retries.
+    // Defaults to 10 times the base interval.
+    google.protobuf.Duration max_interval = 2;
+}
+
+
+// The message specifies the retry policy of the external gRPC service when unable to initally connect.
+message RetryPolicy {
+
+    // Specifies the allowed number of retries. This parameter is optional and
+    // defaults to 1.
+    google.protobuf.UInt32Value num_retries = 1;
+
+    oneof strategy {
+        // Specifies parameters that control the backoff strategy.
+        // This parameter is optional, in which case the default base interval is 1000 milliseconds. The
+        // default maximum interval is 10 times the base interval.
+        BackoffStrategy retry_back_off = 2;
+    }
+}
+
 // Authorizes requests by querying a custom extauth grpc server
 // Assumes that the server implements the envoy external authorization spec:
 // https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b0309/api/envoy/service/auth/v3/external_auth.proto#L29
@@ -1261,6 +1288,11 @@ message PassThroughGrpc {
 
     // TLS config for the Grpc passthrough, if not configured the connection will use insecure.
     PassThroughGrpcTLSConfig tlsConfig =3;
+
+    // Indicates the retry policy for re-establishing the gRPC stream
+    // This field is optional. If max interval is not provided, it will be set to ten times the provided base interval.
+    // If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied.
+    RetryPolicy retry_policy = 4;
 }
 // TLS configuration for the extauth grpc passthrough connection
 message PassThroughGrpcTLSConfig {
@@ -1400,10 +1432,10 @@ message ExtAuthConfig {
                 Sha1 sha1 = 2;
             }
         }
-    
+
         // Hashing algorithm to use for password hashing.
         EncryptionType encryption = 2;
-    
+
         // To authenticate a user we need the salt and hashed password. The username is expected to be the key in a map of Users.
         message User {
             string salt = 1;
