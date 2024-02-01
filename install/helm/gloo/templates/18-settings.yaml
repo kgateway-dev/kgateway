@@ -73,7 +73,8 @@ spec:
   {{- end }}
 {{- end }}
   {{- if .Values.global.istioIntegration }}
-    appendIstioXfh: {{ ne .Values.global.istioIntegration.appendXForwardedHost false }}
+    istioOptions:
+      appendIstioXForwardedHost: {{ .Values.global.istioIntegration.appendXForwardedHost }}
   {{- end }}
 
   {{- if .Values.settings.integrations.consul }}
