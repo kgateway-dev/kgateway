@@ -1880,8 +1880,8 @@ Configuration defining an exponential back off strategy.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The base interval to be used for the next back off computation. |
-| `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum delay between retries. |
+| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The base interval to be used for the next back off computation. Defaults to 1000 milliseconds. |
+| `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum delay between retries. Defaults to 10 times the base interval. |
 
 
 
@@ -1893,15 +1893,15 @@ Configuration defining an exponential back off strategy.
 The message specifies the retry policy of the external gRPC service when unable to initally connect.
 
 ```yaml
-"retryBackOff": .enterprise.gloo.solo.io.BackoffStrategy
 "numRetries": .google.protobuf.UInt32Value
+"retryBackOff": .enterprise.gloo.solo.io.BackoffStrategy
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `retryBackOff` | [.enterprise.gloo.solo.io.BackoffStrategy](../extauth.proto.sk/#backoffstrategy) | Specifies parameters that control the backoff strategy. This parameter is optional, in which case the default base interval is 1000 milliseconds. The default maximum interval is 10 times the base interval. |
 | `numRetries` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Specifies the allowed number of retries. This parameter is optional and defaults to 1. |
+| `retryBackOff` | [.enterprise.gloo.solo.io.BackoffStrategy](../extauth.proto.sk/#backoffstrategy) | Specifies parameters that control the backoff strategy. This parameter is optional, in which case the default base interval is 1000 milliseconds. The default maximum interval is 10 times the base interval. |
 
 
 

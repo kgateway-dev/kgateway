@@ -1351,23 +1351,28 @@ message PassThroughAuth {
 // Configuration defining an exponential back off strategy.
 message BackoffStrategy {
     // The base interval to be used for the next back off computation.
+    // Defaults to 1000 milliseconds
     google.protobuf.Duration base_interval = 1;
 
     // Specifies the maximum delay between retries.
+    // Defaults to 10 times the base interval.
     google.protobuf.Duration max_interval = 2;
 }
 
 
 // The message specifies the retry policy of the external gRPC service when unable to initally connect.
 message RetryPolicy {
-    // Specifies parameters that control the backoff strategy.
-    // This parameter is optional, in which case the default base interval is 1000 milliseconds. The
-    // default maximum interval is 10 times the base interval.
-    BackoffStrategy retry_back_off = 1;
 
     // Specifies the allowed number of retries. This parameter is optional and
     // defaults to 1.
-    google.protobuf.UInt32Value num_retries = 2;
+    google.protobuf.UInt32Value num_retries = 1;
+
+    oneof strategy {
+        // Specifies parameters that control the backoff strategy.
+        // This parameter is optional, in which case the default base interval is 1000 milliseconds. The
+        // default maximum interval is 10 times the base interval.
+        BackoffStrategy retry_back_off = 2;
+    }
 }
 
 // Authorizes requests by querying a custom extauth grpc server

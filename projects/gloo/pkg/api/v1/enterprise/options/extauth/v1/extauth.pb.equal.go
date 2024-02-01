@@ -2758,22 +2758,36 @@ func (m *RetryPolicy) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetRetryBackOff()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetRetryBackOff()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetRetryBackOff(), target.GetRetryBackOff()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetNumRetries()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetNumRetries()) {
 			return false
 		}
 	} else {
 		if !proto.Equal(m.GetNumRetries(), target.GetNumRetries()) {
+			return false
+		}
+	}
+
+	switch m.Strategy.(type) {
+
+	case *RetryPolicy_RetryBackOff:
+		if _, ok := target.Strategy.(*RetryPolicy_RetryBackOff); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRetryBackOff()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRetryBackOff()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRetryBackOff(), target.GetRetryBackOff()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Strategy != target.Strategy {
 			return false
 		}
 	}

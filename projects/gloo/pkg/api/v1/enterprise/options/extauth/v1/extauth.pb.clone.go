@@ -1638,16 +1638,26 @@ func (m *RetryPolicy) Clone() proto.Message {
 	}
 	target = &RetryPolicy{}
 
-	if h, ok := interface{}(m.GetRetryBackOff()).(clone.Cloner); ok {
-		target.RetryBackOff = h.Clone().(*BackoffStrategy)
-	} else {
-		target.RetryBackOff = proto.Clone(m.GetRetryBackOff()).(*BackoffStrategy)
-	}
-
 	if h, ok := interface{}(m.GetNumRetries()).(clone.Cloner); ok {
 		target.NumRetries = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	} else {
 		target.NumRetries = proto.Clone(m.GetNumRetries()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	switch m.Strategy.(type) {
+
+	case *RetryPolicy_RetryBackOff:
+
+		if h, ok := interface{}(m.GetRetryBackOff()).(clone.Cloner); ok {
+			target.Strategy = &RetryPolicy_RetryBackOff{
+				RetryBackOff: h.Clone().(*BackoffStrategy),
+			}
+		} else {
+			target.Strategy = &RetryPolicy_RetryBackOff{
+				RetryBackOff: proto.Clone(m.GetRetryBackOff()).(*BackoffStrategy),
+			}
+		}
+
 	}
 
 	return target
