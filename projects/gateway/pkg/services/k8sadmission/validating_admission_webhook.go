@@ -391,7 +391,6 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 	admissionRequest *v1beta1.AdmissionRequest,
 ) (*validation.Reports, *multierror.Error) {
 
-	fmt.Printf("SAH - in validateAdmissionRequest\n")
 	isDelete := admissionRequest.Operation == v1beta1.Delete
 	dryRun := isDryRun(admissionRequest)
 
@@ -431,7 +430,6 @@ func (wh *gatewayValidationWebhook) deleteRef(ctx context.Context, gvk schema.Gr
 		Namespace: ref.GetNamespace(),
 		Name:      ref.GetName(),
 	})
-
 	err := wh.validator.ValidateDeletedGvk(ctx, gvk, newResource, isDryRun(admissionRequest))
 	if err != nil {
 		return nil, &multierror.Error{Errors: []error{errors.Wrapf(err, "failed validating the deletion of resource namespace: %s name: %s", ref.GetNamespace(), ref.GetName())}}

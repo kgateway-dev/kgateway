@@ -2,7 +2,6 @@ package validation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -49,7 +48,6 @@ type GlooValidationReport struct {
 func (gv glooValidator) Validate(ctx context.Context, proxy *gloov1.Proxy, snapshot *gloosnapshot.ApiSnapshot, shouldDelete bool) []*GlooValidationReport {
 	ctx = contextutils.WithLogger(ctx, "proxy-validator")
 
-	fmt.Println("SAH - in gloo/pkg/validation/validator.go, in Validate()")
 	var validationReports []*GlooValidationReport
 	var proxiesToValidate gloov1.ProxyList
 

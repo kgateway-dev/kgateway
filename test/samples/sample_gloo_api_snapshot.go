@@ -105,7 +105,7 @@ func SimpleSecret() *v1.Secret {
 
 func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 	secret := SimpleSecret()
-	us := InvalidUpstreamWithSecret(secret)
+	us := UpstreamWithSecret(secret)
 	routes := []*v1.Route{{
 		Action: &v1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{

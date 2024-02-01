@@ -91,7 +91,6 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	fmt.Println("SAH - in gloo/pkg/translator/translator.go, in Translate()")
 	reports := make(reporter.ResourceReports)
 	reports.Accept(snap.Gateways.AsInputResources()...)
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
@@ -207,12 +206,10 @@ func ListenerName(gateway *v1.Gateway) string {
 //  1. All bind addresses are unique
 //  2. All VirtualServices that are referenced by a Gateway are available in the API Snapshot
 func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
-	fmt.Printf("SAH - in gloo/pkg/translator/translator.go, in validateGateways()\n")
 	bindAddresses := map[string]v1.GatewayList{}
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
 	// they are invalid.
 	for _, gw := range gateways {
-		fmt.Printf("SAH - in gloo/pkg/translator/translator.go, in validateGateways() for gateway %s\n", gw.GetMetadata().GetName())
 		bindAddress := fmt.Sprintf("%s:%d", gw.GetBindAddress(), gw.GetBindPort())
 		bindAddresses[bindAddress] = append(bindAddresses[bindAddress], gw)
 
@@ -229,7 +226,6 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 		}
 
 		for _, vs := range gatewayVirtualServices {
-			fmt.Printf("SAH - in gloo/pkg/translator/translator.go, in validateGateways(), validates vs %+v\n", vs)
 			if _, err := virtualServices.Find(vs.Strings()); err != nil {
 				reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 			}

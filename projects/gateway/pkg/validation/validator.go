@@ -314,8 +314,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		if proxy == nil {
 			continue
 		}
-
-		// DO_NOT_SUBMIT: do we need to add this failure type to the list of errors that invalidate the revalidation comparison
 		proxies = append(proxies, proxy)
 
 		// validate the proxy with the Gloo validator
@@ -797,23 +795,23 @@ func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooVa
 
 	for _, report := range reports {
 		err, warning := report.ResourceReports.ValidateWithWarnings(warningHandling)
-		fmt.Printf("SAH getErrorsFromGlooValidation::ValidateWithWarnings errs:\n%+v\n, warnings:\n+%v\n", err, warning)
+		//fmt.Printf("SAH getErrorsFromGlooValidation::ValidateWithWarnings errs:\n%+v\n, warnings:\n+%v\n", err, warning)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		}
-		if warning != nil && !v.allowWarnings {
+		if warning != nil {
 			warnings = multierror.Append(warnings, warning)
 		}
 
 		if proxyReport := report.ProxyReport; proxyReport != nil {
 			// Errors always go to errors
 			if err := validationutils.GetProxyError(proxyReport); err != nil {
-				fmt.Printf("SAH - GetProxyError: %+v\n", err)
+				//fmt.Printf("SAH - GetProxyError: %+v\n", err)
 				errs = multierror.Append(errs, errors.Wrapf(err, "getErrorsFromGlooValidation failed to validate Proxy with Gloo validation server"))
 			}
 
 			if proxyWarnings := validationutils.GetProxyWarning(proxyReport); len(proxyWarnings) > 0 {
-				fmt.Printf("SAH - getErrorsFromGlooValidation::GetProxyWarning: %+v\n", proxyWarnings)
+				//fmt.Printf("SAH - getErrorsFromGlooValidation::GetProxyWarning: %+v\n", proxyWarnings)
 				// We didn't pass down `opts` but can use warningHandling to determine how to handle warnings
 				if warningHandling == reporter.SeparateWarnings {
 					for _, warning := range proxyWarnings {

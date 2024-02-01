@@ -451,7 +451,6 @@ func RunGloo(opts bootstrap.Opts) error {
 }
 
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
-	fmt.Printf("SHGREP: RunGlooWithExtensions\n")
 	// Validate Extensions
 	if extensions.ApiEmitterChannel == nil {
 		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")

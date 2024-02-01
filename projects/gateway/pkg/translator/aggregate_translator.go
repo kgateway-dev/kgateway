@@ -2,7 +2,6 @@ package translator
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -49,7 +48,6 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 
 	case *v1.Gateway_HybridGateway:
 		hybrid := gw.HybridGateway
-		fmt.Printf("SAH - hybrid gateway\n")
 		// warn early if there are no virtual services and no tcp configurations
 		if len(snap.VirtualServices) == 0 {
 			hasTCP := hybrid.GetDelegatedTcpGateways() != nil
