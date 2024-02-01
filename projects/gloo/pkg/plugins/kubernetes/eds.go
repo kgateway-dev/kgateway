@@ -305,6 +305,9 @@ func getServiceFromUpstreamSpec(spec *kubeplugin.UpstreamSpec, services []*kubev
 	return nil
 }
 
+// FilterEndpoints computes the endpoints for Gloo from the given Kubernetes endpoints, services, and Gloo upstreams.
+// It is exported to provide an injection point into our existing EDS solution for the Gloo K8s Gateway integration.
+// It returns the endpoints, warnings, and errors.
 func FilterEndpoints(
 	_ context.Context, // do not use for logging! return logging messages as strings and log them after hashing (see https://github.com/solo-io/gloo/issues/3761)
 	writeNamespace string,
@@ -324,9 +327,6 @@ func FilterEndpoints(
 	)
 }
 
-// computeGlooEndpoints computes the endpoints for Gloo from the given Kubernetes endpoints, services, and Gloo upstreams.
-// It is exported to provide an injection point into our existing EDS solution for the Gloo K8s Gateway integration.
-// It returns the endpoints, warnings, and errors.
 func computeGlooEndpoints(
 	writeNamespace string,
 	kubeEndpoints []*kubev1.Endpoints,

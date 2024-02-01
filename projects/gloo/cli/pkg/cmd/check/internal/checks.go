@@ -34,8 +34,6 @@ func CheckConnection(ctx context.Context, _ printers.P, opts *options.Options) e
 	return nil
 }
 
-// func CheckControlPlane(ctx context.Context, printer printers.P, opts *options.Options) error {}
-
 func CheckDeployments(ctx context.Context, printer printers.P, opts *options.Options) error {
 	printer.AppendCheck("Checking deployments... ")
 	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)

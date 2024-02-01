@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *options.Options) {
+func CheckMulticlusterResources(_ context.Context, printer printers.P, opts *options.Options) {
 	// check if the gloo fed deployment exists
 	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(opts.Top.Ctx, "gloo-fed", metav1.GetOptions{})
