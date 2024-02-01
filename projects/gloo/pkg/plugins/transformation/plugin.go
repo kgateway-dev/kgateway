@@ -3,6 +3,7 @@ package transformation
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -437,6 +438,11 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 }
 
 func translateExtractor(extractor *transformation.Extraction, name string) (*envoytransformation.Extraction, error) {
+	err := validateRegex(extractor)
+	if err != nil {
+		return nil, eris.Wrapf(err, "error validating regex for extractor %s", name)
+	}
+
 	out := &envoytransformation.Extraction{
 		// TODO: could log an error if this is an empty string
 		Regex: extractor.GetRegex(),
@@ -484,9 +490,54 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 		if extractor.GetReplacementText() == nil {
 			return nil, eris.Errorf("replacement_text is not set for extractor %s, but must be set for mode REPLACE_ALL", name)
 		}
+	default:
+		// identical to Extraction_EXTRACT
+		// TODO: unit tests for default case
+		out.Mode = envoytransformation.Extraction_EXTRACT
+		out.Subgroup = extractor.GetSubgroup()
+
+		// error if replacement_text is set
+		if extractor.GetReplacementText().GetValue() != "" {
+			return nil, eris.Errorf("replacement_text is set for extractor %s, but must not be set for mode EXTRACT", name)
+		}
 	}
 
 	return out, nil
+}
+
+// TODO / note to reviewers
+//
+//	this function compiles the regex and checks that the subgroup is valid
+//	because it compiles a regex, it will affect the performance of the transformation plugin
+//	that being said, it does prevent us from crashing envoy at runtime if we try to
+//	select a subgroup greater than the number of capturing groups in the regex
+//
+// validate that the regex compiles, and that the specified subgroup does not exceed the number of capturing groups in the regex
+func validateRegex(extractor *transformation.Extraction) error {
+	regex := extractor.GetRegex()
+	subgroup := extractor.GetSubgroup()
+
+	// if subgroup is 0, return
+	if subgroup == 0 {
+		return nil
+	}
+
+	// compile regex
+	compiledRegex, err := regexp.Compile(regex)
+	if err != nil {
+		// indicate that there was an error compiling the regex
+		return eris.Wrapf(err, "error compiling regex %s", regex)
+	}
+
+	// get the number of capturing groups in the regex
+	numCapturingGroups := compiledRegex.NumSubexp()
+
+	// if subgroup exceeds the number of capturing groups, return an error
+	if uint32(numCapturingGroups) < subgroup {
+		return eris.Errorf("subgroup %d exceeds the number of capturing groups in regex %s", subgroup, regex)
+	}
+
+	return nil
 }
 
 func (p *Plugin) validateTransformation(
