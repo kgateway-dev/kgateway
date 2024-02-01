@@ -2694,6 +2694,108 @@ func (m *PassThroughAuth) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *BackoffStrategy) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BackoffStrategy)
+	if !ok {
+		that2, ok := that.(BackoffStrategy)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetBaseInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBaseInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBaseInterval(), target.GetBaseInterval()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMaxInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxInterval(), target.GetMaxInterval()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RetryPolicy) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RetryPolicy)
+	if !ok {
+		that2, ok := that.(RetryPolicy)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetNumRetries()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetNumRetries()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetNumRetries(), target.GetNumRetries()) {
+			return false
+		}
+	}
+
+	switch m.Strategy.(type) {
+
+	case *RetryPolicy_RetryBackOff:
+		if _, ok := target.Strategy.(*RetryPolicy_RetryBackOff); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRetryBackOff()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRetryBackOff()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRetryBackOff(), target.GetRetryBackOff()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Strategy != target.Strategy {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *PassThroughGrpc) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -2734,6 +2836,16 @@ func (m *PassThroughGrpc) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetTlsConfig(), target.GetTlsConfig()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetRetryPolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRetryPolicy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRetryPolicy(), target.GetRetryPolicy()) {
 			return false
 		}
 	}
