@@ -953,7 +953,11 @@ func (m *RedirectAction) Clone() proto.Message {
 
 	target.StripQuery = m.GetStripQuery()
 
-	target.PortRedirect = m.GetPortRedirect()
+	if h, ok := interface{}(m.GetPortRedirect()).(clone.Cloner); ok {
+		target.PortRedirect = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.PortRedirect = proto.Clone(m.GetPortRedirect()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
 
 	switch m.PathRewriteSpecifier.(type) {
 

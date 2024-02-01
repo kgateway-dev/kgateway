@@ -341,8 +341,8 @@ func (h *httpRouteConfigurationTranslator) setAction(
 			SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.GetHttpsRedirect()},
 			StripQuery:             action.RedirectAction.GetStripQuery(),
 		}
-		if action.RedirectAction.GetPortRedirect() != 0 {
-			redir.PortRedirect = action.RedirectAction.GetPortRedirect()
+		if action.RedirectAction.GetPortRedirect() != nil {
+			redir.PortRedirect = action.RedirectAction.GetPortRedirect().GetValue()
 		}
 		out.Action = &envoy_config_route_v3.Route_Redirect{
 			Redirect: redir,

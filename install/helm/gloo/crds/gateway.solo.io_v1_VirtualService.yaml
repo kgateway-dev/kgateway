@@ -4716,7 +4716,9 @@ spec:
                             pathRedirect:
                               type: string
                             portRedirect:
-                              format: int32
+                              maximum: 4294967295
+                              minimum: 0
+                              nullable: true
                               type: integer
                             prefixRewrite:
                               type: string

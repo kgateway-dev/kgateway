@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
@@ -53,11 +54,13 @@ func (p *plugin) ApplyRoutePlugin(
 	return nil
 }
 
-func translatePort(port *gwv1.PortNumber) uint32 {
+func translatePort(port *gwv1.PortNumber) *wrappers.UInt32Value {
 	if port == nil {
-		return 0
+		return nil
 	}
-	return uint32(*port)
+	return &wrappers.UInt32Value{
+		Value: uint32(*port),
+	}
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {

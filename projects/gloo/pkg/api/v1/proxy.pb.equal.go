@@ -1493,8 +1493,14 @@ func (m *RedirectAction) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetPortRedirect() != target.GetPortRedirect() {
-		return false
+	if h, ok := interface{}(m.GetPortRedirect()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPortRedirect()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPortRedirect(), target.GetPortRedirect()) {
+			return false
+		}
 	}
 
 	switch m.PathRewriteSpecifier.(type) {

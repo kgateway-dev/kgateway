@@ -553,7 +553,7 @@ message RedirectAction {
     bool strip_query = 6;
 
     // Which port to redirect to if different than original.
-    uint32 port_redirect = 7;
+    google.protobuf.UInt32Value port_redirect = 7;
 }
 
 // DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
