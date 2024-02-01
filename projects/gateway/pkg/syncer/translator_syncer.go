@@ -28,6 +28,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -46,7 +47,7 @@ type TranslatorSyncer struct {
 var (
 	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
 	proxyLabelsToWrite = map[string]string{
-		"created_by": "gloo-gateway-translator",
+		glooutils.TranslatorKey: glooutils.GlooEdgeTranslatorValue,
 	}
 
 	// Previously, proxies would be identified with:
@@ -61,7 +62,7 @@ var (
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
 	proxyLabelSelectorOptions = clients.ListOpts{
-		ExpressionSelector: "created_by in (gloo-gateway-translator, gateway)",
+		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.GlooEdgeTranslatorValue, "gateway"),
 	}
 )
 

@@ -75,6 +75,7 @@ func (e *emptyRouteConfigurationTranslator) ComputeRouteConfiguration(params plu
 type httpRouteConfigurationTranslator struct {
 	pluginRegistry           plugins.PluginRegistry
 	proxy                    *v1.Proxy
+	translatorName           string
 	parentListener           *v1.Listener
 	listener                 *v1.HttpListener
 	parentReport             *validationapi.ListenerReport
@@ -89,6 +90,11 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 		Name:                           h.routeConfigName,
 		VirtualHosts:                   h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
+	}
+	if h.translatorName == utils.GlooGatewayTranslatorValue {
+		// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
+		// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
+		cfg.IgnorePortInHostMatching = true
 	}
 
 	if mostSpecificVal := h.parentListener.GetRouteOptions().GetMostSpecificHeaderMutationsWins(); mostSpecificVal != nil {
@@ -175,7 +181,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	generatedName string,
 ) []*envoy_config_route_v3.Route {
 
-	out := initRoutes(params, in, routeReport, generatedName)
+	out := h.initRoutes(params, in, routeReport, generatedName)
 
 	for i := range out {
 		h.setAction(params, routeReport, in, out[i])
@@ -186,7 +192,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 }
 
 // creates Envoy routes for each matcher provided on our Gateway route
-func initRoutes(
+func (h *httpRouteConfigurationTranslator) initRoutes(
 	params plugins.RouteParams,
 	in *v1.Route,
 	routeReport *validationapi.RouteReport,
@@ -212,7 +218,7 @@ func initRoutes(
 				generatedName,
 			)
 		}
-		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
+		match := h.glooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
 		out[i] = &envoy_config_route_v3.Route{
 			Match: &match,
 		}
@@ -244,7 +250,7 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route, routeReport *validationa
 }
 
 // utility function to transform gloo matcher to envoy route matcher
-func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) envoy_config_route_v3.RouteMatch {
+func (h *httpRouteConfigurationTranslator) glooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) envoy_config_route_v3.RouteMatch {
 	match := envoy_config_route_v3.RouteMatch{
 		Headers:         envoyHeaderMatcher(ctx, matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
@@ -259,7 +265,7 @@ func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) e
 	}
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
-	setEnvoyPathMatcher(ctx, matcher, &match)
+	h.setEnvoyPathMatcher(ctx, matcher, &match)
 	match.CaseSensitive = matcher.GetCaseSensitive()
 	return match
 }
@@ -279,9 +285,16 @@ func (h *httpRouteConfigurationTranslator) setAction(
 			)
 		}
 
-		out.Action = &envoy_config_route_v3.Route_Route{
-			Route: &envoy_config_route_v3.RouteAction{},
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		if h.translatorName == utils.GlooGatewayTranslatorValue {
+			// Gateway API spec requires that invalid refs result in a 500 status code
+			// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule - backendRefs field
+			routeAction.ClusterNotFoundResponseCode = envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR
 		}
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: routeAction,
+		}
+
 		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
 			if isWarningErr(err) {
 				validation.AppendRouteWarning(routeReport,
@@ -322,13 +335,17 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		h.runRouteActionPlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
+		redir := &envoy_config_route_v3.RedirectAction{
+			HostRedirect:           action.RedirectAction.GetHostRedirect(),
+			ResponseCode:           envoy_config_route_v3.RedirectAction_RedirectResponseCode(action.RedirectAction.GetResponseCode()),
+			SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.GetHttpsRedirect()},
+			StripQuery:             action.RedirectAction.GetStripQuery(),
+		}
+		if action.RedirectAction.GetPortRedirect() != nil {
+			redir.PortRedirect = action.RedirectAction.GetPortRedirect().GetValue()
+		}
 		out.Action = &envoy_config_route_v3.Route_Redirect{
-			Redirect: &envoy_config_route_v3.RedirectAction{
-				HostRedirect:           action.RedirectAction.GetHostRedirect(),
-				ResponseCode:           envoy_config_route_v3.RedirectAction_RedirectResponseCode(action.RedirectAction.GetResponseCode()),
-				SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.GetHttpsRedirect()},
-				StripQuery:             action.RedirectAction.GetStripQuery(),
-			},
+			Redirect: redir,
 		}
 
 		switch pathRewrite := action.RedirectAction.GetPathRewriteSpecifier().(type) {
@@ -612,7 +629,7 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch) {
+func (h *httpRouteConfigurationTranslator) setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch) {
 	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Path{
@@ -623,8 +640,29 @@ func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_c
 			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
-		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
-			Prefix: path.Prefix,
+		if h.translatorName == utils.GlooGatewayTranslatorValue {
+			// Gateway API spec treats each path segment as a full word, i.e. a request with path /abcd should not match
+			// the matcher prefix /abc (but request to /abc/def should match) so we must use PathSeparatedPrefix unless
+			// the matcher path ends in / in which case we need to use Prefix (PathSeparatedPrefix cannot end in /)
+			// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1.PathMatchType - PathPrefix
+			// and https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1.HTTPRouteRule - matches field
+			// for how matching should be done
+
+			// TODO: we may need more validation here.
+			// envoy uses this regex: "^[^?#]+[^?#/]$"
+			if strings.HasSuffix(path.Prefix, "/") {
+				out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
+					Prefix: path.Prefix,
+				}
+			} else {
+				out.PathSpecifier = &envoy_config_route_v3.RouteMatch_PathSeparatedPrefix{
+					PathSeparatedPrefix: path.Prefix,
+				}
+			}
+		} else {
+			out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
+				Prefix: path.Prefix,
+			}
 		}
 	case *matchers.Matcher_ConnectMatcher_:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_ConnectMatcher_{
