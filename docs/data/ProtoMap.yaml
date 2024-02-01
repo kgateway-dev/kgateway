@@ -227,6 +227,9 @@ apis:
   enterprise.gloo.solo.io.AutoMapFromMetadata:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AutoMapFromMetadata
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.BackoffStrategy:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#BackoffStrategy
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.BasicAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#BasicAuth
     package: enterprise.gloo.solo.io
@@ -322,6 +325,9 @@ apis:
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.RedisOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RedisOptions
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.RetryPolicy:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RetryPolicy
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.SecretRefList:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#SecretRefList
