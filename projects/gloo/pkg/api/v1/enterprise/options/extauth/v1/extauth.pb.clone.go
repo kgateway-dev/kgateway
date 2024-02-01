@@ -1608,6 +1608,62 @@ func (m *PassThroughAuth) Clone() proto.Message {
 }
 
 // Clone function
+func (m *BackoffStrategy) Clone() proto.Message {
+	var target *BackoffStrategy
+	if m == nil {
+		return target
+	}
+	target = &BackoffStrategy{}
+
+	if h, ok := interface{}(m.GetBaseInterval()).(clone.Cloner); ok {
+		target.BaseInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetMaxInterval()).(clone.Cloner); ok {
+		target.MaxInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *RetryPolicy) Clone() proto.Message {
+	var target *RetryPolicy
+	if m == nil {
+		return target
+	}
+	target = &RetryPolicy{}
+
+	if h, ok := interface{}(m.GetNumRetries()).(clone.Cloner); ok {
+		target.NumRetries = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.NumRetries = proto.Clone(m.GetNumRetries()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	switch m.Strategy.(type) {
+
+	case *RetryPolicy_RetryBackOff:
+
+		if h, ok := interface{}(m.GetRetryBackOff()).(clone.Cloner); ok {
+			target.Strategy = &RetryPolicy_RetryBackOff{
+				RetryBackOff: h.Clone().(*BackoffStrategy),
+			}
+		} else {
+			target.Strategy = &RetryPolicy_RetryBackOff{
+				RetryBackOff: proto.Clone(m.GetRetryBackOff()).(*BackoffStrategy),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *PassThroughGrpc) Clone() proto.Message {
 	var target *PassThroughGrpc
 	if m == nil {
@@ -1627,6 +1683,12 @@ func (m *PassThroughGrpc) Clone() proto.Message {
 		target.TlsConfig = h.Clone().(*PassThroughGrpcTLSConfig)
 	} else {
 		target.TlsConfig = proto.Clone(m.GetTlsConfig()).(*PassThroughGrpcTLSConfig)
+	}
+
+	if h, ok := interface{}(m.GetRetryPolicy()).(clone.Cloner); ok {
+		target.RetryPolicy = h.Clone().(*RetryPolicy)
+	} else {
+		target.RetryPolicy = proto.Clone(m.GetRetryPolicy()).(*RetryPolicy)
 	}
 
 	return target
