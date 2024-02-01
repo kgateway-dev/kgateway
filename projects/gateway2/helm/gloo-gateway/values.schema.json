@@ -1,0 +1,196 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "develop": {
+            "type": "boolean"
+        },
+        "gatewayClass": {
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "controllerName": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "controlPlane": {
+            "allOf": [
+                {
+                    "$ref": "#/definitions/deploymentProperties"
+                },
+                {
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "autoProvision": {
+                            "type": "boolean"
+                        },
+                        "nameOverride": {
+                            "type": "string"
+                        },
+                        "fullnameOverride": {
+                            "type": "string"
+                        },
+                        "image": {
+                            "$ref": "#/definitions/containerImage"
+                        },
+                        "serviceAccount": {
+                            "$ref": "#/definitions/serviceAccount"
+                        }
+                    },
+                    "type": "object"
+                }
+            ]
+        },
+        "gateway": {
+            "allOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "xds": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "host": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "gatewayName": {
+                            "type": "string"
+                        },
+                        "image": {
+                            "$ref": "#/definitions/containerImage"
+                        },
+                        "serviceAccount": {
+                            "$ref": "#/definitions/serviceAccount"
+                        },
+                        "autoscaling": {
+                            "type": "object"
+                        },
+                        "service": {
+                            "type": "object"
+                        },
+                        "readinessPort": {
+                            "type": "integer"
+                        },
+                        "ports": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "$ref": "#/definitions/gatewayPort"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "$ref": "#/definitions/deploymentProperties"
+                }
+            ]
+        }
+    },
+    "title": "Values",
+    "type": "object",
+    "definitions": {
+        "serviceAccount": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "create": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "annotations": {
+                    "$ref": "#/definitions/stringStringMap"
+                }
+            }
+        },
+        "gatewayPort": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "port": {
+                    "type": "integer"
+                },
+                "targetPort": {
+                    "type": "integer"
+                },
+                "protocol": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "containerImage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "repository",
+                "tag"
+            ],
+            "properties": {
+                "repository": {
+                    "type": "string"
+                },
+                "pullPolicy": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "deploymentProperties": {
+            "type": "object",
+            "properties": {
+                "resources": {
+                    "type": "object"
+                },
+                "securityContext": {
+                    "type": "object"
+                },
+                "podSecurityContext": {
+                    "type": "object"
+                },
+                "podAnnotations": {
+                    "$ref": "#/definitions/stringStringMap"
+                },
+                "nodeSelector": {
+                    "type": "object"
+                },
+                "tolerations": {
+                    "type": "array"
+                },
+                "affinity": {
+                    "type": "object"
+                },
+                "replicaCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "stringStringMap": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        }
+    }
+}

@@ -1,0 +1,58 @@
+name: Deploy Images to GHCR
+
+on:
+  push:
+    tags:
+      - v2.** # Push events to v2.x tags
+  workflow_dispatch:
+
+jobs:
+  push-images:
+    name: Release images
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go 1.21
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+    - name: "Login to GitHub Container Registry"
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+    - name: Build and Push images
+      run: make -C ./projects/gateway2/ push TAGGED_VERSION=${{  github.ref_name }}
+  release-helm:
+    name: Release Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go 1.21
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+    - name: "Login to GitHub Container Registry"
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+    - name: Package Helm Chart
+      run: make -C ./projects/gateway2/ helm TAGGED_VERSION=${{  github.ref_name }}
+  release-artifacts :
+    name: Release Glooctl
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go 1.21
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+    - name: "Build glooctl"
+      run: make glooctl-linux-amd64.sha256 glooctl-linux-arm64.sha256 glooctl-darwin-amd64.sha256 glooctl-darwin-arm64.sha256 TAGGED_VERSION=${{  github.ref_name }}
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: _output/glooctl-*

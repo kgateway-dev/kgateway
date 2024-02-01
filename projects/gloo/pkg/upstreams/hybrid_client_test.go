@@ -8,7 +8,6 @@ import (
 	"github.com/rotisserie/eris"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -20,6 +19,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("Hybrid Upstream Client", func() {

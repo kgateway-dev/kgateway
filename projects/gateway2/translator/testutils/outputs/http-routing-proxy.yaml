@@ -1,0 +1,69 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher: {}
+      virtualHostRefs:
+      - http~bar.example.com
+      - http~example.com
+      - http~foo.example.com
+    httpResources:
+      virtualHosts:
+        http~bar.example.com:
+          domains:
+          - bar.example.com
+          name: http~bar.example.com
+          routes:
+          - matchers:
+            - headers:
+              - name: env
+                value: canary
+              prefix: /
+            options: {}
+            routeAction:
+              single:
+                upstream:
+                  name: default-bar-svc-canary-8080
+                  namespace: default
+          - matchers:
+            - prefix: /
+            options: {}
+            routeAction:
+              single:
+                upstream:
+                  name: default-bar-svc-8080
+                  namespace: default
+        http~example.com:
+          domains:
+          - example.com
+          name: http~example.com
+          routes:
+          - matchers:
+            - prefix: /
+            options: {}
+            routeAction:
+              single:
+                upstream:
+                  name: default-example-svc-80
+                  namespace: default
+        http~foo.example.com:
+          domains:
+          - foo.example.com
+          name: http~foo.example.com
+          routes:
+          - matchers:
+            - prefix: /login
+            options: {}
+            routeAction:
+              single:
+                upstream:
+                  name: default-foo-svc-8080
+                  namespace: default
+  bindAddress: '::'
+  bindPort: 8080
+  name: http
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api-translator
+  name: example-gateway
+  namespace: default
