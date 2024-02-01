@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -116,7 +117,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	}
 
 	labels := map[string]string{
-		"created_by": "gloo-knative-translator",
+		glooutils.TranslatorKey: "gloo-knative-translator",
 	}
 
 	var desiredResources gloov1.ProxyList

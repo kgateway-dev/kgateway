@@ -7,29 +7,24 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils"
-
-	"github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/go-utils/stats"
-
-	"github.com/solo-io/gloo/test/gomega/assertions"
-
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
-
-	"go.uber.org/zap/zapcore"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/go-utils/stats"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
+	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -70,7 +65,7 @@ func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper
 				Ctx: contextWithCancel,
 			},
 		}
-		err := check.CheckResources(opts)
+		err := check.CheckResources(contextWithCancel, printers.P{}, opts)
 		if err != nil {
 			return errors.Wrap(err, "glooctl check detected a problem with the installation")
 		}

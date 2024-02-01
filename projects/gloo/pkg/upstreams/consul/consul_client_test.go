@@ -3,12 +3,12 @@ package consul_test
 import (
 	"context"
 
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("ClientWrapper", func() {
