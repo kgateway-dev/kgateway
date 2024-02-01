@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/6804
+  resolvesIssue: false
+  description: Add the option to allow retries for gRPC Passthrough Auth in case the service is unavailable. This can be configured via the new `retryPolicy` in the PassThroughGrpc AuthConfig.
