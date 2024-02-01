@@ -3,7 +3,6 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"os"
 	"os/exec"
 	"reflect"
@@ -1372,7 +1371,7 @@ spec:
 					})
 				})
 
-				FIt("should set AppendXForwardHost to false in Settings when value is false", func() {
+				It("should set AppendXForwardHost to false in Settings when value is false", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"global.istioIntegration.appendXForwardedHost=false"},
 					})
@@ -1380,12 +1379,8 @@ spec:
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Settings"
 					}).ExpectAll(func(settings *unstructured.Unstructured) {
-						settingsObject, err := kuberesource.ConvertUnstructured(settings)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Settings %+v should be able to convert from unstructured", settings))
-						structuredSettings, ok := settingsObject.(*v12.Settings)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Settings %+v should be able to cast to a structured Settings", settings))
-
-						Expect(structuredSettings.Gloo.IstioOptions.AppendXForwardedHost.GetValue()).To(BeFalse())
+						field := getFieldFromUnstructured(settings, "spec", "gloo", "istioOptions", "appendXForwardedHost")
+						Expect(field).To(BeFalse())
 					})
 				})
 
