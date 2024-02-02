@@ -291,7 +291,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
 	// translate all the proxies
 	for proxyName, gatewayList := range gatewaysByProxy {
-		//fmt.Printf("SAH - Validiating proxy %s\n", proxyName)
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
 		err, warning = reports.ValidateWithWarnings(warningHandling)
 
@@ -299,7 +298,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			err = errors.Wrapf(err, couldNotRenderProxy)
 			errs = multierror.Append(errs, err)
 
-			//fmt.Printf("SAH - proxy translation error: %+v\n", err)
 			if !opts.collectAllErrorsAndWarnings {
 				continue
 			}
@@ -353,7 +351,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 
 		// Get the warnings from the proxyReport
 		if proxyWarnings := validationutils.GetProxyWarning(proxyReport); len(proxyWarnings) > 0 {
-			//fmt.Printf("SAH - proxyReport warning: %+v\n", proxyWarnings)
 			if opts.collectAllErrorsAndWarnings {
 				for _, warning := range proxyWarnings {
 					warnings = multierror.Append(warnings, errors.New(warning))
@@ -391,14 +388,11 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	// Extension validation. Currently only supports rate limit.
 	extensionReports := v.extensionValidator.Validate(ctx, snapshot)
 
-	//fmt.Println("SAH - extensionReports: ", extensionReports)
 	if len(extensionReports) > 0 {
 		// Collect the errors and maybe warnings from the reports
 		err, warning = extensionReports.ValidateWithWarnings(warningHandling)
-		//fmt.Printf("SAH - extensionReports.ValidateSeparateWarnings() error, warnings: %+v, %+v\n", err, warning)
 
 		if err != nil {
-			//fmt.Printf("SAH - extensionReports errors : %v\n", err)
 			err = errors.Wrapf(err, failedExtensionResourceReports)
 			errs = multierror.Append(errs, err)
 		}
@@ -414,8 +408,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 	}
 
-	//fmt.Printf("SAH - errors from validation:\n %+v\n", errs)
-	//fmt.Printf("SAH - warnings from validation:\n %+v\n", warnings)
 	return proxies, proxyReports, errs, warnings
 }
 
@@ -468,12 +460,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	// In some cases, validation should be retried if there are errors. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the original, unmodified snapshot
 	retryValidation := v.shouldRetryValidation(ctx, opts)
-	//fmt.Printf("SAH - retryValidationOnWarnings: %t\n", retryValidation)
 
 	// The collectAllErrorsAndWarnings opts field is used to control whether warnings are treated as errors.
 	// We only want to treat warnings as errors when 'allow_warnings=false' we will not be attempting to retry validation
 	opts.collectAllErrorsAndWarnings = retryValidation || v.allowWarnings
-	//fmt.Printf("SAH - opts.collectAllErrorsAndWarnings: %t\n", opts.collectAllErrorsAndWarnings)
 
 	// Run the validation. Warnings are only returned if 'opts.collectAllErrorsAndWarnings' is true
 	proxies, proxyReports, errs, warnings := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
@@ -497,11 +487,9 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	if !v.passedValidation(errs, warnings) && !overrideErrors {
 
 		// If we have warnings and they are not allowed, they are errors.
-		//fmt.Printf("SAH - warnings: %+v\n, going to append to errors", warnings)
 		if warnings != nil {
 			errs = multierror.Append(errs, warnings)
 		}
-		//fmt.Printf("SAH - errs is now: %+v\n", errs)
 
 		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
 		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs,
@@ -555,7 +543,6 @@ func (v *validator) passedValidation(errs error, warnings error) bool {
 // validation of the request (proxies, proexReports, errors, and warnings) is compared yo the output of the validation of the original snapshot.
 // If outputs are the same, it is assumed that the modification did not degrade the system and  is accepted
 func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error, warnings error) bool {
-	//fmt.Println("SAH - validating without modification")
 	contextutils.LoggerFrom(ctx).Debugw(
 		"Comparing validation output against original snapshot",
 		zap.String("resource", opts.Resource.GetMetadata().String()),
@@ -706,7 +693,6 @@ func findNonComparableErrors(errs error) bool {
 
 	for _, err := range nonComparableErrorTypes {
 		if errors.As(errs, err) {
-			fmt.Printf("Found error! %v\n", err)
 			return true
 		}
 	}
@@ -842,7 +828,6 @@ func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooVa
 
 	for _, report := range reports {
 		err, warning := report.ResourceReports.ValidateWithWarnings(warningHandling)
-		//fmt.Printf("SAH getErrorsFromGlooValidation::ValidateWithWarnings errs:\n%+v\n, warnings:\n+%v\n", err, warning)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		}
@@ -853,13 +838,11 @@ func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooVa
 		if proxyReport := report.ProxyReport; proxyReport != nil {
 			// Errors always go to errors
 			if err := validationutils.GetProxyError(proxyReport); err != nil {
-				//fmt.Printf("SAH - GetProxyError: %+v\n", err)
 				errs = multierror.Append(errs, errors.Wrapf(err, "getErrorsFromGlooValidation failed to validate Proxy with Gloo validation server"))
 			}
 
 			if proxyWarnings := validationutils.GetProxyWarning(proxyReport); len(proxyWarnings) > 0 {
-				//fmt.Printf("SAH - getErrorsFromGlooValidation::GetProxyWarning: %+v\n", proxyWarnings)
-				// We didn't pass down `opts` but can use warningHandling to determine how to handle warnings
+				// `opts` is not passed down but warningHandling can be used to determine how to handle warnings
 				if warningHandling == reporter.SeparateWarnings {
 					for _, warning := range proxyWarnings {
 						warnings = multierror.Append(warnings, errors.New(warning))
@@ -873,8 +856,6 @@ func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooVa
 		}
 	}
 
-	//fmt.Printf("SAH - returning from getErrorsFromGlooValidation errs: %+v\n ", errs)
-	//fmt.Printf("SAH - returning from getErrorsFromGlooValidation warnings: %+v\n ", warnings)
 	return errs, warnings
 }
 
