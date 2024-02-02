@@ -1390,7 +1390,7 @@ message PassThroughGrpc {
     PassThroughGrpcTLSConfig tlsConfig =3;
 
     // Indicates the retry policy for re-establishing the gRPC stream.
-    // This field is optional and failed calls will not not retry unless configured.
+    // This field is optional and failed calls will not retry unless configured.
     RetryPolicy retry_policy = 4;
 }
 // TLS configuration for the extauth grpc passthrough connection

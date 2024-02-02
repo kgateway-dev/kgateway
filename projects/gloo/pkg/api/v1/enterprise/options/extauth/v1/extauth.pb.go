@@ -4391,7 +4391,7 @@ type PassThroughGrpc struct {
 	// TLS config for the Grpc passthrough, if not configured the connection will use insecure.
 	TlsConfig *PassThroughGrpcTLSConfig `protobuf:"bytes,3,opt,name=tlsConfig,proto3" json:"tlsConfig,omitempty"`
 	// Indicates the retry policy for re-establishing the gRPC stream.
-	// This field is optional and failed calls will not not retry unless configured.
+	// This field is optional and failed calls will not retry unless configured.
 	RetryPolicy *RetryPolicy `protobuf:"bytes,4,opt,name=retry_policy,json=retryPolicy,proto3" json:"retry_policy,omitempty"`
 }
 
