@@ -1389,9 +1389,8 @@ message PassThroughGrpc {
     // TLS config for the Grpc passthrough, if not configured the connection will use insecure.
     PassThroughGrpcTLSConfig tlsConfig =3;
 
-    // Indicates the retry policy for re-establishing the gRPC stream
-    // This field is optional. If max interval is not provided, it will be set to ten times the provided base interval.
-    // If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied.
+    // Indicates the retry policy for re-establishing the gRPC stream.
+    // This field is optional and failed calls will not retry unless configured.
     RetryPolicy retry_policy = 4;
 }
 // TLS configuration for the extauth grpc passthrough connection
