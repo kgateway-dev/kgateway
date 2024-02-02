@@ -77,7 +77,7 @@ spec:
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
-      {{- if .Values.global.glooStats.setDatadogAnnotations }}
+      {{- if $global.glooStats.setDatadogAnnotations }}
         ad.datadoghq.com/gateway-proxy.check_names: '["envoy"]'
         ad.datadoghq.com/gateway-proxy.init_configs: '[{}]'
         ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8081/stats"}]'
@@ -327,6 +327,14 @@ spec:
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
 {{- end }}
+{{- if $global.glooMtls.sds.logLevel }}
+          - name: LOG_LEVEL
+            value: {{ $global.glooMtls.sds.logLevel }}
+{{- end}}
+{{- if $statsConfig.enabled }}
+          - name: START_STATS_SERVER
+            value: "true"
+{{- end}}
         volumeMounts:
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
@@ -343,6 +351,10 @@ spec:
         - containerPort: 8234
           name: sds
           protocol: TCP
+        {{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
+        - name: http-monitoring
+          containerPort: 9091
+        {{- end }}
         readinessProbe:
           tcpSocket:
             port: 8234
@@ -374,26 +386,20 @@ spec:
         - $(POD_NAMESPACE).svc.cluster.local
         - --configPath
         - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
         - --serviceCluster
         - istio-proxy-prometheus
         - --drainDuration
         - 45s
         - --parentShutdownDuration
         - 1m0s
-        - --proxyLogLevel=warning
+        - --proxyLogLevel={{ $global.glooMtls.istioProxy.logLevel }}
         - --proxyComponentLogLevel=misc:error
         - --connectTimeout
         - 10s
-        - --proxyAdminPort
-        - "15000"
         - --controlPlaneAuthPolicy
         - NONE
         - --dnsRefreshRate
         - 300s
-        - --statusPort
-        - "15021"
         - --trust-domain=cluster.local
         - --controlPlaneBootstrap=false
         env:
@@ -442,16 +448,8 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /healthz/ready
-            port: 15021
-            scheme: HTTP
-          initialDelaySeconds: 3
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
+          - name: DISABLE_ENVOY
+            value: "true"
         volumeMounts:
         - mountPath: /var/run/secrets/istio
           name: istiod-ca-cert
