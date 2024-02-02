@@ -191,6 +191,7 @@ run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 
 .PHONY: run-performance-tests
+run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2 ## gateway2 conformance tests need to be compiled a certain way, so explicitly skip so it doesn't try compiling
 run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
 run-performance-tests: test
 
