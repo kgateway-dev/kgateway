@@ -464,11 +464,12 @@ var _ = Describe("Plugin", func() {
 
 		Context("Extractors", func() {
 			type extractorTestCase struct {
-				Regex           string
-				Mode            transformation.Extraction_Mode
-				Subgroup        uint32
-				ReplacementText *wrapperspb.StringValue
-				ExpectError     bool
+				Regex                string
+				Mode                 transformation.Extraction_Mode
+				Subgroup             uint32
+				ReplacementText      *wrapperspb.StringValue
+				ExpectError          bool
+				ExpectedErrorMessage string // Use this to specify part of the expected error message
 			}
 
 			type transformationPlugin interface {
@@ -589,8 +590,11 @@ var _ = Describe("Plugin", func() {
 					inputTransformationStages := createInputTransformationStages(inputExtraction)
 					output, err := p.(transformationPlugin).ConvertTransformation(ctx, &transformation.Transformations{}, inputTransformationStages)
 
-					if tc.ExpectError {
-						Expect(err).To(HaveOccurred())
+					if tc.ExpectedErrorMessage != "" {
+						Expect(err).To(HaveOccurred(), "Expected an error but got none")
+						extractedErr, ok := err.(*ExtractorError)
+						Expect(ok).To(BeTrue(), "Expected error to be of type *ExtractorError")
+						Expect(extractedErr.Message).To(Equal(tc.ExpectedErrorMessage), "Error message does not match expected")
 					} else {
 						Expect(err).NotTo(HaveOccurred())
 						expectedOutputExtraction := createOutputExtraction(tc)
@@ -604,87 +608,96 @@ var _ = Describe("Plugin", func() {
 				// DO_NOT_SUBMIT
 				Entry("Defaults to Extract mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_EXTRACT,
-						Regex:           "abc",
-						Subgroup:        0,
-						ReplacementText: nil,
-						ExpectError:     false,
+						Mode:                 transformation.Extraction_EXTRACT,
+						Regex:                "abc",
+						Subgroup:             0,
+						ReplacementText:      nil,
+						ExpectError:          false,
+						ExpectedErrorMessage: "",
 					},
 				),
 				Entry("Errors if subgroup is larger than number of capture groups in regex - Extract mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_EXTRACT,
-						Regex:           "(abc)",
-						Subgroup:        2,
-						ReplacementText: nil,
-						ExpectError:     true,
+						Mode:                 transformation.Extraction_EXTRACT,
+						Regex:                "(abc)",
+						Subgroup:             2,
+						ReplacementText:      nil,
+						ExpectError:          true,
+						ExpectedErrorMessage: ErrMsgInvalidRegex,
 					},
 				),
 				Entry("Errors if replacement_text is set - Extract mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_EXTRACT,
-						Regex:           "abc",
-						Subgroup:        0,
-						ReplacementText: &wrapperspb.StringValue{Value: "replacement"},
-						ExpectError:     true,
+						Mode:                 transformation.Extraction_EXTRACT,
+						Regex:                "abc",
+						Subgroup:             0,
+						ReplacementText:      &wrapperspb.StringValue{Value: "replacement"},
+						ExpectError:          true,
+						ExpectedErrorMessage: ErrMsgReplacementTextSetWhenNotNeeded,
 					},
 				),
 
 				// Single Replace Mode Test Cases
 				Entry("Can set mode to Single Replace with valid replacement text",
 					extractorTestCase{
-						Mode:            transformation.Extraction_SINGLE_REPLACE,
-						Regex:           "abc",
-						Subgroup:        0,
-						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
-						ExpectError:     false,
+						Mode:                 transformation.Extraction_SINGLE_REPLACE,
+						Regex:                "abc",
+						Subgroup:             0,
+						ReplacementText:      &wrapperspb.StringValue{Value: "foo"},
+						ExpectError:          false,
+						ExpectedErrorMessage: "",
 					},
 				),
 				Entry("Errors if replacement_text is not set in Single Replace mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_SINGLE_REPLACE,
-						Regex:           "abc",
-						Subgroup:        0,
-						ReplacementText: nil,
-						ExpectError:     true,
+						Mode:                 transformation.Extraction_SINGLE_REPLACE,
+						Regex:                "abc",
+						Subgroup:             0,
+						ReplacementText:      nil,
+						ExpectError:          true,
+						ExpectedErrorMessage: ErrMsgReplacementTextNotSetWhenNeeded,
 					},
 				),
 				Entry("Errors if subgroup is larger than number of capture groups in regex - Single Replace mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_SINGLE_REPLACE,
-						Regex:           "(abc)",
-						Subgroup:        2,
-						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
-						ExpectError:     true,
+						Mode:                 transformation.Extraction_SINGLE_REPLACE,
+						Regex:                "(abc)",
+						Subgroup:             2,
+						ReplacementText:      &wrapperspb.StringValue{Value: "foo"},
+						ExpectError:          true,
+						ExpectedErrorMessage: ErrMsgInvalidRegex,
 					},
 				),
 
 				// Replace All Mode Test Cases
 				Entry("Can set mode to ReplaceAll with valid replacement text",
 					extractorTestCase{
-						Mode:            transformation.Extraction_REPLACE_ALL,
-						Regex:           "abc",
-						Subgroup:        0,
-						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
-						ExpectError:     false,
+						Mode:                 transformation.Extraction_REPLACE_ALL,
+						Regex:                "abc",
+						Subgroup:             0,
+						ReplacementText:      &wrapperspb.StringValue{Value: "foo"},
+						ExpectError:          false,
+						ExpectedErrorMessage: "",
 					},
 				),
 				Entry("Errors if subgroup is set - Replace All mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_REPLACE_ALL,
-						Regex:           "abc",
-						Subgroup:        1,
-						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
-						ExpectError:     true,
+						Mode:                 transformation.Extraction_REPLACE_ALL,
+						Regex:                "(abc)",
+						Subgroup:             1,
+						ReplacementText:      &wrapperspb.StringValue{Value: "foo"},
+						ExpectError:          true,
+						ExpectedErrorMessage: ErrMsgSubgroupSetWhenNotNeeded,
 					},
 				),
 				Entry("Errors if replacement_text is not set - Replace All mode",
 					extractorTestCase{
-						Mode:            transformation.Extraction_REPLACE_ALL,
-						Regex:           "abc",
-						Subgroup:        0,
-						ReplacementText: nil,
-						ExpectError:     true,
+						Mode:                 transformation.Extraction_REPLACE_ALL,
+						Regex:                "abc",
+						Subgroup:             0,
+						ReplacementText:      nil,
+						ExpectError:          true,
+						ExpectedErrorMessage: ErrMsgReplacementTextNotSetWhenNeeded,
 					},
 				),
 			)

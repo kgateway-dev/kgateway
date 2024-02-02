@@ -437,10 +437,52 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	return out, nil
 }
 
+// Note to reviewers -- I'm not sure if it's better to define these errors close to extractor functionality or towards the
+// ExtractorError represents an error related to extractor configuration.
+type ExtractorError struct {
+	Message string // The error message
+	Name    string // The name of the extractor causing the error
+	Mode    string // (optional) The (stringified) mode of the extractor causing the error
+}
+
+// Error implements the error interface for ExtractorError.
+func (e *ExtractorError) Error() string {
+	if e.Mode == "" {
+		return fmt.Sprintf("%s for extractor %s", e.Message, e.Name)
+	} else {
+		return fmt.Sprintf("%s for extractor %s in mode %s", e.Message, e.Name, e.Mode)
+	}
+}
+
+// Helper functions to create specific ExtractorError instances.
+func NewExtractorError(message, name string, mode transformation.Extraction_Mode) *ExtractorError {
+	extractorError := &ExtractorError{
+		Message: message,
+		Name:    name,
+	}
+
+	// check if int32(mode) is in Extraction_Mode_name
+	if transformation.Extraction_Mode_name[int32(mode)] != "" {
+		extractorError.Mode = transformation.Extraction_Mode_name[int32(mode)]
+	}
+	return extractorError
+}
+
+// Static error messages for different conditions.
+const (
+	ErrMsgReplacementTextSetWhenNotNeeded = "replacement text should not be set"
+	ErrMsgReplacementTextNotSetWhenNeeded = "replacement text must be set"
+	ErrMsgSubgroupSetWhenNotNeeded        = "subgroup should not be set"
+	ErrMsgInvalidRegex                    = "regex is invalid"
+)
+
 func translateExtractor(extractor *transformation.Extraction, name string) (*envoytransformation.Extraction, error) {
+	// TODO: regex validation doesn't currently handle mode differences very well
+	// TODO: mode information is potentially useful here, depending on the failure type
+	// TODO: if we don't take in mode here, then we should consider doing this after the mode validation
 	err := validateRegex(extractor)
 	if err != nil {
-		return nil, eris.Wrapf(err, "error validating regex for extractor %s", name)
+		return nil, NewExtractorError(ErrMsgInvalidRegex, name, -1)
 	}
 
 	out := &envoytransformation.Extraction{
@@ -459,14 +501,15 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 		}
 	}
 
-	switch extractor.GetMode() {
+	mode := extractor.GetMode()
+	switch mode {
 	case transformation.Extraction_EXTRACT:
 		out.Mode = envoytransformation.Extraction_EXTRACT
 		out.Subgroup = extractor.GetSubgroup()
 
 		// error if replacement_text is set
 		if extractor.GetReplacementText().GetValue() != "" {
-			return nil, eris.Errorf("replacement_text is set for extractor %s, but must not be set for mode EXTRACT", name)
+			return nil, NewExtractorError(ErrMsgReplacementTextSetWhenNotNeeded, name, mode)
 		}
 	case transformation.Extraction_SINGLE_REPLACE:
 		out.Mode = envoytransformation.Extraction_SINGLE_REPLACE
@@ -475,7 +518,7 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 
 		// error if replacement_text is not set
 		if extractor.GetReplacementText() == nil {
-			return nil, eris.Errorf("replacement_text is not set for extractor %s, but must be set for mode SINGLE_REPLACE", name)
+			return nil, NewExtractorError(ErrMsgReplacementTextNotSetWhenNeeded, name, mode)
 		}
 	case transformation.Extraction_REPLACE_ALL:
 		out.Mode = envoytransformation.Extraction_REPLACE_ALL
@@ -483,12 +526,12 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 
 		// error if subgroup is set
 		if extractor.GetSubgroup() != 0 {
-			return nil, eris.Errorf("subgroup is set for extractor %s, but must not be set for mode REPLACE_ALL", name)
+			return nil, NewExtractorError(ErrMsgSubgroupSetWhenNotNeeded, name, mode)
 		}
 
 		// error if replacement_text is not set
 		if extractor.GetReplacementText() == nil {
-			return nil, eris.Errorf("replacement_text is not set for extractor %s, but must be set for mode REPLACE_ALL", name)
+			return nil, NewExtractorError(ErrMsgReplacementTextNotSetWhenNeeded, name, mode)
 		}
 	default:
 		// identical to Extraction_EXTRACT
@@ -498,7 +541,7 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 
 		// error if replacement_text is set
 		if extractor.GetReplacementText().GetValue() != "" {
-			return nil, eris.Errorf("replacement_text is set for extractor %s, but must not be set for mode EXTRACT", name)
+			return nil, NewExtractorError(ErrMsgReplacementTextSetWhenNotNeeded, name, mode)
 		}
 	}
 
