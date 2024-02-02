@@ -3167,7 +3167,7 @@ type GlooOptions_IstioOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Set to false externto disable adding X-Forwarded-Host header in Istio integration
+	// Set to false to disable adding X-Forwarded-Host header in Istio integration
 	// Defaults to true
 	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,1,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
 }

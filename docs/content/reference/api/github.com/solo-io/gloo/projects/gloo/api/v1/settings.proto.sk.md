@@ -797,7 +797,7 @@ Policy for how Gloo should handle invalid config
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false externto disable adding X-Forwarded-Host header in Istio integration Defaults to true. |
+| `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true. |
 
 
 
