@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Correct the extauth grpc passthroughauth retryproto comment.
+
