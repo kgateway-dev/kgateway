@@ -89,6 +89,7 @@ require (
 
 require (
 	github.com/go-logr/zapr v1.2.4
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.1
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
@@ -171,7 +172,6 @@ require (
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
