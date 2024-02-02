@@ -1370,6 +1370,20 @@ spec:
 						}
 					})
 				})
+
+				It("should set AppendXForwardHost to false in Settings when value is false", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.istioIntegration.appendXForwardedHost=false"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Settings"
+					}).ExpectAll(func(settings *unstructured.Unstructured) {
+						field := getFieldFromUnstructured(settings, "spec", "gloo", "istioOptions", "appendXForwardedHost")
+						Expect(field).To(BeFalse())
+					})
+				})
+
 			})
 
 			Context("gateway", func() {
@@ -4129,6 +4143,8 @@ spec:
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run ` + "`glooctl check`" + ` to find and fix config errors.
       invalidRouteResponseCode: 404
       replaceInvalidRoutes: false
+    istioOptions:
+      appendXForwardedHost: true
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}

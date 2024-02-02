@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/8855
+    resolvesIssue: false
+    description: |
+      Expose the `global.istioIntegration.AppendXForwardedHost` Helm value to allow users to toggle off the appending of
+      the `x-forwarded-host` header when using the Istio plugin. This field is `true` by default.
