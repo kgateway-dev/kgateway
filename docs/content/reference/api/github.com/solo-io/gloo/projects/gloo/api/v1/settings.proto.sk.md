@@ -39,6 +39,7 @@ weight: 5
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
 - [InvalidConfigPolicy](#invalidconfigpolicy)
+- [IstioOptions](#istiooptions)
 - [VirtualServiceOptions](#virtualserviceoptions)
 - [GatewayOptions](#gatewayoptions)
 - [ValidationOptions](#validationoptions)
@@ -708,6 +709,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "proxyDebugBindAddr": string
 "logTransformationRequestResponseInfo": .google.protobuf.BoolValue
 "transformationEscapeCharacters": .google.protobuf.BoolValue
+"istioOptions": .gloo.solo.io.GlooOptions.IstioOptions
 
 ```
 
@@ -730,6 +732,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `proxyDebugBindAddr` | `string` | Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`. |
 | `logTransformationRequestResponseInfo` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When enabled, log the request/response body and headers before and after any transformations are applied. May be useful in the case where many transformations are applied and it is difficult to determine which are causing issues. Defaults to false. |
 | `transformationEscapeCharacters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set escapeCharacters for all TransformationTemplates on all vhosts and routes. This setting can be overridden in individual TransformationTemplates. |
+| `istioOptions` | [.gloo.solo.io.GlooOptions.IstioOptions](../settings.proto.sk/#istiooptions) |  |
 
 
 
@@ -778,6 +781,23 @@ Policy for how Gloo should handle invalid config
 | `replaceInvalidRoutes` | `bool` | if set to `true`, Gloo removes any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. When routes are replaced, Gloo will configure Envoy with a special listener which serves direct responses. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |
 | `invalidRouteResponseCode` | `int` | replaced routes reply to clients with this response code. default is 404. |
 | `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body. default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |
+
+
+
+
+---
+### IstioOptions
+
+
+
+```yaml
+"appendXForwardedHost": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true. |
 
 
 

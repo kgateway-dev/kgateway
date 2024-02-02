@@ -766,7 +766,8 @@ type GlooOptions struct {
 	LogTransformationRequestResponseInfo *wrappers.BoolValue `protobuf:"bytes,16,opt,name=log_transformation_request_response_info,json=logTransformationRequestResponseInfo,proto3" json:"log_transformation_request_response_info,omitempty"`
 	// Set escapeCharacters for all TransformationTemplates on all vhosts and routes.
 	// This setting can be overridden in individual TransformationTemplates
-	TransformationEscapeCharacters *wrappers.BoolValue `protobuf:"bytes,17,opt,name=transformation_escape_characters,json=transformationEscapeCharacters,proto3" json:"transformation_escape_characters,omitempty"`
+	TransformationEscapeCharacters *wrappers.BoolValue       `protobuf:"bytes,17,opt,name=transformation_escape_characters,json=transformationEscapeCharacters,proto3" json:"transformation_escape_characters,omitempty"`
+	IstioOptions                   *GlooOptions_IstioOptions `protobuf:"bytes,18,opt,name=istio_options,json=istioOptions,proto3" json:"istio_options,omitempty"`
 }
 
 func (x *GlooOptions) Reset() {
@@ -916,6 +917,13 @@ func (x *GlooOptions) GetLogTransformationRequestResponseInfo() *wrappers.BoolVa
 func (x *GlooOptions) GetTransformationEscapeCharacters() *wrappers.BoolValue {
 	if x != nil {
 		return x.TransformationEscapeCharacters
+	}
+	return nil
+}
+
+func (x *GlooOptions) GetIstioOptions() *GlooOptions_IstioOptions {
+	if x != nil {
+		return x.IstioOptions
 	}
 	return nil
 }
@@ -3154,6 +3162,55 @@ func (x *GlooOptions_InvalidConfigPolicy) GetInvalidRouteResponseBody() string {
 	return ""
 }
 
+type GlooOptions_IstioOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Set to false to disable adding X-Forwarded-Host header in Istio integration
+	// Defaults to true
+	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,1,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
+}
+
+func (x *GlooOptions_IstioOptions) Reset() {
+	*x = GlooOptions_IstioOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[36]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GlooOptions_IstioOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GlooOptions_IstioOptions) ProtoMessage() {}
+
+func (x *GlooOptions_IstioOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[36]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GlooOptions_IstioOptions.ProtoReflect.Descriptor instead.
+func (*GlooOptions_IstioOptions) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDescGZIP(), []int{2, 2}
+}
+
+func (x *GlooOptions_IstioOptions) GetAppendXForwardedHost() *wrappers.BoolValue {
+	if x != nil {
+		return x.AppendXForwardedHost
+	}
+	return nil
+}
+
 // options for configuring admission control / validation
 type GatewayOptions_ValidationOptions struct {
 	state         protoimpl.MessageState
@@ -3219,7 +3276,7 @@ type GatewayOptions_ValidationOptions struct {
 func (x *GatewayOptions_ValidationOptions) Reset() {
 	*x = GatewayOptions_ValidationOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[36]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3232,7 +3289,7 @@ func (x *GatewayOptions_ValidationOptions) String() string {
 func (*GatewayOptions_ValidationOptions) ProtoMessage() {}
 
 func (x *GatewayOptions_ValidationOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[36]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3339,7 +3396,7 @@ type GraphqlOptions_SchemaChangeValidationOptions struct {
 func (x *GraphqlOptions_SchemaChangeValidationOptions) Reset() {
 	*x = GraphqlOptions_SchemaChangeValidationOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3352,7 +3409,7 @@ func (x *GraphqlOptions_SchemaChangeValidationOptions) String() string {
 func (*GraphqlOptions_SchemaChangeValidationOptions) ProtoMessage() {}
 
 func (x *GraphqlOptions_SchemaChangeValidationOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3938,7 +3995,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDesc = [
 	0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
 	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
 	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x88, 0x10, 0x0a, 0x0b, 0x47,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xb8, 0x11, 0x0a, 0x0b, 0x47,
 	0x6c, 0x6f, 0x6f, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x22, 0x0a, 0x0d, 0x78, 0x64,
 	0x73, 0x5f, 0x62, 0x69, 0x6e, 0x64, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x0b, 0x78, 0x64, 0x73, 0x42, 0x69, 0x6e, 0x64, 0x41, 0x64, 0x64, 0x72, 0x12, 0x30,
@@ -4022,52 +4079,63 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDesc = [
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61,
 	0x6c, 0x75, 0x65, 0x52, 0x1e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x45, 0x73, 0x63, 0x61, 0x70, 0x65, 0x43, 0x68, 0x61, 0x72, 0x61, 0x63, 0x74,
-	0x65, 0x72, 0x73, 0x1a, 0x83, 0x04, 0x0a, 0x0a, 0x41, 0x57, 0x53, 0x4f, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x12, 0x40, 0x0a, 0x1b, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x63, 0x72, 0x65,
-	0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x5f, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65,
-	0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x19, 0x65, 0x6e, 0x61, 0x62, 0x6c,
-	0x65, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x44, 0x69, 0x73, 0x63,
-	0x6f, 0x76, 0x65, 0x79, 0x12, 0x93, 0x01, 0x0a, 0x1b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74,
-	0x69, 0x61, 0x6c, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x51, 0x2e, 0x65, 0x6e, 0x76,
-	0x6f, 0x79, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72,
-	0x2e, 0x68, 0x74, 0x74, 0x70, 0x2e, 0x61, 0x77, 0x73, 0x5f, 0x6c, 0x61, 0x6d, 0x62, 0x64, 0x61,
-	0x2e, 0x76, 0x32, 0x2e, 0x41, 0x57, 0x53, 0x4c, 0x61, 0x6d, 0x62, 0x64, 0x61, 0x43, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75,
-	0x6e, 0x74, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x48, 0x00, 0x52,
-	0x19, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x43,
-	0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x12, 0x58, 0x0a, 0x1a, 0x70, 0x72,
-	0x6f, 0x70, 0x61, 0x67, 0x61, 0x74, 0x65, 0x5f, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x6c,
-	0x5f, 0x72, 0x6f, 0x75, 0x74, 0x69, 0x6e, 0x67, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a,
-	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
-	0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x18, 0x70, 0x72, 0x6f, 0x70,
-	0x61, 0x67, 0x61, 0x74, 0x65, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x6c, 0x52, 0x6f, 0x75,
-	0x74, 0x69, 0x6e, 0x67, 0x12, 0x53, 0x0a, 0x18, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69,
-	0x61, 0x6c, 0x5f, 0x72, 0x65, 0x66, 0x72, 0x65, 0x73, 0x68, 0x5f, 0x64, 0x65, 0x6c, 0x61, 0x79,
-	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x52, 0x16, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x52, 0x65, 0x66,
-	0x72, 0x65, 0x73, 0x68, 0x44, 0x65, 0x6c, 0x61, 0x79, 0x12, 0x57, 0x0a, 0x1a, 0x66, 0x61, 0x6c,
-	0x6c, 0x62, 0x61, 0x63, 0x6b, 0x5f, 0x74, 0x6f, 0x5f, 0x66, 0x69, 0x72, 0x73, 0x74, 0x5f, 0x66,
-	0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
-	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
-	0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x17, 0x66, 0x61, 0x6c, 0x6c, 0x62,
-	0x61, 0x63, 0x6b, 0x54, 0x6f, 0x46, 0x69, 0x72, 0x73, 0x74, 0x46, 0x75, 0x6e, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x42, 0x15, 0x0a, 0x13, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c,
-	0x73, 0x5f, 0x66, 0x65, 0x74, 0x63, 0x68, 0x65, 0x72, 0x1a, 0xc9, 0x01, 0x0a, 0x13, 0x49, 0x6e,
-	0x76, 0x61, 0x6c, 0x69, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x50, 0x6f, 0x6c, 0x69, 0x63,
-	0x79, 0x12, 0x34, 0x0a, 0x16, 0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x5f, 0x69, 0x6e, 0x76,
-	0x61, 0x6c, 0x69, 0x64, 0x5f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x14, 0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x49, 0x6e, 0x76, 0x61, 0x6c, 0x69,
-	0x64, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x73, 0x12, 0x3d, 0x0a, 0x1b, 0x69, 0x6e, 0x76, 0x61, 0x6c,
-	0x69, 0x64, 0x5f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x5f, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x18, 0x69, 0x6e,
-	0x76, 0x61, 0x6c, 0x69, 0x64, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x43, 0x6f, 0x64, 0x65, 0x12, 0x3d, 0x0a, 0x1b, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69,
-	0x64, 0x5f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x5f, 0x62, 0x6f, 0x64, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x18, 0x69, 0x6e, 0x76,
-	0x61, 0x6c, 0x69, 0x64, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x42, 0x6f, 0x64, 0x79, 0x22, 0x53, 0x0a, 0x15, 0x56, 0x69, 0x72, 0x74, 0x75, 0x61, 0x6c,
+	0x65, 0x72, 0x73, 0x12, 0x4b, 0x0a, 0x0d, 0x69, 0x73, 0x74, 0x69, 0x6f, 0x5f, 0x6f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x12, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x47, 0x6c, 0x6f, 0x6f, 0x4f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x49, 0x73, 0x74, 0x69, 0x6f, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x52, 0x0c, 0x69, 0x73, 0x74, 0x69, 0x6f, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x1a, 0x83, 0x04, 0x0a, 0x0a, 0x41, 0x57, 0x53, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
+	0x40, 0x0a, 0x1b, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e,
+	0x74, 0x69, 0x61, 0x6c, 0x73, 0x5f, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x79, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x19, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x43, 0x72,
+	0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x44, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65,
+	0x79, 0x12, 0x93, 0x01, 0x0a, 0x1b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x61, 0x63,
+	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c,
+	0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x51, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2e, 0x68, 0x74,
+	0x74, 0x70, 0x2e, 0x61, 0x77, 0x73, 0x5f, 0x6c, 0x61, 0x6d, 0x62, 0x64, 0x61, 0x2e, 0x76, 0x32,
+	0x2e, 0x41, 0x57, 0x53, 0x4c, 0x61, 0x6d, 0x62, 0x64, 0x61, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x43,
+	0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x48, 0x00, 0x52, 0x19, 0x73, 0x65,
+	0x72, 0x76, 0x69, 0x63, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x43, 0x72, 0x65, 0x64,
+	0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x12, 0x58, 0x0a, 0x1a, 0x70, 0x72, 0x6f, 0x70, 0x61,
+	0x67, 0x61, 0x74, 0x65, 0x5f, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x6c, 0x5f, 0x72, 0x6f,
+	0x75, 0x74, 0x69, 0x6e, 0x67, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f,
+	0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x18, 0x70, 0x72, 0x6f, 0x70, 0x61, 0x67, 0x61,
+	0x74, 0x65, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x6c, 0x52, 0x6f, 0x75, 0x74, 0x69, 0x6e,
+	0x67, 0x12, 0x53, 0x0a, 0x18, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x5f,
+	0x72, 0x65, 0x66, 0x72, 0x65, 0x73, 0x68, 0x5f, 0x64, 0x65, 0x6c, 0x61, 0x79, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x16,
+	0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x52, 0x65, 0x66, 0x72, 0x65, 0x73,
+	0x68, 0x44, 0x65, 0x6c, 0x61, 0x79, 0x12, 0x57, 0x0a, 0x1a, 0x66, 0x61, 0x6c, 0x6c, 0x62, 0x61,
+	0x63, 0x6b, 0x5f, 0x74, 0x6f, 0x5f, 0x66, 0x69, 0x72, 0x73, 0x74, 0x5f, 0x66, 0x75, 0x6e, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f,
+	0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x17, 0x66, 0x61, 0x6c, 0x6c, 0x62, 0x61, 0x63, 0x6b,
+	0x54, 0x6f, 0x46, 0x69, 0x72, 0x73, 0x74, 0x46, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42,
+	0x15, 0x0a, 0x13, 0x63, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x73, 0x5f, 0x66,
+	0x65, 0x74, 0x63, 0x68, 0x65, 0x72, 0x1a, 0xc9, 0x01, 0x0a, 0x13, 0x49, 0x6e, 0x76, 0x61, 0x6c,
+	0x69, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x12, 0x34,
+	0x0a, 0x16, 0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x5f, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69,
+	0x64, 0x5f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x14,
+	0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x49, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x52, 0x6f,
+	0x75, 0x74, 0x65, 0x73, 0x12, 0x3d, 0x0a, 0x1b, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x5f,
+	0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x63,
+	0x6f, 0x64, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x18, 0x69, 0x6e, 0x76, 0x61, 0x6c,
+	0x69, 0x64, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x43,
+	0x6f, 0x64, 0x65, 0x12, 0x3d, 0x0a, 0x1b, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x5f, 0x72,
+	0x6f, 0x75, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x62, 0x6f,
+	0x64, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x18, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69,
+	0x64, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x6f,
+	0x64, 0x79, 0x1a, 0x61, 0x0a, 0x0c, 0x49, 0x73, 0x74, 0x69, 0x6f, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x12, 0x51, 0x0a, 0x17, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x5f, 0x78, 0x5f, 0x66,
+	0x6f, 0x72, 0x77, 0x61, 0x72, 0x64, 0x65, 0x64, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52,
+	0x14, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x58, 0x46, 0x6f, 0x72, 0x77, 0x61, 0x72, 0x64, 0x65,
+	0x64, 0x48, 0x6f, 0x73, 0x74, 0x22, 0x53, 0x0a, 0x15, 0x56, 0x69, 0x72, 0x74, 0x75, 0x61, 0x6c,
 	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x3a,
 	0x0a, 0x0b, 0x6f, 0x6e, 0x65, 0x5f, 0x77, 0x61, 0x79, 0x5f, 0x74, 0x6c, 0x73, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
@@ -4238,7 +4306,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDescGZI
 }
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = []interface{}{
 	(Settings_DiscoveryOptions_FdsMode)(0),                           // 0: gloo.solo.io.Settings.DiscoveryOptions.FdsMode
 	(GraphqlOptions_SchemaChangeValidationOptions_ProcessingRule)(0), // 1: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
@@ -4278,27 +4346,28 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = [
 	nil,                                      // 35: gloo.solo.io.UpstreamOptions.GlobalAnnotationsEntry
 	(*GlooOptions_AWSOptions)(nil),           // 36: gloo.solo.io.GlooOptions.AWSOptions
 	(*GlooOptions_InvalidConfigPolicy)(nil),  // 37: gloo.solo.io.GlooOptions.InvalidConfigPolicy
-	(*GatewayOptions_ValidationOptions)(nil), // 38: gloo.solo.io.GatewayOptions.ValidationOptions
-	(*GraphqlOptions_SchemaChangeValidationOptions)(nil),  // 39: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
-	(*duration.Duration)(nil),                             // 40: google.protobuf.Duration
-	(*Extensions)(nil),                                    // 41: gloo.solo.io.Extensions
-	(*ratelimit.ServiceSettings)(nil),                     // 42: ratelimit.options.gloo.solo.io.ServiceSettings
-	(*ratelimit.Settings)(nil),                            // 43: ratelimit.options.gloo.solo.io.Settings
-	(*rbac.Settings)(nil),                                 // 44: rbac.options.gloo.solo.io.Settings
-	(*v1.Settings)(nil),                                   // 45: enterprise.gloo.solo.io.Settings
-	(*caching.Settings)(nil),                              // 46: caching.options.gloo.solo.io.Settings
-	(*core.Metadata)(nil),                                 // 47: core.solo.io.Metadata
-	(*core.NamespacedStatuses)(nil),                       // 48: core.solo.io.NamespacedStatuses
-	(*extproc.Settings)(nil),                              // 49: extproc.options.gloo.solo.io.Settings
-	(*ssl.SslParameters)(nil),                             // 50: gloo.solo.io.SslParameters
-	(*CircuitBreakerConfig)(nil),                          // 51: gloo.solo.io.CircuitBreakerConfig
-	(*wrappers.BoolValue)(nil),                            // 52: google.protobuf.BoolValue
-	(*wrappers.UInt32Value)(nil),                          // 53: google.protobuf.UInt32Value
-	(*core.ResourceRef)(nil),                              // 54: core.solo.io.ResourceRef
-	(consul.ConsulConsistencyModes)(0),                    // 55: consul.options.gloo.solo.io.ConsulConsistencyModes
-	(*consul.QueryOptions)(nil),                           // 56: consul.options.gloo.solo.io.QueryOptions
-	(*aws.AWSLambdaConfig_ServiceAccountCredentials)(nil), // 57: envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
-	(*wrappers.Int32Value)(nil),                           // 58: google.protobuf.Int32Value
+	(*GlooOptions_IstioOptions)(nil),         // 38: gloo.solo.io.GlooOptions.IstioOptions
+	(*GatewayOptions_ValidationOptions)(nil), // 39: gloo.solo.io.GatewayOptions.ValidationOptions
+	(*GraphqlOptions_SchemaChangeValidationOptions)(nil),  // 40: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
+	(*duration.Duration)(nil),                             // 41: google.protobuf.Duration
+	(*Extensions)(nil),                                    // 42: gloo.solo.io.Extensions
+	(*ratelimit.ServiceSettings)(nil),                     // 43: ratelimit.options.gloo.solo.io.ServiceSettings
+	(*ratelimit.Settings)(nil),                            // 44: ratelimit.options.gloo.solo.io.Settings
+	(*rbac.Settings)(nil),                                 // 45: rbac.options.gloo.solo.io.Settings
+	(*v1.Settings)(nil),                                   // 46: enterprise.gloo.solo.io.Settings
+	(*caching.Settings)(nil),                              // 47: caching.options.gloo.solo.io.Settings
+	(*core.Metadata)(nil),                                 // 48: core.solo.io.Metadata
+	(*core.NamespacedStatuses)(nil),                       // 49: core.solo.io.NamespacedStatuses
+	(*extproc.Settings)(nil),                              // 50: extproc.options.gloo.solo.io.Settings
+	(*ssl.SslParameters)(nil),                             // 51: gloo.solo.io.SslParameters
+	(*CircuitBreakerConfig)(nil),                          // 52: gloo.solo.io.CircuitBreakerConfig
+	(*wrappers.BoolValue)(nil),                            // 53: google.protobuf.BoolValue
+	(*wrappers.UInt32Value)(nil),                          // 54: google.protobuf.UInt32Value
+	(*core.ResourceRef)(nil),                              // 55: core.solo.io.ResourceRef
+	(consul.ConsulConsistencyModes)(0),                    // 56: consul.options.gloo.solo.io.ConsulConsistencyModes
+	(*consul.QueryOptions)(nil),                           // 57: consul.options.gloo.solo.io.QueryOptions
+	(*aws.AWSLambdaConfig_ServiceAccountCredentials)(nil), // 58: envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
+	(*wrappers.Int32Value)(nil),                           // 59: google.protobuf.Int32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_depIdxs = []int32{
 	10, // 0: gloo.solo.io.Settings.kubernetes_config_source:type_name -> gloo.solo.io.Settings.KubernetesCrds
@@ -4311,7 +4380,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_depIdxs = [
 	16, // 7: gloo.solo.io.Settings.kubernetes_artifact_source:type_name -> gloo.solo.io.Settings.KubernetesConfigmaps
 	17, // 8: gloo.solo.io.Settings.directory_artifact_source:type_name -> gloo.solo.io.Settings.Directory
 	15, // 9: gloo.solo.io.Settings.consul_kv_artifact_source:type_name -> gloo.solo.io.Settings.ConsulKv
-	40, // 10: gloo.solo.io.Settings.refresh_rate:type_name -> google.protobuf.Duration
+	41, // 10: gloo.solo.io.Settings.refresh_rate:type_name -> google.protobuf.Duration
 	18, // 11: gloo.solo.io.Settings.knative:type_name -> gloo.solo.io.Settings.KnativeOptions
 	19, // 12: gloo.solo.io.Settings.discovery:type_name -> gloo.solo.io.Settings.DiscoveryOptions
 	4,  // 13: gloo.solo.io.Settings.gloo:type_name -> gloo.solo.io.GlooOptions
@@ -4319,90 +4388,92 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_depIdxs = [
 	20, // 15: gloo.solo.io.Settings.consul:type_name -> gloo.solo.io.Settings.ConsulConfiguration
 	21, // 16: gloo.solo.io.Settings.consulDiscovery:type_name -> gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration
 	22, // 17: gloo.solo.io.Settings.kubernetes:type_name -> gloo.solo.io.Settings.KubernetesConfiguration
-	41, // 18: gloo.solo.io.Settings.extensions:type_name -> gloo.solo.io.Extensions
-	42, // 19: gloo.solo.io.Settings.ratelimit:type_name -> ratelimit.options.gloo.solo.io.ServiceSettings
-	43, // 20: gloo.solo.io.Settings.ratelimit_server:type_name -> ratelimit.options.gloo.solo.io.Settings
-	44, // 21: gloo.solo.io.Settings.rbac:type_name -> rbac.options.gloo.solo.io.Settings
-	45, // 22: gloo.solo.io.Settings.extauth:type_name -> enterprise.gloo.solo.io.Settings
+	42, // 18: gloo.solo.io.Settings.extensions:type_name -> gloo.solo.io.Extensions
+	43, // 19: gloo.solo.io.Settings.ratelimit:type_name -> ratelimit.options.gloo.solo.io.ServiceSettings
+	44, // 20: gloo.solo.io.Settings.ratelimit_server:type_name -> ratelimit.options.gloo.solo.io.Settings
+	45, // 21: gloo.solo.io.Settings.rbac:type_name -> rbac.options.gloo.solo.io.Settings
+	46, // 22: gloo.solo.io.Settings.extauth:type_name -> enterprise.gloo.solo.io.Settings
 	23, // 23: gloo.solo.io.Settings.named_extauth:type_name -> gloo.solo.io.Settings.NamedExtauthEntry
-	46, // 24: gloo.solo.io.Settings.caching_server:type_name -> caching.options.gloo.solo.io.Settings
-	47, // 25: gloo.solo.io.Settings.metadata:type_name -> core.solo.io.Metadata
-	48, // 26: gloo.solo.io.Settings.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
+	47, // 24: gloo.solo.io.Settings.caching_server:type_name -> caching.options.gloo.solo.io.Settings
+	48, // 25: gloo.solo.io.Settings.metadata:type_name -> core.solo.io.Metadata
+	49, // 26: gloo.solo.io.Settings.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
 	24, // 27: gloo.solo.io.Settings.observabilityOptions:type_name -> gloo.solo.io.Settings.ObservabilityOptions
 	3,  // 28: gloo.solo.io.Settings.upstreamOptions:type_name -> gloo.solo.io.UpstreamOptions
 	7,  // 29: gloo.solo.io.Settings.console_options:type_name -> gloo.solo.io.ConsoleOptions
 	8,  // 30: gloo.solo.io.Settings.graphql_options:type_name -> gloo.solo.io.GraphqlOptions
-	49, // 31: gloo.solo.io.Settings.ext_proc:type_name -> extproc.options.gloo.solo.io.Settings
-	50, // 32: gloo.solo.io.UpstreamOptions.ssl_parameters:type_name -> gloo.solo.io.SslParameters
+	50, // 31: gloo.solo.io.Settings.ext_proc:type_name -> extproc.options.gloo.solo.io.Settings
+	51, // 32: gloo.solo.io.UpstreamOptions.ssl_parameters:type_name -> gloo.solo.io.SslParameters
 	35, // 33: gloo.solo.io.UpstreamOptions.global_annotations:type_name -> gloo.solo.io.UpstreamOptions.GlobalAnnotationsEntry
-	51, // 34: gloo.solo.io.GlooOptions.circuit_breakers:type_name -> gloo.solo.io.CircuitBreakerConfig
-	40, // 35: gloo.solo.io.GlooOptions.endpoints_warming_timeout:type_name -> google.protobuf.Duration
+	52, // 34: gloo.solo.io.GlooOptions.circuit_breakers:type_name -> gloo.solo.io.CircuitBreakerConfig
+	41, // 35: gloo.solo.io.GlooOptions.endpoints_warming_timeout:type_name -> google.protobuf.Duration
 	36, // 36: gloo.solo.io.GlooOptions.aws_options:type_name -> gloo.solo.io.GlooOptions.AWSOptions
 	37, // 37: gloo.solo.io.GlooOptions.invalid_config_policy:type_name -> gloo.solo.io.GlooOptions.InvalidConfigPolicy
-	52, // 38: gloo.solo.io.GlooOptions.disable_grpc_web:type_name -> google.protobuf.BoolValue
-	52, // 39: gloo.solo.io.GlooOptions.disable_proxy_garbage_collection:type_name -> google.protobuf.BoolValue
-	53, // 40: gloo.solo.io.GlooOptions.regex_max_program_size:type_name -> google.protobuf.UInt32Value
-	52, // 41: gloo.solo.io.GlooOptions.enable_rest_eds:type_name -> google.protobuf.BoolValue
-	40, // 42: gloo.solo.io.GlooOptions.failover_upstream_dns_polling_interval:type_name -> google.protobuf.Duration
-	52, // 43: gloo.solo.io.GlooOptions.remove_unused_filters:type_name -> google.protobuf.BoolValue
-	52, // 44: gloo.solo.io.GlooOptions.log_transformation_request_response_info:type_name -> google.protobuf.BoolValue
-	52, // 45: gloo.solo.io.GlooOptions.transformation_escape_characters:type_name -> google.protobuf.BoolValue
-	52, // 46: gloo.solo.io.VirtualServiceOptions.one_way_tls:type_name -> google.protobuf.BoolValue
-	38, // 47: gloo.solo.io.GatewayOptions.validation:type_name -> gloo.solo.io.GatewayOptions.ValidationOptions
-	5,  // 48: gloo.solo.io.GatewayOptions.virtual_service_options:type_name -> gloo.solo.io.VirtualServiceOptions
-	52, // 49: gloo.solo.io.GatewayOptions.persist_proxy_spec:type_name -> google.protobuf.BoolValue
-	52, // 50: gloo.solo.io.GatewayOptions.enable_gateway_controller:type_name -> google.protobuf.BoolValue
-	52, // 51: gloo.solo.io.GatewayOptions.isolate_virtual_hosts_by_ssl_config:type_name -> google.protobuf.BoolValue
-	52, // 52: gloo.solo.io.GatewayOptions.translate_empty_gateways:type_name -> google.protobuf.BoolValue
-	52, // 53: gloo.solo.io.ConsoleOptions.read_only:type_name -> google.protobuf.BoolValue
-	52, // 54: gloo.solo.io.ConsoleOptions.api_explorer_enabled:type_name -> google.protobuf.BoolValue
-	39, // 55: gloo.solo.io.GraphqlOptions.schema_change_validation_options:type_name -> gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
-	25, // 56: gloo.solo.io.Settings.SecretOptions.sources:type_name -> gloo.solo.io.Settings.SecretOptions.Source
-	52, // 57: gloo.solo.io.Settings.VaultSecrets.insecure:type_name -> google.protobuf.BoolValue
-	14, // 58: gloo.solo.io.Settings.VaultSecrets.tls_config:type_name -> gloo.solo.io.Settings.VaultTlsConfig
-	13, // 59: gloo.solo.io.Settings.VaultSecrets.aws:type_name -> gloo.solo.io.Settings.VaultAwsAuth
-	52, // 60: gloo.solo.io.Settings.VaultTlsConfig.insecure:type_name -> google.protobuf.BoolValue
-	0,  // 61: gloo.solo.io.Settings.DiscoveryOptions.fds_mode:type_name -> gloo.solo.io.Settings.DiscoveryOptions.FdsMode
-	26, // 62: gloo.solo.io.Settings.DiscoveryOptions.uds_options:type_name -> gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
-	27, // 63: gloo.solo.io.Settings.DiscoveryOptions.fds_options:type_name -> gloo.solo.io.Settings.DiscoveryOptions.FdsOptions
-	52, // 64: gloo.solo.io.Settings.ConsulConfiguration.insecure_skip_verify:type_name -> google.protobuf.BoolValue
-	40, // 65: gloo.solo.io.Settings.ConsulConfiguration.wait_time:type_name -> google.protobuf.Duration
-	29, // 66: gloo.solo.io.Settings.ConsulConfiguration.service_discovery:type_name -> gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions
-	40, // 67: gloo.solo.io.Settings.ConsulConfiguration.dns_polling_interval:type_name -> google.protobuf.Duration
-	54, // 68: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.rootCa:type_name -> core.solo.io.ResourceRef
-	55, // 69: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.consistencyMode:type_name -> consul.options.gloo.solo.io.ConsulConsistencyModes
-	56, // 70: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.query_options:type_name -> consul.options.gloo.solo.io.QueryOptions
-	52, // 71: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.eds_blocking_queries:type_name -> google.protobuf.BoolValue
-	30, // 72: gloo.solo.io.Settings.KubernetesConfiguration.rate_limits:type_name -> gloo.solo.io.Settings.KubernetesConfiguration.RateLimits
-	45, // 73: gloo.solo.io.Settings.NamedExtauthEntry.value:type_name -> enterprise.gloo.solo.io.Settings
-	31, // 74: gloo.solo.io.Settings.ObservabilityOptions.grafanaIntegration:type_name -> gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration
-	33, // 75: gloo.solo.io.Settings.ObservabilityOptions.configStatusMetricLabels:type_name -> gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricLabelsEntry
-	11, // 76: gloo.solo.io.Settings.SecretOptions.Source.kubernetes:type_name -> gloo.solo.io.Settings.KubernetesSecrets
-	12, // 77: gloo.solo.io.Settings.SecretOptions.Source.vault:type_name -> gloo.solo.io.Settings.VaultSecrets
-	17, // 78: gloo.solo.io.Settings.SecretOptions.Source.directory:type_name -> gloo.solo.io.Settings.Directory
-	52, // 79: gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.enabled:type_name -> google.protobuf.BoolValue
-	28, // 80: gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.watch_labels:type_name -> gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.WatchLabelsEntry
-	52, // 81: gloo.solo.io.Settings.DiscoveryOptions.FdsOptions.graphql_enabled:type_name -> google.protobuf.BoolValue
-	53, // 82: gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration.default_dashboard_folder_id:type_name -> google.protobuf.UInt32Value
-	34, // 83: gloo.solo.io.Settings.ObservabilityOptions.MetricLabels.labelToPath:type_name -> gloo.solo.io.Settings.ObservabilityOptions.MetricLabels.LabelToPathEntry
-	32, // 84: gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricLabelsEntry.value:type_name -> gloo.solo.io.Settings.ObservabilityOptions.MetricLabels
-	57, // 85: gloo.solo.io.GlooOptions.AWSOptions.service_account_credentials:type_name -> envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
-	52, // 86: gloo.solo.io.GlooOptions.AWSOptions.propagate_original_routing:type_name -> google.protobuf.BoolValue
-	40, // 87: gloo.solo.io.GlooOptions.AWSOptions.credential_refresh_delay:type_name -> google.protobuf.Duration
-	52, // 88: gloo.solo.io.GlooOptions.AWSOptions.fallback_to_first_function:type_name -> google.protobuf.BoolValue
-	52, // 89: gloo.solo.io.GatewayOptions.ValidationOptions.always_accept:type_name -> google.protobuf.BoolValue
-	52, // 90: gloo.solo.io.GatewayOptions.ValidationOptions.allow_warnings:type_name -> google.protobuf.BoolValue
-	52, // 91: gloo.solo.io.GatewayOptions.ValidationOptions.warn_route_short_circuiting:type_name -> google.protobuf.BoolValue
-	52, // 92: gloo.solo.io.GatewayOptions.ValidationOptions.disable_transformation_validation:type_name -> google.protobuf.BoolValue
-	58, // 93: gloo.solo.io.GatewayOptions.ValidationOptions.validation_server_grpc_max_size_bytes:type_name -> google.protobuf.Int32Value
-	52, // 94: gloo.solo.io.GatewayOptions.ValidationOptions.server_enabled:type_name -> google.protobuf.BoolValue
-	52, // 95: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.reject_breaking_changes:type_name -> google.protobuf.BoolValue
-	1,  // 96: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.processing_rules:type_name -> gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
-	97, // [97:97] is the sub-list for method output_type
-	97, // [97:97] is the sub-list for method input_type
-	97, // [97:97] is the sub-list for extension type_name
-	97, // [97:97] is the sub-list for extension extendee
-	0,  // [0:97] is the sub-list for field type_name
+	53, // 38: gloo.solo.io.GlooOptions.disable_grpc_web:type_name -> google.protobuf.BoolValue
+	53, // 39: gloo.solo.io.GlooOptions.disable_proxy_garbage_collection:type_name -> google.protobuf.BoolValue
+	54, // 40: gloo.solo.io.GlooOptions.regex_max_program_size:type_name -> google.protobuf.UInt32Value
+	53, // 41: gloo.solo.io.GlooOptions.enable_rest_eds:type_name -> google.protobuf.BoolValue
+	41, // 42: gloo.solo.io.GlooOptions.failover_upstream_dns_polling_interval:type_name -> google.protobuf.Duration
+	53, // 43: gloo.solo.io.GlooOptions.remove_unused_filters:type_name -> google.protobuf.BoolValue
+	53, // 44: gloo.solo.io.GlooOptions.log_transformation_request_response_info:type_name -> google.protobuf.BoolValue
+	53, // 45: gloo.solo.io.GlooOptions.transformation_escape_characters:type_name -> google.protobuf.BoolValue
+	38, // 46: gloo.solo.io.GlooOptions.istio_options:type_name -> gloo.solo.io.GlooOptions.IstioOptions
+	53, // 47: gloo.solo.io.VirtualServiceOptions.one_way_tls:type_name -> google.protobuf.BoolValue
+	39, // 48: gloo.solo.io.GatewayOptions.validation:type_name -> gloo.solo.io.GatewayOptions.ValidationOptions
+	5,  // 49: gloo.solo.io.GatewayOptions.virtual_service_options:type_name -> gloo.solo.io.VirtualServiceOptions
+	53, // 50: gloo.solo.io.GatewayOptions.persist_proxy_spec:type_name -> google.protobuf.BoolValue
+	53, // 51: gloo.solo.io.GatewayOptions.enable_gateway_controller:type_name -> google.protobuf.BoolValue
+	53, // 52: gloo.solo.io.GatewayOptions.isolate_virtual_hosts_by_ssl_config:type_name -> google.protobuf.BoolValue
+	53, // 53: gloo.solo.io.GatewayOptions.translate_empty_gateways:type_name -> google.protobuf.BoolValue
+	53, // 54: gloo.solo.io.ConsoleOptions.read_only:type_name -> google.protobuf.BoolValue
+	53, // 55: gloo.solo.io.ConsoleOptions.api_explorer_enabled:type_name -> google.protobuf.BoolValue
+	40, // 56: gloo.solo.io.GraphqlOptions.schema_change_validation_options:type_name -> gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
+	25, // 57: gloo.solo.io.Settings.SecretOptions.sources:type_name -> gloo.solo.io.Settings.SecretOptions.Source
+	53, // 58: gloo.solo.io.Settings.VaultSecrets.insecure:type_name -> google.protobuf.BoolValue
+	14, // 59: gloo.solo.io.Settings.VaultSecrets.tls_config:type_name -> gloo.solo.io.Settings.VaultTlsConfig
+	13, // 60: gloo.solo.io.Settings.VaultSecrets.aws:type_name -> gloo.solo.io.Settings.VaultAwsAuth
+	53, // 61: gloo.solo.io.Settings.VaultTlsConfig.insecure:type_name -> google.protobuf.BoolValue
+	0,  // 62: gloo.solo.io.Settings.DiscoveryOptions.fds_mode:type_name -> gloo.solo.io.Settings.DiscoveryOptions.FdsMode
+	26, // 63: gloo.solo.io.Settings.DiscoveryOptions.uds_options:type_name -> gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
+	27, // 64: gloo.solo.io.Settings.DiscoveryOptions.fds_options:type_name -> gloo.solo.io.Settings.DiscoveryOptions.FdsOptions
+	53, // 65: gloo.solo.io.Settings.ConsulConfiguration.insecure_skip_verify:type_name -> google.protobuf.BoolValue
+	41, // 66: gloo.solo.io.Settings.ConsulConfiguration.wait_time:type_name -> google.protobuf.Duration
+	29, // 67: gloo.solo.io.Settings.ConsulConfiguration.service_discovery:type_name -> gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions
+	41, // 68: gloo.solo.io.Settings.ConsulConfiguration.dns_polling_interval:type_name -> google.protobuf.Duration
+	55, // 69: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.rootCa:type_name -> core.solo.io.ResourceRef
+	56, // 70: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.consistencyMode:type_name -> consul.options.gloo.solo.io.ConsulConsistencyModes
+	57, // 71: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.query_options:type_name -> consul.options.gloo.solo.io.QueryOptions
+	53, // 72: gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration.eds_blocking_queries:type_name -> google.protobuf.BoolValue
+	30, // 73: gloo.solo.io.Settings.KubernetesConfiguration.rate_limits:type_name -> gloo.solo.io.Settings.KubernetesConfiguration.RateLimits
+	46, // 74: gloo.solo.io.Settings.NamedExtauthEntry.value:type_name -> enterprise.gloo.solo.io.Settings
+	31, // 75: gloo.solo.io.Settings.ObservabilityOptions.grafanaIntegration:type_name -> gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration
+	33, // 76: gloo.solo.io.Settings.ObservabilityOptions.configStatusMetricLabels:type_name -> gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricLabelsEntry
+	11, // 77: gloo.solo.io.Settings.SecretOptions.Source.kubernetes:type_name -> gloo.solo.io.Settings.KubernetesSecrets
+	12, // 78: gloo.solo.io.Settings.SecretOptions.Source.vault:type_name -> gloo.solo.io.Settings.VaultSecrets
+	17, // 79: gloo.solo.io.Settings.SecretOptions.Source.directory:type_name -> gloo.solo.io.Settings.Directory
+	53, // 80: gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.enabled:type_name -> google.protobuf.BoolValue
+	28, // 81: gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.watch_labels:type_name -> gloo.solo.io.Settings.DiscoveryOptions.UdsOptions.WatchLabelsEntry
+	53, // 82: gloo.solo.io.Settings.DiscoveryOptions.FdsOptions.graphql_enabled:type_name -> google.protobuf.BoolValue
+	54, // 83: gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration.default_dashboard_folder_id:type_name -> google.protobuf.UInt32Value
+	34, // 84: gloo.solo.io.Settings.ObservabilityOptions.MetricLabels.labelToPath:type_name -> gloo.solo.io.Settings.ObservabilityOptions.MetricLabels.LabelToPathEntry
+	32, // 85: gloo.solo.io.Settings.ObservabilityOptions.ConfigStatusMetricLabelsEntry.value:type_name -> gloo.solo.io.Settings.ObservabilityOptions.MetricLabels
+	58, // 86: gloo.solo.io.GlooOptions.AWSOptions.service_account_credentials:type_name -> envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
+	53, // 87: gloo.solo.io.GlooOptions.AWSOptions.propagate_original_routing:type_name -> google.protobuf.BoolValue
+	41, // 88: gloo.solo.io.GlooOptions.AWSOptions.credential_refresh_delay:type_name -> google.protobuf.Duration
+	53, // 89: gloo.solo.io.GlooOptions.AWSOptions.fallback_to_first_function:type_name -> google.protobuf.BoolValue
+	53, // 90: gloo.solo.io.GlooOptions.IstioOptions.append_x_forwarded_host:type_name -> google.protobuf.BoolValue
+	53, // 91: gloo.solo.io.GatewayOptions.ValidationOptions.always_accept:type_name -> google.protobuf.BoolValue
+	53, // 92: gloo.solo.io.GatewayOptions.ValidationOptions.allow_warnings:type_name -> google.protobuf.BoolValue
+	53, // 93: gloo.solo.io.GatewayOptions.ValidationOptions.warn_route_short_circuiting:type_name -> google.protobuf.BoolValue
+	53, // 94: gloo.solo.io.GatewayOptions.ValidationOptions.disable_transformation_validation:type_name -> google.protobuf.BoolValue
+	59, // 95: gloo.solo.io.GatewayOptions.ValidationOptions.validation_server_grpc_max_size_bytes:type_name -> google.protobuf.Int32Value
+	53, // 96: gloo.solo.io.GatewayOptions.ValidationOptions.server_enabled:type_name -> google.protobuf.BoolValue
+	53, // 97: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.reject_breaking_changes:type_name -> google.protobuf.BoolValue
+	1,  // 98: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.processing_rules:type_name -> gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
+	99, // [99:99] is the sub-list for method output_type
+	99, // [99:99] is the sub-list for method input_type
+	99, // [99:99] is the sub-list for extension type_name
+	99, // [99:99] is the sub-list for extension extendee
+	0,  // [0:99] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() }
@@ -4786,7 +4857,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GatewayOptions_ValidationOptions); i {
+			switch v := v.(*GlooOptions_IstioOptions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4798,6 +4869,18 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GatewayOptions_ValidationOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GraphqlOptions_SchemaChangeValidationOptions); i {
 			case 0:
 				return &v.state
@@ -4840,7 +4923,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   38,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

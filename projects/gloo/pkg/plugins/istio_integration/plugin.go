@@ -19,6 +19,7 @@ const (
 
 // Handles transformations required to integrate with Istio
 type plugin struct {
+	appendXForwardedHost bool
 }
 
 func NewPlugin(ctx context.Context) *plugin {
@@ -29,7 +30,12 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) {
+func (p *plugin) Init(params plugins.InitParams) {
+	if xfh := params.Settings.GetGloo().GetIstioOptions().GetAppendXForwardedHost(); xfh != nil {
+		p.appendXForwardedHost = xfh.GetValue()
+	} else {
+		p.appendXForwardedHost = true
+	}
 }
 
 // When istio integration is enabled, we need to access k8s services using a host that istio will recognize (servicename.namespace)
@@ -60,7 +66,11 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_HostRewriteLiteral{
 		HostRewriteLiteral: hostInMesh,
 	}
-	routeAction.Route.AppendXForwardedHost = true
+
+	if p.appendXForwardedHost {
+		routeAction.Route.AppendXForwardedHost = true
+	}
+
 	return nil
 }
 
