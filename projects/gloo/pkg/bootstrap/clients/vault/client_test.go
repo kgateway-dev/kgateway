@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/golang/mock/gomock"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
+	"go.uber.org/mock/gomock"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault/mocks"
 	"github.com/solo-io/gloo/test/gomega/assertions"
