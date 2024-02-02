@@ -14,7 +14,7 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockVirtualServiceSelector is a mock of VirtualServiceSelector interface.

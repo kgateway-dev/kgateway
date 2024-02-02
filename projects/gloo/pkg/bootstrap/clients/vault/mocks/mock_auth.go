@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	api "github.com/hashicorp/vault/api"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockAuthMethod is a mock of AuthMethod interface.

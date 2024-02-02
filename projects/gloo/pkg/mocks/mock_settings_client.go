@@ -9,7 +9,7 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockSettingsClient is a mock of SettingsClient interface

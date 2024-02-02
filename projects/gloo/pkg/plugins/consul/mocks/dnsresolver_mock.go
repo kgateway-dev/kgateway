@@ -13,7 +13,7 @@ import (
 	net "net"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockDnsResolver is a mock of DnsResolver interface.

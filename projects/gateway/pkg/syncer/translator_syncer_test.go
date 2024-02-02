@@ -25,7 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 )
 
 var _ = Describe("TranslatorSyncer", func() {

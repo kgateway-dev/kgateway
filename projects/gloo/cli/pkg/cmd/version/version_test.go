@@ -13,7 +13,7 @@ import (
 	mock_version "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version/mocks"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 )
 
 var _ = Describe("version command", func() {

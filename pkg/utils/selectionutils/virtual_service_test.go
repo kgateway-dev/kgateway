@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_errors "github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/test/matchers"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 )
 
 var (

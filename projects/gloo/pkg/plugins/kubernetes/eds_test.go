@@ -12,7 +12,7 @@ import (
 	mock_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/mocks"
 	mock_cache "github.com/solo-io/gloo/test/mocks/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 )
 
 var _ = Describe("Eds", func() {

@@ -16,7 +16,7 @@ import (
 	v10 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloosnapshot "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	reporter "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockTranslator is a mock of Translator interface.

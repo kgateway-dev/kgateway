@@ -12,7 +12,7 @@ import (
 	reflect "reflect"
 
 	cache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 

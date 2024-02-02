@@ -15,7 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockSslConfigTranslator is a mock of SslConfigTranslator interface.

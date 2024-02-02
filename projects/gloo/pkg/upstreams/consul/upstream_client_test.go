@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/test/gomega"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"

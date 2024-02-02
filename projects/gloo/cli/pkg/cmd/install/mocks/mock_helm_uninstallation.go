@@ -11,7 +11,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 	release "helm.sh/helm/v3/pkg/release"
 )
 

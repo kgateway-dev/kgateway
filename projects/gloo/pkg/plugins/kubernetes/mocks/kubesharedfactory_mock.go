@@ -11,7 +11,7 @@ package mock_kubernetes
 import (
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 

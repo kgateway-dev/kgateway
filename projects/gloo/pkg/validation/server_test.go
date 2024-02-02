@@ -33,7 +33,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/test/matchers"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 	"google.golang.org/grpc"
 )
 

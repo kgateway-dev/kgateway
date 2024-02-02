@@ -12,7 +12,7 @@ import (
 	reflect "reflect"
 
 	api "github.com/hashicorp/consul/api"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClientWrapper is a mock of ClientWrapper interface.

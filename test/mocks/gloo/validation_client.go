@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	validation "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
 

@@ -12,7 +12,7 @@ import (
 	reflect "reflect"
 
 	install "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 	chart "helm.sh/helm/v3/pkg/chart"
 	cli "helm.sh/helm/v3/pkg/cli"
 )

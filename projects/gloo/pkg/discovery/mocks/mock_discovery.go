@@ -15,7 +15,7 @@ import (
 	discovery "github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockDiscoveryPlugin is a mock of DiscoveryPlugin interface.

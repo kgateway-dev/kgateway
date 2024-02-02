@@ -91,7 +91,7 @@ require (
 	github.com/go-logr/zapr v1.2.4
 	github.com/google/uuid v1.3.1
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
-	go.uber.org/mock v0.3.0
+	github.com/golang/mock v1.6.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d

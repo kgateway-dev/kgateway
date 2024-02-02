@@ -33,7 +33,7 @@ import (
 	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 	"golang.org/x/sync/errgroup"
 )
 

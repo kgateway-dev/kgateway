@@ -23,7 +23,7 @@ import (
 	_ "github.com/saiskee/gettercheck"
 	_ "github.com/solo-io/protoc-gen-ext"
 	_ "github.com/solo-io/protoc-gen-openapi"
-	_ "go.uber.org/mock/mockgen"
+	_ "github.com/golang/mock/mockgen"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
 )

@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"

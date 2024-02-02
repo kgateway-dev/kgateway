@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 )
