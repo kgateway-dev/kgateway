@@ -1,7 +1,0 @@
-gateway:
-  enabled: true
-  validation:
-    enabled: true
-    alwaysAcceptResources: false
-    webhook:
-      enabled: true
