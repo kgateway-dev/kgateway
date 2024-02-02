@@ -48,6 +48,7 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 
 	case *v1.Gateway_HybridGateway:
 		hybrid := gw.HybridGateway
+
 		// warn early if there are no virtual services and no tcp configurations
 		if len(snap.VirtualServices) == 0 {
 			hasTCP := hybrid.GetDelegatedTcpGateways() != nil
