@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/avast/retry-go"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/avast/retry-go"
-	"github.com/kelseyhightower/envconfig"
+	"github.com/solo-io/go-utils/stats"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 )
@@ -18,6 +18,7 @@ import (
 var (
 	// The NodeID of the envoy server reading from this SDS
 	sdsClientDefault = "sds_client"
+	sdsComponentName = "sds_server"
 )
 
 type Config struct {
@@ -39,9 +40,10 @@ type Config struct {
 }
 
 func RunMain() {
-	ctx := contextutils.WithLogger(context.Background(), "sds_server")
+	ctx := contextutils.WithLogger(context.Background(), sdsComponentName)
+	// Initialize stats server to dynamically change log level. This will also use LOG_LEVEL if set.
+	stats.ConditionallyStartStatsServer()
 	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
-
 	contextutils.LoggerFrom(ctx).Info("initializing config")
 
 	var c = setup(ctx)
