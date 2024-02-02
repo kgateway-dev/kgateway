@@ -463,23 +463,40 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("Extractors", func() {
+			type extractorTestCase struct {
+				Regex           string
+				Mode            transformation.Extraction_Mode
+				Subgroup        uint32
+				ReplacementText *wrapperspb.StringValue
+				ExpectError     bool
+			}
+
+			type transformationPlugin interface {
+				plugins.Plugin
+				ConvertTransformation(
+					ctx context.Context,
+					t *transformation.Transformations,
+					stagedTransformations *transformation.TransformationStages,
+				) (*envoytransformation.RouteTransformations, error)
+			}
+
 			// Helper functions to create input and output transformations
-			createInputExtraction := func(regex string, mode transformation.Extraction_Mode, subgroup uint32, replacementText *wrapperspb.StringValue) *transformation.Extraction {
+			createInputExtraction := func(tc extractorTestCase) *transformation.Extraction {
 				return &transformation.Extraction{
-					Regex:           regex,
-					Mode:            mode,
-					Subgroup:        subgroup,
-					ReplacementText: replacementText,
+					Regex:           tc.Regex,
+					Mode:            tc.Mode,
+					Subgroup:        tc.Subgroup,
+					ReplacementText: tc.ReplacementText,
 					Source:          &transformation.Extraction_Header{Header: "foo"},
 				}
 			}
 
-			createOutputExtraction := func(regex string, mode envoytransformation.Extraction_Mode, subgroup uint32, replacementText *wrapperspb.StringValue) *envoytransformation.Extraction {
+			createOutputExtraction := func(tc extractorTestCase) *envoytransformation.Extraction {
 				return &envoytransformation.Extraction{
-					Regex:           regex,
-					Mode:            mode,
-					Subgroup:        subgroup,
-					ReplacementText: replacementText,
+					Regex:           tc.Regex,
+					Mode:            envoytransformation.Extraction_Mode(tc.Mode),
+					Subgroup:        tc.Subgroup,
+					ReplacementText: tc.ReplacementText,
 					Source:          &envoytransformation.Extraction_Header{Header: "foo"},
 				}
 			}
@@ -492,6 +509,17 @@ var _ = Describe("Plugin", func() {
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Extractors: map[string]*transformation.Extraction{"foo": extraction},
 						},
+					},
+				}
+			}
+
+			// intermediary function to create transformationStages with a single extraction
+			createInputTransformationStages := func(extraction *transformation.Extraction) *transformation.TransformationStages {
+				return &transformation.TransformationStages{
+					Regular: &transformation.RequestResponseTransformations{
+						RequestTransforms: []*transformation.RequestMatch{{
+							RequestTransformation: createInputTransformation(extraction),
+						}},
 					},
 				}
 			}
@@ -525,7 +553,7 @@ var _ = Describe("Plugin", func() {
 				return createOutputRouteTransformations(createOutputTransformation(extraction))
 			}
 
-			// we this custom comparison because generated protos can't be compared directly
+			// we use this custom comparison because generated protos can't be compared directly
 			validateExtractionMatch := func(expected, actual *envoytransformation.RouteTransformations) {
 				getTransformation := func(rt *envoytransformation.RouteTransformations) *envoytransformation.Transformation {
 					return rt.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation()
@@ -555,47 +583,17 @@ var _ = Describe("Plugin", func() {
 				}
 			}
 
-			type transformationPlugin interface {
-				plugins.Plugin
-				ConvertTransformation(
-					ctx context.Context,
-					t *transformation.Transformations,
-					stagedTransformations *transformation.TransformationStages,
-				) (*envoytransformation.RouteTransformations, error)
-			}
-
-			type extractorTestCase struct {
-				Regex           string
-				Mode            transformation.Extraction_Mode
-				Subgroup        uint32
-				ReplacementText string // Use an empty string to represent nil
-				ExpectError     bool
-			}
-
 			DescribeTable("Extractor transformations",
 				func(tc extractorTestCase) {
-					var replacementText *wrapperspb.StringValue
-					if tc.ReplacementText != "" {
-						replacementText = &wrapperspb.StringValue{Value: tc.ReplacementText}
-					}
-
-					inputExtraction := createInputExtraction(tc.Regex, tc.Mode, tc.Subgroup, replacementText)
-					inputTransform := createInputTransformation(inputExtraction)
-					inputTransformationStages := &transformation.TransformationStages{
-						Regular: &transformation.RequestResponseTransformations{
-							RequestTransforms: []*transformation.RequestMatch{{
-								RequestTransformation: inputTransform,
-							}},
-						},
-					}
-
+					inputExtraction := createInputExtraction(tc)
+					inputTransformationStages := createInputTransformationStages(inputExtraction)
 					output, err := p.(transformationPlugin).ConvertTransformation(ctx, &transformation.Transformations{}, inputTransformationStages)
 
 					if tc.ExpectError {
 						Expect(err).To(HaveOccurred())
 					} else {
 						Expect(err).NotTo(HaveOccurred())
-						expectedOutputExtraction := createOutputExtraction(tc.Regex, envoytransformation.Extraction_Mode(tc.Mode), tc.Subgroup, replacementText)
+						expectedOutputExtraction := createOutputExtraction(tc)
 						expectedOutput := createOutputRouteTransformationsFromExtraction(expectedOutputExtraction)
 						validateExtractionMatch(expectedOutput, output)
 					}
@@ -606,28 +604,28 @@ var _ = Describe("Plugin", func() {
 				// DO_NOT_SUBMIT
 				Entry("Defaults to Extract mode",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_EXTRACT,
+						Regex:           "abc",
 						Subgroup:        0,
-						ReplacementText: "",
+						ReplacementText: nil,
 						ExpectError:     false,
 					},
 				),
 				Entry("Errors if subgroup is larger than number of capture groups in regex - Extract mode",
 					extractorTestCase{
-						Regex:           "(abc)",
 						Mode:            transformation.Extraction_EXTRACT,
+						Regex:           "(abc)",
 						Subgroup:        2,
-						ReplacementText: "",
+						ReplacementText: nil,
 						ExpectError:     true,
 					},
 				),
 				Entry("Errors if replacement_text is set - Extract mode",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_EXTRACT,
+						Regex:           "abc",
 						Subgroup:        0,
-						ReplacementText: "replacement",
+						ReplacementText: &wrapperspb.StringValue{Value: "replacement"},
 						ExpectError:     true,
 					},
 				),
@@ -635,28 +633,28 @@ var _ = Describe("Plugin", func() {
 				// Single Replace Mode Test Cases
 				Entry("Can set mode to Single Replace with valid replacement text",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_SINGLE_REPLACE,
+						Regex:           "abc",
 						Subgroup:        0,
-						ReplacementText: "foo",
+						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
 						ExpectError:     false,
 					},
 				),
 				Entry("Errors if replacement_text is not set in Single Replace mode",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_SINGLE_REPLACE,
+						Regex:           "abc",
 						Subgroup:        0,
-						ReplacementText: "",
+						ReplacementText: nil,
 						ExpectError:     true,
 					},
 				),
 				Entry("Errors if subgroup is larger than number of capture groups in regex - Single Replace mode",
 					extractorTestCase{
-						Regex:           "(abc)",
 						Mode:            transformation.Extraction_SINGLE_REPLACE,
+						Regex:           "(abc)",
 						Subgroup:        2,
-						ReplacementText: "foo",
+						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
 						ExpectError:     true,
 					},
 				),
@@ -664,28 +662,28 @@ var _ = Describe("Plugin", func() {
 				// Replace All Mode Test Cases
 				Entry("Can set mode to ReplaceAll with valid replacement text",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_REPLACE_ALL,
+						Regex:           "abc",
 						Subgroup:        0,
-						ReplacementText: "foo",
+						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
 						ExpectError:     false,
 					},
 				),
 				Entry("Errors if subgroup is set - Replace All mode",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_REPLACE_ALL,
+						Regex:           "abc",
 						Subgroup:        1,
-						ReplacementText: "foo",
+						ReplacementText: &wrapperspb.StringValue{Value: "foo"},
 						ExpectError:     true,
 					},
 				),
 				Entry("Errors if replacement_text is not set - Replace All mode",
 					extractorTestCase{
-						Regex:           "abc",
 						Mode:            transformation.Extraction_REPLACE_ALL,
+						Regex:           "abc",
 						Subgroup:        0,
-						ReplacementText: "",
+						ReplacementText: nil,
 						ExpectError:     true,
 					},
 				),
