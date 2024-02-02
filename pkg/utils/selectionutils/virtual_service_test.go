@@ -3,6 +3,7 @@ package selectionutils_test
 import (
 	"context"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
@@ -14,7 +15,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_errors "github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/test/matchers"
-	"go.uber.org/mock/gomock"
 )
 
 var (

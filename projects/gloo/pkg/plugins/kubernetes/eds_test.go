@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -12,7 +13,6 @@ import (
 	mock_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/mocks"
 	mock_cache "github.com/solo-io/gloo/test/mocks/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("Eds", func() {
