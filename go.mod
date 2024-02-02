@@ -56,7 +56,7 @@ require (
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.28-bump`)
 	github.com/solo-io/solo-apis v0.0.0-20231206142556-d2e3ed6d4476
-	github.com/solo-io/solo-kit v0.34.1-0.20240202041737-5e82d92a8553
+	github.com/solo-io/solo-kit v0.34.1-0.20240202212811-6d48ed955580
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -89,6 +89,7 @@ require (
 
 require (
 	github.com/go-logr/zapr v1.2.4
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.1
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
@@ -171,7 +172,6 @@ require (
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
