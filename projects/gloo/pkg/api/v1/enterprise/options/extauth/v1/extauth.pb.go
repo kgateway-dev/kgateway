@@ -4390,9 +4390,8 @@ type PassThroughGrpc struct {
 	ConnectionTimeout *duration.Duration `protobuf:"bytes,2,opt,name=connection_timeout,json=connectionTimeout,proto3" json:"connection_timeout,omitempty"`
 	// TLS config for the Grpc passthrough, if not configured the connection will use insecure.
 	TlsConfig *PassThroughGrpcTLSConfig `protobuf:"bytes,3,opt,name=tlsConfig,proto3" json:"tlsConfig,omitempty"`
-	// Indicates the retry policy for re-establishing the gRPC stream
-	// This field is optional. If max interval is not provided, it will be set to ten times the provided base interval.
-	// If not set, gRPC streams default base interval:500ms, maximum interval:30s will be applied.
+	// Indicates the retry policy for re-establishing the gRPC stream.
+	// This field is optional and failed calls will not retry unless configured.
 	RetryPolicy *RetryPolicy `protobuf:"bytes,4,opt,name=retry_policy,json=retryPolicy,proto3" json:"retry_policy,omitempty"`
 }
 
