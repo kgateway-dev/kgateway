@@ -653,7 +653,7 @@ func compareReports(proxyReports1, proxyReports2 ProxyReports, allowWarnings boo
 		}
 		for i := range l1 {
 			// Check that the listener reports are the same types
-			if reflect.TypeOf(l1[i].ListenerTypeReport) != reflect.TypeOf(l2[i].ListenerTypeReport) {
+			if reflect.TypeOf(l1[i].GetListenerTypeReport()) != reflect.TypeOf(l2[i].GetListenerTypeReport()) {
 				return false
 			}
 
