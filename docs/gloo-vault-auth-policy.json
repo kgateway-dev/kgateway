@@ -1,0 +1,21 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+        {
+			"Sid": "",
+			"Effect": "Allow",
+			"Action": [
+				"iam:GetInstanceProfile",
+				"ec2:DescribeInstances",
+				"iam:GetUser",
+				"iam:GetRole"
+			],
+			"Resource": "*"
+		},
+		{
+			"Effect": "Allow",
+			"Action": ["sts:AssumeRole"],
+			"Resource": ["arn:aws:iam::802411188784:role/dev-role-iam-bernie-vault-testing"]
+		}
+	]
+}

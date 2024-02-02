@@ -1,0 +1,22 @@
+global:
+  istioIntegration: {}
+#    enableIstioSidecarOnGateway: true
+#    disableAutoInjection: true
+#    appendXForwardedHost: true
+  istioSDS:
+    enabled: true
+  glooMtls:
+    istioProxy:
+      image:
+        registry: docker.io/istio
+        repository: proxyv2
+        tag: 1.17.1
+    sds:
+      image:
+        repository: sds
+        tag: 1.14.21
+gatewayProxies:
+  gatewayProxy:
+    podTemplate: 
+      httpPort: 8080
+      httpsPort: 8443

@@ -1,0 +1,12 @@
+global:
+  istioIntegration:
+    whitelistDiscovery: true
+    enableIstioSidecarOnGateway: true
+  istioSDS:
+    enabled: true
+  glooMtls:
+    istioProxy:
+      image:
+        registry: docker.io/istio
+        repository: proxyv2
+        tag: 1.14.6
