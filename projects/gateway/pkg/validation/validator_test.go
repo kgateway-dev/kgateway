@@ -595,9 +595,9 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
 			})
 
-			DescribeTable("validation with warnings", func(allowWarnings, allowOpinionatedWarnings bool, expectedMetric int) {
+			DescribeTable("validation with warnings", func(allowWarnings, enableValidationAgainstSnapshot bool, expectedMetric int) {
 				v.allowWarnings = allowWarnings
-				v.enableValidationAgainstSnapshot = allowOpinionatedWarnings
+				v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
 				v.glooValidator = ValidateWarn
 
 				snap := samples.SimpleGlooSnapshot(ns)
@@ -617,11 +617,11 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(expectedMetric))
 
 			},
-				// allowOpinionatedWarnings should not affect anything other than secrets
-				Entry("allowWarnings=false, allowOpinionatedWarnings=false", false, false, 0),
-				Entry("allowWarnings=true, allowOpinionatedWarnings=false", true, false, 1),
-				Entry("allowWarnings=false, allowOpinionatedWarnings=true", false, true, 0),
-				Entry("allowWarnings=true, allowOpinionatedWarnings=true", true, true, 1),
+				// enableValidationAgainstSnapshot should not affect anything other than secrets
+				Entry("allowWarnings=false, enableValidationAgainstSnapshot=false", false, false, 0),
+				Entry("allowWarnings=true, enableValidationAgainstSnapshot=false", true, false, 1),
+				Entry("allowWarnings=false, enableValidationAgainstSnapshot=true", false, true, 0),
+				Entry("allowWarnings=true, enableValidationAgainstSnapshot=true", true, true, 1),
 			)
 
 			It("does not affect metrics when dryRun is true", func() {
