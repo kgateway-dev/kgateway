@@ -602,7 +602,8 @@ var _ = Describe("Plugin", func() {
 				},
 
 				// Extract Mode Test Cases
-				// TODO: this one doesn't quite work in the table setup
+				// TODO: this one doesn't quite work in the table setup - figure out testing mode defaults
+				// DO_NOT_SUBMIT
 				Entry("Defaults to Extract mode",
 					extractorTestCase{
 						Regex:           "abc",
