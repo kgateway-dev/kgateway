@@ -213,27 +213,17 @@ var _ = Describe("Validator", func() {
 			})
 		})
 
-		Context("secrets", func() {
-
-			It("accepts a secret deletion when validation succeeds", func() {
-				v.glooValidator = ValidateAccept
-
-				snap := samples.SimpleGlooSnapshot(ns)
-				err := v.Sync(context.TODO(), snap)
-				Expect(err).NotTo(HaveOccurred())
-
-				secret := &gloov1.Secret{
-					Metadata: &core.Metadata{
-						Name:      "secret",
-						Namespace: "namespace",
-					},
-				}
-				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("rejects a secret deletion when validation fails", func() {
-				v.glooValidator = ValidateFail
+		type validationFunc func(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error)
+		Context("secret deletion", func() {
+			// Inputs:
+			// - enableValidationAgainstSnapshot bool - are we enabling the validation against the snapshot or just checking errors/warnings as usual
+			// - allowWarnings bool - are warnings allowed
+			// - validator - Errors/Warnings/Success - what is returned from valiation.
+			// - errExpected bool - is an error expected
+			DescribeTable("handles secret validation scenarios", func(enableValidationAgainstSnapshot bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
+				v.glooValidator = validator
+				v.allowWarnings = allowWarnings
+				v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
 
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
@@ -246,81 +236,43 @@ var _ = Describe("Validator", func() {
 					},
 				}
 				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
-				Expect(err).To(HaveOccurred())
-			})
-			It("accepts a secret deletion when there is a validation warning and allowWarnings is true", func() {
-				v.glooValidator = ValidateWarn
-				v.allowWarnings = true
-
-				snap := samples.SimpleGlooSnapshot(ns)
-				err := v.Sync(context.TODO(), snap)
-				Expect(err).NotTo(HaveOccurred())
-
-				secret := &gloov1.Secret{
-					Metadata: &core.Metadata{
-						Name:      "secret",
-						Namespace: "namespace",
-					},
-				}
-				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			DescribeTable("handles secret deletion when there is a validation warning and allowWarnings is false",
-				func(enableValidationAgainstSnapshot bool, errExpected bool) {
-					v.glooValidator = ValidateWarn
-					v.allowWarnings = false
-					v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
-
-					snap := samples.SimpleGlooSnapshot(ns)
-					err := v.Sync(context.TODO(), snap)
+				if expectSuccess {
 					Expect(err).NotTo(HaveOccurred())
-
-					secret := &gloov1.Secret{
-						Metadata: &core.Metadata{
-							Name:      "secret",
-							Namespace: "namespace",
-						},
-					}
-					err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
-					if errExpected {
-						Expect(err).To(HaveOccurred())
-					} else {
-						Expect(err).NotTo(HaveOccurred())
-					}
-
-				},
-				Entry("If enableValidationAgainstSnapshot is false, delete should error", false, true),
-				Entry("If enableValidationAgainstSnapshot is true, delete should succeed", true, false),
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+				// Regular validation
+				Entry("No snapshot comparison, allowWarnings=true, no errors or warnings, should succeed", false, true, ValidateAccept, true),
+				Entry("No snapshot comparison, allowWarnings=true, errors w/ no warnings, should fail", false, true, ValidateFail, false),
+				Entry("No snapshot comparison, allowWarnings=true, no errors w/ warnings, should succeed", false, true, ValidateWarn, true),
+				Entry("No snapshot comparison, allowWarnings=true, errors and warnings, should fail", false, true, ValidationErrorAndWarn, false),
+				Entry("No snapshot comparison, allowWarnings=false, no errors or warnings, should succeed", false, false, ValidateAccept, true),
+				Entry("No snapshot comparison, allowWarnings=false, errors w/ no warnings, should fail", false, false, ValidateFail, false),
+				Entry("No snapshot comparison, allowWarnings=false, no errors w/ warnings, should fail", false, false, ValidateWarn, false),
+				Entry("No snapshot comparison, allowWarnings=false, errors and warnings, should fail", false, false, ValidationErrorAndWarn, false),
+				// Snapshot comparison validation - cases where output is the same. These should all succeed
+				Entry("Snapshot comparison, allowWarnings=true, no errors or warnings, consistent, should succeed", true, true, ValidateAccept, true),
+				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, consistent, should succeed", true, true, ValidateFail, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, consistent, should succeed", true, true, ValidateWarn, true),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, consistent, should succeed", true, true, ValidationErrorAndWarn, true),
+				Entry("Snapshot comparison, allowWarnings=false, no errors or warnings, consistent, should succeed", true, false, ValidateAccept, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, consistent, should fail", true, false, ValidateFail, true),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, consistent, should fail", true, false, ValidateWarn, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, consistent, should succeed", true, true, ValidationErrorAndWarn, true),
+				// Snapshot comparison validation - cases where output changes - warnings are allowed
+				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, errors changed, should fail", true, true, ValidateFailChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings changed, should succeed", true, true, ValidateChangeWarning, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings and errors changed, should fail", true, true, ValidateChangeWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only errors changed, should fail", true, true, ValidateSameWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should pass", true, true, ValidateChangeWarningAndSameError, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, errors changed, should fail", true, false, ValidateFailChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings changed, should fail", true, false, ValidateChangeWarning, false),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings and errors changed, should fail", false, true, ValidateChangeWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, only errors changed, should fail", true, false, ValidateSameWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", true, false, ValidateChangeWarningAndSameError, false),
 			)
 
-			DescribeTable("handles secret deletion when there is a validation warning and allowWarnings is false and the error changes",
-				// For the unit tests we are not doing full validation, so we need to make sure that the error message changes
-				func(enableValidationAgainstSnapshot bool, errExpected bool) {
-					// We aren't doign full v
-					//gloovalidator := gloovalidation.NewValidator(gloovalidation.ValidatorConfig{})
-					//gloovalidator := ValidateChangeWarning
-
-					v.glooValidator = ValidateChangeWarning
-					v.allowWarnings = false
-					v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
-
-					snap := samples.SimpleGlooSnapshot(ns)
-					err := v.Sync(context.TODO(), snap)
-					Expect(err).NotTo(HaveOccurred())
-
-					secret := samples.SimpleSecret()
-					err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
-					if errExpected {
-						Expect(err).To(HaveOccurred())
-					} else {
-						Expect(err).NotTo(HaveOccurred())
-					}
-
-				},
-				Entry("If enableValidationAgainstSnapshot is false, delete should error", false, true),
-				Entry("If enableValidationAgainstSnapshot is true, delete should error", true, true),
-			)
 		})
 	})
 
@@ -388,7 +340,7 @@ var _ = Describe("Validator", func() {
 					rt := snap.RouteTables[0]
 					reports, err := v.ValidateModifiedGvk(context.TODO(), rt.GroupVersionKind(), rt, false)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Route Warning: InvalidDestinationWarning. Reason: you should try harder next time"))
+					Expect(err.Error()).To(ContainSubstring("Route Warning: InvalidDestinationWarning. Reason: " + warnString))
 					Expect(*(reports.ProxyReports)).To(HaveLen(1))
 				})
 			})
@@ -1201,51 +1153,6 @@ var _ = Describe("Validator", func() {
 	})
 })
 
-func ValidateAccept(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
-	var proxies []*gloov1.Proxy
-	if proxy != nil {
-		proxies = []*gloov1.Proxy{proxy}
-	} else {
-		proxies = samples.SimpleGlooSnapshot("gloo-system").Proxies
-	}
-
-	var validationReports []*gloovalidation.GlooValidationReport
-	for _, proxy := range proxies {
-		proxyReport := validationutils.MakeReport(proxy)
-		validationReports = append(validationReports, &gloovalidation.GlooValidationReport{
-			Proxy:       proxy,
-			ProxyReport: proxyReport,
-		})
-
-	}
-	return validationReports, nil
-}
-
-func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
-	var proxies []*gloov1.Proxy
-	if proxy != nil {
-		proxies = []*gloov1.Proxy{proxy}
-	} else {
-		proxies = samples.SimpleGlooSnapshot("gloo-system").Proxies
-	}
-
-	var validationReports []*gloovalidation.GlooValidationReport
-	for _, proxy := range proxies {
-		proxyReport := validationutils.MakeReport(proxy)
-		validationutils.AppendListenerError(proxyReport.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, "you should try harder next time")
-
-		validationReports = append(validationReports, &gloovalidation.GlooValidationReport{
-			Proxy:       proxy,
-			ProxyReport: proxyReport,
-		})
-	}
-	return validationReports, nil
-}
-
-func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
-	return ValidateWarnWithString(ctx, proxy, resource, shouldDelete, "")
-}
-
 func ValidateWarnWithString(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool, addToWarning string) ([]*gloovalidation.GlooValidationReport, error) {
 	var proxies []*gloov1.Proxy
 	if proxy != nil {
@@ -1267,9 +1174,87 @@ func ValidateWarnWithString(ctx context.Context, proxy *gloov1.Proxy, resource r
 	return validationReports, nil
 }
 
+// ValidationAddErrorsAndWarnings is a helper function to add errors and warnings to a proxy
+func ValidationAddErrorsAndWarnings(proxy *gloov1.Proxy, validationReports []*gloovalidation.GlooValidationReport, errMessages []string, warnMessages []string) ([]*gloovalidation.GlooValidationReport, error) {
+	var proxies []*gloov1.Proxy
+	if proxy != nil {
+		proxies = []*gloov1.Proxy{proxy}
+	} else {
+		proxies = samples.SimpleGlooSnapshot("gloo-system").Proxies
+	}
+
+	for _, proxy := range proxies {
+		proxyReport := validationutils.MakeReport(proxy)
+
+		for _, errMessage := range errMessages {
+			validationutils.AppendListenerError(proxyReport.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, errMessage)
+		}
+
+		for _, warnMessage := range warnMessages {
+			validationutils.AppendRouteWarning(proxyReport.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, warnMessage)
+		}
+
+		validationReports = append(validationReports, &gloovalidation.GlooValidationReport{
+			Proxy:       proxy,
+			ProxyReport: proxyReport,
+		})
+	}
+
+	return validationReports, nil
+}
+
+const (
+	warnString  = "this is a warning"
+	errString   = "this is an error"
+	warnStringF = "this is a warning %d"
+	errStringF  = "this is an error %d"
+)
+
+// Validation functions here. There return reports that are processed by the validator
+// In order to test the secret valdiation logic, there needs to be a way to change the error message and/or warning.
+// These validation functions have the word "Change" in their names and will return a unqiue error/warning message each time they are called.
+func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{errString}, []string{})
+}
+
+func ValidateAccept(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{}, []string{})
+}
+
+func ValidateWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{}, []string{warnString})
+}
+
+// Integers appended to errors/warnings to create different error/warning messages for testing secret deletion
+var validateChangeErrCnt = 0
 var validateChangeWarningCnt = 0
+
+func ValidateFailChangeError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	validateChangeErrCnt++
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{fmt.Sprintf(errStringF, validateChangeErrCnt)}, []string{})
+}
 
 func ValidateChangeWarning(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	validateChangeWarningCnt++
-	return ValidateWarnWithString(ctx, proxy, resource, shouldDelete, "-"+fmt.Sprintf("%d", validateChangeWarningCnt))
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{}, []string{fmt.Sprintf(warnStringF, validateChangeWarningCnt)})
+}
+
+func ValidationErrorAndWarn(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{errString}, []string{warnString})
+}
+
+func ValidateChangeWarningAndChangeError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	validateChangeWarningCnt++
+	validateChangeErrCnt++
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{fmt.Sprintf(errStringF, validateChangeErrCnt)}, []string{fmt.Sprintf(warnStringF, validateChangeWarningCnt)})
+}
+
+func ValidateChangeWarningAndSameError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	validateChangeWarningCnt++
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{errString}, []string{fmt.Sprintf(warnStringF, validateChangeWarningCnt)})
+}
+
+func ValidateSameWarningAndChangeError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	validateChangeErrCnt++
+	return ValidationAddErrorsAndWarnings(proxy, nil, []string{fmt.Sprintf(errStringF, validateChangeErrCnt)}, []string{warnString})
 }
