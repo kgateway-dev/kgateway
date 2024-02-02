@@ -727,7 +727,7 @@ message GlooOptions {
     google.protobuf.BoolValue transformation_escape_characters = 17;
 
     message IstioOptions {
-        // Set to false externto disable adding X-Forwarded-Host header in Istio integration
+        // Set to false to disable adding X-Forwarded-Host header in Istio integration
         // Defaults to true
         google.protobuf.BoolValue append_x_forwarded_host = 1;
     }
