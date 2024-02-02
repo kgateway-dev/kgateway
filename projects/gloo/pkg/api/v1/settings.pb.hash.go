@@ -1069,6 +1069,26 @@ func (m *GlooOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetIstioOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("IstioOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetIstioOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("IstioOptions")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -2603,6 +2623,42 @@ func (m *GlooOptions_InvalidConfigPolicy) Hash(hasher hash.Hash64) (uint64, erro
 
 	if _, err = hasher.Write([]byte(m.GetInvalidRouteResponseBody())); err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *GlooOptions_IstioOptions) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GlooOptions_IstioOptions")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetAppendXForwardedHost()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("AppendXForwardedHost")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAppendXForwardedHost(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("AppendXForwardedHost")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

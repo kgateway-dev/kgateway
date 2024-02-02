@@ -631,6 +631,12 @@ spec:
                       replaceInvalidRoutes:
                         type: boolean
                     type: object
+                  istioOptions:
+                    properties:
+                      appendXForwardedHost:
+                        nullable: true
+                        type: boolean
+                    type: object
                   logTransformationRequestResponseInfo:
                     nullable: true
                     type: boolean

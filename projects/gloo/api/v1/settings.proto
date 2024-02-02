@@ -725,6 +725,14 @@ message GlooOptions {
     // Set escapeCharacters for all TransformationTemplates on all vhosts and routes.
     // This setting can be overridden in individual TransformationTemplates
     google.protobuf.BoolValue transformation_escape_characters = 17;
+
+    message IstioOptions {
+        // Set to false to disable adding X-Forwarded-Host header in Istio integration
+        // Defaults to true
+        google.protobuf.BoolValue append_x_forwarded_host = 1;
+    }
+
+    IstioOptions istio_options = 18;
 }
 
 
