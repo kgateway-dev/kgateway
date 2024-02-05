@@ -220,10 +220,10 @@ var _ = Describe("Validator", func() {
 			// - allowWarnings bool - are warnings allowed
 			// - validator - Errors/Warnings/Success - what is returned from valiation.
 			// - errExpected bool - is an error expected
-			DescribeTable("handles secret validation scenarios", func(enableValidationAgainstSnapshot bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
+			DescribeTable("handles secret validation scenarios", func(disableValidationAgainstSnapshot bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
 				v.glooValidator = validator
 				v.allowWarnings = allowWarnings
-				v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
+				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
 
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
@@ -243,34 +243,34 @@ var _ = Describe("Validator", func() {
 				}
 			},
 				// Regular validation
-				Entry("No snapshot comparison, allowWarnings=true, no errors or warnings, should succeed", false, true, ValidateAccept, true),
-				Entry("No snapshot comparison, allowWarnings=true, errors w/ no warnings, should fail", false, true, ValidateFail, false),
-				Entry("No snapshot comparison, allowWarnings=true, no errors w/ warnings, should succeed", false, true, ValidateWarn, true),
-				Entry("No snapshot comparison, allowWarnings=true, errors and warnings, should fail", false, true, ValidationErrorAndWarn, false),
-				Entry("No snapshot comparison, allowWarnings=false, no errors or warnings, should succeed", false, false, ValidateAccept, true),
-				Entry("No snapshot comparison, allowWarnings=false, errors w/ no warnings, should fail", false, false, ValidateFail, false),
-				Entry("No snapshot comparison, allowWarnings=false, no errors w/ warnings, should fail", false, false, ValidateWarn, false),
-				Entry("No snapshot comparison, allowWarnings=false, errors and warnings, should fail", false, false, ValidationErrorAndWarn, false),
+				Entry("No snapshot comparison, allowWarnings=true, no errors or warnings, should succeed", true, true, ValidateAccept, true),
+				Entry("No snapshot comparison, allowWarnings=true, errors w/ no warnings, should fail", true, true, ValidateFail, false),
+				Entry("No snapshot comparison, allowWarnings=true, no errors w/ warnings, should succeed", true, true, ValidateWarn, true),
+				Entry("No snapshot comparison, allowWarnings=true, errors and warnings, should fail", true, true, ValidationErrorAndWarn, false),
+				Entry("No snapshot comparison, allowWarnings=false, no errors or warnings, should succeed", true, false, ValidateAccept, true),
+				Entry("No snapshot comparison, allowWarnings=false, errors w/ no warnings, should fail", true, false, ValidateFail, false),
+				Entry("No snapshot comparison, allowWarnings=false, no errors w/ warnings, should fail", true, false, ValidateWarn, false),
+				Entry("No snapshot comparison, allowWarnings=false, errors and warnings, should fail", true, false, ValidationErrorAndWarn, false),
 				// Snapshot comparison validation - cases where output is the same. These should all succeed
-				Entry("Snapshot comparison, allowWarnings=true, no errors or warnings, consistent, should succeed", true, true, ValidateAccept, true),
-				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, consistent, should succeed", true, true, ValidateFail, true),
-				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, consistent, should succeed", true, true, ValidateWarn, true),
-				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, consistent, should succeed", true, true, ValidationErrorAndWarn, true),
-				Entry("Snapshot comparison, allowWarnings=false, no errors or warnings, consistent, should succeed", true, false, ValidateAccept, true),
-				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, consistent, should fail", true, false, ValidateFail, true),
-				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, consistent, should fail", true, false, ValidateWarn, true),
-				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, consistent, should succeed", true, true, ValidationErrorAndWarn, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors or warnings, consistent, should succeed", false, true, ValidateAccept, true),
+				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, consistent, should succeed", false, true, ValidateFail, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, consistent, should succeed", false, true, ValidateWarn, true),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, consistent, should succeed", false, true, ValidationErrorAndWarn, true),
+				Entry("Snapshot comparison, allowWarnings=false, no errors or warnings, consistent, should succeed", false, false, ValidateAccept, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, consistent, should fail", false, false, ValidateFail, true),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, consistent, should fail", false, false, ValidateWarn, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, consistent, should succeed", false, true, ValidationErrorAndWarn, true),
 				// Snapshot comparison validation - cases where output changes - warnings are allowed
-				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, errors changed, should fail", true, true, ValidateFailChangeError, false),
-				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings changed, should succeed", true, true, ValidateChangeWarning, true),
-				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings and errors changed, should fail", true, true, ValidateChangeWarningAndChangeError, false),
-				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only errors changed, should fail", true, true, ValidateSameWarningAndChangeError, false),
-				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should pass", true, true, ValidateChangeWarningAndSameError, true),
-				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, errors changed, should fail", true, false, ValidateFailChangeError, false),
-				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings changed, should fail", true, false, ValidateChangeWarning, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, errors changed, should fail", false, true, ValidateFailChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings changed, should succeed", false, true, ValidateChangeWarning, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings and errors changed, should fail", false, true, ValidateChangeWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only errors changed, should fail", false, true, ValidateSameWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should pass", false, true, ValidateChangeWarningAndSameError, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, errors changed, should fail", false, false, ValidateFailChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings changed, should fail", false, false, ValidateChangeWarning, false),
 				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings and errors changed, should fail", false, true, ValidateChangeWarningAndChangeError, false),
-				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, only errors changed, should fail", true, false, ValidateSameWarningAndChangeError, false),
-				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", true, false, ValidateChangeWarningAndSameError, false),
+				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, only errors changed, should fail", false, false, ValidateSameWarningAndChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, ValidateChangeWarningAndSameError, false),
 			)
 
 		})
@@ -595,9 +595,9 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
 			})
 
-			DescribeTable("validation with warnings", func(allowWarnings, enableValidationAgainstSnapshot bool, expectedMetric int) {
+			DescribeTable("validation with warnings", func(allowWarnings, disableValidationAgainstSnapshot bool, expectedMetric int) {
 				v.allowWarnings = allowWarnings
-				v.enableValidationAgainstSnapshot = enableValidationAgainstSnapshot
+				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
 				v.glooValidator = ValidateWarn
 
 				snap := samples.SimpleGlooSnapshot(ns)
@@ -618,10 +618,10 @@ var _ = Describe("Validator", func() {
 
 			},
 				// enableValidationAgainstSnapshot should not affect anything other than secrets
-				Entry("allowWarnings=false, enableValidationAgainstSnapshot=false", false, false, 0),
-				Entry("allowWarnings=true, enableValidationAgainstSnapshot=false", true, false, 1),
-				Entry("allowWarnings=false, enableValidationAgainstSnapshot=true", false, true, 0),
-				Entry("allowWarnings=true, enableValidationAgainstSnapshot=true", true, true, 1),
+				Entry("allowWarnings=false, disableValidationAgainstSnapshot=true", false, true, 0),
+				Entry("allowWarnings=true, disableValidationAgainstSnapshot=true", true, true, 1),
+				Entry("allowWarnings=false, disableValidationAgainstSnapshot=false", false, false, 0),
+				Entry("allowWarnings=true, disableValidationAgainstSnapshot=false", true, false, 1),
 			)
 
 			It("does not affect metrics when dryRun is true", func() {

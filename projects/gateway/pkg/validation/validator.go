@@ -114,10 +114,10 @@ type validator struct {
 	latestSnapshotErr error
 	translator        translator.Translator
 	// This function replaces a grpc client from when gloo and gateway pods were separate.
-	glooValidator                   GlooValidatorFunc
-	extensionValidator              syncerValidation.Validator
-	allowWarnings                   bool
-	enableValidationAgainstSnapshot bool
+	glooValidator                    GlooValidatorFunc
+	extensionValidator               syncerValidation.Validator
+	allowWarnings                    bool
+	disableValidationAgainstSnapshot bool
 }
 
 type validationOptions struct {
@@ -135,20 +135,20 @@ type validationOptions struct {
 }
 
 type ValidatorConfig struct {
-	Translator                      translator.Translator
-	GlooValidator                   GlooValidatorFunc
-	ExtensionValidator              syncerValidation.Validator
-	AllowWarnings                   bool
-	EnableValidationAgainstSnapshot bool
+	Translator                       translator.Translator
+	GlooValidator                    GlooValidatorFunc
+	ExtensionValidator               syncerValidation.Validator
+	AllowWarnings                    bool
+	DisableValidationAgainstSnapshot bool
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
-		glooValidator:                   cfg.GlooValidator,
-		extensionValidator:              cfg.ExtensionValidator,
-		translator:                      cfg.Translator,
-		allowWarnings:                   cfg.AllowWarnings,
-		enableValidationAgainstSnapshot: cfg.EnableValidationAgainstSnapshot,
+		glooValidator:                    cfg.GlooValidator,
+		extensionValidator:               cfg.ExtensionValidator,
+		translator:                       cfg.Translator,
+		allowWarnings:                    cfg.AllowWarnings,
+		disableValidationAgainstSnapshot: cfg.DisableValidationAgainstSnapshot,
 	}
 }
 
@@ -522,7 +522,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 // and the results of that valdidation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
 func (v *validator) shouldRetryValidation(ctx context.Context, opts *validationOptions) bool {
-	if !v.enableValidationAgainstSnapshot {
+	if v.disableValidationAgainstSnapshot {
 		return false
 	}
 
@@ -548,11 +548,8 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 		zap.String("resource", opts.Resource.GetMetadata().String()),
 	)
 
-	if findNonComparableErrors(errs) {
-		contextutils.LoggerFrom(ctx).Debugw(
-			"Non-comparable errors found, not revalidating against original snapshot",
-			zap.String("resource", opts.Resource.GetMetadata().String()),
-		)
+	if findBreakingErrors(errs) {
+		contextutils.LoggerFrom(ctx).Debug("Breaking errors found, not revalidating against original snapshot")
 		return false
 	}
 	// Set the 'validateUnmodified' flag to true to ensure that the resource is not deleted in glooValidation
@@ -627,7 +624,7 @@ func compareReports(proxyReports1, proxyReports2 ProxyReports, allowWarnings boo
 		return false
 	}
 
-	// Loop over the proxy reports and compare their errors. Ignore warnigns
+	// Loop over the proxy reports and compare their errors. Ignore warnings
 	for i := range proxyReports1 {
 		pr1 := proxyReports1[i]
 		pr2 := proxyReports2[i]
@@ -679,10 +676,10 @@ func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
 	return sameProxies
 }
 
-// findNonComparableErrors looks for errors that are not due to the snapshot itself,
+// findBreakingErrors looks for errors that are not due to the snapshot itself,
 // for example if Sync has not yet been run. These errors make comparision of snapshot validation output
 // invalid for the purposes of determinning if an alteration created a new error or warning.
-func findNonComparableErrors(errs error) bool {
+func findBreakingErrors(errs error) bool {
 	var lengthError GlooValidationResponseLengthError
 	var syncError SyncNotYetRunError
 
