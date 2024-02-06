@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,8 +20,11 @@ import (
 	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	gloovalidation "github.com/solo-io/gloo/projects/gloo/pkg/validation"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/solo-io/gloo/test/samples"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -273,7 +277,60 @@ var _ = Describe("Validator", func() {
 				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, ValidateChangeWarningAndSameError, false),
 			)
 
+			DescribeTable("Breaking errors don't trigger revalidation", func(validator validationFunc, expectedErrString string) {
+				//FIt("Fails if it gets a hasn't Sync'ed", func() {
+				var (
+					buf    *bytes.Buffer
+					bws    *zapcore.BufferedWriteSyncer
+					logger *zap.SugaredLogger
+				)
+
+				// The error we are interested in is not returned, but there is a relevant log message,
+				// so capture/check that after the validation is run
+				buf = &bytes.Buffer{}
+				bws = &zapcore.BufferedWriteSyncer{WS: zapcore.AddSync(buf)}
+				encoderCfg := zapcore.EncoderConfig{
+					MessageKey:     "msg",
+					LevelKey:       "level",
+					NameKey:        "logger",
+					EncodeLevel:    zapcore.LowercaseLevelEncoder,
+					EncodeTime:     zapcore.ISO8601TimeEncoder,
+					EncodeDuration: zapcore.StringDurationEncoder,
+				}
+				zapCore := zapcore.NewCore(zapcore.NewJSONEncoder(encoderCfg), bws, zap.DebugLevel)
+				logger = zap.New(zapCore).Sugar()
+				contextutils.SetFallbackLogger(logger)
+
+				v.glooValidator = validator
+				v.allowWarnings = true
+				v.disableValidationAgainstSnapshot = false
+
+				snap := samples.SimpleGlooSnapshot(ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
+				Expect(err).To(HaveOccurred())
+				// Check the expected error was returned, but that is not enough to ensure the validation was not re-run
+				Expect(err.Error()).To(ContainSubstring(expectedErrString))
+
+				// Check the logs that the breaking error was recognized
+				logerr := logger.Sync()
+				Expect(logerr).NotTo(HaveOccurred())
+
+				Expect(buf.String()).To(ContainSubstring(BreakingErrorLogMsg))
+			},
+				Entry("Sync not run error", ValidateNoGlooSync, gloovalidation.SyncNotCalledError.Error()),
+				Entry("Sync not run error", ValidateResponseLengthError, GlooValidationResponseLengthError{}.Error()),
+			)
 		})
+
 	})
 
 	Context("validating a route table", func() {
@@ -1257,4 +1314,12 @@ func ValidateChangeWarningAndSameError(ctx context.Context, proxy *gloov1.Proxy,
 func ValidateSameWarningAndChangeError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	validateChangeErrCnt++
 	return ValidationAddErrorsAndWarnings(proxy, nil, []string{fmt.Sprintf(errStringF, validateChangeErrCnt)}, []string{warnString})
+}
+
+func ValidateNoGlooSync(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return nil, gloovalidation.SyncNotCalledError
+}
+
+func ValidateResponseLengthError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+	return nil, GlooValidationResponseLengthError{}
 }

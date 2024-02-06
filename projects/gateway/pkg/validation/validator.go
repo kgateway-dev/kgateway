@@ -85,6 +85,8 @@ var (
 
 	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config",
 		"A boolean that indicates whether the Gloo configuration is valid. However, its behavior changes depending upon the validation configuration. Configuration status metrics provide a better solution: https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/")
+
+	BreakingErrorLogMsg = "Breaking errors found, not revalidating against original snapshot"
 )
 
 const (
@@ -549,7 +551,7 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 	)
 
 	if findBreakingErrors(errs) {
-		contextutils.LoggerFrom(ctx).Debug("Breaking errors found, not revalidating against original snapshot")
+		contextutils.LoggerFrom(ctx).Debug(BreakingErrorLogMsg)
 		return false
 	}
 	// Set the 'validateUnmodified' flag to true to ensure that the resource is not deleted in glooValidation
@@ -683,12 +685,12 @@ func findBreakingErrors(errs error) bool {
 	var lengthError GlooValidationResponseLengthError
 	var syncError SyncNotYetRunError
 
-	nonComparableErrorTypes := []error{
+	breakingErrorTypes := []error{
 		&lengthError,
 		&syncError,
 	}
 
-	for _, err := range nonComparableErrorTypes {
+	for _, err := range breakingErrorTypes {
 		if errors.As(errs, err) {
 			return true
 		}
