@@ -309,15 +309,16 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			multierror.Append(warnings, warning)
 		}
 
-		// a nil proxy may have been returned if 0 listeners were created
+		// A nil proxy may have been returned if 0 listeners were created
 		// continue here even if collecting all errors and warnings, because the proxy is nil and there is nothing to validate
 		if proxy == nil {
 			continue
 		}
 		proxies = append(proxies, proxy)
 
-		// validate the proxy with the Gloo validator
-		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot a nil resource is passed in so no modifications are made
+		// Validate the proxy with the Gloo validator
+		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot
+		// a nil resource is passed in so no modifications are made
 		resourceToModify := opts.Resource
 		if opts.validateUnmodified {
 			resourceToModify = nil
@@ -334,9 +335,10 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 
 		if len(glooReports) != 1 {
-			// This was likely caused by a development error.
-			// If we encounter this error we can continue even if collecting all errors, as we know
-			// the revalidation will fail due to the presence of this error
+			// This was likely caused by a development error. When passing a proxy to the glooValidator,
+			// it should return a single repor: https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/gloo/pkg/validation/validator.go#L55
+			// If this error is encountered, stop collecting all errors,
+			// as revalidation will fail due to the presence of this error
 			err = GlooValidationResponseLengthError{reportLength: len(glooReports)}
 			errs = multierror.Append(errs, err)
 			continue

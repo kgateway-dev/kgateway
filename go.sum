@@ -1962,6 +1962,8 @@ github.com/solo-io/solo-kit v0.34.2-0.20240205144847-b4fde4df83d3 h1:dWNIx6jGgh+
 github.com/solo-io/solo-kit v0.34.2-0.20240205144847-b4fde4df83d3/go.mod h1:HkrxDRo+uR0FZUJi+SGAUkbrUNWC6V0FD7GGXbtC0UU=
 github.com/solo-io/solo-kit v0.34.2-0.20240205191639-70ca0a17e0d6 h1:tOC1tFozBAYNuU8ZWifr2W5iC3F2zTTsZhwG/NCTwzI=
 github.com/solo-io/solo-kit v0.34.2-0.20240205191639-70ca0a17e0d6/go.mod h1:HkrxDRo+uR0FZUJi+SGAUkbrUNWC6V0FD7GGXbtC0UU=
+github.com/solo-io/solo-kit v0.34.2-0.20240206193208-2d67ff10afb1 h1:g+4VBnMEdsbKnSBASE0PustQ/U822m9YuF7O7uJx0Fk=
+github.com/solo-io/solo-kit v0.34.2-0.20240206193208-2d67ff10afb1/go.mod h1:HkrxDRo+uR0FZUJi+SGAUkbrUNWC6V0FD7GGXbtC0UU=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
