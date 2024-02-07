@@ -246,7 +246,7 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 // attempting to delete a secret. This flag results in warnings and errors being collected separately, and overrides
 // the usual behavior of continuing to the next proxy after the first error.
 //
-// This means there are three separate behaviors for validation:
+// This means there are four separate behaviors for validation:
 // 1. allow_warnings=true and opts.collectAllErrorsAndWarnings=false
 //     Warnings are ignored and after the first error for a proxy, the next proxy is translated
 // 2. allow_warnings=true and opts.collectAllErrorsAndWarnings=true
@@ -257,9 +257,9 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 //     Warnings are treated as errors and after the first error for a proxy, the next proxy is translated
 //
 // There are two main ways errors and warnings are collected to be processed:
-// 1. The Gloo validation reports are collected and processed by the reporter package. By passign the 'warningHandling' parameter
+// 1. The Gloo validation reports are collected and processed by the reporter package. By passing the 'warningHandling' parameter
 //    to the ValidateWithWarnings method, it can sort the errors and warnings how we want them to be returned. It will treat
-//    errors as warnings if the value is set to 'reporter.Strict', it will ignore errors if the value is set to 'reporter.IgnoreWarnings',
+//    warnings as errors if the value is set to 'reporter.Strict', it will ignore warnings if the value is set to 'reporter.IgnoreWarnings',
 //    and it will return errors and warnings separately the value is set to 'reporter.SeparateWarnings'.
 // 2. Manually looping over proxyreport errors and warnings. In these cases, the `opts.collectAllErrorsAndWarnings` and `v.allowWarnings`
 //    fields need to be checked to determine the approrpiate behavior.
@@ -544,7 +544,7 @@ func (v *validator) passedValidation(errs error, warnings error) bool {
 // compareValidationWithoutModification is used to compare the output of validation against validation of the orginal snapshot
 // this is used in special cases. specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
 // and instead of relying on the presence of errors and warnings to determine whether to accept the modification, the output of
-// validation of the request (proxies, proexReports, errors, and warnings) is compared yo the output of the validation of the original snapshot.
+// validation of the request (proxies, proexReports, errors, and warnings) is compared to the output of the validation of the original snapshot.
 // If outputs are the same, it is assumed that the modification did not degrade the system and  is accepted
 func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error, warnings error) bool {
 	contextutils.LoggerFrom(ctx).Debugw(
@@ -848,7 +848,7 @@ func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooVa
 					for _, warning := range proxyWarnings {
 						warnings = multierror.Append(warnings, errors.New(warning))
 					}
-				} else if warningHandling != reporter.IgnoreWarnings {
+				} else if warningHandling == reporter.Strict {
 					for _, warning := range proxyWarnings {
 						errs = multierror.Append(errs, errors.New(warning))
 					}
