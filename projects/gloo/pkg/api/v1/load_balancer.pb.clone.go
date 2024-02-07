@@ -51,6 +51,12 @@ func (m *LoadBalancerConfig) Clone() proto.Message {
 		target.UpdateMergeWindow = proto.Clone(m.GetUpdateMergeWindow()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetUseHostnameForHashing()).(clone.Cloner); ok {
+		target.UseHostnameForHashing = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.UseHostnameForHashing = proto.Clone(m.GetUseHostnameForHashing()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.Type.(type) {
 
 	case *LoadBalancerConfig_RoundRobin_:
