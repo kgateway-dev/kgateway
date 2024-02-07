@@ -51,6 +51,7 @@ func (r *Reports) GetProxies() []*gloov1.Proxy {
 type ProxyReports []*validation.ProxyReport
 type UpstreamReports []*validation.ResourceReport
 
+// This error is a struct so it can be checked with errors.As
 type GlooValidationResponseLengthError struct {
 	reportLength int
 }
@@ -59,6 +60,7 @@ func (e GlooValidationResponseLengthError) Error() string {
 	return fmt.Sprintf("Expected Gloo validation response to contain 1 report, but contained %d", e.reportLength)
 }
 
+// This error is a struct so it can be checked with errors.As
 type SyncNotYetRunError struct {
 	err error
 }
@@ -272,14 +274,10 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 
 // Extra notes to document - when validating reports with the reporter package errors and warnings are sorted how we want them to be returned
 // other sources of warnings/errors need to be handled separately
-func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) ([]*gloov1.Proxy, ProxyReports, error, error) {
+func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) (proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error, warnings error) {
 	var (
-		errs            error
 		err             error
 		warning         error
-		warnings        error
-		proxyReports    ProxyReports
-		proxies         []*gloov1.Proxy
 		warningHandling reporter.WarningHandling
 	)
 
