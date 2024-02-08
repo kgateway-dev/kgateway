@@ -288,9 +288,12 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		warningHandling = reporter.IgnoreWarnings
 	}
 
-	gatewaysByProxy := utils.GatewaysByProxyName(snapshot.Gateways)
+	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
+
 	// translate all the proxies
-	for proxyName, gatewayList := range gatewaysByProxy {
+	for _, gatewayAndProxy := range gatewaysByProxy {
+		proxyName := gatewayAndProxy.Name
+		gatewayList := gatewayAndProxy.Gateways
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
 		err, warning = reports.ValidateWithWarnings(warningHandling)
 
@@ -349,6 +352,10 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		// Get the errors from the proxyReport
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierror.Append(errs, proxyFailedGlooValidation(err, proxy))
+
+			if !opts.collectAllErrorsAndWarnings {
+				continue
+			}
 		}
 
 		// Get the warnings from the proxyReport
@@ -360,6 +367,9 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			} else if !v.allowWarnings {
 				for _, warning := range proxyWarnings {
 					errs = multierror.Append(errs, errors.New(warning))
+				}
+				if !opts.collectAllErrorsAndWarnings {
+					continue
 				}
 			}
 		}
@@ -489,7 +499,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	if !v.passedValidation(errs, warnings) && !overrideErrors {
 
 		// If we have warnings and they are not allowed, they are errors.
-		if warnings != nil {
+		if warnings != nil && !v.allowWarnings {
 			errs = multierror.Append(errs, warnings)
 		}
 
@@ -520,7 +530,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-// shouldRetryValidationOnWarnings contains the logic to determine if validation should be retried against the original snapshot
+// shouldRetryValidation contains the logic to determine if validation should be retried against the original snapshot
 // and the results of that valdidation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
 func (v *validator) shouldRetryValidation(ctx context.Context, opts *validationOptions) bool {
@@ -575,26 +585,24 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 	sameProxies := compareProxies(proxiesNoMod, proxies)
 	sameReports := compareReports(proxyReportsNoMod, proxyReports, v.allowWarnings)
 
-	sameValidationOutput := false
 	if sameProxies && sameReports && sameWarnings && sameErrors {
-		sameValidationOutput = true
 		contextutils.LoggerFrom(ctx).Debugw(
-			"Validation against original snapshot failed, accepting modification",
-			zap.Bool("sameProxies", sameProxies),
-			zap.Bool("sameReports", sameReports),
-			zap.Bool("sameErrors", sameErrors),
-			zap.Bool("sameWarnings", sameWarnings),
+			"Validation against original snapshot succeded",
 			zap.String("resource", opts.Resource.GetMetadata().String()),
 		)
-	} else {
-		contextutils.LoggerFrom(ctx).Debugw(
-			"Validation against original snapshot succeded, accepting modification",
-			zap.String("resource", opts.Resource.GetMetadata().String()),
-		)
-
+		return true
 	}
 
-	return sameValidationOutput
+	contextutils.LoggerFrom(ctx).Debugw(
+		"Validation against original snapshot failed",
+		zap.Bool("sameProxies", sameProxies),
+		zap.Bool("sameReports", sameReports),
+		zap.Bool("sameErrors", sameErrors),
+		zap.Bool("sameWarnings", sameWarnings),
+		zap.String("resource", opts.Resource.GetMetadata().String()),
+	)
+
+	return false
 }
 
 // compareWarnings compares two lists of errors and returns true if they are the same
@@ -622,6 +630,7 @@ func compareReports(proxyReports1, proxyReports2 ProxyReports, allowWarnings boo
 	}
 
 	// Warnings are allowed, so the proxy reports must be compared manually
+	// DO_NOT_SUBMIT: double check that reports are created regardless of warnings and errors being present
 	if len(proxyReports1) != len(proxyReports2) {
 		return false
 	}
@@ -817,8 +826,8 @@ func (v *validator) validateResource(opts *validationOptions) (*Reports, error) 
 }
 
 // getErrorsFromGlooValidation returns errors and warnings from the Gloo validation reports. It uses the warningHandling field to determine
-// how to handle warnings. This function is consistent with our general warning handling approach:
-// * fill in &
+// how to handle warnings. This function uses the reporter package to extract errors and warnings from the reports and manually loops over
+// the proxyReports' warnings and errors, applying the SeparateWarnings and IgnoreWarnings logic.
 func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooValidationReport, warningHandling reporter.WarningHandling) (error, error) {
 	var (
 		errs     error
