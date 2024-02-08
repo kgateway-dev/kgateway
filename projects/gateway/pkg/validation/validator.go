@@ -307,7 +307,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 		if warning != nil { // The reporter will only return warnings if collectAllErrorsAndWarnings is set to true
 			warning = errors.Wrapf(warning, couldNotRenderProxy)
-			multierror.Append(warnings, warning)
+			warnings = multierror.Append(warnings, warning)
 		}
 
 		// A nil proxy may have been returned if 0 listeners were created

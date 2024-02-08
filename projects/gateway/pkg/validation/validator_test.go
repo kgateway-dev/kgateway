@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -28,6 +29,8 @@ import (
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	skmocks "github.com/solo-io/solo-kit/test/mocks/v1"
 	"go.opencensus.io/stats/view"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syamlutil "sigs.k8s.io/yaml"
@@ -228,7 +231,6 @@ var _ = Describe("Validator", func() {
 				v.glooValidator = validator
 				v.allowWarnings = allowWarnings
 				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
-
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
@@ -275,6 +277,65 @@ var _ = Describe("Validator", func() {
 				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings and errors changed, should fail", false, true, ValidateChangeWarningAndChangeError, false),
 				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, only errors changed, should fail", false, false, ValidateSameWarningAndChangeError, false),
 				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, ValidateChangeWarningAndSameError, false),
+			)
+
+			DescribeTable("handles gloo translation scenarios", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+				v.glooValidator = ValidateAccept
+				v.allowWarnings = allowWarnings
+				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+
+				snap := samples.SimpleGlooSnapshot(ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Update the translator after sync:
+				v.translator = &MockTranslator{
+					Translator:      t,
+					ReportGenerator: reportGenerator,
+				}
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
+				if expectSuccess {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+				// Regular validation
+				Entry("No snapshot comparison, allowWarnings=true, no errors or warnings, should succeed", true, true, generateNone, true),
+				Entry("No snapshot comparison, allowWarnings=true, errors w/ no warnings, should fail", true, true, generateError, false),
+				Entry("No snapshot comparison, allowWarnings=true, no errors w/ warnings, should succeed", true, true, generateWarn, true),
+				Entry("No snapshot comparison, allowWarnings=true, errors and warnings, should fail", true, true, generateErrorAndWarn, false),
+				Entry("No snapshot comparison, allowWarnings=false, no errors or warnings, should succeed", true, false, generateNone, true),
+				Entry("No snapshot comparison, allowWarnings=false, errors w/ no warnings, should fail", true, false, generateError, false),
+				Entry("No snapshot comparison, allowWarnings=false, no errors w/ warnings, should fail", true, false, generateWarn, false),
+				Entry("No snapshot comparison, allowWarnings=false, errors and warnings, should fail", true, false, generateErrorAndWarn, false),
+				// Snapshot comparison validation - cases where output is the same. These should all succeed
+				Entry("Snapshot comparison, allowWarnings=true, no errors or warnings, consistent, should succeed", false, true, generateNone, true),
+				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, consistent, should succeed", false, true, generateError, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, consistent, should succeed", false, true, generateWarn, true),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, consistent, should succeed", false, true, generateErrorAndWarn, true),
+				Entry("Snapshot comparison, allowWarnings=false, no errors or warnings, consistent, should succeed", false, false, generateNone, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, consistent, should fail", false, false, generateError, true),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, consistent, should fail", false, false, generateWarn, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, consistent, should succeed", false, true, generateErrorAndWarn, true),
+				// Snapshot comparison validation - cases where output changes - warnings are allowed
+				Entry("Snapshot comparison, allowWarnings=true, errors w/ no warnings, errors changed, should fail", false, true, generateChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings changed, should succeed", false, true, generateChangeWarn, true),
+				Entry("Snapshot comparison, allowWarnings=true, no errors w/ warnings, warnings and errors changed, should fail", false, true, generateChangeWarnChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only errors changed, should fail", false, true, generateSameWarnChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should pass", false, true, generateChangeWarnSameError, true),
+				Entry("Snapshot comparison, allowWarnings=false, errors w/ no warnings, errors changed, should fail", false, false, generateChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings changed, should fail", false, false, generateChangeWarn, false),
+				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings and errors changed, should fail", false, true, generateChangeWarnChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, only errors changed, should fail", false, false, generateSameWarnChangeError, false),
+				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, generateChangeWarnSameError, false),
 			)
 
 			DescribeTable("Breaking errors don't trigger revalidation", func(validator validationFunc, expectedErrString string) {
@@ -327,7 +388,7 @@ var _ = Describe("Validator", func() {
 				Expect(buf.String()).To(ContainSubstring(BreakingErrorLogMsg))
 			},
 				Entry("Sync not run error", ValidateNoGlooSync, gloovalidation.SyncNotCalledError.Error()),
-				Entry("Sync not run error", ValidateResponseLengthError, GlooValidationResponseLengthError{}.Error()),
+				Entry("Validation Length Response Error", ValidateResponseLengthError, GlooValidationResponseLengthError{}.Error()),
 			)
 		})
 
@@ -1322,4 +1383,89 @@ func ValidateNoGlooSync(ctx context.Context, proxy *gloov1.Proxy, resource resou
 
 func ValidateResponseLengthError(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	return nil, GlooValidationResponseLengthError{}
+}
+
+// type Translator interface {
+// 	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
+// }
+
+type MockTranslator struct {
+	Translator      translator.Translator // Would call it `T`, but that would be confusing
+	ReportGenerator func() reporter.ResourceReports
+}
+
+func (m *MockTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+	proxy, _ := m.Translator.Translate(ctx, proxyName, snap, filteredGateways)
+	return proxy, m.ReportGenerator()
+}
+
+func generateTranslationReports(rep reporter.Report) reporter.ResourceReports {
+	res := &skmocks.MockResource{
+		Metadata: &core.Metadata{
+			Name:      fmt.Sprintf("r0"),
+			Namespace: "ns",
+		},
+	}
+
+	return reporter.ResourceReports{
+		res: rep,
+	}
+}
+
+func generateErrorAndWarn() reporter.ResourceReports {
+	return generateTranslationReports(reporter.Report{
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{"r0warn1"},
+	})
+}
+
+func generateError() reporter.ResourceReports {
+	return generateTranslationReports(reporter.Report{
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}},
+	})
+}
+
+func generateWarn() reporter.ResourceReports {
+	return generateTranslationReports(reporter.Report{
+		Warnings: []string{"r0warn1"},
+	})
+}
+
+func generateNone() reporter.ResourceReports {
+	return generateTranslationReports(reporter.Report{})
+}
+
+func generateChangeError() reporter.ResourceReports {
+	validateChangeErrCnt++
+	return generateTranslationReports(reporter.Report{
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err%d", validateChangeErrCnt))}},
+	})
+}
+
+func generateChangeWarn() reporter.ResourceReports {
+	validateChangeWarningCnt++
+	return generateTranslationReports(reporter.Report{
+		Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
+	})
+}
+
+func generateChangeWarnSameError() reporter.ResourceReports {
+	validateChangeWarningCnt++
+	return generateTranslationReports(reporter.Report{
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
+	})
+}
+
+func generateSameWarnChangeError() reporter.ResourceReports {
+	validateChangeErrCnt++
+	return generateTranslationReports(reporter.Report{
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err%d", validateChangeErrCnt))}}, Warnings: []string{"r0warn1"},
+	})
+}
+
+func generateChangeWarnChangeError() reporter.ResourceReports {
+	validateChangeErrCnt++
+	validateChangeWarningCnt++
+	return generateTranslationReports(reporter.Report{
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err%d", validateChangeErrCnt))}}, Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
+	})
 }
