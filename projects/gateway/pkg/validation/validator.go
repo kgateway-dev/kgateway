@@ -281,6 +281,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		warningHandling reporter.WarningHandling
 	)
 
+	// Determine the warningHandling used by the reporter package
 	warningHandling = reporter.Strict
 	if opts.collectAllErrorsAndWarnings {
 		warningHandling = reporter.SeparateWarnings
@@ -291,23 +292,17 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
 
 	// translate all the proxies
-	for _, gatewayAndProxy := range gatewaysByProxy {
-		proxyName := gatewayAndProxy.Name
-		gatewayList := gatewayAndProxy.Gateways
+	for _, gatewayAndProxyName := range gatewaysByProxy {
+		proxyName := gatewayAndProxyName.Name
+		gatewayList := gatewayAndProxyName.Gateways
+
+		// Validation Section 1:
+		// Translate the proxy and process the errors and warnings
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
-		err, warning = reports.ValidateWithWarnings(warningHandling)
 
-		if err != nil {
-			err = errors.Wrapf(err, couldNotRenderProxy)
-			errs = multierror.Append(errs, err)
-
-			if !opts.collectAllErrorsAndWarnings {
-				continue
-			}
-		}
-		if warning != nil { // The reporter will only return warnings if collectAllErrorsAndWarnings is set to true
-			warning = errors.Wrapf(warning, couldNotRenderProxy)
-			warnings = multierror.Append(warnings, warning)
+		stopValidatingProxy := v.appendTranslationWarningsAndErrors(&errs, &warnings, reports, warningHandling, opts)
+		if stopValidatingProxy {
+			continue
 		}
 
 		// A nil proxy may have been returned if 0 listeners were created
@@ -317,9 +312,9 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 		proxies = append(proxies, proxy)
 
+		// Validation Section 2:
 		// Validate the proxy with the Gloo validator
-		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot
-		// a nil resource is passed in so no modifications are made
+		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot a nil resource is passed in so no modifications are made
 		resourceToModify := opts.Resource
 		if opts.validateUnmodified {
 			resourceToModify = nil
@@ -337,7 +332,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 
 		if len(glooReports) != 1 {
 			// This was likely caused by a development error. When passing a proxy to the glooValidator,
-			// it should return a single repor: https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/gloo/pkg/validation/validator.go#L55
+			// it should return a single report: https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/gloo/pkg/validation/validator.go#L55
 			// If this error is encountered, stop collecting all errors,
 			// as revalidation will fail due to the presence of this error
 			err = GlooValidationResponseLengthError{reportLength: len(glooReports)}
@@ -349,53 +344,17 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 
-		// Get the errors from the proxyReport
-		if err := validationutils.GetProxyError(proxyReport); err != nil {
-			errs = multierror.Append(errs, proxyFailedGlooValidation(err, proxy))
-
-			if !opts.collectAllErrorsAndWarnings {
-				continue
-			}
-		}
-
-		// Get the warnings from the proxyReport
-		if proxyWarnings := validationutils.GetProxyWarning(proxyReport); len(proxyWarnings) > 0 {
-			if opts.collectAllErrorsAndWarnings {
-				for _, warning := range proxyWarnings {
-					warnings = multierror.Append(warnings, errors.New(warning))
-				}
-			} else if !v.allowWarnings {
-				for _, warning := range proxyWarnings {
-					errs = multierror.Append(errs, errors.New(warning))
-				}
-				if !opts.collectAllErrorsAndWarnings {
-					continue
-				}
-			}
+		// Validation Section 2a:
+		// Get the errors and warngings from the proxyReport
+		stopValidatingProxy = v.appendProxyErrorsAndWarnings(&errs, &warnings, proxyReport, proxy, opts)
+		if stopValidatingProxy {
+			continue
 		}
 
 		// Get errors and warnings from the glooReports
-		err, warning = v.getErrorsFromGlooValidation(glooReports, warningHandling)
-		// v.getErrorsFromGlooValidation is passed a flag to tell it whether to treat warnings as errors, so don't need to
-		// check if these should be errors
-		if err != nil {
-			err = errors.Wrapf(err, failedResourceReports)
-			errs = multierror.Append(errs, err)
-			if !opts.collectAllErrorsAndWarnings {
-				continue
-			}
-		}
-		if warning != nil {
-			if opts.collectAllErrorsAndWarnings {
-				warning = errors.Wrapf(warning, failedResourceReports)
-				warnings = multierror.Append(warnings, warning)
-			} else if !v.allowWarnings {
-				warning = errors.Wrapf(warning, failedResourceReports)
-				errs = multierror.Append(errs, warning)
-			}
-		}
-
-	} // End of proxy vaildation loop
+		// The returned value indicates whether to stop processing this proxy, but this is the end of the loop
+		_ = v.appendGlooReportErrorsAndWarnings(&errs, &warnings, glooReports, opts, warningHandling)
+	} // End of proxy validation loop
 
 	// Extension validation. Currently only supports rate limit.
 	extensionReports := v.extensionValidator.Validate(ctx, snapshot)
@@ -421,6 +380,80 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	}
 
 	return proxies, proxyReports, errs, warnings
+}
+
+func (v *validator) appendTranslationWarningsAndErrors(errs *error, warnings *error, reports reporter.ResourceReports, warningHandling reporter.WarningHandling, opts *validationOptions) bool {
+	err, warning := reports.ValidateWithWarnings(warningHandling)
+
+	if err != nil {
+		err = errors.Wrapf(err, couldNotRenderProxy)
+		*errs = multierror.Append(*errs, err)
+
+		if !opts.collectAllErrorsAndWarnings {
+			return true
+		}
+	}
+	if warning != nil { // The reporter will only return warnings if collectAllErrorsAndWarnings is set to true
+		warning = errors.Wrapf(warning, couldNotRenderProxy)
+		*warnings = multierror.Append(*warnings, warning)
+	}
+
+	return false
+}
+
+// appendProxyErrorsAndWarnings appends the errors and warnings from the proxyReport the errors and warngings slices, passed in by pointer
+// It returns a boolean to indicate whether the caller should continue processing the next proxy
+func (v *validator) appendProxyErrorsAndWarnings(errs *error, warnings *error, proxyReport *validation.ProxyReport, proxy *gloov1.Proxy, opts *validationOptions) bool {
+	if err := validationutils.GetProxyError(proxyReport); err != nil {
+		*errs = multierror.Append(*errs, proxyFailedGlooValidation(err, proxy))
+
+		if !opts.collectAllErrorsAndWarnings {
+			return true
+		}
+	}
+	// Get the warnings from the proxyReport
+	if proxyWarnings := validationutils.GetProxyWarning(proxyReport); len(proxyWarnings) > 0 {
+		if opts.collectAllErrorsAndWarnings {
+			for _, warning := range proxyWarnings {
+				*warnings = multierror.Append(*warnings, errors.New(warning))
+			}
+		} else if !v.allowWarnings {
+			for _, warning := range proxyWarnings {
+				*errs = multierror.Append(*errs, errors.New(warning))
+			}
+			// In this block opts.collectAllErrorsAndWarnings is false so no need to check
+			return true
+		}
+	}
+
+	return false
+}
+
+// appendGlooReportsErrors and Warngings appends the errors and warnings from the glooReports to the errors and warnings slices, passed in by pointer
+// It returns a boolean to indicate whether the caller should continue processing the next proxy
+func (v *validator) appendGlooReportErrorsAndWarnings(errs *error, warnings *error, glooReports []*gloovalidation.GlooValidationReport, opts *validationOptions, warningHandling reporter.WarningHandling) bool {
+	// Get errors and warnings from the glooReports
+	err, warning := v.getErrorsFromGlooValidation(glooReports, warningHandling)
+	// v.getErrorsFromGlooValidation is passed a flag to tell it whether to treat warnings as errors, so don't need to
+	// check if these should be errors
+	if err != nil {
+		err = errors.Wrapf(err, failedResourceReports)
+		*errs = multierror.Append(*errs, err)
+		if !opts.collectAllErrorsAndWarnings {
+			return true
+		}
+	}
+	if warning != nil {
+		if opts.collectAllErrorsAndWarnings {
+			warning = errors.Wrapf(warning, failedResourceReports)
+			*warnings = multierror.Append(*warnings, warning)
+		} else if !v.allowWarnings {
+			warning = errors.Wrapf(warning, failedResourceReports)
+			*errs = multierror.Append(*errs, warning)
+		}
+	}
+
+	return true
 }
 
 func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) {
