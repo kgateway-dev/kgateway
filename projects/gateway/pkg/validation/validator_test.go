@@ -36,6 +36,8 @@ import (
 	k8syamlutil "sigs.k8s.io/yaml"
 )
 
+type validationFunc func(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error)
+
 var _ = Describe("Validator", func() {
 	var (
 		t  translator.Translator
@@ -220,14 +222,15 @@ var _ = Describe("Validator", func() {
 			})
 		})
 
-		type validationFunc func(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error)
 		Context("secret deletion", func() {
 			// Inputs:
 			// - enableValidationAgainstSnapshot bool - are we enabling the validation against the snapshot or just checking errors/warnings as usual
 			// - allowWarnings bool - are warnings allowed
 			// - validator - Errors/Warnings/Success - what is returned from valiation.
 			// - errExpected bool - is an error expected
-			DescribeTable("handles secret validation scenarios", func(disableValidationAgainstSnapshot bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
+			// the glooValidator returns two types of reports: ProxyReports and ResourceReports.
+			// Test that both are handled correctly. This test is focuses on the ProxyReports.
+			DescribeTable("handles secret validation scenarios for glooValidation output", func(disableValidationAgainstSnapshot bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
 				v.glooValidator = validator
 				v.allowWarnings = allowWarnings
 				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
@@ -279,34 +282,10 @@ var _ = Describe("Validator", func() {
 				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, ValidateChangeWarningAndSameError, false),
 			)
 
-			DescribeTable("handles gloo translation scenarios", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
-				v.glooValidator = ValidateAccept
-				v.allowWarnings = allowWarnings
-				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
-
-				snap := samples.SimpleGlooSnapshot(ns)
-				err := v.Sync(context.TODO(), snap)
-				Expect(err).NotTo(HaveOccurred())
-
-				// Update the translator after sync:
-				v.translator = &MockTranslator{
-					Translator:      t,
-					ReportGenerator: reportGenerator,
-				}
-
-				secret := &gloov1.Secret{
-					Metadata: &core.Metadata{
-						Name:      "secret",
-						Namespace: "namespace",
-					},
-				}
-				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
-				if expectSuccess {
-					Expect(err).NotTo(HaveOccurred())
-				} else {
-					Expect(err).To(HaveOccurred())
-				}
-			},
+			// reportValidationEntries is a table of inputs for the validation tests, that can be resued to test handling of the gloo Translator,
+			// the extension validator, and the glooValidator resourceReports,  as they all rely on resourceReports that can be generated the same way
+			// and used appropriately in the separate tests.
+			reportValidationEntries := []TableEntry{
 				// Regular validation
 				Entry("No snapshot comparison, allowWarnings=true, no errors or warnings, should succeed", true, true, generateNone, true),
 				Entry("No snapshot comparison, allowWarnings=true, errors w/ no warnings, should fail", true, true, generateError, false),
@@ -336,6 +315,93 @@ var _ = Describe("Validator", func() {
 				Entry("Snapshot comparison, allowWarnings=false, no errors w/ warnings, warnings and errors changed, should fail", false, true, generateChangeWarnChangeError, false),
 				Entry("Snapshot comparison, allowWarnings=false, errors and warnings, only errors changed, should fail", false, false, generateSameWarnChangeError, false),
 				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, generateChangeWarnSameError, false),
+			}
+
+			DescribeTable("handles secret deletion for gloo translation scenarios with reports", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+				v.glooValidator = ValidateAccept
+				v.allowWarnings = allowWarnings
+				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+
+				snap := samples.SimpleGlooSnapshot(ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Update the translator after sync:
+				v.translator = &MockTranslator{
+					Translator:      t,
+					ReportGenerator: reportGenerator,
+				}
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
+				if expectSuccess {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+				reportValidationEntries,
+			)
+
+			DescribeTable("handles secret deletion for gloovalidation reports", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+				v.glooValidator = ValidationWithResourceReports(reportGenerator)
+				v.allowWarnings = allowWarnings
+				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+
+				snap := samples.SimpleGlooSnapshot(ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
+				if expectSuccess {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+				reportValidationEntries,
+			)
+
+			DescribeTable("handles secret deletion for extension validation scenarios", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+				v.glooValidator = ValidateAccept
+				v.allowWarnings = allowWarnings
+				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+
+				snap := samples.SimpleGlooSnapshot(ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Update the validator after sync
+				v.extensionValidator = &MockExtensionValidator{
+					ReportGenerator: reportGenerator,
+				}
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				err = v.ValidateDeletedGvk(context.TODO(), gloov1.SecretGVK, secret, false)
+				if expectSuccess {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+				// Regular validation
+				reportValidationEntries,
 			)
 
 			DescribeTable("Breaking errors don't trigger revalidation", func(validator validationFunc, expectedErrString string) {
@@ -1271,27 +1337,6 @@ var _ = Describe("Validator", func() {
 	})
 })
 
-func ValidateWarnWithString(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool, addToWarning string) ([]*gloovalidation.GlooValidationReport, error) {
-	var proxies []*gloov1.Proxy
-	if proxy != nil {
-		proxies = []*gloov1.Proxy{proxy}
-	} else {
-		proxies = samples.SimpleGlooSnapshot("gloo-system").Proxies
-	}
-
-	var validationReports []*gloovalidation.GlooValidationReport
-	for _, proxy := range proxies {
-		proxyReport := validationutils.MakeReport(proxy)
-		validationutils.AppendRouteWarning(proxyReport.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time"+addToWarning)
-
-		validationReports = append(validationReports, &gloovalidation.GlooValidationReport{
-			Proxy:       proxy,
-			ProxyReport: proxyReport,
-		})
-	}
-	return validationReports, nil
-}
-
 // ValidationAddErrorsAndWarnings is a helper function to add errors and warnings to a proxy
 func ValidationAddErrorsAndWarnings(proxy *gloov1.Proxy, validationReports []*gloovalidation.GlooValidationReport, errMessages []string, warnMessages []string) ([]*gloovalidation.GlooValidationReport, error) {
 	var proxies []*gloov1.Proxy
@@ -1319,6 +1364,27 @@ func ValidationAddErrorsAndWarnings(proxy *gloov1.Proxy, validationReports []*gl
 	}
 
 	return validationReports, nil
+}
+
+func ValidationWithResourceReports(reportGenerator func() reporter.ResourceReports) validationFunc {
+	return func(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
+		var validationReports []*gloovalidation.GlooValidationReport
+		var proxies []*gloov1.Proxy
+		if proxy != nil {
+			proxies = []*gloov1.Proxy{proxy}
+		} else {
+			proxies = samples.SimpleGlooSnapshot("gloo-system").Proxies
+		}
+
+		for _, proxy := range proxies {
+			validationReports = append(validationReports, &gloovalidation.GlooValidationReport{
+				Proxy:           proxy,
+				ResourceReports: reportGenerator(),
+			})
+		}
+
+		return validationReports, nil
+	}
 }
 
 const (
@@ -1389,11 +1455,13 @@ func ValidateResponseLengthError(ctx context.Context, proxy *gloov1.Proxy, resou
 // 	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 // }
 
+// MockTranslator is a mock translator that can be used to test the validator
 type MockTranslator struct {
 	Translator      translator.Translator // Would call it `T`, but that would be confusing
 	ReportGenerator func() reporter.ResourceReports
 }
 
+// Translate uses te real translator to generate the snapshot, then overrides the reports with the output of ReportGenerator function
 func (m *MockTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	proxy, _ := m.Translator.Translate(ctx, proxyName, snap, filteredGateways)
 	return proxy, m.ReportGenerator()
@@ -1402,7 +1470,7 @@ func (m *MockTranslator) Translate(ctx context.Context, proxyName string, snap *
 func generateTranslationReports(rep reporter.Report) reporter.ResourceReports {
 	res := &skmocks.MockResource{
 		Metadata: &core.Metadata{
-			Name:      fmt.Sprintf("r0"),
+			Name:      "r0",
 			Namespace: "ns",
 		},
 	}
@@ -1414,19 +1482,19 @@ func generateTranslationReports(rep reporter.Report) reporter.ResourceReports {
 
 func generateErrorAndWarn() reporter.ResourceReports {
 	return generateTranslationReports(reporter.Report{
-		Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{"r0warn1"},
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(errString)}}, Warnings: []string{warnString},
 	})
 }
 
 func generateError() reporter.ResourceReports {
 	return generateTranslationReports(reporter.Report{
-		Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}},
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(errString)}},
 	})
 }
 
 func generateWarn() reporter.ResourceReports {
 	return generateTranslationReports(reporter.Report{
-		Warnings: []string{"r0warn1"},
+		Warnings: []string{warnString},
 	})
 }
 
@@ -1437,28 +1505,28 @@ func generateNone() reporter.ResourceReports {
 func generateChangeError() reporter.ResourceReports {
 	validateChangeErrCnt++
 	return generateTranslationReports(reporter.Report{
-		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err%d", validateChangeErrCnt))}},
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf(errStringF, validateChangeErrCnt))}},
 	})
 }
 
 func generateChangeWarn() reporter.ResourceReports {
 	validateChangeWarningCnt++
 	return generateTranslationReports(reporter.Report{
-		Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
+		Warnings: []string{fmt.Sprintf(warnStringF, validateChangeWarningCnt)},
 	})
 }
 
 func generateChangeWarnSameError() reporter.ResourceReports {
 	validateChangeWarningCnt++
 	return generateTranslationReports(reporter.Report{
-		Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(errString)}}, Warnings: []string{fmt.Sprintf(warnStringF, validateChangeWarningCnt)},
 	})
 }
 
 func generateSameWarnChangeError() reporter.ResourceReports {
 	validateChangeErrCnt++
 	return generateTranslationReports(reporter.Report{
-		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err%d", validateChangeErrCnt))}}, Warnings: []string{"r0warn1"},
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf(errStringF, validateChangeErrCnt))}}, Warnings: []string{warnString},
 	})
 }
 
@@ -1466,6 +1534,14 @@ func generateChangeWarnChangeError() reporter.ResourceReports {
 	validateChangeErrCnt++
 	validateChangeWarningCnt++
 	return generateTranslationReports(reporter.Report{
-		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err%d", validateChangeErrCnt))}}, Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
+		Errors: &multierror.Error{Errors: []error{fmt.Errorf(fmt.Sprintf("r0err1-%d", validateChangeErrCnt))}}, Warnings: []string{fmt.Sprintf("r0warn1-%d", validateChangeWarningCnt)},
 	})
+}
+
+type MockExtensionValidator struct {
+	ReportGenerator func() reporter.ResourceReports
+}
+
+func (m *MockExtensionValidator) Validate(ctx context.Context, snapshot *gloov1snap.ApiSnapshot) reporter.ResourceReports {
+	return m.ReportGenerator()
 }
