@@ -122,6 +122,58 @@ func (m *Settings) Equal(that interface{}) bool {
 		return false
 	}
 
+	switch m.ServiceType.(type) {
+
+	case *Settings_GrpcService:
+		if _, ok := target.ServiceType.(*Settings_GrpcService); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcService()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcService(), target.GetGrpcService()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ServiceType != target.ServiceType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcService) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcService)
+	if !ok {
+		that2, ok := that.(GrpcService)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthority(), target.GetAuthority()) != 0 {
+		return false
+	}
+
 	return true
 }
 
