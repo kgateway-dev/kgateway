@@ -133,6 +133,37 @@ var _ = Describe("RateLimit Plugin", func() {
 		Expect(cfg).To(matchers.MatchProto(expectedConfig))
 	})
 
+	It("should pass through authority to grpc service", func() {
+		rlSettings.ServiceType = &ratelimitpb.Settings_GrpcService{
+			GrpcService: &ratelimitpb.GrpcService{
+				Authority: "xyz",
+			},
+		}
+		filters, err := rlPlugin.HttpFilters(params, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(filters).To(HaveLen(1))
+		hundredms := DefaultTimeout
+		expectedConfig := &envoyratelimit.RateLimit{
+			Domain:          CustomDomain,
+			FailureModeDeny: false,
+			Stage:           3,
+			Timeout:         hundredms,
+			RequestType:     "both",
+			RateLimitService: &rlconfig.RateLimitServiceConfig{
+				TransportApiVersion: envoycore.ApiVersion_V3,
+				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+						ClusterName: translator.UpstreamToClusterName(rlServerRef),
+						Authority:   "xyz",
+					},
+				}},
+			},
+		}
+		cfg := getTypedConfig(filters[0].HttpFilter)
+		Expect(cfg).To(matchers.MatchProto(expectedConfig))
+	})
+
 	It("default timeout is 100ms", func() {
 		filters, err := rlPlugin.HttpFilters(params, nil)
 		Expect(err).NotTo(HaveOccurred())
