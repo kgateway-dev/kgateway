@@ -1331,6 +1331,9 @@ apis:
   ratelimit.api.solo.io.SimpleDescriptor:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#SimpleDescriptor
     package: ratelimit.api.solo.io
+  ratelimit.options.gloo.solo.io.GrpcService:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#GrpcService
+    package: ratelimit.options.gloo.solo.io
   ratelimit.options.gloo.solo.io.IngressRateLimit:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#IngressRateLimit
     package: ratelimit.options.gloo.solo.io

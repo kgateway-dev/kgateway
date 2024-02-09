@@ -623,6 +623,11 @@ spec:
                     type: boolean
                   enableXRatelimitHeaders:
                     type: boolean
+                  grpcService:
+                    properties:
+                      authority:
+                        type: string
+                    type: object
                   rateLimitBeforeAuth:
                     type: boolean
                   ratelimitServerRef:
