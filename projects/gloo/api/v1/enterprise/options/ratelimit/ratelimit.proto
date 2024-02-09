@@ -34,8 +34,10 @@ message Settings {
   // *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state
   bool rate_limit_before_auth = 9;
 
-  // Optional gRPC settings used when calling the ratelimit server.
-  GrpcService grpc_service = 10;
+  oneof service_type {
+    // Optional gRPC settings used when calling the ratelimit server.
+    GrpcService grpc_service = 10;
+  }
 }
 
 message GrpcService {

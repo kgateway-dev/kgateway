@@ -149,24 +149,30 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetGrpcService()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("GrpcService")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetGrpcService(), nil); err != nil {
-			return 0, err
-		} else {
+	switch m.ServiceType.(type) {
+
+	case *Settings_GrpcService:
+
+		if h, ok := interface{}(m.GetGrpcService()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("GrpcService")); err != nil {
 				return 0, err
 			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetGrpcService(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("GrpcService")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
 		}
+
 	}
 
 	return hasher.Sum64(), nil

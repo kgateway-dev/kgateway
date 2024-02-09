@@ -122,12 +122,26 @@ func (m *Settings) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetGrpcService()) {
+	switch m.ServiceType.(type) {
+
+	case *Settings_GrpcService:
+		if _, ok := target.ServiceType.(*Settings_GrpcService); !ok {
 			return false
 		}
-	} else {
-		if !proto.Equal(m.GetGrpcService(), target.GetGrpcService()) {
+
+		if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcService()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcService(), target.GetGrpcService()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ServiceType != target.ServiceType {
 			return false
 		}
 	}

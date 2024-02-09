@@ -82,10 +82,20 @@ func (m *Settings) Clone() proto.Message {
 
 	target.RateLimitBeforeAuth = m.GetRateLimitBeforeAuth()
 
-	if h, ok := interface{}(m.GetGrpcService()).(clone.Cloner); ok {
-		target.GrpcService = h.Clone().(*GrpcService)
-	} else {
-		target.GrpcService = proto.Clone(m.GetGrpcService()).(*GrpcService)
+	switch m.ServiceType.(type) {
+
+	case *Settings_GrpcService:
+
+		if h, ok := interface{}(m.GetGrpcService()).(clone.Cloner); ok {
+			target.ServiceType = &Settings_GrpcService{
+				GrpcService: h.Clone().(*GrpcService),
+			}
+		} else {
+			target.ServiceType = &Settings_GrpcService{
+				GrpcService: proto.Clone(m.GetGrpcService()).(*GrpcService),
+			}
+		}
+
 	}
 
 	return target

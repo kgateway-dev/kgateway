@@ -134,8 +134,10 @@ var _ = Describe("RateLimit Plugin", func() {
 	})
 
 	It("should pass through authority to grpc service", func() {
-		rlSettings.GrpcService = &ratelimitpb.GrpcService{
-			Authority: "xyz",
+		rlSettings.ServiceType = &ratelimitpb.Settings_GrpcService{
+			GrpcService: &ratelimitpb.GrpcService{
+				Authority: "xyz",
+			},
 		}
 		filters, err := rlPlugin.HttpFilters(params, nil)
 		Expect(err).NotTo(HaveOccurred())
