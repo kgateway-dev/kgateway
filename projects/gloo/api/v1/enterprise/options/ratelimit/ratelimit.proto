@@ -33,6 +33,16 @@ message Settings {
   // Set this is set to true if you would like to rate limit traffic before applying external auth to it.
   // *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state
   bool rate_limit_before_auth = 9;
+
+  oneof service_type {
+    // Optional gRPC settings used when calling the ratelimit server.
+    GrpcService grpc_service = 10;
+  }
+}
+
+message GrpcService {
+  // Set the authority header when calling the gRPC service.
+  string authority = 1;
 }
 
 // API based on Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
