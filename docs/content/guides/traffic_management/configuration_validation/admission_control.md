@@ -19,36 +19,13 @@ For more information about how resource configuration validation works in Gloo E
 
 Configure the validating admission webhook to reject invalid Gloo custom resources before they are applied in the cluster. 
 
-1. Enable strict resource validation by using one of the following options: 
-   * **Update the Helm settings**: Update your Gloo Edge installation and set the following Helm values.
-     ```bash
-     --set gateway.validation.alwaysAcceptResources=false
-     --set gateway.validation.enabled=true
-     ```
-   * **Update the settings resources**: Add the following `spec.gateway.validation` block to the settings resource. Note that settings that you manually add to this resource might be overwritten during a Helm upgrade. 
-     {{< highlight yaml "hl_lines=12-14" >}}
-     apiVersion: gloo.solo.io/v1
-     kind: Settings
-     metadata:
-       labels:
-         app: gloo
-       name: default
-       namespace: gloo-system
-     spec:
-       discoveryNamespace: gloo-system
-       gloo:
-         xdsBindAddr: 0.0.0.0:9977
-       gateway:
-         validation:
-           alwaysAccept: false
-       kubernetesArtifactSource: {}
-       kubernetesConfigSource: {}
-       kubernetesSecretSource: {}
-       refreshRate: 60s
-     {{< /highlight >}}
-  
+1. Enable strict resource validation by updating your Gloo Edge installation and set the following Helm values.
+   ```bash
+   --set gateway.validation.alwaysAcceptResources=false
+   --set gateway.validation.enabled=true
+   ```
    {{% notice tip %}}
-   To also reject Gloo custom resources that result in a `Warning` status, set `allowWarnings=false`. 
+   To also reject Gloo custom resources that result in a `Warning` status, include `--set gateway.validation.allowWarnings=false`. 
    {{% /notice %}}
 
 2. Verify that the validating admission webhook is enabled. 
@@ -131,7 +108,7 @@ validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",n
 You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration or [send requests directly to the Gloo Edge validation API](#validation-api). 
 
 {{% notice note %}}
-The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, run `kubectl edit settings default -n gloo-system` and set `alwaysAccept: false` and `allowWarnings: false` in the `spec.gateway.validation` section. 
+The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, update your Gloo Edge installation and include `--set gateway.validation.alwaysAcceptResources=false`, `--set gateway.validation.enabled=true`, and `--set gateway.validation.allowWarnings=false`.
 {{% /notice %}}
 
 ### Use the dry run capability in Kubernetes {#dry-run}

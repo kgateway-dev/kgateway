@@ -2,4 +2,4 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/8995
     resolvesIssue: false
-    description: Expose a new ratelmiit option `grpcService.authority` to configure the authority header for the ratelimit gRPC call.
+    description: Expose a new ratelimit option `grpcService.authority` to configure the authority header for the ratelimit gRPC call.
