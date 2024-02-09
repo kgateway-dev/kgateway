@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.25.10-patch2
+  issueLink: https://github.com/solo-io/solo-projects/issues/5778
+  resolvesIssue: false
+  description: >-
+    Bump envoy-gloo for fixes Envoy CVEs announced 8 Feb 2024.
