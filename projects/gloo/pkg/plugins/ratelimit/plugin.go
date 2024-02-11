@@ -143,6 +143,7 @@ func GenerateEnvoyHttpFilterConfig(serverSettings *ratelimit.Settings) *envoy_ex
 
 	return GenerateEnvoyConfigForFilterWith(
 		serverSettings.GetRatelimitServerRef(),
+		serverSettings.GetGrpcService(),
 		CustomDomain,
 		rateLimitStage,
 		serverSettings.GetRequestTimeout(),
