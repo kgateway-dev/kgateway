@@ -296,7 +296,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxyName := gatewayAndProxyName.Name
 		gatewayList := gatewayAndProxyName.Gateways
 
-		// Validation Section 1:
 		// Translate the proxy and process the errors and warnings
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
 
@@ -312,7 +311,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 		proxies = append(proxies, proxy)
 
-		// Validation Section 2:
 		// Validate the proxy with the Gloo validator
 		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot a nil resource is passed in so no modifications are made
 		resourceToModify := opts.Resource
@@ -344,7 +342,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 
-		// Validation Section 2a:
 		// Get the errors and warngings from the proxyReport
 		stopValidatingProxy = v.appendProxyErrorsAndWarnings(&errs, &warnings, proxyReport, proxy, opts)
 		if stopValidatingProxy {
@@ -663,7 +660,6 @@ func compareReports(proxyReports1, proxyReports2 ProxyReports, allowWarnings boo
 	}
 
 	// Warnings are allowed, so the proxy reports must be compared manually
-	// DO_NOT_SUBMIT: double check that reports are created regardless of warnings and errors being present
 	if len(proxyReports1) != len(proxyReports2) {
 		return false
 	}
@@ -674,6 +670,7 @@ func compareReports(proxyReports1, proxyReports2 ProxyReports, allowWarnings boo
 		pr2 := proxyReports2[i]
 
 		// Check that the listener reports are the same types
+		// DO_NOT_SUBMIT: double check that reports are created regardless of warnings and errors being present
 		l1 := pr1.GetListenerReports()
 		l2 := pr2.GetListenerReports()
 		if len(l1) != len(l2) {
