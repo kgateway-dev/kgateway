@@ -7,12 +7,10 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/rotisserie/eris"
 	errors "github.com/rotisserie/eris"
 	utils2 "github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
@@ -71,7 +69,7 @@ func (e SyncNotYetRunError) Error() string {
 
 var (
 	NotReadyErr                    = errors.Errorf("validation is not yet available. Waiting for first snapshot")
-	HasNotReceivedFirstSync        = eris.New("proxy validation called before the validation server received its first sync of resources")
+	HasNotReceivedFirstSync        = errors.New("proxy validation called before the validation server received its first sync of resources")
 	unmarshalErrMsg                = "could not unmarshal raw object"
 	couldNotRenderProxy            = "could not render proxy"
 	failedGlooValidation           = "failed gloo validation"
@@ -272,7 +270,7 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 // error - errors from the Gloo validation
 // error - warnings from the Gloo validation
 
-// Extra notes to document - when validating reports with the reporter package errors and warnings are sorted how we want them to be returned
+// When validating reports with the reporter package errors and warnings are sorted how we want them to be returned
 // other sources of warnings/errors need to be handled separately
 func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) (proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error, warnings error) {
 	var (
@@ -499,13 +497,13 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 	}
 
-	// In some cases, validation should be retried if there are errors. In those cases, all errors are collected and returned
-	// so they can be compared against the result of a second validation run of the original, unmodified snapshot
-	retryValidation := v.shouldRetryValidation(ctx, opts)
+	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
+	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
+	validateAgainstCurrentSnapshot := v.validateAgainstCurrentSnapshot(ctx, opts)
 
 	// The collectAllErrorsAndWarnings opts field is used to control whether warnings are treated as errors.
 	// We only want to treat warnings as errors when 'allow_warnings=false' we will not be attempting to retry validation
-	opts.collectAllErrorsAndWarnings = retryValidation || v.allowWarnings
+	opts.collectAllErrorsAndWarnings = validateAgainstCurrentSnapshot || v.allowWarnings
 
 	// Run the validation. Warnings are only returned if 'opts.collectAllErrorsAndWarnings' is true
 	proxies, proxyReports, errs, warnings := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
@@ -513,7 +511,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	// If we have errors or warnings and we are not to retry validation, we need to compare the validation output
 	overrideErrors := false
 	// We want to compare the validation output if the retryValidation flag and we are currently not passing validation
-	if retryValidation && !v.passedValidation(errs, warnings) {
+	if validateAgainstCurrentSnapshot && !v.passedValidation(errs, warnings) {
 		overrideErrors = v.compareValidationWithoutModification(ctx, opts, proxies, proxyReports, errs, warnings)
 	}
 
@@ -560,10 +558,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-// shouldRetryValidation contains the logic to determine if validation should be retried against the original snapshot
+// validateAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
 // and the results of that valdidation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
-func (v *validator) shouldRetryValidation(ctx context.Context, opts *validationOptions) bool {
+func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *validationOptions) bool {
 	if v.disableValidationAgainstSnapshot {
 		return false
 	}
@@ -582,7 +580,7 @@ func (v *validator) passedValidation(errs error, warnings error) bool {
 // compareValidationWithoutModification is used to compare the output of validation against validation of the orginal snapshot
 // this is used in special cases. specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
 // and instead of relying on the presence of errors and warnings to determine whether to accept the modification, the output of
-// validation of the request (proxies, proexReports, errors, and warnings) is compared to the output of the validation of the original snapshot.
+// validation of the request (proxies, proxyReports, errors, and warnings) is compared to the output of the validation of the original snapshot.
 // If outputs are the same, it is assumed that the modification did not degrade the system and  is accepted
 func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error, warnings error) bool {
 	contextutils.LoggerFrom(ctx).Debugw(
@@ -604,10 +602,7 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 		return false
 	}
 
-	// Get the validation output without the modification. At the moment, any errors returned here are ignored.
-	// No errors existed in the original validation output or they would have returned already, so there is
-	// nothing to compare new errors to. It would be very unexpected to receive no errors after removing a secret
-	// and then errors after adding it back in. This logic should be reconsidered as more cases are supported.
+	// Get the validation output without the modification. This is used to compare against the validation output the snapshot with the modification.
 	proxiesNoMod, proxyReportsNoMod, errorsNoMod, warningsNoMod := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
 
 	sameWarnings := v.allowWarnings || compareErrors(warningsNoMod, warnings)
@@ -635,7 +630,7 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 	return false
 }
 
-// compareWarnings compares two lists of errors and returns true if they are the same
+// compareErrors compares two lists of errors and returns true if they are the same
 // The api.snapshot is composed of lists, so the order of validation is consistent.
 // Some of the errors are generated by the reporter package, which has been updated to return errors in a consistent order
 // Because of this, we can compare errors by comparing the strings of the errors
@@ -818,7 +813,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 		return &Reports{ProxyReports: &ProxyReports{}}, err
 	}
 
-	if newResourceFunc, hit := gloosnapshot.ApiGvkToHashableResource[itemGvk]; hit {
+	if newResourceFunc, hit := gloov1snap.ApiGvkToHashableResource[itemGvk]; hit {
 		resource := newResourceFunc()
 		if unmarshalErr := UnmarshalResource(jsonBytes, resource); unmarshalErr != nil {
 			return &Reports{ProxyReports: &ProxyReports{}}, WrappedUnmarshalErr(unmarshalErr)
@@ -832,7 +827,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 // copySnapshotNonThreadSafe will copy the snapshot. If there is an error with the latest snapshot, it will error.
 // NOTE: does not perform any lock, and this function is not thread safe. Any read or write to the snapshot needs to be
 // done under a lock
-func (v *validator) copySnapshotNonThreadSafe(ctx context.Context, dryRun bool) (*gloosnapshot.ApiSnapshot, error) {
+func (v *validator) copySnapshotNonThreadSafe(ctx context.Context, dryRun bool) (*gloov1snap.ApiSnapshot, error) {
 	if v.latestSnapshot == nil {
 		return nil, HasNotReceivedFirstSync
 	}
@@ -841,7 +836,7 @@ func (v *validator) copySnapshotNonThreadSafe(ctx context.Context, dryRun bool) 
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
 		contextutils.LoggerFrom(ctx).Errorw(InvalidSnapshotErrMessage, zap.Error(v.latestSnapshotErr))
-		return nil, eris.New(InvalidSnapshotErrMessage)
+		return nil, errors.New(InvalidSnapshotErrMessage)
 	}
 	snapshotClone := v.latestSnapshot.Clone()
 	return &snapshotClone, nil
