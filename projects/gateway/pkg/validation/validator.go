@@ -450,7 +450,7 @@ func (v *validator) appendGlooReportErrorsAndWarnings(errs *error, warnings *err
 		}
 	}
 
-	return true
+	return false
 }
 
 func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) {
