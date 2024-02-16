@@ -6,24 +6,24 @@ import (
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
 )
 
 const (
 	APIKeyDataKey                           = "api-key"
-	APIKeySecretType      kubev1.SecretType = "extauth.solo.io/apikey"
+	APIKeySecretType      corev1.SecretType = "extauth.solo.io/apikey"
 	GlooKindAnnotationKey                   = "resource_kind"
 )
 
 // Processes secrets with type "extauth.solo.io/apikey".
 type APIKeySecretConverter struct{}
 
-func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	if secret == nil {
 		contextutils.LoggerFrom(ctx).Warn("unexpected nil secret")
 		return nil, nil
@@ -66,7 +66,7 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 	return nil, nil
 }
 
-func (c *APIKeySecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (c *APIKeySecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
@@ -93,7 +93,7 @@ func (c *APIKeySecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.R
 		secretData[key] = value
 	}
 
-	kubeSecret := &kubev1.Secret{
+	kubeSecret := &corev1.Secret{
 		ObjectMeta: kubeMeta,
 		Type:       APIKeySecretType,
 		StringData: secretData,

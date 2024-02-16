@@ -2,13 +2,18 @@ package xds
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
+
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+
+	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -18,6 +23,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -29,7 +35,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -49,11 +54,6 @@ var (
 		emptyResource,
 		emptyResource,
 	)
-)
-
-const (
-	// The port used to expose a developer server
-	devModePort = 10010
 )
 
 var (
@@ -84,9 +84,13 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs *XdsInputChannels
-	cli    client.Client
-	scheme *runtime.Scheme
+	inputs                 *XdsInputChannels
+	mgr                    manager.Manager
+	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
+
+	// proxyClient is the client that writes Proxy resources into an in-memory cache
+	// This cache is utilized by the debug.ProxyEndpointServer
+	proxyClient gloo_solo_io.ProxyClient
 }
 
 type XdsInputChannels struct {
@@ -122,18 +126,20 @@ func NewXdsSyncer(
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
-	cli client.Client,
-	scheme *runtime.Scheme,
+	mgr manager.Manager,
+	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
+	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
-		controllerName:       controllerName,
-		translator:           translator,
-		sanitizer:            sanitizer,
-		xdsCache:             xdsCache,
-		xdsGarbageCollection: xdsGarbageCollection,
-		inputs:               inputs,
-		cli:                  cli,
-		scheme:               scheme,
+		controllerName:         controllerName,
+		translator:             translator,
+		sanitizer:              sanitizer,
+		xdsCache:               xdsCache,
+		xdsGarbageCollection:   xdsGarbageCollection,
+		inputs:                 inputs,
+		mgr:                    mgr,
+		k8sGwExtensionsFactory: k8sGwExtensionsFactory,
+		proxyClient:            proxyClient,
 	}
 }
 
@@ -150,29 +156,47 @@ func (s *XdsSyncer) Start(
 		if !discoveryWarmed || !secretsWarmed {
 			return
 		}
+		ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
+
 		var gwl apiv1.GatewayList
-		err := s.cli.List(ctx, &gwl)
+		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {
 			// This should never happen, try again?
 			return
 		}
-		queries := query.NewData(s.cli, s.scheme)
-		pluginRegistry := registry.NewPluginRegistry(queries)
-		t := gloot.NewTranslator(*pluginRegistry)
+
+		k8sGatewayExtensions := s.k8sGwExtensionsFactory(s.mgr)
+
+		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
+		pluginRegistry := k8sGatewayExtensions.CreatePluginRegistry(ctx)
+		gatewayTranslator := gloot.NewTranslator(
+			gatewayQueries, pluginRegistry)
+
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
+
+		var translatedGateways []gwplugins.TranslatedGateway
 		for _, gw := range gwl.Items {
-			proxy := t.TranslateProxy(ctx, &gw, queries, r)
+			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
+				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
+					Gateway: gw,
+				})
 				//TODO: handle reports and process statuses
 			}
 		}
 		proxyApiSnapshot.Proxies = proxies
+
+		applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
+			TranslatedGateways: translatedGateways,
+		})
+
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
+		s.syncProxyCache(ctx, proxies)
 	}
 
 	for {
@@ -229,13 +253,13 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(utils.GlooGatewayTranslatorValue, snap.Proxies) {
 			allKeys[key] = true
 		}
 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
-			if !valid {
+			if !valid && xds.SnapshotBelongsTo(key, utils.GlooGatewayTranslatorValue) {
 				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}
@@ -275,7 +299,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		reports.Merge(reports)
-		key := xds.SnapshotCacheKey(proxy)
+		key := xds.SnapshotCacheKey(utils.GlooGatewayTranslatorValue, proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics
@@ -307,52 +331,17 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 	return reports
 }
 
-// ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// TODO(ilackarms): move this somewhere else, make it part of dev-mode
-// https://github.com/solo-io/gloo/issues/6494
-func (s *XdsSyncer) ServeXdsSnapshots() error {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%v", "Developer API")
-	})
-	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.xdsCache.GetStatusKeys()))
-	})
-	r.HandleFunc("/xds/{key}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		xdsCacheKey := vars["key"]
-
-		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
-		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
-	})
-	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
-	})
-
-	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
-}
-
 func measureResource(ctx context.Context, resource string, length int) {
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
 		stats.Record(ctxWithTags, envoySnapshotOut.M(int64(length)))
 	}
 }
 
-func prettify(original interface{}) string {
-	b, err := json.MarshalIndent(original, "", "    ")
-	if err != nil {
-		return ""
-	}
-
-	return string(b)
-}
-
 func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	rl := apiv1.HTTPRouteList{}
-	err := s.cli.List(ctx, &rl)
+	err := s.mgr.GetClient().List(ctx, &rl)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -362,7 +351,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
 			route.Status = *status
-			if err := s.cli.Status().Update(ctx, &route); err != nil {
+			if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
 				logger.Error(err)
 			}
 		}
@@ -376,9 +365,40 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
 			gw.Status = *status
-			if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
+			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
 				logger.Error(err)
 			}
+		}
+	}
+}
+
+// syncProxyCache persists the proxies that were generated during translations and stores them in an in-memory cache
+// This cache is utilized by the debug.ProxyEndpointServer
+func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
+	ctx = contextutils.WithLogger(ctx, "proxyCache")
+	logger := contextutils.LoggerFrom(ctx)
+	for _, proxy := range proxyList {
+		_, err := s.proxyClient.Write(proxy, clients.WriteOpts{
+			Ctx: ctx,
+		})
+		if err != nil {
+			// A write error to our cache should not impact translation
+			// We will emit a message, and continue
+			logger.Error(err)
+		}
+
+	}
+}
+
+func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
+	ctx = contextutils.WithLogger(ctx, "postTranslation")
+	logger := contextutils.LoggerFrom(ctx)
+
+	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
+		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
+		if err != nil {
+			logger.Errorf("Error applying post-translation plugin: %v", err)
+			continue
 		}
 	}
 }

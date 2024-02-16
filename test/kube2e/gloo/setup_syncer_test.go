@@ -158,6 +158,7 @@ var _ = Describe("Setup Syncer", func() {
 			}, namespace)
 
 			err = testFunc()
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("received message larger than max (19 vs. 1)"))
 		})
 	})

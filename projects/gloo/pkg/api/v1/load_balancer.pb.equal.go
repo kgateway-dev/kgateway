@@ -66,6 +66,16 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetUseHostnameForHashing()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUseHostnameForHashing()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUseHostnameForHashing(), target.GetUseHostnameForHashing()) {
+			return false
+		}
+	}
+
 	switch m.Type.(type) {
 
 	case *LoadBalancerConfig_RoundRobin_:

@@ -7,6 +7,7 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,9 +30,10 @@ type GatewayConfig struct {
 	Dev            bool
 	ControllerName string
 	AutoProvision  bool
-	XdsServer      string
-	XdsPort        uint16
 	Kick           func(ctx context.Context)
+
+	ControlPlane bootstrap.ControlPlane
+	IstioValues  bootstrap.IstioValues
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -84,8 +86,13 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.XdsServer, "port", c.cfg.XdsPort)
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Dev, c.cfg.ControllerName, c.cfg.XdsServer, c.cfg.XdsPort)
+	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), &deployer.Inputs{
+		ControllerName: c.cfg.ControllerName,
+		Dev:            c.cfg.Dev,
+		Port:           c.cfg.ControlPlane.GetBindPort(),
+		IstioValues:    c.cfg.IstioValues,
+	})
 	if err != nil {
 		return err
 	}
@@ -122,7 +129,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
-	gwreconciler := &gatewayReconciler{
+	gwReconciler := &gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
 		className:     c.cfg.GWClass,
@@ -130,7 +137,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		deployer:      d,
 		kick:          c.cfg.Kick,
 	}
-	err = buildr.Complete(gwreconciler)
+	err = buildr.Complete(gwReconciler)
 	if err != nil {
 		return err
 	}

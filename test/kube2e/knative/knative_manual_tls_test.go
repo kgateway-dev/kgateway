@@ -6,6 +6,11 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/gloo/jobs/pkg/kube"
 	"github.com/solo-io/gloo/jobs/pkg/run"
@@ -14,12 +19,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	v1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
@@ -50,7 +49,7 @@ var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 			Verbose:           true,
 			SelfSigned:        true,
 			Sni:               "helloworld-go.default.example.com",
-		}, "Hello Go Sample v1!", 1, time.Minute*2, 1*time.Second)
+		}, "Hello Go Sample corev1!", 1, time.Minute*2, 1*time.Second)
 	})
 
 	It("works when the secret is added after the service which points to it", func() {
@@ -73,7 +72,7 @@ var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 			Verbose:           true,
 			SelfSigned:        true,
 			Sni:               "helloworld-go.default.example.com",
-		}, "Hello Go Sample v1!", 1, time.Minute*2, 1*time.Second)
+		}, "Hello Go Sample corev1!", 1, time.Minute*2, 1*time.Second)
 	})
 
 })
@@ -84,9 +83,9 @@ func addTLSSecret() {
 		SecretNamespace:             defaults.DefaultValue,
 		SvcName:                     "knative-external-proxy",
 		SvcNamespace:                testHelper.InstallNamespace,
-		ServerKeySecretFileName:     v1.TLSPrivateKeyKey,
-		ServerCertSecretFileName:    v1.TLSCertKey,
-		ServerCertAuthorityFileName: v1.ServiceAccountRootCAKey,
+		ServerKeySecretFileName:     corev1.TLSPrivateKeyKey,
+		ServerCertSecretFileName:    corev1.TLSCertKey,
+		ServerCertAuthorityFileName: corev1.ServiceAccountRootCAKey,
 	}
 	certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
 	Expect(err).NotTo(HaveOccurred(), "it should generate the cert")

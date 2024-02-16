@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5876
+    resolvesIssue: false
+    description: >-
+      Expose extension points for the k8s gateway translator. These will be implemented by the Developer Portal
+      translator that is only available in Gloo Gateway Enterprise.

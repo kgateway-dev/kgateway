@@ -133,6 +133,15 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
+	if cfg.GetUseHostnameForHashing().GetValue() {
+		if out.GetCommonLbConfig() == nil {
+			out.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
+		}
+		out.GetCommonLbConfig().ConsistentHashingLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+			UseHostnameForHashing: true,
+		}
+	}
+
 	return nil
 }
 

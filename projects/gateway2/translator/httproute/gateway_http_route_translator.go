@@ -20,6 +20,7 @@ func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
 ) []*v1.Route {
@@ -36,6 +37,7 @@ func TranslateGatewayHTTPRouteRules(
 			ctx,
 			pluginRegistry,
 			queries,
+			gwListener,
 			&route,
 			rule,
 			reporter,
@@ -57,6 +59,7 @@ func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
@@ -66,7 +69,8 @@ func translateGatewayHTTPRouteRule(
 		outputRoute := &v1.Route{
 			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
 			Action:   nil,
-			Options:  &v1.RouteOptions{},
+			// The RouteOptions plugin is responsible for populating these options
+			Options: &v1.RouteOptions{},
 		}
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(
@@ -79,6 +83,7 @@ func translateGatewayHTTPRouteRule(
 		}
 
 		rtCtx := &plugins.RouteContext{
+			Listener: &gwListener,
 			Route:    gwroute,
 			Rule:     &rule,
 			Match:    &match,

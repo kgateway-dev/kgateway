@@ -6,19 +6,19 @@ import (
 	"fmt"
 	"net/http"
 
-	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -104,7 +104,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(utils.GlooEdgeTranslatorValue, snap.Proxies) {
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
@@ -114,7 +114,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
-			if !valid {
+			if !valid && xds.SnapshotBelongsTo(key, utils.GlooEdgeTranslatorValue) {
 				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}
@@ -152,7 +152,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
-		key := xds.SnapshotCacheKey(proxy)
+		key := xds.SnapshotCacheKey(utils.GlooEdgeTranslatorValue, proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics

@@ -2,6 +2,17 @@ namespace:
   create: false
 k8s:
   clusterName: cluster.local
+
+# Default values for gloo-gateway.
+gateway2:
+  gatewayClass:
+    className: gloo-gateway
+    controllerName: solo.io/gloo-gateway
+  controlPlane:
+    enabled: true
+    nameOverride: ""
+    fullnameOverride: ""
+
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
@@ -246,6 +257,7 @@ global:
     disableAutoinjection: false
     enableIstioSidecarOnGateway: false
     appendXForwardedHost: true
+    enableAutoMtls: false
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true

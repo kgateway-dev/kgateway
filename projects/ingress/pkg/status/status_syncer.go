@@ -5,6 +5,7 @@ import (
 	"net"
 	"sort"
 
+	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -15,12 +16,10 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	kubev1 "k8s.io/api/core/v1"
-
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 type statusSyncer struct {
@@ -105,8 +104,8 @@ func getLbStatus(services v1.KubeServiceList) ([]networkv1.IngressLoadBalancerIn
 	}())
 }
 
-func serviceAddrs(svc *kubev1.Service, kubeSvcRef *core.ResourceRef) ([]string, error) {
-	if svc.Spec.Type == kubev1.ServiceTypeExternalName {
+func serviceAddrs(svc *corev1.Service, kubeSvcRef *core.ResourceRef) ([]string, error) {
+	if svc.Spec.Type == corev1.ServiceTypeExternalName {
 
 		// Remove the possibility of using localhost in ExternalNames as endpoints
 		svcIp := net.ParseIP(svc.Spec.ExternalName)

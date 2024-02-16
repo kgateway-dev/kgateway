@@ -16,14 +16,20 @@ service ProxyEndpointService {
 }
 
 message ProxyEndpointRequest {
-  // The namespace to look for proxies.
+  // Optional. The namespace to look for proxies. If this is omitted, all namespaces will be considered.
   string namespace = 1;
 
-  // Optional. The name of the proxy to look up
+  // Optional. The name of the proxy to look up. If this is provided, a namespace must be included as well.
   string name = 2;
 
   // Optional. Selector to use to filter returned proxies. This will be ignored if a name is provided.
   map<string, string> selector = 3;
+
+  // Optional. The translator source that produced the requested Proxy. Available values are:
+  //  1. edge-gw: If the Proxy was created using the Edge Gateway resources
+  //  2. k8s-gw: If the Proxy was created using the K8s Gateway resources
+  // If this is omitted, all sources will be considered.
+  string source = 4;
 }
 
 message ProxyEndpointResponse {

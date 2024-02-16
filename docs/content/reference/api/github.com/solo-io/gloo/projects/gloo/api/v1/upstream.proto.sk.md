@@ -67,6 +67,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "dnsRefreshRate": .google.protobuf.Duration
 "proxyProtocolVersion": .google.protobuf.StringValue
 "preconnectPolicy": .gloo.solo.io.PreconnectPolicy
+"disableIstioAutoMtls": .google.protobuf.BoolValue
 
 ```
 
@@ -103,6 +104,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Service Discovery DNS Refresh Rate. Minimum value is 1 ms. Values below the minimum are considered invalid. Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid. |
 | `proxyProtocolVersion` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Proxy Protocol Version to add when communicating with the upstream. If unset will not wrap the transport socket. These are of the format "V1" or "V2". |
 | `preconnectPolicy` | [.gloo.solo.io.PreconnectPolicy](../upstream.proto.sk/#preconnectpolicy) | Preconnect policy for the cluster Aligns as closely as possible with https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster-preconnectpolicy This is not recommended for use unless you are sure you need it. In most cases preconnect hurts more than it helps. |
+| `disableIstioAutoMtls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, the proxy will not allow automatic mTLS detection for Istio upstreams. Defaults to false. |
 
 
 

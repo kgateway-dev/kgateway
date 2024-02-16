@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/helm"
-	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -26,6 +25,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/helm"
+	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 type gatewayPort struct {
@@ -35,38 +41,42 @@ type gatewayPort struct {
 	TargetPort uint16 `json:"targetPort"`
 }
 
+// A Deployer is responsible for deploying proxies
 type Deployer struct {
-	dev            bool
-	chart          *chart.Chart
-	scheme         *runtime.Scheme
-	controllerName string
-	host           string
-	port           uint16
+	chart  *chart.Chart
+	scheme *runtime.Scheme
+
+	inputs *Inputs
 }
 
-func NewDeployer(scheme *runtime.Scheme, dev bool, controllerName, host string, port uint16) (*Deployer, error) {
+// Inputs is the set of options used to configure the gateway deployer deployment
+type Inputs struct {
+	ControllerName string
+	Dev            bool
+	Port           int
+	IstioValues    bootstrap.IstioValues
+}
 
-	chart, err := loadFs(helm.GlooGatewayHelmChart)
+// NewDeployer creates a new gateway deployer
+func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
+	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
-		// don't retrun an error is requeueing won't help here
 		return nil, err
 	}
 	// simulate what `helm package` in the Makefile does
 	if version.Version != version.UndefinedVersion {
-		chart.Metadata.AppVersion = version.Version
-		chart.Metadata.Version = version.Version
+		helmChart.Metadata.AppVersion = version.Version
+		helmChart.Metadata.Version = version.Version
 	}
 
 	return &Deployer{
-		dev:            dev,
-		chart:          chart,
-		scheme:         scheme,
-		controllerName: controllerName,
-		host:           host,
-		port:           port,
+		scheme: scheme,
+		chart:  helmChart,
+		inputs: inputs,
 	}, nil
 }
 
+// GetGvksToWatch returns the list of GVKs that the deployer will watch for
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
 	fakeGw := &api.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -122,7 +132,9 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	}
 
 	vals := map[string]any{
-		"controlPlane": map[string]any{"enabled": false},
+		"controlPlane": map[string]any{
+			"enabled": false,
+		},
 		"gateway": map[string]any{
 			"enabled":     true,
 			"name":        gw.Name,
@@ -132,13 +144,24 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 			"service": map[string]any{
 				"type": "LoadBalancer",
 			},
-			"xds": map[string]any{
-				"host": d.host,
-				"port": d.port,
+			"istioSDS": map[string]any{
+				"enabled": d.inputs.IstioValues.SDSEnabled,
 			},
+			"xds": map[string]any{
+				// The xds host/port MUST map to the Service definition for the Control Plane
+				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+				//
+				// NOTE: The current implementation in flawed in multiple ways:
+				//	1 - This assumes that the Control Plane is installed in `gloo-system`
+				//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
+				//		will always be what is exposed by the Kubernetes Service.
+				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
+				"port": d.inputs.Port,
+			},
+			"image": getDeployerImageValues(),
 		},
 	}
-	if d.dev {
+	if d.inputs.Dev {
 		vals["develop"] = true
 	}
 	log := log.FromContext(ctx)
@@ -186,6 +209,9 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	// Set owner ref
 	trueVal := true
 	for _, obj := range objs {
+		fmt.Printf("xxxxx objToDeploy: kind=%v, namespace=%s, name=%s\n", obj.GetObjectKind(),
+			obj.GetNamespace(), obj.GetName())
+
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,
@@ -200,7 +226,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 
 func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object, cli client.Client) error {
 	for _, obj := range objs {
-		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.controllerName)); err != nil {
+		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
 			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
 		}
 	}
@@ -291,4 +317,27 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+func getDeployerImageValues() map[string]any {
+	image := os.Getenv(constants.GlooGatewayDeployerImage)
+	defaultImageValues := map[string]any{
+		// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
+		"tag": "",
+	}
+
+	if image == "" {
+		// If the env is not defined, return the default
+		return defaultImageValues
+	}
+
+	imageParts := strings.Split(image, ":")
+	if len(imageParts) != 2 {
+		// If the user provided an invalid override, fallback to the default
+		return defaultImageValues
+	}
+	return map[string]any{
+		"repository": imageParts[0],
+		"tag":        imageParts[1],
+	}
 }

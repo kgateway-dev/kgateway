@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
+
 	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/ginkgo/labels"
@@ -47,10 +49,17 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
+
+	// The consulvaulte2e test suite is not run against a k8s cluster, so we must disable the features that require a k8s cluster
+	err = os.Setenv(constants.GlooGatewayEnableK8sGwControllerEnv, "false")
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
 	envoyFactory.Clean()
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
+
+	err := os.Unsetenv(constants.GlooGatewayEnableK8sGwControllerEnv)
+	Expect(err).NotTo(HaveOccurred())
 })

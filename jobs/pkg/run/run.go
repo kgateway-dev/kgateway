@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -128,7 +128,7 @@ func Run(ctx context.Context, opts Options) error {
 	return persistWebhook(ctx, opts, kubeClient, secret)
 }
 
-func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Interface, secret *v1.Secret) error {
+func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Interface, secret *corev1.Secret) error {
 	vwcName := opts.ValidatingWebhookConfigurationName
 	if vwcName == "" {
 		contextutils.LoggerFrom(ctx).Infof("no ValidatingWebhookConfiguration provided. finished successfully.")
@@ -150,7 +150,7 @@ func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Int
 }
 
 // construct a TlsSecret from an existing Secret
-func parseTlsSecret(secret *v1.Secret, opts Options) kube.TlsSecret {
+func parseTlsSecret(secret *corev1.Secret, opts Options) kube.TlsSecret {
 	return kube.TlsSecret{
 		SecretName:         secret.GetObjectMeta().GetName(),
 		SecretNamespace:    secret.GetObjectMeta().GetNamespace(),

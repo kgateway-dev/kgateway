@@ -19,6 +19,8 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
 func convertUnstructured[T any](f client.Object) T {
@@ -58,8 +60,61 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
+		d, err = deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should render the correct deployment when sds is enabled", func() {
+		inputs := &deployer.Inputs{
+			Dev:            false,
+			ControllerName: "foo",
+			Port:           8080,
+			IstioValues: bootstrap.IstioValues{
+				SDSEnabled: true,
+			},
+		}
+		d, err := deployer.NewDeployer(scheme.NewScheme(), inputs)
+		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
+
+		// Create a Gateway
+		gw := &api.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+				UID:       "1235",
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Gateway",
+				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				Listeners: []api.Listener{
+					{
+						Name: "listener-1",
+						Port: 80,
+					},
+				},
+			},
+		}
+		objs, err := d.GetObjsToDeploy(context.Background(), gw)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).NotTo(BeEmpty())
+
+		// check that there are three containers in the deployment (istio-proxy, sds and gloo-proxy)
+		dep := func() *appsv1.Deployment {
+			for _, obj := range objs {
+				if dep, ok := obj.(*appsv1.Deployment); ok {
+					return dep
+				}
+			}
+			return nil
+		}()
+		Expect(dep).NotTo(BeNil())
+		Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(3))
 	})
 
 	It("should get gvks", func() {
@@ -204,7 +259,12 @@ var _ = Describe("Deployer", func() {
 
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
-		d, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
+
+		d, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 		gw := &api.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
@@ -311,21 +371,28 @@ var _ = Describe("Deployer", func() {
 
 		// make sure the envoy node metadata looks right
 		node := envoyConfig["node"].(map[string]any)
-		Expect(node["metadata"]).NotTo(BeNil())
-		metadata := node["metadata"].(map[string]any)
-		Expect(metadata["gateway"]).NotTo(BeNil())
-		gateway := metadata["gateway"].(map[string]any)
-		Expect(gateway["name"]).To(Equal(gw.Name))
-		Expect(gateway["namespace"]).To(Equal(gw.Namespace))
+		Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
+			"gateway": map[string]any{
+				"name":      gw.Name,
+				"namespace": gw.Namespace,
+			},
+		}))
 
 	})
 
 	It("support segmenting by release", func() {
-
-		d1, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
+		d1, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", "xds", 8080)
+		d2, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		gw1 := &api.Gateway{

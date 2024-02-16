@@ -21,3 +21,10 @@
 .idea/
 *.tmproj
 .vscode/
+
+# template files
+*-template.yaml
+
+# generator files
+*.go
+generate/

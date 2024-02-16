@@ -11,6 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+
+	"golang.org/x/sync/errgroup"
+
+	"github.com/solo-io/gloo/projects/gloo/constants"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -109,6 +115,7 @@ func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
 	return NewSetupFuncWithRunAndExtensions(runFunc, nil)
 }
 
+// Called directly by GlooEE
 func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
 	s := &setupSyncer{
 		extensions: extensions,
@@ -216,6 +223,7 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
+// Setup constructs bootstrap options based on settings and other input, and calls the runFunc with these options.
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
@@ -429,16 +437,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	return err
 }
 
-type Extensions struct {
-	PluginRegistryFactory plugins.PluginRegistryFactory
-	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
-	XdsCallbacks          xdsserver.Callbacks
-	ApiEmitterChannel     chan struct{}
-}
-
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
+		K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
+		PluginRegistryFactory:       registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -450,22 +452,25 @@ func RunGloo(opts bootstrap.Opts) error {
 	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
+// RunGlooWithExtensions is the core entrypoint to the Gloo components.
+// THIS FUNCTION MUST NOT BLOCK:
+//
+//	It is invoked by an outer control loop (SetupFunc) which monitors
+//	the current Settings resource, and re-runs this function each time the global Settings change
+//
+// This function is called directly by GlooEE
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
-	// Validate Extensions
-	if extensions.ApiEmitterChannel == nil {
-		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
-	}
-	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
-	}
-	if extensions.SyncerExtensions == nil {
-		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+	if err := extensions.Validate(); err != nil {
+		return err
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
+	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
-	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
+	runErrorGroup, _ := errgroup.WithContext(watchOpts.Ctx)
+	logger := contextutils.LoggerFrom(watchOpts.Ctx)
+
 	endpointsFactory := &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
@@ -613,8 +618,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 
-	logger := contextutils.LoggerFrom(watchOpts.Ctx)
-
 	startRestXdsServer(opts)
 
 	errs := make(chan error)
@@ -638,7 +641,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if warmTimeout.GetSeconds() != 0 || warmTimeout.GetNanos() != 0 {
 		warmTimeoutDuration := prototime.DurationFromProto(warmTimeout)
-		ctx := opts.WatchOpts.Ctx
+		ctx := watchOpts.Ctx
 		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
 		if err != nil {
 			// make sure that the reason we got here is not context cancellation
@@ -712,6 +715,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}()
 		opts.ValidationServer.StartGrpcServer = false
 	}
+
 	if opts.ControlPlane.StartGrpcServer {
 		// copy for the go-routines
 		controlPlane := opts.ControlPlane
@@ -733,7 +737,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if opts.ProxyDebugServer.StartGrpcServer {
 		proxyDebugServer := opts.ProxyDebugServer
-		proxyDebugServer.Server.SetProxyClient(proxyClient)
+		proxyDebugServer.Server.RegisterProxyReader(debug.EdgeGatewayTranslation, proxyClient)
 		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
@@ -786,7 +790,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
+	sharedTranslator := translator.NewTranslatorWithHasher(
+		sslutils.NewSslConfigTranslator(),
+		opts.Settings,
+		extensions.PluginRegistryFactory(watchOpts.Ctx),
+		resourceHasher,
+	)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -818,7 +827,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
 		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
 		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(
-			opts.WatchOpts.Ctx,
+			watchOpts.Ctx,
 			opts.WriteNamespace,
 			proxyClient,
 			proxyReconciler,
@@ -842,10 +851,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// create a validator to validate extensions
 	extensionValidator := syncerValidation.NewValidator(syncerValidatorExtensions, opts.Settings)
 
+	// allow by default
+	disableValidationAgainstPreviousState := os.Getenv("DISABLE_VALIDATION_AGAINST_PREVIOUS_STATE") == "true"
 	validationConfig := gwvalidation.ValidatorConfig{
-		Translator:         gatewayTranslator,
-		GlooValidator:      validator.ValidateGloo,
-		ExtensionValidator: extensionValidator,
+		Translator:                            gatewayTranslator,
+		GlooValidator:                         validator.ValidateGloo,
+		ExtensionValidator:                    extensionValidator,
+		DisableValidationAgainstPreviousState: disableValidationAgainstPreviousState,
 	}
 	if gwOpts.Validation != nil {
 		valOpts := gwOpts.Validation
@@ -856,7 +868,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
 	translationSync := syncer.NewTranslatorSyncer(
-		opts.WatchOpts.Ctx,
+		watchOpts.Ctx,
 		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizers,
@@ -893,6 +905,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			}
 		}
 	}()
+
+	// startFuncs represents the set of StartFunc that should be executed at startup
+	// At the moment, the functionality is used minimally.
+	// Overtime, we should break up this large function into smaller StartFunc
+	startFuncs := map[string]StartFunc{}
+
+	if opts.GlooGateway.EnableK8sGatewayController {
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc()
+	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
 	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
@@ -964,6 +985,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 
+	ExecuteAsynchronousStartFuncs(
+		watchOpts.Ctx,
+		opts,
+		extensions,
+		startFuncs,
+		runErrorGroup,
+	)
+
+	go func() {
+		// It is critical that the RunGlooWithExtensions function does not block.
+		// As a result, we monitor the runErrorGroup and just drop errors on the shared "errs" channel if one occurs
+		errs <- runErrorGroup.Wait()
+	}()
+
 	go func() {
 		for {
 			select {
@@ -972,7 +1007,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					return
 				}
 				logger.Errorw("gloo main event loop", zap.Error(err))
-			case <-opts.WatchOpts.Ctx.Done():
+			case <-watchOpts.Ctx.Done():
 				// think about closing this channel
 				// close(errs)
 				return
@@ -980,6 +1015,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
+	logger.Infof("Gloo setup completed successfully")
 	return nil
 }
 
@@ -1023,6 +1059,7 @@ type constructOptsParams struct {
 	writeNamespace     string
 }
 
+// constructs bootstrap opts from settings
 func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.Opts, error) {
 
 	var (
@@ -1239,5 +1276,35 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
+		GlooGateway:                  constructGlooGatewayBootstrapOpts(),
 	}, nil
+}
+
+func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
+	return bootstrap.GlooGateway{
+		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
+		// In the interim, we use an env variable to control the value
+		EnableK8sGatewayController: isEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
+		IstioValues:                constructIstioBootstrapOpts(),
+	}
+}
+
+func constructIstioBootstrapOpts() bootstrap.IstioValues {
+	istioValues := bootstrap.IstioValues{
+		// TODO: This value should be inherited at installation time, to determine if the istio integration is enabled
+		// In the interim, we use an env variable to control the value
+		SDSEnabled: isEnvTruthy(constants.IstioMtlsEnabled),
+
+		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
+		SidecarOnGatewayEnabled: isEnvTruthy(constants.IstioInjectionEnabled),
+	}
+
+	return istioValues
+}
+
+// IsEnvTruthy returns true if a given environment variable has a truthy value
+// Examples of truthy values are: "1", "t", "T", "true", "TRUE", "True". Anything else is considered false.
+func isEnvTruthy(envVarName string) bool {
+	envValue, _ := strconv.ParseBool(os.Getenv(envVarName))
+	return envValue
 }

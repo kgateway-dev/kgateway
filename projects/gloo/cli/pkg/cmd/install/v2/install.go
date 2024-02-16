@@ -47,7 +47,10 @@ func install(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	dep, err := deployer.NewDeployer(cli.Scheme(), false, "glooctl", "", 0)
+	// TODO(npolshak): Need to support providing SDSEnabled here to the cli options
+	dep, err := deployer.NewDeployer(cli.Scheme(), &deployer.Inputs{
+		ControllerName: "glooctl",
+	})
 	if err != nil {
 		return err
 	}

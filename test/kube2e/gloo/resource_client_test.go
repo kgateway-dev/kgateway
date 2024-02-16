@@ -1,7 +1,7 @@
 package gloo_test
 
 import (
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,7 +29,7 @@ var _ = Describe("ResourceClient", func() {
 		testNamespace = helpers.RandString(8)
 		kubeClient = resourceClientset.KubeClients()
 
-		_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+		_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: testNamespace,
 			},
@@ -47,16 +47,16 @@ var _ = Describe("ResourceClient", func() {
 		svcClient := v1.NewKubeServiceClientWithBase(baseClient)
 
 		kubeSvcClient := kubeClient.CoreV1().Services(testNamespace)
-		kubeSvc, err := kubeSvcClient.Create(ctx, &kubev1.Service{
+		kubeSvc, err := kubeSvcClient.Create(ctx, &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "hi",
 				Namespace: testNamespace,
 			},
-			Spec: kubev1.ServiceSpec{
-				Ports: []kubev1.ServicePort{
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
 					{
 						Name:     "http",
-						Protocol: kubev1.ProtocolTCP,
+						Protocol: corev1.ProtocolTCP,
 						Port:     1234,
 					},
 				},

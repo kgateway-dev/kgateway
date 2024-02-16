@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check/internal/v2"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -71,14 +72,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			printer := printers.P{OutputType: opts.Top.Output}
 			printer.CheckResult = printer.NewCheckResult()
 
-			var err error
+			// TODO add back the v2 check (probably better to pass in as a flag rather than try to infer it)
+			// var err error
 			// call v2 check if k8s gateway crds are detected, otherwise call v1 check
-			isV2 := detectCrdsV2(opts.Top.KubeContext)
-			if isV2 {
-				err = v2.Check(ctx, printer, opts)
-			} else {
-				err = CheckResources(ctx, printer, opts)
-			}
+			// isV2 := detectCrdsV2(opts.Top.KubeContext)
+			// if isV2 {
+			// 	err = v2.Check(ctx, printer, opts)
+			// } else {
+			err := CheckResources(ctx, printer, opts)
+			// }
 
 			if err != nil {
 				// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
@@ -89,9 +91,10 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				printer.AppendMessage("No problems detected.")
 			}
 
-			if !isV2 {
-				CheckMulticlusterResources(ctx, printer, opts)
-			}
+			// TODO add back the v2 check
+			// if !isV2 {
+			CheckMulticlusterResources(ctx, printer, opts)
+			// }
 
 			if opts.Top.Output.IsJSON() {
 				printer.PrintChecks(new(bytes.Buffer))
@@ -891,8 +894,18 @@ func checkProxies(ctx context.Context, printer printers.P, opts *options.Options
 					}
 				}
 			} else {
-				errMessage := fmt.Sprintf("Found proxy with no status: %s\n", renderMetadata(proxy.GetMetadata()))
-				multiErr = multierror.Append(multiErr, errors.New(errMessage))
+				// Proxy has no status. We want to warn users that something is causing the Proxy to not be processed by the ControlPlane
+				translatorValue := utils.GetTranslatorValue(proxy.GetMetadata())
+				if translatorValue == utils.GlooGatewayTranslatorValue {
+					// This proxy was created by the k8s Gateway translation
+					// That feature does not yet support propagating statuses onto the Proxy CR, so we ignore it
+
+				} else {
+					// This proxy was created by the Edge Gateway translation
+					// That feature does support propagating statuses on the Proxy CR, so if a status is not there, we should error
+					errMessage := fmt.Sprintf("Found proxy with no status: %s\n", renderMetadata(proxy.GetMetadata()))
+					multiErr = multierror.Append(multiErr, errors.New(errMessage))
+				}
 			}
 		}
 	}

@@ -7,20 +7,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type OpaqueSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &OpaqueSecretConverter{}
 
-func (c *OpaqueSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (c *OpaqueSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	if secret == nil {
 		contextutils.LoggerFrom(ctx).Warn("unexpected nil secret")
 		return nil, nil
 	}
 
-	if secret.Type != kubev1.SecretTypeOpaque {
+	if secret.Type != corev1.SecretTypeOpaque {
 		return nil, nil
 	}
 
@@ -35,7 +35,7 @@ func (c *OpaqueSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecr
 	return resource, nil
 }
 
-func (c *OpaqueSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, _ resources.Resource) (*kubev1.Secret, error) {
+func (c *OpaqueSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, _ resources.Resource) (*corev1.Secret, error) {
 	// We don't need to do any special conversion from Gloo to k8s secrets. Just return nil and let next converter handle it
 	return nil, nil
 }
