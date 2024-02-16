@@ -593,7 +593,6 @@ func compareReports(proxyReports1, proxyReports2 ProxyReports, allowWarnings boo
 		pr2 := proxyReports2[i]
 
 		// Check that the listener reports are the same types
-		// DO_NOT_SUBMIT: double check that reports are created regardless of warnings and errors being present
 		l1 := pr1.GetListenerReports()
 		l2 := pr2.GetListenerReports()
 		if len(l1) != len(l2) {
