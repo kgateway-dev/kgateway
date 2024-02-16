@@ -240,7 +240,7 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 }
 
 // validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. This was removed from the
-// main validation loop to allow it to be re-run against the original snapshot. The reseaon for revalidation is to allow
+// main validation loop to allow it to be re-run against the original snapshot. The reason for this second validaiton run is to allow
 // the deletion of secrets, but only if they are not in use by the snapshot. This function does not know about
 // those use cases, but supports them with the opts.collectAllErrors flag, which is passed as 'true' when
 // attempting to delete a secret. This flag overrides the usual behavior of continuing to the next proxy after the first error,
@@ -248,13 +248,13 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 //
 // This means there are four separate behaviors for validation:
 // 1. allow_warnings=true and opts.collectAllErrors=false
-//     Warnings are ignored and after the first error for a proxy, the next proxy is translated
+//     Warnings are ignored and after the first error for a proxy validation stops and the next proxy is translated/validated
 // 2. allow_warnings=true and opts.collectAllErrors=true
 //     Warnings are ignored, and all errors are collected and returned
-// 3. allow_warnings=false and opts.collectAllErrors=true
-//     Warnings are ignored and all errors are collected and returned
-// 4. allow_warnings=false and opts.collectAllErrors=falses
-//     Warnings are treated as errors and after the first error for a proxy, the next proxy is translated
+// 3. allow_warnings=false and opts.collectAllErrors=false
+//     Warnings are treated as errors and after the first error for a proxy validation stops and the next proxy is translated
+// 4. allow_warnings=false and opts.collectAllErrors=true
+//     Warnings are treated as errors and all errors are collected and returned
 //
 // There are two main ways errors and warnings are collected to be processed:
 // 1. The Gloo validation reports are collected and processed by the reporter package. Based on the value of `allowWarnings`,
@@ -306,14 +306,14 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxies = append(proxies, proxy)
 
 		// Validate the proxy with the Gloo validator
-		// This validation also attempts to modify the snapshot, so when validaiting the unmodified snapshot a nil resource is passed in so no modifications are made
+		// This validation also attempts to modify the snapshot, so when validating the unmodified snapshot a nil resource is passed in so no modifications are made
 		resourceToModify := opts.Resource
 		if opts.validateUnmodified {
 			resourceToModify = nil
 		}
 
 		// The error returned here will occur when the function is run before the first sync of resources
-		// If we encounter this error we can continue even if collecting all errors, as we know
+		// If we encounter this error we can `continue` even if collecting all errors, as we know
 		// the revalidation will fail due to the presence of this error
 		glooReports, err := v.glooValidator(ctx, proxy, resourceToModify, opts.Delete)
 		if err != nil {
@@ -323,19 +323,19 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 
 		if len(glooReports) != 1 {
-			// This was likely caused by a development error. When passing a proxy to the glooValidator,
-			// it should return a single report: https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/gloo/pkg/validation/validator.go#L55
-			// If this error is encountered, stop collecting all errors,
-			// as revalidation will fail due to the presence of this error
+			// This was likely caused by a development error. When passing a proxy to the glooValidator,  it should return a single report:
+			// https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/gloo/pkg/validation/validator.go#L55
+			// If this error is encountered, stop collecting all errors, as revalidation will fail due to the presence of this error
 			err = GlooValidationResponseLengthError{reportLength: len(glooReports)}
 			errs = multierror.Append(errs, err)
 			continue
 		}
 
-		// Validate the reports returned by the glooValidator
+		// Collect the reports returned by the glooValidator
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 
+		// Validate the reports returned by the glooValidator
 		// Get the errors and warngings from the proxyReport
 		stopValidatingProxy := v.appendProxyErrors(&errs, proxyReport, proxy, opts)
 		if stopValidatingProxy {
@@ -348,7 +348,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		if err != nil {
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierror.Append(errs, err)
-			// Don't need to check opts.collectAllErrors here, because this is the end of the loop
 		}
 
 	} // End of proxy validation loop
@@ -357,7 +356,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	extensionReports := v.extensionValidator.Validate(ctx, snapshot)
 
 	if len(extensionReports) > 0 {
-		// Collect the errors and maybe warnings from the reports
+		// Collect the errors from the reports
 		err = v.getErrorsFromResourceReports(extensionReports)
 
 		if err != nil {
@@ -369,7 +368,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	return proxies, proxyReports, errs
 }
 
-// appendProxyErrors appends the errors and from the proxyReport to the error, passed in by pointer
+// appendProxyErrors appends the errors and from the proxyReport to the (multi)error, passed in by pointer
 // It returns a boolean to indicate whether the caller should continue processing the next proxy
 func (v *validator) appendProxyErrors(errs *error, proxyReport *validation.ProxyReport, proxy *gloov1.Proxy, opts *validationOptions) bool {
 	if err := validationutils.GetProxyError(proxyReport); err != nil {
@@ -441,7 +440,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
-	validateAgainstCurrentSnapshot := v.validateAgainstCurrentSnapshot(ctx, opts)
+	validateAgainstCurrentSnapshot := v.validateAgainstCurrentSnapshot(opts)
 
 	// The collectAllErrors opts field is used to control whether all errors are collected or if valdiation for a proxy is stopped on the first error
 	// Only treat warnings as errors when 'allow_warnings=false'
@@ -450,11 +449,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	// Run the validation.
 	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
 
-	// If we have errors and we are not to retry validation, we need to compare the validation output
-	overrideErrors := false
+	passedSnapshotValidation := false
 	// We want to compare the validation output if the retryValidation flag and we are currently not passing validation
 	if validateAgainstCurrentSnapshot && errs != nil {
-		overrideErrors = v.compareValidationWithoutModification(ctx, opts, proxies, proxyReports, errs)
+		passedSnapshotValidation = v.compareValidationWithoutModification(ctx, opts, proxies, proxyReports, errs)
 	}
 
 	// Put the metric logic in its own block because the acceptance logic has gotten more complicated
@@ -466,8 +464,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 	}
 
-	if errs != nil && !overrideErrors {
-
+	if errs != nil && !passedSnapshotValidation {
 		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
 		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs,
 			"validating %T %v",
@@ -498,7 +495,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 // validateAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
 // and the results of that valdidation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
-func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *validationOptions) bool {
+func (v *validator) validateAgainstCurrentSnapshot(opts *validationOptions) bool {
 	if v.disableValidationAgainstSnapshot {
 		return false
 	}
@@ -511,9 +508,9 @@ func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *va
 }
 
 // compareValidationWithoutModification is used to compare the output of validation against validation of the orginal snapshot
-// this is used in special cases. specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
+// This is used in special cases, specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
 // and instead of relying on the presence of errors to determine whether to accept the modification, the output of
-// validation of the request (proxies, proxyReports, errors) is compared to the output of the validation of the original snapshot.
+// validation of the modified snapshot (proxies, proxyReports, errors) is compared to the output of the validation of the original snapshot.
 // If outputs are the same, it is assumed that the modification did not degrade the system and  is accepted
 func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error) bool {
 	contextutils.LoggerFrom(ctx).Debugw(
@@ -535,10 +532,7 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 		return false
 	}
 
-	// Get the validation output without the modification. At the moment, any errors returned here are ignored.
-	// No errors existed in the original validation output or they would have returned already, so there is
-	// nothing to compare new errors to. It would be very unexpected to receive no errors after removing a secret
-	// and then errors after adding it back in. This logic should be reconsidered as more cases are supported.
+	// Get the validation output without the modification.
 	proxiesNoMod, proxyReportsNoMod, errorsNoMod := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
 
 	sameErrors := compareErrors(errorsNoMod, errs)
@@ -648,7 +642,7 @@ func compareProxies(proxy1, proxy2 []*gloov1.Proxy) bool {
 
 // findBreakingErrors looks for errors that are not due to the snapshot itself,
 // for example if Sync has not yet been run. These errors make comparision of snapshot validation output
-// invalid for the purposes of determinning if an alteration created a new error or warning.
+// invalid for the purposes of determining if an alteration created a new error or warning.
 func findBreakingErrors(errs error) bool {
 	var lengthError GlooValidationResponseLengthError
 	var syncError SyncNotYetRunError
