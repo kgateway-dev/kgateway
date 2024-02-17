@@ -412,6 +412,8 @@ var _ = Describe("Validator", func() {
 					logger *zap.SugaredLogger
 				)
 
+				v.glooValidator = ValidationWithResourceReports(generateError)
+
 				// The error we are interested in is not returned, but there is a relevant log message,
 				// so capture/check that after the validation is run
 				buf = &bytes.Buffer{}
