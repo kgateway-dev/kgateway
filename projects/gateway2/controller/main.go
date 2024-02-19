@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"os"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
@@ -27,9 +28,9 @@ type ControllerConfig struct {
 	GatewayControllerName string
 	Release               string
 	AutoProvision         bool
-	XdsServer             string
-	XdsPort               uint16
 	Dev                   bool
+
+	ControlPlane bootstrap.ControlPlane
 }
 
 func Start(cfg ControllerConfig) {
@@ -60,7 +61,6 @@ func Start(cfg ControllerConfig) {
 
 	ctx := signals.SetupSignalHandler()
 
-	xdsCache := newAdsSnapshotCache(ctx)
 	glooTranslator := newGlooTranslator(ctx)
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
@@ -68,7 +68,7 @@ func Start(cfg ControllerConfig) {
 		cfg.GatewayControllerName,
 		glooTranslator,
 		sanz,
-		xdsCache,
+		cfg.ControlPlane.SnapshotCache,
 		false,
 		inputChannels,
 		mgr.GetClient(),
@@ -83,11 +83,6 @@ func Start(cfg ControllerConfig) {
 		go xdsSyncer.ServeXdsSnapshots()
 	}
 
-	if err := mgr.Add(NewServer(ctx, cfg.XdsPort, xdsCache)); err != nil {
-		setupLog.Error(err, "unable to start xds server")
-		os.Exit(1)
-	}
-
 	var gatewayClassName apiv1.ObjectName = apiv1.ObjectName(cfg.GatewayClassName)
 
 	gwcfg := GatewayConfig{
@@ -96,8 +91,7 @@ func Start(cfg ControllerConfig) {
 		Dev:            cfg.Dev,
 		ControllerName: cfg.GatewayControllerName,
 		AutoProvision:  cfg.AutoProvision,
-		XdsServer:      cfg.XdsServer,
-		XdsPort:        cfg.XdsPort,
+		ControlPlane:   cfg.ControlPlane,
 		Kick:           inputChannels.Kick,
 	}
 	err = NewBaseGatewayController(ctx, gwcfg)

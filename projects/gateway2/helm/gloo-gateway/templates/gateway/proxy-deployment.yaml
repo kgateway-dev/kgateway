@@ -34,8 +34,6 @@ spec:
         securityContext:
           {{- toYaml .Values.gateway.securityContext | nindent 12 }}
         args:
-        - "-c"
-        - "/etc/envoy/envoy.yaml"
         - "--disable-hot-restart"
         - "--service-node"
         - $(POD_NAME).$(POD_NAMESPACE)
@@ -125,10 +123,9 @@ spec:
   selector:
     {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
 ---
-{{- $xdsDefault := printf "%s.%s" (include "gloo-gateway.controlPlane.fullname" . ) .Release.Namespace }}
-{{- $xdsHost := default $xdsDefault .Values.gateway.xds.host }}
-{{- $xdsPort := default .Values.controlPlane.service.port .Values.gateway.xds.port }}
-{{- $xdsClusterName := printf "%s:%v" $xdsHost $xdsPort }}
+{{- $glooXdsAddress := printf "gloo.%s.svc.%s" .Release.Namespace .Values.k8s.clusterName }}
+{{- $glooXdsPort := default .Values.controlPlane.service.port .Values.gateway.xds.port }}
+
 
 # config_map
 apiVersion: v1
@@ -148,6 +145,7 @@ data:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
         gateway:
+          # TODO: Should this default live somewhere shared instead of just here?
           name: {{ .Values.gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
           namespace: {{ .Release.Namespace }}
     static_resources:
@@ -182,23 +180,19 @@ data:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
       clusters:
-        - name: {{ $xdsClusterName }}
+        - name: xds_cluster
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s
           load_assignment:
-            cluster_name: {{ $xdsClusterName }}
+            cluster_name: xds_cluster
             endpoints:
             - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: {{ $xdsHost }}
-                      port_value: {{ $xdsPort }}
-          typed_extension_protocol_options:
-            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-              explicit_http_config:
-                http2_protocol_options: {}
+                      address: {{ $glooXdsAddress }}
+                      port_value: {{ $glooXdsPort }}
+          http2_protocol_options: {}
           upstream_connection_options:
             tcp_keepalive:
               keepalive_time: 10
@@ -225,7 +219,7 @@ data:
         rate_limit_settings: {}
         grpc_services:
         - envoy_grpc:
-            cluster_name: {{ $xdsClusterName }}
+            cluster_name: xds_cluster
       cds_config:
         resource_api_version: V3
         ads: {}

@@ -86,9 +86,24 @@ type ProxyDebugServer struct {
 	*GrpcService
 	Server debug.ProxyEndpointServer
 }
+
 type GrpcService struct {
 	Ctx             context.Context
 	BindAddr        net.Addr
 	GrpcServer      *grpc.Server
 	StartGrpcServer bool
+}
+
+// GetBindAddress returns the string form of the BindAddr (for example, "192.0.2.1:25", "[2001:db8::1]:80")
+func (g *GrpcService) GetBindAddress() string {
+	return g.BindAddr.String()
+}
+
+// GetBindPort returns the port if the GrpcService relies on a TCPAddr, 0 otherwise
+func (g *GrpcService) GetBindPort() int {
+	tcpAddr, ok := g.BindAddr.(*net.TCPAddr)
+	if !ok {
+		return 0
+	}
+	return tcpAddr.Port
 }

@@ -318,6 +318,13 @@ var _ = Describe("Deployer", func() {
 		Expect(gateway["name"]).To(Equal(gw.Name))
 		Expect(gateway["namespace"]).To(Equal(gw.Namespace))
 
+		Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
+			"gateway": map[string]any{
+				"name":      gw.Name,
+				"namespace": gw.Namespace,
+			},
+		}))
+
 	})
 
 	It("support segmenting by release", func() {

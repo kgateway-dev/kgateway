@@ -902,9 +902,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	controller.Start(controller.ControllerConfig{
 		GatewayClassName:      "gloo-gateway",
 		GatewayControllerName: "solo.io/gloo-gateway",
-		XdsServer:             "",
-		XdsPort:               8080,
 		AutoProvision:         true,
+
+		ControlPlane: opts.ControlPlane,
 	})
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
