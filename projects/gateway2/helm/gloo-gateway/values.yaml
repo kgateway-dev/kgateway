@@ -78,7 +78,9 @@ gateway:
   xds:
     host: ""
     port: 8080
-  replicaCount: 1
+  # The glood deployment will be removed entirely soon, as the ControlPlane will be run as a single binary
+  # In the meantime, we scale down this deployment to avoid confusion for other developers
+  replicaCount: 0
   resources: {}
   autoscaling:
     enabled: false
