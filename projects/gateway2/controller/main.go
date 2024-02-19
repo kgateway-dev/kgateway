@@ -1,8 +1,9 @@
 package controller
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
@@ -79,6 +80,7 @@ func Start(cfg ControllerConfig) {
 		os.Exit(1)
 	}
 
+	// sam-heilbron: I don't think this is necessary, as we should have a shared cache
 	if cfg.Dev {
 		go xdsSyncer.ServeXdsSnapshots()
 	}

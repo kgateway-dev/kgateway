@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"

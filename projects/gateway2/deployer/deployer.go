@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"io"
 	"io/fs"
 	"path/filepath"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/ports"

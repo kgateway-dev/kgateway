@@ -1,9 +1,10 @@
 package deployer
 
 import (
+	"io/fs"
+
 	"github.com/solo-io/gloo/pkg/version"
 	"helm.sh/helm/v3/pkg/chart"
-	"io/fs"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
