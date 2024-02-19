@@ -239,6 +239,12 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 	return v.validateSnapshot(opts)
 }
 
+type validationOutput struct {
+	proxies      []*gloov1.Proxy
+	proxyReports ProxyReports
+	err          error
+}
+
 // validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. This was removed from the
 // main validation loop to allow it to be re-run against the original snapshot. The reason for this second validaiton run is to allow
 // the deletion of secrets, but only if they are not in use by the snapshot. This function does not know about
@@ -269,7 +275,7 @@ func (v *validator) validateSnapshotThreadSafe(opts *validationOptions) (
 
 // When validating reports with the reporter package errors and warnings are sorted how we want them to be returned
 // other sources of warnings/errors need to be handled separately
-func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) ([]*gloov1.Proxy, ProxyReports, error) {
+func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *gloov1snap.ApiSnapshot, opts *validationOptions) validationOutput {
 	var (
 		proxies      []*gloov1.Proxy
 		proxyReports ProxyReports
@@ -365,7 +371,11 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		}
 	}
 
-	return proxies, proxyReports, errs
+	return validationOutput{
+		proxies:      proxies,
+		proxyReports: proxyReports,
+		err:          errs,
+	}
 }
 
 // appendProxyErrors appends the errors and from the proxyReport to the (multi)error, passed in by pointer
@@ -440,33 +450,33 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
-	validateAgainstCurrentSnapshot := v.validateAgainstCurrentSnapshot(opts)
+	useValidationAgainstCurrentSnapshot := v.useValidationAgainstCurrentSnapshot(opts)
 
 	// The collectAllErrors opts field is used to control whether all errors are collected or if valdiation for a proxy is stopped on the first error
-	// Only treat warnings as errors when 'allow_warnings=false'
-	opts.collectAllErrors = validateAgainstCurrentSnapshot || v.allowWarnings
+	opts.collectAllErrors = useValidationAgainstCurrentSnapshot
 
 	// Run the validation.
-	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
+	validationOutput := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
+	//errs := validationOutput.err // we use this one so often ,just pull it out
 
 	passedSnapshotValidation := false
-	// We want to compare the validation output if validateAgainstCurrentSnapshot is true and we are currently not passing validation
-	if validateAgainstCurrentSnapshot && errs != nil {
-		passedSnapshotValidation = v.compareValidationWithoutModification(ctx, opts, proxies, proxyReports, errs)
+	// We want to compare the validation output if the retryValidation flag and we are currently not passing validation
+	if useValidationAgainstCurrentSnapshot && validationOutput.err != nil {
+		passedSnapshotValidation = v.validateAgainstCurrentSnapshot(ctx, opts, validationOutput)
 	}
 
 	// Put the metric logic in its own block because the acceptance logic has gotten more complicated
 	if !opts.DryRun {
-		if errs == nil {
+		if validationOutput.err == nil {
 			utils2.MeasureOne(ctx, mValidConfig)
 		} else {
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
 	}
 
-	if errs != nil && !passedSnapshotValidation {
-		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, errs)
-		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs,
+	if validationOutput.err != nil && !passedSnapshotValidation {
+		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", opts.Resource, ref, validationOutput.err)
+		return &Reports{ProxyReports: &validationOutput.proxyReports, Proxies: validationOutput.proxies}, errors.Wrapf(validationOutput.err,
 			"validating %T %v",
 			opts.Resource,
 			ref)
@@ -475,7 +485,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", opts.Resource, ref)
 
-	reports := &Reports{ProxyReports: &proxyReports, Proxies: proxies}
+	reports := &Reports{ProxyReports: &validationOutput.proxyReports, Proxies: validationOutput.proxies}
 	if !opts.DryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
 		if opts.Delete {
@@ -492,10 +502,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-// validateAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
-// and the results of that valdidation compared to the original validation output in order to determine whether to accept the modification.
+// useValidationAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
+// and the results of that validation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
-func (v *validator) validateAgainstCurrentSnapshot(opts *validationOptions) bool {
+func (v *validator) useValidationAgainstCurrentSnapshot(opts *validationOptions) bool {
 	if v.disableValidationAgainstSnapshot {
 		return false
 	}
@@ -507,18 +517,16 @@ func (v *validator) validateAgainstCurrentSnapshot(opts *validationOptions) bool
 	return false
 }
 
-// compareValidationWithoutModification is used to compare the output of validation against validation of the orginal snapshot
-// This is used in special cases, specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
-// and instead of relying on the presence of errors to determine whether to accept the modification, the output of
-// validation of the modified snapshot (proxies, proxyReports, errors) is compared to the output of the validation of the original snapshot.
-// If outputs are the same, it is assumed that the modification did not degrade the system and  is accepted
-func (v *validator) compareValidationWithoutModification(ctx context.Context, opts *validationOptions, proxies []*gloov1.Proxy, proxyReports ProxyReports, errs error) bool {
+// validateAgainstCurrentSnapshot is used to compare the output of validation against validation of the orginal snapshot.
+// It takes the output of the first valdidation with the modification and then gets the output of the validation of the original snapshot
+// and compares the two using compareValidationOutputs, unless there are breaking errors in the first validation output
+func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *validationOptions, validationOutput validationOutput) bool {
 	contextutils.LoggerFrom(ctx).Debugw(
 		"Comparing validation output against original snapshot",
 		zap.String("resource", opts.Resource.GetMetadata().String()),
 	)
 
-	if findBreakingErrors(errs) {
+	if findBreakingErrors(validationOutput.err) {
 		contextutils.LoggerFrom(ctx).Debug(BreakingErrorLogMsg)
 		return false
 	}
@@ -533,11 +541,21 @@ func (v *validator) compareValidationWithoutModification(ctx context.Context, op
 	}
 
 	// Get the validation output without the modification.
-	proxiesNoMod, proxyReportsNoMod, errorsNoMod := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
+	validationOutputNoMod := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
 
-	sameErrors := compareErrors(errorsNoMod, errs)
-	sameProxies := compareProxies(proxiesNoMod, proxies)
-	sameReports := compareReports(proxyReportsNoMod, proxyReports, v.allowWarnings)
+	return v.compareValidationOutputs(ctx, opts, validationOutput, validationOutputNoMod)
+}
+
+// compareValidationOutputs is used to compare the output of validation against validation of the orginal snapshot
+// This is used in special cases, specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
+// and instead of relying on the presence of errors to determine whether to accept the modification, the output of
+// validation of the modified snapshot (proxies, proxyReports, errors) is compared to the output of the validation of the original snapshot.
+// If outputs are the same, it is assumed that the modification did not degrade the system and  is accepted
+func (v *validator) compareValidationOutputs(ctx context.Context, opts *validationOptions, voMod, voNoMod validationOutput) bool {
+
+	sameErrors := compareErrors(voMod.err, voNoMod.err)
+	sameProxies := compareProxies(voMod.proxies, voNoMod.proxies)
+	sameReports := compareReports(voMod.proxyReports, voNoMod.proxyReports, v.allowWarnings)
 
 	if sameProxies && sameReports && sameErrors {
 		contextutils.LoggerFrom(ctx).Debugw(
