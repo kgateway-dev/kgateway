@@ -22,17 +22,45 @@ var _ = Describe("NodeHash", func() {
 			Expect(nodeHash.ID(node)).To(expectedHash,
 				"ClassicEdgeNodeHash should produce the expected string identifier for the Envoy node.")
 		},
-		Entry(&structpb.Struct{}, Equal(xds.FallbackNodeCacheKey)),
-		Entry(&structpb.Struct{
+		Entry("empty metadata", &structpb.Struct{}, Equal(xds.FallbackNodeCacheKey)),
+		Entry("metadata without role", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"non-role-field": structpb.NewStringValue("non-role-value"),
 			},
 		}, Equal(xds.FallbackNodeCacheKey)),
-		Entry(&structpb.Struct{
+		Entry("metadata with role", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
 			},
 		}, Equal("role-value")),
+	)
+
+	DescribeTable("GlooGatewayNodeHash",
+		func(nodeMetadata *structpb.Struct, expectedHash types.GomegaMatcher) {
+			nodeHash := xds.NewGlooGatewayNodeHash()
+
+			node := &envoy_config_core_v3.Node{
+				Metadata: nodeMetadata,
+			}
+			Expect(nodeHash.ID(node)).To(expectedHash,
+				"GlooGatewayNodeHash should produce the expected string identifier for the Envoy node.")
+		},
+		Entry("empty metadata", &structpb.Struct{}, Equal(xds.FallbackNodeCacheKey)),
+		Entry("metadata without gateway field", &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"non-gateway-field": structpb.NewStringValue("non-gateway-value"),
+			},
+		}, Equal(xds.FallbackNodeCacheKey)),
+		Entry("metadata with gateway field", &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"gateway": structpb.NewStructValue(&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"name":      structpb.NewStringValue("name"),
+						"namespace": structpb.NewStringValue("namespace"),
+					},
+				}),
+			},
+		}, Equal("namespace~name")),
 	)
 
 })
