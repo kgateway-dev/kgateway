@@ -450,7 +450,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	proxies, proxyReports, errs := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
 
 	passedSnapshotValidation := false
-	// We want to compare the validation output if the retryValidation flag and we are currently not passing validation
+	// We want to compare the validation output if validateAgainstCurrentSnapshot is true and we are currently not passing validation
 	if validateAgainstCurrentSnapshot && errs != nil {
 		passedSnapshotValidation = v.compareValidationWithoutModification(ctx, opts, proxies, proxyReports, errs)
 	}
