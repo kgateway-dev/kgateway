@@ -2,6 +2,7 @@ namespace:
   create: false
 k8s:
   clusterName: cluster.local
+
 ####### start gateway2
 gateway2:
   # Default values for gloo-gateway.
@@ -16,7 +17,10 @@ gateway2:
 
   controlPlane:
     enabled: true
-    replicaCount: 1
+
+    # The glood deployment will be removed entirely soon, as the ControlPlane will be run as a single binary
+    # In the meantime, we scale down this deployment to avoid confusion for other developers
+    replicaCount: 0
     autoProvision: true
 
     nameOverride: ""
@@ -124,6 +128,7 @@ gateway2:
       # If not set and create is true, a name is generated using the fullname template
       name: ""
 ####### end gateway2
+
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true

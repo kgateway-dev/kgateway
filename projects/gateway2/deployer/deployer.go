@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"io"
 	"io/fs"
 	"path/filepath"
@@ -113,7 +114,9 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	}
 
 	vals := map[string]any{
-		"controlPlane": map[string]any{"enabled": false},
+		"controlPlane": map[string]any{
+			"enabled": false,
+		},
 		"gateway": map[string]any{
 			"enabled":     true,
 			"name":        gw.Name,
@@ -124,6 +127,9 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 				"type": "LoadBalancer",
 			},
 			"xds": map[string]any{
+				// This creates a limitation that the Deployer can only work when the ControlPlane is installed to the gloo-system
+				// namespace. We can address this in a follow-up, and we should be able to identify the namespace of the control plane programmatically
+				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
 				"port": d.port,
 			},
 		},

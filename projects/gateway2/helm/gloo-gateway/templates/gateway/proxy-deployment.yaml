@@ -123,11 +123,6 @@ spec:
   selector:
     {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
 ---
-{{- $glooXdsAddress := printf "gloo.%s.svc.%s" .Release.Namespace .Values.k8s.clusterName }}
-{{- $glooXdsPort := default .Values.controlPlane.service.port .Values.gateway.xds.port }}
-
-
-# config_map
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -190,9 +185,13 @@ data:
               - endpoint:
                   address:
                     socket_address:
-                      address: {{ $glooXdsAddress }}
-                      port_value: {{ $glooXdsPort }}
-          http2_protocol_options: {}
+                      address: {{ .Values.gateway.xds.host }}
+                      port_value: {{ .Values.gateway.xds.port }}
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
           upstream_connection_options:
             tcp_keepalive:
               keepalive_time: 10
