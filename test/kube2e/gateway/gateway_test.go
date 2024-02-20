@@ -2215,7 +2215,7 @@ spec:
 
 		})
 
-		FWhen("allowWarnings=false, FailurePolicy=Fail and there are warnings", Ordered, func() {
+		When("allowWarnings=false, FailurePolicy=Fail and there are warnings", Ordered, func() {
 			const secretName = "tls-secret"
 			const unusedSecretName = "tls-secret-unused"
 
@@ -2272,40 +2272,19 @@ spec:
 					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
 				}, testHelper.InstallNamespace)
 
-				glooResources.VirtualServices = []*gatewayv1.VirtualService{invalidVs}
-
 				Eventually(func() error {
 					err := install.KubectlApply([]byte(upstreamYaml))
 					if err != nil {
 						return err
 					}
 
-					// err = install.KubectlApply([]byte(vsYaml))
-					// if err != nil {
-					// 	return err
-					// }
+					err = install.KubectlApply([]byte(vsYaml))
+					if err != nil {
+						return err
+					}
 
 					return nil
 				}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).ShouldNot(HaveOccurred())
-
-				invalidVs := helpers.NewVirtualServiceBuilder().
-					WithName("my-vs").
-					WithNamespace(testHelper.InstallNamespace).
-					WithDomain("invalid.com").
-					WithRouteMatcher("route", &matchers.Matcher{
-						PathSpecifier: &matchers.Matcher_Prefix{
-							Prefix: "/",
-						},
-					}).
-					WithRouteActionToUpstream("single", &gloov1.Upstream{
-						Metadata: &core.Metadata{
-							Name:      "my-us",
-							Namespace: testHelper.InstallNamespace,
-						},
-					}).
-					Build()
-
-				glooResources.VirtualServices = []*gatewayv1.VirtualService{invalidVs}
 			})
 
 			AfterAll(func() {
