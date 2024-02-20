@@ -1078,6 +1078,9 @@ spec:
                     type: object
                   updateMergeWindow:
                     type: string
+                  useHostnameForHashing:
+                    nullable: true
+                    type: boolean
                 type: object
               maxConcurrentStreams:
                 maximum: 4294967295
