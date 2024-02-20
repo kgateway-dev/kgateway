@@ -2225,7 +2225,7 @@ apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   name: my-us
-  namespace: ` + testHelper.InstallNamespace + `
+  namespace: gloo-system
 spec:
   kube:
     serviceName: my-svc
@@ -2251,7 +2251,8 @@ spec:
         single:
           upstream:
             name: my-us
-            namespace: ` + testHelper.InstallNamespace
+            namespace: gloo-system
+`
 			)
 
 			var updateFailurePolicy = func(failurePolicy admissionregv1.FailurePolicyType) {
