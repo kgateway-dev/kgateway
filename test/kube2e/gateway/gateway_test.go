@@ -2216,7 +2216,7 @@ spec:
 		})
 
 		// These are the conditions to check secret deletion functionality/validation against current errors with allowWarnings=false and there are warngings
-		FWhen("allowWarnings=false, FailurePolicy=Fail and there are warnings", Ordered, func() {
+		When("allowWarnings=false, FailurePolicy=Fail and there are warnings", Ordered, func() {
 			const (
 				secretName       = "tls-secret"
 				unusedSecretName = "tls-secret-unused"
@@ -2276,15 +2276,11 @@ spec:
 				// Allow warnings during setup so that we can install the resources
 				kube2e.UpdateAllowWarningsSetting(ctx, true, testHelper.InstallNamespace)
 
-				// Use an "Eventually" in case it takes a few ticks for the settings to propagate
-				Eventually(func() error {
-					err := install.KubectlApply([]byte(invalidUpstreamYaml))
-					if err != nil {
-						return err
-					}
-					return nil
-				}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).ShouldNot(HaveOccurred())
+				// This should work regardless of whether the warnings are allowed or not
+				err := install.KubectlApply([]byte(invalidUpstreamYaml))
+				Expect(err).NotTo(HaveOccurred())
 
+				// Use an "Eventually" here, as this is the step that actually causes the warnings, so the changes need to have been propagated
 				Eventually(func() error {
 					err := install.KubectlApply([]byte(vsYaml))
 					if err != nil {
@@ -2351,9 +2347,30 @@ spec:
 			})
 
 			It("should act as expected with secret validation", FlakeAttempts(3), func() {
+				By("waiting for the modified VS to be accepted")
+				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+				})
+
+				By("Rejecting resource patches due to existing warnings") // Make sure `allowWarnings` is being respected
+				err := helpers.PatchResource(
+					ctx,
+					&core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      testServerVs.GetMetadata().Name,
+					},
+					func(resource resources.Resource) resources.Resource {
+						vs, ok := resource.(*gatewayv1.VirtualService)
+						Expect(ok).To(BeTrue())
+						vs.SslConfig = nil
+						return vs
+					},
+					resourceClientset.VirtualServiceClient().BaseClient())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"references the service", "which does not exist in namespace"}))
 
 				By("failing to delete a secret that is in use")
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+				err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
 
