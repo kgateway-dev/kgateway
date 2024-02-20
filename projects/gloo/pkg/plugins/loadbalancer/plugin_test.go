@@ -324,6 +324,19 @@ status: {}
 		Expect(out.LbConfig).To(BeNil())
 	})
 
+	It("should use hostname for hashing", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			UseHostnameForHashing: &wrappers.BoolValue{Value: true},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig).To(Equal(&envoy_config_cluster_v3.Cluster_CommonLbConfig{
+			ConsistentHashingLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+				UseHostnameForHashing: true,
+			},
+		}))
+	})
+
 	It("should set locality config - locality weighted lb config", func() {
 		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			LocalityConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig{

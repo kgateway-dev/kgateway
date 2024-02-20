@@ -78,6 +78,10 @@ message LoadBalancerConfig {
         google.protobuf.Empty locality_weighted_lb_config = 8;
     }
 
+
+    // Default: false, If set to true, the hostname will be used for hashing when using maglev for example, useful when using multiple host in the upstreams that resolve to the same IP.
+    google.protobuf.BoolValue  use_hostname_for_hashing = 9;
+
     message SlowStartConfig {
         // Represents the size of slow start window.
         // If set, the newly created host remains in slow start mode starting from its creation time
