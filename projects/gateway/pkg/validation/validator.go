@@ -450,10 +450,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
-	useValidationAgainstCurrentSnapshot := v.useValidationAgainstCurrentSnapshot(opts)
+	shouldValidateAgainstCurrentSnapshot := v.shouldValidateAgainstCurrentSnapshot(opts)
 
 	// The collectAllErrors opts field is used to control whether all errors are collected or if valdiation for a proxy is stopped on the first error
-	opts.collectAllErrors = useValidationAgainstCurrentSnapshot
+	opts.collectAllErrors = shouldValidateAgainstCurrentSnapshot
 
 	// Run the validation.
 	validationOutput := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
@@ -461,7 +461,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	passedSnapshotValidation := false
 	// We want to compare the validation output if the retryValidation flag and we are currently not passing validation
-	if useValidationAgainstCurrentSnapshot && validationOutput.err != nil {
+	if shouldValidateAgainstCurrentSnapshot && validationOutput.err != nil {
 		passedSnapshotValidation = v.validateAgainstCurrentSnapshot(ctx, opts, validationOutput)
 	}
 
@@ -502,10 +502,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-// useValidationAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
+// shouldValidateAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
 // and the results of that validation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
-func (v *validator) useValidationAgainstCurrentSnapshot(opts *validationOptions) bool {
+func (v *validator) shouldValidateAgainstCurrentSnapshot(opts *validationOptions) bool {
 	if v.disableValidationAgainstSnapshot {
 		return false
 	}
