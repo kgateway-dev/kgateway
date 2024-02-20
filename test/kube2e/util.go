@@ -114,6 +114,13 @@ func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNa
 	}, installNamespace)
 }
 
+func UpdateAllowWarningsSetting(ctx context.Context, allowWarnings bool, installNamespace string) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
+		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
+		settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: allowWarnings}
+	}, installNamespace)
+}
+
 func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamespace string) {
 	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGloo()).NotTo(BeNil())
