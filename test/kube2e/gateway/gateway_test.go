@@ -2215,7 +2215,7 @@ spec:
 
 		})
 
-		// These are the conditions to check secret deletion functionality/validation against current errors with allowWarnings=false and there are warngings
+		// These are the conditions to check secret deletion functionality/validation against current errors with allowWarnings=false and there are warnings
 		When("allowWarnings=false, FailurePolicy=Fail and there are warnings", Ordered, func() {
 			const (
 				secretName       = "tls-secret"
