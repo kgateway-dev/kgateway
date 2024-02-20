@@ -75,6 +75,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/yaml"
+
+	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
 )
 
 var _ = Describe("Kube2e: gateway", func() {
@@ -2208,6 +2211,142 @@ spec:
 				for _, tc := range testCases {
 					expectResourceAccepted(tc.resourceYaml)
 				}
+			})
+
+		})
+
+		When("allowWarnings=false, FailurePolicy=Fail and there are warnings", Ordered, func() {
+			const secretName = "tls-secret"
+			const unusedSecretName = "tls-secret-unused"
+
+			var (
+				upstreamYaml = `
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: my-us
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  kube:
+    serviceName: my-svc
+    serviceNamespace: gloo-system
+    servicePort: 18081
+    serviceSpec:
+      grpc: {}
+`
+				vsYaml = `
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: my-vs
+spec:
+   virtualHost:
+    domains:
+    - valid.local
+    options:
+    routes:
+    - matchers:
+        - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: my-us
+            namespace: ` + testHelper.InstallNamespace
+			)
+
+			var updateFailurePolicy = func(failurePolicy admissionregv1.FailurePolicyType) {
+				kubeClient := clienthelpers.MustKubeClient()
+				cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, "gloo-gateway-validation-webhook-gloo-system", metav1.GetOptions{})
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				cfg.Webhooks[0].FailurePolicy = &failurePolicy
+
+				_, err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			}
+
+			// Before these secret deletion tests, set the failure policy to Fail and setup the resources with warnings
+			BeforeAll(func() {
+				updateFailurePolicy(admissionregv1.Fail)
+				// Allow warnings during setup so that we can install the resources
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+
+				Eventually(func() error {
+					err := install.KubectlApply([]byte(upstreamYaml))
+					if err != nil {
+						return err
+					}
+
+					err = install.KubectlApply([]byte(vsYaml))
+					if err != nil {
+						return err
+					}
+
+					return nil
+				}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).ShouldNot(HaveOccurred())
+			})
+
+			AfterAll(func() {
+				updateFailurePolicy(admissionregv1.Ignore)
+				err := install.KubectlDelete([]byte(upstreamYaml))
+				Expect(err).NotTo(HaveOccurred())
+				err = install.KubectlDelete([]byte(vsYaml))
+				Expect(err).NotTo(HaveOccurred())
+
+				// Our tests default to using allowWarnings=true, so we just need to ensure we leave it that way
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+			})
+
+			// The outer "JustBeforeEach" writes the snapshot, and it will have warnings, so in BeforeEach, allowWarnings is set to true
+			BeforeEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+
+				tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
+				glooResources.Secrets = gloov1.SecretList{tlsSecret}
+
+				tlsSecretUnused := helpers.GetTlsSecret(unusedSecretName, testHelper.InstallNamespace)
+				glooResources.Secrets = append(glooResources.Secrets, tlsSecretUnused)
+
+				// Modify the VirtualService to include the created SslConfig
+				testServerVs.SslConfig = &ssl.SslConfig{
+					SslSecrets: &ssl.SslConfig_SecretRef{
+						SecretRef: &core.ResourceRef{
+							Name:      tlsSecret.GetMetadata().GetName(),
+							Namespace: tlsSecret.GetMetadata().GetNamespace(),
+						},
+					},
+				}
+
+			})
+
+			// After the outer "JustBeforeEach" writes the snapshot, set allowWarnings to false for the tests
+			JustBeforeEach(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: false}
+				}, testHelper.InstallNamespace)
+			})
+
+			It("should act as expected with secret validation", FlakeAttempts(3), func() {
+				By("waiting for the modified VS to be accepted")
+				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+				})
+
+				By("failing to delete a secret that is in use")
+				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+
+				// No test for removing a secret from use and deleting it, as the modification would not be allowed due to allowWarnings=false
+				By("deleting a secret that is not in use")
+				err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, unusedSecretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
 			})
 
 		})
