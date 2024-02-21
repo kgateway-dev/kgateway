@@ -95,30 +95,30 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
-		allKeys := map[string]bool{
-			xds.FallbackNodeCacheKey: true,
-		}
-		// Get all envoy node ID keys
-		for _, key := range s.xdsCache.GetStatusKeys() {
-			allKeys[key] = false
-		}
-		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
-			allKeys[key] = true
-		}
-		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
-		for _, extension := range s.syncerExtensions {
-			allKeys[extension.ID()] = true
-		}
+	// if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
+	// 	allKeys := map[string]bool{
+	// 		xds.FallbackNodeCacheKey: true,
+	// 	}
+	// 	// Get all envoy node ID keys
+	// 	for _, key := range s.xdsCache.GetStatusKeys() {
+	// 		allKeys[key] = false
+	// 	}
+	// 	// Get all valid node ID keys for Proxies
+	// 	for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+	// 		allKeys[key] = true
+	// 	}
+	// 	// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
+	// 	for _, extension := range s.syncerExtensions {
+	// 		allKeys[extension.ID()] = true
+	// 	}
 
-		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
-		for key, valid := range allKeys {
-			if !valid {
-				s.xdsCache.SetSnapshot(key, emptySnapshot)
-			}
-		}
-	}
+	// 	// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
+	// 	for key, valid := range allKeys {
+	// 		if !valid {
+	// 			s.xdsCache.SetSnapshot(key, emptySnapshot)
+	// 		}
+	// 	}
+	// }
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
