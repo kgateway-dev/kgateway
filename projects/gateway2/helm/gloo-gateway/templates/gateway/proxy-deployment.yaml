@@ -34,8 +34,6 @@ spec:
         securityContext:
           {{- toYaml .Values.gateway.securityContext | nindent 12 }}
         args:
-        - "-c"
-        - "/etc/envoy/envoy.yaml"
         - "--disable-hot-restart"
         - "--service-node"
         - $(POD_NAME).$(POD_NAMESPACE)
