@@ -904,7 +904,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.GlooGateway.EnableK8sGatewayController {
 		// Run GG controller
 		// TODO: These values are hard-coded, but they should be inherited from the Helm chart
-		controller.Start(controller.ControllerConfig{
+		controller.Start(watchOpts.Ctx, controller.ControllerConfig{
 			GatewayClassName:      "gloo-gateway",
 			GatewayControllerName: "solo.io/gloo-gateway",
 			AutoProvision:         true,

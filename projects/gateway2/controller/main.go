@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -13,7 +14,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -32,7 +32,7 @@ type ControllerConfig struct {
 	ControlPlane bootstrap.ControlPlane
 }
 
-func Start(cfg ControllerConfig) {
+func Start(ctx context.Context, cfg ControllerConfig) {
 	setupLog.Info("xxxxx starting gw2 controller xxxxxx")
 	var opts []zap.Opts
 	if cfg.Dev {
@@ -58,7 +58,7 @@ func Start(cfg ControllerConfig) {
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	// mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	ctx := signals.SetupSignalHandler()
+	// ctx := signals.SetupSignalHandler()
 
 	glooTranslator := newGlooTranslator(ctx)
 	var sanz sanitizer.XdsSanitizers
