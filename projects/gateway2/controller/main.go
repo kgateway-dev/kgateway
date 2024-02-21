@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -43,13 +42,13 @@ func Start(cfg ControllerConfig) {
 	}
 	ctrl.SetLogger(zap.New(opts...))
 	mgrOpts := ctrl.Options{
-		Scheme:           scheme.NewScheme(),
-		PprofBindAddress: "127.0.0.1:9099",
-		// if you change the port here, also change the port "health" in the helmchart.
-		HealthProbeBindAddress: ":9093",
-		Metrics: metricsserver.Options{
-			BindAddress: ":9092",
-		},
+		Scheme: scheme.NewScheme(),
+		// PprofBindAddress: "127.0.0.1:9099",
+		// // if you change the port here, also change the port "health" in the helmchart.
+		// HealthProbeBindAddress: ":9093",
+		// Metrics: metricsserver.Options{
+		// 	BindAddress: ":9092",
+		// },
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
