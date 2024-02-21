@@ -13,8 +13,8 @@ build-glooctl:
 
 docker: build
 	docker build -t ghcr.io/solo-io/gloo-gateway/glood:$(VERSION) .
-	docker pull quay.io/solo-io/gloo-envoy-wrapper:1.16.4
-	docker tag quay.io/solo-io/gloo-envoy-wrapper:1.16.4 ghcr.io/solo-io/gloo-gateway/gloo-proxy:$(VERSION)
+	docker pull quay.io/solo-io/gloo-envoy-wrapper:1.17.0-beta8-9148
+	docker tag quay.io/solo-io/gloo-envoy-wrapper:1.17.0-beta8-9148 ghcr.io/solo-io/gloo-gateway/gloo-proxy:$(VERSION)
 
 push: docker
 	docker push ghcr.io/solo-io/gloo-gateway/glood:$(VERSION)
