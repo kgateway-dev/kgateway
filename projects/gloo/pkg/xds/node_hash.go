@@ -15,13 +15,17 @@ var _ cache.NodeHash = new(aggregateNodeHash)
 // we assign a "fix me" snapshot for bad nodes
 const FallbackNodeCacheKey = "misconfigured-node"
 
-// NamespaceNameID returns the string identifier for an Envoy node in a provided namespace.
+// Prefix indicating which translator created this Proxy.
+const ClassicEdgePrefix = "edge"
+const GlooGatewayPrefix = "gateway"
+
+// OwnerNamespaceNameID returns the string identifier for an Envoy node in a provided namespace.
 // Envoy proxies are assigned their configuration by Gloo based on their Node ID.
 // Therefore, proxies must identify themselves using the same naming
 // convention that we use to persist the Proxy resource in the snapshot cache.
-// The naming convention that we follow is "NAMESPACE~NAME"
-func NamespaceNameID(namespace, name string) string {
-	return fmt.Sprintf("%s~%s", namespace, name)
+// The naming convention that we follow is "OWNER~NAMESPACE~NAME"
+func OwnerNamespaceNameID(owner, namespace, name string) string {
+	return fmt.Sprintf("%s~%s~%s", owner, namespace, name)
 }
 
 func NewClassicEdgeNodeHash() *classicEdgeNodeHash {
@@ -35,7 +39,7 @@ func (c classicEdgeNodeHash) ID(node *envoy_config_core_v3.Node) string {
 	if node.GetMetadata() != nil {
 		roleValue := node.GetMetadata().GetFields()["role"]
 		if roleValue != nil {
-			return roleValue.GetStringValue()
+			return fmt.Sprintf("%s~%s", ClassicEdgePrefix, roleValue.GetStringValue())
 		}
 	}
 
@@ -53,7 +57,8 @@ func (g glooGatewayNodeHash) ID(node *envoy_config_core_v3.Node) string {
 	if node.GetMetadata() != nil {
 		gatewayFields := node.GetMetadata().GetFields()["gateway"].GetStructValue().GetFields()
 		if gatewayFields != nil {
-			return NamespaceNameID(
+			return OwnerNamespaceNameID(
+				GlooGatewayPrefix,
 				gatewayFields["namespace"].GetStringValue(),
 				gatewayFields["name"].GetStringValue())
 		}

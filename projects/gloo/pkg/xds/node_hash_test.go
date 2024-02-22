@@ -32,7 +32,7 @@ var _ = Describe("NodeHash", func() {
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
 			},
-		}, Equal("role-value")),
+		}, Equal("edge~role-value")),
 	)
 
 	DescribeTable("GlooGatewayNodeHash",
@@ -60,7 +60,7 @@ var _ = Describe("NodeHash", func() {
 					},
 				}),
 			},
-		}, Equal("namespace~name")),
+		}, Equal("gateway~namespace~name")),
 	)
 
 	DescribeTable("AggregateNodeHash",
@@ -88,12 +88,12 @@ var _ = Describe("NodeHash", func() {
 					},
 				}),
 			},
-		}, Equal("namespace~name")),
+		}, Equal("gateway~namespace~name")),
 		Entry("metadata with role", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
 			},
-		}, Equal("role-value")),
+		}, Equal("edge~role-value")),
 		Entry("metadata with gateway and role field", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
@@ -104,7 +104,7 @@ var _ = Describe("NodeHash", func() {
 					},
 				}),
 			},
-		}, Equal("namespace~name")),
+		}, Equal("gateway~namespace~name")),
 	)
 
 })

@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -9,21 +10,26 @@ import (
 )
 
 // SnapshotCacheKey returns the key used to identify a Proxy resource in a SnapshotCache
-// This key must match the node.metadata.role of the Envoy Node
-func SnapshotCacheKey(proxy *v1.Proxy) string {
+func SnapshotCacheKey(owner string, proxy *v1.Proxy) string {
 	namespace, name := proxy.GetMetadata().Ref().Strings()
-	return NamespaceNameID(namespace, name)
+	return OwnerNamespaceNameID(owner, namespace, name)
 }
 
 // SnapshotCacheKeys returns a list with the SnapshotCacheKey for each Proxy
-func SnapshotCacheKeys(proxies v1.ProxyList) []string {
+func SnapshotCacheKeys(owner string, proxies v1.ProxyList) []string {
 	var keys []string
 	// Get keys from proxies
 	for _, proxy := range proxies {
 		// This is where we correlate Node ID with proxy namespace~name
-		keys = append(keys, SnapshotCacheKey(proxy))
+		keys = append(keys, SnapshotCacheKey(owner, proxy))
 	}
 	return keys
+}
+
+// SnapshotBelongsTo returns true if the snapshot with the given cache key was created by the given
+// owner (translator).
+func SnapshotBelongsTo(key string, owner string) bool {
+	return strings.HasPrefix(key, owner+"~")
 }
 
 // NewAdsSnapshotCache returns a snapshot-based cache, used to serve xDS requests
