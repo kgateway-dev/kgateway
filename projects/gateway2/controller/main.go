@@ -12,8 +12,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -41,13 +43,13 @@ func Start(cfg ControllerConfig) {
 	}
 	ctrl.SetLogger(zap.New(opts...))
 	mgrOpts := ctrl.Options{
-		Scheme: scheme.NewScheme(),
-		// PprofBindAddress: "127.0.0.1:9099",
-		// // if you change the port here, also change the port "health" in the helmchart.
-		// HealthProbeBindAddress: ":9093",
-		// Metrics: metricsserver.Options{
-		// 	BindAddress: ":9092",
-		// },
+		Scheme:           scheme.NewScheme(),
+		PprofBindAddress: "127.0.0.1:9099",
+		// if you change the port here, also change the port "health" in the helmchart.
+		HealthProbeBindAddress: ":9093",
+		Metrics: metricsserver.Options{
+			BindAddress: ":9092",
+		},
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
@@ -56,7 +58,7 @@ func Start(cfg ControllerConfig) {
 	}
 
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
-	// mgr.AddReadyzCheck("ready-ping", healthz.Ping)
+	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	ctx := signals.SetupSignalHandler()
 
@@ -79,9 +81,9 @@ func Start(cfg ControllerConfig) {
 	}
 
 	// sam-heilbron: I don't think this is necessary, as we should have a shared cache
-	// if cfg.Dev {
-	// 	go xdsSyncer.ServeXdsSnapshots()
-	// }
+	if cfg.Dev {
+		go xdsSyncer.ServeXdsSnapshots()
+	}
 
 	var gatewayClassName apiv1.ObjectName = apiv1.ObjectName(cfg.GatewayClassName)
 
