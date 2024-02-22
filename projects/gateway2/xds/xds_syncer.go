@@ -235,7 +235,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
-			if !valid {
+			if !valid && xds.SnapshotBelongsTo(key, xds.GlooGatewayPrefix) {
 				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}

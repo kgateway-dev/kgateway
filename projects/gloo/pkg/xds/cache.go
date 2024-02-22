@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -23,6 +24,12 @@ func SnapshotCacheKeys(owner string, proxies v1.ProxyList) []string {
 		keys = append(keys, SnapshotCacheKey(owner, proxy))
 	}
 	return keys
+}
+
+// SnapshotBelongsTo returns true if the snapshot with the given cache key was created by the given
+// owner (translator).
+func SnapshotBelongsTo(key string, owner string) bool {
+	return strings.HasPrefix(key, owner+"~")
 }
 
 // NewAdsSnapshotCache returns a snapshot-based cache, used to serve xDS requests
