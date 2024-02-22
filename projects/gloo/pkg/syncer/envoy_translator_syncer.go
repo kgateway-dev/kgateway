@@ -104,7 +104,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(xds.ClassicEdgePrefix, snap.Proxies) {
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
@@ -152,7 +152,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
-		key := xds.SnapshotCacheKey(proxy)
+		key := xds.SnapshotCacheKey(xds.ClassicEdgePrefix, proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics

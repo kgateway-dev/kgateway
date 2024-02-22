@@ -229,7 +229,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(xds.GlooGatewayPrefix, snap.Proxies) {
 			allKeys[key] = true
 		}
 
@@ -275,7 +275,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		reports.Merge(reports)
-		key := xds.SnapshotCacheKey(proxy)
+		key := xds.SnapshotCacheKey(xds.GlooGatewayPrefix, proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics
