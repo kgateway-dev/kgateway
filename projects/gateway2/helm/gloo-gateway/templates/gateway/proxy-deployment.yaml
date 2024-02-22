@@ -93,7 +93,7 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
   labels:
     {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
