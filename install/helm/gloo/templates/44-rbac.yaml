@@ -51,9 +51,6 @@ metadata:
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}.{{.Release.Namespace}}-binding
 subjects:
 - kind: ServiceAccount
-  name: {{ include "gloo-gateway.controlPlane.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}
-- kind: ServiceAccount
   name: gloo
   namespace: {{ .Release.Namespace }}
 roleRef:
@@ -90,9 +87,6 @@ metadata:
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
   name: {{ include "gloo-gateway.controlPlane.fullname" . }}-deploy.{{.Release.Namespace}}-binding
 subjects:
-- kind: ServiceAccount
-  name: {{ include "gloo-gateway.controlPlane.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}
 - kind: ServiceAccount
   name: gloo
   namespace: {{ .Release.Namespace }}
