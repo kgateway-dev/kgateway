@@ -1,12 +1,3 @@
-kind create cluster
-
-SCRIPTPATH=$( cd "$(dirname "$0")" && pwd -P )
-
-kubectl apply -f $SCRIPTPATH/crds/gateway-crds.yaml
-
-# TODO: make this smarter if desired; simple relative path works for now
-kubectl apply -f $SCRIPTPATH/../../install/helm/gloo/crds/gateway.solo.io_v1_RouteOption.yaml
-
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
 
 # Wait for MetalLB to become available.

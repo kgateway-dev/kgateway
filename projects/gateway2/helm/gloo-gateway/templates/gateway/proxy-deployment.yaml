@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.gateway.autoscaling.enabled }}
@@ -34,8 +34,6 @@ spec:
         securityContext:
           {{- toYaml .Values.gateway.securityContext | nindent 12 }}
         args:
-        - "-c"
-        - "/etc/envoy/envoy.yaml"
         - "--disable-hot-restart"
         - "--service-node"
         - $(POD_NAME).$(POD_NAMESPACE)
@@ -95,9 +93,9 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
   {{- with .Values.gateway.serviceAccount.annotations }}
   annotations:
@@ -111,7 +109,7 @@ kind: Service
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.gateway.service.type }}
@@ -125,18 +123,12 @@ spec:
   selector:
     {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
 ---
-{{- $xdsDefault := printf "%s.%s" (include "gloo-gateway.controlPlane.fullname" . ) .Release.Namespace }}
-{{- $xdsHost := default $xdsDefault .Values.gateway.xds.host }}
-{{- $xdsPort := default .Values.controlPlane.service.port .Values.gateway.xds.port }}
-{{- $xdsClusterName := printf "%s:%v" $xdsHost $xdsPort }}
-
-# config_map
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 data:
   envoy.yaml: |
@@ -148,6 +140,7 @@ data:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
         gateway:
+          # TODO: Should this default live somewhere shared instead of just here?
           name: {{ .Values.gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
           namespace: {{ .Release.Namespace }}
     static_resources:
@@ -182,18 +175,18 @@ data:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
       clusters:
-        - name: {{ $xdsClusterName }}
+        - name: xds_cluster
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s
           load_assignment:
-            cluster_name: {{ $xdsClusterName }}
+            cluster_name: xds_cluster
             endpoints:
             - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: {{ $xdsHost }}
-                      port_value: {{ $xdsPort }}
+                      address: {{ .Values.gateway.xds.host }}
+                      port_value: {{ .Values.gateway.xds.port }}
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -225,7 +218,7 @@ data:
         rate_limit_settings: {}
         grpc_services:
         - envoy_grpc:
-            cluster_name: {{ $xdsClusterName }}
+            cluster_name: xds_cluster
       cds_config:
         resource_api_version: V3
         ads: {}

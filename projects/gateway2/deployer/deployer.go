@@ -9,7 +9,8 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
@@ -40,31 +41,23 @@ type Deployer struct {
 	chart          *chart.Chart
 	scheme         *runtime.Scheme
 	controllerName string
-	host           string
-	port           uint16
+	port           int
 }
 
-func NewDeployer(scheme *runtime.Scheme, dev bool, controllerName, host string, port uint16) (*Deployer, error) {
-
-	chart, err := loadFs(helm.GlooGatewayHelmChart)
-	if err != nil {
-		// don't retrun an error is requeueing won't help here
-		return nil, err
+// NewDeployer builds a Deployer or returns an error if one could not be constructed
+// A Deployer is responsible for deploying proxies
+// NOTE: This constructor is flawed, as it will fall subject to the telescoping constructor anti-pattern as we
+// add more properties. We should migrate to using just the builder
+func NewDeployer(scheme *runtime.Scheme, dev bool, controllerName string, xdsPort int) (*Deployer, error) {
+	deployerOptions := []Option{
+		WithScheme(scheme),
+		WithChartFs(helm.GlooGatewayHelmChart),
+		WithControllerName(controllerName),
+		WithXdsServer(xdsPort),
+		WithDevMode(dev),
 	}
-	// simulate what `helm package` in the Makefile does
-	if version.Version != version.UndefinedVersion {
-		chart.Metadata.AppVersion = version.Version
-		chart.Metadata.Version = version.Version
-	}
 
-	return &Deployer{
-		dev:            dev,
-		chart:          chart,
-		scheme:         scheme,
-		controllerName: controllerName,
-		host:           host,
-		port:           port,
-	}, nil
+	return BuildDeployer(deployerOptions...)
 }
 
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
@@ -122,7 +115,9 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	}
 
 	vals := map[string]any{
-		"controlPlane": map[string]any{"enabled": false},
+		"controlPlane": map[string]any{
+			"enabled": false,
+		},
 		"gateway": map[string]any{
 			"enabled":     true,
 			"name":        gw.Name,
@@ -133,7 +128,9 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 				"type": "LoadBalancer",
 			},
 			"xds": map[string]any{
-				"host": d.host,
+				// This creates a limitation that the Deployer can only work when the ControlPlane is installed to the gloo-system
+				// namespace. We can address this in a follow-up, and we should be able to identify the namespace of the control plane programmatically
+				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
 				"port": d.port,
 			},
 		},
@@ -186,6 +183,9 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	// Set owner ref
 	trueVal := true
 	for _, obj := range objs {
+		fmt.Printf("xxxxx objToDeploy: kind=%v, namespace=%s, name=%s\n", obj.GetObjectKind(),
+			obj.GetNamespace(), obj.GetName())
+
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,

@@ -174,7 +174,12 @@ var _ = Describe("Helm Test", func() {
 			})
 
 			It("should have all resources marked with a namespace", func() {
-				prepareMakefile(namespace, helmValues{})
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{
+						// TODO: re-enable once gateway2 supports namespaced rbac
+						"gateway2.controlPlane.enabled=false",
+					},
+				})
 
 				nonNamespacedKinds := sets.NewString(
 					"ClusterRole",

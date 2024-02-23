@@ -3,6 +3,8 @@ package controller
 import (
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
@@ -27,12 +29,13 @@ type ControllerConfig struct {
 	GatewayControllerName string
 	Release               string
 	AutoProvision         bool
-	XdsServer             string
-	XdsPort               uint16
 	Dev                   bool
+
+	ControlPlane bootstrap.ControlPlane
 }
 
 func Start(cfg ControllerConfig) {
+	setupLog.Info("xxxxx starting gw2 controller xxxxxx")
 	var opts []zap.Opts
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
@@ -43,9 +46,9 @@ func Start(cfg ControllerConfig) {
 		Scheme:           scheme.NewScheme(),
 		PprofBindAddress: "127.0.0.1:9099",
 		// if you change the port here, also change the port "health" in the helmchart.
-		HealthProbeBindAddress: ":9091",
+		HealthProbeBindAddress: ":9093",
 		Metrics: metricsserver.Options{
-			BindAddress: ":9090",
+			BindAddress: ":9092",
 		},
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
@@ -59,7 +62,6 @@ func Start(cfg ControllerConfig) {
 
 	ctx := signals.SetupSignalHandler()
 
-	xdsCache := newAdsSnapshotCache(ctx)
 	glooTranslator := newGlooTranslator(ctx)
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
@@ -67,7 +69,7 @@ func Start(cfg ControllerConfig) {
 		cfg.GatewayControllerName,
 		glooTranslator,
 		sanz,
-		xdsCache,
+		cfg.ControlPlane.SnapshotCache,
 		false,
 		inputChannels,
 		mgr.GetClient(),
@@ -78,13 +80,9 @@ func Start(cfg ControllerConfig) {
 		os.Exit(1)
 	}
 
+	// sam-heilbron: I don't think this is necessary, as we should have a shared cache
 	if cfg.Dev {
 		go xdsSyncer.ServeXdsSnapshots()
-	}
-
-	if err := mgr.Add(NewServer(ctx, cfg.XdsPort, xdsCache)); err != nil {
-		setupLog.Error(err, "unable to start xds server")
-		os.Exit(1)
 	}
 
 	var gatewayClassName apiv1.ObjectName = apiv1.ObjectName(cfg.GatewayClassName)
@@ -95,8 +93,7 @@ func Start(cfg ControllerConfig) {
 		Dev:            cfg.Dev,
 		ControllerName: cfg.GatewayControllerName,
 		AutoProvision:  cfg.AutoProvision,
-		XdsServer:      cfg.XdsServer,
-		XdsPort:        cfg.XdsPort,
+		ControlPlane:   cfg.ControlPlane,
 		Kick:           inputChannels.Kick,
 	}
 	err = NewBaseGatewayController(ctx, gwcfg)
