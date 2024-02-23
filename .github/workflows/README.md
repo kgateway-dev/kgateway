@@ -35,21 +35,26 @@ To test this on 1.13.x branch:
 
 **NOTE: After the PR opens in solo-apis, we want to avoid the chance that it merges. Please put a 'work in progress' label on the PR to prevent it from merging.**
 
+## [Gloo Gateway Conformance Tests](./regression-tests.yaml)
+Conformance tests a pinned version of the [Kubernetes Gateway API Conformance suite](https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/conformance_test.go).
+
+### Draft Pull Requests
+This Github Action will not run by default on a Draft Pull Request. After a Pull Request is marked as `Ready for Review`
+it will trigger the action to run.
+
 ## [Regression Tests](./regression-tests.yaml)
 Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/main/test).
 
 ### Draft Pull Requests
-This Github Action will not run by default on a Draft Pull Request. If you would like to run this, you need to:
-1. Mark the PR as `Ready for Review`
-1. Push an empty commit to run the jobs: `git commit --allow-empty -m "Trigger CI"` 
+This Github Action will not run by default on a Draft Pull Request. After a Pull Request is marked as `Ready for Review`
+it will trigger the action to run.
 
 ## [Docs Generation](./docs-gen.yaml)
 Docs generation builds the docs that power https://docs.solo.io/gloo-edge/latest/, and on pushes to the main branch, deploys those changes to Firebase.
 
 ### Draft Pull Requests
-This Github Action will not run by default on a Draft Pull Request. If you would like to run this, you need to:
-1. Mark the PR as `Ready for Review`
-1. Push an empty commit to run the jobs: `git commit --allow-empty -m "Trigger CI"`
+This Github Action will not run by default on a Draft Pull Request. After a Pull Request is marked as `Ready for Review`
+it will trigger the action to run.
 
 ## [Trivy Vulnerability Scanning](./trivy-analysis-scheduled.yaml)
 A scheduled job which scans images released from both the Open Source and Enterprise repositories.
