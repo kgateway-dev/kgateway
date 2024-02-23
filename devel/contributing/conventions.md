@@ -7,6 +7,9 @@
     - [Effective Go](https://golang.org/doc/effective_go.html)
     - [Go's commenting conventions](http://blog.golang.org/godoc-documenting-go-code)
     - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+    - Errors:
+        - Error variables with a fixed string should start with `Err` - [Examples from `io/fs`](https://pkg.go.dev/io/fs#pkg-variables)
+        - Error types should be descriptive and end with `Error` - [PathError example from `io/fs`](https://pkg.go.dev/io/fs#PathError)
 
 ## Testing conventions
 See [writing tests](/devel/testing/writing-tests.md) for more details about writing tests.
