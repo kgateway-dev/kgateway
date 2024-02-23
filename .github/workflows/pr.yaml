@@ -1,11 +1,14 @@
 name: GGII Tests
-on: pull_request
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   test_gloo_gateway2:
     name: Build and Test Gloo Gateway 2
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    if: ${{ !github.event.pull_request.draft }}
     steps:
     - uses: actions/checkout@v4
     - name: Setup Go 1.21
@@ -23,6 +26,7 @@ jobs:
     name: Run Gateway api conformance tests
     runs-on: ubuntu-22.04
     timeout-minutes: 15
+    if: ${{ !github.event.pull_request.draft }}
     steps:
     - uses: actions/checkout@v4
     - name: Setup Go 1.21
