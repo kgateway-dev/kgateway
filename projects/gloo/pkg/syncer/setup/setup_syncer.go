@@ -274,10 +274,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	emptyValidationServer := bootstrap.ValidationServer{}
 	emptyProxyDebugServer := bootstrap.ProxyDebugServer{}
 
-	specialLogger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "SAM"))
-
-	specialLogger.Error("emptyValidationServer initialized")
-
 	// check if we need to restart the control plane
 	if xdsAddr != s.previousXdsServer.addr {
 		if s.previousXdsServer.cancel != nil {
@@ -289,7 +285,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// check if we need to restart the validation server
 	if validationAddr != s.previousValidationServer.addr || maxGrpcRecvSize != s.previousValidationServer.maxGrpcRecvSize {
-		specialLogger.Error("validationAddr or maxGrpcRecvSize changed")
 		if s.previousValidationServer.cancel != nil {
 			s.previousValidationServer.cancel()
 			s.previousValidationServer.cancel = nil
@@ -321,7 +316,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// initialize the validation server context in this block either on the first loop, or if bind addr changed
 	if s.validationServer == emptyValidationServer {
-		specialLogger.Error("validationServer is empty, so starting up a new Validation server")
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 		var validationGrpcServerOpts []grpc.ServerOption
