@@ -6,7 +6,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -33,7 +32,7 @@ var _ = Describe("NodeHash", func() {
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
 			},
-		}, Equal(utils.GlooEdgeTranslatorValue+"~role-value")),
+		}, Equal("gloo-gateway-translator~role-value")),
 	)
 
 	DescribeTable("GlooGatewayNodeHash",
@@ -61,7 +60,7 @@ var _ = Describe("NodeHash", func() {
 					},
 				}),
 			},
-		}, Equal(utils.GlooGatewayTranslatorValue+"~namespace~name")),
+		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
 	)
 
 	DescribeTable("AggregateNodeHash",
@@ -89,12 +88,12 @@ var _ = Describe("NodeHash", func() {
 					},
 				}),
 			},
-		}, Equal(utils.GlooGatewayTranslatorValue+"~namespace~name")),
+		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
 		Entry("metadata with role", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
 			},
-		}, Equal(utils.GlooEdgeTranslatorValue+"~role-value")),
+		}, Equal("gloo-gateway-translator~role-value")),
 		Entry("metadata with gateway and role field", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),
@@ -105,7 +104,7 @@ var _ = Describe("NodeHash", func() {
 					},
 				}),
 			},
-		}, Equal(utils.GlooGatewayTranslatorValue+"~namespace~name")),
+		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
 	)
 
 })
