@@ -53,10 +53,10 @@ func GetPodNameEnvVar() v1.EnvVar {
 	}
 }
 
-func GetLogLevelEnvVar() v1.EnvVar {
+func GetLogLevelEnvVar(level string) v1.EnvVar {
 	return v1.EnvVar{
 		Name:  "LOG_LEVEL",
-		Value: "debug",
+		Value: level,
 	}
 }
 
@@ -1044,7 +1044,12 @@ spec:
 
 				It("should add an sds sidecar AND an istio-proxy sidecar in the Gateway-Proxy Deployment", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.istioSDS.enabled=true"},
+						valuesArgs: []string{
+							"global.istioSDS.enabled=true",
+							"gloo.logLevel=debug",
+							"global.glooMtls.sds.logLevel=error",
+							"global.glooMtls.istioProxy.logLevel=warning",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -1062,14 +1067,22 @@ spec:
 							Ω(haveIstioSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an istio-proxy sidecar")
 							Ω(sdsIsIstioMode(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "sds sidecar should have istio mode enabled")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(istioCertsVolume), "should have istio-certs volume mounted")
+							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
+								if c.Name == "sds" {
+									Expect(c.Env).Should(ContainElement(GetLogLevelEnvVar("error")))
+								} else if c.Name == "istio-proxy" {
+									Expect(c.Args).Should(ContainElement("--proxyLogLevel=warning"))
+								}
+							}
 						}
 
 						// Make sure gloo didn't pick up any sidecars for istio SDS (which it would for glooMTLS SDS)
 						if structuredDeployment.GetName() == "gloo" {
 							Ω(haveIstioSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeFalse(), "should not have istio-proxy sidecar in gloo")
 							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeFalse(), "should not have sds sidecar in gloo")
-							Expect(len(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal(1), "should have exactly 1 container")
+							Expect(structuredDeployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).NotTo(ContainElement(istioCertsVolume), "should not mount istio-certs in gloo")
+							Expect(structuredDeployment.Spec.Template.Spec.Containers[0].Env).Should(ContainElement(GetLogLevelEnvVar("debug")))
 						}
 
 					})
@@ -4849,7 +4862,7 @@ metadata:
 					It("can set log level env var", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							glooDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
+							GetLogLevelEnvVar("debug"),
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gloo.logLevel=debug"},
@@ -5102,7 +5115,7 @@ metadata:
 					It("can set log level env var", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							discoveryDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
+							GetLogLevelEnvVar("debug"),
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"discovery.logLevel=debug"},

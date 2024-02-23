@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/9006
+    resolvesIssue: true
+    description: >
+      Add helm flags for setting log level on sds container `.Values.global.glooMtls.sds.logLevel` and setting
+      log level on istio-proxy container `global.glooMtls.istioProxy.logLevel`.
