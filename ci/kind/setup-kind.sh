@@ -59,7 +59,10 @@ fi
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
 USE_SILENCE_REDIRECTS=true make -s build-cli-local
 
-# 5. Install additional resources used for particular KUBE2E tests
+# 5. Apply the Kubernetes Gateway API CRDs
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+
+# 6. Install additional resources used for particular KUBE2E tests
 if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then
   TARGET_ARCH=x86_64
   if [[ $ARCH == 'arm64' ]]; then

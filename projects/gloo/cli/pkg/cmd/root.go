@@ -19,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/get"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/initpluginmanager"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-	v2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/v2"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin"
@@ -126,8 +125,9 @@ func GlooCli() *cobra.Command {
 			plugin.RootCmd(opts),
 			istio.RootCmd(opts),
 			initpluginmanager.Command(context.Background()),
-			v2.InstallCmd(opts),
-			v2.UninstallCmd(opts),
+			// TODO: re-enable this when it's working again
+			// v2.InstallCmd(opts),
+			// v2.UninstallCmd(opts),
 			completionCmd(),
 		)
 	}

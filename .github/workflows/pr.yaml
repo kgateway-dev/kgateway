@@ -34,7 +34,13 @@ jobs:
       with:
         install_only: true
         version: v0.20.0
-    - name: Setup Env in KinD
-      run: make -C ./projects/gateway2/ build docker kind
+    - name: Set up cluster and helm chart
+      run: ./ci/kind/setup-kind.sh
+    - name: Additional cluster setup
+      run: ./projects/gateway2/kind.sh
+    - name: Install Gloo Gateway
+      run: helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci.tgz --create-namespace -f ./projects/gateway2/tests/conformance/test-values.yaml
+    - name: Pre-test cleanup of resources
+      run: kubectl delete rs --all
     - name: Test Conformance
       run: make -C ./projects/gateway2/ conformance

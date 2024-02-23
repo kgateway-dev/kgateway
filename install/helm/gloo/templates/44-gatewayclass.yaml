@@ -1,0 +1,10 @@
+{{- if .Values.gateway2.controlPlane.enabled -}}
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  labels:
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
+  name: {{ .Values.gateway2.gatewayClass.className }}
+spec:
+  controllerName: {{ .Values.gateway2.gatewayClass.controllerName }}
+{{- end }}

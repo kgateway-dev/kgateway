@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
+
+	"github.com/solo-io/gloo/projects/gateway2/controller"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -109,6 +113,7 @@ func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
 	return NewSetupFuncWithRunAndExtensions(runFunc, nil)
 }
 
+// Called directly by GlooEE
 func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
 	s := &setupSyncer{
 		extensions: extensions,
@@ -216,6 +221,7 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
+// Setup constructs bootstrap options based on settings and other input, and calls the runFunc with these options.
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
@@ -450,6 +456,7 @@ func RunGloo(opts bootstrap.Opts) error {
 	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
+// Called directly by GlooEE
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Validate Extensions
 	if extensions.ApiEmitterChannel == nil {
@@ -894,6 +901,18 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
+	if opts.GlooGateway.EnableK8sGatewayController {
+		// Run GG controller
+		// TODO: These values are hard-coded, but they should be inherited from the Helm chart
+		controller.Start(controller.ControllerConfig{
+			GatewayClassName:      "gloo-gateway",
+			GatewayControllerName: "solo.io/gloo-gateway",
+			AutoProvision:         true,
+
+			ControlPlane: opts.ControlPlane,
+		})
+	}
+
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
 	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
 	if validationMustStart == "true" || validationMustStart == "" {
@@ -1023,6 +1042,7 @@ type constructOptsParams struct {
 	writeNamespace     string
 }
 
+// constructs bootstrap opts from settings
 func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.Opts, error) {
 
 	var (
@@ -1239,5 +1259,21 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
+		GlooGateway:                  constructGlooGatewayBootstrapOpts(),
 	}, nil
+}
+
+func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
+	return bootstrap.GlooGateway{
+		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
+		// In the interim, we use an env variable to control the value
+		EnableK8sGatewayController: isEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
+	}
+}
+
+// IsEnvTruthy returns true if a given environment variable has a truthy value
+// Examples of truthy values are: "1", "t", "T", "true", "TRUE", "True". Anything else is considered false.
+func isEnvTruthy(envVarName string) bool {
+	envValue, _ := strconv.ParseBool(os.Getenv(envVarName))
+	return envValue
 }

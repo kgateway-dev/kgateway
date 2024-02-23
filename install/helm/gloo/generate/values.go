@@ -10,7 +10,9 @@ type HelmConfig struct {
 }
 
 type Config struct {
-	Namespace      *Namespace              `json:"namespace,omitempty"`
+	Namespace *Namespace `json:"namespace,omitempty"`
+	// This is an Alpha API and is subject to change in subsequent 1.17 beta releases
+	Gateway2       interface{}             `json:"gateway2,omitempty" desc:"Gloo Gateway settings, subject to change."`
 	Settings       *Settings               `json:"settings,omitempty"`
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
 	Discovery      *Discovery              `json:"discovery,omitempty"`
