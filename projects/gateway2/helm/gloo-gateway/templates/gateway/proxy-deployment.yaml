@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.gateway.autoscaling.enabled }}
@@ -95,7 +95,7 @@ kind: ServiceAccount
 metadata:
   name: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
   {{- with .Values.gateway.serviceAccount.annotations }}
   annotations:
@@ -109,7 +109,7 @@ kind: Service
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.gateway.service.type }}
@@ -128,7 +128,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.const_labels" . | nindent 4 }}
+    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 data:
   envoy.yaml: |

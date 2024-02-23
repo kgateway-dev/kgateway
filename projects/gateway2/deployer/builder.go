@@ -68,8 +68,6 @@ func WithDevMode(devMode bool) Option {
 	}
 }
 
-// scheme *runtime.Scheme, dev bool, controllerName, host string, port uint16
-
 func buildDeployerProperties(options ...Option) *properties {
 	//default
 	cfg := &properties{}
