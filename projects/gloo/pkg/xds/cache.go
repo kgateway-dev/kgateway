@@ -20,7 +20,7 @@ func SnapshotCacheKeys(owner string, proxies v1.ProxyList) []string {
 	var keys []string
 	// Get keys from proxies
 	for _, proxy := range proxies {
-		// This is where we correlate Node ID with proxy namespace~name
+		// This is where we correlate Node ID with proxy owner~namespace~name
 		keys = append(keys, SnapshotCacheKey(owner, proxy))
 	}
 	return keys
