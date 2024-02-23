@@ -14,6 +14,10 @@ gateway:
 gloo:
   logLevel: info
   disableLeaderElection: true
+  deployment:
+    customEnv:
+    - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
+      value: "true"
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
