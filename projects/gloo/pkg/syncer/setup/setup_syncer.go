@@ -3,7 +3,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/gloo/projects/gloo/constants"
 

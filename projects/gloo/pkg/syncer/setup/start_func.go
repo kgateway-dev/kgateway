@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/go-utils/contextutils"
