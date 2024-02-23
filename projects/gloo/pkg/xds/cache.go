@@ -14,10 +14,6 @@ import (
 func SnapshotCacheKey(proxy *v1.Proxy) string {
 	namespace, name := proxy.GetMetadata().Ref().Strings()
 	owner := utils.GetTranslatorValue(proxy.GetMetadata())
-	if owner == "" {
-		// fall back to classic edge if the label is missing
-		owner = utils.GlooEdgeTranslatorValue
-	}
 	return OwnerNamespaceNameID(owner, namespace, name)
 }
 
