@@ -86,7 +86,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress())
+	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Dev, c.cfg.ControllerName, c.cfg.ControlPlane.GetBindPort())
 	if err != nil {
 		return err
