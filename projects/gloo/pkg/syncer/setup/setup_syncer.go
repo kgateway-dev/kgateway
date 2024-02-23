@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"net"
 	"net/http"
 	"os"
@@ -12,8 +13,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/constants"
-
-	"github.com/solo-io/gloo/projects/gateway2/controller"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
@@ -275,6 +274,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	emptyValidationServer := bootstrap.ValidationServer{}
 	emptyProxyDebugServer := bootstrap.ProxyDebugServer{}
 
+	specialLogger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "SAM"))
+
+	specialLogger.Error("emptyValidationServer initialized")
+
 	// check if we need to restart the control plane
 	if xdsAddr != s.previousXdsServer.addr {
 		if s.previousXdsServer.cancel != nil {
@@ -286,6 +289,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// check if we need to restart the validation server
 	if validationAddr != s.previousValidationServer.addr || maxGrpcRecvSize != s.previousValidationServer.maxGrpcRecvSize {
+		specialLogger.Error("validationAddr or maxGrpcRecvSize changed")
 		if s.previousValidationServer.cancel != nil {
 			s.previousValidationServer.cancel()
 			s.previousValidationServer.cancel = nil
@@ -317,6 +321,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// initialize the validation server context in this block either on the first loop, or if bind addr changed
 	if s.validationServer == emptyValidationServer {
+		specialLogger.Error("validationServer is empty, so starting up a new Validation server")
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 		var validationGrpcServerOpts []grpc.ServerOption
@@ -456,7 +461,10 @@ func RunGloo(opts bootstrap.Opts) error {
 	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
-// Called directly by GlooEE
+// RunGlooWithExtensions is the core entrypoint to the Gloo components.
+// THIS FUNCTION MUST NOT BLOCK !!!
+// It is invoked by an outer control loop (SetupFunc) which monitors
+// the current Settings resource, and re-runs this function each time the global Settings change
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Validate Extensions
 	if extensions.ApiEmitterChannel == nil {
@@ -473,11 +481,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
+
+	runErrorGroup, runCtx := errgroup.WithContext(opts.WatchOpts.Ctx)
+	logger := contextutils.LoggerFrom(runCtx)
+
 	endpointsFactory := &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
 
-	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
+	upstreamClient, err := v1.NewUpstreamClient(runCtx, opts.Upstreams)
 	if err != nil {
 		return err
 	}
@@ -494,7 +506,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	proxyClient, err := v1.NewProxyClient(watchOpts.Ctx, opts.Proxies)
+	proxyClient, err := v1.NewProxyClient(runCtx, opts.Proxies)
 	if err != nil {
 		return err
 	}
@@ -619,8 +631,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
-
-	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
 	startRestXdsServer(opts)
 
@@ -901,16 +911,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	if opts.GlooGateway.EnableK8sGatewayController {
-		// Run GG controller
-		// TODO: These values are hard-coded, but they should be inherited from the Helm chart
-		controller.Start(controller.ControllerConfig{
-			GatewayClassName:      "gloo-gateway",
-			GatewayControllerName: "solo.io/gloo-gateway",
-			AutoProvision:         true,
+	// startFuncs represents the set of StartFunc that should be executed at startup
+	// At the moment, the functionality is used minimally.
+	// Overtime, we should break up this large function into smaller StartFunc
+	startFuncs := map[string]StartFunc{}
 
-			ControlPlane: opts.ControlPlane,
-		})
+	if opts.GlooGateway.EnableK8sGatewayController {
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc()
 	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
@@ -982,6 +989,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		case <-time.After(time.Millisecond * 100):
 		}
 	}
+
+	AddStartFuncsToErrorGroup(
+		opts.WatchOpts.Ctx,
+		opts,
+		extensions,
+		startFuncs,
+		runErrorGroup,
+	)
+
+	go func() {
+		// It is critical that the RunGlooWithExtensions function does not block.
+		// As a result, we monitor the runErrorGroup and just drop errors on the shared "errs" channel if one occurs
+		errs <- runErrorGroup.Wait()
+	}()
 
 	go func() {
 		for {
