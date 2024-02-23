@@ -477,7 +477,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
 
-	runErrorGroup, runCtx := errgroup.WithContext(opts.WatchOpts.Ctx)
+	runErrorGroup, runCtx := errgroup.WithContext(watchOpts.Ctx)
 	logger := contextutils.LoggerFrom(runCtx)
 
 	endpointsFactory := &factory.MemoryResourceClientFactory{
@@ -509,7 +509,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	upstreamGroupClient, err := v1.NewUpstreamGroupClient(watchOpts.Ctx, opts.UpstreamGroups)
+	upstreamGroupClient, err := v1.NewUpstreamGroupClient(runCtx, opts.UpstreamGroups)
 	if err != nil {
 		return err
 	}
@@ -517,22 +517,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	endpointClient, err := v1.NewEndpointClient(watchOpts.Ctx, endpointsFactory)
+	endpointClient, err := v1.NewEndpointClient(runCtx, endpointsFactory)
 	if err != nil {
 		return err
 	}
 
-	secretClient, err := v1.NewSecretClient(watchOpts.Ctx, opts.Secrets)
+	secretClient, err := v1.NewSecretClient(runCtx, opts.Secrets)
 	if err != nil {
 		return err
 	}
 
-	artifactClient, err := v1.NewArtifactClient(watchOpts.Ctx, opts.Artifacts)
+	artifactClient, err := v1.NewArtifactClient(runCtx, opts.Artifacts)
 	if err != nil {
 		return err
 	}
 
-	authConfigClient, err := extauth.NewAuthConfigClient(watchOpts.Ctx, opts.AuthConfigs)
+	authConfigClient, err := extauth.NewAuthConfigClient(runCtx, opts.AuthConfigs)
 	if err != nil {
 		return err
 	}
@@ -540,7 +540,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	graphqlApiClient, err := v1beta1.NewGraphQLApiClient(watchOpts.Ctx, opts.GraphQLApis)
+	graphqlApiClient, err := v1beta1.NewGraphQLApiClient(runCtx, opts.GraphQLApis)
 	if err != nil {
 		return err
 	}
@@ -548,7 +548,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	rlClient, rlReporterClient, err := rlv1alpha1.NewRateLimitClients(watchOpts.Ctx, opts.RateLimitConfigs)
+	rlClient, rlReporterClient, err := rlv1alpha1.NewRateLimitClients(runCtx, opts.RateLimitConfigs)
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	virtualServiceClient, err := gateway.NewVirtualServiceClient(watchOpts.Ctx, opts.VirtualServices)
+	virtualServiceClient, err := gateway.NewVirtualServiceClient(runCtx, opts.VirtualServices)
 	if err != nil {
 		return err
 	}
@@ -564,7 +564,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	rtClient, err := gateway.NewRouteTableClient(watchOpts.Ctx, opts.RouteTables)
+	rtClient, err := gateway.NewRouteTableClient(runCtx, opts.RouteTables)
 	if err != nil {
 		return err
 	}
@@ -572,7 +572,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	gatewayClient, err := gateway.NewGatewayClient(watchOpts.Ctx, opts.Gateways)
+	gatewayClient, err := gateway.NewGatewayClient(runCtx, opts.Gateways)
 	if err != nil {
 		return err
 	}
@@ -580,7 +580,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	matchableHttpGatewayClient, err := gateway.NewMatchableHttpGatewayClient(watchOpts.Ctx, opts.MatchableHttpGateways)
+	matchableHttpGatewayClient, err := gateway.NewMatchableHttpGatewayClient(runCtx, opts.MatchableHttpGateways)
 	if err != nil {
 		return err
 	}
@@ -588,7 +588,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	matchableTcpGatewayClient, err := gateway.NewMatchableTcpGatewayClient(watchOpts.Ctx, opts.MatchableTcpGateways)
+	matchableTcpGatewayClient, err := gateway.NewMatchableTcpGatewayClient(runCtx, opts.MatchableTcpGateways)
 	if err != nil {
 		return err
 	}
@@ -596,7 +596,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
+	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(runCtx, opts.VirtualHostOptions)
 	if err != nil {
 		return err
 	}
@@ -604,7 +604,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	routeOptionClient, err := gateway.NewRouteOptionClient(watchOpts.Ctx, opts.RouteOptions)
+	routeOptionClient, err := gateway.NewRouteOptionClient(runCtx, opts.RouteOptions)
 	if err != nil {
 		return err
 	}
@@ -617,12 +617,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
+	pluginRegistry := extensions.PluginRegistryFactory(runCtx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
-			disc.Init(plugins.InitParams{Ctx: watchOpts.Ctx, Settings: opts.Settings})
+			disc.Init(plugins.InitParams{Ctx: runCtx, Settings: opts.Settings})
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
@@ -650,7 +650,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if warmTimeout.GetSeconds() != 0 || warmTimeout.GetNanos() != 0 {
 		warmTimeoutDuration := prototime.DurationFromProto(warmTimeout)
-		ctx := opts.WatchOpts.Ctx
+		ctx := runCtx
 		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
 		if err != nil {
 			// make sure that the reason we got here is not context cancellation
@@ -663,7 +663,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	// We are ready!
 
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
+	go errutils.AggregateErrs(runCtx, errs, edsErrs, "eds.gloo")
 	apiCache := v1snap.NewApiEmitterWithEmit(
 		artifactClient,
 		endpointClient,
@@ -794,11 +794,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	var syncerExtensions []syncer.TranslatorSyncerExtension
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
+		syncerExtension := syncerExtensionFactory(runCtx, syncerExtensionParams)
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
+	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(runCtx), resourceHasher)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -810,7 +810,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	vc := validation.ValidatorConfig{
-		Ctx: watchOpts.Ctx,
+		Ctx: runCtx,
 		GlooValidatorConfig: validation.GlooValidatorConfig{
 			XdsSanitizer: xdsSanitizers,
 			Translator:   sharedTranslator,
@@ -830,7 +830,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
 		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
 		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(
-			opts.WatchOpts.Ctx,
+			runCtx,
 			opts.WriteNamespace,
 			proxyClient,
 			proxyReconciler,
@@ -868,7 +868,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
 	translationSync := syncer.NewTranslatorSyncer(
-		opts.WatchOpts.Ctx,
+		runCtx,
 		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizers,
@@ -894,12 +894,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if err != nil {
 		return err
 	}
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
+	go errutils.AggregateErrs(runCtx, errs, apiEventLoopErrs, "event_loop.gloo")
 
 	go func() {
 		for {
 			select {
-			case <-watchOpts.Ctx.Done():
+			case <-runCtx.Done():
 				logger.Debugf("context cancelled")
 				return
 			}
@@ -941,7 +941,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 			validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
 				k8sadmission.NewWebhookConfig(
-					watchOpts.Ctx,
+					runCtx,
 					gwValidationSyncer,
 					gwOpts.WatchNamespaces,
 					gwOpts.Validation.ValidatingWebhookPort,
@@ -958,11 +958,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 			go func() {
 				// close out validation server when context is cancelled
-				<-watchOpts.Ctx.Done()
+				<-runCtx.Done()
 				validationWebhook.Close()
 			}()
 			go func() {
-				contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
+				contextutils.LoggerFrom(runCtx).Infow("starting gateway validation server",
 					zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
 					zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
 					zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
@@ -985,8 +985,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 
-	AddStartFuncsToErrorGroup(
-		opts.WatchOpts.Ctx,
+	ExecuteAsynchronousStartFuncs(
+		runCtx,
 		opts,
 		extensions,
 		startFuncs,
@@ -1007,7 +1007,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					return
 				}
 				logger.Errorw("gloo main event loop", zap.Error(err))
-			case <-opts.WatchOpts.Ctx.Done():
+			case <-runCtx.Done():
 				// think about closing this channel
 				// close(errs)
 				return

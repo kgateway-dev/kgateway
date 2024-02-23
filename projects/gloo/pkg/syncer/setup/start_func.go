@@ -14,8 +14,8 @@ import (
 // (which runs whenever the Setting CR is modified)
 type StartFunc func(opts bootstrap.Opts, extensions Extensions) error
 
-// AddStartFuncsToErrorGroup accepts a collection of StartFunc inputs, and executes them
-func AddStartFuncsToErrorGroup(
+// ExecuteAsynchronousStartFuncs accepts a collection of StartFunc inputs, and executes them within an Error Group
+func ExecuteAsynchronousStartFuncs(
 	ctx context.Context,
 	opts bootstrap.Opts,
 	extensions Extensions,
