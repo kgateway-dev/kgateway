@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -13,8 +14,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -24,24 +23,21 @@ var (
 )
 
 type ControllerConfig struct {
+	Ctx context.Context
+
 	// The name of the GatewayClass to watch for
 	GatewayClassName      string
 	GatewayControllerName string
 	Release               string
 	AutoProvision         bool
-	Dev                   bool
 
 	ControlPlane bootstrap.ControlPlane
 }
 
-func Start(cfg ControllerConfig) {
+// Start
+func Start(cfg ControllerConfig) error {
 	setupLog.Info("xxxxx starting gw2 controller xxxxxx")
-	var opts []zap.Opts
-	if cfg.Dev {
-		setupLog.Info("starting log in dev mode")
-		opts = append(opts, zap.UseDevMode(true))
-	}
-	ctrl.SetLogger(zap.New(opts...))
+
 	mgrOpts := ctrl.Options{
 		Scheme:           scheme.NewScheme(),
 		PprofBindAddress: "127.0.0.1:9099",
@@ -60,7 +56,8 @@ func Start(cfg ControllerConfig) {
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	ctx := signals.SetupSignalHandler()
+	//ctx := signals.SetupSignalHandler()
+	ctx := cfg.Ctx
 
 	glooTranslator := newGlooTranslator(ctx)
 	var sanz sanitizer.XdsSanitizers
@@ -77,48 +74,33 @@ func Start(cfg ControllerConfig) {
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")
-		os.Exit(1)
+		return err
 	}
 
-	// sam-heilbron: I don't think this is necessary, as we should have a shared cache
-	if cfg.Dev {
-		go xdsSyncer.ServeXdsSnapshots()
-	}
-
-	var gatewayClassName apiv1.ObjectName = apiv1.ObjectName(cfg.GatewayClassName)
+	var gatewayClassName = apiv1.ObjectName(cfg.GatewayClassName)
 
 	gwcfg := GatewayConfig{
 		Mgr:            mgr,
 		GWClass:        gatewayClassName,
-		Dev:            cfg.Dev,
 		ControllerName: cfg.GatewayControllerName,
 		AutoProvision:  cfg.AutoProvision,
 		ControlPlane:   cfg.ControlPlane,
 		Kick:           inputChannels.Kick,
 	}
-	err = NewBaseGatewayController(ctx, gwcfg)
-
-	if err != nil {
+	if err = NewBaseGatewayController(ctx, gwcfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
-		os.Exit(1)
+		return err
 	}
 
-	err = discovery.NewDiscoveryController(ctx, mgr, inputChannels)
-	if err != nil {
+	if err = discovery.NewDiscoveryController(ctx, mgr, inputChannels); err != nil {
 		setupLog.Error(err, "unable to create controller")
-		os.Exit(1)
+		return err
 	}
 
-	err = secrets.NewSecretsController(ctx, mgr, inputChannels)
-	if err != nil {
+	if err = secrets.NewSecretsController(ctx, mgr, inputChannels); err != nil {
 		setupLog.Error(err, "unable to create controller")
-		os.Exit(1)
+		return err
 	}
 
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
-
+	return mgr.Start(ctx)
 }
