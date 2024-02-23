@@ -15,8 +15,6 @@ type properties struct {
 	// A collection of values which will be injected into the Helm chart
 	// We should aggregate these using a Go struct that can be re-used to generate the
 	// Helm API for this chart
-
-	dev            bool
 	controllerName string
 	port           int
 
@@ -62,12 +60,6 @@ func WithControllerName(controllerName string) Option {
 	}
 }
 
-func WithDevMode(devMode bool) Option {
-	return func(p *properties) {
-		p.dev = devMode
-	}
-}
-
 func buildDeployerProperties(options ...Option) *properties {
 	//default
 	cfg := &properties{}
@@ -91,7 +83,6 @@ func BuildDeployer(options ...Option) (*Deployer, error) {
 		chart:  config.chart,
 		scheme: config.scheme,
 
-		dev:            config.dev,
 		controllerName: config.controllerName,
 		port:           config.port,
 	}, nil
