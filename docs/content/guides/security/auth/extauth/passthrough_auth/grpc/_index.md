@@ -210,6 +210,38 @@ curl -H "Host: foo" -H "authorization: authorize me" $(glooctl proxy url)/posts/
 
 The request should now be authorized!
 
+## Configuring retries for unresponsive passthrough services
+
+You can configure the Gloo ExtAuth server to retry the connection to the passthrough service in the case that the passthrough service becomes unavailable. In the following AuthConfig, the Gloo ExtAuth server is configured to retry the connection to the passthrough service 10 times. To not overload the passthrough service, an optional backoff strategy is defined. The backoff strategy configures the ExtAuth server to wait 1 second between retries. In addition, the defined `baseInterval` between retries can vary up to 2 milliseconds. 
+
+For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" >}}).
+
+{{< highlight yaml "hl_lines=13-18" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: passthrough-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - passThroughAuth:
+      grpc:
+        # Address of the grpc auth server to query
+        address: example-grpc-auth-service.default.svc.cluster.local:9001
+        # Set a connection timeout to external service, default is 5 seconds
+        connectionTimeout: 3s
+        retryPolicy: 
+          numRetries: 10
+          retryBackOff:
+            baseInterval: 1s
+            maxInterval: 2ms
+{{< /highlight >}}
+
+{{% notice note %}}
+When you configure your AuthConfig with a retry policy, auth requests are retried only after the initial connection between the Gloo auth server and passthrough service is established successfully. If establishing the initial connection fails, the ExtAuth server retries the connection up to the defined `connectionTimeout` in the AuthConfig. The settings in the retry policy are ignored and any auth requests that are sent to the ExtAuth server during that time fail immediately. Auth requests continue to fail when the `connectionTimeout` is reached, even if the passthrough service becomes available afterwards. To mitigate this issue, you can try increasing the `connectionTimeout` setting if you think that your passthrough service can recover and become available within the specified connection timeout.
+{{% /notice %}}
+
+
 ## Sharing state with other auth steps
 
 {{% notice note %}}
