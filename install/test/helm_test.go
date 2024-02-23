@@ -5895,11 +5895,6 @@ metadata:
 						Expect(err).NotTo(HaveOccurred(), "json.Unmarshall error")
 						Expect(deploy.Spec.Template).NotTo(BeNil(), "generated spec template is non-nil")
 
-						// TODO can remove this check once we remove the unused glood deployment
-						if deploy.GetName() == "glood-gloo" {
-							return
-						}
-
 						By(fmt.Sprintf("Validating Deployment %s", deploy.GetName()))
 
 						podLevelSecurity := false
