@@ -176,7 +176,7 @@ var _ = Describe("Helm Test", func() {
 			It("should have all resources marked with a namespace", func() {
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
-						// TODO: disabling gateway2 in helm tests for now until helm merge is finalized
+						// TODO: re-enable once gateway2 supports namespaced rbac
 						"gateway2.controlPlane.enabled=false",
 					},
 				})
@@ -301,12 +301,7 @@ spec:
 				)
 
 				It("should be able to configure a stats server by default on all relevant deployments", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							// TODO: disabling gateway2 in helm tests for now until helm merge is finalized
-							"gateway2.controlPlane.enabled=false",
-						},
-					})
+					prepareMakefile(namespace, helmValues{})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
@@ -351,9 +346,6 @@ spec:
 					// Note note: Update number in final expectation if you add new labels here.
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							// TODO: disabling gateway2 in helm tests for now until helm merge is finalized
-							"gateway2.controlPlane.enabled=false",
-
 							"gloo.deployment.extraGlooLabels.foo=bar",
 							"discovery.deployment.extraDiscoveryLabels.foo=bar",
 							"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
@@ -685,9 +677,6 @@ spec:
 				It("should be able to expose http-monitoring port on all relevant services", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							// TODO: disabling gateway2 in helm tests for now until helm merge is finalized
-							"gateway2.controlPlane.enabled=false",
-
 							// to enable accessLogger service
 							"gateway.enabled=true",
 							"accessLogger.enabled=true",
@@ -726,9 +715,6 @@ spec:
 				It("should be able to expose http-monitoring port on all relevant deployments", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							// TODO: disabling gateway2 in helm tests for now until helm merge is finalized
-							"gateway2.controlPlane.enabled=false",
-
 							// to enable accessLogger deployment
 							"gateway.enabled=true",
 							"accessLogger.enabled=true",
