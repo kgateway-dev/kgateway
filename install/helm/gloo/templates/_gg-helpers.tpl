@@ -60,6 +60,6 @@ Data-plane related macros:
 Constant labels - labels that are stable across releases
 We want this label to remain constant as it is used in glooctl version.
 */}}
-{{- define "gloo-gateway.gateway.const_labels" -}}
+{{- define "gloo-gateway.gateway.constLabels" -}}
 gloo: gateway-v2
 {{- end }}
