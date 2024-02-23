@@ -39,6 +39,11 @@ spec:
   - name: http-monitoring
     port: 9091
 {{- end }}
+{{- if .Values.settings.devMode }}
+  - name: dev-admin
+    port: 10010
+    protocol: TCP
+{{- end }}
   selector:
     gloo: gloo
 {{- end }} {{/* define "gloo.serviceSpec "*/}}

@@ -98,8 +98,6 @@ var _ = BeforeSuite(func() {
 		ControllerName: gatewayControllerName,
 		GWClass:        gatewayClassObjName,
 		AutoProvision:  true,
-		XdsServer:      "localhost",
-		XdsPort:        0,
 		Kick:           func(ctx context.Context) { return },
 	}
 	err = controller.NewBaseGatewayController(ctx, cfg)
