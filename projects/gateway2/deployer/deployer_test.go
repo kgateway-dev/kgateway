@@ -58,7 +58,7 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(scheme.NewScheme(), false, "foo", 8080)
+		d, err = deployer.NewDeployer(scheme.NewScheme(), "foo", 8080)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -204,7 +204,7 @@ var _ = Describe("Deployer", func() {
 
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
-		d, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", 8080)
+		d, err := deployer.NewDeployer(scheme.NewScheme(), "foo", 8080)
 		Expect(err).NotTo(HaveOccurred())
 		gw := &api.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
@@ -322,10 +322,10 @@ var _ = Describe("Deployer", func() {
 
 	It("support segmenting by release", func() {
 
-		d1, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", 8080)
+		d1, err := deployer.NewDeployer(scheme.NewScheme(), "foo", 8080)
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(scheme.NewScheme(), false, "foo", 8080)
+		d2, err := deployer.NewDeployer(scheme.NewScheme(), "foo", 8080)
 		Expect(err).NotTo(HaveOccurred())
 
 		gw1 := &api.Gateway{

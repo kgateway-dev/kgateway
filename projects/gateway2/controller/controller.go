@@ -28,7 +28,6 @@ import (
 type GatewayConfig struct {
 	Mgr            manager.Manager
 	GWClass        apiv1.ObjectName
-	Dev            bool
 	ControllerName string
 	AutoProvision  bool
 	Kick           func(ctx context.Context)
@@ -87,7 +86,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Dev, c.cfg.ControllerName, c.cfg.ControlPlane.GetBindPort())
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.ControllerName, c.cfg.ControlPlane.GetBindPort())
 	if err != nil {
 		return err
 	}

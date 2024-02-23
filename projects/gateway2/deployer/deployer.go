@@ -37,7 +37,6 @@ type gatewayPort struct {
 }
 
 type Deployer struct {
-	dev            bool
 	chart          *chart.Chart
 	scheme         *runtime.Scheme
 	controllerName string
@@ -48,13 +47,12 @@ type Deployer struct {
 // A Deployer is responsible for deploying proxies
 // NOTE: This constructor is flawed, as it will fall subject to the telescoping constructor anti-pattern as we
 // add more properties. We should migrate to using just the builder
-func NewDeployer(scheme *runtime.Scheme, dev bool, controllerName string, xdsPort int) (*Deployer, error) {
+func NewDeployer(scheme *runtime.Scheme, controllerName string, xdsPort int) (*Deployer, error) {
 	deployerOptions := []Option{
 		WithScheme(scheme),
 		WithChartFs(helm.GlooGatewayHelmChart),
 		WithControllerName(controllerName),
 		WithXdsServer(xdsPort),
-		WithDevMode(dev),
 	}
 
 	return BuildDeployer(deployerOptions...)
@@ -135,9 +133,7 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 			},
 		},
 	}
-	if d.dev {
-		vals["develop"] = true
-	}
+
 	log := log.FromContext(ctx)
 	log.Info("rendering helm chart", "vals", vals)
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)

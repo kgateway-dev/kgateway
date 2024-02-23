@@ -2,9 +2,9 @@ package controller
 
 import (
 	"context"
-	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
@@ -16,10 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-)
-
-var (
-	setupLog = ctrl.Log.WithName("setup")
 )
 
 type ControllerConfig struct {
@@ -34,9 +30,12 @@ type ControllerConfig struct {
 	ControlPlane bootstrap.ControlPlane
 }
 
-// Start
+// Start runs the controllers responsible for processing the K8s Gateway API objects
+// It is intended to be run in a goroutine as the function will block until the supplied
+// context is cancelled
 func Start(cfg ControllerConfig) error {
-	setupLog.Info("xxxxx starting gw2 controller xxxxxx")
+	ctx := cfg.Ctx
+	logger := contextutils.LoggerFrom(ctx)
 
 	mgrOpts := ctrl.Options{
 		Scheme:           scheme.NewScheme(),
@@ -49,15 +48,12 @@ func Start(cfg ControllerConfig) error {
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		logger.Error(err, "unable to start manager")
+		return err
 	}
 
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
-
-	//ctx := signals.SetupSignalHandler()
-	ctx := cfg.Ctx
 
 	glooTranslator := newGlooTranslator(ctx)
 	var sanz sanitizer.XdsSanitizers
@@ -73,13 +69,13 @@ func Start(cfg ControllerConfig) error {
 		mgr.GetScheme(),
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
-		setupLog.Error(err, "unable to add xdsSyncer runnable")
+		logger.Error(err, "unable to add xdsSyncer runnable")
 		return err
 	}
 
 	var gatewayClassName = apiv1.ObjectName(cfg.GatewayClassName)
 
-	gwcfg := GatewayConfig{
+	gwCfg := GatewayConfig{
 		Mgr:            mgr,
 		GWClass:        gatewayClassName,
 		ControllerName: cfg.GatewayControllerName,
@@ -87,20 +83,21 @@ func Start(cfg ControllerConfig) error {
 		ControlPlane:   cfg.ControlPlane,
 		Kick:           inputChannels.Kick,
 	}
-	if err = NewBaseGatewayController(ctx, gwcfg); err != nil {
-		setupLog.Error(err, "unable to create controller")
+	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
+		logger.Error(err, "unable to create controller")
 		return err
 	}
 
 	if err = discovery.NewDiscoveryController(ctx, mgr, inputChannels); err != nil {
-		setupLog.Error(err, "unable to create controller")
+		logger.Error(err, "unable to create controller")
 		return err
 	}
 
 	if err = secrets.NewSecretsController(ctx, mgr, inputChannels); err != nil {
-		setupLog.Error(err, "unable to create controller")
+		logger.Error(err, "unable to create controller")
 		return err
 	}
 
+	logger.Debugf("Starting controller-runtime.Manager")
 	return mgr.Start(ctx)
 }
