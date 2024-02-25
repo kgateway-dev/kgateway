@@ -3,13 +3,13 @@ package controller
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/go-utils/contextutils"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/xds"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,9 +31,14 @@ const (
 	AutoProvision = true
 )
 
-var gatewayClass = apiv1.ObjectName(GatewayClassName)
+var (
+	gatewayClass = apiv1.ObjectName(GatewayClassName)
+
+	setupLog = ctrl.Log.WithName("setup")
+)
 
 type StartConfig struct {
+	Dev          bool
 	ControlPlane bootstrap.ControlPlane
 }
 
@@ -41,7 +46,12 @@ type StartConfig struct {
 // It is intended to be run in a goroutine as the function will block until the supplied
 // context is cancelled
 func Start(ctx context.Context, cfg StartConfig) error {
-	logger := contextutils.LoggerFrom(ctx)
+	var opts []zap.Opts
+	if cfg.Dev {
+		setupLog.Info("starting log in dev mode")
+		opts = append(opts, zap.UseDevMode(true))
+	}
+	ctrl.SetLogger(zap.New(opts...))
 
 	mgrOpts := ctrl.Options{
 		Scheme:           scheme.NewScheme(),
@@ -54,7 +64,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
-		logger.Error(err, "unable to start manager")
+		setupLog.Error(err, "unable to start manager")
 		return err
 	}
 
@@ -75,7 +85,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		mgr.GetScheme(),
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
-		logger.Error(err, "unable to add xdsSyncer runnable")
+		setupLog.Error(err, "unable to add xdsSyncer runnable")
 		return err
 	}
 
@@ -88,20 +98,19 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		Kick:           inputChannels.Kick,
 	}
 	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
-		logger.Error(err, "unable to create controller")
+		setupLog.Error(err, "unable to create controller")
 		return err
 	}
 
 	if err = discovery.NewDiscoveryController(ctx, mgr, inputChannels); err != nil {
-		logger.Error(err, "unable to create controller")
+		setupLog.Error(err, "unable to create controller")
 		return err
 	}
 
 	if err = secrets.NewSecretsController(ctx, mgr, inputChannels); err != nil {
-		logger.Error(err, "unable to create controller")
+		setupLog.Error(err, "unable to create controller")
 		return err
 	}
 
-	logger.Debugf("Starting controller-runtime.Manager")
 	return mgr.Start(ctx)
 }

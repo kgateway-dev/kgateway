@@ -44,6 +44,10 @@ func K8sGatewayControllerStartFunc() StartFunc {
 	return func(opts bootstrap.Opts, extensions Extensions) error {
 		return controller.Start(opts.WatchOpts.Ctx, controller.StartConfig{
 			ControlPlane: opts.ControlPlane,
+
+			// Useful for development purposes
+			// At the moment, this is not tied to any user-facing API
+			Dev: false,
 		})
 	}
 }

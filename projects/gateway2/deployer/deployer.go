@@ -11,7 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
@@ -36,26 +35,15 @@ type gatewayPort struct {
 	TargetPort uint16 `json:"targetPort"`
 }
 
+// A Deployer is responsible for deploying proxies
+// See builder.go for the Deployer constructor
 type Deployer struct {
 	chart          *chart.Chart
 	scheme         *runtime.Scheme
 	controllerName string
-	port           int
-}
 
-// NewDeployer builds a Deployer or returns an error if one could not be constructed
-// A Deployer is responsible for deploying proxies
-// NOTE: This constructor is flawed, as it will fall subject to the telescoping constructor anti-pattern as we
-// add more properties. We should migrate to using just the builder
-func NewDeployer(scheme *runtime.Scheme, controllerName string, xdsPort int) (*Deployer, error) {
-	deployerOptions := []Option{
-		WithScheme(scheme),
-		WithChartFs(helm.GlooGatewayHelmChart),
-		WithControllerName(controllerName),
-		WithXdsServer(xdsPort),
-	}
-
-	return BuildDeployer(deployerOptions...)
+	dev  bool
+	port int
 }
 
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
@@ -126,14 +114,21 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 				"type": "LoadBalancer",
 			},
 			"xds": map[string]any{
-				// This creates a limitation that the Deployer can only work when the ControlPlane is installed to the gloo-system
-				// namespace. We can address this in a follow-up, and we should be able to identify the namespace of the control plane programmatically
+				// The xds host/port MUST map to the Service definition for the Control Plane
+				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+				//
+				// NOTE: The current implementation in flawed in multiple ways:
+				//	1 - This assumes that the Control Plane is installed in `gloo-system`
+				//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
+				//		will always be what is exposed by the Kubernetes Service.
 				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
 				"port": d.port,
 			},
 		},
 	}
-
+	if d.dev {
+		vals["develop"] = true
+	}
 	log := log.FromContext(ctx)
 	log.Info("rendering helm chart", "vals", vals)
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)

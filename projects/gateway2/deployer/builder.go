@@ -3,42 +3,31 @@ package deployer
 import (
 	"io/fs"
 
+	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/helm"
+
 	"github.com/solo-io/gloo/pkg/version"
-	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type properties struct {
-	chart  *chart.Chart
-	scheme *runtime.Scheme
+	chartFs fs.FS
+
+	scheme         *runtime.Scheme
+	controllerName string
 
 	// A collection of values which will be injected into the Helm chart
 	// We should aggregate these using a Go struct that can be re-used to generate the
 	// Helm API for this chart
-	controllerName string
-	port           int
-
-	// An internal error that occurred during construction of the deployer
-	constructionErr error
+	dev  bool
+	port int
 }
 
 type Option func(*properties)
 
 func WithChartFs(fs fs.FS) Option {
 	return func(p *properties) {
-		helmChart, err := loadFs(fs)
-		if err != nil {
-			p.constructionErr = err
-		} else {
-			p.chart = helmChart
-
-			// (sam-heilbron): Is this necessary?
-			// simulate what `helm package` in the Makefile does
-			if version.Version != version.UndefinedVersion {
-				p.chart.Metadata.AppVersion = version.Version
-				p.chart.Metadata.Version = version.Version
-			}
-		}
+		p.chartFs = fs
 	}
 }
 
@@ -60,9 +49,22 @@ func WithControllerName(controllerName string) Option {
 	}
 }
 
+func WithDevMode(devMode bool) Option {
+	return func(p *properties) {
+		p.dev = devMode
+	}
+}
+
 func buildDeployerProperties(options ...Option) *properties {
 	//default
-	cfg := &properties{}
+	cfg := &properties{
+		chartFs:        helm.GlooGatewayHelmChart,
+		scheme:         nil,
+		controllerName: controller.GatewayControllerName,
+
+		port: 0,
+		dev:  false,
+	}
 
 	//apply opts
 	for _, opt := range options {
@@ -72,17 +74,27 @@ func buildDeployerProperties(options ...Option) *properties {
 	return cfg
 }
 
-func BuildDeployer(options ...Option) (*Deployer, error) {
+// NewDeployer builds a Deployer or returns an error if one could not be constructed
+func NewDeployer(options ...Option) (*Deployer, error) {
 	config := buildDeployerProperties(options...)
 
-	if config.constructionErr != nil {
-		return nil, config.constructionErr
+	helmChart, err := loadFs(config.chartFs)
+	if err != nil {
+		return nil, err
+	} else {
+		// (sam-heilbron): Is this necessary?
+		// simulate what `helm package` in the Makefile does
+		if version.Version != version.UndefinedVersion {
+			helmChart.Metadata.AppVersion = version.Version
+			helmChart.Metadata.Version = version.Version
+		}
 	}
 
 	return &Deployer{
-		chart:  config.chart,
+		chart:  helmChart,
 		scheme: config.scheme,
 
+		dev:            config.dev,
 		controllerName: config.controllerName,
 		port:           config.port,
 	}, nil

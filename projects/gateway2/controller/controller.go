@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gateway2/helm"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -87,7 +89,15 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.ControllerName, c.cfg.ControlPlane.GetBindPort())
+
+	deployerOptions := []deployer.Option{
+		deployer.WithScheme(c.cfg.Mgr.GetScheme()),
+		deployer.WithChartFs(helm.GlooGatewayHelmChart),
+		deployer.WithControllerName(c.cfg.ControllerName),
+		deployer.WithXdsServer(c.cfg.ControlPlane.GetBindPort()),
+		deployer.WithDevMode(c.cfg.Dev),
+	}
+	d, err := deployer.NewDeployer(deployerOptions...)
 	if err != nil {
 		return err
 	}
@@ -124,7 +134,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
-	gwreconciler := &gatewayReconciler{
+	gwReconciler := &gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
 		className:     c.cfg.GWClass,
@@ -132,7 +142,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		deployer:      d,
 		kick:          c.cfg.Kick,
 	}
-	err = buildr.Complete(gwreconciler)
+	err = buildr.Complete(gwReconciler)
 	if err != nil {
 		return err
 	}

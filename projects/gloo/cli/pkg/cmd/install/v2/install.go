@@ -47,7 +47,7 @@ func install(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	dep, err := deployer.NewDeployer(cli.Scheme(), "glooctl", 0)
+	dep, err := deployer.NewDeployer(deployer.WithScheme(cli.Scheme()), deployer.WithControllerName("glooctl"))
 	if err != nil {
 		return err
 	}
