@@ -18,23 +18,29 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-type ControllerConfig struct {
-	Ctx context.Context
+const (
+	// GatewayClassName represents the name of the GatewayClass to watch for
+	GatewayClassName = "gloo-gateway"
 
-	// The name of the GatewayClass to watch for
-	GatewayClassName      string
-	GatewayControllerName string
-	Release               string
-	AutoProvision         bool
+	// GatewayControllerName is the name of the controller that has implemented the Gateway API
+	// It is configured to manage GatewayClasses with the name GatewayClassName
+	GatewayControllerName = "solo.io/gloo-gateway"
 
+	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
+	// infrastructure for the Gateway API.
+	AutoProvision = true
+)
+
+var gatewayClass = apiv1.ObjectName(GatewayClassName)
+
+type StartConfig struct {
 	ControlPlane bootstrap.ControlPlane
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
 // It is intended to be run in a goroutine as the function will block until the supplied
 // context is cancelled
-func Start(cfg ControllerConfig) error {
-	ctx := cfg.Ctx
+func Start(ctx context.Context, cfg StartConfig) error {
 	logger := contextutils.LoggerFrom(ctx)
 
 	mgrOpts := ctrl.Options{
@@ -59,7 +65,7 @@ func Start(cfg ControllerConfig) error {
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
-		cfg.GatewayControllerName,
+		GatewayControllerName,
 		glooTranslator,
 		sanz,
 		cfg.ControlPlane.SnapshotCache,
@@ -73,13 +79,11 @@ func Start(cfg ControllerConfig) error {
 		return err
 	}
 
-	var gatewayClassName = apiv1.ObjectName(cfg.GatewayClassName)
-
 	gwCfg := GatewayConfig{
 		Mgr:            mgr,
-		GWClass:        gatewayClassName,
-		ControllerName: cfg.GatewayControllerName,
-		AutoProvision:  cfg.AutoProvision,
+		GWClass:        gatewayClass,
+		ControllerName: GatewayControllerName,
+		AutoProvision:  AutoProvision,
 		ControlPlane:   cfg.ControlPlane,
 		Kick:           inputChannels.Kick,
 	}

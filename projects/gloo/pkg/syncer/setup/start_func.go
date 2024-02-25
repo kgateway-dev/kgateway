@@ -42,14 +42,7 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc() StartFunc {
 	return func(opts bootstrap.Opts, extensions Extensions) error {
-		// Run GG controller
-		// TODO: These values are hard-coded, but they should be inherited from the Helm chart
-		return controller.Start(controller.ControllerConfig{
-			Ctx:                   opts.WatchOpts.Ctx,
-			GatewayClassName:      "gloo-gateway",
-			GatewayControllerName: "solo.io/gloo-gateway",
-			AutoProvision:         true,
-
+		return controller.Start(opts.WatchOpts.Ctx, controller.StartConfig{
 			ControlPlane: opts.ControlPlane,
 		})
 	}

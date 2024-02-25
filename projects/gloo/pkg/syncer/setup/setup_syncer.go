@@ -457,9 +457,12 @@ func RunGloo(opts bootstrap.Opts) error {
 }
 
 // RunGlooWithExtensions is the core entrypoint to the Gloo components.
-// THIS FUNCTION MUST NOT BLOCK !!!
-// It is invoked by an outer control loop (SetupFunc) which monitors
-// the current Settings resource, and re-runs this function each time the global Settings change
+// THIS FUNCTION MUST NOT BLOCK:
+//
+//	It is invoked by an outer control loop (SetupFunc) which monitors
+//	the current Settings resource, and re-runs this function each time the global Settings change
+//
+// This function is called directly by GlooEE
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Validate Extensions
 	if extensions.ApiEmitterChannel == nil {

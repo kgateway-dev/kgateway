@@ -28,6 +28,7 @@ import (
 type GatewayConfig struct {
 	Mgr            manager.Manager
 	GWClass        apiv1.ObjectName
+	Dev            bool
 	ControllerName string
 	AutoProvision  bool
 	Kick           func(ctx context.Context)
