@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -19,20 +20,13 @@ import (
 )
 
 const (
-	// GatewayClassName represents the name of the GatewayClass to watch for
-	GatewayClassName = "gloo-gateway"
-
-	// GatewayControllerName is the name of the controller that has implemented the Gateway API
-	// It is configured to manage GatewayClasses with the name GatewayClassName
-	GatewayControllerName = "solo.io/gloo-gateway"
-
 	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
 	// infrastructure for the Gateway API.
 	AutoProvision = true
 )
 
 var (
-	gatewayClass = apiv1.ObjectName(GatewayClassName)
+	gatewayClass = apiv1.ObjectName(wellknown.GatewayClassName)
 
 	setupLog = ctrl.Log.WithName("setup")
 )
@@ -75,7 +69,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
-		GatewayControllerName,
+		wellknown.GatewayControllerName,
 		glooTranslator,
 		sanz,
 		cfg.ControlPlane.SnapshotCache,
@@ -92,7 +86,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	gwCfg := GatewayConfig{
 		Mgr:            mgr,
 		GWClass:        gatewayClass,
-		ControllerName: GatewayControllerName,
+		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane:   cfg.ControlPlane,
 		Kick:           inputChannels.Kick,

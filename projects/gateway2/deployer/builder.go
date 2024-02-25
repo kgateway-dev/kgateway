@@ -1,9 +1,9 @@
 package deployer
 
 import (
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"io/fs"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 
 	"github.com/solo-io/gloo/pkg/version"
@@ -60,7 +60,7 @@ func buildDeployerProperties(options ...Option) *properties {
 	cfg := &properties{
 		chartFs:        helm.GlooGatewayHelmChart,
 		scheme:         nil,
-		controllerName: controller.GatewayControllerName,
+		controllerName: wellknown.GatewayControllerName,
 
 		port: 0,
 		dev:  false,
