@@ -12,7 +12,7 @@ import (
 // StartFunc represents a function that will be called with the initialized bootstrap.Opts
 // and Extensions. This is invoked each time the setup_syncer is executed
 // (which runs whenever the Setting CR is modified)
-type StartFunc func(opts bootstrap.Opts, extensions Extensions) error
+type StartFunc func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error
 
 // ExecuteAsynchronousStartFuncs accepts a collection of StartFunc inputs, and executes them within an Error Group
 func ExecuteAsynchronousStartFuncs(
@@ -29,7 +29,7 @@ func ExecuteAsynchronousStartFuncs(
 		errorGroup.Go(
 			func() error {
 				contextutils.LoggerFrom(namedCtx).Debugf("starting main goroutine")
-				err := startFn(opts, extensions)
+				err := startFn(namedCtx, opts, extensions)
 				if err != nil {
 					contextutils.LoggerFrom(namedCtx).Errorf("main goroutine failed: %v", err)
 				}
@@ -41,8 +41,8 @@ func ExecuteAsynchronousStartFuncs(
 
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc() StartFunc {
-	return func(opts bootstrap.Opts, extensions Extensions) error {
-		return controller.Start(opts.WatchOpts.Ctx, controller.StartConfig{
+	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
+		return controller.Start(ctx, controller.StartConfig{
 			ControlPlane: opts.ControlPlane,
 
 			// Useful for development purposes
