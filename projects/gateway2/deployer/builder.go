@@ -1,8 +1,9 @@
 package deployer
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"io/fs"
+
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 
