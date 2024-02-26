@@ -9,7 +9,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   {{- end }}
   labels:
-    app: gloo
+    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
     gloo: rbac
 rules:
 - apiGroups:

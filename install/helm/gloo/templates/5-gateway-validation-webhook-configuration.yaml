@@ -5,7 +5,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
   labels:
-    app: gloo
+    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
     gloo: gateway
   annotations:
     {{- if not .Values.gateway.validation.webhook.disableHelmHook }}

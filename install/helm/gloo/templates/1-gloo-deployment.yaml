@@ -8,8 +8,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: gloo
-    gloo: gloo
+    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:

@@ -5,8 +5,7 @@ metadata:
   name: {{ required "A ConfigMap name is required!" $configMap.name }}
   namespace: {{ $configMap.namespace | default $.Release.Namespace }}
   labels:
-    app: gloo
-    gloo: gloo
+    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
 data:
   {{- range $key, $value := $configMap.data}}
   {{ $key }}: {{ $value }}

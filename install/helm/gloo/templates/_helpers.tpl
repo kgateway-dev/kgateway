@@ -246,3 +246,14 @@ Otherwise it will generate ["Create", "Update", "Delete"]
 {{- end -}}
 {{ toJson $result }}
 {{- end -}}
+
+{{/*
+Common labels
+*/}}
+{{- define "gloo.labels" -}}
+gloo: gloo
+app: gloo
+{{- with .context.Values.additionalLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
