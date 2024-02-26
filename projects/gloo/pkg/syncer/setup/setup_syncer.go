@@ -1017,6 +1017,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
+	logger.Infof("Gloo setup completed successfully")
 	return nil
 }
 
