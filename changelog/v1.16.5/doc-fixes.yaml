@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING  
+  description: >- 
+    Removes unit from value.
+    skipCI-kube-tests:true
+  resolvesIssue: false
