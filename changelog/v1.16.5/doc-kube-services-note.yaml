@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING  
+  description: >- 
+    Backport for adding more info about not using Kube services as a routing destination.
+    skipCI-kube-tests:true
+  resolvesIssue: false
