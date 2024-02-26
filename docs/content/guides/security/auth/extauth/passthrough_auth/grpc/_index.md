@@ -237,7 +237,7 @@ spec:
           numRetries: 10
           retryBackOff:
             baseInterval: 1s
-            maxInterval: 2ms
+            maxInterval: 2s
   {{< /highlight >}}
 
 
