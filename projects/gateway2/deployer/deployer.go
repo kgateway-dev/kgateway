@@ -39,7 +39,6 @@ type gatewayPort struct {
 }
 
 // A Deployer is responsible for deploying proxies
-// See builder.go for the Deployer constructor
 type Deployer struct {
 	chart  *chart.Chart
 	scheme *runtime.Scheme
