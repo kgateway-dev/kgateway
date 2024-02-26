@@ -9,6 +9,9 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/helm"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/projects/gateway2/ports"
@@ -38,12 +41,36 @@ type gatewayPort struct {
 // A Deployer is responsible for deploying proxies
 // See builder.go for the Deployer constructor
 type Deployer struct {
-	chart          *chart.Chart
-	scheme         *runtime.Scheme
-	controllerName string
+	chart  *chart.Chart
+	scheme *runtime.Scheme
 
-	dev  bool
-	port int
+	inputs *Inputs
+}
+
+// Inputs is the set of options used to configure the gateway deployer deployment
+type Inputs struct {
+	ControllerName string
+	Dev            bool
+	Port           int
+}
+
+// NewDeployer creates a new gateway deployer
+func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
+	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
+	if err != nil {
+		return nil, err
+	}
+	// simulate what `helm package` in the Makefile does
+	if version.Version != version.UndefinedVersion {
+		helmChart.Metadata.AppVersion = version.Version
+		helmChart.Metadata.Version = version.Version
+	}
+
+	return &Deployer{
+		scheme: scheme,
+		chart:  helmChart,
+		inputs: inputs,
+	}, nil
 }
 
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
@@ -122,11 +149,11 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 				//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
 				//		will always be what is exposed by the Kubernetes Service.
 				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
-				"port": d.port,
+				"port": d.inputs.Port,
 			},
 		},
 	}
-	if d.dev {
+	if d.inputs.Dev {
 		vals["develop"] = true
 	}
 	log := log.FromContext(ctx)
@@ -191,7 +218,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 
 func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object, cli client.Client) error {
 	for _, obj := range objs {
-		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.controllerName)); err != nil {
+		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
 			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
 		}
 	}

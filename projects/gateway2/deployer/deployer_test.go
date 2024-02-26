@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -58,11 +60,11 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		deployerOptions := []deployer.Option{
-			deployer.WithScheme(scheme.NewScheme()),
-			deployer.WithXdsServer(8080),
-		}
-		d, err = deployer.NewDeployer(deployerOptions...)
+		d, err = deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -209,11 +211,11 @@ var _ = Describe("Deployer", func() {
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
 
-		deployerOptions := []deployer.Option{
-			deployer.WithScheme(scheme.NewScheme()),
-			deployer.WithXdsServer(8080),
-		}
-		d, err := deployer.NewDeployer(deployerOptions...)
+		d, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 		gw := &api.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
@@ -330,15 +332,18 @@ var _ = Describe("Deployer", func() {
 	})
 
 	It("support segmenting by release", func() {
-
-		deployerOptions := []deployer.Option{
-			deployer.WithScheme(scheme.NewScheme()),
-			deployer.WithXdsServer(8080),
-		}
-		d1, err := deployer.NewDeployer(deployerOptions...)
+		d1, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(deployerOptions...)
+		d2, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+			ControllerName: wellknown.GatewayControllerName,
+			Port:           8080,
+			Dev:            false,
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		gw1 := &api.Gateway{
