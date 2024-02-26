@@ -32,13 +32,13 @@ func ExecuteAsynchronousStartFuncs(
 				err := startFn(namedCtx, opts, extensions)
 				if err != nil {
 					contextutils.LoggerFrom(namedCtx).Errorf("%s goroutine failed: %v", name, err)
-				} else {
-					contextutils.LoggerFrom(namedCtx).Debugf("%s goroutine completed", name)
 				}
 				return err
 			},
 		)
 	}
+
+	contextutils.LoggerFrom(ctx).Debug("main goroutines successfully started")
 }
 
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
