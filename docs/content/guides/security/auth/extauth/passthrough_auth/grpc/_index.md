@@ -215,11 +215,11 @@ The request should now be authorized!
 You can configure the Gloo ExtAuth server to retry the connection to the passthrough service in the case that the passthrough service becomes unavailable. Consider the following two scenarios to learn more about how retries to the passthrough service are executed: 
 
 
-* **Passthrough service becomes unavailable after initial connection**: You can add a retry policy to your AuthConfig to retry the connection to the passthrough service if the service becomes unavailable. In the following AuthConfig, the Gloo ExtAuth server is configured to retry the connection to the passthrough service 10 times. To not overload the passthrough service, an optional exponential backoff strategy is defined. The backoff strategy configures the ExtAuth server to start retries after 1 second (`baseInterval`). Retries are then executed exponentially, such as after 2 seconds, 4 seconds, 8 seconds, etc. Note that retries are only executed up to the defined `global.extensions.extAuth.requestTimeout` which defaults to 10 seconds. The `maxInterval` configures a maximum delay of 2 seconds between retries.
+* **Passthrough service becomes unavailable after initial connection**: In this scenario, the Gloo ExtAuth server successfully established an initial connection to the passthrough service. However later on, the passthrough service becomes unavailable. You can add a retry policy to your AuthConfig to retry the connection to the passthrough service if the service becomes unavailable. In the following AuthConfig, the Gloo ExtAuth server is configured to retry the connection to the passthrough service 10 times. To not overload the passthrough service, an optional exponential backoff strategy is defined. The backoff strategy configures the ExtAuth server to start retries after 1 second (`baseInterval`). Retries are then executed exponentially, such as after 2 seconds, 4 seconds, 8 seconds, etc. Note that retries are only executed up to the defined `global.extensions.extAuth.requestTimeout` which defaults to 10 seconds. The `maxInterval` configures a maximum delay of 2 seconds between retries.
 
-For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" >}}).
+  For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" >}}).
 
-{{< highlight yaml "hl_lines=13-18" >}}
+  {{< highlight yaml "hl_lines=13-18" >}}
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
@@ -238,7 +238,7 @@ spec:
           retryBackOff:
             baseInterval: 1s
             maxInterval: 2ms
-{{< /highlight >}}
+  {{< /highlight >}}
 
 
 * **Passthrough service is unavailable during the initial connection**: When you configure your AuthConfig with a retry policy, auth requests are retried only after the initial connection between the Gloo auth server and passthrough service is established successfully. If establishing the initial connection fails, the ExtAuth server retries the connection up to the defined `connectionTimeout` in the AuthConfig. The settings in the retry policy are ignored and any auth requests that are sent to the ExtAuth server during that time fail immediately. Auth requests continue to fail when the `connectionTimeout` is reached, even if the passthrough service becomes available afterwards. To mitigate this issue, you can try increasing the `connectionTimeout` setting if you think that your passthrough service can recover and become available within the specified connection timeout.
