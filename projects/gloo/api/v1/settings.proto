@@ -678,7 +678,7 @@ message GlooOptions {
     // [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) 
     // Upstream resources as a routing destination to forward requests to the pod directly. 
     // 
-    // The default value is true. 
+    // For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).
     bool disable_kubernetes_destinations = 7;
 
     // Default policy for grpc-web.
