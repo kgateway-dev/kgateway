@@ -964,7 +964,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 				validationWebhook.Close()
 			}()
 			go func() {
-				logger.Infow("starting gateway validation server",
+				contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
 					zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
 					zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
 					zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
