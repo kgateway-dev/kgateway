@@ -87,7 +87,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Dev, c.cfg.ControllerName, c.cfg.ControlPlane.GetBindPort())
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), &deployer.Inputs{
+		ControllerName: c.cfg.ControllerName,
+		Dev:            c.cfg.Dev,
+		Port:           c.cfg.ControlPlane.GetBindPort(),
+	})
 	if err != nil {
 		return err
 	}
@@ -124,7 +128,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
-	gwreconciler := &gatewayReconciler{
+	gwReconciler := &gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
 		className:     c.cfg.GWClass,
@@ -132,7 +136,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		deployer:      d,
 		kick:          c.cfg.Kick,
 	}
-	err = buildr.Complete(gwreconciler)
+	err = buildr.Complete(gwReconciler)
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,7 @@ const (
 	// Gloo after a test suite completes
 	TearDown = "TEAR_DOWN"
 
-	// SkipInstall can be used when running Kube suites consecutively, and you didnt tear down the Gloo
+	// SkipInstall can be used when running Kube suites consecutively, and you didn't tear down the Gloo
 	// installation from a previous run
 	SkipInstall = "SKIP_INSTALL"
 

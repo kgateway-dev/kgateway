@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/constants"
+	"golang.org/x/sync/errgroup"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
@@ -456,7 +456,13 @@ func RunGloo(opts bootstrap.Opts) error {
 	return RunGlooWithExtensions(opts, glooExtensions)
 }
 
-// Called directly by GlooEE
+// RunGlooWithExtensions is the core entrypoint to the Gloo components.
+// THIS FUNCTION MUST NOT BLOCK:
+//
+//	It is invoked by an outer control loop (SetupFunc) which monitors
+//	the current Settings resource, and re-runs this function each time the global Settings change
+//
+// This function is called directly by GlooEE
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Validate Extensions
 	if extensions.ApiEmitterChannel == nil {
@@ -470,9 +476,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
+	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
-	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
+	runErrorGroup, _ := errgroup.WithContext(watchOpts.Ctx)
+	logger := contextutils.LoggerFrom(watchOpts.Ctx)
+
 	endpointsFactory := &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
@@ -620,8 +629,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 
-	logger := contextutils.LoggerFrom(watchOpts.Ctx)
-
 	startRestXdsServer(opts)
 
 	errs := make(chan error)
@@ -645,7 +652,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if warmTimeout.GetSeconds() != 0 || warmTimeout.GetNanos() != 0 {
 		warmTimeoutDuration := prototime.DurationFromProto(warmTimeout)
-		ctx := opts.WatchOpts.Ctx
+		ctx := watchOpts.Ctx
 		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
 		if err != nil {
 			// make sure that the reason we got here is not context cancellation
@@ -825,7 +832,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gatewayTranslator = gwtranslator.NewDefaultTranslator(gwOpts)
 		proxyReconciler := gwreconciler.NewProxyReconciler(validator.Validate, proxyClient, statusClient)
 		gwTranslatorSyncer = gwsyncer.NewTranslatorSyncer(
-			opts.WatchOpts.Ctx,
+			watchOpts.Ctx,
 			opts.WriteNamespace,
 			proxyClient,
 			proxyReconciler,
@@ -863,7 +870,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
 	translationSync := syncer.NewTranslatorSyncer(
-		opts.WatchOpts.Ctx,
+		watchOpts.Ctx,
 		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizers,
@@ -901,16 +908,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	if opts.GlooGateway.EnableK8sGatewayController {
-		// Run GG controller
-		// TODO: These values are hard-coded, but they should be inherited from the Helm chart
-		controller.Start(controller.ControllerConfig{
-			GatewayClassName:      "gloo-gateway",
-			GatewayControllerName: "solo.io/gloo-gateway",
-			AutoProvision:         true,
+	// startFuncs represents the set of StartFunc that should be executed at startup
+	// At the moment, the functionality is used minimally.
+	// Overtime, we should break up this large function into smaller StartFunc
+	startFuncs := map[string]StartFunc{}
 
-			ControlPlane: opts.ControlPlane,
-		})
+	if opts.GlooGateway.EnableK8sGatewayController {
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc()
 	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
@@ -983,6 +987,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 
+	ExecuteAsynchronousStartFuncs(
+		watchOpts.Ctx,
+		opts,
+		extensions,
+		startFuncs,
+		runErrorGroup,
+	)
+
+	go func() {
+		// It is critical that the RunGlooWithExtensions function does not block.
+		// As a result, we monitor the runErrorGroup and just drop errors on the shared "errs" channel if one occurs
+		errs <- runErrorGroup.Wait()
+	}()
+
 	go func() {
 		for {
 			select {
@@ -991,7 +1009,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					return
 				}
 				logger.Errorw("gloo main event loop", zap.Error(err))
-			case <-opts.WatchOpts.Ctx.Done():
+			case <-watchOpts.Ctx.Done():
 				// think about closing this channel
 				// close(errs)
 				return
@@ -999,6 +1017,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
+	logger.Infof("Gloo setup completed successfully")
 	return nil
 }
 
