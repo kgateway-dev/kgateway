@@ -121,6 +121,9 @@ message Extraction {
     string header = 1;
     // Extract information from the request/response body
     google.protobuf.Empty body = 4;
+    // Extract information from dynamic metadata
+    // The string is used as a key to look up the metadata in the filter namespace.
+    string dynamic_metadata = 7;
   }
 
   // The regex field specifies the regular expression used for matching against the source content.

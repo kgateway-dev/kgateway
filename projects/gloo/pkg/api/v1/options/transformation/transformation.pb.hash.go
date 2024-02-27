@@ -564,6 +564,12 @@ func (m *Extraction) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *Extraction_DynamicMetadata:
+
+		if _, err = hasher.Write([]byte(m.GetDynamicMetadata())); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

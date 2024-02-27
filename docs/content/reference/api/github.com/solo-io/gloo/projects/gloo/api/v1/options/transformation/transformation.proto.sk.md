@@ -180,6 +180,7 @@ The extracted information can then be referenced in template fields.
 ```yaml
 "header": string
 "body": .google.protobuf.Empty
+"dynamicMetadata": string
 "regex": string
 "subgroup": int
 "replacementText": .google.protobuf.StringValue
@@ -189,8 +190,9 @@ The extracted information can then be referenced in template fields.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `header` | `string` | Extract information from headers. Only one of `header` or `body` can be set. |
-| `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Extract information from the request/response body. Only one of `body` or `header` can be set. |
+| `header` | `string` | Extract information from headers. Only one of `header`, `body`, or `dynamicMetadata` can be set. |
+| `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Extract information from the request/response body. Only one of `body`, `header`, or `dynamicMetadata` can be set. |
+| `dynamicMetadata` | `string` | Extract information from dynamic metadata The string is used as a key to look up the metadata in the filter namespace. Only one of `dynamicMetadata`, `header`, or `body` can be set. |
 | `regex` | `string` | The regex field specifies the regular expression used for matching against the source content. - In EXTRACT mode, the entire source must match the regex. The subgroup-th capturing group, if specified, determines which part of the match is extracted. - In SINGLE_REPLACE mode, the regex also needs to match the entire source. The subgroup-th capturing group is targeted for replacement with the replacement_text. - In REPLACE_ALL mode, the regex is applied repeatedly to find all occurrences within the source that match. Each matching occurrence is replaced with the replacement_text, and the subgroup field is not used. This field is required, and if the regex does not match the source as per the selected mode, the result of the extraction will be an empty value. |
 | `subgroup` | `int` | If your regex contains capturing groups, use this field to determine which group should be selected. For EXTRACT and SINGLE_REPLACE, refers to the portion of the text to extract/replace. TODO: confirm the validity of the following statement: Config will be rejected if this is specified in REPLACE_ALL mode. |
 | `replacementText` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The string to replace the matched portion of the source with. Used in SINGLE_REPLACE and REPLACE_ALL modes. |
