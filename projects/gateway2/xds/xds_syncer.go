@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"net/http"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -30,7 +32,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -85,9 +86,9 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs *XdsInputChannels
-	cli    client.Client
-	scheme *runtime.Scheme
+	inputs       *XdsInputChannels
+	mgr          manager.Manager
+	wrapRegistry plugins.GatewayV2PluginRegistryFactory
 }
 
 type XdsInputChannels struct {
@@ -123,8 +124,8 @@ func NewXdsSyncer(
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
-	cli client.Client,
-	scheme *runtime.Scheme,
+	mgr manager.Manager,
+	wrapRegistry plugins.GatewayV2PluginRegistryFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:       controllerName,
@@ -133,8 +134,8 @@ func NewXdsSyncer(
 		xdsCache:             xdsCache,
 		xdsGarbageCollection: xdsGarbageCollection,
 		inputs:               inputs,
-		cli:                  cli,
-		scheme:               scheme,
+		mgr:                  mgr,
+		wrapRegistry:         wrapRegistry,
 	}
 }
 
@@ -152,21 +153,36 @@ func (s *XdsSyncer) Start(
 			return
 		}
 		var gwl apiv1.GatewayList
-		err := s.cli.List(ctx, &gwl)
+		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {
 			// This should never happen, try again?
 			return
 		}
-		queries := query.NewData(s.cli, s.scheme)
+		queries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
 		pluginRegistry := registry.NewPluginRegistry(queries)
-		t := gloot.NewTranslator(*pluginRegistry)
+
+		if s.wrapRegistry != nil {
+			pluginRegistry = s.wrapRegistry(ctx, s.mgr, pluginRegistry)
+		}
+
+		t := gloot.NewTranslator(pluginRegistry)
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
+		var gwNamespaces []string
+		appendUniqueNamespace := func(namespace string) {
+			for _, ns := range gwNamespaces {
+				if ns == namespace {
+					return
+				}
+			}
+			gwNamespaces = append(gwNamespaces, namespace)
+		}
 		for _, gw := range gwl.Items {
 			proxy := t.TranslateProxy(ctx, &gw, queries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
+				appendUniqueNamespace(proxy.GetMetadata().Namespace)
 				//TODO: handle reports and process statuses
 			}
 		}
@@ -174,6 +190,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
+		s.syncGwNamespaces(ctx, gwNamespaces, pluginRegistry)
 	}
 
 	for {
@@ -353,7 +370,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	rl := apiv1.HTTPRouteList{}
-	err := s.cli.List(ctx, &rl)
+	err := s.mgr.GetClient().List(ctx, &rl)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -363,7 +380,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
 			route.Status = *status
-			if err := s.cli.Status().Update(ctx, &route); err != nil {
+			if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
 				logger.Error(err)
 			}
 		}
@@ -377,8 +394,21 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
 			gw.Status = *status
-			if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
+			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
 				logger.Error(err)
+			}
+		}
+	}
+}
+
+func (s *XdsSyncer) syncGwNamespaces(ctx context.Context, namespaces []string, pluginRegistry registry.PluginRegistry) {
+	logger := contextutils.LoggerFrom(ctx)
+	for _, ns := range namespaces {
+		for _, nsPlugin := range pluginRegistry.GetNamespacePlugins() {
+			err := nsPlugin.ApplyNamespacePlugin(ctx, &gwplugins.NamespaceContext{Namespace: ns})
+			if err != nil {
+				logger.Errorf("Error applying namespace plugin: %v", err)
+				continue
 			}
 		}
 	}

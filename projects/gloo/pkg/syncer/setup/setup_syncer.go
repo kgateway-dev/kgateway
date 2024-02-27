@@ -437,9 +437,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 type Extensions struct {
 	PluginRegistryFactory plugins.PluginRegistryFactory
-	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
-	XdsCallbacks          xdsserver.Callbacks
-	ApiEmitterChannel     chan struct{}
+	GatewayV2PluginWrapper
+	SyncerExtensions  []syncer.TranslatorSyncerExtensionFactory
+	XdsCallbacks      xdsserver.Callbacks
+	ApiEmitterChannel chan struct{}
 }
 
 func RunGloo(opts bootstrap.Opts) error {

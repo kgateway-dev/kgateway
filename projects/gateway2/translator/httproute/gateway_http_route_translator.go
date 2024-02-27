@@ -20,6 +20,7 @@ func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
 ) []*v1.Route {
@@ -36,6 +37,7 @@ func TranslateGatewayHTTPRouteRules(
 			ctx,
 			pluginRegistry,
 			queries,
+			gwListener,
 			&route,
 			rule,
 			reporter,
@@ -57,6 +59,7 @@ func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
@@ -79,6 +82,7 @@ func translateGatewayHTTPRouteRule(
 		}
 
 		rtCtx := &plugins.RouteContext{
+			Listener: &gwListener,
 			Route:    gwroute,
 			Rule:     &rule,
 			Match:    &match,

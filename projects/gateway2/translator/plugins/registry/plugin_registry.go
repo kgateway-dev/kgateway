@@ -10,16 +10,33 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 )
 
-type PluginRegistry struct {
-	routePlugins []plugins.RoutePlugin
+type PluginRegistry interface {
+	GetRoutePlugins() []plugins.RoutePlugin
+	GetNamespacePlugins() []plugins.NamespacePlugin
 }
 
-func (h *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
+type PluginRegistryFactory interface {
+	MakePluginRegistry() PluginRegistry
+}
+
+type pluginRegistry struct {
+	routePlugins     []plugins.RoutePlugin
+	namespacePlugins []plugins.NamespacePlugin
+}
+
+func (h *pluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
 	return h.routePlugins
 }
 
-func NewPluginRegistry(queries query.GatewayQueries) *PluginRegistry {
-	var routePlugins []plugins.RoutePlugin
+func (h *pluginRegistry) GetNamespacePlugins() []plugins.NamespacePlugin {
+	return h.namespacePlugins
+}
+
+func NewPluginRegistry(queries query.GatewayQueries) PluginRegistry {
+	var (
+		routePlugins     []plugins.RoutePlugin
+		namespacePlugins []plugins.NamespacePlugin
+	)
 
 	allPlugins := buildPlugins(queries)
 
@@ -27,9 +44,13 @@ func NewPluginRegistry(queries query.GatewayQueries) *PluginRegistry {
 		if routePlugin, ok := plugin.(plugins.RoutePlugin); ok {
 			routePlugins = append(routePlugins, routePlugin)
 		}
+		if namespacePlugin, ok := plugin.(plugins.NamespacePlugin); ok {
+			namespacePlugins = append(namespacePlugins, namespacePlugin)
+		}
 	}
-	return &PluginRegistry{
-		routePlugins,
+	return &pluginRegistry{
+		routePlugins:     routePlugins,
+		namespacePlugins: namespacePlugins,
 	}
 }
 
