@@ -709,10 +709,16 @@ type GlooOptions struct {
 	AwsOptions              *GlooOptions_AWSOptions `protobuf:"bytes,5,opt,name=aws_options,json=awsOptions,proto3" json:"aws_options,omitempty"`
 	// set these options to fine-tune the way Gloo handles invalid user configuration
 	InvalidConfigPolicy *GlooOptions_InvalidConfigPolicy `protobuf:"bytes,6,opt,name=invalid_config_policy,json=invalidConfigPolicy,proto3" json:"invalid_config_policy,omitempty"`
-	// Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature,
-	// Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them.
-	// If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
-	// in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
+	// Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources
+	// to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if
+	// you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Edge watches,
+	// the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load
+	// balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing
+	// destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use
+	// [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/)
+	// Upstream resources as a routing destination to forward requests to the pod directly.
+	//
+	// For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).
 	DisableKubernetesDestinations bool `protobuf:"varint,7,opt,name=disable_kubernetes_destinations,json=disableKubernetesDestinations,proto3" json:"disable_kubernetes_destinations,omitempty"`
 	// Default policy for grpc-web.
 	// set to true if you do not wish grpc-web to be automatically enabled.
