@@ -437,42 +437,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	return err
 }
 
-// Extensions contains the set of extension points for Gloo
-type Extensions struct {
-	// PluginRegistryFactory is responsible for creating a K8sGateway PluginRegistry
-	// This is the set of plugins which are executed when converting K8s Gateway resources into a Proxy resource
-	K8sGatewayPluginRegistryFactory k8sgatewayregistry.PluginRegistryFactory
-
-	// PluginRegistryFactory is responsible for creating an xDS PluginRegistry
-	// This is the set of plugins which are executed when converting a Proxy into an xDS Snapshot
-	PluginRegistryFactory plugins.PluginRegistryFactory
-
-	// SyncerExtensions perform additional syncing logic on a given ApiSnapshot
-	// These are used to inject the syncers that process Enterprise-only APIs (AuthConfig, RateLimitConfig)
-	SyncerExtensions []syncer.TranslatorSyncerExtensionFactory
-
-	// XdsCallbacks are asynchronous callbacks to perform during xds communication
-	XdsCallbacks      xdsserver.Callbacks
-	ApiEmitterChannel chan struct{}
-}
-
-// Validate returns an error if the Extensions are invalid
-func (e Extensions) Validate() error {
-	if e.K8sGatewayPluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.K8sGatewayPluginRegistryFactory must be defined, found nil")
-	}
-	if e.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
-	}
-	if e.ApiEmitterChannel == nil {
-		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
-	}
-	if e.SyncerExtensions == nil {
-		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
-	}
-	return nil
-}
-
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
 		K8sGatewayPluginRegistryFactory: k8sgatewayregistry.GetPluginRegistryFactory(),
