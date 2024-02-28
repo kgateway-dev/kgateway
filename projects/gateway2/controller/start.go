@@ -2,9 +2,9 @@ package controller
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
@@ -33,9 +33,9 @@ var (
 )
 
 type StartConfig struct {
-	Dev          bool
-	ControlPlane bootstrap.ControlPlane
-	WrapRegistry plugins.GatewayV2PluginRegistryFactory
+	Dev                   bool
+	ControlPlane          bootstrap.ControlPlane
+	PluginRegistryFactory registry.PluginRegistryFactory
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -78,7 +78,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		false,
 		inputChannels,
 		mgr,
-		cfg.WrapRegistry,
+		cfg.PluginRegistryFactory,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")

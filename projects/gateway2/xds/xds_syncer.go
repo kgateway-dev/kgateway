@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"net/http"
+
+	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gorilla/mux"
@@ -86,9 +87,9 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs       *XdsInputChannels
-	mgr          manager.Manager
-	wrapRegistry plugins.GatewayV2PluginRegistryFactory
+	inputs                *XdsInputChannels
+	mgr                   manager.Manager
+	pluginRegistryFactory registry.PluginRegistryFactory
 }
 
 type XdsInputChannels struct {
@@ -125,17 +126,17 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	wrapRegistry plugins.GatewayV2PluginRegistryFactory,
+	pluginRegistryFactory registry.PluginRegistryFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
-		controllerName:       controllerName,
-		translator:           translator,
-		sanitizer:            sanitizer,
-		xdsCache:             xdsCache,
-		xdsGarbageCollection: xdsGarbageCollection,
-		inputs:               inputs,
-		mgr:                  mgr,
-		wrapRegistry:         wrapRegistry,
+		controllerName:        controllerName,
+		translator:            translator,
+		sanitizer:             sanitizer,
+		xdsCache:              xdsCache,
+		xdsGarbageCollection:  xdsGarbageCollection,
+		inputs:                inputs,
+		mgr:                   mgr,
+		pluginRegistryFactory: pluginRegistryFactory,
 	}
 }
 
@@ -159,13 +160,8 @@ func (s *XdsSyncer) Start(
 			return
 		}
 		queries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
-		pluginRegistry := registry.NewPluginRegistry(queries)
-
-		if s.wrapRegistry != nil {
-			pluginRegistry = s.wrapRegistry(ctx, s.mgr, pluginRegistry)
-		}
-
-		t := gloot.NewTranslator(pluginRegistry)
+		pluginRegistry := s.pluginRegistryFactory(ctx, s.mgr, queries)
+		gatewayTranslator := gloot.NewTranslator(pluginRegistry)
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
@@ -178,8 +174,9 @@ func (s *XdsSyncer) Start(
 			}
 			gwNamespaces = append(gwNamespaces, namespace)
 		}
+
 		for _, gw := range gwl.Items {
-			proxy := t.TranslateProxy(ctx, &gw, queries, r)
+			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, queries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
 				appendUniqueNamespace(proxy.GetMetadata().Namespace)

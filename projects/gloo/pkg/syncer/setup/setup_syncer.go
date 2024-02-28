@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	k8sgatewayregistry "github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -435,17 +437,46 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	return err
 }
 
+// Extensions contains the set of extension points for Gloo
 type Extensions struct {
+	// PluginRegistryFactory is responsible for creating a K8sGateway PluginRegistry
+	// This is the set of plugins which are executed when converting K8s Gateway resources into a Proxy resource
+	K8sGatewayPluginRegistryFactory k8sgatewayregistry.PluginRegistryFactory
+
+	// PluginRegistryFactory is responsible for creating an xDS PluginRegistry
+	// This is the set of plugins which are executed when converting a Proxy into an xDS Snapshot
 	PluginRegistryFactory plugins.PluginRegistryFactory
-	GatewayV2PluginWrapper
-	SyncerExtensions  []syncer.TranslatorSyncerExtensionFactory
+
+	// SyncerExtensions perform additional syncing logic on a given ApiSnapshot
+	// These are used to inject the syncers that process Enterprise-only APIs (AuthConfig, RateLimitConfig)
+	SyncerExtensions []syncer.TranslatorSyncerExtensionFactory
+
+	// XdsCallbacks are asynchronous callbacks to perform during xds communication
 	XdsCallbacks      xdsserver.Callbacks
 	ApiEmitterChannel chan struct{}
 }
 
+// Validate returns an error if the Extensions are invalid
+func (e Extensions) Validate() error {
+	if e.K8sGatewayPluginRegistryFactory == nil {
+		return errors.Errorf("Extensions.K8sGatewayPluginRegistryFactory must be defined, found nil")
+	}
+	if e.PluginRegistryFactory == nil {
+		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
+	}
+	if e.ApiEmitterChannel == nil {
+		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
+	}
+	if e.SyncerExtensions == nil {
+		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+	}
+	return nil
+}
+
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
+		K8sGatewayPluginRegistryFactory: k8sgatewayregistry.GetPluginRegistryFactory(),
+		PluginRegistryFactory:           registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -465,15 +496,8 @@ func RunGloo(opts bootstrap.Opts) error {
 //
 // This function is called directly by GlooEE
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
-	// Validate Extensions
-	if extensions.ApiEmitterChannel == nil {
-		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
-	}
-	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
-	}
-	if extensions.SyncerExtensions == nil {
-		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+	if err := extensions.Validate(); err != nil {
+		return err
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()

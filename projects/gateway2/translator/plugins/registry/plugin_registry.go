@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"context"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
@@ -8,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
 type PluginRegistry interface {
@@ -15,9 +18,7 @@ type PluginRegistry interface {
 	GetNamespacePlugins() []plugins.NamespacePlugin
 }
 
-type PluginRegistryFactory interface {
-	MakePluginRegistry() PluginRegistry
-}
+type PluginRegistryFactory func(ctx context.Context, mgr controllerruntime.Manager, queries query.GatewayQueries) PluginRegistry
 
 type pluginRegistry struct {
 	routePlugins     []plugins.RoutePlugin
@@ -32,13 +33,11 @@ func (h *pluginRegistry) GetNamespacePlugins() []plugins.NamespacePlugin {
 	return h.namespacePlugins
 }
 
-func NewPluginRegistry(queries query.GatewayQueries) PluginRegistry {
+func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 	var (
 		routePlugins     []plugins.RoutePlugin
 		namespacePlugins []plugins.NamespacePlugin
 	)
-
-	allPlugins := buildPlugins(queries)
 
 	for _, plugin := range allPlugins {
 		if routePlugin, ok := plugin.(plugins.RoutePlugin); ok {
@@ -54,11 +53,19 @@ func NewPluginRegistry(queries query.GatewayQueries) PluginRegistry {
 	}
 }
 
-// This function returns the full set of plugins to be registered.
+// GetPluginRegistryFactory returns the PluginRegistryFactory for the Gloo Gateway Open Source implementation
+func GetPluginRegistryFactory() PluginRegistryFactory {
+	return func(ctx context.Context, _ controllerruntime.Manager, queries query.GatewayQueries) PluginRegistry {
+		allPlugins := BuildPlugins(queries)
+		return NewPluginRegistry(allPlugins)
+	}
+}
+
+// BuildPlugins returns the full set of plugins to be registered.
 // New plugins should be added to this list (and only this list).
 // If modification of this list is needed for testing etc,
 // we can add a new registry constructor that accepts this function
-func buildPlugins(queries query.GatewayQueries) []plugins.Plugin {
+func BuildPlugins(queries query.GatewayQueries) []plugins.Plugin {
 	return []plugins.Plugin{
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),

@@ -2,8 +2,6 @@ package plugins
 
 import (
 	"context"
-	gatewayv2registry "github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -206,9 +204,6 @@ type PluginRegistry interface {
 // A PluginRegistryFactory generates a PluginRegistry
 // It is executed each translation loop, ensuring we have up to date configuration of all plugins
 type PluginRegistryFactory func(ctx context.Context) PluginRegistry
-
-// A PluginRegistryFactory generates a Gateway V2 PluginRegistry
-type GatewayV2PluginRegistryFactory func(ctx context.Context, mgr manager.Manager, ossRegistry gatewayv2registry.PluginRegistry) gatewayv2registry.PluginRegistry
 
 // ExtendedFilterChain is a FilterChain with additional information
 // This extra information may not end up on the final filter chain

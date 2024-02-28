@@ -15,10 +15,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// K8sGwTranslator This translator Translates K8s Gateway resources into Gloo Edege Proxies.
+// K8sGwTranslator This translator Translates K8s Gateway resources into Gloo Edge Proxies.
 type K8sGwTranslator interface {
 	// TranslateProxy This function is called by the reconciler when a K8s Gateway resource is created or updated.
-	// It returns an instance of the Gloo Edge Proxy resources that should configure a target Gloo Edge Proxy.
+	// It returns an instance of the Gloo Edge Proxy resource, that should configure a target Gloo Edge Proxy workload.
 	// A null return value indicates the K8s Gateway resource failed to translate into a Gloo Edge Proxy. The error will be reported on the provided reporter.
 	TranslateProxy(
 		ctx context.Context,
