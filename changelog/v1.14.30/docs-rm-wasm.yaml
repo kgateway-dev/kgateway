@@ -6,3 +6,8 @@ changelog:
     skipCI-kube-tests:true
   issueLink: https://github.com/solo-io/doctopus/issues/79
   resolvesIssue: false
+- type: NON_USER_FACING  
+  description: >- 
+    Adds docs for why to use upstreams over Kube services.
+    skipCI-kube-tests:true
+  resolvesIssue: false
