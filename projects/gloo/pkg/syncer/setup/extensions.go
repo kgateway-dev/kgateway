@@ -29,7 +29,7 @@ type Extensions struct {
 	ApiEmitterChannel chan struct{}
 }
 
-// Validate returns an error if the Extensions are invalid
+// Validate returns an error if the Extensions are invalid, nil otherwise
 func (e Extensions) Validate() error {
 	if e.K8sGatewayPluginRegistryFactory == nil {
 		return errors.Errorf("Extensions.K8sGatewayPluginRegistryFactory must be defined, found nil")

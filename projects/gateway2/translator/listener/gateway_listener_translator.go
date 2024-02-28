@@ -228,8 +228,8 @@ func (ml *mergedListener) translateListener(
 		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
 			ctx,
 			pluginRegistry,
-			ml.gatewayNamespace,
 			mfc.gatewayListenerName,
+			ml.gatewayNamespace,
 			ml.listener,
 			queries,
 			reporter,

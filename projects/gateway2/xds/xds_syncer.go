@@ -2,14 +2,9 @@ package xds
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -52,11 +47,6 @@ var (
 		emptyResource,
 		emptyResource,
 	)
-)
-
-const (
-	// The port used to expose a developer server
-	devModePort = 10010
 )
 
 var (
@@ -322,45 +312,10 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 	return reports
 }
 
-// ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// TODO(ilackarms): move this somewhere else, make it part of dev-mode
-// https://github.com/solo-io/gloo/issues/6494
-func (s *XdsSyncer) ServeXdsSnapshots() error {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%v", "Developer API")
-	})
-	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.xdsCache.GetStatusKeys()))
-	})
-	r.HandleFunc("/xds/{key}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		xdsCacheKey := vars["key"]
-
-		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
-		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
-	})
-	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
-	})
-
-	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
-}
-
 func measureResource(ctx context.Context, resource string, length int) {
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
 		stats.Record(ctxWithTags, envoySnapshotOut.M(int64(length)))
 	}
-}
-
-func prettify(original interface{}) string {
-	b, err := json.MarshalIndent(original, "", "    ")
-	if err != nil {
-		return ""
-	}
-
-	return string(b)
 }
 
 func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {

@@ -65,6 +65,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 	}
 
 	queries := testutils.BuildGatewayQueries(dependencies)
+	pluginRegistry := registry.GetPluginRegistryFactory()(ctx, nil, queries)
 
 	results := make(map[types.NamespacedName]bool)
 	for _, gw := range gateways {
@@ -75,9 +76,6 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		}
 		reportsMap := reports.NewReportMap()
 		reporter := reports.NewReporter(&reportsMap)
-
-		pluginRegistryFactory := registry.GetPluginRegistryFactory()
-		pluginRegistry := pluginRegistryFactory(context.Background(), nil, queries)
 
 		// translate gateway
 		proxy := NewTranslator(pluginRegistry).TranslateProxy(

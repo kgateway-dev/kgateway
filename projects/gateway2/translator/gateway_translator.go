@@ -28,9 +28,7 @@ type K8sGwTranslator interface {
 	) *v1.Proxy
 }
 
-func NewTranslator(
-	pluginRegistry registry.PluginRegistry,
-) K8sGwTranslator {
+func NewTranslator(pluginRegistry registry.PluginRegistry) K8sGwTranslator {
 	return &translator{
 		pluginRegistry,
 	}
