@@ -4,3 +4,10 @@ changelog:
     Backport for adding more info about not using Kube services as a routing destination.
     skipCI-kube-tests:true
   resolvesIssue: false
+- type: NON_USER_FACING  
+  description: >- 
+    Removes references to WebAssembly Hub and `wasme` CLI.
+    Updates the old WAH image to one stored in GCR.
+    skipCI-kube-tests:true
+  issueLink: https://github.com/solo-io/doctopus/issues/79
+  resolvesIssue: false
