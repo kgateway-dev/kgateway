@@ -19,7 +19,10 @@ Consider the following information before choosing a Kubernetes service as your 
 
 To use Kubernetes services as a routing destination: 
 
-1. Enable Kubernetes service scanning in Gloo Edge by setting `settings.disableKubernetesDestinations: false`. By default, scanning of Kubernetes services is disabled in Gloo Edge due to the negative performance impact on translation and load balancing time in clusters with a lot of Kubernetes services. 
+1. Get the default Gloo Edge settings and verify that `spec.gloo.disableKubernetesDestinations` is set to `false`. This setting is required to allow Gloo Edge to scan all Kubernetes services in the cluster and to create in-memory Upstream resources to represent them. If it is set to `true`, follow the [upgrade guide]({{% versioned_link_path fromRoot="/operations/upgrading/" %}}) and set `settings.disableKubernetesDestinations: false` in your Helm chart. 
+   ```sh
+   kubectl get settings default -n gloo-system -o yaml
+   ```
 2. Configure the Kubernetes service as a routing destination in your VirtualService. The following example configuration forwards all requests to `/petstore` to port `8080` on the `petstore` Kubernetes service in the `default` namespace.
 
    {{< highlight yaml "hl_lines=6-10" >}}
