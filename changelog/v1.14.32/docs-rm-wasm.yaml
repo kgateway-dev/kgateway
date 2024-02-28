@@ -6,3 +6,4 @@ changelog:
     skipCI-kube-tests:true
   issueLink: https://github.com/solo-io/doctopus/issues/79
   resolvesIssue: false
+  
