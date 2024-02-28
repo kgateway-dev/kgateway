@@ -10,7 +10,7 @@ import (
 
 // Extensions contains the set of extension points for Gloo
 type Extensions struct {
-	// PluginRegistryFactory is responsible for creating a K8sGateway PluginRegistry
+	// K8sGatewayPluginRegistryFactory is responsible for creating a K8sGateway PluginRegistry
 	// This is the set of plugins which are executed when converting K8s Gateway resources into a Proxy resource
 	K8sGatewayPluginRegistryFactory k8sgatewayregistry.PluginRegistryFactory
 
