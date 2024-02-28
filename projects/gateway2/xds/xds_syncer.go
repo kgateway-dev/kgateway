@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/stringutils"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -155,21 +156,13 @@ func (s *XdsSyncer) Start(
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
-		var gwNamespaces []string
-		appendUniqueNamespace := func(namespace string) {
-			for _, ns := range gwNamespaces {
-				if ns == namespace {
-					return
-				}
-			}
-			gwNamespaces = append(gwNamespaces, namespace)
-		}
 
+		var uniqueGatewayNamespaces []string
 		for _, gw := range gwl.Items {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, queries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
-				appendUniqueNamespace(proxy.GetMetadata().Namespace)
+				uniqueGatewayNamespaces = stringutils.AppendIfMissing(uniqueGatewayNamespaces, proxy.GetMetadata().GetNamespace())
 				//TODO: handle reports and process statuses
 			}
 		}
@@ -177,7 +170,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
-		s.syncGwNamespaces(ctx, gwNamespaces, pluginRegistry)
+		s.syncGwNamespaces(ctx, uniqueGatewayNamespaces, pluginRegistry)
 	}
 
 	for {
