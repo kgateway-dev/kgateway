@@ -76,7 +76,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/yaml"
 
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 )
 
@@ -2225,16 +2224,6 @@ spec:
 			var (
 				invalidUpstreamYaml string
 				vsYaml              string
-
-				updateFailurePolicy = func(failurePolicy admissionregv1.FailurePolicyType) {
-					kubeClient := clienthelpers.MustKubeClient()
-					cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
-					ExpectWithOffset(1, err).NotTo(HaveOccurred())
-					cfg.Webhooks[0].FailurePolicy = &failurePolicy
-
-					_, err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
-					ExpectWithOffset(1, err).NotTo(HaveOccurred())
-				}
 			)
 
 			// Before these secret deletion tests, set the failure policy to Fail and setup the resources with warnings
@@ -2272,11 +2261,11 @@ spec:
             name: my-us
             namespace:  ` + testHelper.InstallNamespace
 
-				updateFailurePolicy(admissionregv1.Fail)
+				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
 				// Allow warnings during setup so that we can install the resources
 				kube2e.UpdateAllowWarningsSetting(ctx, true, testHelper.InstallNamespace)
 
-				// This should work regardless of whether the warnings are allowed or not
+				// This should work regardless of whether the warnings are allowed or not, as an invalid upstream is not a warning until it part of a route
 				err := install.KubectlApply([]byte(invalidUpstreamYaml))
 				Expect(err).NotTo(HaveOccurred())
 
@@ -2293,7 +2282,7 @@ spec:
 			})
 
 			AfterAll(func() {
-				updateFailurePolicy(admissionregv1.Ignore)
+				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
 				err := install.KubectlDelete([]byte(invalidUpstreamYaml))
 				Expect(err).NotTo(HaveOccurred())
 				err = install.KubectlDelete([]byte(vsYaml))

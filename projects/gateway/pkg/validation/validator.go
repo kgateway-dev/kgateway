@@ -342,7 +342,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxyReports = append(proxyReports, proxyReport)
 
 		// Validate the reports returned by the glooValidator
-		// Get the errors and warngings from the proxyReport
+		// Get the errors and warnings from the proxyReport
 		stopValidatingProxy := v.appendProxyErrors(&errs, proxyReport, proxy, opts)
 		if stopValidatingProxy {
 			continue
@@ -520,13 +520,13 @@ func (v *validator) shouldValidateAgainstCurrentSnapshot(opts *validationOptions
 // validateAgainstCurrentSnapshot is used to compare the output of validation against validation of the orginal snapshot.
 // It takes the output of the first valdidation with the modification and then gets the output of the validation of the original snapshot
 // and compares the two using compareValidationOutputs, unless there are breaking errors in the first validation output
-func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *validationOptions, validationOutput validationOutput) bool {
+func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *validationOptions, voMod validationOutput) bool {
 	contextutils.LoggerFrom(ctx).Debugw(
 		"Comparing validation output against original snapshot",
 		zap.String("resource", opts.Resource.GetMetadata().String()),
 	)
 
-	if findBreakingErrors(validationOutput.err) {
+	if findBreakingErrors(voMod.err) {
 		contextutils.LoggerFrom(ctx).Debug(BreakingErrorLogMsg)
 		return false
 	}
@@ -541,9 +541,9 @@ func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *va
 	}
 
 	// Get the validation output without the modification.
-	validationOutputNoMod := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
+	voNoMod := v.validateProxiesAndExtensions(ctx, snapshotCloneUnmodified, opts)
 
-	return v.compareValidationOutputs(ctx, opts, validationOutput, validationOutputNoMod)
+	return v.compareValidationOutputs(ctx, opts, voMod, voNoMod)
 }
 
 // compareValidationOutputs is used to compare the output of validation against validation of the orginal snapshot
@@ -796,7 +796,7 @@ func (v *validator) validateResource(opts *validationOptions) (*Reports, error) 
 }
 
 // getErrorsFromGlooValidation returns errors from the Gloo validation reports. This function uses the reporter package to
-// extract errors and warnings from the reports and manually loops over the proxyReports' warnings and errors, applying the `allowWarngings` logic.
+// extract errors and warnings from the reports and manually loops over the proxyReports' warnings and errors, applying the `allowWarnings` logic.
 func (v *validator) getErrorsFromGlooValidation(reports []*gloovalidation.GlooValidationReport) error {
 	var (
 		errs error
