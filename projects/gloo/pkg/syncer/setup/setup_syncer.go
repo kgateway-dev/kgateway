@@ -857,12 +857,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	extensionValidator := syncerValidation.NewValidator(syncerValidatorExtensions, opts.Settings)
 
 	// allow by default
-	disableValidationAgainstSnapshot := os.Getenv("DISABLE_VALIDATION_AGAINST_SNAPSHOT") == "true"
+	disableValidationAgainstPreviousState := os.Getenv("DISABLE_VALIDATION_AGAINST_PREVIOUS_STATE") == "true"
 	validationConfig := gwvalidation.ValidatorConfig{
-		Translator:                       gatewayTranslator,
-		GlooValidator:                    validator.ValidateGloo,
-		ExtensionValidator:               extensionValidator,
-		DisableValidationAgainstSnapshot: disableValidationAgainstSnapshot,
+		Translator:                            gatewayTranslator,
+		GlooValidator:                         validator.ValidateGloo,
+		ExtensionValidator:                    extensionValidator,
+		DisableValidationAgainstPreviousState: disableValidationAgainstPreviousState,
 	}
 	if gwOpts.Validation != nil {
 		valOpts := gwOpts.Validation

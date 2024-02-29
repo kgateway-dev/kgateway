@@ -224,16 +224,16 @@ var _ = Describe("Validator", func() {
 
 		Context("secret deletion", func() {
 			// Inputs:
-			// - enableValidationAgainstSnapshot bool - are we enabling the validation against the snapshot or just checking errors/warnings as usual
+			// - disableValidationAgainstPreviousState bool - are we enabling the validation against the previous state or just checking errors/warnings as usual
 			// - allowWarnings bool - are warnings allowed
 			// - validator - Errors/Warnings/Success - what is returned from valiation.
 			// - errExpected bool - is an error expected
 			// the glooValidator returns two types of reports: ProxyReports and ResourceReports.
 			// Test that both are handled correctly. This test is focuses on the ProxyReports.
-			DescribeTable("handles secret validation scenarios for glooValidation output", func(disableValidationAgainstSnapshot bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
+			DescribeTable("handles secret validation scenarios for glooValidation output", func(disableValidationAgainstPreviousState bool, allowWarnings bool, validator validationFunc, expectSuccess bool) {
 				v.glooValidator = validator
 				v.allowWarnings = allowWarnings
-				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+				v.disableValidationAgainstPreviousState = disableValidationAgainstPreviousState
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
@@ -317,10 +317,10 @@ var _ = Describe("Validator", func() {
 				Entry("Snapshot comparison, allowWarnings=true, errors and warnings, only warnings changed, should fail", false, false, generateChangeWarnSameError, false),
 			}
 
-			DescribeTable("handles secret deletion for gloo translation scenarios with reports", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+			DescribeTable("handles secret deletion for gloo translation scenarios with reports", func(disableValidationAgainstPreviousState bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
 				v.glooValidator = ValidateAccept
 				v.allowWarnings = allowWarnings
-				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+				v.disableValidationAgainstPreviousState = disableValidationAgainstPreviousState
 
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
@@ -348,10 +348,10 @@ var _ = Describe("Validator", func() {
 				reportValidationEntries,
 			)
 
-			DescribeTable("handles secret deletion for gloovalidation reports", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+			DescribeTable("handles secret deletion for gloovalidation reports", func(disableValidationAgainstPreviousState bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
 				v.glooValidator = ValidationWithResourceReports(reportGenerator)
 				v.allowWarnings = allowWarnings
-				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+				v.disableValidationAgainstPreviousState = disableValidationAgainstPreviousState
 
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
@@ -373,10 +373,10 @@ var _ = Describe("Validator", func() {
 				reportValidationEntries,
 			)
 
-			DescribeTable("handles secret deletion for extension validation scenarios", func(disableValidationAgainstSnapshot bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
+			DescribeTable("handles secret deletion for extension validation scenarios", func(disableValidationAgainstPreviousState bool, allowWarnings bool, reportGenerator func() reporter.ResourceReports, expectSuccess bool) {
 				v.glooValidator = ValidateAccept
 				v.allowWarnings = allowWarnings
-				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+				v.disableValidationAgainstPreviousState = disableValidationAgainstPreviousState
 
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
@@ -431,7 +431,7 @@ var _ = Describe("Validator", func() {
 
 				v.glooValidator = validator
 				v.allowWarnings = true
-				v.disableValidationAgainstSnapshot = false
+				v.disableValidationAgainstPreviousState = false
 
 				snap := samples.SimpleGlooSnapshot(ns)
 				err := v.Sync(context.TODO(), snap)
@@ -780,9 +780,9 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
 			})
 
-			DescribeTable("validation with warnings", func(allowWarnings, disableValidationAgainstSnapshot bool, expectedMetric int) {
+			DescribeTable("validation with warnings", func(allowWarnings, disableValidationAgainstPreviousState bool, expectedMetric int) {
 				v.allowWarnings = allowWarnings
-				v.disableValidationAgainstSnapshot = disableValidationAgainstSnapshot
+				v.disableValidationAgainstPreviousState = disableValidationAgainstPreviousState
 				v.glooValidator = ValidateWarn
 
 				snap := samples.SimpleGlooSnapshot(ns)
@@ -802,11 +802,11 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(expectedMetric))
 
 			},
-				// enableValidationAgainstSnapshot should not affect anything other than secrets
-				Entry("allowWarnings=false, disableValidationAgainstSnapshot=true", false, true, 0),
-				Entry("allowWarnings=true, disableValidationAgainstSnapshot=true", true, true, 1),
-				Entry("allowWarnings=false, disableValidationAgainstSnapshot=false", false, false, 0),
-				Entry("allowWarnings=true, disableValidationAgainstSnapshot=false", true, false, 1),
+				// disableValidationAgainstPreviousState should not affect anything other than secrets
+				Entry("allowWarnings=false, disableValidationAgainstPreviousState=true", false, true, 0),
+				Entry("allowWarnings=true, disableValidationAgainstPreviousState=true", true, true, 1),
+				Entry("allowWarnings=false, disableValidationAgainstPreviousState=false", false, false, 0),
+				Entry("allowWarnings=true, disableValidationAgainstPreviousState=false", true, false, 1),
 			)
 
 			It("does not affect metrics when dryRun is true", func() {

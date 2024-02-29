@@ -116,10 +116,10 @@ type validator struct {
 	latestSnapshotErr error
 	translator        translator.Translator
 	// This function replaces a grpc client from when gloo and gateway pods were separate.
-	glooValidator                    GlooValidatorFunc
-	extensionValidator               syncerValidation.Validator
-	allowWarnings                    bool
-	disableValidationAgainstSnapshot bool
+	glooValidator                         GlooValidatorFunc
+	extensionValidator                    syncerValidation.Validator
+	allowWarnings                         bool
+	disableValidationAgainstPreviousState bool
 }
 
 type validationOptions struct {
@@ -137,20 +137,20 @@ type validationOptions struct {
 }
 
 type ValidatorConfig struct {
-	Translator                       translator.Translator
-	GlooValidator                    GlooValidatorFunc
-	ExtensionValidator               syncerValidation.Validator
-	AllowWarnings                    bool
-	DisableValidationAgainstSnapshot bool
+	Translator                            translator.Translator
+	GlooValidator                         GlooValidatorFunc
+	ExtensionValidator                    syncerValidation.Validator
+	AllowWarnings                         bool
+	DisableValidationAgainstPreviousState bool
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
 	return &validator{
-		glooValidator:                    cfg.GlooValidator,
-		extensionValidator:               cfg.ExtensionValidator,
-		translator:                       cfg.Translator,
-		allowWarnings:                    cfg.AllowWarnings,
-		disableValidationAgainstSnapshot: cfg.DisableValidationAgainstSnapshot,
+		glooValidator:                         cfg.GlooValidator,
+		extensionValidator:                    cfg.ExtensionValidator,
+		translator:                            cfg.Translator,
+		allowWarnings:                         cfg.AllowWarnings,
+		disableValidationAgainstPreviousState: cfg.DisableValidationAgainstPreviousState,
 	}
 }
 
@@ -450,10 +450,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
-	shouldValidateAgainstCurrentSnapshot := v.shouldValidateAgainstCurrentSnapshot(opts)
+	shouldValidateAgainstPreviousState := v.shouldValidateAgainstPreviousState(opts)
 
 	// The collectAllErrors opts field is used to control whether all errors are collected or if valdiation for a proxy is stopped on the first error
-	opts.collectAllErrors = shouldValidateAgainstCurrentSnapshot
+	opts.collectAllErrors = shouldValidateAgainstPreviousState
 
 	// Run the validation.
 	validationOutput := v.validateProxiesAndExtensions(ctx, snapshotClone, opts)
@@ -461,7 +461,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	passedSnapshotValidation := false
 	// We want to compare the validation output if the retryValidation flag and we are currently not passing validation
-	if shouldValidateAgainstCurrentSnapshot && validationOutput.err != nil {
+	if shouldValidateAgainstPreviousState && validationOutput.err != nil {
 		passedSnapshotValidation = v.validateAgainstCurrentSnapshot(ctx, opts, validationOutput)
 	}
 
@@ -502,11 +502,11 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	return reports, nil
 }
 
-// shouldValidateAgainstCurrentSnapshot contains the logic to determine if validation should be retried against the original snapshot
+// shouldValidateAgainstPreviousState contains the logic to determine if validation should be retried against the original snapshot
 // and the results of that validation compared to the original validation output in order to determine whether to accept the modification.
 // Currently we only support this for the deletion of secrets.
-func (v *validator) shouldValidateAgainstCurrentSnapshot(opts *validationOptions) bool {
-	if v.disableValidationAgainstSnapshot {
+func (v *validator) shouldValidateAgainstPreviousState(opts *validationOptions) bool {
+	if v.disableValidationAgainstPreviousState {
 		return false
 	}
 
