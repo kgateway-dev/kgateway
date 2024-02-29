@@ -463,15 +463,6 @@ func (m *Extraction) Equal(that interface{}) bool {
 			}
 		}
 
-	case *Extraction_DynamicMetadata:
-		if _, ok := target.Source.(*Extraction_DynamicMetadata); !ok {
-			return false
-		}
-
-		if strings.Compare(m.GetDynamicMetadata(), target.GetDynamicMetadata()) != 0 {
-			return false
-		}
-
 	default:
 		// m is nil but target is not nil
 		if m.Source != target.Source {
