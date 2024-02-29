@@ -2299,7 +2299,7 @@ spec:
 				glooResources.Secrets = append(glooResources.Secrets, tlsSecretUnused)
 
 				// Modify the VirtualService to include the created SslConfig
-				testServerVs.SslConfig = &ssl.SslConfig{
+				testRunnerVs.SslConfig = &ssl.SslConfig{
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
 							Name:      tlsSecret.GetMetadata().GetName(),
@@ -2332,7 +2332,7 @@ spec:
 			It("should act as expected with secret validation", FlakeAttempts(3), func() {
 				By("waiting for the modified VS to be accepted")
 				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-					return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 				})
 
 				By("Rejecting resource patches due to existing warnings") // Make sure `allowWarnings` is being respected
@@ -2340,7 +2340,7 @@ spec:
 					ctx,
 					&core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      testServerVs.GetMetadata().Name,
+						Name:      testRunnerVs.GetMetadata().Name,
 					},
 					func(resource resources.Resource) resources.Resource {
 						vs, ok := resource.(*gatewayv1.VirtualService)
