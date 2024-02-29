@@ -41,10 +41,10 @@ func (c classicEdgeNodeHash) ID(node *envoy_config_core_v3.Node) string {
 		if roleValue != nil {
 			roleString := roleValue.GetStringValue()
 			if c.isProxyWorkloadRole(roleString) {
-				// Proxy workloads us a key that is prefixed by the translator that produced the xDS Snapshot
+				// Proxy workloads use a key that is prefixed by the translator that produced the xDS Snapshot
 				return strings.Join([]string{utils.GlooEdgeTranslatorValue, roleString}, KeyDelimiter)
 			} else {
-				// Non-Proxy workloads are used the exact key as the role
+				// Non-Proxy workloads use the exact key as the role
 				return roleString
 			}
 
@@ -61,7 +61,6 @@ func (c classicEdgeNodeHash) ID(node *envoy_config_core_v3.Node) string {
 // who follow a format of "NAME".
 func (c classicEdgeNodeHash) isProxyWorkloadRole(role string) bool {
 	if strings.Contains(role, KeyDelimiter) {
-		// We assume that this will only occur if a role is NAMESPACE~NAME
 		return true
 	}
 	return false
