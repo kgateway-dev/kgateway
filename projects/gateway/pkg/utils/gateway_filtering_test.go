@@ -30,4 +30,29 @@ var _ = Describe("gateway util unit tests", func() {
 			}))
 		})
 	})
+
+	Describe("SortedGatewaysByProxyName", func() {
+		// Must pass repeatedly so we don't accidentally get the right order by chance
+		It("assigns each gateway once to each proxy by their proxyNames", MustPassRepeatedly(5), func() {
+
+			gws := v1.GatewayList{
+				{Metadata: &core.Metadata{Name: "gw5"}, ProxyNames: []string{"proxy3", "proxy2"}},
+				{Metadata: &core.Metadata{Name: "gw4"}, ProxyNames: []string{"proxy1", "proxy4"}},
+				{Metadata: &core.Metadata{Name: "gw3"}, ProxyNames: []string{"proxy1", defaults.GatewayProxyName}},
+				{Metadata: &core.Metadata{Name: "gw2"}, ProxyNames: []string{"proxy1", "proxy2"}},
+				{Metadata: &core.Metadata{Name: "gw1"}, ProxyNames: nil /*default proxy*/},
+			}
+
+			gw5, gw4, gw3, gw2, gw1 := gws[0], gws[1], gws[2], gws[3], gws[4]
+
+			byProxy := SortedGatewaysByProxyName(gws)
+			Expect(byProxy).To(Equal([]GatewaysAndProxyName{
+				{Gateways: v1.GatewayList{gw3, gw1}, Name: defaults.GatewayProxyName},
+				{Gateways: v1.GatewayList{gw4, gw3, gw2}, Name: "proxy1"},
+				{Gateways: v1.GatewayList{gw5, gw2}, Name: "proxy2"},
+				{Gateways: v1.GatewayList{gw5}, Name: "proxy3"},
+				{Gateways: v1.GatewayList{gw4}, Name: "proxy4"},
+			}))
+		})
+	})
 })

@@ -266,36 +266,48 @@ func GetTcpHostWarning(tcpHost *validation.TcpHostReport) []string {
 	return warnings
 }
 
+func GetListenerError(listener *validation.ListenerReport) []error {
+	var errs []error
+
+	if err := GetListenerErr(listener); err != nil {
+		errs = append(errs, err...)
+	}
+	switch listenerType := listener.GetListenerTypeReport().(type) {
+	case *validation.ListenerReport_HttpListenerReport:
+		errs = append(errs, getHttpListenerReportErrs(listenerType.HttpListenerReport)...)
+
+	case *validation.ListenerReport_TcpListenerReport:
+		errs = append(errs, getTcpListenerReportErrs(listenerType.TcpListenerReport)...)
+
+	case *validation.ListenerReport_HybridListenerReport:
+		for _, mr := range listenerType.HybridListenerReport.GetMatchedListenerReports() {
+			switch lrt := mr.GetListenerReportType().(type) {
+			case *validation.MatchedListenerReport_HttpListenerReport:
+				errs = append(errs, getHttpListenerReportErrs(lrt.HttpListenerReport)...)
+			case *validation.MatchedListenerReport_TcpListenerReport:
+				errs = append(errs, getTcpListenerReportErrs(lrt.TcpListenerReport)...)
+			}
+		}
+
+	case *validation.ListenerReport_AggregateListenerReport:
+		for _, httpListenerReport := range listenerType.AggregateListenerReport.GetHttpListenerReports() {
+			errs = append(errs, getHttpListenerReportErrs(httpListenerReport)...)
+		}
+		for _, tcpListenerReport := range listenerType.AggregateListenerReport.GetTcpListenerReports() {
+			errs = append(errs, getTcpListenerReportErrs(tcpListenerReport)...)
+		}
+	}
+
+	return errs
+}
+
 func GetProxyError(proxyRpt *validation.ProxyReport) error {
 	var errs []error
 	for _, listener := range proxyRpt.GetListenerReports() {
-		if err := GetListenerErr(listener); err != nil {
-			errs = append(errs, err...)
-		}
-		switch listenerType := listener.GetListenerTypeReport().(type) {
-		case *validation.ListenerReport_HttpListenerReport:
-			errs = append(errs, getHttpListenerReportErrs(listenerType.HttpListenerReport)...)
+		listenerErrs := GetListenerError(listener)
 
-		case *validation.ListenerReport_TcpListenerReport:
-			errs = append(errs, getTcpListenerReportErrs(listenerType.TcpListenerReport)...)
-
-		case *validation.ListenerReport_HybridListenerReport:
-			for _, mr := range listenerType.HybridListenerReport.GetMatchedListenerReports() {
-				switch lrt := mr.GetListenerReportType().(type) {
-				case *validation.MatchedListenerReport_HttpListenerReport:
-					errs = append(errs, getHttpListenerReportErrs(lrt.HttpListenerReport)...)
-				case *validation.MatchedListenerReport_TcpListenerReport:
-					errs = append(errs, getTcpListenerReportErrs(lrt.TcpListenerReport)...)
-				}
-			}
-
-		case *validation.ListenerReport_AggregateListenerReport:
-			for _, httpListenerReport := range listenerType.AggregateListenerReport.GetHttpListenerReports() {
-				errs = append(errs, getHttpListenerReportErrs(httpListenerReport)...)
-			}
-			for _, tcpListenerReport := range listenerType.AggregateListenerReport.GetTcpListenerReports() {
-				errs = append(errs, getTcpListenerReportErrs(tcpListenerReport)...)
-			}
+		if listenerErrs != nil {
+			errs = append(errs, listenerErrs...)
 		}
 	}
 
