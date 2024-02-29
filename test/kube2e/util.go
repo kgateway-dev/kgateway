@@ -25,6 +25,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap/zapcore"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -111,6 +113,13 @@ func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNa
 	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
+	}, installNamespace)
+}
+
+func UpdateAllowWarningsSetting(ctx context.Context, allowWarnings bool, installNamespace string) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
+		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
+		settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: allowWarnings}
 	}, installNamespace)
 }
 
@@ -219,4 +228,14 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 			return defaults
 		})
 	}
+}
+
+func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy admissionregv1.FailurePolicyType) {
+	kubeClient := clienthelpers.MustKubeClient()
+	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	cfg.Webhooks[0].FailurePolicy = &failurePolicy
+
+	_, err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
