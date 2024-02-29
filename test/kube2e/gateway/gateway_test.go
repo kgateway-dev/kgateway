@@ -2320,8 +2320,8 @@ spec:
 				kube2e.UpdateAllowWarningsSetting(ctx, true, testHelper.InstallNamespace)
 
 				// Ensure the secrets are deleted after the test. Ignore the errors, as they may have been deleted already
-				_ = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-				_ = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, unusedSecretName, metav1.DeleteOptions{})
+				resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+				resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, unusedSecretName, metav1.DeleteOptions{})
 
 				// Check that they're gone
 				_, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Get(ctx, secretName, metav1.GetOptions{})
