@@ -4962,8 +4962,6 @@ spec:
                                                             body:
                                                               maxProperties: 0
                                                               type: object
-                                                            dynamicMetadata:
-                                                              type: string
                                                             header:
                                                               type: string
                                                             mode:
@@ -6256,8 +6254,6 @@ spec:
                                                   body:
                                                     maxProperties: 0
                                                     type: object
-                                                  dynamicMetadata:
-                                                    type: string
                                                   header:
                                                     type: string
                                                   mode:

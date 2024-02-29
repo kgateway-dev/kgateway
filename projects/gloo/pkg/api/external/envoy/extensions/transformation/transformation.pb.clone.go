@@ -274,12 +274,6 @@ func (m *Extraction) Clone() proto.Message {
 			}
 		}
 
-	case *Extraction_DynamicMetadata:
-
-		target.Source = &Extraction_DynamicMetadata{
-			DynamicMetadata: m.GetDynamicMetadata(),
-		}
-
 	}
 
 	return target
