@@ -23,6 +23,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var SyncNotCalledError = eris.New("proxy validation called before the validation server received its first sync of resources")
+
 type Validator interface {
 	v1snap.ApiSyncer
 	validation.GlooValidationServiceServer
@@ -179,7 +181,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
 		s.lock.Unlock()
-		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
+		return nil, SyncNotCalledError
 	}
 	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
 	s.lock.Unlock()
@@ -209,7 +211,7 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
 		s.lock.Unlock()
-		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
+		return nil, SyncNotCalledError
 	}
 	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
 	s.lock.Unlock()
