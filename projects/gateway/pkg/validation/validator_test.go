@@ -405,7 +405,6 @@ var _ = Describe("Validator", func() {
 			)
 
 			DescribeTable("Breaking errors don't trigger revalidation", func(validator validationFunc, expectedErrString string) {
-				//FIt("Fails if it gets a hasn't Sync'ed", func() {
 				var (
 					buf    *bytes.Buffer
 					bws    *zapcore.BufferedWriteSyncer
