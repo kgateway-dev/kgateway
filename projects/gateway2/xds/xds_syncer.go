@@ -3,12 +3,13 @@ package xds
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+
 	"github.com/solo-io/gloo/pkg/utils/stringutils"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -79,10 +80,9 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs                *XdsInputChannels
-	mgr                   manager.Manager
-	pluginRegistryFactory registry.PluginRegistryFactory
-	queryEngineFactory    query.EngineFactory
+	inputs                  *XdsInputChannels
+	mgr                     manager.Manager
+	extensionManagerFactory extensions.ExtensionManagerFactory
 }
 
 type XdsInputChannels struct {
@@ -119,19 +119,17 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	pluginRegistryFactory registry.PluginRegistryFactory,
-	queryEngineFactory query.EngineFactory,
+	extensionManagerFactory extensions.ExtensionManagerFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
-		controllerName:        controllerName,
-		translator:            translator,
-		sanitizer:             sanitizer,
-		xdsCache:              xdsCache,
-		xdsGarbageCollection:  xdsGarbageCollection,
-		inputs:                inputs,
-		mgr:                   mgr,
-		pluginRegistryFactory: pluginRegistryFactory,
-		queryEngineFactory:    queryEngineFactory,
+		controllerName:          controllerName,
+		translator:              translator,
+		sanitizer:               sanitizer,
+		xdsCache:                xdsCache,
+		xdsGarbageCollection:    xdsGarbageCollection,
+		inputs:                  inputs,
+		mgr:                     mgr,
+		extensionManagerFactory: extensionManagerFactory,
 	}
 }
 
@@ -155,8 +153,10 @@ func (s *XdsSyncer) Start(
 			return
 		}
 
-		queryEngine := s.queryEngineFactory(ctx, s.mgr)
-		pluginRegistry := s.pluginRegistryFactory(ctx, queryEngine)
+		extensionManager := s.extensionManagerFactory(s.mgr)
+
+		queryEngine := extensionManager.CreateQueryEngine(ctx)
+		pluginRegistry := extensionManager.CreatePluginRegistry(ctx)
 		gatewayTranslator := gloot.NewTranslator(pluginRegistry)
 
 		proxies := gloo_solo_io.ProxyList{}

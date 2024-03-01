@@ -13,8 +13,13 @@ import (
 )
 
 type PluginRegistry struct {
+	initialized            bool // hacky for now
 	routePlugins           []plugins.RoutePlugin
 	postTranslationPlugins []plugins.PostTranslationPlugin
+}
+
+func (p *PluginRegistry) IsNil() bool {
+	return !p.initialized
 }
 
 func (p *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
@@ -40,6 +45,7 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 		}
 	}
 	return PluginRegistry{
+		initialized:            true,
 		routePlugins:           routePlugins,
 		postTranslationPlugins: postTranslationPlugins,
 	}
