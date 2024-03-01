@@ -1,8 +1,6 @@
 package registry
 
 import (
-	"context"
-
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
@@ -51,21 +49,11 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 	}
 }
 
-type PluginRegistryFactory func(ctx context.Context, queryEngine query.Engine) PluginRegistry
-
-// GetPluginRegistryFactory returns the PluginRegistryFactory for the Gloo Gateway Open Source implementation
-func GetPluginRegistryFactory() PluginRegistryFactory {
-	return func(ctx context.Context, queryEngine query.Engine) PluginRegistry {
-		allPlugins := BuildPlugins(queryEngine)
-		return NewPluginRegistry(allPlugins)
-	}
-}
-
 // BuildPlugins returns the full set of plugins to be registered.
 // New plugins should be added to this list (and only this list).
 // If modification of this list is needed for testing etc,
 // we can add a new registry constructor that accepts this function
-func BuildPlugins(queries query.Engine) []plugins.Plugin {
+func BuildPlugins(queries query.GatewayQueries) []plugins.Plugin {
 	return []plugins.Plugin{
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),

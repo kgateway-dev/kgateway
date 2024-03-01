@@ -65,7 +65,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 	}
 
 	queries := testutils.BuildGatewayQueries(dependencies)
-	pluginRegistry := registry.GetPluginRegistryFactory()(ctx, nil, queries)
+	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries))
 
 	results := make(map[types.NamespacedName]bool)
 	for _, gw := range gateways {

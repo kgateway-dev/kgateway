@@ -9,7 +9,7 @@ import (
 )
 
 type ExtensionManager interface {
-	CreateQueryEngine(ctx context.Context) query.Engine
+	CreateGatewayQueries(ctx context.Context) query.GatewayQueries
 	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
 }
 
@@ -24,11 +24,11 @@ func NewExtensionManager(manager controllerruntime.Manager) ExtensionManager {
 type extensionManager struct {
 	manager controllerruntime.Manager
 
-	queryEngine    query.Engine
+	queryEngine    query.GatewayQueries
 	pluginRegistry registry.PluginRegistry
 }
 
-func (e *extensionManager) CreateQueryEngine(ctx context.Context) query.Engine {
+func (e *extensionManager) CreateGatewayQueries(ctx context.Context) query.GatewayQueries {
 	if e.queryEngine == nil {
 		e.queryEngine = query.NewData(e.manager.GetClient(), e.manager.GetScheme())
 	}
@@ -38,8 +38,8 @@ func (e *extensionManager) CreateQueryEngine(ctx context.Context) query.Engine {
 
 func (e *extensionManager) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
 	if e.pluginRegistry.IsNil() {
-		queryEngine := e.CreateQueryEngine(ctx)
-		plugins := registry.BuildPlugins(queryEngine)
+		gatewayQueries := e.CreateGatewayQueries(ctx)
+		plugins := registry.BuildPlugins(gatewayQueries)
 		e.pluginRegistry = registry.NewPluginRegistry(plugins)
 	}
 
