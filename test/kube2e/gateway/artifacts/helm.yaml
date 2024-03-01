@@ -31,6 +31,8 @@ gloo:
       value: 3s
     - name: LEADER_ELECTION_RETRY_PERIOD
       value: 1s
+    - name: DISABLE_VALIDATION_AGAINST_PREVIOUS_STATE
+      value: "false"
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
