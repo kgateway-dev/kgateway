@@ -12,7 +12,8 @@ import (
 // Empty type for base plugins, currently no base methods.
 type Plugin interface{}
 
-type RouteContext struct { // top-level gw Listener
+type RouteContext struct {
+	// top-level gw Listener
 	Listener *gwv1.Listener
 	// top-level HTTPRoute
 	Route *gwv1.HTTPRoute
@@ -38,9 +39,9 @@ type NamespaceContext struct {
 	Namespace string
 }
 
-type NamespacePlugin interface {
+type PostTranslationPlugin interface {
 	// called for each Namespace containing a gateway
-	ApplyNamespacePlugin(
+	ApplyPostTranslationPlugin(
 		ctx context.Context,
 		namespaceCtx *NamespaceContext,
 	) error

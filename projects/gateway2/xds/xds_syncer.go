@@ -82,6 +82,7 @@ type XdsSyncer struct {
 	inputs                *XdsInputChannels
 	mgr                   manager.Manager
 	pluginRegistryFactory registry.PluginRegistryFactory
+	queryEngineFactory    query.EngineFactory
 }
 
 type XdsInputChannels struct {
@@ -119,6 +120,7 @@ func NewXdsSyncer(
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
 	pluginRegistryFactory registry.PluginRegistryFactory,
+	queryEngineFactory query.EngineFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:        controllerName,
@@ -129,6 +131,7 @@ func NewXdsSyncer(
 		inputs:                inputs,
 		mgr:                   mgr,
 		pluginRegistryFactory: pluginRegistryFactory,
+		queryEngineFactory:    queryEngineFactory,
 	}
 }
 
@@ -151,16 +154,18 @@ func (s *XdsSyncer) Start(
 			// This should never happen, try again?
 			return
 		}
-		queries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
-		pluginRegistry := s.pluginRegistryFactory(ctx, s.mgr, queries)
+
+		queryEngine := s.queryEngineFactory(ctx, s.mgr)
+		pluginRegistry := s.pluginRegistryFactory(ctx, queryEngine)
 		gatewayTranslator := gloot.NewTranslator(pluginRegistry)
+
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
 
 		var uniqueGatewayNamespaces []string
 		for _, gw := range gwl.Items {
-			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, queries, r)
+			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, queryEngine, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
 				uniqueGatewayNamespaces = stringutils.AppendIfMissing(uniqueGatewayNamespaces, proxy.GetMetadata().GetNamespace())
@@ -171,7 +176,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
-		s.syncGwNamespaces(ctx, uniqueGatewayNamespaces, pluginRegistry)
+		s.syncPostTranslationPlugins(ctx, uniqueGatewayNamespaces, pluginRegistry)
 	}
 
 	for {
@@ -347,11 +352,11 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	}
 }
 
-func (s *XdsSyncer) syncGwNamespaces(ctx context.Context, namespaces []string, pluginRegistry registry.PluginRegistry) {
+func (s *XdsSyncer) syncPostTranslationPlugins(ctx context.Context, namespaces []string, pluginRegistry registry.PluginRegistry) {
 	logger := contextutils.LoggerFrom(ctx)
 	for _, ns := range namespaces {
-		for _, nsPlugin := range pluginRegistry.GetNamespacePlugins() {
-			err := nsPlugin.ApplyNamespacePlugin(ctx, &gwplugins.NamespaceContext{Namespace: ns})
+		for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
+			err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, &gwplugins.NamespaceContext{Namespace: ns})
 			if err != nil {
 				logger.Errorf("Error applying namespace plugin: %v", err)
 				continue

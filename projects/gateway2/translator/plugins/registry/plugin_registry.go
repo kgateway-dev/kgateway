@@ -10,53 +10,47 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
-type PluginRegistry interface {
-	GetRoutePlugins() []plugins.RoutePlugin
-	GetNamespacePlugins() []plugins.NamespacePlugin
+type PluginRegistry struct {
+	routePlugins           []plugins.RoutePlugin
+	postTranslationPlugins []plugins.PostTranslationPlugin
 }
 
-type PluginRegistryFactory func(ctx context.Context, mgr controllerruntime.Manager, queries query.GatewayQueries) PluginRegistry
-
-type pluginRegistry struct {
-	routePlugins     []plugins.RoutePlugin
-	namespacePlugins []plugins.NamespacePlugin
+func (p *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
+	return p.routePlugins
 }
 
-func (h *pluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
-	return h.routePlugins
-}
-
-func (h *pluginRegistry) GetNamespacePlugins() []plugins.NamespacePlugin {
-	return h.namespacePlugins
+func (p *PluginRegistry) GetPostTranslationPlugins() []plugins.PostTranslationPlugin {
+	return p.postTranslationPlugins
 }
 
 func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 	var (
-		routePlugins     []plugins.RoutePlugin
-		namespacePlugins []plugins.NamespacePlugin
+		routePlugins           []plugins.RoutePlugin
+		postTranslationPlugins []plugins.PostTranslationPlugin
 	)
 
 	for _, plugin := range allPlugins {
 		if routePlugin, ok := plugin.(plugins.RoutePlugin); ok {
 			routePlugins = append(routePlugins, routePlugin)
 		}
-		if namespacePlugin, ok := plugin.(plugins.NamespacePlugin); ok {
-			namespacePlugins = append(namespacePlugins, namespacePlugin)
+		if postTranslationPlugin, ok := plugin.(plugins.PostTranslationPlugin); ok {
+			postTranslationPlugins = append(postTranslationPlugins, postTranslationPlugin)
 		}
 	}
-	return &pluginRegistry{
-		routePlugins:     routePlugins,
-		namespacePlugins: namespacePlugins,
+	return PluginRegistry{
+		routePlugins:           routePlugins,
+		postTranslationPlugins: postTranslationPlugins,
 	}
 }
 
+type PluginRegistryFactory func(ctx context.Context, queryEngine query.Engine) PluginRegistry
+
 // GetPluginRegistryFactory returns the PluginRegistryFactory for the Gloo Gateway Open Source implementation
 func GetPluginRegistryFactory() PluginRegistryFactory {
-	return func(ctx context.Context, _ controllerruntime.Manager, queries query.GatewayQueries) PluginRegistry {
-		allPlugins := BuildPlugins(queries)
+	return func(ctx context.Context, queryEngine query.Engine) PluginRegistry {
+		allPlugins := BuildPlugins(queryEngine)
 		return NewPluginRegistry(allPlugins)
 	}
 }
@@ -65,7 +59,7 @@ func GetPluginRegistryFactory() PluginRegistryFactory {
 // New plugins should be added to this list (and only this list).
 // If modification of this list is needed for testing etc,
 // we can add a new registry constructor that accepts this function
-func BuildPlugins(queries query.GatewayQueries) []plugins.Plugin {
+func BuildPlugins(queries query.Engine) []plugins.Plugin {
 	return []plugins.Plugin{
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),

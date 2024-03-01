@@ -46,7 +46,8 @@ func K8sGatewayControllerStartFunc() StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		return controller.Start(ctx, controller.StartConfig{
 			ControlPlane:          opts.ControlPlane,
-			PluginRegistryFactory: extensions.K8sGatewayPluginRegistryFactory,
+			PluginRegistryFactory: extensions.K8sGatewayExtensions.PluginRegistryFactory,
+			QueryEngineFactory:    extensions.K8sGatewayExtensions.QueryEngineFactory,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API
