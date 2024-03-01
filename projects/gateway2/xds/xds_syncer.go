@@ -155,7 +155,7 @@ func (s *XdsSyncer) Start(
 
 		extensionManager := s.extensionManagerFactory(s.mgr)
 
-		queryEngine := extensionManager.CreateQueryEngine(ctx)
+		gatewayQueries := extensionManager.CreateGatewayQueries(ctx)
 		pluginRegistry := extensionManager.CreatePluginRegistry(ctx)
 		gatewayTranslator := gloot.NewTranslator(pluginRegistry)
 
@@ -165,7 +165,7 @@ func (s *XdsSyncer) Start(
 
 		var uniqueGatewayNamespaces []string
 		for _, gw := range gwl.Items {
-			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, queryEngine, r)
+			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, gatewayQueries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
 				uniqueGatewayNamespaces = stringutils.AppendIfMissing(uniqueGatewayNamespaces, proxy.GetMetadata().GetNamespace())
