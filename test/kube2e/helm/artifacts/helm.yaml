@@ -11,7 +11,7 @@ settings:
     replaceInvalidRoutes: true
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
-  disableKubernetesDestinations: true
+  disableKubernetesDestinations: false
 gateway:
   persistProxySpec: true
   logLevel: info
