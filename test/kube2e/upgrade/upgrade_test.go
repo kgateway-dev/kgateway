@@ -248,7 +248,7 @@ func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClient
 // Util methods
 // ===================================
 func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
-	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
+	glooVersion, _, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(glooVersion.GetServer()).To(HaveLen(1))
 	for _, container := range glooVersion.GetServer()[0].GetKubernetes().GetContainers() {
