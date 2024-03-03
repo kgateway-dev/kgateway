@@ -9,6 +9,7 @@ import (
 	version2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/versionutils"
+	kube1vVersion "k8s.io/apimachinery/pkg/version"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -20,8 +21,8 @@ type testVersionGetter struct {
 	err      error
 }
 
-func (t *testVersionGetter) Get(ctx context.Context) ([]*version.ServerVersion, error) {
-	return t.versions, t.err
+func (t *testVersionGetter) Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersion.Info, error) {
+	return t.versions, nil, t.err
 }
 
 var _ version2.ServerVersion = &testVersionGetter{}

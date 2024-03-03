@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	version0 "k8s.io/apimachinery/pkg/version"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +15,7 @@ import (
 	mock_version "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version/mocks"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	kube1vVersion "k8s.io/apimachinery/pkg/version"
 )
 
 var _ = Describe("version command", func() {
@@ -35,19 +37,27 @@ var _ = Describe("version command", func() {
 	Context("getVersion", func() {
 		It("will error if an error occurs while getting the version", func() {
 			fakeErr := eris.New("test")
-			client.EXPECT().Get(ctx).Return(nil, fakeErr).Times(1)
-			_, err := GetClientServerVersions(ctx, client)
+			client.EXPECT().Get(ctx).Return(nil, nil, fakeErr).Times(1)
+			_, _, err := GetClientServerVersions(ctx, client)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(fakeErr))
 		})
-		It("can get the version", func() {
+		It("can get the server version", func() {
 			v := make([]*version.ServerVersion, 1)
-			client.EXPECT().Get(ctx).Return(v, nil).Times(1)
-			vrs, err := GetClientServerVersions(ctx, client)
+			client.EXPECT().Get(ctx).Return(v, nil, nil).Times(1)
+			vrs, _, err := GetClientServerVersions(ctx, client)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(v).To(Equal(vrs.Server))
 		})
-
+		It("can get kubernetes version", func() {
+			expectedVrs := make([]*version.ServerVersion, 1)
+			expectedK8s := &version0.Info{}
+			client.EXPECT().Get(ctx).Return(expectedVrs, expectedK8s, nil).Times(1)
+			vrs, k8s, err := GetClientServerVersions(ctx, client)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(expectedVrs).To(Equal(vrs.Server))
+			Expect(expectedK8s).To(Equal(k8s))
+		})
 	})
 
 	Context("printing", func() {
@@ -82,7 +92,8 @@ var _ = Describe("version command", func() {
 			}
 		})
 
-		var osTableOutput = fmt.Sprintf(`Client: version: %s
+		var osTableOutput = fmt.Sprintf(`Client version: %s
+Server version:
 +-------------+-----------------+-----------------+
 |  NAMESPACE  | DEPLOYMENT-TYPE |   CONTAINERS    |
 +-------------+-----------------+-----------------+
@@ -91,7 +102,8 @@ var _ = Describe("version command", func() {
 +-------------+-----------------+-----------------+
 `, gloo_version.Version)
 
-		var eTableOutput = fmt.Sprintf(`Client: version: %s
+		var eTableOutput = fmt.Sprintf(`Client version: %s
+Server version:
 +-------------+--------------------+-----------------+
 |  NAMESPACE  |  DEPLOYMENT-TYPE   |   CONTAINERS    |
 +-------------+--------------------+-----------------+
@@ -100,44 +112,134 @@ var _ = Describe("version command", func() {
 +-------------+--------------------+-----------------+
 `, gloo_version.Version)
 
-		var osYamlOutput = fmt.Sprintf(`Client: version: %s
-Server:
-kubernetes:
-  containers:
-  - Name: gloo
-    Registry: quay.io/solo-io
-    Tag: v0.0.1
-  - Name: gateway
-    Registry: quay.io/solo-io
-    Tag: v0.0.2
-  namespace: gloo-system
-type: Gateway
-
+		var osYamlOutput = fmt.Sprintf(`glooVersion:
+  client:
+    version: %s
+  server:
+  - kubernetes:
+      containers:
+      - Name: gloo
+        Registry: quay.io/solo-io
+        Tag: v0.0.1
+      - Name: gateway
+        Registry: quay.io/solo-io
+        Tag: v0.0.2
+      namespace: gloo-system
+    type: Gateway
 `, gloo_version.Version)
 
-		var eYamlOutput = fmt.Sprintf(`Client: version: %s
-Server:
-enterprise: true
-kubernetes:
-  containers:
-  - Name: gloo
-    Registry: quay.io/solo-io
-    Tag: v0.0.1
-  - Name: gateway
-    Registry: quay.io/solo-io
-    Tag: v0.0.2
-  namespace: gloo-system
-type: Gateway
-
+		var eYamlOutput = fmt.Sprintf(`glooVersion:
+  client:
+    version: %s
+  server:
+  - enterprise: true
+    kubernetes:
+      containers:
+      - Name: gloo
+        Registry: quay.io/solo-io
+        Tag: v0.0.1
+      - Name: gateway
+        Registry: quay.io/solo-io
+        Tag: v0.0.2
+      namespace: gloo-system
+    type: Gateway
 `, gloo_version.Version)
 
-		var osJsonOutput = fmt.Sprintf(`Client: {"version":"%s"}
-Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
-`, gloo_version.Version)
+		var osJsonOutput = fmt.Sprintf(`{
+  "glooVersion": {
+    "client": {
+      "version": "%s"
+    },
+    "server": [
+      {
+        "type": "Gateway",
+        "kubernetes": {
+          "containers": [
+            {
+              "Tag": "v0.0.1",
+              "Name": "gloo",
+              "Registry": "quay.io/solo-io"
+            },
+            {
+              "Tag": "v0.0.2",
+              "Name": "gateway",
+              "Registry": "quay.io/solo-io"
+            }
+          ],
+          "namespace": "gloo-system"
+        }
+      }
+    ]
+  }
+}`, gloo_version.Version)
 
-		var eJsonOutput = fmt.Sprintf(`Client: {"version":"%s"}
-Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
-`, gloo_version.Version)
+		var eJsonOutput = fmt.Sprintf(`{
+  "glooVersion": {
+    "client": {
+      "version": "%s"
+    },
+    "server": [
+      {
+        "type": "Gateway",
+        "enterprise": true,
+        "kubernetes": {
+          "containers": [
+            {
+              "Tag": "v0.0.1",
+              "Name": "gloo",
+              "Registry": "quay.io/solo-io"
+            },
+            {
+              "Tag": "v0.0.2",
+              "Name": "gateway",
+              "Registry": "quay.io/solo-io"
+            }
+          ],
+          "namespace": "gloo-system"
+        }
+      }
+    ]
+  }
+}`, gloo_version.Version)
+
+		var osJsonIncludeK8sOutput = fmt.Sprintf(`{
+  "glooVersion": {
+    "client": {
+      "version": "%s"
+    },
+    "server": [
+      {
+        "type": "Gateway",
+        "kubernetes": {
+          "containers": [
+            {
+              "Tag": "v0.0.1",
+              "Name": "gloo",
+              "Registry": "quay.io/solo-io"
+            },
+            {
+              "Tag": "v0.0.2",
+              "Name": "gateway",
+              "Registry": "quay.io/solo-io"
+            }
+          ],
+          "namespace": "gloo-system"
+        }
+      }
+    ]
+  },
+  "kubernetesVersion": {
+    "major": "1",
+    "minor": "24",
+    "gitVersion": "",
+    "gitCommit": "",
+    "gitTreeState": "",
+    "buildDate": "",
+    "goVersion": "",
+    "compiler": "",
+    "platform": ""
+  }
+}`, gloo_version.Version)
 
 		tests := []struct {
 			name       string
@@ -193,7 +295,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"
 						},
 					}
 					sv.Enterprise = test.enterprise
-					client.EXPECT().Get(nil).Times(1).Return([]*version.ServerVersion{sv}, nil)
+					client.EXPECT().Get(nil).Times(1).Return([]*version.ServerVersion{sv}, nil, nil)
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(Equal(test.result))
@@ -205,7 +307,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"
 							Output: test.outputType,
 						},
 					}
-					client.EXPECT().Get(nil).Times(1).Return(nil, eris.Errorf("fake rbac error"))
+					client.EXPECT().Get(nil).Times(1).Return(nil, nil, eris.Errorf("fake rbac error"))
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(ContainSubstring(undefinedServer))
@@ -213,6 +315,17 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"
 			})
 		}
 
+		It("can translate with valid server version (including kubernetes server version)", func() {
+			opts := &options.Options{
+				Top: options.Top{
+					Output: printers.JSON,
+				},
+			}
+			client.EXPECT().Get(nil).Times(1).Return([]*version.ServerVersion{sv}, &kube1vVersion.Info{Major: "1", Minor: "24"}, nil)
+			err := printVersion(client, buf, opts)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(buf.String()).To(Equal(osJsonIncludeK8sOutput))
+		})
 	})
 
 })

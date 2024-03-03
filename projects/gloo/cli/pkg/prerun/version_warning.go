@@ -69,7 +69,7 @@ func (d *defaultLogger) Println(str string) {
 
 // visible for testing
 func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.ServerVersion, logger Logger) error {
-	clientServerVersions, err := versioncmd.GetClientServerVersions(ctx, sv)
+	clientServerVersions, _, err := versioncmd.GetClientServerVersions(ctx, sv)
 	if err != nil {
 		warnOnError(err, logger)
 		return nil

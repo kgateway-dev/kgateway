@@ -52,7 +52,7 @@ func Register(opts *options.Options) error {
 
 	// check to see if Gloo is installed onto RemoteContext.  If not, install CRDs to prevent a gloo-fed crash, per
 	// https://github.com/solo-io/gloo/issues/5832
-	serverVersion, err := version.NewKube(registerOpts.RemoteNamespace, registerOpts.RemoteContext).Get(ctx)
+	serverVersion, _, err := version.NewKube(registerOpts.RemoteNamespace, registerOpts.RemoteContext).Get(ctx)
 	if err != nil {
 		return err
 	}

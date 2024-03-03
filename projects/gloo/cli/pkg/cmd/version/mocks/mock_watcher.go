@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	version "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	version0 "k8s.io/apimachinery/pkg/version"
 )
 
 // MockServerVersion is a mock of ServerVersion interface.
@@ -36,12 +37,13 @@ func (m *MockServerVersion) EXPECT() *MockServerVersionMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockServerVersion) Get(ctx context.Context) ([]*version.ServerVersion, error) {
+func (m *MockServerVersion) Get(ctx context.Context) ([]*version.ServerVersion, *version0.Info, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx)
 	ret0, _ := ret[0].([]*version.ServerVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*version0.Info)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Get indicates an expected call of Get.

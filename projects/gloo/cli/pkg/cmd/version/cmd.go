@@ -2,12 +2,11 @@ package version
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"io"
 	"os"
-	"strings"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
@@ -22,11 +21,19 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
+	kube1vVersion "k8s.io/apimachinery/pkg/version"
+	kubeYaml "sigs.k8s.io/yaml"
 )
 
 const (
 	undefinedServer = "Server: version undefined, could not find any version of gloo running"
 )
+
+// VersionWrapper is a struct for version information
+type VersionWrapper struct {
+	GlooVersion       json.RawMessage     `json:"glooVersion,omitempty" yaml:"glooVersion,omitempty"`
+	KubernetesVersion *kube1vVersion.Info `json:"kubernetesVersion,omitempty" yaml:"kubernetesVersion,omitempty"`
+}
 
 var (
 	NoNamespaceAllError = eris.New("single namespace must be specified, cannot be namespace all for version command")
@@ -61,16 +68,27 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Version, error) {
+func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Version, *kube1vVersion.Info, error) {
 	v := &version.Version{
 		Client: getClientVersion(),
 	}
-	serverVersion, err := sv.Get(ctx)
+	serverVersion, k8sServerVersion, err := sv.Get(ctx)
 	if err != nil {
-		return v, err
+		return v, k8sServerVersion, err
 	}
 	v.Server = serverVersion
-	return v, nil
+	return v, k8sServerVersion, nil
+}
+
+func getWrappedVersions(vrs *version.Version, k8sV *kube1vVersion.Info) (*VersionWrapper, error) {
+	marshalledVrs, err := getJson(vrs)
+	if err != nil {
+		return nil, err
+	}
+	return &VersionWrapper{
+		GlooVersion:       marshalledVrs,
+		KubernetesVersion: k8sV,
+	}, nil
 }
 
 func getClientVersion() *version.ClientVersion {
@@ -80,53 +98,30 @@ func getClientVersion() *version.ClientVersion {
 }
 
 func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
-	vrs, _ := GetClientServerVersions(opts.Top.Ctx, sv)
+	vrs, k8sV, _ := GetClientServerVersions(opts.Top.Ctx, sv)
+	wrappedVersions, _ := getWrappedVersions(vrs, k8sV)
 	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersion, err := GetJson(vrs.GetClient())
+		formattedVer, err := getFormattedJson(wrappedVersions) // GetJson(vrs)
 		if err != nil {
 			return err
 		}
-		clientVersionStr := string(clientVersion)
-		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
-		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
-			fmt.Fprintln(w, undefinedServer)
-			return nil
+			fmt.Fprintf(w, "%s\n\n", undefinedServer)
 		}
-		fmt.Fprint(w, "Server: ")
-		for _, v := range vrs.GetServer() {
-			serverVersionStr, err := GetJson(v)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
-		}
+		fmt.Fprintf(w, "%s", string(formattedVer))
 	case printers.YAML:
-		clientVersion, err := GetYaml(vrs.GetClient())
+		formattedVer, err := getFormattedYaml(wrappedVersions) // GetJson(vrs)
 		if err != nil {
 			return err
 		}
-		clientVersionStr := string(clientVersion)
-		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
-		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
-			fmt.Fprintln(w, undefinedServer)
-			return nil
+			fmt.Fprintf(w, "%s\n\n", undefinedServer)
 		}
-		fmt.Fprintln(w, "Server:")
-		for _, v := range vrs.GetServer() {
-			serverVersion, err := GetYaml(v)
-			if err != nil {
-				return err
-			}
-			serverVersionStr := string(serverVersion)
-			clientVersionStr = strings.TrimRight(clientVersionStr, "\n")
-			fmt.Fprintf(w, "%s\n", serverVersionStr)
-		}
+		fmt.Fprintf(w, "%s", string(formattedVer))
 	default:
-		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().GetVersion())
+		fmt.Fprintf(w, "Client version: %s\n", vrs.GetClient().GetVersion())
 		if vrs.GetServer() == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
@@ -160,8 +155,12 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		table.SetHeader(headers)
 		table.AppendBulk(rows)
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		fmt.Println("Server:")
+		fmt.Fprintln(w, "Server version:")
 		table.Render()
+
+		if k8sV != nil {
+			fmt.Fprintf(w, "Kubernetes version: %s\n", k8sV.GitVersion)
+		}
 	}
 	return nil
 }
@@ -173,7 +172,7 @@ func getDistributionName(name string, enterprise bool) string {
 	return name
 }
 
-func GetJson(pb proto.Message) ([]byte, error) {
+func getJson(pb proto.Message) ([]byte, error) {
 	data, err := protoutils.MarshalBytes(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
@@ -182,8 +181,8 @@ func GetJson(pb proto.Message) ([]byte, error) {
 	return data, nil
 }
 
-func GetYaml(pb proto.Message) ([]byte, error) {
-	jsn, err := GetJson(pb)
+func getYaml(pb proto.Message) ([]byte, error) {
+	jsn, err := getJson(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return nil, err
@@ -194,4 +193,22 @@ func GetYaml(pb proto.Message) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func getFormattedJson(ver *VersionWrapper) ([]byte, error) {
+	marshalled, err := json.MarshalIndent(&ver, "", "  ")
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return nil, err
+	}
+	return marshalled, nil
+}
+
+func getFormattedYaml(ver *VersionWrapper) ([]byte, error) {
+	marshalled, err := kubeYaml.Marshal(&ver)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return nil, err
+	}
+	return marshalled, nil
 }
