@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:55ddd1bfc4d9976bc953cab2dd0fcc874edd9405
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:ef5b4d9f594199f07b4ac26141f1ff4b84d36232
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
