@@ -176,7 +176,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
-		s.syncPostTranslationPlugins(ctx, uniqueGatewayNamespaces, pluginRegistry)
+		s.applyPostTranslationPlugins(ctx, uniqueGatewayNamespaces, pluginRegistry)
 	}
 
 	for {
@@ -352,13 +352,13 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	}
 }
 
-func (s *XdsSyncer) syncPostTranslationPlugins(ctx context.Context, namespaces []string, pluginRegistry registry.PluginRegistry) {
+func (s *XdsSyncer) applyPostTranslationPlugins(ctx context.Context, namespaces []string, pluginRegistry registry.PluginRegistry) {
 	logger := contextutils.LoggerFrom(ctx)
 	for _, ns := range namespaces {
 		for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
 			err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, &gwplugins.NamespaceContext{Namespace: ns})
 			if err != nil {
-				logger.Errorf("Error applying namespace plugin: %v", err)
+				logger.Errorf("Error applying post-translation plugin: %v", err)
 				continue
 			}
 		}

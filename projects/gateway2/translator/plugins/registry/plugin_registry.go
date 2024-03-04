@@ -10,20 +10,12 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 )
 
-// PluginRegistry is used to provide Plugins to relevant translators using
-// during the conversion of K8s Gateway resources into a Gloo Proxy resource.
-// The registry is a concrete type because we only have one implementation for a
-// registry to provide these plugins. This can still support Enterprise-only functionality
-// because the registry initialized with the list of plugins that it will manage.
+// PluginRegistry is used to provide Plugins to the K8s Gateway translator.
+// These plugins either operate during the conversion of K8s Gateway resources
+// into a Gloo Proxy resource, or during the post-processing of that conversion.
 type PluginRegistry struct {
-	initialized            bool // initialized is used to track whether a PluginRegistry instance has been created
 	routePlugins           []plugins.RoutePlugin
 	postTranslationPlugins []plugins.PostTranslationPlugin
-}
-
-// IsNil returns true if the PluginRegistry has not been initialized.
-func (p *PluginRegistry) IsNil() bool {
-	return !p.initialized
 }
 
 func (p *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
@@ -49,7 +41,6 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 		}
 	}
 	return PluginRegistry{
-		initialized:            true,
 		routePlugins:           routePlugins,
 		postTranslationPlugins: postTranslationPlugins,
 	}
