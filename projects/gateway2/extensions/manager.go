@@ -8,6 +8,8 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
+// ExtensionManager is responsible for providing implementations for translation utilities
+// which have Enterprise variants.
 type ExtensionManager interface {
 	CreateGatewayQueries(ctx context.Context) query.GatewayQueries
 	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
@@ -15,6 +17,7 @@ type ExtensionManager interface {
 
 type ExtensionManagerFactory func(manager controllerruntime.Manager) ExtensionManager
 
+// NewExtensionManager returns the Open Source implementation of ExtensionManager
 func NewExtensionManager(manager controllerruntime.Manager) ExtensionManager {
 	return &extensionManager{
 		manager: manager,
@@ -29,19 +32,21 @@ type extensionManager struct {
 }
 
 func (e *extensionManager) CreateGatewayQueries(ctx context.Context) query.GatewayQueries {
-	if e.queryEngine == nil {
-		e.queryEngine = query.NewData(e.manager.GetClient(), e.manager.GetScheme())
+	if e.queryEngine != nil {
+		return e.queryEngine
 	}
 
+	e.queryEngine = query.NewData(e.manager.GetClient(), e.manager.GetScheme())
 	return e.queryEngine
 }
 
 func (e *extensionManager) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
-	if e.pluginRegistry.IsNil() {
-		gatewayQueries := e.CreateGatewayQueries(ctx)
-		plugins := registry.BuildPlugins(gatewayQueries)
-		e.pluginRegistry = registry.NewPluginRegistry(plugins)
+	if !e.pluginRegistry.IsNil() {
+		return e.pluginRegistry
 	}
 
+	gatewayQueries := e.CreateGatewayQueries(ctx)
+	plugins := registry.BuildPlugins(gatewayQueries)
+	e.pluginRegistry = registry.NewPluginRegistry(plugins)
 	return e.pluginRegistry
 }
