@@ -1,0 +1,8 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/9186
+  resolvesIssue: true
+  description: >
+    Choosing to ignore helm upgrade, as it does not impact the data and control planes of Gloo Edge. This only impacts glooctl, and panics will not affect future uses of glooctl. The fix to bump helm would also require bumping the k8s dependencies by several minor versions in <=1.15, which can cause issues. There is a simple resolution on the client side, so it is deemed to have little to no impact.
+      skipCI-kube-tests:true
+      skipCI-storybook-tests:true
