@@ -26,3 +26,13 @@ CVE-2022-41721
 # affect us as kubernetes does not use the affected code path (see description in
 # https://github.com/kubernetes/kubernetes/pull/118036).
 CVE-2023-2253
+
+# These CVEs only impacts install of Gloo-Edge from Glooctl CLI.
+# It only leads to a panic if there is a misconfigured / malicious helm plugin installed
+# and can be easily resolved by removing the misconfigured / malicious plugin
+# The helm bump will require bumping the k8s dependencies by +2 minor versions that can cause issues.
+# https://github.com/advisories/GHSA-r53h-jv2g-vpx6
+# https://github.com/solo-io/gloo/issues/9186
+# https://github.com/solo-io/gloo/issues/9187
+# https://github.com/solo-io/gloo/issues/9189
+CVE-2024-26147
