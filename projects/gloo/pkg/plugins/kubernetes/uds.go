@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/go-utils/stringutils"
+	corev1 "k8s.io/api/core/v1"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
@@ -12,7 +13,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -39,7 +39,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	upstreamsChan := make(chan v1.UpstreamList)
 	errs := make(chan error)
 	discoverUpstreams := func() {
-		var serviceList []*kubev1.Service
+		var serviceList []*corev1.Service
 		for _, ns := range watchNamespaces {
 
 			lister := p.kubeCoreCache.NamespacedServiceLister(ns)
@@ -82,7 +82,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	return upstreamsChan, errs, nil
 }
 
-func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, services []*kubev1.Service, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
+func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, services []*corev1.Service, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		if skip(svc, opts) {

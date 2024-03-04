@@ -4,23 +4,23 @@ import (
 	"context"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	corev1 "k8s.io/api/core/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	kubev1 "k8s.io/api/core/v1"
 )
 
 const (
-	AccountCredentialsSecretType kubev1.SecretType = "extauth.solo.io/accountcredentials"
+	AccountCredentialsSecretType corev1.SecretType = "extauth.solo.io/accountcredentials"
 	UsernameDataKey                                = "username"
 	PasswordDataKey                                = "password"
 )
 
 type AccountCredentialsSecretConverter struct{}
 
-func (t *AccountCredentialsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *AccountCredentialsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	if secret.Type == AccountCredentialsSecretType {
 		username, ok := secret.Data[UsernameDataKey]
 		if !ok {
@@ -50,7 +50,7 @@ func (t *AccountCredentialsSecretConverter) FromKubeSecret(_ context.Context, _ 
 	// any unmatched secrets will be handled by subsequent converters
 	return nil, nil
 }
-func (t *AccountCredentialsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *AccountCredentialsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
@@ -64,7 +64,7 @@ func (t *AccountCredentialsSecretConverter) ToKubeSecret(_ context.Context, _ *k
 	storedData := make(map[string]string)
 	storedData[UsernameDataKey] = credentialsSecret.Credentials.GetUsername()
 	storedData[PasswordDataKey] = credentialsSecret.Credentials.GetPassword()
-	kubeSecret := &kubev1.Secret{
+	kubeSecret := &corev1.Secret{
 		ObjectMeta: kubeMeta,
 		Type:       AccountCredentialsSecretType,
 		StringData: storedData,

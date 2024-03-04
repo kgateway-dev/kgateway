@@ -17,11 +17,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type UpstreamConverter interface {
-	UpstreamsForService(ctx context.Context, svc *kubev1.Service) v1.UpstreamList
+	UpstreamsForService(ctx context.Context, svc *corev1.Service) v1.UpstreamList
 }
 
 func DefaultUpstreamConverter() *KubeUpstreamConverter {
@@ -34,7 +34,7 @@ type KubeUpstreamConverter struct {
 	serviceConverters []serviceconverter.ServiceConverter
 }
 
-func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *kubev1.Service) v1.UpstreamList {
+func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *corev1.Service) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, port := range svc.Spec.Ports {
 		upstreams = append(upstreams, uc.CreateUpstream(ctx, svc, port))
@@ -42,7 +42,7 @@ func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *k
 	return upstreams
 }
 
-func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort) *v1.Upstream {
+func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *v1.Upstream {
 	meta := svc.ObjectMeta
 	coremeta := kubeutils.FromKubeMeta(meta, false)
 	coremeta.ResourceVersion = ""
@@ -78,7 +78,7 @@ func UpstreamName(serviceNamespace, serviceName string, servicePort int32) strin
 	return sanitizer.SanitizeNameV2(fmt.Sprintf("%s-%s-%v", serviceNamespace, serviceName, servicePort))
 }
 
-func skip(svc *kubev1.Service, opts discovery.Opts) bool {
+func skip(svc *corev1.Service, opts discovery.Opts) bool {
 	// ilackarms: allow user to override the skip with an annotation
 	// force discovery for a service with no selector
 	if svc.ObjectMeta.Annotations[discoveryAnnotationKey] == discoveryAnnotationTrue {

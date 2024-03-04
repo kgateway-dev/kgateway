@@ -80,7 +80,7 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	. "github.com/solo-io/solo-kit/test/matchers"
-	k8scorev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -2084,8 +2084,8 @@ var _ = Describe("Translator", func() {
 
 			// The kube service that we want to route to
 			svc := skkube.NewService("ns-1", "svc-1")
-			svc.Spec = k8scorev1.ServiceSpec{
-				Ports: []k8scorev1.ServicePort{
+			svc.Spec = corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
 					{
 						Name:       "port-1",
 						Port:       8080,

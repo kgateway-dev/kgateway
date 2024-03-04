@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -40,7 +40,7 @@ func NewSecretConverterChain(converters ...kubesecret.SecretConverter) *SecretCo
 	return &SecretConverterChain{converters: converters}
 }
 
-func (t *SecretConverterChain) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *SecretConverterChain) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	for _, converter := range t.converters {
 		resource, err := converter.FromKubeSecret(ctx, rc, secret)
 		if err != nil {
@@ -54,7 +54,7 @@ func (t *SecretConverterChain) FromKubeSecret(ctx context.Context, rc *kubesecre
 	return nil, nil
 }
 
-func (t *SecretConverterChain) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *SecretConverterChain) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	for _, converter := range t.converters {
 		kubeSecret, err := converter.ToKubeSecret(ctx, rc, resource)
 		if err != nil {
@@ -72,14 +72,14 @@ type TLSSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &TLSSecretConverter{}
 
-func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
-	if secret.Type == kubev1.SecretTypeTLS {
+func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
+	if secret.Type == corev1.SecretTypeTLS {
 		glooSecret := &v1.Secret{
 			Kind: &v1.Secret_Tls{
 				Tls: &v1.TlsSecret{
-					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
-					CertChain:  string(secret.Data[kubev1.TLSCertKey]),
-					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
+					PrivateKey: string(secret.Data[corev1.TLSPrivateKeyKey]),
+					CertChain:  string(secret.Data[corev1.TLSCertKey]),
+					RootCa:     string(secret.Data[corev1.ServiceAccountRootCAKey]),
 					OcspStaple: secret.Data[OCSPStapleKey],
 				},
 			},
@@ -91,24 +91,24 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 	return nil, nil
 }
 
-func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	if glooSecret, ok := resource.(*v1.Secret); ok {
 		if tlsGlooSecret, ok := glooSecret.GetKind().(*v1.Secret_Tls); ok {
 			objectMeta := kubeutils.ToKubeMeta(glooSecret.GetMetadata())
 			if len(objectMeta.Annotations) == 0 {
 				objectMeta.Annotations = nil
 			}
-			kubeSecret := &kubev1.Secret{
+			kubeSecret := &corev1.Secret{
 				ObjectMeta: objectMeta,
-				Type:       kubev1.SecretTypeTLS,
+				Type:       corev1.SecretTypeTLS,
 				Data: map[string][]byte{
-					kubev1.TLSPrivateKeyKey: []byte(tlsGlooSecret.Tls.GetPrivateKey()),
-					kubev1.TLSCertKey:       []byte(tlsGlooSecret.Tls.GetCertChain()),
+					corev1.TLSPrivateKeyKey: []byte(tlsGlooSecret.Tls.GetPrivateKey()),
+					corev1.TLSCertKey:       []byte(tlsGlooSecret.Tls.GetCertChain()),
 				},
 			}
 
 			if tlsGlooSecret.Tls.GetRootCa() != "" {
-				kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
+				kubeSecret.Data[corev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
 			}
 
 			if tlsGlooSecret.Tls.GetOcspStaple() != nil {
@@ -135,7 +135,7 @@ const (
 	AwsSessionTokenName = "aws_session_token"
 )
 
-func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	accessKey, hasAccessKey := secret.Data[AwsAccessKeyName]
 	secretKey, hasSecretKey := secret.Data[AwsSecretKeyName]
 	sessionToken, hasSessionToken := secret.Data[AwsSessionTokenName]
@@ -165,7 +165,7 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 	return nil, nil
 }
 
-func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
@@ -187,9 +187,9 @@ func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 		return nil, err
 	}
 
-	kubeSecret := &kubev1.Secret{
+	kubeSecret := &corev1.Secret{
 		ObjectMeta: objectMeta,
-		Type:       kubev1.SecretTypeOpaque,
+		Type:       corev1.SecretTypeOpaque,
 		Data: map[string][]byte{
 			AwsAccessKeyName: []byte(awsGlooSecret.Aws.GetAccessKey()),
 			AwsSecretKeyName: []byte(awsGlooSecret.Aws.GetSecretKey()),
