@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: helm.sh
+  dependencyRepo: helm
+  dependencyTag: v3.14.2
+  description: Bump helm to fix CVE-2024-26147
+  issueLink: https://github.com/solo-io/gloo/issues/9185
+  resolvesIssue: false
