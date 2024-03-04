@@ -26,27 +26,14 @@ func NewExtensionManager(manager controllerruntime.Manager) ExtensionManager {
 
 type extensionManager struct {
 	manager controllerruntime.Manager
-
-	queryEngine    query.GatewayQueries
-	pluginRegistry registry.PluginRegistry
 }
 
 func (e *extensionManager) CreateGatewayQueries(ctx context.Context) query.GatewayQueries {
-	if e.queryEngine != nil {
-		return e.queryEngine
-	}
-
-	e.queryEngine = query.NewData(e.manager.GetClient(), e.manager.GetScheme())
-	return e.queryEngine
+	return query.NewData(e.manager.GetClient(), e.manager.GetScheme())
 }
 
 func (e *extensionManager) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
-	if !e.pluginRegistry.IsNil() {
-		return e.pluginRegistry
-	}
-
 	gatewayQueries := e.CreateGatewayQueries(ctx)
 	plugins := registry.BuildPlugins(gatewayQueries)
-	e.pluginRegistry = registry.NewPluginRegistry(plugins)
-	return e.pluginRegistry
+	return registry.NewPluginRegistry(plugins)
 }
