@@ -6,3 +6,6 @@ changelog:
   description: Bump helm to fix CVE-2024-26147
   issueLink: https://github.com/solo-io/gloo/issues/9185
   resolvesIssue: false
+- type: NON_USER_FACING
+  description: Adds the ability for devs to run nightlies on the specified branch
+
