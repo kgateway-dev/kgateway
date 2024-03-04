@@ -602,20 +602,6 @@ var _ = Describe("Plugin", func() {
 						validateExtractionMatch(expectedOutput, output)
 					}
 				},
-
-				// Extract Mode Test Cases
-				// TODO: this one doesn't quite work in the table setup - figure out testing mode defaults
-				// DO_NOT_SUBMIT
-				Entry("Defaults to Extract mode",
-					extractorTestCase{
-						Mode:                 transformation.Extraction_EXTRACT,
-						Regex:                "abc",
-						Subgroup:             0,
-						ReplacementText:      nil,
-						ExpectError:          false,
-						ExpectedErrorMessage: "",
-					},
-				),
 				Entry("Errors if subgroup is larger than number of capture groups in regex - Extract mode",
 					extractorTestCase{
 						Mode:                 transformation.Extraction_EXTRACT,
@@ -701,6 +687,19 @@ var _ = Describe("Plugin", func() {
 					},
 				),
 			)
+
+			It("defaults to Extract mode if mode is not set", func() {
+				inputExtraction := createInputExtraction(extractorTestCase{})
+				inputTransformationStages := createInputTransformationStages(inputExtraction)
+				output, err := p.(transformationPlugin).ConvertTransformation(ctx, &transformation.Transformations{}, inputTransformationStages)
+				Expect(err).NotTo(HaveOccurred())
+				expectedOutputExtraction := createOutputExtraction(extractorTestCase{
+					Mode: transformation.Extraction_EXTRACT,
+				})
+
+				expectedOutput := createOutputRouteTransformationsFromExtraction(expectedOutputExtraction)
+				validateExtractionMatch(expectedOutput, output)
+			})
 		})
 	})
 
