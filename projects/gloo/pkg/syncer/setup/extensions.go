@@ -8,7 +8,10 @@ import (
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
-// Extensions contains the set of extension points for Gloo
+// Extensions contains the set of extension points for Gloo.
+// These are the injectable pieces of code, which we use to define separate
+// implementations of our Open Source and Enterprise Control Plane implementations.
+// See RunGlooWithExtensions for where this is used.
 type Extensions struct {
 	// PluginRegistryFactory is responsible for creating an xDS PluginRegistry
 	// This is the set of plugins which are executed when converting a Proxy into an xDS Snapshot
@@ -24,7 +27,9 @@ type Extensions struct {
 	// ApiEmitterChannel is a channel that forces the API Emitter to emit a new API Snapshot
 	ApiEmitterChannel chan struct{}
 
-	K8sGatewayExtensions extensions.ExtensionManagerFactory
+	// K8sGatewayExtensions is the factory function which will return an extensions.Manager
+	// This is responsible for producing the extension points that the K8s Gateway integration requires
+	K8sGatewayExtensions extensions.ManagerFactory
 }
 
 // Validate returns an error if the Extensions are invalid, nil otherwise

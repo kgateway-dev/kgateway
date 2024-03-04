@@ -82,7 +82,7 @@ type XdsSyncer struct {
 
 	inputs                  *XdsInputChannels
 	mgr                     manager.Manager
-	extensionManagerFactory extensions.ExtensionManagerFactory
+	extensionManagerFactory extensions.ManagerFactory
 }
 
 type XdsInputChannels struct {
@@ -119,7 +119,7 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	extensionManagerFactory extensions.ExtensionManagerFactory,
+	extensionManagerFactory extensions.ManagerFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:          controllerName,

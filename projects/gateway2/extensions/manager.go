@@ -8,32 +8,38 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
-// ExtensionManager is responsible for providing implementations for translation utilities
+// Manager is responsible for providing implementations for translation utilities
 // which have Enterprise variants.
-type ExtensionManager interface {
+type Manager interface {
+	// CreateGatewayQueries returns the GatewayQueries
 	CreateGatewayQueries(ctx context.Context) query.GatewayQueries
+
+	// CreatePluginRegistry returns the PluginRegistry
 	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
 }
 
-type ExtensionManagerFactory func(manager controllerruntime.Manager) ExtensionManager
+// ManagerFactory returns an extensions.Manager
+type ManagerFactory func(manager controllerruntime.Manager) Manager
 
-// NewExtensionManager returns the Open Source implementation of ExtensionManager
-func NewExtensionManager(manager controllerruntime.Manager) ExtensionManager {
-	return &extensionManager{
-		manager: manager,
+// NewManager returns the Open Source implementation of Manager
+func NewManager(mgr controllerruntime.Manager) Manager {
+	return &manager{
+		mgr: mgr,
 	}
 }
 
-type extensionManager struct {
-	manager controllerruntime.Manager
+type manager struct {
+	mgr controllerruntime.Manager
 }
 
-func (e *extensionManager) CreateGatewayQueries(ctx context.Context) query.GatewayQueries {
-	return query.NewData(e.manager.GetClient(), e.manager.GetScheme())
+// CreateGatewayQueries returns the GatewayQueries
+func (m *manager) CreateGatewayQueries(ctx context.Context) query.GatewayQueries {
+	return query.NewData(m.mgr.GetClient(), m.mgr.GetScheme())
 }
 
-func (e *extensionManager) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
-	gatewayQueries := e.CreateGatewayQueries(ctx)
+// CreatePluginRegistry returns the PluginRegistry
+func (m *manager) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
+	gatewayQueries := m.CreateGatewayQueries(ctx)
 	plugins := registry.BuildPlugins(gatewayQueries)
 	return registry.NewPluginRegistry(plugins)
 }

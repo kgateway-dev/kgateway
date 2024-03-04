@@ -36,7 +36,7 @@ var (
 type StartConfig struct {
 	Dev                     bool
 	ControlPlane            bootstrap.ControlPlane
-	ExtensionManagerFactory extensions.ExtensionManagerFactory
+	ExtensionManagerFactory extensions.ManagerFactory
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects

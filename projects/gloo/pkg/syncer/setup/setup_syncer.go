@@ -439,7 +439,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		K8sGatewayExtensions:  extensions.NewExtensionManager,
+		K8sGatewayExtensions:  extensions.NewManager,
 		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
