@@ -28,11 +28,16 @@ var _ = Describe("NodeHash", func() {
 				"non-role-field": structpb.NewStringValue("non-role-value"),
 			},
 		}, Equal(xds.FallbackNodeCacheKey)),
-		Entry("metadata with role", &structpb.Struct{
+		Entry("metadata with proxy workload", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"role": structpb.NewStringValue("role-value"),
+				"role": structpb.NewStringValue("proxy-namespace~proxy-name"),
 			},
-		}, Equal("gloo-gateway-translator~role-value")),
+		}, Equal("gloo-gateway-translator~proxy-namespace~proxy-name")),
+		Entry("metadata with non-proxy workload", &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"role": structpb.NewStringValue("no-tilde-in-role"),
+			},
+		}, Equal("no-tilde-in-role")),
 	)
 
 	DescribeTable("GlooGatewayNodeHash",
@@ -89,11 +94,16 @@ var _ = Describe("NodeHash", func() {
 				}),
 			},
 		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
-		Entry("metadata with role", &structpb.Struct{
+		Entry("metadata with proxy workload role", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"role": structpb.NewStringValue("role-value"),
+				"role": structpb.NewStringValue("proxy-namespace~proxy-name"),
 			},
-		}, Equal("gloo-gateway-translator~role-value")),
+		}, Equal("gloo-gateway-translator~proxy-namespace~proxy-name")),
+		Entry("metadata with non-proxy workload role", &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"role": structpb.NewStringValue("no-tilde-in-role"),
+			},
+		}, Equal("no-tilde-in-role")),
 		Entry("metadata with gateway and role field", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("role-value"),

@@ -44,7 +44,7 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
-	github.com/rotisserie/eris v0.4.0
+	github.com/rotisserie/eris v0.5.4
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
@@ -56,7 +56,7 @@ require (
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.28-bump`)
 	github.com/solo-io/solo-apis v0.0.0-20231206142556-d2e3ed6d4476
-	github.com/solo-io/solo-kit v0.34.0
+	github.com/solo-io/solo-kit v0.34.2
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
