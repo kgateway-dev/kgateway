@@ -5,7 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 
-	"github.com/solo-io/gloo/pkg/utils/stringutils"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -163,12 +162,15 @@ func (s *XdsSyncer) Start(
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
 
-		var uniqueGatewayNamespaces []string
+		var translatedProxies []gwplugins.TranslatedProxy
 		for _, gw := range gwl.Items {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, gatewayQueries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
-				uniqueGatewayNamespaces = stringutils.AppendIfMissing(uniqueGatewayNamespaces, proxy.GetMetadata().GetNamespace())
+				translatedProxies = append(translatedProxies, gwplugins.TranslatedProxy{
+					Gateway: gw,
+					Proxy:   proxy,
+				})
 				//TODO: handle reports and process statuses
 			}
 		}
@@ -176,7 +178,9 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
-		s.applyPostTranslationPlugins(ctx, uniqueGatewayNamespaces, pluginRegistry)
+		s.applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
+			TranslatedProxies: translatedProxies,
+		})
 	}
 
 	for {
@@ -352,15 +356,15 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	}
 }
 
-func (s *XdsSyncer) applyPostTranslationPlugins(ctx context.Context, namespaces []string, pluginRegistry registry.PluginRegistry) {
+func (s *XdsSyncer) applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
+	ctx = contextutils.WithLogger(ctx, "postTranslation")
 	logger := contextutils.LoggerFrom(ctx)
-	for _, ns := range namespaces {
-		for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
-			err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, &gwplugins.NamespaceContext{Namespace: ns})
-			if err != nil {
-				logger.Errorf("Error applying post-translation plugin: %v", err)
-				continue
-			}
+
+	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
+		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
+		if err != nil {
+			logger.Errorf("Error applying post-translation plugin: %v", err)
+			continue
 		}
 	}
 }
