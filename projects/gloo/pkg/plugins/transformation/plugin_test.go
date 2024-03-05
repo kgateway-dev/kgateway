@@ -583,7 +583,7 @@ var _ = Describe("Plugin", func() {
 				}
 			}
 
-			FDescribeTable("Extractor transformations",
+			DescribeTable("Extractor transformations",
 				func(tc extractorTestCase) {
 					inputExtraction := createInputExtraction(tc)
 					inputTransformationStages := createInputTransformationStages(inputExtraction)
@@ -687,7 +687,7 @@ var _ = Describe("Plugin", func() {
 				),
 			)
 
-			FIt("defaults to Extract mode if mode is not set", func() {
+			It("defaults to Extract mode if mode is not set", func() {
 				inputExtraction := createInputExtraction(extractorTestCase{})
 				inputTransformationStages := createInputTransformationStages(inputExtraction)
 				output, err := p.(transformationPlugin).ConvertTransformation(ctx, &transformation.Transformations{}, inputTransformationStages)
