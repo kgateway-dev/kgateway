@@ -19,11 +19,11 @@ var _ = Describe("Extensions", func() {
 		},
 		Entry("missing K8sGatewayExtensions", Extensions{
 			K8sGatewayExtensions: nil,
-		}, MatchError("Extensions.K8sGatewayExtension must be defined, found nil")),
+		}, MatchError(ErrNilExtension("K8sGatewayExtension"))),
 		Entry("missing PluginRegistryFactory", Extensions{
 			K8sGatewayExtensions:  extensions.NewManager,
 			PluginRegistryFactory: nil,
-		}, MatchError("Extensions.PluginRegistryFactory must be defined, found nil")),
+		}, MatchError(ErrNilExtension("PluginRegistryFactory"))),
 		Entry("missing ApiEmitterChannel", Extensions{
 			K8sGatewayExtensions: extensions.NewManager,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
@@ -31,7 +31,7 @@ var _ = Describe("Extensions", func() {
 				return nil
 			},
 			ApiEmitterChannel: nil,
-		}, MatchError("Extensions.ApiEmitterChannel must be defined, found nil")),
+		}, MatchError(ErrNilExtension("ApiEmitterChannel"))),
 		Entry("missing ApiEmitterChannel", Extensions{
 			K8sGatewayExtensions: extensions.NewManager,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
@@ -40,7 +40,7 @@ var _ = Describe("Extensions", func() {
 			},
 			ApiEmitterChannel: make(chan struct{}),
 			SyncerExtensions:  nil,
-		}, MatchError("Extensions.SyncerExtensions must be defined, found nil")),
+		}, MatchError(ErrNilExtension("SyncerExtensions"))),
 		Entry("missing nothing", Extensions{
 			K8sGatewayExtensions: extensions.NewManager,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {

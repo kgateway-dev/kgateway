@@ -8,6 +8,10 @@ import (
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
+var ErrNilExtension = func(name string) error {
+	return errors.Errorf("Extensions.%s must be defined, found nil", name)
+}
+
 // Extensions contains the set of extension points for Gloo.
 // These are the injectable pieces of code, which we use to define separate
 // implementations of our Open Source and Enterprise Control Plane implementations.
@@ -35,17 +39,17 @@ type Extensions struct {
 // Validate returns an error if the Extensions are invalid, nil otherwise
 func (e Extensions) Validate() error {
 	if e.K8sGatewayExtensions == nil {
-		return errors.Errorf("Extensions.K8sGatewayExtension must be defined, found nil")
+		return ErrNilExtension("K8sGatewayExtension")
 	}
 
 	if e.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
+		return ErrNilExtension("PluginRegistryFactory")
 	}
 	if e.ApiEmitterChannel == nil {
-		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
+		return ErrNilExtension("ApiEmitterChannel")
 	}
 	if e.SyncerExtensions == nil {
-		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+		return ErrNilExtension("SyncerExtensions")
 	}
 
 	return nil
