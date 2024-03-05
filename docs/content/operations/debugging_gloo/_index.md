@@ -232,7 +232,7 @@ kubectl port-forward -n gloo-system deploy/gateway-proxy 19000:19000
 Now you can `curl localhost:19000` and get access to the Envoy Admin API. 
 
 
-## Debugging the control plane {#debug-control-plane}
+## Debugging the control plane
 
 The Gloo Edge control plane is made up of the following components:
 
