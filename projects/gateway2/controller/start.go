@@ -2,7 +2,7 @@ package controller
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -38,8 +38,8 @@ type StartConfig struct {
 	Dev          bool
 	ControlPlane bootstrap.ControlPlane
 
-	Opts       bootstrap.Opts
-	Extensions setup.Extensions
+	Opts                  bootstrap.Opts
+	PluginRegistryFactory plugins.PluginRegistryFactory
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -73,7 +73,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	glooTranslator := translator.NewDefaultTranslator(
 		cfg.Opts.Settings,
-		cfg.Extensions.PluginRegistryFactory(ctx))
+		cfg.PluginRegistryFactory(ctx))
 
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
