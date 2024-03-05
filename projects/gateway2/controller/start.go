@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 
@@ -35,6 +37,9 @@ var (
 type StartConfig struct {
 	Dev          bool
 	ControlPlane bootstrap.ControlPlane
+
+	Opts       bootstrap.Opts
+	Extensions setup.Extensions
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -66,7 +71,10 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	glooTranslator := newGlooTranslator(ctx)
+	glooTranslator := translator.NewDefaultTranslator(
+		cfg.Opts.Settings,
+		cfg.Extensions.PluginRegistryFactory(ctx))
+
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 	xdsSyncer := xds.NewXdsSyncer(
