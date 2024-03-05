@@ -334,7 +334,6 @@ func TranslateTransformation(glooTransform *transformation.Transformation,
 
 			transformationType, err := translateTransformationTemplate(typedTransformation)
 			if err != nil {
-				// TODO: create a typed error for this
 				return nil, err
 			}
 			out.TransformationType = transformationType
@@ -437,7 +436,6 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	return out, nil
 }
 
-// Note to reviewers -- I'm not sure if it's better to define these errors close to extractor functionality or towards the
 // ExtractorError represents an error related to extractor configuration.
 type ExtractorError struct {
 	Message string // The error message
@@ -445,7 +443,7 @@ type ExtractorError struct {
 	Mode    string // (optional) The (stringified) mode of the extractor causing the error
 }
 
-// Error implements the error interface for ExtractorError.
+// implements the error interface for ExtractorError.
 func (e *ExtractorError) Error() string {
 	if e.Mode == "" {
 		return fmt.Sprintf("%s for extractor %s", e.Message, e.Name)
@@ -461,14 +459,13 @@ func NewExtractorError(message, name string, mode transformation.Extraction_Mode
 		Name:    name,
 	}
 
-	// check if int32(mode) is in Extraction_Mode_name
+	// check if there's a readable mode name
 	if transformation.Extraction_Mode_name[int32(mode)] != "" {
 		extractorError.Mode = transformation.Extraction_Mode_name[int32(mode)]
 	}
 	return extractorError
 }
 
-// Static error messages for different conditions.
 const (
 	ErrMsgReplacementTextSetWhenNotNeeded = "replacement text should not be set"
 	ErrMsgReplacementTextNotSetWhenNeeded = "replacement text must be set"
@@ -477,16 +474,12 @@ const (
 )
 
 func translateExtractor(extractor *transformation.Extraction, name string) (*envoytransformation.Extraction, error) {
-	// TODO: regex validation doesn't currently handle mode differences very well
-	// TODO: mode information is potentially useful here, depending on the failure type
-	// TODO: if we don't take in mode here, then we should consider doing this after the mode validation
 	err := validateRegex(extractor)
 	if err != nil {
 		return nil, NewExtractorError(ErrMsgInvalidRegex, name, -1)
 	}
 
 	out := &envoytransformation.Extraction{
-		// TODO: could log an error if this is an empty string
 		Regex: extractor.GetRegex(),
 	}
 
@@ -535,7 +528,6 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 		}
 	default:
 		// identical to Extraction_EXTRACT
-		// TODO: unit tests for default case
 		out.Mode = envoytransformation.Extraction_EXTRACT
 		out.Subgroup = extractor.GetSubgroup()
 
@@ -548,14 +540,12 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 	return out, nil
 }
 
-// TODO / note to reviewers
+// validate that the regex compiles, and that the specified subgroup does not exceed the number of capturing groups in the regex
 //
 //	this function compiles the regex and checks that the subgroup is valid
-//	because it compiles a regex, it will affect the performance of the transformation plugin
+//	because it compiles a regex, it will slow the performance of the transformation plugin
 //	that being said, it does prevent us from crashing envoy at runtime if we try to
 //	select a subgroup greater than the number of capturing groups in the regex
-//
-// validate that the regex compiles, and that the specified subgroup does not exceed the number of capturing groups in the regex
 func validateRegex(extractor *transformation.Extraction) error {
 	regex := extractor.GetRegex()
 	subgroup := extractor.GetSubgroup()
@@ -563,6 +553,11 @@ func validateRegex(extractor *transformation.Extraction) error {
 	// if subgroup is 0, return
 	if subgroup == 0 {
 		return nil
+	}
+
+	// if regex is empty, return an error
+	if regex == "" {
+		return eris.Errorf("regex is empty")
 	}
 
 	// compile regex
