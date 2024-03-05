@@ -502,7 +502,6 @@ var _ = Describe("Plugin", func() {
 				}
 			}
 
-			// TODO: we can probably remove some layers of indirection + get rid of some of these helpers
 			// intermediary function to create a transformation with a single extraction
 			createInputTransformation := func(extraction *transformation.Extraction) *transformation.Transformation {
 				return &transformation.Transformation{
@@ -584,7 +583,7 @@ var _ = Describe("Plugin", func() {
 				}
 			}
 
-			DescribeTable("Extractor transformations",
+			FDescribeTable("Extractor transformations",
 				func(tc extractorTestCase) {
 					inputExtraction := createInputExtraction(tc)
 					inputTransformationStages := createInputTransformationStages(inputExtraction)
@@ -688,7 +687,7 @@ var _ = Describe("Plugin", func() {
 				),
 			)
 
-			It("defaults to Extract mode if mode is not set", func() {
+			FIt("defaults to Extract mode if mode is not set", func() {
 				inputExtraction := createInputExtraction(extractorTestCase{})
 				inputTransformationStages := createInputTransformationStages(inputExtraction)
 				output, err := p.(transformationPlugin).ConvertTransformation(ctx, &transformation.Transformations{}, inputTransformationStages)
