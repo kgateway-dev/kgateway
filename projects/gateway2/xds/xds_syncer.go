@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -88,6 +89,8 @@ type XdsSyncer struct {
 	inputs *XdsInputChannels
 	cli    client.Client
 	scheme *runtime.Scheme
+
+	proxyClient gloo_solo_io.ProxyClient
 }
 
 type XdsInputChannels struct {
@@ -125,6 +128,7 @@ func NewXdsSyncer(
 	inputs *XdsInputChannels,
 	cli client.Client,
 	scheme *runtime.Scheme,
+	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:       controllerName,
@@ -135,6 +139,7 @@ func NewXdsSyncer(
 		inputs:               inputs,
 		cli:                  cli,
 		scheme:               scheme,
+		proxyClient:          proxyClient,
 	}
 }
 
@@ -174,6 +179,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
+		s.storeProxiesInCache(ctx, proxies)
 	}
 
 	for {
@@ -381,5 +387,21 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 				logger.Error(err)
 			}
 		}
+	}
+}
+
+func (s *XdsSyncer) storeProxiesInCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
+	ctx = contextutils.WithLogger(ctx, "proxyCache")
+	logger := contextutils.LoggerFrom(ctx)
+	for _, proxy := range proxyList {
+		_, err := s.proxyClient.Write(proxy, clients.WriteOpts{
+			Ctx: ctx,
+		})
+		if err != nil {
+			// A write error to our cache should not impact translation
+			// We will emit a message, and continue
+			logger.Error(err)
+		}
+
 	}
 }

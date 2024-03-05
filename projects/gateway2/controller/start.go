@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
@@ -40,6 +41,7 @@ type StartConfig struct {
 
 	Opts                  bootstrap.Opts
 	PluginRegistryFactory plugins.PluginRegistryFactory
+	ProxyClient           v1.ProxyClient
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -86,6 +88,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		inputChannels,
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		cfg.ProxyClient,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")

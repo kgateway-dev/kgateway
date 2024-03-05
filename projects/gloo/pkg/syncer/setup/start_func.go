@@ -2,6 +2,10 @@ package setup
 
 import (
 	"context"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -44,10 +48,27 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc() StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
+
+		inMemoryProxyClient, err := v1.NewProxyClient(opts.WatchOpts.Ctx, &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		})
+		if err != nil {
+			return err
+		}
+
+		if opts.ProxyDebugServer.Server != nil {
+			// If we have a debug server running, let's register the proxy client used by
+			// the k8s gateway translation. This will enable operators to query the debug endpoint
+			// and get the proxies in memory
+			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, inMemoryProxyClient)
+		}
+
 		return controller.Start(ctx, controller.StartConfig{
 			ControlPlane:          opts.ControlPlane,
 			Opts:                  opts,
 			PluginRegistryFactory: extensions.PluginRegistryFactory,
+
+			ProxyClient: inMemoryProxyClient,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

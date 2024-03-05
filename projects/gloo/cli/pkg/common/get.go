@@ -147,7 +147,6 @@ func ListProxiesFromSettings(namespace string, opts *options.Options, settings *
 }
 
 func computeProxyEndpointPort(ctx context.Context, settings *gloov1.Settings) string {
-
 	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
 	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
 	if err != nil {

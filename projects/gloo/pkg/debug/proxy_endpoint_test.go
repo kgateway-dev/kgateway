@@ -29,7 +29,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 
 		proxyClient, _ = v1.NewProxyClient(ctx, resourceClientFactory)
 		proxyEndpointServer = debug.NewProxyEndpointServer()
-		proxyEndpointServer.SetProxyClient(proxyClient)
+		proxyEndpointServer.RegisterProxyReader(debug.EdgeGatewayTranslation, proxyClient)
 		ns = "some-namespace"
 		proxy1 := &v1.Proxy{
 			Metadata: &core.Metadata{
