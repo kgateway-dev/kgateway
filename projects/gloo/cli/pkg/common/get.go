@@ -235,7 +235,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
 				Name:      name,
 				Namespace: namespace,
-				Source: "edge-gw", "k8s-gw", "all?"
+				Source:    "",
 			}, options...)
 			if err != nil {
 				errs <- err
@@ -259,6 +259,15 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 	}
 
 }
+
+// GetProxiesFromControlPlane executes a gRPC request against the Control Plane (Gloo) a a given port (proxyEndpointPort).
+// Proxies are an intermediate resource that are often persisted in-memory in the Control Plane.
+// To improve debuggability, we expose an API to return the current proxies, and rely on this CLI method to expose that to users
+func GetProxiesFromControlPlane(opts *options.Options, proxyRequest *debug.ProxyEndpointRequest, proxyEndpointPort int) (gloov1.ProxyList, error) {
+
+	return gloov1.ProxyList{}, nil
+}
+
 func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
 	var authConfigList extauthv1.AuthConfigList
 
