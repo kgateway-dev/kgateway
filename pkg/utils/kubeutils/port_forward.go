@@ -3,7 +3,6 @@ package kubeutils
 import (
 	"context"
 	"fmt"
-
 	"github.com/avast/retry-go"
 
 	"net"
@@ -44,8 +43,9 @@ type PortForwarder interface {
 
 func NewPortForwarder(options ...PortForwardOption) PortForwarder {
 	return &forwarder{
-		stopCh:     make(chan struct{}),
 		errCh:      make(chan error, 1),
+		stopCh:     nil, // Populated when Start is invoked
+		readyCh:    nil, // Populated when Start is invoked
 		properties: buildPortForwardProperties(options...),
 		podName:    "", // Populated when Start is invoked
 	}
@@ -54,6 +54,7 @@ func NewPortForwarder(options ...PortForwardOption) PortForwarder {
 type forwarder struct {
 	stopCh     chan struct{}
 	errCh      chan error
+	readyCh    chan struct{}
 	properties *properties
 	podName    string
 }
@@ -67,7 +68,8 @@ func (f *forwarder) Start(ctx context.Context, options ...retry.Option) error {
 func (f *forwarder) attemptStart(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 
-	readyCh := make(chan struct{}, 1)
+	f.readyCh = make(chan struct{}, 1)
+	f.stopCh = make(chan struct{}, 1)
 
 	var fw *portforward.PortForwarder
 	go func() {
@@ -92,7 +94,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 			// At this point, either the stopCh has been closed, or port forwarder connection is broken.
 			// the port forwarder should have already been ready before.
 			// No need to notify the ready channel anymore when forwarding again.
-			readyCh = nil
+			f.readyCh = nil
 		}
 	}()
 
@@ -101,7 +103,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 	select {
 	case err := <-f.errCh:
 		return fmt.Errorf("failure running port forward process: %v", err)
-	case <-readyCh:
+	case <-f.readyCh:
 		p, err := fw.GetPorts()
 		if err != nil {
 			return fmt.Errorf("failed to get ports: %v", err)
@@ -157,13 +159,11 @@ func (f *forwarder) portForwarderToPod(ctx context.Context) (*portforward.PortFo
 	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
 
-	stopChan, readyChan := make(chan struct{}, 1), make(chan struct{}, 1)
-
-	return portforward.New(
-		dialer,
-		[]string{fmt.Sprintf("%s:%s", f.properties.localPort, f.properties.remotePort)},
-		stopChan,
-		readyChan,
+	return portforward.NewOnAddresses(dialer,
+		[]string{f.properties.localAddress},
+		[]string{fmt.Sprintf("%d:%d", f.properties.localPort, f.properties.remotePort)},
+		f.stopCh,
+		f.readyCh,
 		f.properties.stdout,
 		f.properties.stderr)
 }

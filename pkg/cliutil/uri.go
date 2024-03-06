@@ -178,6 +178,7 @@ func minikubeIp(clusterName string) (string, error) {
 }
 
 // PortForward call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
+// Deprecated: Prefer kubeutils.NewPortForwarder
 func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (*exec.Cmd, error) {
 
 	/** port-forward command **/

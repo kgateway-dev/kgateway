@@ -100,7 +100,14 @@ type Upgrade struct {
 }
 
 type Get struct {
+	Proxy    GetProxy
 	Selector InputMapStringString
+}
+
+type GetProxy struct {
+	Namespace         string
+	K8sGatewaySource  bool
+	EdgeGatewaySource bool
 }
 
 type Delete struct {

@@ -1,28 +1,15 @@
 package common
 
 import (
-	"io"
-	"math"
-	"net"
-	"os"
-	"strconv"
-	"time"
-
-	"github.com/avast/retry-go"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/pkg/cliutil"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"google.golang.org/grpc"
 )
 
 func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceList, error) {
@@ -122,113 +109,6 @@ func GetSettings(opts *options.Options) (*gloov1.Settings, error) {
 		return nil, err
 	}
 	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
-}
-
-func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
-	settings, err := GetSettings(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	proxyEndpointPort, err := computeProxyEndpointPort(settings)
-	if err != nil {
-		return nil, err
-	}
-	return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
-}
-
-// ListProxiesFromSettings retrieves proxies from the proxy debug endpoint, or from kubernetes if the proxy debug endpoint is not available
-// Takes in a settings object to determine whether the proxy debug endpoint is available
-func ListProxiesFromSettings(namespace string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
-	proxyEndpointPort, err := computeProxyEndpointPort(settings)
-	if err != nil {
-		return nil, err
-	}
-
-	return getProxiesFromGrpc("", namespace, opts, proxyEndpointPort)
-}
-
-func computeProxyEndpointPort(settings *gloov1.Settings) (string, error) {
-	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
-	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
-	return proxyEndpointPort, err
-}
-
-// Used to retrieve proxies from the proxy debug endpoint in newer versions of gloo
-// if name is empty, return all proxies
-func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
-	remotePort, err := strconv.Atoi(proxyEndpointPort)
-	if err != nil {
-		return nil, err
-	}
-
-	return GetProxiesFromControlPlane(
-		opts,
-		&debug.ProxyEndpointRequest{
-			Name:      name,
-			Namespace: namespace,
-			Source:    "",  // this method does not support the source API
-			Selector:  nil, // this method does not support the selector API
-		},
-		remotePort)
-}
-
-// GetProxiesFromControlPlane executes a gRPC request against the Control Plane (Gloo) a a given port (proxyEndpointPort).
-// Proxies are an intermediate resource that are often persisted in-memory in the Control Plane.
-// To improve debuggability, we expose an API to return the current proxies, and rely on this CLI method to expose that to users
-func GetProxiesFromControlPlane(opts *options.Options, proxyRequest *debug.ProxyEndpointRequest, proxyEndpointPort int) (gloov1.ProxyList, error) {
-	logger := cliutil.GetLogger()
-	var outWriter, errWriter io.Writer
-	errWriter = io.MultiWriter(logger, os.Stderr)
-	if opts.Top.Verbose {
-		outWriter = io.MultiWriter(logger, os.Stdout)
-	} else {
-		outWriter = logger
-	}
-
-	portForwarder := kubeutils.NewPortForwarder(
-		kubeutils.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
-		kubeutils.WithRemotePort(proxyEndpointPort),
-		kubeutils.WithWriters(outWriter, errWriter),
-	)
-	if err := portForwarder.Start(
-		opts.Top.Ctx,
-		retry.LastErrorOnly(true),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(5),
-	); err != nil {
-		return nil, err
-	}
-	defer portForwarder.Close()
-
-	var proxyEndpointResponse *debug.ProxyEndpointResponse
-	requestErr := retry.Do(func() error {
-		cc, err := grpc.DialContext(opts.Top.Ctx, portForwarder.Address(), grpc.WithInsecure())
-		if err != nil {
-			return err
-		}
-		pxClient := debug.NewProxyEndpointServiceClient(cc)
-		r, err := pxClient.GetProxies(opts.Top.Ctx, proxyRequest,
-			// Some proxies can become very large and exceed the default 100Mb limit
-			// For this reason we want remove the limit but will settle for a limit of MaxInt32
-			// as we don't anticipate proxies to exceed this
-			grpc.MaxCallRecvMsgSize(math.MaxInt32),
-		)
-		proxyEndpointResponse = r
-		return err
-	},
-		retry.LastErrorOnly(true),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(5),
-	)
-
-	if requestErr != nil {
-		return nil, requestErr
-	}
-
-	return proxyEndpointResponse.GetProxies(), nil
 }
 
 func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
