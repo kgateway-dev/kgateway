@@ -1,18 +1,18 @@
 package common
 
 import (
-	"context"
+	"io"
 	"math"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/avast/retry-go"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/hashicorp/go-multierror"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -130,142 +130,105 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 		return nil, err
 	}
 
-	// todo: let's create a "dumb" cli and it just asks the CP for data and the server is "smart"
-
-	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
-	if proxyEndpointPort != "" {
-		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
+	proxyEndpointPort, err := computeProxyEndpointPort(settings)
+	if err != nil {
+		return nil, err
 	}
-	return getProxiesFromK8s(name, opts)
+	return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
 }
 
 // ListProxiesFromSettings retrieves proxies from the proxy debug endpoint, or from kubernetes if the proxy debug endpoint is not available
 // Takes in a settings object to determine whether the proxy debug endpoint is available
 func ListProxiesFromSettings(namespace string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
-	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
-	if proxyEndpointPort != "" {
-		return getProxiesFromGrpc("", namespace, opts, proxyEndpointPort)
+	proxyEndpointPort, err := computeProxyEndpointPort(settings)
+	if err != nil {
+		return nil, err
 	}
-	return getProxiesFromK8s("", opts)
+
+	return getProxiesFromGrpc("", namespace, opts, proxyEndpointPort)
 }
 
-func computeProxyEndpointPort(ctx context.Context, settings *gloov1.Settings) string {
+func computeProxyEndpointPort(settings *gloov1.Settings) (string, error) {
 	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
 	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
-	if err != nil {
-		proxyEndpointPort = ""
-		contextutils.LoggerFrom(ctx).Debugf("Could not parse the port for the proxy debug endpoint. " +
-			"Will check for proxies persisted to etcd.")
-	}
-	return proxyEndpointPort
-}
-
-// This is necessary for older versions of gloo
-// if name is empty, return all proxies
-func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, error) {
-	var list gloov1.ProxyList
-	pxClient := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	if name == "" {
-		uss, err := pxClient.List(opts.Metadata.GetNamespace(),
-			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, uss...)
-	} else {
-		us, err := pxClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
-		if err != nil {
-			return nil, err
-		}
-		opts.Metadata.Name = name
-		list = append(list, us)
-	}
-
-	return list, nil
+	return proxyEndpointPort, err
 }
 
 // Used to retrieve proxies from the proxy debug endpoint in newer versions of gloo
 // if name is empty, return all proxies
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
-
-	options := []grpc.CallOption{
-		// Some proxies can become very large and exceed the default 100Mb limit
-		// For this reason we want remove the limit but will settle for a limit of MaxInt32
-		// as we don't anticipate proxies to exceed this
-		grpc.MaxCallRecvMsgSize(int(math.MaxInt32)),
-	}
-
-	freePort, err := cliutil.GetFreePort()
+	remotePort, err := strconv.Atoi(proxyEndpointPort)
 	if err != nil {
 		return nil, err
 	}
-	localPort := strconv.Itoa(freePort)
-	portFwdCmd, err := cliutil.PortForward(opts.Metadata.GetNamespace(), "deployment/gloo",
-		localPort, proxyEndpointPort, opts.Top.Verbose)
-	if portFwdCmd.Process != nil {
-		defer portFwdCmd.Process.Release()
-		defer portFwdCmd.Process.Kill()
-	}
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
-	}
-	localCtx, cancel := context.WithTimeout(opts.Top.Ctx, time.Second*30)
-	defer cancel()
-	// wait for port-forward to be ready
-	retryInterval := time.Millisecond * 250
-	errs := make(chan error)
-	resp := make(chan *debug.ProxyEndpointResponse)
-	go func() {
-		for {
-			select {
-			case <-localCtx.Done():
-				return
-			default:
-			}
-			cc, err := grpc.DialContext(localCtx, "localhost:"+localPort, grpc.WithInsecure())
-			if err != nil {
-				errs <- err
-				time.Sleep(retryInterval)
-				continue
-			}
-			pxClient := debug.NewProxyEndpointServiceClient(cc)
-			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
-				Name:      name,
-				Namespace: namespace,
-				Source:    "",
-			}, options...)
-			if err != nil {
-				errs <- err
-				time.Sleep(retryInterval)
-				continue
-			}
-			resp <- r
-		}
-	}()
 
-	var multiErr *multierror.Error
-	for {
-		select {
-		case err := <-errs:
-			multiErr = multierror.Append(multiErr, err)
-		case r := <-resp:
-			return r.GetProxies(), nil
-		case <-localCtx.Done():
-			return nil, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
-		}
-	}
-
+	return GetProxiesFromControlPlane(
+		opts,
+		&debug.ProxyEndpointRequest{
+			Name:      name,
+			Namespace: namespace,
+			Source:    "",  // this method does not support the source API
+			Selector:  nil, // this method does not support the selector API
+		},
+		remotePort)
 }
 
 // GetProxiesFromControlPlane executes a gRPC request against the Control Plane (Gloo) a a given port (proxyEndpointPort).
 // Proxies are an intermediate resource that are often persisted in-memory in the Control Plane.
 // To improve debuggability, we expose an API to return the current proxies, and rely on this CLI method to expose that to users
 func GetProxiesFromControlPlane(opts *options.Options, proxyRequest *debug.ProxyEndpointRequest, proxyEndpointPort int) (gloov1.ProxyList, error) {
+	logger := cliutil.GetLogger()
+	var outWriter, errWriter io.Writer
+	errWriter = io.MultiWriter(logger, os.Stderr)
+	if opts.Top.Verbose {
+		outWriter = io.MultiWriter(logger, os.Stdout)
+	} else {
+		outWriter = logger
+	}
 
-	return gloov1.ProxyList{}, nil
+	portForwarder := kubeutils.NewPortForwarder(
+		kubeutils.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
+		kubeutils.WithRemotePort(proxyEndpointPort),
+		kubeutils.WithWriters(outWriter, errWriter),
+	)
+	if err := portForwarder.Start(
+		opts.Top.Ctx,
+		retry.LastErrorOnly(true),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Attempts(5),
+	); err != nil {
+		return nil, err
+	}
+	defer portForwarder.Close()
+
+	var proxyEndpointResponse *debug.ProxyEndpointResponse
+	requestErr := retry.Do(func() error {
+		cc, err := grpc.DialContext(opts.Top.Ctx, portForwarder.Address(), grpc.WithInsecure())
+		if err != nil {
+			return err
+		}
+		pxClient := debug.NewProxyEndpointServiceClient(cc)
+		r, err := pxClient.GetProxies(opts.Top.Ctx, proxyRequest,
+			// Some proxies can become very large and exceed the default 100Mb limit
+			// For this reason we want remove the limit but will settle for a limit of MaxInt32
+			// as we don't anticipate proxies to exceed this
+			grpc.MaxCallRecvMsgSize(math.MaxInt32),
+		)
+		proxyEndpointResponse = r
+		return err
+	},
+		retry.LastErrorOnly(true),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Attempts(5),
+	)
+
+	if requestErr != nil {
+		return nil, requestErr
+	}
+
+	return proxyEndpointResponse.GetProxies(), nil
 }
 
 func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {

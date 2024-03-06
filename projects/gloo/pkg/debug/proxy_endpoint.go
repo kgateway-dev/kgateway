@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/rotisserie/eris"

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/avast/retry-go"
+
 	"net"
 	"net/http"
 	"net/url"
@@ -23,7 +25,7 @@ var _ PortForwarder = &forwarder{}
 // PortForwarder manages the forwarding of a single port.
 type PortForwarder interface {
 	// Start runs this forwarder.
-	Start(ctx context.Context) error
+	Start(ctx context.Context, options ...retry.Option) error
 
 	// Address returns the local forwarded address. Only valid while the forwarder is running.
 	Address() string
@@ -56,7 +58,13 @@ type forwarder struct {
 	podName    string
 }
 
-func (f *forwarder) Start(ctx context.Context) error {
+func (f *forwarder) Start(ctx context.Context, options ...retry.Option) error {
+	return retry.Do(func() error {
+		return f.attemptStart(ctx)
+	}, options...)
+}
+
+func (f *forwarder) attemptStart(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 
 	readyCh := make(chan struct{}, 1)
