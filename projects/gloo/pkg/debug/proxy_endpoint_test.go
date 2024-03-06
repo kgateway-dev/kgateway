@@ -41,7 +41,60 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 		proxyEndpointServer.RegisterProxyReader(debug.K8sGatewayTranslation, k8sGatewayProxyClient)
 	})
 
-	Context("Request returns the appropriate error", func() {
+	Context("GetProxies returns the appropriate value", func() {
+
+		BeforeEach(func() {
+			edgeGatewayProxies := v1.ProxyList{
+				&v1.Proxy{
+					Metadata: &core.Metadata{
+						Name:      "edge-proxy-1",
+						Namespace: "east",
+					},
+				},
+				&v1.Proxy{
+					Metadata: &core.Metadata{
+						Name:      "edge-proxy-2",
+						Namespace: "east",
+					},
+				},
+				&v1.Proxy{
+					Metadata: &core.Metadata{
+						Name:      "edge-proxy-3",
+						Namespace: "west",
+					},
+				},
+			}
+
+			k8sGatewayProxies := v1.ProxyList{
+				&v1.Proxy{
+					Metadata: &core.Metadata{
+						Name:      "k8s-proxy-1",
+						Namespace: "east",
+					},
+				},
+				&v1.Proxy{
+					Metadata: &core.Metadata{
+						Name:      "k8s-proxy-2",
+						Namespace: "east",
+					},
+				},
+				&v1.Proxy{
+					Metadata: &core.Metadata{
+						Name:      "k8s-proxy-3",
+						Namespace: "west",
+					},
+				},
+			}
+
+			for _, proxy := range edgeGatewayProxies {
+				_, err := edgeGatewayProxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+			for _, proxy := range k8sGatewayProxies {
+				_, err := k8sGatewayProxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
 
 		It("returns error when req.Source is invalid", func() {
 			req := &debug_api.ProxyEndpointRequest{
@@ -51,73 +104,109 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 			Expect(err).To(MatchError(ContainSubstring("ProxyEndpointRequest.source (invalid-source) is not a valid option")))
 		})
 
-	})
-
-	Context("Request returns the appropriate value", func() {
-
-		BeforeEach(func() {
-			proxies := v1.ProxyList{
-				&v1.Proxy{
-					Metadata: &core.Metadata{
-						Name:      "proxy1",
-						Namespace: "custom-namespace",
-					},
-				},
-				&v1.Proxy{
-					Metadata: &core.Metadata{
-						Name:      "proxy2",
-						Namespace: "custom-namespace",
-					},
-				},
-				&v1.Proxy{
-					Metadata: &core.Metadata{
-						Name:      "proxy3",
-						Namespace: "other-namespace",
-					},
-				},
-			}
-
-			for _, proxy := range proxies {
-				_, err := edgeGatewayProxyClient.Write(proxy, clients.WriteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred())
-			}
-		})
-
-		It("returns proxy by name", func() {
+		It("returns proxy by name, with source", func() {
 			edgeProxyResponse, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
-				Name:      "proxy1",
-				Namespace: "custom-namespace",
-				Source:    "edge-gw",
+				Name:      "edge-proxy-1",
+				Namespace: "east",
+				Source:    debug.EdgeGatewaySourceName,
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(edgeProxyResponse.GetProxies()).To(HaveLen(1), "There should be a single edge gateway proxy")
-			Expect(edgeProxyResponse.GetProxies()[0].GetMetadata().GetName()).To(Equal("proxy1"))
+			Expect(edgeProxyResponse.GetProxies()[0].GetMetadata().GetName()).To(Equal("edge-proxy-1"))
+
+			k8sProxyResponse, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "k8s-proxy-1",
+				Namespace: "east",
+				Source:    debug.K8sGatewaySourceName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sProxyResponse.GetProxies()).To(HaveLen(1), "There should be a single k8s gateway proxy")
+			Expect(k8sProxyResponse.GetProxies()[0].GetMetadata().GetName()).To(Equal("k8s-proxy-1"))
+		})
+
+		It("returns error if name not found, with source", func() {
+			_, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "edge-proxy-1-invalid",
+				Namespace: "east",
+				Source:    debug.EdgeGatewaySourceName,
+			})
+			Expect(err).To(MatchError(ContainSubstring("east.edge-proxy-1-invalid does not exist")))
 
 			_, err = proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
-				Name:      "proxy1",
-				Namespace: "custom-namespace",
-				Source:    "k8s-gw",
+				Name:      "k8s-proxy-1-invalid",
+				Namespace: "east",
+				Source:    debug.K8sGatewaySourceName,
 			})
-			Expect(err).To(MatchError(ContainSubstring("namespace.proxy1 does not exist")), "There should not be any k8s gateway proxies")
+			Expect(err).To(MatchError(ContainSubstring("east.k8s-proxy-1-invalid does not exist")))
 		})
 
-		It("Returns all proxies from the provided namespace", func() {
-			resp, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
-				Namespace: "custom-namespace",
-				// We do not include the source, to demonstrate that it will fallback to the edge gateway source
+		It("returns proxy by name, without source", func() {
+			response, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "edge-proxy-1",
+				Namespace: "east",
+				Source:    "",
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.GetProxies()).To(HaveLen(2))
+			Expect(response.GetProxies()).To(HaveLen(1), "There should be a single edge gateway proxy")
+			Expect(response.GetProxies()[0].GetMetadata().GetName()).To(Equal("edge-proxy-1"))
 		})
 
-		It("Returns all proxies from all namespaces", func() {
-			resp, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+		It("returns all proxies from the provided namespace, with source", func() {
+			edgeProxyResponse, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "", // name is empty so that we list all resources in the provided namespace
+				Namespace: "east",
+				Source:    debug.EdgeGatewaySourceName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(edgeProxyResponse.GetProxies()).To(HaveLen(2))
+
+			k8sProxyResponse, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "", // name is empty so that we list all resources in the provided namespace
+				Namespace: "west",
+				Source:    debug.K8sGatewaySourceName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sProxyResponse.GetProxies()).To(HaveLen(1))
+		})
+
+		It("returns all proxies from the provided namespace, without source", func() {
+			response, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "", // name is empty so that we list all resources in the provided namespace
+				Namespace: "east",
+				Source:    "",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response.GetProxies()).To(HaveLen(4), "2 edge gateway proxies, 2 kubernetes gateway proxies")
+		})
+
+		It("returns all proxies from all namespaces, with source", func() {
+			edgeProxyResponse, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "", // name is empty so that we list all resources
 				Namespace: "",
-				// We do not include the source, to demonstrate that it will fallback to the edge gateway source
+				Source:    debug.EdgeGatewaySourceName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.GetProxies()).To(HaveLen(3))
+			Expect(edgeProxyResponse.GetProxies()).To(HaveLen(3))
+
+			k8sProxyResponse, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "", // name is empty so that we list all resources
+				Namespace: "",
+				Source:    debug.K8sGatewaySourceName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sProxyResponse.GetProxies()).To(HaveLen(3))
+		})
+
+		It("returns all proxies from the provided namespace, without source", func() {
+			response, err := proxyEndpointServer.GetProxies(ctx, &debug_api.ProxyEndpointRequest{
+				Name:      "", // name is empty so that we list all resources in the provided namespace
+				Namespace: "",
+				Source:    "",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response.GetProxies()).To(HaveLen(6), "3 edge gateway proxies, 3 kubernetes gateway proxies")
 		})
 
 	})
+
 })

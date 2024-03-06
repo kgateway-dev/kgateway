@@ -129,6 +129,9 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// todo: let's create a "dumb" cli and it just asks the CP for data and the server is "smart"
+
 	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
 	if proxyEndpointPort != "" {
 		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
@@ -232,6 +235,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
 				Name:      name,
 				Namespace: namespace,
+				Source: "edge-gw", "k8s-gw", "all?"
 			}, options...)
 			if err != nil {
 				errs <- err
