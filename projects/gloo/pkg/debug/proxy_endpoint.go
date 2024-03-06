@@ -28,6 +28,10 @@ var (
 	}
 )
 
+// Open Questions:
+// 1. Should users have to specify which type of Proxy they want, or should they just ask, and we return
+// any proxies that fit that criteria (so we look at all available proxies)
+
 // ProxyEndpointServer responds to requests for Proxies, and returns them
 // The server relies on ProxyReaders being registered with the server
 type ProxyEndpointServer interface {

@@ -40,7 +40,7 @@ type StartConfig struct {
 	Dev          bool
 	ControlPlane bootstrap.ControlPlane
 
-	Opts                  bootstrap.Opts
+	Settings              *v1.Settings
 	PluginRegistryFactory plugins.PluginRegistryFactory
 	ProxyClient           v1.ProxyClient
 }
@@ -75,7 +75,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	glooTranslator := translator.NewDefaultTranslator(
-		cfg.Opts.Settings,
+		cfg.Settings,
 		cfg.PluginRegistryFactory(ctx))
 
 	var sanz sanitizer.XdsSanitizers
