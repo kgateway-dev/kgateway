@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"net/http"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
