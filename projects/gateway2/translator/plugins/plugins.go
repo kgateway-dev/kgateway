@@ -35,16 +35,13 @@ type RoutePlugin interface {
 }
 
 type PostTranslationContext struct {
-	// TranslatedProxies is the list of Proxies that were generated in a single translation run
-	TranslatedProxies []TranslatedProxy
+	// TranslatedGateways is the list of Gateways that were generated in a single translation run
+	TranslatedGateways []TranslatedGateway
 }
 
-type TranslatedProxy struct {
+type TranslatedGateway struct {
 	// Gateway is the input object that produced the Proxy
 	Gateway gwv1.Gateway
-
-	// Proxy is the output object, that was created by the Gateway
-	Proxy *v1.Proxy
 }
 
 type PostTranslationPlugin interface {

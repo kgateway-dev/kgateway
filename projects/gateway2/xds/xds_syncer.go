@@ -162,25 +162,26 @@ func (s *XdsSyncer) Start(
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
 
-		var translatedProxies []gwplugins.TranslatedProxy
+		var translatedGateways []gwplugins.TranslatedGateway
 		for _, gw := range gwl.Items {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, gatewayQueries, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
-				translatedProxies = append(translatedProxies, gwplugins.TranslatedProxy{
+				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
 					Gateway: gw,
-					Proxy:   proxy,
 				})
 				//TODO: handle reports and process statuses
 			}
 		}
 		proxyApiSnapshot.Proxies = proxies
+
+		applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
+			TranslatedGateways: translatedGateways,
+		})
+
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
-		s.applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
-			TranslatedProxies: translatedProxies,
-		})
 	}
 
 	for {
@@ -356,7 +357,7 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	}
 }
 
-func (s *XdsSyncer) applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
+func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
 	ctx = contextutils.WithLogger(ctx, "postTranslation")
 	logger := contextutils.LoggerFrom(ctx)
 
