@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
@@ -19,7 +19,7 @@ var _ = Describe("Encryption Key converters", func() {
 		encryptionSecret := &v1.EncryptionKeySecret{
 			Key: encryptionValue,
 		}
-		kubeSecret := &kubev1.Secret{
+		kubeSecret := &corev1.Secret{
 			Type: EncryptionKeySecretType,
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",

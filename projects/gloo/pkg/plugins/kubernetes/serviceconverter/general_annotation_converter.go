@@ -6,12 +6,12 @@ import (
 	"reflect"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/imdario/mergo"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"google.golang.org/protobuf/proto"
-	kubev1 "k8s.io/api/core/v1"
 )
 
 const GlooAnnotationPrefix = "gloo.solo.io/upstream_config"
@@ -19,7 +19,7 @@ const DeepMergeAnnotationPrefix = "gloo.solo.io/upstream_config.deep_merge"
 
 type GeneralServiceConverter struct{}
 
-func (s *GeneralServiceConverter) ConvertService(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
+func (s *GeneralServiceConverter) ConvertService(ctx context.Context, svc *corev1.Service, port corev1.ServicePort, us *v1.Upstream) error {
 	// Global upstream configuration settings
 	if globalAnnotations := settingsutil.MaybeFromContext(ctx).GetUpstreamOptions().GetGlobalAnnotations(); globalAnnotations != nil {
 		if err := applyAnnotations(globalAnnotations, us); err != nil {
