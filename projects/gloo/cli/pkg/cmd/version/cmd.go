@@ -58,7 +58,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printVersion(NewKube(opts.Metadata.GetNamespace(), ""), os.Stdout, opts)
+			return printVersion(NewKube(opts.Metadata.GetNamespace(), opts.Top.KubeContext), os.Stdout, opts)
 		},
 	}
 
