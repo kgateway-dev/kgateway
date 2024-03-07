@@ -65,8 +65,12 @@ func K8sGatewayControllerStartFunc() StartFunc {
 		}
 
 		return controller.Start(ctx, controller.StartConfig{
-			ControlPlane: opts.ControlPlane,
-			ProxyClient:  inMemoryProxyClient,
+			ControlPlane:              opts.ControlPlane,
+			Settings:                  opts.Settings,
+			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
+			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
+
+			ProxyClient: inMemoryProxyClient,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

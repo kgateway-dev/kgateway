@@ -3,9 +3,13 @@ package controller
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
@@ -36,7 +40,15 @@ var (
 type StartConfig struct {
 	Dev          bool
 	ControlPlane bootstrap.ControlPlane
-	ProxyClient  v1.ProxyClient
+	Settings     *v1.Settings
+
+	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
+
+	// GlooPluginRegistryFactory is the factory function to produce a PluginRegistry
+	// The plugins in this registry are used during the conversion of a Proxy resource into an xDS Snapshot
+	GlooPluginRegistryFactory plugins.PluginRegistryFactory
+
+	ProxyClient v1.ProxyClient
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -68,7 +80,9 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	glooTranslator := newGlooTranslator(ctx)
+	glooTranslator := translator.NewDefaultTranslator(
+		cfg.Settings,
+		cfg.GlooPluginRegistryFactory(ctx))
 
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
@@ -79,9 +93,9 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.ControlPlane.SnapshotCache,
 		false,
 		inputChannels,
-		mgr.GetClient(),
-		mgr.GetScheme(),
+		mgr,
 		cfg.ProxyClient,
+		cfg.ExtensionsFactory,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")

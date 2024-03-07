@@ -7,7 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/constants"
 
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
@@ -150,6 +154,7 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
 				"port": d.inputs.Port,
 			},
+			"image": getDeployerImageValues(),
 		},
 	}
 	if d.inputs.Dev {
@@ -308,4 +313,27 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+func getDeployerImageValues() map[string]any {
+	image := os.Getenv(constants.GlooGatewayDeployerImage)
+	defaultImageValues := map[string]any{
+		// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
+		"tag": "",
+	}
+
+	if image == "" {
+		// If the env is not defined, return the default
+		return defaultImageValues
+	}
+
+	imageParts := strings.Split(image, ":")
+	if len(imageParts) != 2 {
+		// If the user provided an invalid override, fallback to the default
+		return defaultImageValues
+	}
+	return map[string]any{
+		"repository": imageParts[0],
+		"tag":        imageParts[1],
+	}
 }
