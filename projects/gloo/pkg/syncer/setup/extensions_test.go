@@ -18,14 +18,14 @@ var _ = Describe("Extensions", func() {
 			Expect(extensions.Validate()).To(expectedError)
 		},
 		Entry("missing K8sGatewayExtensions", Extensions{
-			K8sGatewayExtensions: nil,
+			K8sGatewayExtensionsFactory: nil,
 		}, MatchError(ErrNilExtension("K8sGatewayExtension"))),
 		Entry("missing PluginRegistryFactory", Extensions{
-			K8sGatewayExtensions:  extensions.NewManager,
-			PluginRegistryFactory: nil,
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
+			PluginRegistryFactory:       nil,
 		}, MatchError(ErrNilExtension("PluginRegistryFactory"))),
 		Entry("missing ApiEmitterChannel", Extensions{
-			K8sGatewayExtensions: extensions.NewManager,
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 				// non-nil function
 				return nil
@@ -33,7 +33,7 @@ var _ = Describe("Extensions", func() {
 			ApiEmitterChannel: nil,
 		}, MatchError(ErrNilExtension("ApiEmitterChannel"))),
 		Entry("missing ApiEmitterChannel", Extensions{
-			K8sGatewayExtensions: extensions.NewManager,
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 				// non-nil function
 				return nil
@@ -42,7 +42,7 @@ var _ = Describe("Extensions", func() {
 			SyncerExtensions:  nil,
 		}, MatchError(ErrNilExtension("SyncerExtensions"))),
 		Entry("missing nothing", Extensions{
-			K8sGatewayExtensions: extensions.NewManager,
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 				// non-nil function
 				return nil

@@ -45,8 +45,8 @@ func ExecuteAsynchronousStartFuncs(
 func K8sGatewayControllerStartFunc() StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		return controller.Start(ctx, controller.StartConfig{
-			ControlPlane:            opts.ControlPlane,
-			ExtensionManagerFactory: extensions.K8sGatewayExtensions,
+			ControlPlane:      opts.ControlPlane,
+			ExtensionsFactory: extensions.K8sGatewayExtensionsFactory,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

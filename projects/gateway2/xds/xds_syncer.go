@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
 
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
@@ -80,9 +81,9 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs          *XdsInputChannels
-	mgr             manager.Manager
-	k8sGwExtensions extensions.K8sGatewayExtensionsFactory
+	inputs                 *XdsInputChannels
+	mgr                    manager.Manager
+	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
 }
 
 type XdsInputChannels struct {
@@ -119,17 +120,17 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	k8sGwExtensions extensions.K8sGatewayExtensionsFactory,
+	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
-		controllerName:       controllerName,
-		translator:           translator,
-		sanitizer:            sanitizer,
-		xdsCache:             xdsCache,
-		xdsGarbageCollection: xdsGarbageCollection,
-		inputs:               inputs,
-		mgr:                  mgr,
-		k8sGwExtensions:      k8sGwExtensions,
+		controllerName:         controllerName,
+		translator:             translator,
+		sanitizer:              sanitizer,
+		xdsCache:               xdsCache,
+		xdsGarbageCollection:   xdsGarbageCollection,
+		inputs:                 inputs,
+		mgr:                    mgr,
+		k8sGwExtensionsFactory: k8sGwExtensionsFactory,
 	}
 }
 
@@ -153,10 +154,10 @@ func (s *XdsSyncer) Start(
 			return
 		}
 
-		extensionManager := s.k8sGwExtensions(s.mgr)
+		k8sGatewayExtensions := s.k8sGwExtensionsFactory(s.mgr)
 
 		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
-		pluginRegistry := extensionManager.CreatePluginRegistry(ctx)
+		pluginRegistry := k8sGatewayExtensions.CreatePluginRegistry(ctx)
 		gatewayTranslator := gloot.NewTranslator(
 			gatewayQueries, pluginRegistry)
 

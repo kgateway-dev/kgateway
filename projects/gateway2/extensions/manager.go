@@ -2,6 +2,7 @@ package extensions
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
 
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -16,7 +17,7 @@ type K8sGatewayExtensions interface {
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
-type K8sGatewayExtensionsFactory func(k8sGatewayExtensions controllerruntime.Manager) K8sGatewayExtensions
+type K8sGatewayExtensionsFactory func(mgr controllerruntime.Manager) K8sGatewayExtensions
 
 // NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
 func NewK8sGatewayExtensions(mgr controllerruntime.Manager) K8sGatewayExtensions {
@@ -30,7 +31,7 @@ type k8sGatewayExtensions struct {
 }
 
 // CreatePluginRegistry returns the PluginRegistry
-func (e *k8sGatewayExtensions) CreatePluginRegistry() registry.PluginRegistry {
+func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
 	plugins := registry.BuildPlugins(query.NewData(
 		e.mgr.GetClient(),
 		e.mgr.GetScheme(),

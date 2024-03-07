@@ -34,9 +34,9 @@ var (
 )
 
 type StartConfig struct {
-	Dev                     bool
-	ControlPlane            bootstrap.ControlPlane
-	ExtensionManagerFactory extensions.ManagerFactory
+	Dev               bool
+	ControlPlane      bootstrap.ControlPlane
+	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -79,7 +79,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		false,
 		inputChannels,
 		mgr,
-		cfg.ExtensionManagerFactory,
+		cfg.ExtensionsFactory,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")

@@ -31,15 +31,15 @@ type Extensions struct {
 	// ApiEmitterChannel is a channel that forces the API Emitter to emit a new API Snapshot
 	ApiEmitterChannel chan struct{}
 
-	// K8sGatewayExtensions is the factory function which will return an extensions.K8sGatewayExtensions
+	// K8sGatewayExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that the K8s Gateway integration requires
-	K8sGatewayExtensions extensions.K8sGatewayExtensions
+	K8sGatewayExtensionsFactory extensions.K8sGatewayExtensionsFactory
 }
 
 // Validate returns an error if the Extensions are invalid, nil otherwise
 func (e Extensions) Validate() error {
-	if e.K8sGatewayExtensions == nil {
-		return ErrNilExtension("K8sGatewayExtension")
+	if e.K8sGatewayExtensionsFactory == nil {
+		return ErrNilExtension("K8sGatewayExtensionsFactory")
 	}
 
 	if e.PluginRegistryFactory == nil {
