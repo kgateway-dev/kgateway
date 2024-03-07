@@ -274,7 +274,7 @@ Extracted values can be used in two ways:
 
 Starting with Gloo Edge 1.17, extractors support multiple different modes of operation. These modes enable more powerful and flexible extraction capabilities. You can specify the mode of operation for an extractor using the `mode` field. The supported modes are:
  - `Extract` (default): Extracts the value of the specified capturing group from the source. This is the standard behavior of extractors prior to this version.
- - `Single Replace`: Replaces the value of the specified capturing group with the text specified in `replacement_text`.
+ - `Single Replace`: Replaces the value of the specified `subgroup`-th capturing group with the text specified in `replacement_text`.
  - `Replace All`: Replaces all occurrences of the pattern specified in the `regex` field within the source with the text specified in `replacement_text`.
 
 {{% notice warning %}}
@@ -285,21 +285,17 @@ The semantics of the `regex` field vary by mode and must be carefully considered
  - `Single Replace`: The `regex` must match the entire source for replacement to occur. The `subgroup` specifies which part of the match to replace.
  - `Replace All`: The `regex` can match any part of the source. All matches are replaced, and configuration which specifies a `subgroup` will be rejected.
 
-###### Extractor Configuration Validation
+##### Extractor Configuration Validation
 
 To ensure correct configuration, Gloo Edge performs validation based on the extractor's mode:
  - For **Extract** mode, the `replacement_text` must not be set. If set, the configuration will be rejected.
  - For **Single Replace** and **Replace All** modes, the `replacement_text` must be set. If not set, the configuration will be rejected.
- - For **Replace All** mode, the subgroup must not be set, as it is not used. If set, the configuration will be rejected
+ - For **Replace All** mode, the `subgroup` must not be set, as it is not used. If set, the configuration will be rejected.  
 
-###### Extractor Examples
+##### Extractor Example - Single Replace Mode
 
-**Single Replace Mode**
-
-Define an extractor that replaces the first occurence of the item `banana` with `orange` in a list of fruits. The exact composition of the list is unkown, but we know the format is:
-
-```md
-Fruits: [apple, pear, cherry, etc.]
+Define an extractor that replaces the first occurrence of the item `banana` with `orange` in a list of fruits. The exact composition of the list is unknown, but the format is the same, such as a comma-separated list.
+Fruits: [apple, pear, banana, pineapple, etc.] 
 ```
 
 ```yaml
@@ -316,14 +312,14 @@ In this configuration:
  - `body: {}` indicates that the request/response body will be used as input to the extractor.
  - `regex: '.*(banana).*'` is designed to match the entire source, and capture the word `banana` in the first capturing group.
  - `mode: SINGLE_REPLACE` specifies the operation mode, indicating a single replace operation.
- - `replacement_text: 'orange'` replaces the content in the second capturing group with the text orange.
- - `subgroup: 2` specifies that the replacement should only apply to the second captured group, which is banana in this case.
+ - `replacement_text: 'orange'` replaces the content in the first capturing group with the text `orange`.
+ - `subgroup: 1` specifies that the replacement should only apply to the second captured group, which is banana in this case.
 
 In this case, if the extractor processes a body containing the text `Fruits: [apple, pear, banana, pineapple]`
 
 The result will be `Fruits: [apple, pear, orange, pineapple]`
 
-**Replace All Mode**
+##### Extractor Example - Replace All Mode  
 
 Define an extractor that replaces all occurrences of the pattern `foo` with the text `bar` in the source.
 ```yaml
