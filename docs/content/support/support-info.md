@@ -59,7 +59,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
    - High-level diagram of the interactions from the perspective of the client request
    - The request protocol that is handled by the application(s) in question, such as HTTP / TCP / gRPC 
    - If the issue is related to authentication or authorization, details of the auth configuration
-2. Describe the impact of the issue. For example, the issue might be blocking an update or a demo, or causing the loss of data or an entire system.
+2. Describe the impact of the issue. For example, the issue might block an update or a demo, or cause the loss of data or an entire system.
 3. Export the relevant configuration files that are related to the issue.
   {{< tabs >}}
   {{% tab name="Gloo Edge Resources"%}}
