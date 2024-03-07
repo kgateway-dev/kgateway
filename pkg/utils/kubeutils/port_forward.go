@@ -34,7 +34,7 @@ type PortForwarder interface {
 	// Address returns the local forwarded address. Only valid while the forwarder is running.
 	Address() string
 
-	// Close this forwarder and release an resources.
+	// Close this forwarder and release any resources.
 	Close()
 
 	// ErrChan returns a channel that returns an error when one is encountered. While Start() may return an initial error,
