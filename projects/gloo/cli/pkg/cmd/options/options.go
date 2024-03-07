@@ -108,6 +108,7 @@ type GetProxy struct {
 	Namespace         string
 	K8sGatewaySource  bool
 	EdgeGatewaySource bool
+	All               bool
 }
 
 type Delete struct {
