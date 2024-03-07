@@ -469,7 +469,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
 	}
 	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.GlooPluginRegistryFactory must be defined, found nil")
+		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
 	}
 	if extensions.SyncerExtensions == nil {
 		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
