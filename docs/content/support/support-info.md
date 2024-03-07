@@ -139,7 +139,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
    glooctl proxy served-config -n <controlplaneNamespace> > served-config.yaml
    ```
 2. Get the configuration that is served in the `gateway-proxy` Envoy pod(s). 
-   <br>For more information, see [Dumping Envoy configuration]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#dumping-envoy-configuration" >}}) section for more details.
+   <br>For more information, see [Dumping Envoy configuration]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#dumping-envoy-configuration" >}}).
    ```shell
    kubectl port-forward deploy/gateway-proxy -n <proxyNamespace> 19000:19000 > /dev/null 2>&1 &
    PID=$!
