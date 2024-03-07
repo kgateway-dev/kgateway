@@ -150,7 +150,7 @@ check-spelling:
 # The analyze target runs a suite of static analysis tools against the codebase.
 # The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_OPTIONS variable.
 .PHONY: analyze
-ANALYZE_OPTIONS ?= --fast --timeout=5m --tests=true --verbose
+ANALYZE_OPTIONS ?= --fast --verbose
 analyze:
 	$(DEPSGOBIN)/golangci-lint run $(ANALYZE_OPTIONS) ./...
 
