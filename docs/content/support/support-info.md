@@ -146,7 +146,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
    curl -s localhost:19000/config_dump\?include_eds > gateway-config.json
    kill -9 $PID
    ```
-3. Get the access log(s) for failed request from the `gateway-proxy` pod(s). If Access logging is not enabled, refer to [this guide]({{< versioned_link_path fromRoot="/guides/security/access_logging" >}}) to enable it.
+3. Get the access log(s) for failed request from the `gateway-proxy` pod(s). If access logging is not enabled, refer to [this guide]({{< versioned_link_path fromRoot="/guides/security/access_logging" >}}) to enable it.
 4. If possible, collect the logs from the `gateway-proxy` Envoy pod(s) in `debug` log level for the failed request.
    {{% notice tip %}}
    Setting the log level to `debug` for all components can get very noisy. Instead, you can change the log level for specific components only. For more information, see [Changing logging levels and more]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#changing-logging-levels-and-more" >}}).
