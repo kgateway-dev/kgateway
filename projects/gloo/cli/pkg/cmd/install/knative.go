@@ -12,29 +12,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
-
 	"github.com/avast/retry-go"
-
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/chartutil"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/yaml"
+
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 )
 
 const (
@@ -217,7 +214,7 @@ func checkKnativeInstallation(ctx context.Context, kubeclient ...kubernetes.Inte
 		kubecontext := contextoptions.KubecontextFrom(ctx)
 		kc = helpers.MustKubeClientWithKubecontext(kubecontext)
 	}
-	namespaces, err := kc.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
+	namespaces, err := kc.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return false, nil, err
 	}

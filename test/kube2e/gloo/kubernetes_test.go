@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -14,11 +15,9 @@ import (
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	kubev1 "k8s.io/api/core/v1"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
@@ -52,7 +51,7 @@ var _ = Describe("Kubernetes Plugin", func() {
 		kubeCoreCache, err = kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+		_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: svcNamespace,
 			},
@@ -62,14 +61,14 @@ var _ = Describe("Kubernetes Plugin", func() {
 		// create a service
 		// create 2 pods for that service
 		// one with extra labels, one without
-		svc, err := kubeClient.CoreV1().Services(svcNamespace).Create(ctx, &kubev1.Service{
+		svc, err := kubeClient.CoreV1().Services(svcNamespace).Create(ctx, &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: svcNamespace,
 				Name:      svcName,
 			},
-			Spec: kubev1.ServiceSpec{
+			Spec: corev1.ServiceSpec{
 				Selector: baseLabels,
-				Ports: []kubev1.ServicePort{
+				Ports: []corev1.ServicePort{
 					{
 						Name: "bar",
 						Port: 8080,
@@ -82,14 +81,14 @@ var _ = Describe("Kubernetes Plugin", func() {
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(ctx, &kubev1.Pod{
+		_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(ctx, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod-for-" + svc.Name + "-basic",
 				Namespace: svcNamespace,
 				Labels:    baseLabels,
 			},
-			Spec: kubev1.PodSpec{
-				Containers: []kubev1.Container{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:  "nginx",
 						Image: "nginx:latest",
@@ -98,14 +97,14 @@ var _ = Describe("Kubernetes Plugin", func() {
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(ctx, &kubev1.Pod{
+		_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(ctx, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod-for-" + svc.Name + "-extra",
 				Namespace: svcNamespace,
 				Labels:    extendedLabels,
 			},
-			Spec: kubev1.PodSpec{
-				Containers: []kubev1.Container{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:  "nginx",
 						Image: "nginx:latest",
@@ -114,19 +113,19 @@ var _ = Describe("Kubernetes Plugin", func() {
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Update(ctx, &kubev1.Endpoints{
+		_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Update(ctx, &corev1.Endpoints{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      svc.Name,
 				Namespace: svcNamespace,
 			},
-			Subsets: []kubev1.EndpointSubset{{
-				Addresses: []kubev1.EndpointAddress{
+			Subsets: []corev1.EndpointSubset{{
+				Addresses: []corev1.EndpointAddress{
 					{IP: "10.4.0.60"},
 					{IP: "10.4.0.61"},
 				},
-				Ports: []kubev1.EndpointPort{
-					{Name: "foo", Port: 9090, Protocol: kubev1.ProtocolTCP},
-					{Name: "bar", Port: 8080, Protocol: kubev1.ProtocolTCP},
+				Ports: []corev1.EndpointPort{
+					{Name: "foo", Port: 9090, Protocol: corev1.ProtocolTCP},
+					{Name: "bar", Port: 8080, Protocol: corev1.ProtocolTCP},
 				},
 			}},
 		}, metav1.UpdateOptions{})
@@ -140,7 +139,7 @@ var _ = Describe("Kubernetes Plugin", func() {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(pods.Items).To(HaveLen(2), "We only expect 2 pods with these labels")
 			for _, pod := range pods.Items {
-				g.Expect(pod.Status.Phase).To(Equal(kubev1.PodRunning), "pod should be running")
+				g.Expect(pod.Status.Phase).To(Equal(corev1.PodRunning), "pod should be running")
 			}
 		}, 60*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
 

@@ -4,26 +4,26 @@ import (
 	"context"
 	"time"
 
-	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-
-	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/knative/api/external/knative"
-	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/watch"
+	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
+	v1alpha13 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
-	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
-	v1alpha13 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/knative/api/external/knative"
+	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
+	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 )
 
 var _ = Describe("TranslatorSyncer", func() {
@@ -42,7 +42,7 @@ var _ = Describe("TranslatorSyncer", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		proxyClient, _ = v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
-		ingress = &v1alpha1.Ingress{Ingress: knative.Ingress{ObjectMeta: v12.ObjectMeta{Generation: 1},
+		ingress = &v1alpha1.Ingress{Ingress: knative.Ingress{ObjectMeta: metav1.ObjectMeta{Generation: 1},
 			Spec: knativev1alpha1.IngressSpec{
 				Rules: []knativev1alpha1.IngressRule{{
 					Hosts: []string{"*"},
@@ -131,7 +131,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// _ formally used as 'ci'
-		ci, err := knativeClient.Ingresses(ingress.Namespace).Get(ctx, ingress.Name, v12.GetOptions{})
+		ci, err := knativeClient.Ingresses(ingress.Namespace).Get(ctx, ingress.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(ci.IsReady()).To(BeTrue())
@@ -149,13 +149,13 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		externalIngress := &v1alpha1.Ingress{
 			Ingress: knative.Ingress{
-				ObjectMeta: v12.ObjectMeta{Generation: 1},
+				ObjectMeta: metav1.ObjectMeta{Generation: 1},
 				Spec:       knativev1alpha1.IngressSpec{},
 			},
 		}
 		internalIngress := &v1alpha1.Ingress{
 			Ingress: knative.Ingress{
-				ObjectMeta: v12.ObjectMeta{Generation: 1},
+				ObjectMeta: metav1.ObjectMeta{Generation: 1},
 				Spec: knativev1alpha1.IngressSpec{
 					Rules: []knativev1alpha1.IngressRule{
 						{Visibility: knativev1alpha1.IngressVisibilityClusterLocal},
@@ -190,39 +190,39 @@ func (c *mockCiClient) Ingresses(namespace string) v1alpha13.IngressInterface {
 	return c
 }
 
-func (c *mockCiClient) UpdateStatus(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.UpdateOptions) (*knativev1alpha1.Ingress, error) {
+func (c *mockCiClient) UpdateStatus(ctx context.Context, ci *knativev1alpha1.Ingress, opts metav1.UpdateOptions) (*knativev1alpha1.Ingress, error) {
 	c.ci.Status = ci.Status
 	return ci, nil
 }
 
-func (*mockCiClient) Create(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.CreateOptions) (*knativev1alpha1.Ingress, error) {
+func (*mockCiClient) Create(ctx context.Context, ci *knativev1alpha1.Ingress, opts metav1.CreateOptions) (*knativev1alpha1.Ingress, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Update(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.UpdateOptions) (*knativev1alpha1.Ingress, error) {
+func (*mockCiClient) Update(ctx context.Context, ci *knativev1alpha1.Ingress, opts metav1.UpdateOptions) (*knativev1alpha1.Ingress, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Delete(ctx context.Context, name string, options v12.DeleteOptions) error {
+func (*mockCiClient) Delete(ctx context.Context, name string, options metav1.DeleteOptions) error {
 	panic("implement me")
 }
 
-func (*mockCiClient) DeleteCollection(ctx context.Context, options v12.DeleteOptions, listOptions v12.ListOptions) error {
+func (*mockCiClient) DeleteCollection(ctx context.Context, options metav1.DeleteOptions, listOptions metav1.ListOptions) error {
 	panic("implement me")
 }
 
-func (c *mockCiClient) Get(ctx context.Context, name string, options v12.GetOptions) (*knativev1alpha1.Ingress, error) {
+func (c *mockCiClient) Get(ctx context.Context, name string, options metav1.GetOptions) (*knativev1alpha1.Ingress, error) {
 	return c.ci, nil
 }
 
-func (*mockCiClient) List(ctx context.Context, opts v12.ListOptions) (*knativev1alpha1.IngressList, error) {
+func (*mockCiClient) List(ctx context.Context, opts metav1.ListOptions) (*knativev1alpha1.IngressList, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Watch(ctx context.Context, opts v12.ListOptions) (watch.Interface, error) {
+func (*mockCiClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v12.PatchOptions, subresources ...string) (result *knativev1alpha1.Ingress, err error) {
+func (*mockCiClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *knativev1alpha1.Ingress, err error) {
 	panic("implement me")
 }

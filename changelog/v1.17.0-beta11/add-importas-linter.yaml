@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Add imports linter to enforce common package (appsv1, corev1, metav1, batchv1) import alias' for k8s.io dependencies

@@ -1,7 +1,7 @@
 package generate
 
 import (
-	appsv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type HelmConfig struct {
@@ -78,7 +78,7 @@ type PodSpec struct {
 	PriorityClassName *string                `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
 	NodeName          *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
 	NodeSelector      map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations       []*appsv1.Toleration   `json:"tolerations,omitempty"`
+	Tolerations       []*corev1.Toleration   `json:"tolerations,omitempty"`
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
@@ -98,7 +98,7 @@ type JobSpec struct {
 
 type DeploymentSpecSansResources struct {
 	Replicas  *int             `json:"replicas,omitempty" desc:"number of instances to deploy"`
-	CustomEnv []*appsv1.EnvVar `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
+	CustomEnv []*corev1.EnvVar `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
 	*PodSpec
 }
 
@@ -298,12 +298,12 @@ type SecurityOpts struct {
 	MergePolicy *string `json:"mergePolicy,omitempty" desc:"How to combine the defined security policy with the default security policy. Valid values are \"\", \"no-merge\", and \"helm-merge\". If defined as an empty string or \"no-merge\", use the defined security context as is.  If \"helm-merge\", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is \"\"."`
 }
 type PodSecurityContext struct {
-	*appsv1.PodSecurityContext
+	*corev1.PodSecurityContext
 	*SecurityOpts
 }
 
 type SecurityContext struct {
-	*appsv1.SecurityContext
+	*corev1.SecurityContext
 	*SecurityOpts
 }
 
@@ -572,7 +572,7 @@ type GatewayProxyPodTemplate struct {
 	ExtraAnnotations              map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod."`
 	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on."`
 	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes."`
-	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitempty"`
+	Tolerations                   []*corev1.Toleration  `json:"tolerations,omitempty"`
 	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
 	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`
@@ -583,8 +583,8 @@ type GatewayProxyPodTemplate struct {
 	FsGroup                       *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied."`
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#istio-lifecycle) for more info."`
-	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
-	CustomLivenessProbe           *appsv1.Probe         `json:"customLivenessProbe,omitempty"`
+	CustomReadinessProbe          *corev1.Probe         `json:"customReadinessProbe,omitempty"`
+	CustomLivenessProbe           *corev1.Probe         `json:"customLivenessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
 	ExtraContainers               []interface{}         `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
 	ExtraInitContainers           []interface{}         `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`

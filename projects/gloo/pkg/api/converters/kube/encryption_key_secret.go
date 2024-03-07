@@ -8,12 +8,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
 	EncryptionDataKey                         = "key"
-	EncryptionKeySecretType kubev1.SecretType = "gloo.solo.io.EncryptionKeySecret"
+	EncryptionKeySecretType corev1.SecretType = "gloo.solo.io.EncryptionKeySecret"
 )
 
 // EncryptionSecretConverter processes secrets with type "gloo.solo.io.EncryptionKeySecret"
@@ -21,7 +21,7 @@ type EncryptionSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &EncryptionSecretConverter{}
 
-func (t *EncryptionSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *EncryptionSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	if secret == nil {
 		contextutils.LoggerFrom(ctx).Warn("unexpected nil secret")
 		return nil, nil
@@ -44,7 +44,7 @@ func (t *EncryptionSecretConverter) FromKubeSecret(ctx context.Context, rc *kube
 	return nil, nil
 }
 
-func (t *EncryptionSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *EncryptionSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
@@ -65,7 +65,7 @@ func (t *EncryptionSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecr
 		}
 	}
 
-	return &kubev1.Secret{
+	return &corev1.Secret{
 		ObjectMeta: objectMeta,
 		Type:       EncryptionKeySecretType,
 		Data: map[string][]byte{
