@@ -70,7 +70,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
       - `RouteTable`
       - `Upstream`
 
-  - Use the following script to dump all the Gloo Edge related resources into a file. Attach the `gloo-edge-configuration.yaml` file to your support request. 
+  - Use the following script to dump all Gloo Edge custom resources into a file. Attach the `gloo-edge-configuration.yaml` file to your support request. 
     ```shell
     for n in $(kubectl get crds | grep solo.io | awk '{print $1}'); do kubectl get $n --all-namespaces -o yaml >> gloo-edge-configuration.yaml; echo "---" >> gloo-edge-configuration.yaml; done
     ```
