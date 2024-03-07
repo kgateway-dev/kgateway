@@ -59,9 +59,8 @@ func NewPortForwarder(options ...PortForwardOption) PortForwarder {
 }
 
 type forwarder struct {
-	stopCh  chan struct{}
-	errCh   chan error
-	readyCh chan struct{}
+	stopCh chan struct{}
+	errCh  chan error
 
 	// properties represents the set of user-defined values to configure the forwarder
 	properties *properties
@@ -117,7 +116,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 			// At this point, either the stopCh has been closed, or port forwarder connection is broken.
 			// the port forwarder should have already been ready before.
 			// No need to notify the ready channel anymore when forwarding again.
-			f.readyCh = nil
+			readyCh = nil
 		}
 	}()
 
@@ -126,7 +125,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 	select {
 	case err := <-f.errCh:
 		return fmt.Errorf("failure running port forward process: %v", err)
-	case <-f.readyCh:
+	case <-readyCh:
 		p, err := fw.GetPorts()
 		if err != nil {
 			return fmt.Errorf("failed to get ports: %v", err)
