@@ -128,6 +128,7 @@ func (ml *mergedListeners) appendHttpListener(
 		port:             finalPort,
 		httpFilterChain:  fc,
 		listenerReporter: reporter,
+		listener:         listener,
 	})
 
 }
@@ -187,6 +188,8 @@ type mergedListener struct {
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
 	listenerReporter  reports.ListenerReporter
+	listener          gwv1.Listener
+
 	// TODO(policy via http listener options)
 }
 
@@ -206,6 +209,7 @@ func (ml *mergedListener) translateListener(
 			ctx,
 			ml.name,
 			ml.gatewayNamespace,
+			ml.listener,
 			pluginRegistry,
 			reporter,
 		)
@@ -226,6 +230,7 @@ func (ml *mergedListener) translateListener(
 			pluginRegistry,
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
+			ml.listener,
 			queries,
 			reporter,
 			ml.listenerReporter,
@@ -282,6 +287,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
 	gatewayNamespace string,
+	listener gwv1.Listener,
 	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
@@ -292,6 +298,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 			ctx,
 			routesByHost,
 			parent.routesWithHosts,
+			listener,
 			pluginRegistry,
 			httpFilterChain.queries,
 			reporter,
@@ -335,6 +342,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	pluginRegistry registry.PluginRegistry,
 	parentName string,
 	gatewayNamespace string,
+	listener gwv1.Listener,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	listenerReporter reports.ListenerReporter,
@@ -345,6 +353,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		ctx,
 		routesByHost,
 		httpsFilterChain.routesWithHosts,
+		listener,
 		pluginRegistry,
 		httpsFilterChain.queries,
 		reporter,
@@ -405,6 +414,7 @@ func buildRoutesPerHost(
 	ctx context.Context,
 	routesByHost map[string]routeutils.SortableRoutes,
 	routes []*query.ListenerRouteResult,
+	gwListener gwv1.Listener,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
@@ -415,6 +425,7 @@ func buildRoutesPerHost(
 			ctx,
 			pluginRegistry,
 			queries,
+			gwListener,
 			routeWithHosts.Route,
 			parentRefReporter,
 		)

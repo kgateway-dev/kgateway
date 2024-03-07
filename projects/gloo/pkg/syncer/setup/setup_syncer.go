@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -435,16 +437,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	return err
 }
 
-type Extensions struct {
-	PluginRegistryFactory plugins.PluginRegistryFactory
-	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
-	XdsCallbacks          xdsserver.Callbacks
-	ApiEmitterChannel     chan struct{}
-}
-
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
+		K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
+		PluginRegistryFactory:       registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -464,15 +460,8 @@ func RunGloo(opts bootstrap.Opts) error {
 //
 // This function is called directly by GlooEE
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
-	// Validate Extensions
-	if extensions.ApiEmitterChannel == nil {
-		return errors.Errorf("Extensions.ApiEmitterChannel must be defined, found nil")
-	}
-	if extensions.PluginRegistryFactory == nil {
-		return errors.Errorf("Extensions.PluginRegistryFactory must be defined, found nil")
-	}
-	if extensions.SyncerExtensions == nil {
-		return errors.Errorf("Extensions.SyncerExtensions must be defined, found nil")
+	if err := extensions.Validate(); err != nil {
+		return err
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
