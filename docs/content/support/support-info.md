@@ -32,7 +32,7 @@ helm get all <releaseName> --namespace <namespaceName> > gloo_edge_helm.yaml
 {{% /tab %}}
 
 {{% tab name="glooctl"%}}
-Share the complete command that you used to install Gloo Edge. The following command shows an example command that you might used. 
+Share the complete command that you used to install Gloo Edge. The following command shows an example command that you might have used. 
 ```shell
 glooctl install gateway enterprise --license-key <license> --values foo,bar
 ```
