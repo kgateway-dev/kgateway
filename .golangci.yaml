@@ -34,6 +34,8 @@ linters-settings:
         alias: corev1
       - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
         alias: metav1
+      - pkg: k8s.io/api/batch/v1
+        alias: batchv1
   nakedret:
     # The team consensus is that naked returns hinder the readability of the code.
     # However, named return values can still be useful as documentation for certain scenarios.
