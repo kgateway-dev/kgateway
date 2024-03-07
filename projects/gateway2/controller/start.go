@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -41,6 +43,8 @@ type StartConfig struct {
 	ControlPlane bootstrap.ControlPlane
 
 	Settings *v1.Settings
+
+	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
 
 	// GlooPluginRegistryFactory is the factory function to produce a PluginRegistry
 	// The plugins in this registry are used during the conversion of a Proxy resource into an xDS Snapshot
@@ -89,8 +93,8 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.ControlPlane.SnapshotCache,
 		false,
 		inputChannels,
-		mgr.GetClient(),
-		mgr.GetScheme(),
+		mgr,
+		cfg.ExtensionsFactory,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")

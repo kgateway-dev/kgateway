@@ -47,6 +47,7 @@ func K8sGatewayControllerStartFunc() StartFunc {
 		return controller.Start(ctx, controller.StartConfig{
 			ControlPlane:              opts.ControlPlane,
 			Settings:                  opts.Settings,
+			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
 
 			// Useful for development purposes

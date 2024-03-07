@@ -9,10 +9,12 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// Empty type for base plugins, currently no base methods.
+// Plugin is an empty type for base plugins, currently no base methods.
 type Plugin interface{}
 
 type RouteContext struct {
+	// top-level gw Listener
+	Listener *gwv1.Listener
 	// top-level HTTPRoute
 	Route *gwv1.HTTPRoute
 	// specific Rule of the HTTPRoute being processed
@@ -24,10 +26,28 @@ type RouteContext struct {
 }
 
 type RoutePlugin interface {
-	// called for each Match in a given Rule
+	// ApplyRoutePlugin is called for each Match in a given Rule
 	ApplyRoutePlugin(
 		ctx context.Context,
 		routeCtx *RouteContext,
 		outputRoute *v1.Route,
+	) error
+}
+
+type PostTranslationContext struct {
+	// TranslatedGateways is the list of Gateways that were generated in a single translation run
+	TranslatedGateways []TranslatedGateway
+}
+
+type TranslatedGateway struct {
+	// Gateway is the input object that produced the Proxy
+	Gateway gwv1.Gateway
+}
+
+type PostTranslationPlugin interface {
+	// ApplyPostTranslationPlugin is executed once at the end of a translation run
+	ApplyPostTranslationPlugin(
+		ctx context.Context,
+		postTranslationContext *PostTranslationContext,
 	) error
 }
