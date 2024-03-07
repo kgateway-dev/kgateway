@@ -48,11 +48,6 @@ import (
 // old version of Gloo
 const upgradeStartingVersion = "1.12.0"
 
-// for testing upgrades from a gloo version before the gloo/gateway merge and
-// before https://github.com/solo-io/gloo/pull/6349 was fixed
-// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
-const versionBeforeGlooGatewayMerge = "1.11.0"
-
 const namespace = defaults.GlooSystem
 
 var glooDeploymentsToCheck []string
@@ -389,18 +384,6 @@ var _ = Describe("Kube2e: helm", func() {
 				Expect(gwSslTimestampBefore).To(Equal(gwSslTimestampAfter))
 			}
 
-			Context("starting from before the gloo/gateway merge, with failurePolicy=Ignore", func() {
-				BeforeEach(func() {
-					fromRelease = versionBeforeGlooGatewayMerge
-					strictValidation = false
-				})
-				It("can upgrade to current release, with failurePolicy=Ignore", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Ignore)
-				})
-				It("can upgrade to current release, with failurePolicy=Fail", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Fail)
-				})
-			})
 			Context("starting from helm hook release, with failurePolicy=Fail", func() {
 				BeforeEach(func() {
 					// The original fix for installing with failurePolicy=Fail (https://github.com/solo-io/gloo/issues/6213)
