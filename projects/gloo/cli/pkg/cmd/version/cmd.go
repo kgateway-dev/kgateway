@@ -113,7 +113,7 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		}
 		fmt.Fprintf(w, "%s", string(formattedVer))
 	case printers.YAML:
-		formattedVer, err := getFormattedYaml(wrappedVersions) // GetJson(vrs)
+		formattedVer, err := getFormattedYaml(wrappedVersions)
 		if err != nil {
 			return err
 		}
