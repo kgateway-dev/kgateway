@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -83,11 +84,13 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	proxyClient gloo_solo_io.ProxyClient
-
 	inputs                 *XdsInputChannels
 	mgr                    manager.Manager
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
+
+	// proxyClient is the client that writes Proxy resources into an in-memory cache
+	// This cache is utilized by the debug.ProxyEndpointServer
+	proxyClient gloo_solo_io.ProxyClient
 }
 
 type XdsInputChannels struct {
@@ -124,8 +127,8 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	proxyClient gloo_solo_io.ProxyClient,
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
+	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:         controllerName,
@@ -153,6 +156,8 @@ func (s *XdsSyncer) Start(
 		if !discoveryWarmed || !secretsWarmed {
 			return
 		}
+		ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
+
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {

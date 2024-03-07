@@ -42,12 +42,16 @@ type StartConfig struct {
 	ControlPlane bootstrap.ControlPlane
 	Settings     *v1.Settings
 
+	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
+	// This is responsible for producing the extension points that this controller requires
 	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
 
 	// GlooPluginRegistryFactory is the factory function to produce a PluginRegistry
 	// The plugins in this registry are used during the conversion of a Proxy resource into an xDS Snapshot
 	GlooPluginRegistryFactory plugins.PluginRegistryFactory
 
+	// ProxyClient is the client that writes Proxy resources into an in-memory cache
+	// This cache is utilized by the debug.ProxyEndpointServer
 	ProxyClient v1.ProxyClient
 }
 
@@ -94,8 +98,8 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		false,
 		inputChannels,
 		mgr,
-		cfg.ProxyClient,
 		cfg.ExtensionsFactory,
+		cfg.ProxyClient,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")
