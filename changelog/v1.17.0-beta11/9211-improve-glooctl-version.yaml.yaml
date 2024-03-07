@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/9211
-    resolvesIssue: true
-    description: Fixes and improvements to glooctl version command. Now also includes kubernetes server version information.
