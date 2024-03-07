@@ -40,8 +40,11 @@ type StartConfig struct {
 	Dev          bool
 	ControlPlane bootstrap.ControlPlane
 
-	Settings              *v1.Settings
-	PluginRegistryFactory plugins.PluginRegistryFactory
+	Settings *v1.Settings
+
+	// GlooPluginRegistryFactory is the factory function to produce a PluginRegistry
+	// The plugins in this registry are used during the conversion of a Proxy resource into an xDS Snapshot
+	GlooPluginRegistryFactory plugins.PluginRegistryFactory
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -75,7 +78,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	glooTranslator := translator.NewDefaultTranslator(
 		cfg.Settings,
-		cfg.PluginRegistryFactory(ctx))
+		cfg.GlooPluginRegistryFactory(ctx))
 
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()

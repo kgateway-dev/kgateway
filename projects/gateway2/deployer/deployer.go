@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
+
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 
@@ -314,18 +316,17 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 }
 
 func getDeployerImageValues() map[string]any {
-	image := os.Getenv("GG_EXPERIMENTAL_DEPLOYER_IMAGE")
+	image := os.Getenv(constants.GlooGatewayDeployerImage)
 	if image == "" {
-		// Fallback to the default values
 		return map[string]any{
-			"tag":        "",
-			"repository": "quay.io/solo-io/gloo-envoy-wrapper",
+			// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
+			"tag": "",
 		}
 	}
 
 	imageParts := strings.Split(image, ":")
 	return map[string]any{
-		"tag":        imageParts[1],
 		"repository": imageParts[0],
+		"tag":        imageParts[1],
 	}
 }
