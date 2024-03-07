@@ -13,3 +13,14 @@ func DeleteOneByValue(slice []string, value string) []string {
 	return slices.Delete(slice, index, index+1)
 
 }
+
+// AppendIfMissing returns a slice, with the provided value included
+// If the value already exists in the slice, it will not be duplicated
+func AppendIfMissing(slice []string, value string) []string {
+	for _, ele := range slice {
+		if ele == value {
+			return slice
+		}
+	}
+	return append(slice, value)
+}
