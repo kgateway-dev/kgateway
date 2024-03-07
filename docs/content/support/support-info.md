@@ -75,7 +75,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
     for n in $(kubectl get crds | grep solo.io | awk '{print $1}'); do kubectl get $n --all-namespaces -o yaml >> gloo-edge-configuration.yaml; echo "---" >> gloo-edge-configuration.yaml; done
     ```
   {{% /tab %}}
-  {{% tab name="Istio Resources"%}}
+  {{% tab name="Istio resources"%}}
   If you use Gloo Edge as a gateway to an Istio service mesh, provide details about how Istio is configured. You can use the following command to create an Istio bug report that you can attach to your support request. 
 
   ```shell
