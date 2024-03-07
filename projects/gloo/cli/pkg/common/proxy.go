@@ -13,7 +13,7 @@ import (
 
 	gloodebug "github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -154,7 +154,10 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 	); err != nil {
 		return nil, err
 	}
-	defer portForwarder.Close()
+	defer func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}()
 
 	var proxyEndpointResponse *debug.ProxyEndpointResponse
 	requestErr := retry.Do(func() error {

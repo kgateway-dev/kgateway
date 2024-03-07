@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"io"
 	"net"
@@ -213,7 +214,12 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 		portforward.WithWriters(outWriter, errWriter),
 	)
 
-	err = portForwarder.Start(localCtx)
+	err = portForwarder.Start(
+		localCtx,
+		retry.LastErrorOnly(true),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Attempts(5))
 	if err != nil {
 		return nil, err
 	}
