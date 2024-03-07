@@ -316,11 +316,14 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 func getDeployerImageValues() map[string]any {
 	image := os.Getenv("GG_EXPERIMENTAL_DEPLOYER_IMAGE")
 	if image == "" {
-		return nil
+		// Fallback to the default values
+		return map[string]any{
+			"tag":        "",
+			"repository": "quay.io/solo-io/gloo-envoy-wrapper",
+		}
 	}
 
 	imageParts := strings.Split(image, ":")
-
 	return map[string]any{
 		"tag":        imageParts[1],
 		"repository": imageParts[0],
