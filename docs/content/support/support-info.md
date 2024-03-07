@@ -62,7 +62,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
 2. Describe the impact of the issue. For example, the issue might block an update or a demo, or cause the loss of data or an entire system.
 3. Export the relevant configuration files that are related to the issue.
   {{< tabs >}}
-  {{% tab name="Gloo Edge Resources"%}}
+  {{% tab name="Gloo Edge resources"%}}
   - Typically, the Gloo Edge `Settings` object is useful to understand the configuration of Gloo Edge.
   - For traffic management issues, include the following list of Gloo Edge resources:
       - `Gateway`
