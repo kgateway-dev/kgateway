@@ -19,9 +19,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	kubev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -49,13 +48,13 @@ var _ = Describe("UdsConvert", func() {
 
 	Context("h2 upstream", func() {
 		It("should not normally create upstream with grpc service spec", func() {
-			svc := &kubev1.Service{
-				Spec: kubev1.ServiceSpec{},
+			svc := &corev1.Service{
+				Spec: corev1.ServiceSpec{},
 			}
 			svc.Name = "test"
 			svc.Namespace = "test-ns"
 
-			port := kubev1.ServicePort{
+			port := corev1.ServicePort{
 				Port: 123,
 			}
 			up := uc.CreateUpstream(context.TODO(), svc, port)
@@ -66,14 +65,14 @@ var _ = Describe("UdsConvert", func() {
 		It("should save discovery metadata to upstream", func() {
 			testLabels := make(map[string]string)
 			testLabels["foo"] = "bar"
-			svc := &kubev1.Service{
-				Spec: kubev1.ServiceSpec{},
+			svc := &corev1.Service{
+				Spec: corev1.ServiceSpec{},
 			}
 			svc.Labels = testLabels
 			svc.Name = "test"
 			svc.Namespace = "test-ns"
 
-			port := kubev1.ServicePort{
+			port := corev1.ServicePort{
 				Port: 123,
 			}
 
@@ -82,13 +81,13 @@ var _ = Describe("UdsConvert", func() {
 		})
 
 		DescribeTable("should create upstream with use_http2=true when port name starts with known prefix", func(portname string) {
-			svc := &kubev1.Service{
-				Spec: kubev1.ServiceSpec{},
+			svc := &corev1.Service{
+				Spec: corev1.ServiceSpec{},
 			}
 			svc.Name = "test"
 			svc.Namespace = "test-ns"
 
-			port := kubev1.ServicePort{
+			port := corev1.ServicePort{
 				Port: 123,
 				Name: portname,
 			}
@@ -107,8 +106,8 @@ var _ = Describe("UdsConvert", func() {
 			It("Should create upstream with use_http2=true when annotation exists", testSetUseHttp2Converter)
 
 			It("General annotation converter should override SetUseHttp2Converter", func() {
-				svc := &kubev1.Service{
-					Spec: kubev1.ServiceSpec{},
+				svc := &corev1.Service{
+					Spec: corev1.ServiceSpec{},
 				}
 				svc.Annotations = make(map[string]string)
 				svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
@@ -118,7 +117,7 @@ var _ = Describe("UdsConvert", func() {
 				svc.Name = "test"
 				svc.Namespace = "test-ns"
 
-				port := kubev1.ServicePort{
+				port := corev1.ServicePort{
 					Port: 123,
 				}
 				up := uc.CreateUpstream(context.TODO(), svc, port)
@@ -128,8 +127,8 @@ var _ = Describe("UdsConvert", func() {
 			Describe("Should create upstream with SSL Config when annotations exist", testSetSslConfig)
 
 			expectAnnotationsToProduceUpstreamConfig := func(annotations map[string]string, expectedCfg *v1.Upstream) {
-				svc := &kubev1.Service{
-					Spec: kubev1.ServiceSpec{},
+				svc := &corev1.Service{
+					Spec: corev1.ServiceSpec{},
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: annotations,
 					},
@@ -137,7 +136,7 @@ var _ = Describe("UdsConvert", func() {
 				svc.Name = "test"
 				svc.Namespace = "test-ns"
 
-				port := kubev1.ServicePort{
+				port := corev1.ServicePort{
 					Port: 123,
 				}
 
@@ -162,7 +161,7 @@ var _ = Describe("UdsConvert", func() {
 				Expect(upstreamConfigJson).To(Equal(expectedCfgJson))
 			}
 
-			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, upstream *v1.Upstream) (*v1.Upstream, error) {
+			CreateUpstreamWithSpec := func(uc *KubeUpstreamConverter, ctx context.Context, svc *corev1.Service, port corev1.ServicePort, upstream *v1.Upstream) (*v1.Upstream, error) {
 				for _, sc := range uc.serviceConverters {
 					if err := sc.ConvertService(ctx, svc, port, upstream); err != nil {
 						return nil, err
@@ -184,8 +183,8 @@ var _ = Describe("UdsConvert", func() {
 					// All four unique settings are expected to be configured, while those appearing twice are
 					// expected to get their value from service-level configuration which takes precedence.
 
-					svc := &kubev1.Service{
-						Spec:       kubev1.ServiceSpec{},
+					svc := &corev1.Service{
+						Spec:       corev1.ServiceSpec{},
 						ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test-ns"},
 					}
 					svc.Annotations = make(map[string]string)
@@ -205,7 +204,7 @@ var _ = Describe("UdsConvert", func() {
 							},
 						})
 
-					port := kubev1.ServicePort{
+					port := corev1.ServicePort{
 						Port: 123,
 					}
 					up := uc.CreateUpstream(ctx, svc, port)
@@ -218,21 +217,21 @@ var _ = Describe("UdsConvert", func() {
 
 			Describe("deep merge", func() {
 				var (
-					svc      *kubev1.Service
-					port     kubev1.ServicePort
+					svc      *corev1.Service
+					port     corev1.ServicePort
 					meta     metav1.ObjectMeta
 					coremeta *core.Metadata
 					labels   map[string]string
 				)
 
 				BeforeEach(func() {
-					svc = &kubev1.Service{
-						Spec: kubev1.ServiceSpec{},
+					svc = &corev1.Service{
+						Spec: corev1.ServiceSpec{},
 					}
 					svc.Name = "test"
 					svc.Namespace = "test-ns"
 
-					port = kubev1.ServicePort{
+					port = corev1.ServicePort{
 						Port: 123,
 					}
 
@@ -652,15 +651,15 @@ var _ = Describe("UdsConvert", func() {
 })
 
 func testSetUseHttp2Converter() {
-	svc := &kubev1.Service{
-		Spec: kubev1.ServiceSpec{},
+	svc := &corev1.Service{
+		Spec: corev1.ServiceSpec{},
 	}
 	svc.Annotations = make(map[string]string)
 	svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
 	svc.Name = "test"
 	svc.Namespace = "test-ns"
 
-	port := kubev1.ServicePort{
+	port := corev1.ServicePort{
 		Port: 123,
 	}
 	up := uc.CreateUpstream(context.TODO(), svc, port)
@@ -669,8 +668,8 @@ func testSetUseHttp2Converter() {
 
 func testSetSslConfig() {
 	DescribeTable("should create upstream with upstreamSslConfig when SSL annotations are present", func(annotations map[string]string, expectedCfg *ssl.UpstreamSslConfig) {
-		svc := &kubev1.Service{
-			Spec: kubev1.ServiceSpec{},
+		svc := &corev1.Service{
+			Spec: corev1.ServiceSpec{},
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: annotations,
 			},
@@ -678,7 +677,7 @@ func testSetSslConfig() {
 		svc.Name = "test"
 		svc.Namespace = "test-ns"
 
-		port := kubev1.ServicePort{
+		port := corev1.ServicePort{
 			Port: 123,
 		}
 

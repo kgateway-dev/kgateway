@@ -8,20 +8,22 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
-	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/ingress/pkg/status"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
+
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/test/setup"
+
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
+	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/ingress/pkg/status"
 )
 
 var _ = Describe("StatusSyncer", func() {
@@ -45,7 +47,7 @@ var _ = Describe("StatusSyncer", func() {
 
 			kube, err := kubernetes.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kube.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+			_, err = kube.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namespace,
 				},
@@ -123,7 +125,7 @@ var _ = Describe("StatusSyncer", func() {
 			}, metav1.CreateOptions{})
 
 			kubeSvcClient := kube.CoreV1().Services(namespace)
-			svc, err := kubeSvcClient.Create(ctx, &kubev1.Service{
+			svc, err := kubeSvcClient.Create(ctx, &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "dusty",
 					Namespace: namespace,
@@ -131,22 +133,22 @@ var _ = Describe("StatusSyncer", func() {
 						"gloo": "ingress-proxy",
 					},
 				},
-				Spec: kubev1.ServiceSpec{
+				Spec: corev1.ServiceSpec{
 					Selector: map[string]string{
 						"gloo": "ingress-proxy",
 					},
-					Ports: []kubev1.ServicePort{
+					Ports: []corev1.ServicePort{
 						{
 							Name: "foo",
 							Port: 1234,
 						},
 					},
-					Type: kubev1.ServiceTypeLoadBalancer,
+					Type: corev1.ServiceTypeLoadBalancer,
 				},
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = kube.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
+			_, err = kube.CoreV1().Pods(namespace).Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "musty",
 					Namespace: namespace,
@@ -154,8 +156,8 @@ var _ = Describe("StatusSyncer", func() {
 						"gloo": "ingress-proxy",
 					},
 				},
-				Spec: kubev1.PodSpec{
-					Containers: []kubev1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:  "nginx",
 							Image: "nginx:latest",
@@ -206,7 +208,7 @@ var _ = Describe("StatusSyncer", func() {
 
 			// Create test namespace
 			namespace = helpers.RandString(8)
-			_, err = kubeClientset.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+			_, err = kubeClientset.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namespace,
 				},
@@ -283,7 +285,7 @@ var _ = Describe("StatusSyncer", func() {
 			}, metav1.CreateOptions{})
 
 			kubeSvcClient := kubeClientset.CoreV1().Services(namespace)
-			svc_def := kubev1.Service{
+			svc_def := corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "dusty",
 					Namespace: namespace,
@@ -291,21 +293,21 @@ var _ = Describe("StatusSyncer", func() {
 						"gloo": "ingress-proxy",
 					},
 				},
-				Spec: kubev1.ServiceSpec{
+				Spec: corev1.ServiceSpec{
 					Selector: map[string]string{
 						"gloo": "ingress-proxy",
 					},
-					Ports: []kubev1.ServicePort{
+					Ports: []corev1.ServicePort{
 						{
 							Name: "foo",
 							Port: 1234,
 						},
 					},
-					Type: kubev1.ServiceTypeLoadBalancer,
+					Type: corev1.ServiceTypeLoadBalancer,
 				},
-				Status: kubev1.ServiceStatus{
-					LoadBalancer: kubev1.LoadBalancerStatus{
-						Ingress: []kubev1.LoadBalancerIngress{
+				Status: corev1.ServiceStatus{
+					LoadBalancer: corev1.LoadBalancerStatus{
+						Ingress: []corev1.LoadBalancerIngress{
 							{
 								Hostname: "hostname",
 							},
@@ -316,7 +318,7 @@ var _ = Describe("StatusSyncer", func() {
 			svc, err := kubeSvcClient.Create(ctx, &svc_def, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = kubeClientset.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
+			_, err = kubeClientset.CoreV1().Pods(namespace).Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "musty",
 					Namespace: namespace,
@@ -324,8 +326,8 @@ var _ = Describe("StatusSyncer", func() {
 						"gloo": "ingress-proxy",
 					},
 				},
-				Spec: kubev1.PodSpec{
-					Containers: []kubev1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:  "nginx",
 							Image: "nginx:latest",
@@ -428,7 +430,7 @@ var _ = Describe("StatusSyncer", func() {
 			}, metav1.CreateOptions{})
 
 			kubeSvcClient := kubeClientset.CoreV1().Services(namespace)
-			kubeSvcDefinition := kubev1.Service{
+			kubeSvcDefinition := corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "dusty",
 					Namespace: namespace,
@@ -436,16 +438,16 @@ var _ = Describe("StatusSyncer", func() {
 						"gloo": "ingress-proxy",
 					},
 				},
-				Spec: kubev1.ServiceSpec{
+				Spec: corev1.ServiceSpec{
 					Selector: map[string]string{
 						"gloo": "ingress-proxy",
 					},
-					Type:         kubev1.ServiceTypeExternalName,
+					Type:         corev1.ServiceTypeExternalName,
 					ExternalName: "localhost", // this should not be allowed
 				},
-				Status: kubev1.ServiceStatus{
-					LoadBalancer: kubev1.LoadBalancerStatus{
-						Ingress: []kubev1.LoadBalancerIngress{
+				Status: corev1.ServiceStatus{
+					LoadBalancer: corev1.LoadBalancerStatus{
+						Ingress: []corev1.LoadBalancerIngress{
 							{
 								Hostname: "hostname",
 							},
@@ -456,7 +458,7 @@ var _ = Describe("StatusSyncer", func() {
 			kubeSvc, err := kubeSvcClient.Create(ctx, &kubeSvcDefinition, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = kubeClientset.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
+			_, err = kubeClientset.CoreV1().Pods(namespace).Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "musty",
 					Namespace: namespace,
@@ -464,8 +466,8 @@ var _ = Describe("StatusSyncer", func() {
 						"gloo": "ingress-proxy",
 					},
 				},
-				Spec: kubev1.PodSpec{
-					Containers: []kubev1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:  "nginx",
 							Image: "nginx:latest",

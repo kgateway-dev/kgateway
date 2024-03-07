@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,7 +40,7 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 	}
 }
 
-func FromKube(svc *kubev1.Service) (*v1.KubeService, error) {
+func FromKube(svc *corev1.Service) (*v1.KubeService, error) {
 	rawSpec, err := json.Marshal(svc.Spec)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling kube svc object")
@@ -69,7 +69,7 @@ func FromKube(svc *kubev1.Service) (*v1.KubeService, error) {
 	return resource, nil
 }
 
-func ToKube(resource resources.Resource) (*kubev1.Service, error) {
+func ToKube(resource resources.Resource) (*corev1.Service, error) {
 	ingResource, ok := resource.(*v1.KubeService)
 	if !ok {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to svc-only client", resources.Kind(resource))
@@ -77,7 +77,7 @@ func ToKube(resource resources.Resource) (*kubev1.Service, error) {
 	if ingResource.GetKubeServiceSpec() == nil {
 		return nil, errors.Errorf("internal error: %v svc spec cannot be nil", ingResource.GetMetadata().Ref())
 	}
-	var svc kubev1.Service
+	var svc corev1.Service
 	if err := json.Unmarshal(ingResource.GetKubeServiceSpec().GetValue(), &svc.Spec); err != nil {
 		return nil, errors.Wrapf(err, "unmarshalling kube svc spec data")
 	}

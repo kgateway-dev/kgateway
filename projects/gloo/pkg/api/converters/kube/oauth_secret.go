@@ -10,12 +10,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"go.uber.org/zap"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
 	ClientSecretDataKey                   = "client-secret"
-	OAuthSecretType     kubev1.SecretType = "extauth.solo.io/oauth"
+	OAuthSecretType     corev1.SecretType = "extauth.solo.io/oauth"
 )
 
 // OAuthSecretConverter processes secrets with type "extauth.solo.io/oauth"
@@ -23,7 +23,7 @@ type OAuthSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &OAuthSecretConverter{}
 
-func (t *OAuthSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *OAuthSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	if secret == nil {
 		contextutils.LoggerFrom(ctx).Warn("unexpected nil secret")
 		return nil, nil
@@ -53,7 +53,7 @@ func (t *OAuthSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecre
 	return nil, nil
 }
 
-func (t *OAuthSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *OAuthSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
@@ -74,7 +74,7 @@ func (t *OAuthSecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.Re
 		}
 	}
 
-	return &kubev1.Secret{
+	return &corev1.Secret{
 		ObjectMeta: objectMeta,
 		Type:       OAuthSecretType,
 		Data: map[string][]byte{

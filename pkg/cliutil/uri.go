@@ -15,12 +15,12 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
-
-	"github.com/solo-io/k8s-utils/kubeutils"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/solo-io/k8s-utils/kubeutils"
 )
 
 const (
@@ -75,7 +75,7 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'",
 			proxyName, proxyNamespace)
 	}
-	var svcPort *v1.ServicePort
+	var svcPort *corev1.ServicePort
 	switch len(svc.Spec.Ports) {
 	case 0:
 		return "", errors.Errorf("service %v is missing ports", proxyName)
@@ -97,24 +97,24 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 	var host, port string
 	serviceType := svc.Spec.Type
 	if localCluster {
-		serviceType = v1.ServiceTypeNodePort
+		serviceType = corev1.ServiceTypeNodePort
 	}
 	switch serviceType {
-	case v1.ServiceTypeClusterIP:
+	case corev1.ServiceTypeClusterIP:
 		// There are a few edge cases where glooctl could be run in an environment where this is not a fatal error
 		// However the service type ClusterIP does not accept incoming traffic which doesnt work as a ingress
 		logger := GetLogger()
 		logger.Write([]byte("Warning: Potentially invalid proxy configuration, proxy may not accepting incoming connections"))
 		host = svc.Spec.ClusterIP
 		port = fmt.Sprintf("%v", svcPort.Port)
-	case v1.ServiceTypeNodePort:
+	case corev1.ServiceTypeNodePort:
 		// TODO: support more types of NodePort services
 		host, err = getNodeIp(ctx, svc, kube, clusterName)
 		if err != nil {
 			return "", errors.Wrapf(err, "")
 		}
 		port = fmt.Sprintf("%v", svcPort.NodePort)
-	case v1.ServiceTypeLoadBalancer:
+	case corev1.ServiceTypeLoadBalancer:
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
 			return "", errors.Errorf("load balancer ingress not found on service %v", proxyName)
 		}
@@ -127,7 +127,7 @@ func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort st
 	return host + ":" + port, nil
 }
 
-func getNodeIp(ctx context.Context, svc *v1.Service, kube kubernetes.Interface, clusterName string) (string, error) {
+func getNodeIp(ctx context.Context, svc *corev1.Service, kube kubernetes.Interface, clusterName string) (string, error) {
 	// pick a node where one of our pods is running
 	pods, err := kube.CoreV1().Pods(svc.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(svc.Spec.Selector).String(),

@@ -21,10 +21,10 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	corev1 "k8s.io/api/core/v1"
 
 	"golang.org/x/crypto/ocsp"
 
-	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
@@ -221,12 +221,12 @@ func MtlsPrivateKey() string {
 	return mtlsPrivKey
 }
 
-func GetKubeSecret(name, namespace string) *kubev1.Secret {
-	return &kubev1.Secret{
-		Type: kubev1.SecretTypeTLS,
+func GetKubeSecret(name, namespace string) *corev1.Secret {
+	return &corev1.Secret{
+		Type: corev1.SecretTypeTLS,
 		Data: map[string][]byte{
-			kubev1.TLSCertKey:       []byte(Certificate()),
-			kubev1.TLSPrivateKeyKey: []byte(PrivateKey()),
+			corev1.TLSCertKey:       []byte(Certificate()),
+			corev1.TLSPrivateKeyKey: []byte(PrivateKey()),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

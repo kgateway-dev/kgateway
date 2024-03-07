@@ -4,6 +4,7 @@ import (
 	"context"
 
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -12,7 +13,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
 )
 
 type HeaderSecretConverter struct{}
@@ -21,13 +21,13 @@ var _ kubesecret.SecretConverter = &HeaderSecretConverter{}
 
 const HeaderSecretType = "gloo.solo.io/header"
 
-func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	if secret == nil {
 		contextutils.LoggerFrom(ctx).Warn("unexpected nil secret")
 		return nil, nil
 	}
 
-	if secret.Type == HeaderSecretType || secret.Type == kubev1.SecretTypeOpaque {
+	if secret.Type == HeaderSecretType || secret.Type == corev1.SecretTypeOpaque {
 		if len(secret.Data) == 0 {
 			if secret.Type == HeaderSecretType {
 				// only log this warning for header secrets (we don't want it to show for all opaque secrets)
@@ -62,7 +62,7 @@ func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 	return nil, nil
 }
 
-func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
@@ -74,7 +74,7 @@ func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Re
 
 	kubeMeta := kubeutils.ToKubeMeta(glooSecret.GetMetadata())
 
-	kubeSecret := &kubev1.Secret{
+	kubeSecret := &corev1.Secret{
 		ObjectMeta: kubeMeta,
 		Type:       HeaderSecretType,
 		StringData: headerGlooSecret.Header.GetHeaders(),

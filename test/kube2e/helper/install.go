@@ -11,12 +11,12 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/pkg/errors"
-	"github.com/solo-io/k8s-utils/testutils/kube"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/k8s-utils/testutils/kube"
 )
 
 const (
@@ -238,7 +238,7 @@ func glooctlInstallWithTimeout(rootDir string, io *InstallOptions, timeout time.
 func waitForDefaultServiceAccount(ctx context.Context, installNamespace string) error {
 	kubeClient := kube.MustKubeClient()
 	getDefaultServiceAccount := func() error {
-		_, err := kubeClient.CoreV1().ServiceAccounts(installNamespace).Get(ctx, "default", v1.GetOptions{})
+		_, err := kubeClient.CoreV1().ServiceAccounts(installNamespace).Get(ctx, "default", metav1.GetOptions{})
 		return err
 	}
 	return retry.Do(getDefaultServiceAccount)
