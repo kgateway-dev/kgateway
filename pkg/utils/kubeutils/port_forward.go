@@ -49,12 +49,11 @@ type PortForwarder interface {
 // NewPortForwarder returns an implementation of a PortForwarder
 func NewPortForwarder(options ...PortForwardOption) PortForwarder {
 	return &forwarder{
-		errCh:      make(chan error, 1),
 		stopCh:     make(chan struct{}, 1),
-		readyCh:    make(chan struct{}, 1),
 		properties: buildPortForwardProperties(options...),
 
 		// The following are populated when Start is invoked
+		errCh:      nil,
 		restConfig: nil,
 	}
 }
@@ -92,6 +91,9 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 		return err
 	}
 
+	f.errCh = make(chan error, 1)
+	readyCh := make(chan struct{}, 1)
+
 	var fw *portforward.PortForwarder
 	go func() {
 		for {
@@ -102,7 +104,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 			}
 			var err error
 			// Build a new port forwarder.
-			fw, err = f.portForwarderToPod(podName)
+			fw, err = f.portForwarderToPod(podName, readyCh)
 			if err != nil {
 				f.errCh <- fmt.Errorf("building port forwarder failed: %v", err)
 				return
@@ -158,7 +160,7 @@ func (f *forwarder) WaitForStop() {
 	<-f.stopCh
 }
 
-func (f *forwarder) portForwarderToPod(podName string) (*portforward.PortForwarder, error) {
+func (f *forwarder) portForwarderToPod(podName string, readyCh chan struct{}) (*portforward.PortForwarder, error) {
 	// the following code is based on this reference, https://github.com/kubernetes/client-go/issues/51
 	roundTripper, upgrader, err := spdy.RoundTripperFor(f.restConfig)
 	if err != nil {
@@ -174,7 +176,7 @@ func (f *forwarder) portForwarderToPod(podName string) (*portforward.PortForward
 		[]string{f.properties.localAddress},
 		[]string{fmt.Sprintf("%d:%d", f.properties.localPort, f.properties.remotePort)},
 		f.stopCh,
-		f.readyCh,
+		readyCh,
 		f.properties.stdout,
 		f.properties.stderr)
 }
