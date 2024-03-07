@@ -601,16 +601,6 @@ var _ = Describe("Plugin", func() {
 						validateExtractionMatch(expectedOutput, output)
 					}
 				},
-				Entry("Errors if subgroup is larger than number of capture groups in regex - Extract mode",
-					extractorTestCase{
-						Mode:                 transformation.Extraction_EXTRACT,
-						Regex:                "(abc)",
-						Subgroup:             2,
-						ReplacementText:      nil,
-						ExpectError:          true,
-						ExpectedErrorMessage: ErrMsgInvalidRegex,
-					},
-				),
 				Entry("Errors if replacement_text is set - Extract mode",
 					extractorTestCase{
 						Mode:                 transformation.Extraction_EXTRACT,
@@ -641,16 +631,6 @@ var _ = Describe("Plugin", func() {
 						ReplacementText:      nil,
 						ExpectError:          true,
 						ExpectedErrorMessage: ErrMsgReplacementTextNotSetWhenNeeded,
-					},
-				),
-				Entry("Errors if subgroup is larger than number of capture groups in regex - Single Replace mode",
-					extractorTestCase{
-						Mode:                 transformation.Extraction_SINGLE_REPLACE,
-						Regex:                "(abc)",
-						Subgroup:             2,
-						ReplacementText:      &wrapperspb.StringValue{Value: "foo"},
-						ExpectError:          true,
-						ExpectedErrorMessage: ErrMsgInvalidRegex,
 					},
 				),
 

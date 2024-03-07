@@ -3,7 +3,6 @@ package transformation
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -470,15 +469,9 @@ const (
 	ErrMsgReplacementTextSetWhenNotNeeded = "replacement text should not be set"
 	ErrMsgReplacementTextNotSetWhenNeeded = "replacement text must be set"
 	ErrMsgSubgroupSetWhenNotNeeded        = "subgroup should not be set"
-	ErrMsgInvalidRegex                    = "regex is invalid"
 )
 
 func translateExtractor(extractor *transformation.Extraction, name string) (*envoytransformation.Extraction, error) {
-	err := validateRegex(extractor)
-	if err != nil {
-		return nil, NewExtractorError(ErrMsgInvalidRegex, name, -1)
-	}
-
 	out := &envoytransformation.Extraction{
 		Regex: extractor.GetRegex(),
 	}
@@ -538,44 +531,6 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 	}
 
 	return out, nil
-}
-
-// validate that the regex compiles, and that the specified subgroup does not exceed the number of capturing groups in the regex
-//
-//	this function compiles the regex and checks that the subgroup is valid
-//	because it compiles a regex, it will slow the performance of the transformation plugin
-//	that being said, it does prevent us from crashing envoy at runtime if we try to
-//	select a subgroup greater than the number of capturing groups in the regex
-func validateRegex(extractor *transformation.Extraction) error {
-	regex := extractor.GetRegex()
-	subgroup := extractor.GetSubgroup()
-
-	// if subgroup is 0, return
-	if subgroup == 0 {
-		return nil
-	}
-
-	// if regex is empty, return an error
-	if regex == "" {
-		return eris.Errorf("regex is empty")
-	}
-
-	// compile regex
-	compiledRegex, err := regexp.Compile(regex)
-	if err != nil {
-		// indicate that there was an error compiling the regex
-		return eris.Wrapf(err, "error compiling regex %s", regex)
-	}
-
-	// get the number of capturing groups in the regex
-	numCapturingGroups := compiledRegex.NumSubexp()
-
-	// if subgroup exceeds the number of capturing groups, return an error
-	if uint32(numCapturingGroups) < subgroup {
-		return eris.Errorf("subgroup %d exceeds the number of capturing groups in regex %s", subgroup, regex)
-	}
-
-	return nil
 }
 
 func (p *Plugin) validateTransformation(
