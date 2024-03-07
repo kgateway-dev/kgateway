@@ -4,7 +4,7 @@ description: Review the details to include in your support.
 weight: 930
 ---
 
-Walk through the steps on this page to collect valuable information for Solo to review and troubleshoot your support request. 
+Collect valuable information for Solo to review and troubleshoot your support request. 
 
 ## Environment
 
