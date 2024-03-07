@@ -46,7 +46,7 @@ import (
 // upgradeStartingVersion represents the default version of Gloo which will be initially installed and used to validate upgrades
 // In practice, this should be dynamic. However, it was introduced after realizing that tests were upgrading from 1.9, an extremely
 // old version of Gloo
-const upgradeStartingVersion = "1.16.0"
+const upgradeStartingVersion = "1.12.0"
 
 // for testing upgrades from a gloo version before the gloo/gateway merge and
 // before https://github.com/solo-io/gloo/pull/6349 was fixed
@@ -122,7 +122,7 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 		It("uses helm to update the settings without errors", func() {
-			By("should start with gloo version 1.16.0")
+			By("should start with gloo version 1.12.0")
 			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(upgradeStartingVersion))
 
 			By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
