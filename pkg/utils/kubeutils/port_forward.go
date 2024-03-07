@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/avast/retry-go"
 
 	"net"
@@ -21,6 +23,8 @@ import (
 )
 
 var _ PortForwarder = &forwarder{}
+
+// Inspired by: https://github.com/istio/istio/blob/master/pkg/kube/portforwarder.go
 
 // PortForwarder manages the forwarding of a single port.
 type PortForwarder interface {
@@ -42,22 +46,30 @@ type PortForwarder interface {
 	WaitForStop()
 }
 
+// NewPortForwarder returns an implementation of a PortForwarder
 func NewPortForwarder(options ...PortForwardOption) PortForwarder {
 	return &forwarder{
 		errCh:      make(chan error, 1),
-		stopCh:     nil, // Populated when Start is invoked
-		readyCh:    nil, // Populated when Start is invoked
+		stopCh:     make(chan struct{}, 1),
+		readyCh:    make(chan struct{}, 1),
 		properties: buildPortForwardProperties(options...),
-		podName:    "", // Populated when Start is invoked
+
+		// The following are populated when Start is invoked
+		restConfig: nil,
 	}
 }
 
 type forwarder struct {
-	stopCh     chan struct{}
-	errCh      chan error
-	readyCh    chan struct{}
+	stopCh  chan struct{}
+	errCh   chan error
+	readyCh chan struct{}
+
+	// properties represents the set of user-defined values to configure the forwarder
 	properties *properties
-	podName    string
+
+	// restConfig is the set of attributes that are passed to a Kubernetes client
+	// The value is derived from the properties
+	restConfig *rest.Config
 }
 
 func (f *forwarder) Start(ctx context.Context, options ...retry.Option) error {
@@ -69,8 +81,16 @@ func (f *forwarder) Start(ctx context.Context, options ...retry.Option) error {
 func (f *forwarder) attemptStart(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 
-	f.readyCh = make(chan struct{}, 1)
-	f.stopCh = make(chan struct{}, 1)
+	config, err := kubeconfig.GetRestConfigWithContext(f.properties.kubeConfig, f.properties.kubeContext, "")
+	if err != nil {
+		return err
+	}
+	f.restConfig = config
+
+	podName, err := f.getPodName(ctx)
+	if err != nil {
+		return err
+	}
 
 	var fw *portforward.PortForwarder
 	go func() {
@@ -82,7 +102,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 			}
 			var err error
 			// Build a new port forwarder.
-			fw, err = f.portForwarderToPod(ctx)
+			fw, err = f.portForwarderToPod(podName)
 			if err != nil {
 				f.errCh <- fmt.Errorf("building port forwarder failed: %v", err)
 				return
@@ -114,7 +134,7 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 		}
 		// Set local port now, as it may have been 0 as input
 		f.properties.localPort = int(p[0].Local)
-		logger.Debugf("Port forward established %v -> %v.%v:%v", f.Address(), f.podName, f.podName, f.properties.remotePort)
+		logger.Debugf("Port forward established %v -> %v.%v:%v", f.Address(), podName, podName, f.properties.remotePort)
 		// The forwarder is now ready.
 		return nil
 	}
@@ -138,25 +158,15 @@ func (f *forwarder) WaitForStop() {
 	<-f.stopCh
 }
 
-func (f *forwarder) portForwarderToPod(ctx context.Context) (*portforward.PortForwarder, error) {
-	err := f.setPodName(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := kubeconfig.GetRestConfigWithContext(f.properties.kubeConfig, f.properties.kubeContext, "")
-	if err != nil {
-		return nil, err
-	}
-
+func (f *forwarder) portForwarderToPod(podName string) (*portforward.PortForwarder, error) {
 	// the following code is based on this reference, https://github.com/kubernetes/client-go/issues/51
-	roundTripper, upgrader, err := spdy.RoundTripperFor(config)
+	roundTripper, upgrader, err := spdy.RoundTripperFor(f.restConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", f.properties.resourceNamespace, f.podName)
-	hostIP := strings.TrimLeft(config.Host, "https:/")
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", f.properties.resourceNamespace, podName)
+	hostIP := strings.TrimLeft(f.restConfig.Host, "https:/")
 	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
 
@@ -169,33 +179,30 @@ func (f *forwarder) portForwarderToPod(ctx context.Context) (*portforward.PortFo
 		f.properties.stderr)
 }
 
-func (f *forwarder) setPodName(ctx context.Context) error {
+func (f *forwarder) getPodName(ctx context.Context) (string, error) {
 	switch f.properties.resourceType {
 	case "deployment":
-		pods, err := GetPodsForDeployment(ctx, f.properties.kubeConfig, f.properties.kubeContext, f.properties.resourceName, f.properties.resourceNamespace)
+		pods, err := GetPodsForDeployment(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		if len(pods) == 0 {
-			return eris.Errorf("No pods found for deployment %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
+			return "", eris.Errorf("No pods found for deployment %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
 		}
-		f.podName = pods[0]
-		return nil
+		return pods[0], nil
 
 	case "service":
-		pods, err := GetPodsForService(ctx, f.properties.kubeConfig, f.properties.kubeContext, f.properties.resourceName, f.properties.resourceNamespace)
+		pods, err := GetPodsForService(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		if len(pods) == 0 {
-			return eris.Errorf("No pods found for service %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
+			return "", eris.Errorf("No pods found for service %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
 		}
-		f.podName = pods[0]
-		return nil
+		return pods[0], nil
 	}
 
-	f.podName = f.properties.resourceName
-	return nil
+	return f.properties.resourceName, nil
 }

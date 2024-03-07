@@ -3,13 +3,13 @@ package kubeutils
 import (
 	"context"
 
+	"k8s.io/client-go/rest"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/solo-io/skv2/pkg/multicluster/kubeconfig"
 )
 
 // Inspired by: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/pkg/utils/kubeutils/pods.go
@@ -17,16 +17,11 @@ import (
 // GetPodsForDeployment gets all pods backing a deployment
 func GetPodsForDeployment(
 	ctx context.Context,
-	kubeConfig string,
-	kubeContext string,
+	restConfig *rest.Config,
 	deploymentName string,
 	deploymentNamespace string,
 ) ([]string, error) {
-	config, err := kubeconfig.GetRestConfigWithContext(kubeConfig, kubeContext, "")
-	if err != nil {
-		return nil, err
-	}
-	kubeClient, err := kubernetes.NewForConfig(config)
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -57,16 +52,11 @@ func GetPodsForDeployment(
 // GetPodsForService gets all pods backing a deployment
 func GetPodsForService(
 	ctx context.Context,
-	kubeConfig string,
-	kubeContext string,
+	restConfig *rest.Config,
 	serviceName string,
 	serviceNamespace string,
 ) ([]string, error) {
-	config, err := kubeconfig.GetRestConfigWithContext(kubeConfig, kubeContext, "")
-	if err != nil {
-		return nil, err
-	}
-	kubeClient, err := kubernetes.NewForConfig(config)
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}
