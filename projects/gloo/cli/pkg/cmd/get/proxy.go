@@ -26,6 +26,6 @@ func Proxy(opts *options.Options) *cobra.Command {
 	}
 
 	flagutils.AddGetProxyFlags(cmd.Flags(), &opts.Get.Proxy)
-	
+
 	return cmd
 }
