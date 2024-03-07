@@ -317,14 +317,21 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 
 func getDeployerImageValues() map[string]any {
 	image := os.Getenv(constants.GlooGatewayDeployerImage)
+	defaultImageValues := map[string]any{
+		// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
+		"tag": "",
+	}
+
 	if image == "" {
-		return map[string]any{
-			// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
-			"tag": "",
-		}
+		// If the env is not defined, return the default
+		return defaultImageValues
 	}
 
 	imageParts := strings.Split(image, ":")
+	if len(imageParts) != 2 {
+		// If the user provided an invalid override, fallback to the default
+		return defaultImageValues
+	}
 	return map[string]any{
 		"repository": imageParts[0],
 		"tag":        imageParts[1],
