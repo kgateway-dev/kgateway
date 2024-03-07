@@ -19,7 +19,7 @@ var _ = Describe("Extensions", func() {
 		},
 		Entry("missing K8sGatewayExtensions", Extensions{
 			K8sGatewayExtensionsFactory: nil,
-		}, MatchError(ErrNilExtension("K8sGatewayExtension"))),
+		}, MatchError(ErrNilExtension("K8sGatewayExtensionsFactory"))),
 		Entry("missing PluginRegistryFactory", Extensions{
 			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory:       nil,
