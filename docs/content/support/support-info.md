@@ -89,8 +89,8 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
 ### Control plane
 
 1. Capture the output of the `glooctl check` command.
-    <br>Typically, the command output indicates any errors in the control plane components or associated resources.
-    <br>An example output is shown below.
+    <br>Typically, the command output indicates any errors in the control plane components or associated resources, such as in the following example.
+
     ```
     Checking deployments... 1 Errors!
     Checking pods... 2 Errors!
