@@ -2,44 +2,38 @@ package extensions
 
 import (
 	"context"
-
 	"github.com/solo-io/gloo/projects/gateway2/query"
+
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
-// Manager is responsible for providing implementations for translation utilities
+// K8sGatewayExtensions is responsible for providing implementations for translation utilities
 // which have Enterprise variants.
-type Manager interface {
-	// CreateGatewayQueries returns the GatewayQueries
-	CreateGatewayQueries(ctx context.Context) query.GatewayQueries
-
+type K8sGatewayExtensions interface {
 	// CreatePluginRegistry returns the PluginRegistry
 	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
 }
 
-// ManagerFactory returns an extensions.Manager
-type ManagerFactory func(manager controllerruntime.Manager) Manager
+// K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
+type K8sGatewayExtensionsFactory func(k8sGatewayExtensions controllerruntime.Manager) K8sGatewayExtensions
 
-// NewManager returns the Open Source implementation of Manager
-func NewManager(mgr controllerruntime.Manager) Manager {
-	return &manager{
+// NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
+func NewK8sGatewayExtensions(mgr controllerruntime.Manager) K8sGatewayExtensions {
+	return &k8sGatewayExtensions{
 		mgr: mgr,
 	}
 }
 
-type manager struct {
+type k8sGatewayExtensions struct {
 	mgr controllerruntime.Manager
 }
 
-// CreateGatewayQueries returns the GatewayQueries
-func (m *manager) CreateGatewayQueries(ctx context.Context) query.GatewayQueries {
-	return query.NewData(m.mgr.GetClient(), m.mgr.GetScheme())
-}
-
 // CreatePluginRegistry returns the PluginRegistry
-func (m *manager) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
-	gatewayQueries := m.CreateGatewayQueries(ctx)
-	plugins := registry.BuildPlugins(gatewayQueries)
+func (e *k8sGatewayExtensions) CreatePluginRegistry() registry.PluginRegistry {
+	plugins := registry.BuildPlugins(query.NewData(
+		e.mgr.GetClient(),
+		e.mgr.GetScheme(),
+	))
 	return registry.NewPluginRegistry(plugins)
 }

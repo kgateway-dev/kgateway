@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 
@@ -79,9 +80,9 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs                  *XdsInputChannels
-	mgr                     manager.Manager
-	extensionManagerFactory extensions.ManagerFactory
+	inputs          *XdsInputChannels
+	mgr             manager.Manager
+	k8sGwExtensions extensions.K8sGatewayExtensionsFactory
 }
 
 type XdsInputChannels struct {
@@ -118,17 +119,17 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	extensionManagerFactory extensions.ManagerFactory,
+	k8sGwExtensions extensions.K8sGatewayExtensionsFactory,
 ) *XdsSyncer {
 	return &XdsSyncer{
-		controllerName:          controllerName,
-		translator:              translator,
-		sanitizer:               sanitizer,
-		xdsCache:                xdsCache,
-		xdsGarbageCollection:    xdsGarbageCollection,
-		inputs:                  inputs,
-		mgr:                     mgr,
-		extensionManagerFactory: extensionManagerFactory,
+		controllerName:       controllerName,
+		translator:           translator,
+		sanitizer:            sanitizer,
+		xdsCache:             xdsCache,
+		xdsGarbageCollection: xdsGarbageCollection,
+		inputs:               inputs,
+		mgr:                  mgr,
+		k8sGwExtensions:      k8sGwExtensions,
 	}
 }
 
@@ -152,11 +153,12 @@ func (s *XdsSyncer) Start(
 			return
 		}
 
-		extensionManager := s.extensionManagerFactory(s.mgr)
+		extensionManager := s.k8sGwExtensions(s.mgr)
 
-		gatewayQueries := extensionManager.CreateGatewayQueries(ctx)
+		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
 		pluginRegistry := extensionManager.CreatePluginRegistry(ctx)
-		gatewayTranslator := gloot.NewTranslator(pluginRegistry)
+		gatewayTranslator := gloot.NewTranslator(
+			gatewayQueries, pluginRegistry)
 
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
@@ -164,7 +166,7 @@ func (s *XdsSyncer) Start(
 
 		var translatedGateways []gwplugins.TranslatedGateway
 		for _, gw := range gwl.Items {
-			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, gatewayQueries, r)
+			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
 				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{

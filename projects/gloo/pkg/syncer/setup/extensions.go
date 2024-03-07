@@ -31,9 +31,9 @@ type Extensions struct {
 	// ApiEmitterChannel is a channel that forces the API Emitter to emit a new API Snapshot
 	ApiEmitterChannel chan struct{}
 
-	// K8sGatewayExtensions is the factory function which will return an extensions.Manager
+	// K8sGatewayExtensions is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that the K8s Gateway integration requires
-	K8sGatewayExtensions extensions.ManagerFactory
+	K8sGatewayExtensions extensions.K8sGatewayExtensions
 }
 
 // Validate returns an error if the Extensions are invalid, nil otherwise

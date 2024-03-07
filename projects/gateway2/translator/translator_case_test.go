@@ -78,10 +78,9 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		reporter := reports.NewReporter(&reportsMap)
 
 		// translate gateway
-		proxy := NewTranslator(pluginRegistry).TranslateProxy(
+		proxy := NewTranslator(queries, pluginRegistry).TranslateProxy(
 			ctx,
 			gw,
-			queries,
 			reporter,
 		)
 

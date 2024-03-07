@@ -23,29 +23,29 @@ type K8sGwTranslator interface {
 	TranslateProxy(
 		ctx context.Context,
 		gateway *gwv1.Gateway,
-		queries query.GatewayQueries,
 		reporter reports.Reporter,
 	) *v1.Proxy
 }
 
-func NewTranslator(pluginRegistry registry.PluginRegistry) K8sGwTranslator {
+func NewTranslator(queries query.GatewayQueries, pluginRegistry registry.PluginRegistry) K8sGwTranslator {
 	return &translator{
-		pluginRegistry,
+		pluginRegistry: pluginRegistry,
+		queries:        queries,
 	}
 }
 
 type translator struct {
 	pluginRegistry registry.PluginRegistry
+	queries        query.GatewayQueries
 }
 
 func (t *translator) TranslateProxy(
 	ctx context.Context,
 	gateway *gwv1.Gateway,
-	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Proxy {
 
-	routesForGw, err := queries.GetRoutesForGw(ctx, gateway)
+	routesForGw, err := t.queries.GetRoutesForGw(ctx, gateway)
 	if err != nil {
 		// TODO(ilackarms): fill in the specific error / validation
 		// reporter.Gateway(gateway).Err(err.Error())
@@ -70,7 +70,7 @@ func (t *translator) TranslateProxy(
 
 	listeners := listener.TranslateListeners(
 		ctx,
-		queries,
+		t.queries,
 		t.pluginRegistry,
 		gateway,
 		routesForGw,
