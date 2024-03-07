@@ -1,12 +1,13 @@
-package kubeutils
+package portforward
 
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	"k8s.io/client-go/rest"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 
 	"net"
 	"net/http"
@@ -22,33 +23,12 @@ import (
 	"github.com/solo-io/skv2/pkg/multicluster/kubeconfig"
 )
 
-var _ PortForwarder = &forwarder{}
+var _ PortForwarder = &apiPortForwarder{}
 
-// Inspired by: https://github.com/istio/istio/blob/master/pkg/kube/portforwarder.go
-
-// PortForwarder manages the forwarding of a single port.
-type PortForwarder interface {
-	// Start runs this forwarder.
-	Start(ctx context.Context, options ...retry.Option) error
-
-	// Address returns the local forwarded address. Only valid while the forwarder is running.
-	Address() string
-
-	// Close this forwarder and release any resources.
-	Close()
-
-	// ErrChan returns a channel that returns an error when one is encountered. While Start() may return an initial error,
-	// the port-forward connection may be lost at anytime. The ErrChan can be read to determine if/when the port-forwarding terminates.
-	// This can return nil if the port forwarding stops gracefully.
-	ErrChan() <-chan error
-
-	// WaitForStop blocks until connection closed (e.g. control-C interrupt)
-	WaitForStop()
-}
-
-// NewPortForwarder returns an implementation of a PortForwarder
-func NewPortForwarder(options ...PortForwardOption) PortForwarder {
-	return &forwarder{
+// NewPortForwarder returns an implementation of a PortForwarder that does not rely on the Kubernetes CLI
+// but instead queries the Kubernetes API directly
+func NewPortForwarder(options ...Option) PortForwarder {
+	return &apiPortForwarder{
 		stopCh:     make(chan struct{}, 1),
 		properties: buildPortForwardProperties(options...),
 
@@ -58,11 +38,11 @@ func NewPortForwarder(options ...PortForwardOption) PortForwarder {
 	}
 }
 
-type forwarder struct {
+type apiPortForwarder struct {
 	stopCh chan struct{}
 	errCh  chan error
 
-	// properties represents the set of user-defined values to configure the forwarder
+	// properties represents the set of user-defined values to configure the apiPortForwarder
 	properties *properties
 
 	// restConfig is the set of attributes that are passed to a Kubernetes client
@@ -70,13 +50,13 @@ type forwarder struct {
 	restConfig *rest.Config
 }
 
-func (f *forwarder) Start(ctx context.Context, options ...retry.Option) error {
+func (f *apiPortForwarder) Start(ctx context.Context, options ...retry.Option) error {
 	return retry.Do(func() error {
-		return f.attemptStart(ctx)
+		return f.startOnce(ctx)
 	}, options...)
 }
 
-func (f *forwarder) attemptStart(ctx context.Context) error {
+func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 
 	config, err := kubeconfig.GetRestConfigWithContext(f.properties.kubeConfig, f.properties.kubeContext, "")
@@ -102,10 +82,10 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 			default:
 			}
 			var err error
-			// Build a new port forwarder.
+			// Build a new port apiPortForwarder.
 			fw, err = f.portForwarderToPod(podName, readyCh)
 			if err != nil {
-				f.errCh <- fmt.Errorf("building port forwarder failed: %v", err)
+				f.errCh <- fmt.Errorf("building port apiPortForwarder failed: %v", err)
 				return
 			}
 			if err = fw.ForwardPorts(); err != nil {
@@ -113,8 +93,8 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 				return
 			}
 			f.errCh <- nil
-			// At this point, either the stopCh has been closed, or port forwarder connection is broken.
-			// the port forwarder should have already been ready before.
+			// At this point, either the stopCh has been closed, or port apiPortForwarder connection is broken.
+			// the port apiPortForwarder should have already been ready before.
 			// No need to notify the ready channel anymore when forwarding again.
 			readyCh = nil
 		}
@@ -136,30 +116,30 @@ func (f *forwarder) attemptStart(ctx context.Context) error {
 		// Set local port now, as it may have been 0 as input
 		f.properties.localPort = int(p[0].Local)
 		logger.Debugf("Port forward established %v -> %v.%v:%v", f.Address(), podName, podName, f.properties.remotePort)
-		// The forwarder is now ready.
+		// The apiPortForwarder is now ready.
 		return nil
 	}
 }
 
-func (f *forwarder) Address() string {
+func (f *apiPortForwarder) Address() string {
 	return net.JoinHostPort(f.properties.localAddress, strconv.Itoa(f.properties.localPort))
 }
 
-func (f *forwarder) Close() {
+func (f *apiPortForwarder) Close() {
 	close(f.stopCh)
 	// Closing the stop channel should close anything
-	// opened by f.forwarder.ForwardPorts()
+	// opened by f.apiPortForwarder.ForwardPorts()
 }
 
-func (f *forwarder) ErrChan() <-chan error {
+func (f *apiPortForwarder) ErrChan() <-chan error {
 	return f.errCh
 }
 
-func (f *forwarder) WaitForStop() {
+func (f *apiPortForwarder) WaitForStop() {
 	<-f.stopCh
 }
 
-func (f *forwarder) portForwarderToPod(podName string, readyCh chan struct{}) (*portforward.PortForwarder, error) {
+func (f *apiPortForwarder) portForwarderToPod(podName string, readyCh chan struct{}) (*portforward.PortForwarder, error) {
 	// the following code is based on this reference, https://github.com/kubernetes/client-go/issues/51
 	roundTripper, upgrader, err := spdy.RoundTripperFor(f.restConfig)
 	if err != nil {
@@ -180,10 +160,10 @@ func (f *forwarder) portForwarderToPod(podName string, readyCh chan struct{}) (*
 		f.properties.stderr)
 }
 
-func (f *forwarder) getPodName(ctx context.Context) (string, error) {
+func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 	switch f.properties.resourceType {
 	case "deployment":
-		pods, err := GetPodsForDeployment(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
+		pods, err := kubeutils.GetPodsForDeployment(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
 		if err != nil {
 			return "", err
 		}
@@ -194,7 +174,7 @@ func (f *forwarder) getPodName(ctx context.Context) (string, error) {
 		return pods[0], nil
 
 	case "service":
-		pods, err := GetPodsForService(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
+		pods, err := kubeutils.GetPodsForService(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
 		if err != nil {
 			return "", err
 		}

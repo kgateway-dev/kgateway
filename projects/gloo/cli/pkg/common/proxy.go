@@ -1,6 +1,7 @@
 package common
 
 import (
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"io"
 	"math"
 	"net"
@@ -139,10 +140,10 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 		outWriter = logger
 	}
 
-	portForwarder := kubeutils.NewPortForwarder(
-		kubeutils.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
-		kubeutils.WithRemotePort(remotePort),
-		kubeutils.WithWriters(outWriter, errWriter),
+	portForwarder := portforward.NewPortForwarder(
+		portforward.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
+		portforward.WithRemotePort(remotePort),
+		portforward.WithWriters(outWriter, errWriter),
 	)
 	if err := portForwarder.Start(
 		opts.Top.Ctx,

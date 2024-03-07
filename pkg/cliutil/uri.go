@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -178,42 +180,54 @@ func minikubeIp(clusterName string) (string, error) {
 }
 
 // PortForward call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
-// Deprecated: Prefer kubeutils.NewPortForwarder
-func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (*exec.Cmd, error) {
-
-	/** port-forward command **/
-
-	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
-		resource, fmt.Sprintf("%s:%s", localPort, kubePort))
-
+// Deprecated: Prefer portforward.NewPortForwarder
+func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (portforward.PortForwarder, error) {
 	err := Initialize()
 	if err != nil {
 		return nil, err
 	}
 	logger := GetLogger()
 
-	portFwd.Stderr = io.MultiWriter(logger, os.Stderr)
+	outWriter := logger
+	errWriter := io.MultiWriter(logger, os.Stderr)
 	if verbose {
-		portFwd.Stdout = io.MultiWriter(logger, os.Stdout)
-	} else {
-		portFwd.Stdout = logger
+		outWriter = io.MultiWriter(logger, os.Stdout)
 	}
 
-	if err := portFwd.Start(); err != nil {
+	localCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	resourceTypeName := strings.Split(resource, "/")
+	localPortInt, err := strconv.Atoi(localPort)
+	if err != nil {
+		return nil, err
+	}
+	remotePortInt, err := strconv.Atoi(kubePort)
+	if err != nil {
 		return nil, err
 	}
 
-	return portFwd, nil
+	portForwarder := portforward.NewCliPortForwarder(
+		portforward.WithResource(resourceTypeName[0], namespace, resourceTypeName[1]),
+		portforward.WithPorts(localPortInt, remotePortInt),
+		portforward.WithWriters(outWriter, errWriter),
+	)
 
+	err = portForwarder.Start(localCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return portForwarder, nil
 }
 
 // PortForwardGet call kubectl port-forward and make a GET request.
 // Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
-func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, *exec.Cmd, error) {
+// Deprecated: Prefer portforward.NewPortForwarder
+func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, portforward.PortForwarder, error) {
 
 	/** port-forward command **/
-
-	portFwd, err := PortForward(namespace, resource, localPort, kubePort, verbose)
+	portForwarder, err := PortForward(namespace, resource, localPort, kubePort, verbose)
 	if err != nil {
 		return "", nil, err
 	}
@@ -232,7 +246,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 				return
 			default:
 			}
-			res, err := http.Get("http://localhost:" + localPort + getPath)
+			res, err := http.Get(fmt.Sprintf("%s/%s", portForwarder.Address(), getPath))
 			if err != nil {
 				errs <- err
 				time.Sleep(retryInterval)
@@ -261,12 +275,10 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 		case err := <-errs:
 			multiErr = multierror.Append(multiErr, err)
 		case res := <-result:
-			return res, portFwd, nil
+			return res, portForwarder, nil
 		case <-localCtx.Done():
-			if portFwd.Process != nil {
-				portFwd.Process.Kill()
-				portFwd.Process.Release()
-			}
+			portForwarder.Close()
+			portForwarder.WaitForStop()
 			return "", nil, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
 		}
 	}

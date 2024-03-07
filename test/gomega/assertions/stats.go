@@ -62,7 +62,7 @@ func EventuallyStatisticsMatchAssertions(statsPortFwd StatsPortFwd, assertions .
 // EventuallyWithOffsetStatisticsMatchAssertions first opens a fort-forward and then performs
 // a series of Asynchronous assertions. The fort-forward is cleaned up with the function returns
 func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd StatsPortFwd, assertions ...types.AsyncAssertion) {
-	portForward, err := cliutil.PortForward(
+	portForwarder, err := cliutil.PortForward(
 		statsPortFwd.ResourceNamespace,
 		statsPortFwd.ResourceName,
 		fmt.Sprintf("%d", statsPortFwd.LocalPort),
@@ -71,10 +71,8 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 
 	defer func() {
-		if portForward.Process != nil {
-			_ = portForward.Process.Kill()
-			_ = portForward.Process.Release()
-		}
+		portForwarder.Close()
+		portForwarder.WaitForStop()
 	}()
 
 	By("Ensure port-forward is open before performing assertions")

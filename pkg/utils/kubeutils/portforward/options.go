@@ -1,4 +1,4 @@
-package kubeutils
+package portforward
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type PortForwardOption func(*properties)
+type Option func(*properties)
 
 type properties struct {
 	kubeConfig        string
@@ -21,25 +21,25 @@ type properties struct {
 	stderr            io.Writer
 }
 
-func WithKindCluster(kindClusterName string) PortForwardOption {
+func WithKindCluster(kindClusterName string) Option {
 	return WithKubeContext(fmt.Sprintf("kind-%s", kindClusterName))
 }
 
-func WithKubeContext(kubeContext string) PortForwardOption {
+func WithKubeContext(kubeContext string) Option {
 	return func(config *properties) {
 		config.kubeContext = kubeContext
 	}
 }
 
-func WithDeployment(name, namespace string) PortForwardOption {
+func WithDeployment(name, namespace string) Option {
 	return WithResource(name, namespace, "deployment")
 }
 
-func WithService(name, namespace string) PortForwardOption {
+func WithService(name, namespace string) Option {
 	return WithResource(name, namespace, "service")
 }
 
-func WithResource(name, namespace, resourceType string) PortForwardOption {
+func WithResource(name, namespace, resourceType string) Option {
 	return func(config *properties) {
 		config.resourceName = name
 		config.resourceNamespace = namespace
@@ -47,26 +47,26 @@ func WithResource(name, namespace, resourceType string) PortForwardOption {
 	}
 }
 
-func WithRemotePort(remotePort int) PortForwardOption {
+func WithRemotePort(remotePort int) Option {
 	// 0 is special value for the local port, it will result in a port being chosen at random
 	return WithPorts(0, remotePort)
 }
 
-func WithPorts(localPort, remotePort int) PortForwardOption {
+func WithPorts(localPort, remotePort int) Option {
 	return func(config *properties) {
 		config.localPort = localPort
 		config.remotePort = remotePort
 	}
 }
 
-func WithWriters(out, err io.Writer) PortForwardOption {
+func WithWriters(out, err io.Writer) Option {
 	return func(config *properties) {
 		config.stdout = out
 		config.stderr = err
 	}
 }
 
-func buildPortForwardProperties(options ...PortForwardOption) *properties {
+func buildPortForwardProperties(options ...Option) *properties {
 	//default
 	cfg := &properties{
 		kubeConfig:        "",
