@@ -125,7 +125,7 @@ var _ = Describe("Kube2e: helm", func() {
 			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
-			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
+			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(104857600)))
 
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, []string{
 				"--set", "settings.replaceInvalidRoutes=true",
