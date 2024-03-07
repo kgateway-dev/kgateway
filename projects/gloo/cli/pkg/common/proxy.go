@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
 	gloodebug "github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/avast/retry-go"
@@ -22,6 +24,7 @@ import (
 )
 
 // GetProxies retrieves the proxies from the Control Plane via the ProxyEndpointServer API
+// This is utilized by `glooctl get proxy` to return the content of Proxies
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	settings, err := GetSettings(opts)
 	if err != nil {
@@ -37,6 +40,7 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 }
 
 // ListProxiesFromSettings retrieves the proxies from the Control Plane via the ProxyEndpointServer API
+// This is utilized by `glooctl check` to report the statuses of Proxies
 func ListProxiesFromSettings(namespace string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
 	proxyEndpointPort, err := computeProxyEndpointPort(settings)
 	if err != nil {
@@ -49,7 +53,10 @@ func ListProxiesFromSettings(namespace string, opts *options.Options, settings *
 func computeProxyEndpointPort(settings *gloov1.Settings) (string, error) {
 	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
 	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
-	return proxyEndpointPort, err
+	if err != nil {
+		return "", errors.Wrapf(err, "Invalid ProxyDebugBindAddr: %s", proxyEndpointAddress)
+	}
+	return proxyEndpointPort, nil
 }
 
 func getProxiesFromControlPlane(opts *options.Options, name string, proxyEndpointPort string) (gloov1.ProxyList, error) {
