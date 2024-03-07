@@ -134,7 +134,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
 
 ### Data plane
 
-1. Capture the currently served xDS configuration.
+1. Capture the xDS configuration that is currently served.
    ```shell
    glooctl proxy served-config -n <controlplaneNamespace> > served-config.yaml
    ```
