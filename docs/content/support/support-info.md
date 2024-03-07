@@ -112,9 +112,9 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
     * proxy check was skipped due to an error in checking deployments
     * xds metrics check was skipped due to an error in checking deployment
     ```
-2. Collect the logs from various control plane components, such as `gloo` by using the `debug` log level (if possible). 
-    <br>To enable the `debug` log level, see [Debugging control plane]({{< versioned_link_path fromRoot="/operations/debugging_gloo#debug-control-plane" >}}).
-    <br><br>Follow the steps below for `gloo` controller pod.
+2. Collect the logs for various control plane components, such as `gloo`, `gloo-fed`, `redis`, or `observability` by using the `debug` log level (if possible). The components vary depending on your Gloo Edge setup and can be found in the `gloo-system` namespace. At a minimum, include the logs for the `gloo` pod in your support request. 
+    <br>To enable the `debug` log level, see [Debugging control plane]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#debugging-the-control-plane" >}}).
+    <br><br>Follow the steps below to get the logs for the `gloo` controller pod.
     1. Set the log level to `debug`.
         ```shell
         kubectl port-forward deploy/gloo -n <controlplaneNamespace> 9091:9091 > /dev/null 2>&1 &
@@ -149,9 +149,26 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
 3. Get the access log(s) for failed request from the `gateway-proxy` pod(s). If access logging is not enabled, refer to [this guide]({{< versioned_link_path fromRoot="/guides/security/access_logging" >}}) to enable it.
 4. If possible, collect the logs from the `gateway-proxy` Envoy pod(s) in `debug` log level for the failed request.
    {{% notice tip %}}
-   Setting the log level to `debug` for all components can get very noisy. Instead, you can change the log level for specific components only. For more information, see [Changing logging levels and more]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#changing-logging-levels-and-more" >}}).
+   The `gateway-proxy` component comes with several loggers. Setting the log level to `debug` for all loggers can get very noisy. Instead, you can change the log level for a specific logger only. For more information, see [Viewing Envoy logs]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#viewing-envoy-logs" >}}).
    {{% /notice %}}
-   For more information, see [Viewing Envoy logs]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#viewing-envoy-logs" >}}).
+   1. Choose the logger that you want to get logs for. For a list of available loggers, see [Viewing Envoy logs]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#viewing-envoy-logs" >}}).
+   2. Port-forward the `gateway-proxy` pod  on port 19000.
+        ```shell
+        kubectl -n gloo-system port-forward deploy/gateway-proxy 19000 &
+        ```
+    3. Change the log level to `debug` for the selected logger. The following example changes the log level for the `grpc` logger. 
+        ```shell
+        curl -X POST "127.0.0.1:19000/logging?grpc=debug"
+        ```
+        
+    4. Capture the logs when reproducing the issue. 
+        ```shell
+        kubectl logs -f deploy/gateway-proxy -n gloo-system > gateway-proxy.log
+        ```
+    3. After you capture the logs, reset the log level to `info`.
+        ```shell
+        curl -X POST "127.0.0.1:19000/logging?grpc=info"
+        ```
 5. Gather the stats from the proxy pod(s).
    ```shell
    glooctl proxy stats > proxy-stats.log
