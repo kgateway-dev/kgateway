@@ -180,7 +180,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
-		s.storeProxiesInCache(ctx, proxies)
+		s.syncProxyCache(ctx, proxies)
 	}
 
 	for {
@@ -391,7 +391,9 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 	}
 }
 
-func (s *XdsSyncer) storeProxiesInCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
+// syncProxyCache persists the proxies that were generated during translations and stores them in an in-memory cache
+// This cache is utilized by the debug.ProxyEndpointServer
+func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
 	ctx = contextutils.WithLogger(ctx, "proxyCache")
 	logger := contextutils.LoggerFrom(ctx)
 	for _, proxy := range proxyList {

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/solo-io/gloo/pkg/version"
@@ -151,7 +150,6 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
 				"port": d.inputs.Port,
 			},
-			"image": getDeployerImageValues(),
 		},
 	}
 	if d.inputs.Dev {
@@ -310,10 +308,4 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
-}
-
-func getDeployerImageValues() map[string]any {
-	return map[string]any{
-		"tag": os.Getenv("GG_EXPERIMENTAL_DEPLOYER_TAG"),
-	}
 }
