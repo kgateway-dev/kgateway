@@ -125,7 +125,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
         ```shell
         kubectl logs -f deploy/gloo -n <controlplaneNamespace> > gloo.log
         ```
-    3. After you captured the logs, reset the log level to `info`.
+    3. After you capture the logs, reset the log level to `info`.
         ```shell
         curl -X PUT -H "Content-Type: application/json" -d '{"level": "info"}' http://localhost:9091/logging
         kill -9 $PID
