@@ -31,7 +31,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8syamlutil "sigs.k8s.io/yaml"
@@ -49,7 +49,7 @@ const (
 
 var (
 	version    string
-	pullPolicy v1.PullPolicy
+	pullPolicy corev1.PullPolicy
 )
 
 func TestHelm(t *testing.T) {
@@ -60,7 +60,7 @@ func TestHelm(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	version = MustGetVersion()
-	pullPolicy = v1.PullIfNotPresent
+	pullPolicy = corev1.PullIfNotPresent
 	// generate the values.yaml and Chart.yaml files
 	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })

@@ -10,15 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-
 	"github.com/hashicorp/go-multierror"
-
 	"github.com/rotisserie/eris"
-
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
@@ -26,7 +23,7 @@ const promStatsPath = "/stats/prometheus"
 
 const metricsUpdateInterval = time.Millisecond * 250
 
-func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
+func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *appsv1.DeploymentList) (error, *multierror.Error) {
 	gatewayProxyDeploymentsFound := 0
 	var multiWarn *multierror.Error
 	var readOnlyErr error

@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -113,7 +113,7 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	return []*version.ServerVersion{serverVersion}, nil
 }
 
-func parseContainerString(container kubev1.Container) *generate.Image {
+func parseContainerString(container corev1.Container) *generate.Image {
 	img := &generate.Image{}
 	splitImageVersion := strings.Split(container.Image, ":")
 	name, tag := "", "latest"

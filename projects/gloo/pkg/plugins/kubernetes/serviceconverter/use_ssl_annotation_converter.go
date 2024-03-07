@@ -8,7 +8,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 /*
@@ -33,7 +33,7 @@ const GlooSslRootCaAnnotation = "gloo.solo.io/sslService.rootCa"
 // sets UseSsl on the upstream if the service has the relevant port name
 type UseSslConverter struct{}
 
-func (u *UseSslConverter) ConvertService(_ context.Context, svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
+func (u *UseSslConverter) ConvertService(_ context.Context, svc *corev1.Service, port corev1.ServicePort, us *v1.Upstream) error {
 
 	upstreamSslConfig := upstreamSslConfigFromService(svc, port)
 
@@ -44,7 +44,7 @@ func (u *UseSslConverter) ConvertService(_ context.Context, svc *kubev1.Service,
 	return nil
 }
 
-func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePort) *ssl.UpstreamSslConfig {
+func upstreamSslConfigFromService(svc *corev1.Service, svcPort corev1.ServicePort) *ssl.UpstreamSslConfig {
 
 	if svc.Annotations == nil {
 		return nil

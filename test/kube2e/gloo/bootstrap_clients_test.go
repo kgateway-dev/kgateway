@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -19,7 +20,6 @@ import (
 	"github.com/solo-io/k8s-utils/kubeutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -88,7 +88,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			kubeClient = resourceClientset.KubeClients()
 
 			testNamespace = skhelpers.RandString(8)
-			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
 				},
@@ -112,7 +112,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			BeforeEach(func() {
 				_, err := kubeClient.CoreV1().ConfigMaps(testNamespace).Create(ctx,
-					&kubev1.ConfigMap{
+					&corev1.ConfigMap{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "cfg",
 							Namespace: testNamespace,
@@ -185,7 +185,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).NotTo(HaveOccurred())
 			kubeClient = resourceClientset.KubeClients()
 
-			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
 				},
