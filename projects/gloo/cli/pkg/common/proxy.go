@@ -52,11 +52,14 @@ func ListProxiesFromSettings(namespace string, opts *options.Options, settings *
 
 func computeProxyEndpointPort(settings *gloov1.Settings) (string, error) {
 	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()
-	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
-	if err != nil {
-		return "", errors.Wrapf(err, "Invalid ProxyDebugBindAddr: %s", proxyEndpointAddress)
+	if proxyEndpointAddress == "" {
+		// This can occur if you are querying a Settings object that was created before the ProxyDebugBindAddr API
+		// was introduced to the Settings CR. In practice, this should never occur, as the API has existed for many releases.
+		return "", errors.Errorf("ProxyDebugBindAddr is empty. Consider upgrading the version of Gloo")
 	}
-	return proxyEndpointPort, nil
+
+	_, proxyEndpointPort, err := net.SplitHostPort(proxyEndpointAddress)
+	return proxyEndpointPort, err
 }
 
 func getProxiesFromControlPlane(opts *options.Options, name string, proxyEndpointPort string) (gloov1.ProxyList, error) {

@@ -43,9 +43,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// now that we run CI on a kube 1.22+ cluster, we must ensure that we install versions of gloo with v1 CRDs
-// Per https://github.com/solo-io/gloo/issues/4543: CRDs were migrated from v1beta1 -> v1 in Gloo 1.9.0
-const earliestVersionWithV1CRDs = "1.9.0"
+// upgradeStartingVersion represents the default version of Gloo which will be initially installed and used to validate upgrades
+// In practice, this should be dynamic. However, it was introduced after realizing that tests were upgrading from 1.9, an extremely
+// old version of Gloo
+const upgradeStartingVersion = "1.16.0"
 
 // for testing upgrades from a gloo version before the gloo/gateway merge and
 // before https://github.com/solo-io/gloo/pull/6349 was fixed
@@ -117,12 +118,12 @@ var _ = Describe("Kube2e: helm", func() {
 
 	Context("upgrades", func() {
 		BeforeEach(func() {
-			fromRelease = earliestVersionWithV1CRDs
+			fromRelease = upgradeStartingVersion
 		})
 
 		It("uses helm to update the settings without errors", func() {
-			By("should start with gloo version 1.9.0")
-			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
+			By("should start with gloo version 1.16.0")
+			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(upgradeStartingVersion))
 
 			By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 			client := helpers.MustSettingsClient(ctx)
