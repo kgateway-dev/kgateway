@@ -33,15 +33,17 @@ type ProxyEndpointRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The namespace to look for proxies.
+	// Optional. The namespace to look for proxies. If this is omitted, all namespaces will be considered.
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	// Optional. The name of the proxy to look up
+	// Optional. The name of the proxy to look up. If this is provided, a namespace must be included as well.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Optional. Selector to use to filter returned proxies. This will be ignored if a name is provided.
 	Selector map[string]string `protobuf:"bytes,3,rep,name=selector,proto3" json:"selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Optional. The translator source that produced the requested Proxy. Available values are:
-	//  1. [DEFAULT] edge-gw: If the Proxy was created using the Edge Gateway resources
+	//  1. edge-gw: If the Proxy was created using the Edge Gateway resources
 	//  2. k8s-gw: If the Proxy was created using the K8s Gateway resources
+	//
+	// If this is omitted, all sources will be considered.
 	Source string `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
 }
 
