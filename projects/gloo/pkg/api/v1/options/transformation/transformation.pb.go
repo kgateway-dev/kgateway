@@ -37,7 +37,7 @@ const (
 	Extraction_SINGLE_REPLACE Extraction_Mode = 1
 	// Replace all matches of the regex in the source with the replacement_text.
 	// Note: replacement_text must be set for this mode.
-	// Note: subgroup is ignored for this mode. configuration will fail if subgroup is set.
+	// Note: configuration will fail if subgroup is set to a nonzero value.
 	// Note: restrictions on the regex are different for this mode. See the regex field for more details.
 	Extraction_REPLACE_ALL Extraction_Mode = 2
 )
@@ -628,16 +628,17 @@ type Extraction struct {
 	//   - In SINGLE_REPLACE mode, the regex also needs to match the entire source. The subgroup-th capturing group
 	//     is targeted for replacement with the replacement_text.
 	//   - In REPLACE_ALL mode, the regex is applied repeatedly to find all occurrences within the source that match.
-	//     Each matching occurrence is replaced with the replacement_text, and the subgroup field is not used.
+	//     Each matching occurrence is replaced with the replacement_text. In this mode, configuration will be rejected
+	//     if subgroup is set.
 	//
 	// This field is required, and if the regex does not match the source as per the selected mode, the result of
 	// the extraction will be an empty value.
 	Regex string `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
 	// If your regex contains capturing groups, use this field to determine which
-	// group should be selected.
-	// For EXTRACT and SINGLE_REPLACE, refers to the portion of the text
+	// group should be selected. Defaults to 0.
+	// For EXTRACT and SINGLE_REPLACE, refers to the capturing group in the input
 	// to extract/replace.
-	// Config will be rejected if this is specified in REPLACE_ALL mode.
+	// Config will be rejected if this is specified as a non-zero value in REPLACE_ALL mode.
 	Subgroup uint32 `protobuf:"varint,3,opt,name=subgroup,proto3" json:"subgroup,omitempty"`
 	// Used in SINGLE_REPLACE and REPLACE_ALL modes.
 	// `replacement_text` is used to format the substitution for matched sequences in the input string
