@@ -6,6 +6,7 @@ import (
 	"net"
 	"os/exec"
 	"strconv"
+	"sync"
 
 	"github.com/avast/retry-go/v4"
 )
@@ -29,7 +30,8 @@ type cliPortForwarder struct {
 
 	errCh chan error
 
-	cmd *exec.Cmd
+	mutex sync.RWMutex
+	cmd   *exec.Cmd
 }
 
 func (c *cliPortForwarder) Start(ctx context.Context, options ...retry.Option) error {
@@ -39,6 +41,9 @@ func (c *cliPortForwarder) Start(ctx context.Context, options ...retry.Option) e
 }
 
 func (c *cliPortForwarder) startOnce(ctx context.Context) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	c.cmd = exec.CommandContext(
 		ctx,
 		"kubectl",
@@ -61,10 +66,12 @@ func (c *cliPortForwarder) Address() string {
 }
 
 func (c *cliPortForwarder) Close() {
-	if c.cmd.Process != nil {
-		c.errCh <- c.cmd.Process.Kill()
-		c.errCh <- c.cmd.Process.Release()
-	}
+	c.useCmdSafe(func() {
+		if c.cmd.Process != nil {
+			c.errCh <- c.cmd.Process.Kill()
+			c.errCh <- c.cmd.Process.Release()
+		}
+	})
 }
 
 func (c *cliPortForwarder) ErrChan() <-chan error {
@@ -73,5 +80,13 @@ func (c *cliPortForwarder) ErrChan() <-chan error {
 }
 
 func (c *cliPortForwarder) WaitForStop() {
-	c.errCh <- c.cmd.Wait()
+	c.useCmdSafe(func() {
+		c.errCh <- c.cmd.Wait()
+	})
+}
+
+func (c *cliPortForwarder) useCmdSafe(fn func()) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	fn()
 }
