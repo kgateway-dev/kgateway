@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strconv"
 
+	errors "github.com/rotisserie/eris"
+
 	"github.com/avast/retry-go/v4"
 )
 
@@ -19,8 +21,9 @@ func NewCliPortForwarder(options ...Option) PortForwarder {
 		properties: buildPortForwardProperties(options...),
 
 		// The following are populated when Start is invoked
-		errCh: nil,
-		cmd:   nil,
+		errCh:     nil,
+		cmd:       nil,
+		cmdCancel: nil,
 	}
 }
 
@@ -30,7 +33,8 @@ type cliPortForwarder struct {
 
 	errCh chan error
 
-	cmd *exec.Cmd
+	cmd       *exec.Cmd
+	cmdCancel context.CancelFunc
 }
 
 func (c *cliPortForwarder) Start(ctx context.Context, options ...retry.Option) error {
@@ -40,8 +44,19 @@ func (c *cliPortForwarder) Start(ctx context.Context, options ...retry.Option) e
 }
 
 func (c *cliPortForwarder) startOnce(ctx context.Context) error {
+	if c.properties.localPort == 0 {
+		// 0 is a special value, which means "choose for me a free port"
+		freePort, err := getFreePort()
+		if err != nil {
+			return err
+		}
+		c.properties.localPort = freePort
+	}
+
+	cmdCtx, cmdCancel := context.WithCancel(ctx)
+
 	c.cmd = exec.CommandContext(
-		ctx,
+		cmdCtx,
 		"kubectl",
 		"port-forward",
 		"-n",
@@ -51,6 +66,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	)
 	c.cmd.Stdout = c.properties.stdout
 	c.cmd.Stderr = c.properties.stderr
+	c.cmdCancel = cmdCancel
 
 	c.errCh = make(chan error, 1)
 
@@ -62,8 +78,8 @@ func (c *cliPortForwarder) Address() string {
 }
 
 func (c *cliPortForwarder) Close() {
-	if c.cmd.Process != nil {
-		c.errCh <- c.cmd.Process.Kill()
+	if c.cmdCancel != nil {
+		c.cmdCancel()
 	}
 }
 
@@ -76,4 +92,17 @@ func (c *cliPortForwarder) WaitForStop() {
 	if c.cmd.Process != nil {
 		c.errCh <- c.cmd.Wait()
 	}
+}
+
+func getFreePort() (int, error) {
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	tcpAddr, ok := l.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0, errors.Errorf("Error occurred looking for an open tcp port")
+	}
+	return tcpAddr.Port, nil
 }
