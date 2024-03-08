@@ -67,8 +67,10 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 		fmt.Println(errMessage)
 		return err
 	}
-	portForwarder.Close()
-	portForwarder.WaitForStop()
+	defer func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}()
 
 	if err := checkProxyConnectedState(stats, deploymentName, errMessage,
 		"Your "+deploymentName+" is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+

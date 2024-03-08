@@ -145,7 +145,7 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 	requestCtx, cancel := context.WithTimeout(opts.Top.Ctx, 30*time.Second)
 	defer cancel()
 
-	portForwarder := portforward.NewCliPortForwarder(
+	portForwarder := portforward.NewPortForwarder(
 		portforward.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
 		portforward.WithRemotePort(remotePort),
 		portforward.WithWriters(outWriter, errWriter),

@@ -26,9 +26,9 @@ import (
 
 var _ PortForwarder = &apiPortForwarder{}
 
-// NewPortForwarder returns an implementation of a PortForwarder that does not rely on the Kubernetes CLI
+// NewApiPortForwarder returns an implementation of a PortForwarder that does not rely on the Kubernetes CLI
 // but instead queries the Kubernetes API directly
-func NewPortForwarder(options ...Option) PortForwarder {
+func NewApiPortForwarder(options ...Option) PortForwarder {
 	return &apiPortForwarder{
 		stopCh:     make(chan struct{}, 1),
 		properties: buildPortForwardProperties(options...),
@@ -163,6 +163,8 @@ func (f *apiPortForwarder) portForwarderToPod(podName string, readyCh chan struc
 
 func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 	switch f.properties.resourceType {
+	case "deploy":
+		fallthrough
 	case "deployment":
 		pods, err := kubeutils.GetPodsForDeployment(ctx, f.restConfig, f.properties.resourceName, f.properties.resourceNamespace)
 		if err != nil {
@@ -184,7 +186,10 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 			return "", eris.Errorf("No pods found for service %s: %s", f.properties.resourceNamespace, f.properties.resourceName)
 		}
 		return pods[0], nil
+
+	case "pod":
+		return f.properties.resourceName, nil
 	}
 
-	return f.properties.resourceName, nil
+	return "", eris.Errorf("Could not determine pod name for resourceType: %s", f.properties.resourceType)
 }

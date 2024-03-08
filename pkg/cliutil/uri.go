@@ -199,7 +199,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 	localCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	resourceTypeName := strings.Split(resource, "/")
+	resourceTypeName := strings.Split(resource, "/") // ie. deployment/gloo
 	localPortInt, err := strconv.Atoi(localPort)
 	if err != nil {
 		return nil, err
@@ -209,8 +209,8 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 		return nil, err
 	}
 
-	portForwarder := portforward.NewCliPortForwarder(
-		portforward.WithResource(resourceTypeName[0], namespace, resourceTypeName[1]),
+	portForwarder := portforward.NewPortForwarder(
+		portforward.WithResource(resourceTypeName[1], namespace, resourceTypeName[0]),
 		portforward.WithPorts(localPortInt, remotePortInt),
 		portforward.WithWriters(outWriter, errWriter),
 	)
@@ -229,7 +229,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 }
 
 // PortForwardGet call kubectl port-forward and make a GET request.
-// Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
+// Callers are expected to clean up the returned portforward.PortForwarder after the port-forward is no longer needed.
 // Deprecated: Prefer portforward.NewPortForwarder
 func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, portforward.PortForwarder, error) {
 
@@ -253,7 +253,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 				return
 			default:
 			}
-			res, err := http.Get(fmt.Sprintf("%s/%s", portForwarder.Address(), getPath))
+			res, err := http.Get(fmt.Sprintf("http://%s/%s", portForwarder.Address(), strings.TrimPrefix(getPath, "/")))
 			if err != nil {
 				errs <- err
 				time.Sleep(retryInterval)
@@ -284,9 +284,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 		case res := <-result:
 			return res, portForwarder, nil
 		case <-localCtx.Done():
-			portForwarder.Close()
-			portForwarder.WaitForStop()
-			return "", nil, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
+			return "", portForwarder, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
 		}
 	}
 

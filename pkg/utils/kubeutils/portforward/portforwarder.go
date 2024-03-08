@@ -9,6 +9,8 @@ import (
 // Inspired by: https://github.com/istio/istio/blob/master/pkg/kube/portforwarder.go
 
 // PortForwarder manages the forwarding of a single port.
+// Implementations are NOT thread-safe, as the goroutine that Starts the PortForward
+// should also be the one that Closes it
 type PortForwarder interface {
 	// Start runs this apiPortForwarder.
 	Start(ctx context.Context, options ...retry.Option) error
@@ -26,4 +28,9 @@ type PortForwarder interface {
 
 	// WaitForStop blocks until connection closed (e.g. control-C interrupt)
 	WaitForStop()
+}
+
+// NewPortForwarder returns an implementation of a PortForwarder
+func NewPortForwarder(options ...Option) PortForwarder {
+	return NewApiPortForwarder(options...)
 }
