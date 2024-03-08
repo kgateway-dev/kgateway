@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"io"
 	"math"
 	"net"
@@ -141,13 +142,16 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 		outWriter = logger
 	}
 
-	portForwarder := portforward.NewPortForwarder(
+	requestCtx, cancel := context.WithTimeout(opts.Top.Ctx, 30*time.Second)
+	defer cancel()
+
+	portForwarder := portforward.NewCliPortForwarder(
 		portforward.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
 		portforward.WithRemotePort(remotePort),
 		portforward.WithWriters(outWriter, errWriter),
 	)
 	if err := portForwarder.Start(
-		opts.Top.Ctx,
+		requestCtx,
 		retry.LastErrorOnly(true),
 		retry.Delay(100*time.Millisecond),
 		retry.DelayType(retry.BackOffDelay),
@@ -162,12 +166,12 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 
 	var proxyEndpointResponse *debug.ProxyEndpointResponse
 	requestErr := retry.Do(func() error {
-		cc, err := grpc.DialContext(opts.Top.Ctx, portForwarder.Address(), grpc.WithInsecure())
+		cc, err := grpc.DialContext(requestCtx, portForwarder.Address(), grpc.WithInsecure())
 		if err != nil {
 			return err
 		}
 		pxClient := debug.NewProxyEndpointServiceClient(cc)
-		r, err := pxClient.GetProxies(opts.Top.Ctx, request,
+		r, err := pxClient.GetProxies(requestCtx, request,
 			// Some proxies can become very large and exceed the default 100Mb limit
 			// For this reason we want remove the limit but will settle for a limit of MaxInt32
 			// as we don't anticipate proxies to exceed this
