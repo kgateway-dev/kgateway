@@ -30,8 +30,8 @@ type cliPortForwarder struct {
 
 	errCh chan error
 
-	mutex sync.RWMutex
-	cmd   *exec.Cmd
+	sync.RWMutex
+	cmd *exec.Cmd
 }
 
 func (c *cliPortForwarder) Start(ctx context.Context, options ...retry.Option) error {
@@ -41,24 +41,27 @@ func (c *cliPortForwarder) Start(ctx context.Context, options ...retry.Option) e
 }
 
 func (c *cliPortForwarder) startOnce(ctx context.Context) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	var startErr error
 
-	c.cmd = exec.CommandContext(
-		ctx,
-		"kubectl",
-		"port-forward",
-		"-n",
-		c.properties.resourceNamespace,
-		fmt.Sprintf("%s/%s", c.properties.resourceType, c.properties.resourceName),
-		fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
-	)
-	c.cmd.Stdout = c.properties.stdout
-	c.cmd.Stderr = c.properties.stderr
+	c.useCmdSafe(func() {
+		c.cmd = exec.CommandContext(
+			ctx,
+			"kubectl",
+			"port-forward",
+			"-n",
+			c.properties.resourceNamespace,
+			fmt.Sprintf("%s/%s", c.properties.resourceType, c.properties.resourceName),
+			fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
+		)
+		c.cmd.Stdout = c.properties.stdout
+		c.cmd.Stderr = c.properties.stderr
 
-	c.errCh = make(chan error, 1)
+		c.errCh = make(chan error, 1)
 
-	return c.cmd.Start()
+		startErr = c.cmd.Start()
+	})
+
+	return startErr
 }
 
 func (c *cliPortForwarder) Address() string {
@@ -67,12 +70,11 @@ func (c *cliPortForwarder) Address() string {
 
 func (c *cliPortForwarder) Close() {
 	// Close invokes process.release() which is considered a Write operation, so we must use a Lock
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	if c.cmd.Process != nil {
-		c.errCh <- c.cmd.Process.Kill()
-		c.errCh <- c.cmd.Process.Release()
-	}
+	c.useCmdSafe(func() {
+		if c.cmd.Process != nil {
+			c.errCh <- c.cmd.Process.Kill()
+		}
+	})
 }
 
 func (c *cliPortForwarder) ErrChan() <-chan error {
@@ -81,7 +83,15 @@ func (c *cliPortForwarder) ErrChan() <-chan error {
 }
 
 func (c *cliPortForwarder) WaitForStop() {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	c.errCh <- c.cmd.Wait()
+	c.useCmdSafe(func() {
+		if c.cmd.Process != nil {
+			c.errCh <- c.cmd.Wait()
+		}
+	})
+}
+
+func (c *cliPortForwarder) useCmdSafe(fn func()) {
+	c.Lock()
+	defer c.Unlock()
+	fn()
 }
