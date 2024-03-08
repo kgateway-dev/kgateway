@@ -66,12 +66,13 @@ func (c *cliPortForwarder) Address() string {
 }
 
 func (c *cliPortForwarder) Close() {
-	c.useCmdSafe(func() {
-		if c.cmd.Process != nil {
-			c.errCh <- c.cmd.Process.Kill()
-			c.errCh <- c.cmd.Process.Release()
-		}
-	})
+	// Close invokes process.release() which is considered a Write operation, so we must use a Lock
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if c.cmd.Process != nil {
+		c.errCh <- c.cmd.Process.Kill()
+		c.errCh <- c.cmd.Process.Release()
+	}
 }
 
 func (c *cliPortForwarder) ErrChan() <-chan error {
@@ -80,13 +81,7 @@ func (c *cliPortForwarder) ErrChan() <-chan error {
 }
 
 func (c *cliPortForwarder) WaitForStop() {
-	c.useCmdSafe(func() {
-		c.errCh <- c.cmd.Wait()
-	})
-}
-
-func (c *cliPortForwarder) useCmdSafe(fn func()) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	fn()
+	c.errCh <- c.cmd.Wait()
 }
