@@ -22,7 +22,7 @@ All Solo customers have access to various channels for obtaining technical assis
 
 For more information, see the following resources: 
 * [Submit a request]({{% versioned_link_path fromRoot="/support/support-ticket/#submit-a-ticket" %}}): Learn how to create a ticket by using the Support Portal or email. 
-* [Details to include in your support request]({{% versioned_link_path fromRoot="/support/support-ticket/#ticket-details" %}}): Review what Solo Support needs to understand your request and provide timely, accurate assistance. 
+* [Add support information]({{< versioned_link_path fromRoot="/support/support-info/" >}}): Review what Solo Support needs to understand your request and provide timely, accurate assistance. 
 * [Priority levels]({{% versioned_link_path fromRoot="/support/support-ticket/#priority-levels" %}}): Learn more about priority levels and how to assign the right priority level to your support request.
 * [Targeted times for initial response]({{% versioned_link_path fromRoot="/support/support-ticket/#response-time" %}}): Review response times from Solo Support based on the priority level that you chose for your request. 
 * [Join the Solo.io Slack community]({{% versioned_link_path fromRoot="/support/support-ticket/#slack" %}}): Learn about which channels to join, and how to open a Support ticket in Zendesk by using Slack. 
