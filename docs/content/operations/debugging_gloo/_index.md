@@ -14,8 +14,6 @@ The guide is broken into three main sections:
 
 This guide is intended to help you understand where to look if things aren't working as expected. After going through, if [all else fails](#all-else-fails), you can capture the state of Gloo Edge configurations and logs and join us on our [Slack](https://slack.solo.io) and one of our engineers will be able to help.
 
-
-
 ## General debugging tools and tips
 
 Review general troubleshooting steps that you can take to start troubleshooting your Gloo Edge setup. 
@@ -61,7 +59,6 @@ To see the Envoy configuration that is currently served by the Gloo Edge xDS ser
 glooctl proxy served-config
 ```
 
-
 ## Debugging the data plane
 
 Gloo Edge is based on Envoy proxies. If requests are handled incorrectly, use the following `glooctl` CLI tools to debug your Envoy configuration.  
@@ -92,7 +89,7 @@ Gloo Edge is based on Envoy proxies. If requests are handled incorrectly, use th
 
 4. Next, check the proxy configuration that is served by the Gloo Edge xDS server. When you create Gloo Edge resources, these resources are translated into Envoy configuration and sent to the xDS server. If Gloo Edge resources are configured correctly, the configuration must be included in the proxy configuration that is served by the xDS server. 
    ```sh
-   glooctl proxy served-config
+   glooctl proxy served config
    ```
 
 5. If the Gloo Edge xDS server has the correct configuration, you can then check what configuration is served by the gateway proxies in your cluster. 
@@ -165,8 +162,6 @@ Finally, you can use the Solo.io Envoy UI to browse the config. You can safely u
 
 ![Envoy UI]({{% versioned_link_path fromRoot="/img/envoy-ui.png" %}})
 
-
-
 ### Viewing Envoy logs
 
 If things look okay (within your ability to tell), another good place to look is the Envoy proxy logs. You can very quickly turn on `debug` logging to Envoy as well as `tail` the logs with this handy `glooctl` command:
@@ -192,12 +187,25 @@ curl -X POST "127.0.0.1:19000/logging?level=debug"
 curl -X POST "127.0.0.1:19000/logging?aws=debug"
 ```
 
+Below is a list of the loggers available to selectively change the log level.
+
+| <!-- -->         | <!-- -->     | <!-- -->       | <!-- -->      | <!-- -->         | <!-- -->      | <!-- -->     |
+|------------------|--------------|----------------|---------------|------------------|---------------|--------------|
+| admin            | aws          | cache_filter   | client        | config           | connection    | conn_handler |
+| decompression    | dns          | envoy_bug      | ext_authz     | ext_proc         | file          | filter       | 
+| forward_proxy    | grpc         | happy_eyeballs | hc            | health_checker   | http          | http2        | 
+| init             | io           | jwt            | kafka         | lua              | main          | mongo        | 
+| multi_connection | oauth2       | quic           | pool          | rate_limit_quota | rbac          | redis        | 
+| router           | runtime      | stats          | secret        | tap              | testing       | thrift       | 
+| tracing          | upstream     | udp            | wasm          |                  |               |              |
+
 For a full list of the different Envoy loggers, visit the following endpoint: `http://localhost:19000/logging`
 
 Additionally, you can configure access logging to dump specific parts of the request into the logs. For more information, see [Access Logging]({{< versioned_link_path fromRoot="/guides/security/access_logging//" >}}). 
 
 
 ### Viewing Envoy stats
+
 Envoy collects a wealth of statistics and makes them available for metric-collection systems like Prometheus, Statsd, and Datadog (to name a few). You can also very quickly get access to the stats from the cli:
 
 ```bash
@@ -231,7 +239,6 @@ The Gloo Edge control plane is made up of the following components:
 ```bash
 NAME                             READY   STATUS    RESTARTS   AGE
 discovery-857796b8fb-gcphh       1/1     Running   0          15h
-gateway-5d7dd58d5f-8z48k         1/1     Running   0          15h
 gateway-proxy-8689c55fb8-7swfq   1/1     Running   0          15h
 gloo-66fb8974c9-8sgll            1/1     Running   0          15h
 ```
@@ -242,7 +249,6 @@ You will see more components for the [Enterprise installation]({{< versioned_lin
 NAME                                                      READY   STATUS    RESTARTS   AGE
 discovery-68dbd794-ssx7b                                  1/1     Running   0          107m
 extauth-67557744dd-5wc2p                                  1/1     Running   0          107m
-gateway-595cc67f54-tr6ps                                  1/1     Running   0          107m
 gateway-proxy-79c9f44b5d-cprg7                            1/1     Running   0          107m
 gloo-74bb8b9df7-72t8m                                     1/1     Running   0          107m
 gloo-fed-857964dd9f-gq8np                                 1/1     Running   0          107m
@@ -279,7 +285,6 @@ To follow the logs of other Gloo Edge deployments, simply change the value of th
 | ------------- | ------------- |
 | Discovery | `kubectl logs -f -n gloo-system -l gloo=discovery` |
 | External Auth (Enterprise) | `kubectl logs -f -n gloo-system -l gloo=extauth` |
-| Gateway | `kubectl logs -f -n gloo-system -l gloo=gateway`  |
 | Gloo Control Plane | `kubectl logs -f -n gloo-system -l gloo=gloo` |
 | Observability (Enterprise) | `kubectl logs -f -n gloo-system -l gloo=observability` |
 | Rate Limiting (Enterprise) | `kubectl logs -f -n gloo-system -l gloo=rate-limit` |
@@ -313,7 +318,7 @@ kubectl port-forward -n gloo-system deploy/discovery 9091:9091
 
 ### Declaratively setting the log levels
 
-Setting the `LOG_LEVEL` environment variable within `gloo`, `discovery`, `gateway` or gateway proxy deployments will change the level at which the stats server logs. The default log level for the stats server is `info`.
+Setting the `LOG_LEVEL` environment variable within `gloo`, `discovery`, or gateway proxy deployments will change the level at which the stats server logs. The default log level for the stats server is `info`.
 
 Other acceptable log levels for Gloo Edge components are:
 
@@ -358,6 +363,7 @@ observability:
 ```
 
 ### Dev Mode and Gloo Debug Endpoint
+
 In non-production environments `settings.devMode` can be set to `true` to enable a debug endpoint on the gloo deployment on port `10010`. If this flag set at install time, the port will be exposed automatically. To set it on an existing installation:
 * Enable in the settings CR:
 ```
@@ -392,4 +398,4 @@ glooctl debug logs -f gloo-logs.log
 glooctl debug yaml -f gloo-yamls.yaml
 ```
 
-These commands dump all of the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Edge deployment. 
+These commands dump all the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Edge deployment. 
