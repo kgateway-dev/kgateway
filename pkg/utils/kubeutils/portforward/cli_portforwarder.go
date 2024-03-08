@@ -18,7 +18,7 @@ func NewCliPortForwarder(options ...Option) PortForwarder {
 		properties: buildPortForwardProperties(options...),
 
 		// The following are populated when Start is invoked
-		errCh: make(chan error),
+		errCh: nil,
 		cmd:   nil,
 	}
 }
@@ -50,6 +50,8 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	)
 	c.cmd.Stdout = c.properties.stdout
 	c.cmd.Stderr = c.properties.stderr
+
+	c.errCh = make(chan error, 1)
 
 	return c.cmd.Start()
 }
