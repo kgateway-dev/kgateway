@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/avast/retry-go/v4"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"io"
 	"net"
 	"net/http"
@@ -15,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/avast/retry-go/v4"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"

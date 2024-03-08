@@ -3,10 +3,11 @@ package portforward
 import (
 	"context"
 	"fmt"
-	"github.com/avast/retry-go/v4"
 	"net"
 	"os/exec"
 	"strconv"
+
+	"github.com/avast/retry-go/v4"
 )
 
 var _ PortForwarder = &cliPortForwarder{}

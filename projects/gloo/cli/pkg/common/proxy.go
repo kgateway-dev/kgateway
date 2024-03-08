@@ -1,13 +1,14 @@
 package common
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"io"
 	"math"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
 
