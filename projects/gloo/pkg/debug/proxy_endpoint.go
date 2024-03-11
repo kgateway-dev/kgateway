@@ -76,8 +76,14 @@ func (p *proxyEndpointServer) getOne(ctx context.Context, namespace, name, sourc
 		proxy, readErr := reader.Read(namespace, name, clients.ReadOpts{Ctx: ctx})
 		if readErr == nil {
 			return proxy, nil
-		} else {
+		}
+
+		if errors.IsNotExist(readErr) {
 			// continue, this just means that one of the readers didn't have a proxy with that name
+		} else {
+			// this was an unexpected error, return to the user
+			return nil, readErr
+
 		}
 	}
 
@@ -101,7 +107,7 @@ func (p *proxyEndpointServer) getMany(ctx context.Context, namespace string, sel
 		}
 	}
 
-	// we treat an getMany request that returned no proxies as valid (no error), just with one proxies
+	// we treat an getMany request that returned no proxies as valid (no error), just with no proxies
 	return proxyList, nil
 }
 

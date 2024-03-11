@@ -31,6 +31,15 @@ const (
 	defaultTimeout = 30 * time.Second
 )
 
+var (
+	defaultRetryOptions = []retry.Option{
+		retry.LastErrorOnly(true),
+		retry.Delay(100 * time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Attempts(5),
+	}
+)
+
 // GetResource identified by the given URI.
 // The URI can either be a http(s) address or a relative/absolute file path.
 func GetResource(uri string) (io.ReadCloser, error) {
@@ -212,12 +221,7 @@ func PortForward(ctx context.Context, namespace string, resource string, localPo
 		portforward.WithWriters(outWriter, errWriter),
 	)
 
-	err = portForwarder.Start(
-		ctx,
-		retry.LastErrorOnly(true),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(5))
+	err = portForwarder.Start(ctx, defaultRetryOptions...)
 	if err != nil {
 		return nil, err
 	}
