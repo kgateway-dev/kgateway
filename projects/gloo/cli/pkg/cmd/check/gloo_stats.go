@@ -89,8 +89,10 @@ func checkXdsMetrics(ctx context.Context, printer printers.P, opts *options.Opti
 	if err != nil {
 		return err
 	}
-	portForwarder.Close()
-	portForwarder.WaitForStop()
+	defer func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}()
 
 	if strings.TrimSpace(stats) == "" {
 		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")

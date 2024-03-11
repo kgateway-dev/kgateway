@@ -183,7 +183,7 @@ func minikubeIp(clusterName string) (string, error) {
 
 // PortForward call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
 // Deprecated: Prefer portforward.NewPortForwarder
-func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (portforward.PortForwarder, error) {
+func PortForward(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool) (portforward.PortForwarder, error) {
 	err := Initialize()
 	if err != nil {
 		return nil, err
@@ -195,9 +195,6 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 	if verbose {
 		outWriter = io.MultiWriter(logger, os.Stdout)
 	}
-
-	localCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
 
 	resourceTypeName := strings.Split(resource, "/") // ie. deployment/gloo
 	localPortInt, err := strconv.Atoi(localPort)
@@ -216,7 +213,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 	)
 
 	err = portForwarder.Start(
-		localCtx,
+		ctx,
 		retry.LastErrorOnly(true),
 		retry.Delay(100*time.Millisecond),
 		retry.DelayType(retry.BackOffDelay),
@@ -234,7 +231,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, portforward.PortForwarder, error) {
 
 	/** port-forward command **/
-	portForwarder, err := PortForward(namespace, resource, localPort, kubePort, verbose)
+	portForwarder, err := PortForward(ctx, namespace, resource, localPort, kubePort, verbose)
 	if err != nil {
 		return "", nil, err
 	}
