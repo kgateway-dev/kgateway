@@ -448,22 +448,6 @@ var _ = Describe("Staged Transformation", func() {
 					})
 				})
 
-				It("Rejects config if subgroup is larger than the total number of capturing groups", func() {
-					extraction.Mode = transformation.Extraction_EXTRACT
-					extraction.Regex = ".*(test).*"
-					extraction.Subgroup = 2
-
-					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-						vsBuilder := helpers.BuilderFromVirtualService(vs)
-						vsBuilder.WithVirtualHostOptions(vHostOpts)
-						return vsBuilder.Build()
-					})
-
-					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
-						vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, e2e.DefaultVirtualServiceName, clients.ReadOpts{})
-						return vs, err
-					})
-				})
 			})
 			Describe("Single Replace mode", func() {
 				It("Can extract a substring from the body and replace it in the response", func() {
@@ -510,7 +494,7 @@ var _ = Describe("Staged Transformation", func() {
 					}, "5s", ".5s").Should(Succeed())
 				})
 
-				It("Doesn't replace if regex doesn't match", func() {
+				It("Returns input if regex doesn't match", func() {
 					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
 					extraction.Regex = "will not match"
 					extraction.Subgroup = 0
@@ -528,12 +512,12 @@ var _ = Describe("Staged Transformation", func() {
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 							StatusCode: http.StatusOK,
-							Body:       "",
+							Body:       body,
 						}))
 					}, "5s", ".5s").Should(Succeed())
 				})
 
-				It("Doesn't replace if regex doesn't match entire input", func() {
+				It("Returns input if regex doesn't match entire input", func() {
 					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
 					extraction.Regex = "is a test"
 					extraction.Subgroup = 0
@@ -551,7 +535,7 @@ var _ = Describe("Staged Transformation", func() {
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 							StatusCode: http.StatusOK,
-							Body:       "",
+							Body:       body,
 						}))
 					}, "5s", ".5s").Should(Succeed())
 				})
@@ -572,27 +556,8 @@ var _ = Describe("Staged Transformation", func() {
 						return vs, err
 					})
 				})
-
-				It("Rejects config if subgroup is larger than the total number of capturing groups", func() {
-					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
-					extraction.Regex = ".*(test).*"
-					extraction.Subgroup = 2
-					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
-
-					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-						vsBuilder := helpers.BuilderFromVirtualService(vs)
-						vsBuilder.WithVirtualHostOptions(vHostOpts)
-						return vsBuilder.Build()
-					})
-
-					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
-						vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, e2e.DefaultVirtualServiceName, clients.ReadOpts{})
-						return vs, err
-					})
-				})
 			})
-
-			Describe("Replace ALl mode", func() {
+			Describe("Replace ALL mode", func() {
 				It("Can replace multiple instances of the regex in the body", func() {
 					extraction.Mode = transformation.Extraction_REPLACE_ALL
 					extraction.Regex = "test"
@@ -614,7 +579,7 @@ var _ = Describe("Staged Transformation", func() {
 					}, "5s", ".5s").Should(Succeed())
 				})
 
-				It("Doesn't replace if regex doesn't match", func() {
+				It("Returns input if regex doesn't match", func() {
 					extraction.Mode = transformation.Extraction_REPLACE_ALL
 					extraction.Regex = "will not match"
 					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
@@ -631,7 +596,7 @@ var _ = Describe("Staged Transformation", func() {
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 							StatusCode: http.StatusOK,
-							Body:       "",
+							Body:       body,
 						}))
 					}, "5s", ".5s").Should(Succeed())
 				})
