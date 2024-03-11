@@ -147,7 +147,7 @@ message Extraction {
   // Used in SINGLE_REPLACE and REPLACE_ALL modes.
   // `replacement_text` is used to format the substitution for matched sequences in the input string
   // - In SINGLE_REPLACE mode, the content in the subgroup-th capturing group is replaced with the `replacement_text`.
-  // - In REPLACE_ALL mode, each sequence matching the specified regex in the in the input is replaced with the `replacement_text`.
+  // - In REPLACE_ALL mode, each sequence matching the specified regex in the input is replaced with the `replacement_text`.
   //     The replacement_text may contain special syntax, such as $1, $2, etc., to refer to captured groups within the regular expression.
   //     The value contained within `replacement_text` is treated as a string, and is passed to std::regex_replace as the replacement string.
   //     see https://en.cppreference.com/w/cpp/regex/regex_replace for more details.
