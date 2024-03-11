@@ -4,12 +4,11 @@ import (
 	"context"
 	"sort"
 
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
-	"github.com/solo-io/go-utils/contextutils"
-	kubev1 "k8s.io/api/core/v1"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
+	"github.com/solo-io/go-utils/contextutils"
+	corev1 "k8s.io/api/core/v1"
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -41,7 +40,7 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 		ingresses = append(ingresses, kubeIngress)
 	}
 
-	var services []*kubev1.Service
+	var services []*corev1.Service
 	for _, svc := range snap.Services {
 		kubeSvc, err := service.ToKube(svc)
 		if err != nil {
@@ -102,7 +101,7 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 	}
 }
 
-func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Service, ingressNamespace string, backend networkingv1.IngressBackend) (*gloov1.Upstream, error) {
+func upstreamForBackend(upstreams gloov1.UpstreamList, services []*corev1.Service, ingressNamespace string, backend networkingv1.IngressBackend) (*gloov1.Upstream, error) {
 	serviceName, servicePort, err := getServiceNameAndPort(services, ingressNamespace, backend.Service)
 	if err != nil {
 		return nil, err
@@ -137,7 +136,7 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Servic
 // getServiceNameAndPort returns the service name and port number for an IngressServiceBackend or an error if the
 // defined IngressServiceBackend does not match any available services.
 // An IngressServiceBackend can have have its port defined either by number or name, so we must handle both cases
-func getServiceNameAndPort(services []*kubev1.Service, namespace string, ingressService *networkingv1.IngressServiceBackend) (string, int32, error) {
+func getServiceNameAndPort(services []*corev1.Service, namespace string, ingressService *networkingv1.IngressServiceBackend) (string, int32, error) {
 	if ingressService == nil {
 		return "", 0, errors.New("no service specified for ingress backend")
 	}
@@ -167,7 +166,7 @@ type secureVirtualHost struct {
 	secret core.ResourceRef
 }
 
-func virtualHosts(ctx context.Context, ingresses []*networkingv1.Ingress, upstreams gloov1.UpstreamList, services []*kubev1.Service, requireIngressClass bool, ingressClass string) ([]*gloov1.VirtualHost, []secureVirtualHost) {
+func virtualHosts(ctx context.Context, ingresses []*networkingv1.Ingress, upstreams gloov1.UpstreamList, services []*corev1.Service, requireIngressClass bool, ingressClass string) ([]*gloov1.VirtualHost, []secureVirtualHost) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)

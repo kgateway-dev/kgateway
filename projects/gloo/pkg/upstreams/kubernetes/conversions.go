@@ -9,7 +9,7 @@ import (
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func IsKubeUpstream(upstreamName string) bool {
@@ -40,7 +40,7 @@ func KubeServicesToUpstreams(ctx context.Context, services skkube.ServiceList) v
 	return result
 }
 
-func serviceToUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort) *gloov1.Upstream {
+func serviceToUpstream(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *gloov1.Upstream {
 	us := kubeplugin.DefaultUpstreamConverter().CreateUpstream(ctx, svc, port)
 
 	us.GetMetadata().Name = fakeUpstreamName(svc.Name, svc.Namespace, port.Port)
