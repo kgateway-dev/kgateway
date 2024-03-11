@@ -590,29 +590,6 @@ var _ = Describe("Staged Transformation", func() {
 						return vs, err
 					})
 				})
-
-				FIt("Can do BananaToOrange example", func() {
-					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
-					extraction.Regex = ".*(banana).*"
-					extraction.Subgroup = 1
-					extraction.ReplacementText = &wrapperspb.StringValue{Value: "orange"}
-
-					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-						vsBuilder := helpers.BuilderFromVirtualService(vs)
-
-						vsBuilder.WithVirtualHostOptions(vHostOpts)
-						return vsBuilder.Build()
-					})
-
-					body := "Fruits: [apple, pear, banana, pineapple]"
-					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
-					Eventually(func(g Gomega) {
-						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-							StatusCode: http.StatusOK,
-							Body:       "Fruits: [apple, pear, orange, pineapple]",
-						}))
-					}, "5s", ".5s").Should(Succeed())
-				})
 			})
 
 			Describe("Replace ALl mode", func() {
