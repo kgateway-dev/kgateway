@@ -30,9 +30,11 @@ const (
 type Extraction_Mode int32
 
 const (
-	// Default mode. Extract the value of the subgroup-th capturing group.
+	// Default mode. Extract the content of a specified capturing group. In this mode,
+	// `subgroup` selects the n-th capturing group whose value will be extracted.
 	Extraction_EXTRACT Extraction_Mode = 0
-	// Replace the value of the subgroup-th capturing group with the replacement_text.
+	// Replace the content of a specified capturing group. In this mode, `subgroup` selects the
+	// n-th capturing group whose value will be replaced with the string provided in `replacement_text`.
 	// Note: replacement_text must be set for this mode.
 	Extraction_SINGLE_REPLACE Extraction_Mode = 1
 	// Replace all matches of the regex in the source with the replacement_text.
@@ -623,20 +625,19 @@ type Extraction struct {
 	//	*Extraction_Body
 	Source isExtraction_Source `protobuf_oneof:"source"`
 	// The regex field specifies the regular expression used for matching against the source content.
-	//   - In EXTRACT mode, the entire source must match the regex. The subgroup-th capturing group,
-	//     if specified, determines which part of the match is extracted.
-	//   - In SINGLE_REPLACE mode, the regex also needs to match the entire source. The subgroup-th capturing group
-	//     is targeted for replacement with the replacement_text.
+	//   - In EXTRACT mode, the entire source must match the regex. `subgroup` selects the n-th capturing group,
+	//     which determines which part of the match is extracted. If the regex does not match the source,
+	//     the result of the extraction will be an empty value.
+	//   - In SINGLE_REPLACE mode, the regex also needs to match the entire source. `subgroup` selects the n-th capturing group
+	//     which is replaced with the content of `replacement_text`. If the regex does not match the source, the result
+	//     of the replacement will be the source itself.
 	//   - In REPLACE_ALL mode, the regex is applied repeatedly to find all occurrences within the source that match.
-	//     Each matching occurrence is replaced with the replacement_text. In this mode, configuration will be rejected
-	//     if subgroup is set.
-	//
-	// This field is required, and if the regex does not match the source as per the selected mode, the result of
-	// the extraction will be an empty value.
+	//     Each matching occurrence is replaced with the `replacement_text`. In this mode, configuration will be rejected
+	//     if subgroup is set. If the regex does not match the source, the result of the replacement will be the source itself.
 	Regex string `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
 	// If your regex contains capturing groups, use this field to determine which
 	// group should be selected. Defaults to 0.
-	// For EXTRACT and SINGLE_REPLACE, refers to the capturing group in the input
+	// For EXTRACT and SINGLE_REPLACE modes, refers to the capturing group in the input
 	// to extract/replace.
 	// Config will be rejected if this is specified as a non-zero value in REPLACE_ALL mode.
 	Subgroup uint32 `protobuf:"varint,3,opt,name=subgroup,proto3" json:"subgroup,omitempty"`
