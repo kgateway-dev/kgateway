@@ -2,20 +2,19 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/solo-io/skv2/codegen"
 	"github.com/solo-io/skv2/codegen/model"
 	"github.com/solo-io/skv2/codegen/skv2_anyvendor"
-	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+//go:generate go run ./generate.go
 func main() {
-	os.RemoveAll("vendor_any")
+	//os.RemoveAll("vendor_any")
 	log.Println("starting generate")
 
-	anyvendorImports := sk_anyvendor.CreateDefaultMatchOptions(
+	anyvendorImports := skv2_anyvendor.CreateDefaultMatchOptions(
 		[]string{
 			"projects/gateway2/**/*.proto",
 		},
@@ -46,15 +45,12 @@ func main() {
 					{
 						Kind: "GatewayConfig",
 						Spec: model.Field{
-							Type: model.Type{
-								Name: "GatewayConfigSpec",
-							},
+							Type: model.Type{Name: "GatewayConfigSpec"},
 						},
-						Status: &model.Field{Type: model.Type{
-							Name: "GatewayConfigStatus",
+						Status: &model.Field{
+							Type: model.Type{Name: "GatewayConfigStatus"},
 						},
-						//Stored: true,
-						},
+						Stored: true,
 					},
 				},
 				RenderManifests:         true,
@@ -62,7 +58,7 @@ func main() {
 				RenderClients:           true,
 				RenderController:        true,
 				MockgenDirective:        true,
-				RenderValidationSchemas: false,
+				RenderValidationSchemas: true,
 			},
 		},
 	}
