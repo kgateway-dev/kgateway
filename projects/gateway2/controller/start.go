@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
@@ -41,14 +40,19 @@ var (
 type StartConfig struct {
 	Dev          bool
 	ControlPlane bootstrap.ControlPlane
+	Settings     *v1.Settings
 
-	Settings *v1.Settings
-
+	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
+	// This is responsible for producing the extension points that this controller requires
 	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
 
 	// GlooPluginRegistryFactory is the factory function to produce a PluginRegistry
 	// The plugins in this registry are used during the conversion of a Proxy resource into an xDS Snapshot
 	GlooPluginRegistryFactory plugins.PluginRegistryFactory
+
+	// ProxyClient is the client that writes Proxy resources into an in-memory cache
+	// This cache is utilized by the debug.ProxyEndpointServer
+	ProxyClient v1.ProxyClient
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -95,6 +99,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		inputChannels,
 		mgr,
 		cfg.ExtensionsFactory,
+		cfg.ProxyClient,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {
 		setupLog.Error(err, "unable to add xdsSyncer runnable")

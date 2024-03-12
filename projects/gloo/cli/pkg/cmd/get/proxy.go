@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/spf13/cobra"
 )
@@ -23,5 +24,8 @@ func Proxy(opts *options.Options) *cobra.Command {
 			return nil
 		},
 	}
+
+	flagutils.AddGetProxyFlags(cmd.Flags(), &opts.Get.Proxy)
+
 	return cmd
 }
