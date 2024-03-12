@@ -160,8 +160,8 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	if d.inputs.Dev {
 		vals["develop"] = true
 	}
-	log := log.FromContext(ctx)
-	log.Info("rendering helm chart", "vals", vals)
+	logger := log.FromContext(ctx)
+	logger.Info("rendering helm chart", "vals", vals)
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
@@ -205,9 +205,6 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	// Set owner ref
 	trueVal := true
 	for _, obj := range objs {
-		fmt.Printf("xxxxx objToDeploy: kind=%v, namespace=%s, name=%s\n", obj.GetObjectKind(),
-			obj.GetNamespace(), obj.GetName())
-
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,
@@ -221,7 +218,9 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 }
 
 func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object, cli client.Client) error {
+	logger := log.FromContext(ctx)
 	for _, obj := range objs {
+		logger.V(1).Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
 		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
 			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
 		}
