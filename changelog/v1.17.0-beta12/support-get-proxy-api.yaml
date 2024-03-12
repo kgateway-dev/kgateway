@@ -1,4 +1,11 @@
 changelog:
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/solo-projects/issues/5874
+    resolvesIssue: false
+    description: >-
+      `glooctl get proxy` will not work if you have persisted Proxy CRs in etcD and you are querying
+      and older server version (1.16 and below). In general, we recommend that you keep your client and 
+      server versions in sync. You can verify the client/server versions you are currently running by calling `glooctl version`.
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/5874
     resolvesIssue: false
