@@ -29,7 +29,6 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
-	admission_v1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -37,20 +36,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	admission_v1_types "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
 	core_v1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 )
 
-// now that we run CI on a kube 1.22+ cluster, we must ensure that we install versions of gloo with v1 CRDs
-// Per https://github.com/solo-io/gloo/issues/4543: CRDs were migrated from v1beta1 -> v1 in Gloo 1.9.0
-const earliestVersionWithV1CRDs = "1.9.0"
-
-// for testing upgrades from a gloo version before the gloo/gateway merge and
-// before https://github.com/solo-io/gloo/pull/6349 was fixed
-// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
-const versionBeforeGlooGatewayMerge = "1.11.0"
+// upgradeStartingVersion represents the default version of Gloo which will be initially installed and used to validate upgrades
+// In practice, this should be dynamic. However, it was introduced after realizing that tests were upgrading from 1.9, an extremely
+// old version of Gloo
+const upgradeStartingVersion = "1.12.0"
 
 const namespace = defaults.GlooSystem
 
@@ -117,19 +111,19 @@ var _ = Describe("Kube2e: helm", func() {
 
 	Context("upgrades", func() {
 		BeforeEach(func() {
-			fromRelease = earliestVersionWithV1CRDs
+			fromRelease = upgradeStartingVersion
 		})
 
 		It("uses helm to update the settings without errors", func() {
-			By("should start with gloo version 1.9.0")
-			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
+			By("should start with gloo version 1.12.0")
+			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(upgradeStartingVersion))
 
 			By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 			client := helpers.MustSettingsClient(ctx)
 			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
-			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
+			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(104857600)))
 
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, []string{
 				"--set", "settings.replaceInvalidRoutes=true",
@@ -337,83 +331,6 @@ var _ = Describe("Kube2e: helm", func() {
 			validationWebhook, err = webhookConfigClient.Get(ctx, fmt.Sprintf("gloo-gateway-validation-webhook-%v", namespace), metav1.GetOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(*validationWebhook.Webhooks[0].TimeoutSeconds).To(Equal(int32(5)))
-		})
-
-		// Below are tests with different combinations of upgrades with failurePolicy=Ignore/Fail.
-		Context("failurePolicy upgrades", func() {
-
-			var webhookConfigClient admission_v1_types.ValidatingWebhookConfigurationInterface
-			var gatewayV1Client gatewayv1kube.GatewayV1Interface
-
-			BeforeEach(func() {
-				webhookConfigClient = kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
-				gatewayV1Client, err = gatewayv1kube.NewForConfig(cfg)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			testFailurePolicyUpgrade := func(oldFailurePolicy admission_v1.FailurePolicyType, newFailurePolicy admission_v1.FailurePolicyType) {
-				By(fmt.Sprintf("should start with gateway.validation.failurePolicy=%v", oldFailurePolicy))
-				webhookConfig, err := webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(oldFailurePolicy))
-
-				// to ensure the default Gateways were not deleted during upgrade, compare their creation timestamps before and after the upgrade
-				gw, err := gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				gwTimestampBefore := gw.GetCreationTimestamp().String()
-				gwSsl, err := gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				gwSslTimestampBefore := gwSsl.GetCreationTimestamp().String()
-
-				// upgrade to the new failurePolicy type
-				var newStrictValue = false
-				if newFailurePolicy == admission_v1.Fail {
-					newStrictValue = true
-				}
-				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, newStrictValue, []string{})
-
-				By(fmt.Sprintf("should have updated to gateway.validation.failurePolicy=%v", newFailurePolicy))
-				webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(*webhookConfig.Webhooks[0].FailurePolicy).To(Equal(newFailurePolicy))
-
-				By("Gateway creation timestamps should not have changed")
-				gw, err = gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				gwTimestampAfter := gw.GetCreationTimestamp().String()
-				Expect(gwTimestampBefore).To(Equal(gwTimestampAfter))
-				gwSsl, err = gatewayV1Client.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				gwSslTimestampAfter := gwSsl.GetCreationTimestamp().String()
-				Expect(gwSslTimestampBefore).To(Equal(gwSslTimestampAfter))
-			}
-
-			Context("starting from before the gloo/gateway merge, with failurePolicy=Ignore", func() {
-				BeforeEach(func() {
-					fromRelease = versionBeforeGlooGatewayMerge
-					strictValidation = false
-				})
-				It("can upgrade to current release, with failurePolicy=Ignore", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Ignore)
-				})
-				It("can upgrade to current release, with failurePolicy=Fail", func() {
-					testFailurePolicyUpgrade(admission_v1.Ignore, admission_v1.Fail)
-				})
-			})
-			Context("starting from helm hook release, with failurePolicy=Fail", func() {
-				BeforeEach(func() {
-					// The original fix for installing with failurePolicy=Fail (https://github.com/solo-io/gloo/issues/6213)
-					// went into gloo v1.11.10. It turned the Gloo custom resources into helm hooks to guarantee ordering,
-					// however it caused additional issues so we moved away from using helm hooks. This test is to ensure
-					// we can successfully upgrade from the helm hook release to the current release.
-					// TODO delete tests once this version is no longer supported https://github.com/solo-io/gloo/issues/6661
-					fromRelease = "1.11.10"
-					strictValidation = true
-				})
-				It("can upgrade to current release, with failurePolicy=Fail", func() {
-					testFailurePolicyUpgrade(admission_v1.Fail, admission_v1.Fail)
-				})
-			})
 		})
 
 	})

@@ -715,6 +715,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}()
 		opts.ValidationServer.StartGrpcServer = false
 	}
+
 	if opts.ControlPlane.StartGrpcServer {
 		// copy for the go-routines
 		controlPlane := opts.ControlPlane
@@ -736,7 +737,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if opts.ProxyDebugServer.StartGrpcServer {
 		proxyDebugServer := opts.ProxyDebugServer
-		proxyDebugServer.Server.SetProxyClient(proxyClient)
+		proxyDebugServer.Server.RegisterProxyReader(debug.EdgeGatewayTranslation, proxyClient)
 		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
