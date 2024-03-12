@@ -50,7 +50,8 @@ func main() {
 						Status: &model.Field{
 							Type: model.Type{Name: "GatewayConfigStatus"},
 						},
-						Stored: true,
+						ShortNames: []string{"gwc"},
+						Stored:     true,
 					},
 				},
 				RenderManifests:         true,

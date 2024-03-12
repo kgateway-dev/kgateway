@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 66ee9a436c69f3e2
+    crd.solo.io/specHash: d1b474cfe17ad609
   labels:
     app: gateway2
     app.kubernetes.io/name: gateway2
@@ -15,6 +15,8 @@ spec:
     kind: GatewayConfig
     listKind: GatewayConfigList
     plural: gatewayconfigs
+    shortNames:
+    - gwc
     singular: gatewayconfig
   scope: Namespaced
   versions:
