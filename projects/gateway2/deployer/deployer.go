@@ -16,8 +16,7 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
@@ -46,6 +45,7 @@ type gatewayPort struct {
 type Deployer struct {
 	chart  *chart.Chart
 	scheme *runtime.Scheme
+	cli    client.Client
 
 	inputs *Inputs
 }
@@ -58,7 +58,7 @@ type Inputs struct {
 }
 
 // NewDeployer creates a new gateway deployer
-func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
+func NewDeployer(scheme *runtime.Scheme, cli client.Client, inputs *Inputs) (*Deployer, error) {
 	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		return nil, err
@@ -71,6 +71,7 @@ func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
 
 	return &Deployer{
 		scheme: scheme,
+		cli:    cli,
 		chart:  helmChart,
 		inputs: inputs,
 	}, nil
@@ -84,7 +85,17 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 		},
 	}
 
-	objs, err := d.renderChartToObjects(ctx, fakeGw)
+	// these are the minimal values that render the Deployment, Service, ServiceAccount, and ConfigMap
+	vals := map[string]any{
+		"gateway": map[string]any{
+			"enabled": true,
+			"serviceAccount": map[string]any{
+				"create": true,
+			},
+		},
+	}
+
+	objs, err := d.renderChartToObjects(ctx, fakeGw, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +106,8 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 			ret = append(ret, gvk)
 		}
 	}
+
+	log.FromContext(ctx).V(1).Info("watching GVKs", "GVKs", ret)
 	return ret, nil
 }
 
@@ -106,8 +119,7 @@ func jsonConvert(in []gatewayPort, out interface{}) error {
 	return json.Unmarshal(b, out)
 }
 
-func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
-
+func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
 	// must not be nil for helm to not fail.
 	gwPorts := []gatewayPort{}
 	for _, l := range gw.Spec.Listeners {
@@ -130,36 +142,37 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 		return nil, err
 	}
 
-	vals := map[string]any{
-		"controlPlane": map[string]any{
-			"enabled": false,
-		},
-		"gateway": map[string]any{
-			"enabled":     true,
-			"name":        gw.Name,
-			"gatewayName": gw.Name,
-			"ports":       portsAny,
-			// Default to Load Balancer
-			"service": map[string]any{
-				"type": "LoadBalancer",
-			},
-			"xds": map[string]any{
-				// The xds host/port MUST map to the Service definition for the Control Plane
-				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-				//
-				// NOTE: The current implementation in flawed in multiple ways:
-				//	1 - This assumes that the Control Plane is installed in `gloo-system`
-				//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
-				//		will always be what is exposed by the Kubernetes Service.
-				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
-				"port": d.inputs.Port,
-			},
-			"image": getDeployerImageValues(),
-		},
-	}
-	if d.inputs.Dev {
-		vals["develop"] = true
-	}
+	// vals = map[string]any{
+	// 	"controlPlane": map[string]any{
+	// 		"enabled": false,
+	// 	},
+	// 	"gateway": map[string]any{
+	// 		"enabled":     true,
+	// 		"name":        gw.Name,
+	// 		"gatewayName": gw.Name,
+	// 		"ports":       portsAny,
+	// 		// Default to Load Balancer
+	// 		"service": map[string]any{
+	// 			"type": "LoadBalancer",
+	// 		},
+	// 		"xds": map[string]any{
+	// 			// The xds host/port MUST map to the Service definition for the Control Plane
+	// 			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+	// 			//
+	// 			// NOTE: The current implementation in flawed in multiple ways:
+	// 			//	1 - This assumes that the Control Plane is installed in `gloo-system`
+	// 			//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
+	// 			//		will always be what is exposed by the Kubernetes Service.
+	// 			"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
+	// 			"port": d.inputs.Port,
+	// 		},
+	// 		"image": getDeployerImageValues(),
+	// 	},
+	// }
+	// if d.inputs.Dev {
+	// 	vals["develop"] = true
+	// }
+
 	logger := log.FromContext(ctx)
 	logger.Info("rendering helm chart", "vals", vals)
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
@@ -172,6 +185,13 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	}
 
 	return objs, nil
+}
+
+func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {
+	gwc := &v1alpha1.GatewayConfig{}
+	err := d.cli.Get(ctx, client.ObjectKey{Namespace: "gloo-system", Name: "my-gateway-config"}, gwc)
+	fmt.Printf("xxxxxx gwc: %v, err: %v\n", gwc, err)
+	return map[string]any{}, nil
 }
 
 func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
@@ -197,7 +217,15 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 }
 
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
-	objs, err := d.renderChartToObjects(ctx, gw)
+	logger := log.FromContext(ctx)
+
+	vals, err := d.getValues(ctx, gw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get values to render objects: %w", err)
+	}
+	logger.V(1).Info("got deployer helm values", "values", vals)
+
+	objs, err := d.renderChartToObjects(ctx, gw, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy: %w", err)
 	}
@@ -217,23 +245,15 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	return objs, nil
 }
 
-func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object, cli client.Client) error {
+func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
 	logger := log.FromContext(ctx)
 	for _, obj := range objs {
 		logger.V(1).Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
-		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
+		if err := d.cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
 			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
 		}
 	}
 	return nil
-}
-
-func (d *Deployer) Deploy(ctx context.Context, gw *api.Gateway, cli client.Client) error {
-	objs, err := d.GetObjsToDeploy(ctx, gw)
-	if err != nil {
-		return err
-	}
-	return d.DeployObjs(ctx, objs, cli)
 }
 
 func loadFs(filesystem fs.FS) (*chart.Chart, error) {

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
+	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -16,11 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
 )
 
 func convertUnstructured[T any](f client.Object) T {
@@ -60,7 +59,8 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		s := scheme.NewScheme()
+		d, err = deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
@@ -210,8 +210,8 @@ var _ = Describe("Deployer", func() {
 
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
-
-		d, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		s := scheme.NewScheme()
+		d, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
@@ -332,14 +332,15 @@ var _ = Describe("Deployer", func() {
 	})
 
 	It("support segmenting by release", func() {
-		d1, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		s := scheme.NewScheme()
+		d1, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		d2, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
