@@ -61,16 +61,16 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+deploymentName,
+	stats, portForwarder, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+deploymentName,
 		localPort, adminPort, false, promStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
 		return err
 	}
-	if portFwdCmd.Process != nil {
-		defer portFwdCmd.Process.Release()
-		defer portFwdCmd.Process.Kill()
-	}
+	defer func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}()
 
 	if err := checkProxyConnectedState(stats, deploymentName, errMessage,
 		"Your "+deploymentName+" is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+

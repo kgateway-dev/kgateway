@@ -12,7 +12,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// Finds all instances of the supplied filterTypes for the Rule supplied in the RouteContext.
+// FindAppliedRouteFilters finds all instances of the supplied filterTypes for the Rule supplied in the RouteContext.
 // Should only be used for plugins that support multiple filters as part of a single Rule
 func FindAppliedRouteFilters(
 	routeCtx *plugins.RouteContext,
@@ -29,7 +29,7 @@ func FindAppliedRouteFilters(
 	return appliedFilters
 }
 
-// Finds the first instance of the filterType supplied in the Rule being processed.
+// FindAppliedRouteFilter finds the first instance of the filterType supplied in the Rule being processed.
 // Returns nil if the Rule doesn't contain a filter of the provided Type
 func FindAppliedRouteFilter(
 	routeCtx *plugins.RouteContext,
@@ -44,7 +44,8 @@ func FindAppliedRouteFilter(
 	return nil
 }
 
-// Finds the first instance of an ExtensionRef filter that references the supplied GroupKind in the Rule being processed.
+// FindExtensionRefFilter finds the first instance of an ExtensionRef filter that
+// references the supplied GroupKind in the Rule being processed.
 // Returns nil if the Rule doesn't contain a matching ExtensionRef filter
 func FindExtensionRefFilter(
 	routeCtx *plugins.RouteContext,
@@ -66,7 +67,8 @@ var (
 	ErrNotSettable   = fmt.Errorf("can't set value")
 )
 
-// Uses the provided query engine to retrieve an ExtensionRef object and set the value of `obj` to point to it.
+// GetExtensionRefObj uses the provided query engine to retrieve an ExtensionRef object
+// and set the value of `obj` to point to it.
 // The type of `obj` must match the type referenced in the extensionRef and must be a pointer.
 // An error will be returned if the Get was unsuccessful or if the type passed is not valid.
 // A nil error indicates success and `obj` should be usable as normal.
