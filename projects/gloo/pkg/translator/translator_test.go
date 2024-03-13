@@ -6,22 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	types2 "github.com/onsi/gomega/types"
-
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
-	csrf_v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -32,23 +16,46 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gomega_types "github.com/onsi/gomega/types"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	. "github.com/solo-io/solo-kit/test/matchers"
+
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	bufferv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	gloocsrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
@@ -56,10 +63,12 @@ import (
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -71,17 +80,6 @@ import (
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	. "github.com/solo-io/solo-kit/test/matchers"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var _ = Describe("Translator", func() {
@@ -97,13 +95,14 @@ var _ = Describe("Translator", func() {
 		matcher           *matchers.Matcher
 		routes            []*v1.Route
 
-		snapshot           envoycache.Snapshot
-		cluster            *envoy_config_cluster_v3.Cluster
-		listener           *envoy_config_listener_v3.Listener
-		endpoints          envoycache.Resources
-		hcmCfg             *envoyhttp.HttpConnectionManager
-		routeConfiguration *envoy_config_route_v3.RouteConfiguration
-		virtualHostName    string
+		snapshot            envoycache.Snapshot
+		cluster             *envoy_config_cluster_v3.Cluster
+		listener            *envoy_config_listener_v3.Listener
+		endpoints           envoycache.Resources
+		hcmCfg              *envoyhttp.HttpConnectionManager
+		routeConfiguration  *envoy_config_route_v3.RouteConfiguration
+		virtualHostName     string
+		memoryClientFactory *factory.MemoryResourceClientFactory
 	)
 
 	beforeEach := func() {
@@ -125,7 +124,7 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
-		memoryClientFactory := &factory.MemoryResourceClientFactory{
+		memoryClientFactory = &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
@@ -202,7 +201,11 @@ var _ = Describe("Translator", func() {
 	justBeforeEach := func() {
 		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
-		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
+		translator = NewTranslatorWithHasher(
+			glooutils.NewSslConfigTranslator(),
+			settings,
+			pluginRegistry,
+			EnvoyCacheResourcesListToFnvHash)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -383,7 +386,11 @@ var _ = Describe("Translator", func() {
 		buggyHasher := func(resources []envoycache.Resource) (uint64, error) {
 			return 0, errors.New("This is a buggy hasher error")
 		}
-		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, registry.NewPluginRegistry(registeredPlugins), buggyHasher)
+		translator = NewTranslatorWithHasher(
+			glooutils.NewSslConfigTranslator(),
+			settings,
+			registry.NewPluginRegistry(registeredPlugins),
+			buggyHasher)
 		snapshot, _, report := translator.Translate(params, proxy)
 		Expect(snapshot.GetResources(types.EndpointTypeV3).Version).To(Equal("endpoints-hashErr"))
 		Expect(snapshot.GetResources(types.ClusterTypeV3).Version).To(Equal("clusters-hashErr"))
@@ -936,12 +943,12 @@ var _ = Describe("Translator", func() {
 				Transformations:    &transformation.Transformations{ClearRouteCache: true},
 				Tracing:            &tracing.RouteTracingSettings{},
 				HeaderManipulation: &headers.HeaderManipulation{RequestHeadersToRemove: []string{"test-header"}},
-				BufferPerRoute: &envoy_v3.BufferPerRoute{
-					Override: &envoy_v3.BufferPerRoute_Disabled{
+				BufferPerRoute: &bufferv3.BufferPerRoute{
+					Override: &bufferv3.BufferPerRoute_Disabled{
 						Disabled: true,
 					},
 				},
-				Csrf: &csrf_v31.CsrfPolicy{
+				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled: &v3.RuntimeFractionalPercent{
 						RuntimeKey: "test-key",
 					},
@@ -3014,6 +3021,147 @@ var _ = Describe("Translator", func() {
 				Expect(tlsContext().CommonTlsContext.TlsParams.CipherSuites).To(Equal(settingsSslParameters.CipherSuites))
 			})
 
+			Context("Automtls", func() {
+				BeforeEach(func() {
+					settings = &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							IstioOptions: &v1.GlooOptions_IstioOptions{
+								EnableAutoMtls: &wrappers.BoolValue{Value: true},
+							},
+						},
+					}
+				})
+
+				AfterEach(func() {
+					settings = &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							IstioOptions: &v1.GlooOptions_IstioOptions{
+								EnableAutoMtls: &wrappers.BoolValue{Value: false},
+							},
+						},
+					}
+				})
+
+				It("should set transport socket match is automtls is enabled", func() {
+					// Create a translator where istio is enabled
+					opts := bootstrap.Opts{
+						Settings:  settings,
+						Secrets:   memoryClientFactory,
+						Upstreams: memoryClientFactory,
+						Consul: bootstrap.Consul{
+							ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+						},
+						GlooGateway: bootstrap.GlooGateway{
+							IstioValues: bootstrap.IstioValues{
+								SDSEnabled: true,
+							},
+						},
+					}
+					registeredPlugins = registry.Plugins(opts)
+
+					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
+					translator = NewTranslatorWithHasher(
+						glooutils.NewSslConfigTranslator(),
+						settings,
+						pluginRegistry,
+						EnvoyCacheResourcesListToFnvHash)
+
+					// clear out upstream config
+					upstream.SslConfig = nil
+					translate()
+
+					clusters := snapshot.GetResources(types.ClusterTypeV3)
+					clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+					cluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+					transportSocketMatches := cluster.GetTransportSocketMatches()
+					Expect(transportSocketMatches).To(HaveLen(2), "Expect 2 transport socket matches when istio auto mtls is enabled")
+				})
+
+				It("should not translate automtls is istio integration is disabled", func() {
+					// Create a translator where istio is disabled
+					opts := bootstrap.Opts{
+						Settings:  settings,
+						Secrets:   memoryClientFactory,
+						Upstreams: memoryClientFactory,
+						Consul: bootstrap.Consul{
+							ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+						},
+						GlooGateway: bootstrap.GlooGateway{
+							IstioValues: bootstrap.IstioValues{
+								SDSEnabled: false,
+							},
+						},
+					}
+					registeredPlugins = registry.Plugins(opts)
+					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
+					translator = NewTranslatorWithHasher(
+						glooutils.NewSslConfigTranslator(),
+						settings,
+						pluginRegistry,
+						EnvoyCacheResourcesListToFnvHash)
+
+					// clear out upstream config
+					upstream.SslConfig = nil
+					translate()
+
+					clusters := snapshot.GetResources(types.ClusterTypeV3)
+					clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+					cluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+					transportSocketMatches := cluster.GetTransportSocketMatches()
+					Expect(transportSocketMatches).To(BeEmpty(), "Expect no transport socket matches when istio auto mtls is enabled")
+				})
+
+				It("should set transport socket based on Upstream if automtls is enabled", func() {
+					// Create a translator where istio is enabled
+					opts := bootstrap.Opts{
+						Settings:  settings,
+						Secrets:   memoryClientFactory,
+						Upstreams: memoryClientFactory,
+						Consul: bootstrap.Consul{
+							ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+						},
+						GlooGateway: bootstrap.GlooGateway{
+							IstioValues: bootstrap.IstioValues{
+								SDSEnabled: true,
+							},
+						},
+					}
+					registeredPlugins = registry.Plugins(opts)
+					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
+					translator = NewTranslatorWithHasher(
+						glooutils.NewSslConfigTranslator(),
+						settings,
+						pluginRegistry,
+						EnvoyCacheResourcesListToFnvHash)
+
+					// Example upstream sslConfig that should overwrite auto mtls
+					upstream.SslConfig.Parameters = nil
+					upstream.SslConfig.SslSecrets = &ssl.UpstreamSslConfig_SslFiles{
+						SslFiles: &ssl.SSLFiles{
+							TlsCert: gloohelpers.Certificate(),
+							TlsKey:  gloohelpers.PrivateKey(),
+						},
+					}
+					settingsSslParameters := &ssl.SslParameters{
+						CipherSuites: []string{"ECDHE-RSA-AES128-SHA"},
+					}
+					settings.UpstreamOptions = &v1.UpstreamOptions{
+						SslParameters: settingsSslParameters,
+					}
+					translate()
+
+					clusters := snapshot.GetResources(types.ClusterTypeV3)
+					clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+					cluster := clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+					transportSocketMatches := cluster.GetTransportSocketMatches()
+					Expect(transportSocketMatches).To(HaveLen(1), "Only upstream defined transport socket match should be present")
+
+					// expect upstream config to be respected
+					Expect(tlsContext()).ToNot(BeNil())
+					Expect(tlsContext().CommonTlsContext.TlsParams.CipherSuites).To(Equal(settingsSslParameters.CipherSuites))
+				})
+			})
+
 		})
 
 		Context("failure", func() {
@@ -3707,7 +3855,7 @@ var _ = Describe("Translator", func() {
 
 	Context("DnsRefreshRate", func() {
 		DescribeTable("Sets DnsRefreshRate on Cluster",
-			func(staticUpstream bool, refreshRate *duration.Duration, refreshRateMatcher types2.GomegaMatcher, reportMatcher types2.GomegaMatcher) {
+			func(staticUpstream bool, refreshRate *duration.Duration, refreshRateMatcher gomega_types.GomegaMatcher, reportMatcher gomega_types.GomegaMatcher) {
 				// By default, the Upstream is configured as a Static Upstream
 				if !staticUpstream {
 					upstream.UpstreamType = &v1.Upstream_Kube{

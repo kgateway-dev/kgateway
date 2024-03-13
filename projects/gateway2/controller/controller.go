@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +33,7 @@ type GatewayConfig struct {
 	Kick           func(ctx context.Context)
 
 	ControlPlane bootstrap.ControlPlane
+	IstioValues  bootstrap.IstioValues
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -91,6 +91,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
 		Port:           c.cfg.ControlPlane.GetBindPort(),
+		IstioValues:    c.cfg.IstioValues,
 	})
 	if err != nil {
 		return err

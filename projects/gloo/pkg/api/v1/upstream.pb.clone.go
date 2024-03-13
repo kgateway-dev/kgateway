@@ -213,6 +213,12 @@ func (m *Upstream) Clone() proto.Message {
 		target.PreconnectPolicy = proto.Clone(m.GetPreconnectPolicy()).(*PreconnectPolicy)
 	}
 
+	if h, ok := interface{}(m.GetDisableIstioAutoMtls()).(clone.Cloner); ok {
+		target.DisableIstioAutoMtls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableIstioAutoMtls = proto.Clone(m.GetDisableIstioAutoMtls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:

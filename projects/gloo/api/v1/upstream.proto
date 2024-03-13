@@ -184,7 +184,9 @@ message Upstream {
     // In most cases preconnect hurts more than it helps.
     PreconnectPolicy preconnect_policy= 32;
 
-
+    // If set to true, the proxy will not allow automatic mTLS detection for Istio upstreams.
+    // Defaults to false.
+    google.protobuf.BoolValue disable_istio_auto_mtls = 33;
 }
 
 // created by discovery services

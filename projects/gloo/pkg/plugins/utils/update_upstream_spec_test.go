@@ -23,6 +23,7 @@ var _ = Describe("UpdateUpstream", func() {
 		desired := &gloov1.Upstream{}
 		original := &gloov1.Upstream{
 			SslConfig:                               &ssl.UpstreamSslConfig{Sni: "testsni"},
+			DisableIstioAutoMtls:                    &wrappers.BoolValue{Value: true},
 			CircuitBreakers:                         &gloov1.CircuitBreakerConfig{MaxConnections: &wrappers.UInt32Value{Value: 6}},
 			LoadBalancerConfig:                      &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 7}},
 			ConnectionConfig:                        &gloov1.ConnectionConfig{MaxRequestsPerConnection: 8},
@@ -37,6 +38,7 @@ var _ = Describe("UpdateUpstream", func() {
 		}
 		utils.UpdateUpstream(original, desired)
 		Expect(desired.SslConfig).To(Equal(original.SslConfig))
+		Expect(desired.DisableIstioAutoMtls).To(Equal(original.DisableIstioAutoMtls))
 		Expect(desired.CircuitBreakers).To(Equal(original.CircuitBreakers))
 		Expect(desired.LoadBalancerConfig).To(Equal(original.LoadBalancerConfig))
 		Expect(desired.ConnectionConfig).To(Equal(original.ConnectionConfig))
@@ -56,6 +58,7 @@ var _ = Describe("UpdateUpstream", func() {
 				SecretRef: &core.ResourceRef{Name: "hi", Namespace: "there"},
 			},
 		}
+		desiredDisableAutoMtls := &wrappers.BoolValue{Value: false}
 		desiredCircuitBreaker := &gloov1.CircuitBreakerConfig{MaxConnections: &wrappers.UInt32Value{Value: 6}}
 		desiredLoadBalancer := &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 7}}
 		desiredConnectionConfig := &gloov1.ConnectionConfig{MaxRequestsPerConnection: 8}
@@ -69,36 +72,39 @@ var _ = Describe("UpdateUpstream", func() {
 		desiredDnsRefreshRate := &durationpb.Duration{Seconds: 10}
 
 		desired := &gloov1.Upstream{
-			SslConfig:          desiredSslConfig,
-			CircuitBreakers:    desiredCircuitBreaker,
-			LoadBalancerConfig: desiredLoadBalancer,
-			ConnectionConfig:   desiredConnectionConfig,
-			HealthChecks:       desiredHealthChecks,
-			OutlierDetection:   desiredOutlierDetection,
-			Failover:           desiredFailover,
-			UseHttp2:           desiredUseHttp2,
-			HttpProxyHostname:  desiredHttpProxyHostname,
-			HttpConnectHeaders: desiredHttpProxyHeaders,
-			RespectDnsTtl:      desiredRespectDnsTtl,
-			DnsRefreshRate:     desiredDnsRefreshRate,
+			SslConfig:            desiredSslConfig,
+			DisableIstioAutoMtls: desiredDisableAutoMtls,
+			CircuitBreakers:      desiredCircuitBreaker,
+			LoadBalancerConfig:   desiredLoadBalancer,
+			ConnectionConfig:     desiredConnectionConfig,
+			HealthChecks:         desiredHealthChecks,
+			OutlierDetection:     desiredOutlierDetection,
+			Failover:             desiredFailover,
+			UseHttp2:             desiredUseHttp2,
+			HttpProxyHostname:    desiredHttpProxyHostname,
+			HttpConnectHeaders:   desiredHttpProxyHeaders,
+			RespectDnsTtl:        desiredRespectDnsTtl,
+			DnsRefreshRate:       desiredDnsRefreshRate,
 		}
 		original := &gloov1.Upstream{
-			SslConfig:          &ssl.UpstreamSslConfig{Sni: "testsni"},
-			CircuitBreakers:    &gloov1.CircuitBreakerConfig{MaxPendingRequests: &wrappers.UInt32Value{Value: 6}},
-			LoadBalancerConfig: &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 9}},
-			ConnectionConfig:   &gloov1.ConnectionConfig{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 10}},
-			HealthChecks:       []*envoycore_gloo.HealthCheck{{}, {}},
-			OutlierDetection:   &cluster.OutlierDetection{ConsecutiveGatewayFailure: &wrappers.UInt32Value{Value: 9}},
-			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}, {}}},
-			UseHttp2:           &wrappers.BoolValue{Value: false},
-			HttpProxyHostname:  &wrappers.StringValue{Value: "originalHostname"},
-			HttpConnectHeaders: desiredHttpProxyHeaders,
-			RespectDnsTtl:      &wrappers.BoolValue{Value: false},
-			DnsRefreshRate:     &durationpb.Duration{Seconds: 1},
+			SslConfig:            &ssl.UpstreamSslConfig{Sni: "testsni"},
+			DisableIstioAutoMtls: &wrappers.BoolValue{Value: true},
+			CircuitBreakers:      &gloov1.CircuitBreakerConfig{MaxPendingRequests: &wrappers.UInt32Value{Value: 6}},
+			LoadBalancerConfig:   &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 9}},
+			ConnectionConfig:     &gloov1.ConnectionConfig{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 10}},
+			HealthChecks:         []*envoycore_gloo.HealthCheck{{}, {}},
+			OutlierDetection:     &cluster.OutlierDetection{ConsecutiveGatewayFailure: &wrappers.UInt32Value{Value: 9}},
+			Failover:             &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}, {}}},
+			UseHttp2:             &wrappers.BoolValue{Value: false},
+			HttpProxyHostname:    &wrappers.StringValue{Value: "originalHostname"},
+			HttpConnectHeaders:   desiredHttpProxyHeaders,
+			RespectDnsTtl:        &wrappers.BoolValue{Value: false},
+			DnsRefreshRate:       &durationpb.Duration{Seconds: 1},
 		}
 
 		utils.UpdateUpstream(original, desired)
 		Expect(desired.SslConfig).To(Equal(desiredSslConfig))
+		Expect(desired.DisableIstioAutoMtls).To(Equal(desiredDisableAutoMtls))
 		Expect(desired.CircuitBreakers).To(Equal(desiredCircuitBreaker))
 		Expect(desired.LoadBalancerConfig).To(Equal(desiredLoadBalancer))
 		Expect(desired.ConnectionConfig).To(Equal(desiredConnectionConfig))
@@ -117,7 +123,7 @@ var _ = Describe("UpdateUpstream", func() {
 		// This should happen very rarely, and should be used as an indication that the `UpdateUpstream` function
 		// most likely needs to change.
 		Expect(reflect.TypeOf(gloov1.Upstream{}).NumField()).To(
-			Equal(28),
+			Equal(29),
 			"wrong number of fields found",
 		)
 	})

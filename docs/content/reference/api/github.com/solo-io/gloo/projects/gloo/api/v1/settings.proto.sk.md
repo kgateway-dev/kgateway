@@ -792,12 +792,14 @@ Policy for how Gloo should handle invalid config
 
 ```yaml
 "appendXForwardedHost": .google.protobuf.BoolValue
+"enableAutoMtls": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true. |
+| `enableAutoMtls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect. Defaults to false. |
 
 
 

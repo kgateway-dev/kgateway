@@ -636,6 +636,9 @@ spec:
                       appendXForwardedHost:
                         nullable: true
                         type: boolean
+                      enableAutoMtls:
+                        nullable: true
+                        type: boolean
                     type: object
                   logTransformationRequestResponseInfo:
                     nullable: true
