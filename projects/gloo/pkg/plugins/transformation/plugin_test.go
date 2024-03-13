@@ -679,6 +679,24 @@ var _ = Describe("Plugin", func() {
 				expectedOutput := createOutputRouteTransformationsFromExtraction(expectedOutputExtraction)
 				validateExtractionMatch(expectedOutput, output)
 			})
+
+			It("defaults to Extract mode if mode is invalid", func() {
+				inputExtraction := createInputExtraction(extractorTestCase{})
+
+				// Mode is an int, which defaults to 0, i.e. EXTRACT
+				// Check to make sure we can handle the case where mode does not
+				// exist in the enum
+				inputExtraction.Mode = -1
+				inputTransformationStages := createInputTransformationStages(inputExtraction)
+				output, err := p.(transformationPlugin).ConvertTransformation(ctx, &transformation.Transformations{}, inputTransformationStages)
+				Expect(err).NotTo(HaveOccurred())
+				expectedOutputExtraction := createOutputExtraction(extractorTestCase{
+					Mode: transformation.Extraction_EXTRACT,
+				})
+
+				expectedOutput := createOutputRouteTransformationsFromExtraction(expectedOutputExtraction)
+				validateExtractionMatch(expectedOutput, output)
+			})
 		})
 	})
 
