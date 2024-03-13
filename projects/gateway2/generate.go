@@ -25,22 +25,20 @@ func main() {
 
 	skv2Cmd := codegen.Command{
 		AppName:      "gateway2",
-		RenderProtos: true,
+		ManifestRoot: "install/helm/gloo",
 		AnyVendorConfig: &skv2_anyvendor.Imports{
 			Local:    anyvendorImports.Local,
 			External: anyvendorImports.External,
 		},
-		ManifestRoot: "install/helm/gloo",
+		RenderProtos: true,
 		Groups: []model.Group{
 			{
-				SkipConditionalCRDLoading: true, // we want the alpha crds always rendered
-				SkipTemplatedCRDManifest:  true, // do not make a copy of crds in templates dir
+				Module:  "github.com/solo-io/gloo",
+				ApiRoot: "projects/gateway2/pkg/api",
 				GroupVersion: schema.GroupVersion{
 					Group:   "gateway.gloo.solo.io",
 					Version: "v1alpha1",
 				},
-				Module:  "github.com/solo-io/gloo",
-				ApiRoot: "projects/gateway2/pkg/api",
 				Resources: []model.Resource{
 					{
 						Kind: "GatewayConfig",
@@ -54,12 +52,14 @@ func main() {
 						Stored:     true,
 					},
 				},
-				RenderManifests:         true,
-				RenderTypes:             true,
-				RenderClients:           true,
-				RenderController:        true,
-				MockgenDirective:        true,
-				RenderValidationSchemas: true,
+				SkipConditionalCRDLoading: true, // we want the alpha crds always rendered
+				SkipTemplatedCRDManifest:  true, // do not make a copy of crds in templates dir
+				RenderManifests:           true,
+				RenderValidationSchemas:   true,
+				RenderTypes:               true,
+				RenderClients:             false,
+				RenderController:          false,
+				MockgenDirective:          false,
 			},
 		},
 	}
