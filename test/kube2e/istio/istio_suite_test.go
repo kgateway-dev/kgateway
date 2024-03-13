@@ -184,8 +184,6 @@ func installGloo(autoMtls bool) {
 
 	// Ensure discovery reaches a valid state
 	// Note: discovery is only used in the "classic", non-k8s-gateway api setup
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
 	err = testutils.WaitPodsRunning(ctx, time.Second, testHelper.InstallNamespace, "gloo=discovery")
 	Expect(err).NotTo(HaveOccurred())
 

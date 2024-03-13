@@ -79,7 +79,7 @@ var _ = Describe("Eds", func() {
 			Expect(isIstioInjectionEnabled()).To(BeFalse())
 		})
 
-		It("autoMtls should translate EDS metadata", func() {
+		It("should translate EDS metadata", func() {
 			writeNamespace := "foo"
 			up := v1.NewUpstream(writeNamespace, "name")
 			up.UpstreamType = &v1.Upstream_Kube{
