@@ -11,7 +11,7 @@ import (
 //go:generate go run generate.go
 
 func main() {
-	log.Printf("starting generate")
+	log.Printf("starting generate for gloo")
 
 	protoImports := sk_anyvendor.CreateDefaultMatchOptions(
 		[]string{
@@ -77,5 +77,5 @@ func main() {
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
-	log.Printf("finished generating code")
+	log.Printf("finished generating code for gloo")
 }

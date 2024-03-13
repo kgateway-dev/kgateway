@@ -12,7 +12,7 @@ import (
 //go:generate go run ./generate.go
 func main() {
 	//os.RemoveAll("vendor_any")
-	log.Println("starting generate")
+	log.Println("starting generate for k8s gateway controller")
 
 	anyvendorImports := skv2_anyvendor.CreateDefaultMatchOptions(
 		[]string{
@@ -68,5 +68,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("Finished generating code")
+	log.Println("finished generating code for k8s gateway controller")
 }
