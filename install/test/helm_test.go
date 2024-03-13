@@ -4165,6 +4165,7 @@ spec:
       replaceInvalidRoutes: false
     istioOptions:
       appendXForwardedHost: true
+      enableAutoMtls: false
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}

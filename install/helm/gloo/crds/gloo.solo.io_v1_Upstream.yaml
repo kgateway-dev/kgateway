@@ -394,6 +394,9 @@ spec:
                       type: string
                     type: array
                 type: object
+              disableIstioAutoMtls:
+                nullable: true
+                type: boolean
               discoveryMetadata:
                 properties:
                   labels:

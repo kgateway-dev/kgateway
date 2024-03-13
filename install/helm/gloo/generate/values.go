@@ -760,4 +760,5 @@ type IstioIntegration struct {
 	EnableIstioSidecarOnGateway *bool   `json:"enableIstioSidecarOnGateway,omitempty" desc:"Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if disableAutoinjection is 'true'."`
 	IstioSidecarRevTag          *string `json:"istioSidecarRevTag,omitempty" desc:"Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if disableAutoinjection is 'true'."`
 	AppendXForwardedHost        *bool   `json:"appendXForwardedHost,omitempty" desc:"Enable appending the X-Forwarded-Host header with the Istio-provided value. Default: true."`
+	EnableAutoMtls              *bool   `json:"enableAutoMtls,omitempty" desc:"Enables Istio auto mtls configuration for Gloo Edge upstreams. Defaults to false."`
 }

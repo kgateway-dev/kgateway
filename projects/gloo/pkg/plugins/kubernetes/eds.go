@@ -11,16 +11,18 @@ import (
 
 	errors "github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 )
 
 type PodLabelSource interface {
@@ -220,8 +222,8 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 // Returns true for when configured for Istio integration where endpoints must
 // be defined by IP address rather than hostnames. For details, see:
 // * https://github.com/solo-io/gloo/issues/6195
-func isIstioIntegrationEnabled() bool {
-	lookupResult, found := os.LookupEnv("ENABLE_ISTIO_INTEGRATION")
+func isIstioInjectionEnabled() bool {
+	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
 	return found && strings.ToLower(lookupResult) == "true"
 }
 
@@ -339,7 +341,7 @@ func computeGlooEndpoints(
 	var warnsToLog, errorsToLog []string
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
-	istioIntegrationEnabled := isIstioIntegrationEnabled()
+	istioInjectionEnabled := isIstioInjectionEnabled()
 
 	// for each upstream
 	for usRef, spec := range upstreams {
@@ -354,7 +356,7 @@ func computeGlooEndpoints(
 		isHeadlessSvc := svc.Spec.ClusterIP == "None"
 		// Istio uses the service's port for routing requests
 		// Headless services don't have a cluster IP, so we'll resort to pod IP endpoints
-		if istioIntegrationEnabled && !isHeadlessSvc {
+		if istioInjectionEnabled && !isHeadlessSvc {
 			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
 			copyRef := *usRef
 			key := Epkey{
@@ -387,7 +389,7 @@ func computeGlooEndpoints(
 		}
 	}
 
-	endpoints = generateFilteredEndpointList(endpointsMap, services, podLabelSource, writeNamespace, endpoints, istioIntegrationEnabled)
+	endpoints = generateFilteredEndpointList(endpointsMap, services, podLabelSource, writeNamespace, endpoints, istioInjectionEnabled)
 
 	return endpoints, warnsToLog, errorsToLog
 }
@@ -468,6 +470,7 @@ func generateFilteredEndpointList(
 
 		var ep *v1.Endpoint
 		// While istio integration requires the Service VIP, headless services require the pod IP, as there is no Cluster IP
+		// Note: If istioIntegrationEnabled is enabled, Istio automtls will not be able to generate the endpoint metadata from the Pod to match the transport socket match.
 		if istioIntegrationEnabled && !addr.IsHeadless {
 			// Istio integration requires assigning endpoints the Kub service VIP rather than pod address
 			service, _ := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
