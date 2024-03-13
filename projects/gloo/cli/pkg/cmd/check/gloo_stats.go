@@ -84,15 +84,15 @@ func checkXdsMetrics(ctx context.Context, printer printers.P, opts *options.Opti
 		printer.AppendCheck("Warning: checking xds with port forwarding is disabled\n")
 		return nil
 	}
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
+	stats, portForwarder, err := cliutil.PortForwardGet(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		return err
 	}
-	if portFwdCmd.Process != nil {
-		defer portFwdCmd.Process.Release()
-		defer portFwdCmd.Process.Kill()
-	}
+	defer func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}()
 
 	if strings.TrimSpace(stats) == "" {
 		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")

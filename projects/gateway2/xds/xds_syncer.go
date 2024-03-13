@@ -3,6 +3,10 @@ package xds
 import (
 	"context"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
 
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
@@ -10,7 +14,6 @@ import (
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -84,6 +87,10 @@ type XdsSyncer struct {
 	inputs                 *XdsInputChannels
 	mgr                    manager.Manager
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
+
+	// proxyClient is the client that writes Proxy resources into an in-memory cache
+	// This cache is utilized by the debug.ProxyEndpointServer
+	proxyClient gloo_solo_io.ProxyClient
 }
 
 type XdsInputChannels struct {
@@ -121,6 +128,7 @@ func NewXdsSyncer(
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
+	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:         controllerName,
@@ -131,6 +139,7 @@ func NewXdsSyncer(
 		inputs:                 inputs,
 		mgr:                    mgr,
 		k8sGwExtensionsFactory: k8sGwExtensionsFactory,
+		proxyClient:            proxyClient,
 	}
 }
 
@@ -147,6 +156,8 @@ func (s *XdsSyncer) Start(
 		if !discoveryWarmed || !secretsWarmed {
 			return
 		}
+		ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
+
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {
@@ -185,6 +196,7 @@ func (s *XdsSyncer) Start(
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
+		s.syncProxyCache(ctx, proxies)
 	}
 
 	for {
@@ -357,6 +369,24 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 				logger.Error(err)
 			}
 		}
+	}
+}
+
+// syncProxyCache persists the proxies that were generated during translations and stores them in an in-memory cache
+// This cache is utilized by the debug.ProxyEndpointServer
+func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
+	ctx = contextutils.WithLogger(ctx, "proxyCache")
+	logger := contextutils.LoggerFrom(ctx)
+	for _, proxy := range proxyList {
+		_, err := s.proxyClient.Write(proxy, clients.WriteOpts{
+			Ctx: ctx,
+		})
+		if err != nil {
+			// A write error to our cache should not impact translation
+			// We will emit a message, and continue
+			logger.Error(err)
+		}
+
 	}
 }
 

@@ -66,12 +66,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			/** port-forward command **/
 
-			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.GetNamespace(), "deployment/gloo-fed-console",
+			_, portForwarder, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.GetNamespace(), "deployment/gloo-fed-console",
 				staticPort, staticPort, opts.Top.Verbose, "")
 			if err != nil {
 				return err
 			}
-			defer portFwdCmd.Wait()
+			defer portForwarder.WaitForStop()
 
 			/** open in browser **/
 

@@ -58,12 +58,18 @@ var _ = Describe("Check", func() {
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
 
-			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
-				Metadata: &core.Metadata{
-					Name:      "default",
-					Namespace: "gloo-system",
-				},
-			}, clients.WriteOpts{})
+			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(
+				&v1.Settings{
+					Metadata: &core.Metadata{
+						Name:      "default",
+						Namespace: "gloo-system",
+					},
+					Gloo: &v1.GlooOptions{
+						// ProxyDebugBindAddr is used by `glooctl check` to determine on which port to query the
+						// Control Plane
+						ProxyDebugBindAddr: "0.0.0.0:1111",
+					},
+				}, clients.WriteOpts{})
 
 			noStatusUpstream := &v1.Upstream{
 				Metadata: &core.Metadata{
@@ -137,7 +143,12 @@ var _ = Describe("Check", func() {
 			_, proxyErr := helpers.MustNamespacedProxyClient(ctx, "gloo-system").Write(noStatusProxy, clients.WriteOpts{})
 			Expect(proxyErr).NotTo(HaveOccurred())
 
-			_, err := testutils.GlooctlOut("check -x xds-metrics")
+			// In this check, we intentionally exclude proxies. To access the proxies, we must query the Control Plane.
+			// In this test, we do not have a true Control Plane, so the check would fail with a TCP error.
+			// A potential improvement to this test would be run start a server at the port specified in settings.Gloo.DebugProxyBindAddr
+			// and have it returned fixtures that we can assert
+			_, err := testutils.GlooctlOut("check -x xds-metrics,proxies")
+
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found upstream with no status: %s %s", noStatusUpstream.GetMetadata().GetNamespace(), noStatusUpstream.GetMetadata().GetName())))
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found upstream group with no status: %s %s", noStatusUpstreamGroup.GetMetadata().GetNamespace(), noStatusUpstreamGroup.GetMetadata().GetName())))
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found auth config with no status: %s %s", noStatusAuthConfig.GetMetadata().GetNamespace(), noStatusAuthConfig.GetMetadata().GetName())))
@@ -145,7 +156,6 @@ var _ = Describe("Check", func() {
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found RouteOption with no status: %s %s", noStatusRouteOption.GetMetadata().GetNamespace(), noStatusRouteOption.GetMetadata().GetName())))
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found gateway with no status: %s %s", noStatusGateway.GetMetadata().GetNamespace(), noStatusGateway.GetMetadata().GetName())))
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found virtual service with no status: %s %s", noStatusVS.GetMetadata().GetNamespace(), noStatusVS.GetMetadata().GetName())))
-			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found proxy with no status: %s %s", noStatusProxy.GetMetadata().GetNamespace(), noStatusProxy.GetMetadata().GetName())))
 		})
 	})
 })

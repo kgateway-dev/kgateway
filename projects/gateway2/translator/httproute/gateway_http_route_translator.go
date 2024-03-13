@@ -69,7 +69,8 @@ func translateGatewayHTTPRouteRule(
 		outputRoute := &v1.Route{
 			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
 			Action:   nil,
-			Options:  &v1.RouteOptions{},
+			// The RouteOptions plugin is responsible for populating these options
+			Options: &v1.RouteOptions{},
 		}
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(

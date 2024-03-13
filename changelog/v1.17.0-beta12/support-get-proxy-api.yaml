@@ -1,0 +1,20 @@
+changelog:
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/solo-projects/issues/5874
+    resolvesIssue: false
+    description: >-
+      `glooctl get proxy` will not work if you have persisted Proxy CRs in etcD and you are querying
+      and older server version (1.16 and below). In general, we recommend that you keep your client and 
+      server versions in sync. You can verify the client/server versions you are currently running by calling `glooctl version`.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5874
+    resolvesIssue: false
+    description: >-
+      Update the ProxyEndpointServer API to support returning proxies produced by the K8s Gateway translator.
+      Update the CLI fix the `get proxy` API so that you can effectively query proxies.
+      Introduce a PortForwarder.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6661
+    resolvesIssue: false
+    description: >-
+      Remove helm upgrade tests that upgrade from a version of Gloo (1.11) that is no longer in the support window.
