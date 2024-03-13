@@ -459,8 +459,8 @@ func NewExtractorError(message, name string, mode transformation.Extraction_Mode
 	}
 
 	// check if there's a readable mode name
-	if transformation.Extraction_Mode_name[int32(mode)] != "" {
-		extractorError.Mode = transformation.Extraction_Mode_name[int32(mode)]
+	if modeName, ok := transformation.Extraction_Mode_name[int32(mode)]; ok {
+		extractorError.Mode = modeName
 	}
 	return extractorError
 }
