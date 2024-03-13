@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -30,6 +31,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/healthcheck"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/istio_automtls"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/istio_integration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
@@ -109,6 +111,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		dynamic_forward_proxy.NewPlugin(),
 		deprecated_cipher_passthrough.NewPlugin(),
 		local_ratelimit.NewPlugin(),
+		istio_automtls.NewPlugin(opts.GlooGateway.IstioValues.SDSEnabled, opts.GlooGateway.IstioValues.SidecarOnGatewayEnabled),
 	)
 
 	if opts.KubeClient != nil {
@@ -117,7 +120,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	if opts.Consul.ConsulWatcher != nil {
 		glooPlugins = append(glooPlugins, consul.NewPlugin(opts.Consul.ConsulWatcher, consul.NewConsulDnsResolver(opts.Consul.DnsServer), opts.Consul.DnsPollingInterval))
 	}
-	lookupResult, found := os.LookupEnv("ENABLE_ISTIO_INTEGRATION")
+	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
 	istioEnabled := found && strings.ToLower(lookupResult) == "true"
 	if istioEnabled {
 		istioPlugin := istio_integration.NewPlugin(opts.WatchOpts.Ctx)

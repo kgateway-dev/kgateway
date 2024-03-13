@@ -73,5 +73,215 @@ Istio leverages the [`x-forwarded-client-cert`](https://istio.io/latest/docs/ops
 
 If the application that we’re running can logs requests that it receives, we could search the logs for the existence of that header
 
+# Testing automtls 
+
+The istio e2e integration tests automtls functionality with Gloo Edge "classic" APIs and k8s Gateway API resources. This 
+can be manually tested by following the steps below on a kind cluster:
+
+1. Setup environment and kind cluster
+
+```shell
+ci/kind/setup-kind.sh; make kind-build-and-load
+```
+
+2. Install Istio
+
+```shell
+./projects/gateway2/istio.sh
+```
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "productpage"
+  namespace: "bookinfo"
+spec:
+  selector:
+    matchLabels:
+      app: productpage
+  mtls:
+    mode: STRICT
+EOF
+```
+
+3. Install Gloo
+
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci.tgz --create-namespace --set global.istioSDS.enabled=true -f ./projects/gateway2/tests/conformance/test-values.yaml
+
+4. Show "Classic" Mode
+
+Apply resources:
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: test-vs
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'www.example.com'
+    routes:
+      - matchers:
+         - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: bookinfo-productpage-9080
+              namespace: gloo-system
+EOF
+```
+
+Port-forward the classic gateway:
+
+```shell
+kubectl port-forward deployment/gateway-proxy -n gloo-system 8080:8080
+```
+
+First attempt will fail because of PeerAuthentication policy:
+
+```shell
+curl -I localhost:8080/productpage -H "host: www.example.com" -v
+```
+
+Next, enable automtls in settings:
+```shell
+  istioOptions:
+    enableAutoMtls: true
+```
+
+Should work:
+```shell
+curl -I localhost:8080/productpage -H "host: www.example.com" -v
+```
+
+Then edit upstream to disable automtls:
+```shell
+kubectl edit upstreams -n gloo-system bookinfo-productpage-9080
+```
+
+Add this line: 
+
+```shell
+spec:
+    disableIstioAutoMtls: true
+```
+
+This should break the curl now that automtls is disabled:
+```shell
+curl -I localhost:8080/productpage -H "host: www.example.com" -v
+```
+
+Test an overwrite:
+
+```shell
+glooctl istio enable-mtls --upstream bookinfo-productpage-9080 -n gloo-system
+```
+
+This adds the following settings to the upstream:
+
+```shell 
+sslConfig:
+  alpnProtocols:
+  - istio
+  sds:
+    certificatesSecretName: istio_server_cert
+    clusterName: gateway_proxy_sds
+    targetUri: 127.0.0.1:8234
+    validationContextName: istio_validation_context
+```
+
+This should fix the curl:
+
+```shell 
+curl -I localhost:8080/productpage -H "host: www.example.com" -v
+```
+
+Delete resources:
+
+``` 
+kubectl delete VirtualService test-vs -n gloo-system
+```
+
+Remove the upstream edit:
+
+```shell
+glooctl istio disable-mtls --upstream bookinfo-productpage-9080 -n gloo-system
+```
+
+5. Test k8s Gateway Mode
+
+Create a gateway resource:
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: http
+spec:
+  gatewayClassName: gloo-gateway
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: All
+    name: http
+    port: 8080
+    protocol: HTTP
+EOF
+```
+
+This should create a new gateway in the `default` namespace named `gloo-proxy-http`:
+```shell  
+❯ kubectl get deployments
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+gloo-proxy-http   1/1     1            1           10m
+```
+
+Apply an HTTPRoute equivalent to the VirtualService we tested earlier:
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: productpage
+  namespace: bookinfo
+  labels:
+    example: productpage-route
+spec:
+  parentRefs:
+    - name: http
+      namespace: default
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: productpage
+          port: 9080
+EOF
+```
+
+Port-forward the new k8s gateway:
+
+```shell
+kubectl port-forward deployment/gloo-proxy-http 8080:8080
+``` 
+
+Now let's send traffic with the same curl as before, this time going through the new k8s Gateway API gateway. 
+The first attempt will succeed because of automtls is still enabled on the settings policy:
+
+```shell
+curl -I localhost:8080/productpage -H "host: www.example.com" -v
+``` 
+
+If auto mtls is disabled on the settings, the same request will fail.
+
+NOTE: Upstream support doesn't exist (yet!) for k8s gateway mode yet so there is no way to overwrite auto mtls or disable it for a specific upstream.
+
 # Additional context
 Additional context on Istio and how the Gloo integration with Istio works can be found [here](https://docs.google.com/document/d/1g7wq6yBGR6VioNJTz_eA7GLRbijlDasGR3h-eToz7jA)

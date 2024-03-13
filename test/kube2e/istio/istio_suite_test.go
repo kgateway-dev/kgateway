@@ -7,7 +7,12 @@ import (
 	"testing"
 	"time"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	testutils2 "github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/solo-io/go-utils/testutils/exec"
 
@@ -26,6 +31,7 @@ import (
 
 const (
 	gatewayProxy     = gatewaydefaults.GatewayProxyName
+	glooGatewayProxy = "gloo-proxy-http"
 	gatewayPort      = int(80)
 	installNamespace = defaults.GlooSystem
 	httpbinNamespace = "httpbin-ns"
@@ -47,6 +53,9 @@ var (
 	cwd string
 
 	resourceClientSet *kube2e.KubeResourceClientSet
+
+	useGlooGateway bool
+	useAutoMtls    bool
 )
 
 var _ = BeforeSuite(func() {
@@ -57,21 +66,75 @@ var _ = BeforeSuite(func() {
 	cwd, err = os.Getwd()
 	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved")
 
+	// Check env for setup options
+	useGlooGateway = testutils2.IsEnvTruthy(testutils2.GlooGatewaySetup)
+	useAutoMtls = testutils2.IsEnvTruthy(testutils2.IstioAutoMtls)
+
 	testHelper, err = kube2e.GetTestHelper(ctx, installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
-	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
-	Expect(err).NotTo(HaveOccurred())
-
 	if !testutils2.ShouldSkipInstall() {
-		installGloo()
+		// testserver is install in gloo-system
+		err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
+		Expect(err).NotTo(HaveOccurred())
+
+		if useGlooGateway {
+			// Gloo Gateway setup always uses auto mtls
+			installGlooGateway()
+		} else {
+			installGloo(useAutoMtls)
+		}
 	}
 
-	// add httpbin app in its own namespace, labeled for Istio injection
-	err = testutils.Kubectl("create", "ns", httpbinNamespace)
-	Expect(err).NotTo(HaveOccurred())
+	resourceClientSet, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
+	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
+
+	// Install httpbin app in its own namespace, labeled for Istio injection
+	installHttpbin()
+
+	// delete testserver Service, as the tests create and manage their own
+	testserverExists := false
+	err = testutils.Kubectl("get", "service", helper.TestServerName, "-n", installNamespace)
+	if err == nil {
+		// namespace exists
+		testserverExists = true
+	}
+	if testserverExists {
+		// ignore errors if the service doesn't exist
+		// (e.g. if the test is being re-run after a previous failure)
+		err = testutils.Kubectl("delete", "service", helper.TestServerName, "-n", installNamespace)
+		Expect(err).NotTo(HaveOccurred())
+	}
+	EventuallyWithOffset(1, func() error {
+		return testutils.Kubectl("get", "service", helper.TestServerName, "-n", installNamespace)
+	}, "60s", "1s").Should(HaveOccurred(), "testserver service should be deleted")
+
+	if !useGlooGateway {
+		// TODO(npolshak): Different check necessary for Gloo Gateway created proxy
+		expectIstioInjected()
+	}
+})
+
+// Installs httpbin app in its own namespace, labeled for Istio injection
+func installHttpbin() {
+	// Check if the namespace exists
+	namespaceExists := false
+	err := testutils.Kubectl("get", "ns", httpbinNamespace)
+	if err == nil {
+		// namespace exists
+		namespaceExists = true
+	}
+
+	if !namespaceExists {
+		// If the namespace doesn't exist, create it
+		err = testutils.Kubectl("create", "ns", httpbinNamespace)
+		if err != nil {
+			// Handle error
+			panic(err)
+		}
+	}
 
 	err = testutils.Kubectl("label", "namespace", httpbinNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
@@ -79,18 +142,14 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("apply", "-n", httpbinNamespace, "-f", filepath.Join(cwd, "artifacts", "httpbin.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
-	// delete testserver Service, as the tests create and manage their own
-	err = testutils.Kubectl("delete", "service", helper.TestServerName, "-n", installNamespace)
-	Expect(err).NotTo(HaveOccurred())
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "service", helper.TestServerName, "-n", installNamespace)
-	}, "60s", "1s").Should(HaveOccurred())
-
-	expectIstioInjected()
-
-	resourceClientSet, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
-	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
-})
+	// Check discovery component has created upstream for httpbin
+	if !useGlooGateway {
+		httpbinUpstreamName := kubernetesplugin.UpstreamName(httpbinNamespace, httpbinName, httpbinPort)
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return resourceClientSet.UpstreamClient().Read(installNamespace, httpbinUpstreamName, clients.ReadOpts{})
+		})
+	}
+}
 
 var _ = AfterSuite(func() {
 	if testutils2.ShouldTearDown() {
@@ -103,8 +162,13 @@ var _ = AfterSuite(func() {
 	cancel()
 })
 
-func installGloo() {
-	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
+func installGloo(autoMtls bool) {
+	var helmValuesFile string
+	if autoMtls {
+		helmValuesFile = filepath.Join(cwd, "artifacts", "automtls-helm.yaml")
+	} else {
+		helmValuesFile = filepath.Join(cwd, "artifacts", "helm.yaml")
+	}
 
 	// Install Gloo
 	// this helper function also applies the testserver pod and service
@@ -117,6 +181,42 @@ func installGloo() {
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	// Ensure discovery reaches a valid state
+	// Note: discovery is only used in the "classic", non-k8s-gateway api setup
+	err = testutils.WaitPodsRunning(ctx, time.Second, testHelper.InstallNamespace, "gloo=discovery")
+	Expect(err).NotTo(HaveOccurred())
+
+	if autoMtls {
+		kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+			Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+			settings.Gloo.IstioOptions.EnableAutoMtls = &wrapperspb.BoolValue{Value: true}
+		}, testHelper.InstallNamespace)
+	}
+}
+
+func installGlooGateway() {
+	helmValuesFile := filepath.Join(cwd, "artifacts", "gloo-gateway-helm.yaml")
+
+	// Install Gloo Gateway with Istio SDS enabled and automtls
+	// this helper function also applies the testserver pod and service
+	err := testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
+	Expect(err).NotTo(HaveOccurred())
+
+	// TODO(npolshak): Add glooctl health check support for Gloo Gateway
+
+	// Ensure gloo reaches valid state and doesn't continually resync
+	// we can consider doing the same for leaking go-routines after resyncs
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+
+	// Create Gateway resources
+	err = testutils.Kubectl("apply", "-f", filepath.Join(cwd, "artifacts", "gateway.yaml"))
+	Expect(err).NotTo(HaveOccurred())
+
+	kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+		Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+		settings.Gloo.IstioOptions.EnableAutoMtls = &wrapperspb.BoolValue{Value: true}
+	}, testHelper.InstallNamespace)
 }
 
 func uninstallGloo() {

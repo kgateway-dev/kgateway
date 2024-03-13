@@ -28,6 +28,7 @@ spec:
      replaceInvalidRoutes: false
    istioOptions:
      appendXForwardedHost: true
+     enableAutoMtls: false
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
