@@ -459,8 +459,8 @@ func NewExtractorError(message, name string, mode transformation.Extraction_Mode
 	}
 
 	// check if there's a readable mode name
-	if transformation.Extraction_Mode_name[int32(mode)] != "" {
-		extractorError.Mode = transformation.Extraction_Mode_name[int32(mode)]
+	if modeName, ok := transformation.Extraction_Mode_name[int32(mode)]; ok {
+		extractorError.Mode = modeName
 	}
 	return extractorError
 }
@@ -488,6 +488,12 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 	}
 
 	mode := extractor.GetMode()
+
+	// if mode isn't in the list of extraction modes, set it to EXTRACT
+	if _, ok := transformation.Extraction_Mode_name[int32(mode)]; !ok {
+		mode = transformation.Extraction_EXTRACT
+	}
+
 	switch mode {
 	case transformation.Extraction_EXTRACT:
 		out.Mode = envoytransformation.Extraction_EXTRACT
@@ -520,14 +526,7 @@ func translateExtractor(extractor *transformation.Extraction, name string) (*env
 			return nil, NewExtractorError(ErrMsgReplacementTextNotSetWhenNeeded, name, mode)
 		}
 	default:
-		// identical to Extraction_EXTRACT
-		out.Mode = envoytransformation.Extraction_EXTRACT
-		out.Subgroup = extractor.GetSubgroup()
-
-		// error if replacement_text is set
-		if extractor.GetReplacementText().GetValue() != "" {
-			return nil, NewExtractorError(ErrMsgReplacementTextSetWhenNotNeeded, name, mode)
-		}
+		return nil, NewExtractorError("unknown extraction mode", name, mode)
 	}
 
 	return out, nil
