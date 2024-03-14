@@ -2413,6 +2413,84 @@ spec:
 					"header template ':status': [inja.exception.parser_error] (at 1:92) expected statement close, got '%'")))
 			})
 
+			Context("Extractors", func() {
+				var (
+					// each test will define and then write this extraction to the test server vs
+					extraction *glootransformation.Extraction
+
+					// helper used in patchVirtualServiceWithExtraction
+					createTransformationFromExtraction = func(extraction *glootransformation.Extraction) *glootransformation.Transformations {
+						return &glootransformation.Transformations{
+							ClearRouteCache: true,
+							ResponseTransformation: &glootransformation.Transformation{
+								TransformationType: &glootransformation.Transformation_TransformationTemplate{
+									TransformationTemplate: &glootransformation.TransformationTemplate{
+										Headers: map[string]*glootransformation.InjaTemplate{
+											":path": {Text: "/"},
+										},
+										Extractors: map[string]*glootransformation.Extraction{
+											"foo": extraction,
+										},
+									},
+								},
+							},
+						}
+					}
+
+					// helper used in each test to patch the test server vs to include the extraction
+					patchVirtualServiceWithExtraction = func(ctx context.Context, namespace, name string, extraction *glootransformation.Extraction) error {
+						return helpers.PatchResource(
+							ctx,
+							&core.ResourceRef{
+								Namespace: namespace,
+								Name:      name,
+							},
+							func(resource resources.Resource) resources.Resource {
+								vs := resource.(*gatewayv1.VirtualService)
+								vs.VirtualHost.Options = &gloov1.VirtualHostOptions{
+									Transformations: createTransformationFromExtraction(extraction),
+								}
+								return vs
+							},
+							resourceClientset.VirtualServiceClient().BaseClient(),
+						)
+					}
+				)
+
+				It("Extract mode -- rejects invalid subgroup in transformation", func() {
+					extraction = &glootransformation.Extraction{
+						Source: &glootransformation.Extraction_Header{
+							Header: ":path",
+						},
+						// note that the regex has no subgroups, but we are trying to extract the first subgroup
+						// this should be rejected
+						Regex:    ".*",
+						Subgroup: 1,
+						Mode:     glootransformation.Extraction_EXTRACT,
+					}
+					// update the test server vs
+					err := patchVirtualServiceWithExtraction(ctx, testServerVs.GetMetadata().GetNamespace(), testServerVs.GetMetadata().GetName(), extraction)
+					Expect(err).To(MatchError(ContainSubstring("envoy validation mode output: error initializing configuration '': Failed to parse response template: group 1 requested for regex with only 0 sub groups")))
+				})
+
+				It("Single replace mode -- rejects invalid subgroup in transformation", func() {
+					extraction = &glootransformation.Extraction{
+						Source: &glootransformation.Extraction_Header{
+							Header: ":path",
+						},
+						// note that the regex has no subgroups, but we are trying to extract the first subgroup
+						// this should be rejected
+						Regex:           ".*",
+						Subgroup:        1,
+						ReplacementText: &wrappers.StringValue{Value: "bar"},
+						Mode:            glootransformation.Extraction_SINGLE_REPLACE,
+					}
+					// update the test server vs
+					err := patchVirtualServiceWithExtraction(ctx, testServerVs.GetMetadata().GetNamespace(), testServerVs.GetMetadata().GetName(), extraction)
+					Expect(err).To(MatchError(ContainSubstring("envoy validation mode output: error initializing configuration '': Failed to parse response template: group 1 requested for regex with only 0 sub groups")))
+				})
+			})
+
 			Context("disable_transformation_validation is set", Ordered, func() {
 
 				BeforeAll(func() {
