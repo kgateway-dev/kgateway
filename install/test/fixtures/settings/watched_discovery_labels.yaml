@@ -38,6 +38,7 @@ spec:
       invalidRouteResponseCode: 404
     istioOptions:
      appendXForwardedHost: true
+     enableAutoMtls: false
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}

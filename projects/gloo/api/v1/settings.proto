@@ -736,6 +736,10 @@ message GlooOptions {
         // Set to false to disable adding X-Forwarded-Host header in Istio integration
         // Defaults to true
         google.protobuf.BoolValue append_x_forwarded_host = 1;
+
+        // Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect.
+        // Defaults to false
+        google.protobuf.BoolValue enable_auto_mtls = 2;
     }
 
     IstioOptions istio_options = 18;

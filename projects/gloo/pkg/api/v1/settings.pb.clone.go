@@ -1219,6 +1219,12 @@ func (m *GlooOptions_IstioOptions) Clone() proto.Message {
 		target.AppendXForwardedHost = proto.Clone(m.GetAppendXForwardedHost()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetEnableAutoMtls()).(clone.Cloner); ok {
+		target.EnableAutoMtls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.EnableAutoMtls = proto.Clone(m.GetEnableAutoMtls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

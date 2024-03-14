@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/constants"
-
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
-
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -55,6 +54,7 @@ type Inputs struct {
 	ControllerName string
 	Dev            bool
 	Port           int
+	IstioValues    bootstrap.IstioValues
 }
 
 // NewDeployer creates a new gateway deployer
@@ -77,6 +77,7 @@ func NewDeployer(scheme *runtime.Scheme, cli client.Client, inputs *Inputs) (*De
 	}, nil
 }
 
+// GetGvksToWatch returns the list of GVKs that the deployer will watch for
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
 	fakeGw := &api.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -142,39 +143,44 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 		return nil, err
 	}
 
-	// vals = map[string]any{
-	// 	"controlPlane": map[string]any{
-	// 		"enabled": false,
-	// 	},
-	// 	"gateway": map[string]any{
-	// 		"enabled":     true,
-	// 		"name":        gw.Name,
-	// 		"gatewayName": gw.Name,
-	// 		"ports":       portsAny,
-	// 		// Default to Load Balancer
-	// 		"service": map[string]any{
-	// 			"type": "LoadBalancer",
-	// 		},
-	// 		"xds": map[string]any{
-	// 			// The xds host/port MUST map to the Service definition for the Control Plane
-	// 			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-	// 			//
-	// 			// NOTE: The current implementation in flawed in multiple ways:
-	// 			//	1 - This assumes that the Control Plane is installed in `gloo-system`
-	// 			//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
-	// 			//		will always be what is exposed by the Kubernetes Service.
-	// 			"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
-	// 			"port": d.inputs.Port,
-	// 		},
-	// 		"image": getDeployerImageValues(),
-	// 	},
-	// }
-	// if d.inputs.Dev {
-	// 	vals["develop"] = true
-	// }
-
+	/*
+		vals := map[string]any{
+			"controlPlane": map[string]any{
+				"enabled": false,
+			},
+			"gateway": map[string]any{
+				"enabled":     true,
+				"name":        gw.Name,
+				"gatewayName": gw.Name,
+				"ports":       portsAny,
+				// Default to Load Balancer
+				"service": map[string]any{
+					"type": "LoadBalancer",
+				},
+				"istioSDS": map[string]any{
+					"enabled": d.inputs.IstioValues.SDSEnabled,
+				},
+				"xds": map[string]any{
+					// The xds host/port MUST map to the Service definition for the Control Plane
+					// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+					//
+					// NOTE: The current implementation in flawed in multiple ways:
+					//	1 - This assumes that the Control Plane is installed in `gloo-system`
+					//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
+					//		will always be what is exposed by the Kubernetes Service.
+					"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
+					"port": d.inputs.Port,
+				},
+				"image": getDeployerImageValues(),
+			},
+		}
+		if d.inputs.Dev {
+			vals["develop"] = true
+		}
+	*/
 	logger := log.FromContext(ctx)
 	logger.Info("rendering helm chart", "vals", vals)
+
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err

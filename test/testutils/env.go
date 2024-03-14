@@ -67,6 +67,12 @@ const (
 	// If set to another value, the test suite will use that version (ie '1.15.0-beta1')
 	// This is an optional value, so if it is not set, the test suite will use the locally built version of Gloo Edge
 	ReleasedVersion = "RELEASED_VERSION"
+
+	// Istio auto mtls
+	IstioAutoMtls = "ISTIO_AUTO_MTLS"
+
+	// Gloo Gateway setup
+	GlooGatewaySetup = "GLOO_GATEWAY_SETUP"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

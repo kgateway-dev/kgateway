@@ -15,6 +15,11 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 		desired.SslConfig = original.GetSslConfig()
 	}
 
+	// do not overwrite the auto istio mtls config if none specified by discovery
+	if desired.GetDisableIstioAutoMtls() == nil {
+		desired.DisableIstioAutoMtls = original.GetDisableIstioAutoMtls()
+	}
+
 	if desired.GetHttpConnectSslConfig() == nil {
 		desired.HttpConnectSslConfig = original.GetHttpConnectSslConfig()
 	}

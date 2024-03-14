@@ -4,6 +4,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
@@ -11,8 +12,12 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-const EnvoyLb = "envoy.lb"
-const SoloAnnotations = "io.solo.annotations"
+const (
+	EnvoyLb         = "envoy.lb"
+	SoloAnnotations = "io.solo.annotations"
+
+	EnvoyTransportSocketMatch = "envoy.transport_socket_match"
+)
 
 // Endpoints
 
@@ -30,7 +35,7 @@ func (t *translatorInstance) computeClusterEndpoints(
 		clusterEndpoints := upstreamRefKeyToEndpoints[upstream.GetMetadata().Ref().Key()]
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
 		if len(clusterEndpoints) > 0 {
-			loadAssignment := loadAssignmentForUpstream(upstream, clusterEndpoints)
+			loadAssignment := loadAssignmentForUpstream(upstream, clusterEndpoints, t.settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue())
 			for _, plugin := range t.pluginRegistry.GetEndpointPlugins() {
 				if err := plugin.ProcessEndpoints(params, upstream, loadAssignment); err != nil {
 					reports.AddError(upstream, err)
@@ -45,11 +50,16 @@ func (t *translatorInstance) computeClusterEndpoints(
 func loadAssignmentForUpstream(
 	upstream *v1.Upstream,
 	clusterEndpoints []*v1.Endpoint,
+	enableAutoMtls bool,
 ) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	clusterName := UpstreamToClusterName(upstream.GetMetadata().Ref())
 	var endpoints []*envoy_config_endpoint_v3.LbEndpoint
 	for _, addr := range clusterEndpoints {
+		// Get the metadata labels and filter metadata for the envoy load balancer based on the upstream
 		metadata := getLbMetadata(upstream, addr.GetMetadata().GetLabels(), "")
+		// Get the metadata labels for the transport socket match if Istio auto mtls is enabled
+		metadata = addIstioAutomtlsMetadata(metadata, addr.GetMetadata().GetLabels(), enableAutoMtls)
+		// Add the annotations to the metadata
 		metadata = addAnnotations(metadata, addr.GetMetadata().GetAnnotations())
 		var healthCheckConfig *envoy_config_endpoint_v3.Endpoint_HealthCheckConfig
 		if host := addr.GetHealthCheck().GetHostname(); host != "" {
@@ -135,7 +145,6 @@ func addAnnotations(metadata *envoy_config_core_v3.Metadata, annotations map[str
 }
 
 func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue string) *envoy_config_core_v3.Metadata {
-
 	meta := &envoy_config_core_v3.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{},
 	}
@@ -170,6 +179,23 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 
 	meta.GetFilterMetadata()[EnvoyLb] = labelsStruct
 	return meta
+}
+
+func addIstioAutomtlsMetadata(metadata *envoy_config_core_v3.Metadata, labels map[string]string, enableAutoMtls bool) *envoy_config_core_v3.Metadata {
+	if enableAutoMtls {
+		if _, ok := labels[constants.IstioTlsModeLabel]; ok {
+			metadata.GetFilterMetadata()[EnvoyTransportSocketMatch] = &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					constants.TLSModeLabelShortname: {
+						Kind: &structpb.Value_StringValue{
+							StringValue: constants.IstioMutualTLSModeLabel,
+						},
+					},
+				},
+			}
+		}
+	}
+	return metadata
 }
 
 func allKeys(upstream *v1.Upstream) []string {

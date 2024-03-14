@@ -7,6 +7,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -74,13 +75,13 @@ func istioUninject(_ []string, opts *options.Options) error {
 
 	if len(upstreamsWithSdsClusterName) > 0 {
 		if opts.Istio.IncludeUpstreams {
-			fmt.Printf("Warning: Found %d upstreams with sds config referencing the %v cluster, removing\n", len(upstreamsWithSdsClusterName), sdsClusterName)
+			fmt.Printf("Warning: Found %d upstreams with sds config referencing the %v cluster, removing\n", len(upstreamsWithSdsClusterName), constants.SdsClusterName)
 			if err := disableMTLSOnUpstreamList(upClient, upstreamsWithSdsClusterName); err != nil {
 				return err
 			}
 		} else {
 			return eris.Wrapf(ErrUpstreamSdsConfigPresent, "There are %d upstreams with sds config referencing the %v cluster. "+
-				"Remove those references or use the --include-upstreams flag", len(upstreamsWithSdsClusterName), sdsClusterName)
+				"Remove those references or use the --include-upstreams flag", len(upstreamsWithSdsClusterName), constants.SdsClusterName)
 		}
 	}
 
@@ -185,7 +186,7 @@ func removeSdsCluster(configMap *corev1.ConfigMap) error {
 	clusters := bootstrapConfig.GetStaticResources().GetClusters()
 
 	for i, cluster := range clusters {
-		if cluster.GetName() == sdsClusterName {
+		if cluster.GetName() == constants.SdsClusterName {
 			// Remove the SDS cluster
 			copy(clusters[i:], clusters[i+1:])
 			clusters = clusters[:len(clusters)-1]
@@ -222,7 +223,7 @@ func getUpstreamsWithDefaultSdsClusterName(client v1.UpstreamClient, namespace s
 
 	var upstreamsWithSdsClusterName v1.UpstreamList
 	appendIfSdsCluster := func(upstream *v1.Upstream) {
-		if upstream.GetSslConfig().GetSds().GetClusterName() == sdsClusterName {
+		if upstream.GetSslConfig().GetSds().GetClusterName() == constants.SdsClusterName {
 			upstreamsWithSdsClusterName = append(upstreamsWithSdsClusterName, upstream)
 		}
 	}

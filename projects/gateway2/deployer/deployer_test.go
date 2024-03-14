@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -66,6 +67,55 @@ var _ = Describe("Deployer", func() {
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should render the correct deployment when sds is enabled", func() {
+		inputs := &deployer.Inputs{
+			Dev:            false,
+			ControllerName: "foo",
+			Port:           8080,
+			IstioValues: bootstrap.IstioValues{
+				SDSEnabled: true,
+			},
+		}
+		d, err := deployer.NewDeployer(scheme.NewScheme(), inputs)
+		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
+
+		// Create a Gateway
+		gw := &api.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+				UID:       "1235",
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Gateway",
+				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				Listeners: []api.Listener{
+					{
+						Name: "listener-1",
+						Port: 80,
+					},
+				},
+			},
+		}
+		objs, err := d.GetObjsToDeploy(context.Background(), gw)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).NotTo(BeEmpty())
+
+		// check that there are three containers in the deployment (istio-proxy, sds and gloo-proxy)
+		dep := func() *appsv1.Deployment {
+			for _, obj := range objs {
+				if dep, ok := obj.(*appsv1.Deployment); ok {
+					return dep
+				}
+			}
+			return nil
+		}()
+		Expect(dep).NotTo(BeNil())
+		Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(3))
 	})
 
 	It("should get gvks", func() {
