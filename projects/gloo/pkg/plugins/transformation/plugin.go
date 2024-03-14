@@ -331,7 +331,11 @@ func TranslateTransformation(glooTransform *transformation.Transformation,
 			}
 			typedTransformation.TransformationTemplate.EscapeCharacters = escapeCharacters
 
-			out.TransformationType = translateTransformationTemplate(typedTransformation)
+			transformationType, err := translateTransformationTemplate(typedTransformation)
+			if err != nil {
+				return nil, err
+			}
+			out.TransformationType = transformationType
 		}
 	default:
 		return nil, UnknownTransformationType(typedTransformation)
@@ -353,7 +357,7 @@ func translateHeaderBodyTransform(in *transformation.Transformation_HeaderBodyTr
 	return out
 }
 
-func translateTransformationTemplate(in *transformation.Transformation_TransformationTemplate) *envoytransformation.Transformation_TransformationTemplate {
+func translateTransformationTemplate(in *transformation.Transformation_TransformationTemplate) (*envoytransformation.Transformation_TransformationTemplate, error) {
 	out := &envoytransformation.Transformation_TransformationTemplate{}
 	inTemplate := in.TransformationTemplate
 	outTemplate := &envoytransformation.TransformationTemplate{
@@ -367,21 +371,11 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	if len(inTemplate.GetExtractors()) > 0 {
 		outTemplate.Extractors = make(map[string]*envoytransformation.Extraction)
 		for k, v := range inTemplate.GetExtractors() {
-			outExtraction := &envoytransformation.Extraction{
-				Regex:    v.GetRegex(),
-				Subgroup: v.GetSubgroup(),
+			extractor, err := translateExtractor(v, k)
+			if err != nil {
+				return nil, err
 			}
-			switch src := v.GetSource().(type) {
-			case *transformation.Extraction_Body:
-				outExtraction.Source = &envoytransformation.Extraction_Body{
-					Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
-				}
-			case *transformation.Extraction_Header:
-				outExtraction.Source = &envoytransformation.Extraction_Header{
-					Header: src.Header,
-				}
-			}
-			outTemplate.GetExtractors()[k] = outExtraction
+			outTemplate.GetExtractors()[k] = extractor
 		}
 	}
 
@@ -438,7 +432,104 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	}
 
 	out.TransformationTemplate = outTemplate
-	return out
+	return out, nil
+}
+
+// ExtractorError represents an error related to extractor configuration.
+type ExtractorError struct {
+	Message string // The error message
+	Name    string // The name of the extractor causing the error
+	Mode    string // (optional) The (stringified) mode of the extractor causing the error
+}
+
+// implements the error interface for ExtractorError.
+func (e *ExtractorError) Error() string {
+	if e.Mode == "" {
+		return fmt.Sprintf("%s for extractor %s", e.Message, e.Name)
+	} else {
+		return fmt.Sprintf("%s for extractor %s in mode %s", e.Message, e.Name, e.Mode)
+	}
+}
+
+// Helper functions to create specific ExtractorError instances.
+func NewExtractorError(message, name string, mode transformation.Extraction_Mode) *ExtractorError {
+	extractorError := &ExtractorError{
+		Message: message,
+		Name:    name,
+	}
+
+	// check if there's a readable mode name
+	if modeName, ok := transformation.Extraction_Mode_name[int32(mode)]; ok {
+		extractorError.Mode = modeName
+	}
+	return extractorError
+}
+
+const (
+	ErrMsgReplacementTextSetWhenNotNeeded = "replacement text should not be set"
+	ErrMsgReplacementTextNotSetWhenNeeded = "replacement text must be set"
+	ErrMsgSubgroupSetWhenNotNeeded        = "subgroup should not be set"
+)
+
+func translateExtractor(extractor *transformation.Extraction, name string) (*envoytransformation.Extraction, error) {
+	out := &envoytransformation.Extraction{
+		Regex: extractor.GetRegex(),
+	}
+
+	switch src := extractor.GetSource().(type) {
+	case *transformation.Extraction_Body:
+		out.Source = &envoytransformation.Extraction_Body{
+			Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
+		}
+	case *transformation.Extraction_Header:
+		out.Source = &envoytransformation.Extraction_Header{
+			Header: src.Header,
+		}
+	}
+
+	mode := extractor.GetMode()
+
+	// if mode isn't in the list of extraction modes, set it to EXTRACT
+	if _, ok := transformation.Extraction_Mode_name[int32(mode)]; !ok {
+		mode = transformation.Extraction_EXTRACT
+	}
+
+	switch mode {
+	case transformation.Extraction_EXTRACT:
+		out.Mode = envoytransformation.Extraction_EXTRACT
+		out.Subgroup = extractor.GetSubgroup()
+
+		// error if replacement_text is set
+		if extractor.GetReplacementText().GetValue() != "" {
+			return nil, NewExtractorError(ErrMsgReplacementTextSetWhenNotNeeded, name, mode)
+		}
+	case transformation.Extraction_SINGLE_REPLACE:
+		out.Mode = envoytransformation.Extraction_SINGLE_REPLACE
+		out.Subgroup = extractor.GetSubgroup()
+		out.ReplacementText = extractor.GetReplacementText()
+
+		// error if replacement_text is not set
+		if extractor.GetReplacementText() == nil {
+			return nil, NewExtractorError(ErrMsgReplacementTextNotSetWhenNeeded, name, mode)
+		}
+	case transformation.Extraction_REPLACE_ALL:
+		out.Mode = envoytransformation.Extraction_REPLACE_ALL
+		out.ReplacementText = extractor.GetReplacementText()
+
+		// error if subgroup is set
+		if extractor.GetSubgroup() != 0 {
+			return nil, NewExtractorError(ErrMsgSubgroupSetWhenNotNeeded, name, mode)
+		}
+
+		// error if replacement_text is not set
+		if extractor.GetReplacementText() == nil {
+			return nil, NewExtractorError(ErrMsgReplacementTextNotSetWhenNeeded, name, mode)
+		}
+	default:
+		return nil, NewExtractorError("unknown extraction mode", name, mode)
+	}
+
+	return out, nil
 }
 
 func (p *Plugin) validateTransformation(
