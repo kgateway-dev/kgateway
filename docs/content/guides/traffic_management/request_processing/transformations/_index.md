@@ -272,7 +272,7 @@ Extracted values can be used in two ways:
 
 ##### Extractor Modes
 
-Starting with Gloo Edge 1.17, extractors support multiple different modes of operation. These modes enable more powerful and flexible extraction capabilities. You can specify the mode of operation for an extractor using the `mode` field. The supported modes are:
+Starting with Gloo Edge 1.15, extractors support multiple different modes of operation. These modes enable more powerful and flexible extraction capabilities. You can specify the mode of operation for an extractor using the `mode` field. The supported modes are:
  - `Extract` (default): Extracts the value of the specified capturing group from the source. This is the standard behavior of extractors prior to this version.
  - `Single Replace`: Replaces the value of the n-th capturing group, where n is the value selected by `subgroup`, with the text specified in `replacement_text`.
  - `Replace All`: Replaces all occurrences of the pattern specified in the `regex` field within the source with the text specified in `replacement_text`.

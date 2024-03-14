@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/8706
+    description: >-
+      Update the extractor documentation to clarify that extractor regex
+      functionality is first available in v1.15.x
