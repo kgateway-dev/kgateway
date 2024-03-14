@@ -233,7 +233,6 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 	logger := contextutils.LoggerFrom(params.Ctx)
 
 	for i, listener := range proxy.GetListeners() {
-		fmt.Printf("computing envoy resources for listener: %v", listener.GetName())
 		logger.Infof("computing envoy resources for listener: %v", listener.GetName())
 
 		listenerReport := proxyReport.GetListenerReports()[i]

@@ -1,9 +1,6 @@
 package tracing
 
 import (
-	"fmt"
-	"time"
-
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -52,11 +49,6 @@ func (p *plugin) Init(_ plugins.InitParams) {
 // Manage the tracing portion of the HCM settings
 func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parent *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 
-	fmt.Println("\nNow:", time.Now())
-	fmt.Printf("\n\nProcessHcmNetworkFilter parent: %+v\n\n", parent)
-	fmt.Printf("\n\nProcessHcmNetworkFilter params: %+v\n\n", params)
-	fmt.Printf("\n\nProcessHcmNetworkFilter listener: %+v\n\n", listener)
-	fmt.Printf("\n\nProcessHcmNetworkFilter out: %+v\n\n", out)
 	// only apply tracing config to the listener is using the HCM plugin
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 	if in == nil {
@@ -241,15 +233,18 @@ func processEnvoyDatadogTracing(
 	}, nil
 }
 
-func getGatewayNameFromMetadataStatic(metadata *v1.SourceMetadata) string {
-	//return metadata.GetSources()[0].GetResourceRef().GetName()
-
-	for _, source := range metadata.GetSources() {
-		if source.GetResourceKind() == "*v1.Gateway" {
-			return source.GetResourceRef().GetName()
+func getGatewayNameFromListener(listener *v1.Listener) string {
+	switch metadata := listener.GetOpaqueMetadata().(type) {
+	case *v1.Listener_Metadata:
+		return "deprecated_metadata"
+	case *v1.Listener_MetadataStatic:
+		for _, source := range metadata.MetadataStatic.GetSources() {
+			if source.GetResourceKind() == "*v1.Gateway" {
+				return source.GetResourceRef().GetName()
+			}
 		}
-	}
 
+	}
 	return ""
 }
 
@@ -275,7 +270,7 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
-	serviceName := getGatewayNameFromMetadataStatic(parent.GetMetadataStatic()) //parent.GetMetadataStatic().GetSources()[0].GetResourceRef().GetName()
+	serviceName := getGatewayNameFromListener(parent) //parent.GetMetadataStatic().GetSources()[0].GetResourceRef().GetName()
 	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, serviceName)
 	if err != nil {
 		return nil, err
@@ -286,7 +281,6 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, err
 	}
 
-	fmt.Println("Creating new OpenTelemetry Tracing_Http")
 	return &envoy_config_trace_v3.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
