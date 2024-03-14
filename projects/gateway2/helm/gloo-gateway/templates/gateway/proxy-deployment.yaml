@@ -1,4 +1,5 @@
-{{- if .Values.gateway.enabled -}}
+{{- $gateway := .Values.gateway }}
+{{- if $gateway.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,32 +8,32 @@ metadata:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.gateway.autoscaling.enabled }}
-  replicas: {{ .Values.gateway.replicaCount }}
+  {{- if not $gateway.autoscaling.enabled }}
+  replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.gateway.podAnnotations }}
+      {{- with $gateway.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.gateway.imagePullSecrets }}
+      {{- with $gateway.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.gateway.podSecurityContext | nindent 8 }}
+        {{- toYaml $gateway.podSecurityContext | nindent 8 }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:
-          {{- toYaml .Values.gateway.securityContext | nindent 12 }}
+          {{- toYaml $gateway.securityContext | nindent 12 }}
         args:
         - "--disable-hot-restart"
         - "--service-node"
@@ -41,8 +42,8 @@ spec:
         - "--log-level"
         - "debug"
         {{- end }}
-        image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag | default .Chart.AppVersion }}"
-        imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+        image: "{{ $gateway.image.repository }}:{{ $gateway.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ $gateway.image.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
@@ -58,29 +59,159 @@ spec:
         - name: ENVOY_UID
           value: "0"
         ports:
-        {{- range $p := .Values.gateway.ports }}
+        {{- range $p := $gateway.ports }}
         - name: {{ $p.name }}
           protocol: {{ $p.protocol }}
           containerPort: {{ $p.targetPort }}
         {{- end }}
         - name: readiness
           protocol: TCP
-          containerPort: {{ .Values.gateway.readinessPort }}
+          containerPort: {{ $gateway.readinessPort }}
         readinessProbe:
           httpGet:
             path: /ready
             port: readiness
         resources:
+          {{- toYaml $gateway.resources | nindent 12 }}
+{{- if $gateway.istioSDS.enabled }}
+      - name: sds
+        image: "quay.io/solo-io/sds:{{ default .Chart.AppVersion }}"
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: ISTIO_MTLS_SDS_ENABLED
+            value: "true"
+        ports:
+          - containerPort: 8234
+            name: sds
+            protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 8234
+          timeoutSeconds: 1
+        resources:
           {{- toYaml .Values.gateway.resources | nindent 12 }}
-      {{- with .Values.gateway.nodeSelector }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+          - mountPath: /etc/istio-certs/
+            name: istio-certs
+          - mountPath: /etc/envoy
+            name: envoy-config
+      - name: istio-proxy
+        # TODO(npolshak): Add configurable security context, istio proxy image and image pull policy
+        image: "docker.io/istio/proxyv2:1.18.2"
+        # TODO(npolshak): Add configurable envoySidecarResources
+        args:
+          - proxy
+          - sidecar
+          - --domain
+          - $(POD_NAMESPACE).svc.cluster.local
+          - --configPath
+          - /etc/istio/proxy
+          - --serviceCluster
+          - istio-proxy-prometheus
+          - --drainDuration
+          - 45s
+          - --parentShutdownDuration
+          - 1m0s
+          - --proxyLogLevel=warning
+          - --proxyComponentLogLevel=misc:error
+          - --connectTimeout
+          - 10s
+          - --controlPlaneAuthPolicy
+          - NONE
+          - --dnsRefreshRate
+          - 300s
+          - --trust-domain=cluster.local
+          - --controlPlaneBootstrap=false
+        env:
+          - name: OUTPUT_CERTS
+            value: "/etc/istio-certs"
+          - name: JWT_POLICY
+            value: third-party-jwt
+          - name: PILOT_CERT_PROVIDER
+            value: istiod
+          - name: CA_ADDR
+            value: "istiod.istio-system.svc:15012" # TODO: Configurable istioDiscoveryAddress
+          - name: ISTIO_META_MESH_ID
+            value: "cluster.local" # TODO: Configurable istioMetaMeshId
+          - name: ISTIO_META_CLUSTER_ID
+            value: "Kubernetes" # TODO: Configurable istioMetaClusterId
+          - name: PROXY_CONFIG
+            # TODO: Configurable istioDiscoveryAddress
+            value: |
+              {"discoveryAddress": "istiod.istio-system.svc:15012" }
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: INSTANCE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: ISTIO_META_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: ISTIO_META_CONFIG_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: DISABLE_ENVOY
+            value: "true"
+        volumeMounts:
+          - mountPath: /var/run/secrets/istio
+            name: istiod-ca-cert
+          - mountPath: /etc/istio/proxy
+            name: istio-envoy
+          - mountPath: /etc/istio-certs/
+            name: istio-certs
+          - mountPath: /var/run/secrets/tokens
+            name: istio-token
+          - mountPath: /var/run/secrets/credential-uds
+            name: credential-socket
+          - mountPath: /var/run/secrets/workload-spiffe-uds
+            name: workload-socket
+          - mountPath: /var/run/secrets/workload-spiffe-credentials
+            name: workload-certs
+{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+      {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.gateway.affinity }}
+      {{- with $gateway.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.gateway.tolerations }}
+      {{- with $gateway.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -88,7 +219,33 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-{{- if .Values.gateway.serviceAccount.create }}
+{{- if $gateway.istioSDS.enabled }}
+      - emptyDir:
+          medium: Memory
+        name: istio-certs
+      - configMap:
+          defaultMode: 420
+          name: istio-ca-root-cert
+        name: istiod-ca-cert
+      - emptyDir:
+          medium: Memory
+        name: istio-envoy
+      - name: istio-token
+        projected:
+          defaultMode: 420
+          sources:
+            - serviceAccountToken:
+                audience: istio-ca
+                expirationSeconds: 43200
+                path: istio-token
+      - name: credential-socket
+        emptyDir: {}
+      - name: workload-socket
+        emptyDir: {}
+      - name: workload-certs
+        emptyDir: {}
+{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -97,12 +254,12 @@ metadata:
   labels:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
-  {{- with .Values.gateway.serviceAccount.annotations }}
+  {{- with $gateway.serviceAccount.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 automountServiceAccountToken: false
-{{- end }}
+{{- end }} {{/* if $gateway.serviceAccount.create */}}
 ---
 apiVersion: v1
 kind: Service
@@ -112,9 +269,9 @@ metadata:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.gateway.service.type }}
+  type: {{ $gateway.service.type }}
   ports:
-  {{- range $p := .Values.gateway.ports }}
+  {{- range $p := $gateway.ports }}
   - name: {{ $p.name }}
     protocol: {{ $p.protocol }}
     targetPort: {{ $p.targetPort }}
@@ -135,45 +292,43 @@ data:
     admin:
       address:
         socket_address: { address: 127.0.0.1, port_value: 19000 }
-  
     node:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
         gateway:
           # TODO: Should this default live somewhere shared instead of just here?
-          name: {{ .Values.gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
+          name: {{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
           namespace: {{ .Release.Namespace }}
     static_resources:
       listeners:
       - name: read_config_listener
         address:
-          socket_address: { address: 0.0.0.0, port_value: {{ .Values.gateway.readinessPort }} }
+          socket_address: { address: 0.0.0.0, port_value: {{ $gateway.readinessPort }} }
         filter_chains:
-        - filters:
-          - name: envoy.filters.network.http_connection_manager
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-              stat_prefix: ingress_http
-              codec_type: AUTO
-              route_config:
-                name: main_route
-                virtual_hosts:
-                - name: local_service
-                  domains: ["*"]
-                  routes:
-                  - match:
-                      path: "/ready"
-                      headers:
-                      - name: ":method"
-                        string_match:
-                          exact: GET
-                    route:
-                      cluster: admin_port_cluster
-              http_filters:
-              - name: envoy.filters.http.router
-                typed_config:
-                  "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-
+          - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: AUTO
+                route_config:
+                  name: main_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"]
+                      routes:
+                        - match:
+                            path: "/ready"
+                            headers:
+                              - name: ":method"
+                                string_match:
+                                  exact: GET
+                          route:
+                            cluster: admin_port_cluster
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       clusters:
         - name: xds_cluster
           alt_stat_name: xds_cluster
@@ -185,8 +340,8 @@ data:
               - endpoint:
                   address:
                     socket_address:
-                      address: {{ .Values.gateway.xds.host }}
-                      port_value: {{ .Values.gateway.xds.port }}
+                      address: {{ $gateway.xds.host }}
+                      port_value: {{ $gateway.xds.port }}
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -210,7 +365,20 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-
+        {{- if $gateway.istioSDS.enabled }}
+        - name: gateway_proxy_sds
+          connect_timeout: 0.25s
+          http2_protocol_options: {}
+          load_assignment:
+            cluster_name: gateway_proxy_sds
+            endpoints:
+              - lb_endpoints:
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: 127.0.0.1
+                        port_value: 8234
+        {{- end }} {{/* if $gateway.istioSDS.enabled */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
