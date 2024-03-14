@@ -241,6 +241,18 @@ func processEnvoyDatadogTracing(
 	}, nil
 }
 
+func getGatewayNameFromMetadataStatic(metadata *v1.SourceMetadata) string {
+	//return metadata.GetSources()[0].GetResourceRef().GetName()
+
+	for _, source := range metadata.GetSources() {
+		if source.GetResourceKind() == "*v1.Gateway" {
+			return source.GetResourceRef().GetName()
+		}
+	}
+
+	return ""
+}
+
 func processEnvoyOpenTelemetryTracing(
 	snapshot *v1snap.ApiSnapshot,
 	openTelemetryTracingSettings *tracing.ListenerTracingSettings_OpenTelemetryConfig,
@@ -263,7 +275,7 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
-	serviceName := parent.GetMetadataStatic().GetSources()[0].GetResourceRef().GetName()
+	serviceName := getGatewayNameFromMetadataStatic(parent.GetMetadataStatic()) //parent.GetMetadataStatic().GetSources()[0].GetResourceRef().GetName()
 	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, serviceName)
 	if err != nil {
 		return nil, err
