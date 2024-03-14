@@ -17,7 +17,7 @@ type K8sGatewayExtensions interface {
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
-type K8sGatewayExtensionsFactory func(mgr controllerruntime.Manager) K8sGatewayExtensions
+type K8sGatewayExtensionsFactory func(mgr controllerruntime.Manager) (K8sGatewayExtensions, error)
 
 // NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
 func NewK8sGatewayExtensions(mgr controllerruntime.Manager) K8sGatewayExtensions {
