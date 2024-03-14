@@ -2297,7 +2297,7 @@ spec:
 						Mode:     glootransformation.Extraction_EXTRACT,
 					}
 					// update the test server vs
-					err := patchVirtualServiceWithExtraction(ctx, testServerVs.GetMetadata().GetNamespace(), testServerVs.GetMetadata().GetName(), extraction)
+					err := patchVirtualServiceWithExtraction(ctx, testRunnerVs.GetMetadata().GetNamespace(), testRunnerVs.GetMetadata().GetName(), extraction)
 					Expect(err).To(MatchError(ContainSubstring("envoy validation mode output: error initializing configuration '': Failed to parse response template: group 1 requested for regex with only 0 sub groups")))
 				})
 
@@ -2314,7 +2314,7 @@ spec:
 						Mode:            glootransformation.Extraction_SINGLE_REPLACE,
 					}
 					// update the test server vs
-					err := patchVirtualServiceWithExtraction(ctx, testServerVs.GetMetadata().GetNamespace(), testServerVs.GetMetadata().GetName(), extraction)
+					err := patchVirtualServiceWithExtraction(ctx, testRunnerVs.GetMetadata().GetNamespace(), testRunnerVs.GetMetadata().GetName(), extraction)
 					Expect(err).To(MatchError(ContainSubstring("envoy validation mode output: error initializing configuration '': Failed to parse response template: group 1 requested for regex with only 0 sub groups")))
 				})
 			})
