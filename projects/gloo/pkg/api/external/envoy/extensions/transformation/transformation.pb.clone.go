@@ -246,6 +246,14 @@ func (m *Extraction) Clone() proto.Message {
 
 	target.Subgroup = m.GetSubgroup()
 
+	if h, ok := interface{}(m.GetReplacementText()).(clone.Cloner); ok {
+		target.ReplacementText = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.ReplacementText = proto.Clone(m.GetReplacementText()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
+
+	target.Mode = m.GetMode()
+
 	switch m.Source.(type) {
 
 	case *Extraction_Header:
