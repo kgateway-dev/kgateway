@@ -1,6 +1,9 @@
 package tracing
 
 import (
+	"fmt"
+	"time"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -47,8 +50,13 @@ func (p *plugin) Init(_ plugins.InitParams) {
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parent *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 
+	fmt.Println("\nNow:", time.Now())
+	fmt.Printf("\n\nProcessHcmNetworkFilter parent: %+v\n\n", parent)
+	fmt.Printf("\n\nProcessHcmNetworkFilter params: %+v\n\n", params)
+	fmt.Printf("\n\nProcessHcmNetworkFilter listener: %+v\n\n", listener)
+	fmt.Printf("\n\nProcessHcmNetworkFilter out: %+v\n\n", out)
 	// only apply tracing config to the listener is using the HCM plugin
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 	if in == nil {
@@ -67,7 +75,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.GetVerbose().GetValue()
 
-	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings)
+	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings, parent)
 	if err != nil {
 		return err
 	}
@@ -133,6 +141,7 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 func processEnvoyTracingProvider(
 	snapshot *v1snap.ApiSnapshot,
 	tracingSettings *tracing.ListenerTracingSettings,
+	parent *v1.Listener,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
 		return nil, nil
@@ -146,7 +155,7 @@ func processEnvoyTracingProvider(
 		return processEnvoyDatadogTracing(snapshot, typed)
 
 	case *tracing.ListenerTracingSettings_OpenTelemetryConfig:
-		return processEnvoyOpenTelemetryTracing(snapshot, typed)
+		return processEnvoyOpenTelemetryTracing(snapshot, typed, parent)
 
 	case *tracing.ListenerTracingSettings_OpenCensusConfig:
 		return processEnvoyOpenCensusTracing(typed)
@@ -235,6 +244,7 @@ func processEnvoyDatadogTracing(
 func processEnvoyOpenTelemetryTracing(
 	snapshot *v1snap.ApiSnapshot,
 	openTelemetryTracingSettings *tracing.ListenerTracingSettings_OpenTelemetryConfig,
+	parent *v1.Listener,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
 
@@ -253,7 +263,8 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
-	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName)
+	serviceName := parent.GetMetadataStatic().GetSources()[0].GetResourceRef().GetName()
+	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, serviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -263,6 +274,7 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, err
 	}
 
+	fmt.Println("Creating new OpenTelemetry Tracing_Http")
 	return &envoy_config_trace_v3.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{

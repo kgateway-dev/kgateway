@@ -209,7 +209,7 @@ var _ = Describe("Tracing config loading", Serial, func() {
 			)
 		}
 
-		It("should send trace msgs with valid opentelemetry provider (collector_ref)", func() {
+		FIt("should send trace msgs with valid opentelemetry provider (collector_ref)", func() {
 			collectorApiHit := make(chan bool, 1)
 			startTracingCollectionServer(collectorApiHit, openTelemetryCollectionPath)
 
@@ -247,6 +247,7 @@ var _ = Describe("Tracing config loading", Serial, func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
+
 			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 

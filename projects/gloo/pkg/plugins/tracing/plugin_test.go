@@ -558,7 +558,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Describe("when opentelemetry provider config", func() {
-			It("translates the plugin correctly", func() {
+			FIt("translates the plugin correctly", func() {
 
 				testClusterName := "test-cluster"
 				cfg := &envoyhttp.HttpConnectionManager{}
@@ -584,6 +584,7 @@ var _ = Describe("Plugin", func() {
 							},
 						},
 					},
+					ServiceName: "gateway",
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
