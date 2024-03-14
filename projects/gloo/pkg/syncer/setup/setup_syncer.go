@@ -790,7 +790,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
+	sharedTranslator := translator.NewTranslatorWithHasher(
+		sslutils.NewSslConfigTranslator(),
+		opts.Settings,
+		extensions.PluginRegistryFactory(watchOpts.Ctx),
+		resourceHasher,
+	)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -1280,7 +1285,21 @@ func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
 		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
 		// In the interim, we use an env variable to control the value
 		EnableK8sGatewayController: isEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
+		IstioValues:                constructIstioBootstrapOpts(),
 	}
+}
+
+func constructIstioBootstrapOpts() bootstrap.IstioValues {
+	istioValues := bootstrap.IstioValues{
+		// TODO: This value should be inherited at installation time, to determine if the istio integration is enabled
+		// In the interim, we use an env variable to control the value
+		SDSEnabled: isEnvTruthy(constants.IstioMtlsEnabled),
+
+		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
+		SidecarOnGatewayEnabled: isEnvTruthy(constants.IstioInjectionEnabled),
+	}
+
+	return istioValues
 }
 
 // IsEnvTruthy returns true if a given environment variable has a truthy value

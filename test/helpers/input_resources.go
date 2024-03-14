@@ -3,6 +3,7 @@ package helpers
 import (
 	"time"
 
+	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -43,25 +44,39 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 		"State": gomega.Equal(desiredStatusState),
 	})
 
-	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
-
 	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
 	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {
-		resource, err := getter()
-		if err != nil {
-			return core.Status{}, errors.Wrapf(err, "failed to get resource")
-		}
-
-		status := statusClient.GetStatus(resource)
-
-		// In newer versions of Gloo Edge we provide a default "empty" status, which allows us to patch it to perform updates
-		// As a result, a nil check isn't enough to determine that that status hasn't been reported
-		if status == nil || status.GetReportedBy() == "" {
-			return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
-		}
-
-		return *status, nil
+		return getResourceStatus(getter)
 	}, timeoutInterval, pollingInterval).Should(statusStateMatcher)
+}
+
+func EventuallyResourceStatusMatches(getter InputResourceGetter, desiredMatcher types.GomegaMatcher, intervals ...interface{}) {
+	EventuallyResourceStatusMatchesWithOffset(1, getter, desiredMatcher, intervals...)
+}
+
+func EventuallyResourceStatusMatchesWithOffset(offset int, getter InputResourceGetter, desiredMatcher types.GomegaMatcher, intervals ...interface{}) {
+	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
+	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {
+		return getResourceStatus(getter)
+	}, timeoutInterval, pollingInterval).Should(desiredMatcher)
+}
+
+func getResourceStatus(getter InputResourceGetter) (core.Status, error) {
+	resource, err := getter()
+	if err != nil {
+		return core.Status{}, errors.Wrapf(err, "failed to get resource")
+	}
+
+	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
+	status := statusClient.GetStatus(resource)
+
+	// In newer versions of Gloo Edge we provide a default "empty" status, which allows us to patch it to perform updates
+	// As a result, a nil check isn't enough to determine that that status hasn't been reported
+	if status == nil || status.GetReportedBy() == "" {
+		return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
+	}
+
+	return *status, nil
 }
 
 func EventuallyResourceDeleted(getter InputResourceGetter, intervals ...interface{}) {

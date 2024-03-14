@@ -270,6 +270,76 @@ Extracted values can be used in two ways:
   - If `advancedTemplates` is set to `true`, format the string such as `{{ extraction(my-extractor) }}`.
 - You can use them in conjunction with the `mergeExtractorsToBody` body transformation type to merge them into the body.
 
+##### Extractor Modes
+
+Starting with Gloo Edge 1.17, extractors support multiple different modes of operation. These modes enable more powerful and flexible extraction capabilities. You can specify the mode of operation for an extractor using the `mode` field. The supported modes are:
+ - `Extract` (default): Extracts the value of the specified capturing group from the source. This is the standard behavior of extractors prior to this version.
+ - `Single Replace`: Replaces the value of the n-th capturing group, where n is the value selected by `subgroup`, with the text specified in `replacement_text`.
+ - `Replace All`: Replaces all occurrences of the pattern specified in the `regex` field within the source with the text specified in `replacement_text`.
+
+{{% notice warning %}}
+The semantics of the `regex` field vary by mode and must be carefully considered.
+{{% /notice %}}
+
+ - `Extract`: The `regex` must match the entire source. Only the specified `subgroup` is extracted.
+ - `Single Replace`: The `regex` must match the entire source for replacement to occur. The `subgroup` specifies which part of the match to replace.
+ - `Replace All`: The `regex` can match any part of the source. All matches are replaced, and configuration which specifies a `subgroup` will be rejected.
+
+##### Extractor Configuration Validation
+
+To ensure correct configuration, Gloo Edge performs validation based on the extractor's mode:
+ - For **Extract** mode, the `replacement_text` must not be set. If set, the configuration will be rejected.
+ - For **Single Replace** and **Replace All** modes, the `replacement_text` must be set. If not set, the configuration will be rejected.
+ - For **Replace All** mode, the `subgroup` must not be set, as it is not used. If set, the configuration will be rejected.  
+
+##### Extractor Example - Single Replace Mode
+
+Define an extractor that replaces the first occurrence of the item `banana` with `orange` in a list of fruits. The exact composition of the list is unknown, but the format is the same, such as a comma-separated list.
+Fruits: `[apple, pear, banana, pineapple, etc.]`
+```
+
+```yaml
+extractors:
+  BananaToOrange:
+    body: {}
+    mode: SINGLE_REPLACE
+    replacement_text: 'orange'
+    regex: '.*(banana).*'
+    subgroup: 1
+```
+In this configuration:
+ - `BananaToOrange` is the name of the extractor.
+ - `body: {}` indicates that the request/response body will be used as input to the extractor.
+ - `regex: '.*(banana).*'` is designed to match the entire source, and capture the word `banana` in the first capturing group.
+ - `mode: SINGLE_REPLACE` specifies the operation mode, indicating a single replace operation.
+ - `replacement_text: 'orange'` replaces the content in the first capturing group with the text `orange`.
+ - `subgroup: 1` specifies that the replacement should only apply to the first captured group, which is banana in this case.
+
+In this case, if the extractor processes a body containing the text `Fruits: [apple, pear, banana, pineapple]`
+
+The result will be `Fruits: [apple, pear, orange, pineapple]`
+
+#### Extractor Example - Replace All Mode  
+
+Define an extractor that replaces all occurrences of the pattern `foo` with the text `bar` in the source.
+```yaml
+extractors:
+  FooToBar:
+    body: {}
+    regex: 'foo'
+    mode: REPLACE_ALL
+    replacement_text: 'bar'
+```
+
+In this configuration:
+ - `FooToBar` is the name of the extractor.
+ - `body: {}` indicates that the request/response body will be used as input to the extractor.
+ - `regex: 'foo'` specifies the pattern to match.
+ - `mode: REPLACE_ALL` specifies the mode of operation.
+ - `replacement_text: 'bar'` specifies the text to replace the matched pattern with.
+
+In this case, if the extractor processes a body containing the text `foo foo foo`, the result will be `bar bar bar`.
+
 ##### headers
 Use this attribute to apply templates to request/response headers. It consists of a map where each key determines the name of the resulting header, while the corresponding value is a {{< protobuf display="template" name="envoy.api.v2.filter.http.InjaTemplate" >}} which will determine the value.
 
