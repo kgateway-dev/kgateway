@@ -622,7 +622,7 @@ type Extraction struct {
 	//     if `subgroup` is set. If the regex does not match the source, the result of the replacement will be the source itself.
 	Regex string `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
 	// If your regex contains capturing groups, use this field to determine the
-	// group that you want to seelc. Defaults to 0.
+	// group that you want to select. Defaults to 0.
 	// If set in `EXTRACT` and `SINGLE_REPLACE` modes, the subgroup represents the capturing
 	// group that you want to extract or replace in the source.
 	// The configuration is rejected if you set subgroup to a non-zero value when using thev `REPLACE_ALL` mode.

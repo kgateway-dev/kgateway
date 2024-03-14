@@ -140,7 +140,7 @@ message Extraction {
   string regex = 2;
 
   // If your regex contains capturing groups, use this field to determine the
-  // group that you want to seelc. Defaults to 0.
+  // group that you want to select. Defaults to 0.
   // If set in `EXTRACT` and `SINGLE_REPLACE` modes, the subgroup represents the capturing
   // group that you want to extract or replace in the source.
   // The configuration is rejected if you set subgroup to a non-zero value when using thev `REPLACE_ALL` mode.
