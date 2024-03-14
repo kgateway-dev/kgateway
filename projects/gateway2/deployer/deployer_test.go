@@ -78,7 +78,8 @@ var _ = Describe("Deployer", func() {
 				SDSEnabled: true,
 			},
 		}
-		d, err := deployer.NewDeployer(scheme.NewScheme(), inputs)
+		s := scheme.NewScheme()
+		d, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), inputs)
 		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
 
 		// Create a Gateway
