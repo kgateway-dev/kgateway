@@ -1,8 +1,6 @@
 package tracing
 
 import (
-	"fmt"
-
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -283,7 +281,6 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, err
 	}
 
-	fmt.Println("Creating new OpenTelemetry Tracing_Http")
 	return &envoy_config_trace_v3.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
