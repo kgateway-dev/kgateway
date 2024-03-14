@@ -209,7 +209,7 @@ var _ = Describe("Tracing config loading", Serial, func() {
 			)
 		}
 
-		FIt("should send trace msgs with valid opentelemetry provider (collector_ref)", func() {
+		It("should send trace msgs with valid opentelemetry provider (collector_ref)", func() {
 			collectorApiHit := make(chan bool, 1)
 			startTracingCollectionServer(collectorApiHit, openTelemetryCollectionPath)
 
