@@ -247,7 +247,6 @@ var _ = Describe("Tracing config loading", Serial, func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
-
 			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 

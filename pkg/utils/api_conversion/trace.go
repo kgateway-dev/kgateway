@@ -1,10 +1,16 @@
 package api_conversion
 
 import (
+	"context"
+	"strings"
+
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoytracegloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -13,6 +19,12 @@ import (
 //
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
+
+const (
+	DeprecatedMetadataGatewayName = "deprecated_metadata"
+	UndefinedGatewayName          = "undefined_gateway"
+	UnkownMetadataGatewayName     = "unknown_metadata"
+)
 
 func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytracegloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
 	envoyDatadogConfig := &envoytrace.DatadogConfig{
@@ -33,7 +45,43 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 	return envoyZipkinConfig, nil
 }
 
-func ToEnvoyOpenTelemetryonfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName, serviceName string) (*envoytrace.OpenTelemetryConfig, error) {
+// GetGatewayNameFromParent returns the name of the gateway that the listener is associated with
+// This is used by the otel plugin to set the service name. It requires that the gateway populate the listener's
+// SourceMetadata with the gateway's name. The resource_kind field is a string, and different gateways may use different
+// strings to represent their kind. This function should be updated to handle different gateway kinds as we become aware of them.
+func GetGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) string {
+	switch metadata := parent.GetOpaqueMetadata().(type) {
+	// Deprecated metadata format
+	case *gloov1.Listener_Metadata:
+		contextutils.LoggerFrom(ctx).Warn("Using deprecated 'Metadata' format for gateway name in parent listener metadata. Please update your gateway to use the new format")
+		return DeprecatedMetadataGatewayName
+	// Expected/desired metadata format
+	case *gloov1.Listener_MetadataStatic:
+		gateways := []string{}
+		for _, source := range metadata.MetadataStatic.GetSources() {
+			// This rule works with gloo v1 gateway. It should be updated/expanded when we have v2 gateway.
+			if source.GetResourceKind() == "*v1.Gateway" {
+				gateways = append(gateways, source.GetResourceRef().GetName())
+			}
+		}
+		switch {
+		case len(gateways) == 0:
+			contextutils.LoggerFrom(ctx).Warn("No gateway found in parent listener metadata")
+			return UndefinedGatewayName
+		case len(gateways) > 1:
+			contextutils.LoggerFrom(ctx).Warnw("Multiple gateways found in listener metadata", zap.Strings("gateways", gateways))
+			return strings.Join(gateways, ",")
+		default: // exactly 1, what we expect
+			return gateways[0]
+		}
+	default:
+		contextutils.LoggerFrom(ctx).Warn("Unknown listener metadata format")
+		return UnkownMetadataGatewayName
+	}
+
+}
+
+func ToEnvoyOpenTelemetryConfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName, serviceName string) (*envoytrace.OpenTelemetryConfig, error) {
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
 		GrpcService: &envoy_config_core_v3.GrpcService{
 			TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{

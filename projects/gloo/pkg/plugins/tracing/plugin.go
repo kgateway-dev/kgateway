@@ -67,7 +67,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parent *v1.Liste
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.GetVerbose().GetValue()
 
-	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings, parent)
+	tracingProvider, err := processEnvoyTracingProvider(params, tracingSettings, parent)
 	if err != nil {
 		return err
 	}
@@ -131,13 +131,15 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 }
 
 func processEnvoyTracingProvider(
-	snapshot *v1snap.ApiSnapshot,
+	params plugins.Params,
 	tracingSettings *tracing.ListenerTracingSettings,
 	parent *v1.Listener,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
 		return nil, nil
 	}
+
+	snapshot := params.Snapshot
 
 	switch typed := tracingSettings.GetProviderConfig().(type) {
 	case *tracing.ListenerTracingSettings_ZipkinConfig:
@@ -147,7 +149,7 @@ func processEnvoyTracingProvider(
 		return processEnvoyDatadogTracing(snapshot, typed)
 
 	case *tracing.ListenerTracingSettings_OpenTelemetryConfig:
-		return processEnvoyOpenTelemetryTracing(snapshot, typed, parent)
+		return processEnvoyOpenTelemetryTracing(params, typed, parent)
 
 	case *tracing.ListenerTracingSettings_OpenCensusConfig:
 		return processEnvoyOpenCensusTracing(typed)
@@ -233,28 +235,14 @@ func processEnvoyDatadogTracing(
 	}, nil
 }
 
-func getGatewayNameFromListener(listener *v1.Listener) string {
-	switch metadata := listener.GetOpaqueMetadata().(type) {
-	case *v1.Listener_Metadata:
-		return "deprecated_metadata"
-	case *v1.Listener_MetadataStatic:
-		for _, source := range metadata.MetadataStatic.GetSources() {
-			if source.GetResourceKind() == "*v1.Gateway" {
-				return source.GetResourceRef().GetName()
-			}
-		}
-
-	}
-	return ""
-}
-
 func processEnvoyOpenTelemetryTracing(
-	snapshot *v1snap.ApiSnapshot,
+	params plugins.Params,
 	openTelemetryTracingSettings *tracing.ListenerTracingSettings_OpenTelemetryConfig,
 	parent *v1.Listener,
 ) (*envoy_config_trace_v3.Tracing_Http, error) {
 	var collectorClusterName string
 
+	snapshot := params.Snapshot
 	switch collectorCluster := openTelemetryTracingSettings.OpenTelemetryConfig.GetCollectorCluster().(type) {
 	case *v3.OpenTelemetryConfig_CollectorUpstreamRef:
 		// Support upstreams as the collector cluster
@@ -270,8 +258,8 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
-	serviceName := getGatewayNameFromListener(parent) //parent.GetMetadataStatic().GetSources()[0].GetResourceRef().GetName()
-	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, serviceName)
+	serviceName := api_conversion.GetGatewayNameFromParent(params.Ctx, parent)
+	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryConfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, serviceName)
 	if err != nil {
 		return nil, err
 	}
