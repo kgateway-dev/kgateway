@@ -118,7 +118,7 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
 	kubecontext := contextoptions.KubecontextFrom(ctx)
 	sv := versioncmd.NewKube(namespace, kubecontext)
-	server, _, err := sv.Get(ctx)
+	server, err := sv.Get(ctx)
 	if err != nil {
 		return "", err
 	}

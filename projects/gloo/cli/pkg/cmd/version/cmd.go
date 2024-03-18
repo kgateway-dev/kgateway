@@ -2,7 +2,6 @@ package version
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -22,19 +21,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
-	kube1vVersion "k8s.io/apimachinery/pkg/version"
-	kubeYaml "sigs.k8s.io/yaml"
 )
 
 const (
 	undefinedServer = "Server: version undefined, could not find any version of gloo running"
 )
-
-// VersionWrapper is a struct for version information
-type VersionWrapper struct {
-	GlooVersion       json.RawMessage     `json:"glooVersion,omitempty" yaml:"glooVersion,omitempty"`
-	KubernetesVersion *kube1vVersion.Info `json:"kubernetesVersion,omitempty" yaml:"kubernetesVersion,omitempty"`
-}
 
 var (
 	NoNamespaceAllError = eris.New("single namespace must be specified, cannot be namespace all for version command")
@@ -69,27 +60,21 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Version, *kube1vVersion.Info, error) {
+func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Version, error) {
 	v := &version.Version{
 		Client: getClientVersion(),
 	}
-	serverVersion, k8sServerVersion, err := sv.Get(ctx)
+	serverVersion, err := sv.Get(ctx)
 	if err != nil {
-		return v, k8sServerVersion, err
+		return v, err
 	}
 	v.Server = serverVersion
-	return v, k8sServerVersion, nil
-}
-
-func getWrappedVersions(vrs *version.Version, k8sV *kube1vVersion.Info) (*VersionWrapper, error) {
-	marshalledVrs, err := getJson(vrs)
+	k8sServerVersion, err := sv.GetClusterVersion()
 	if err != nil {
-		return nil, err
+		return v, err
 	}
-	return &VersionWrapper{
-		GlooVersion:       marshalledVrs,
-		KubernetesVersion: k8sV,
-	}, nil
+	v.KubernetesCluster = k8sServerVersion
+	return v, nil
 }
 
 func getClientVersion() *version.ClientVersion {
@@ -99,12 +84,11 @@ func getClientVersion() *version.ClientVersion {
 }
 
 func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
-	vrs, k8sV, _ := GetClientServerVersions(opts.Top.Ctx, sv)
-	wrappedVersions, _ := getWrappedVersions(vrs, k8sV)
+	vrs, _ := GetClientServerVersions(opts.Top.Ctx, sv)
 	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
-		formattedVer, err := getFormattedJson(wrappedVersions) // GetJson(vrs)
+		formattedVer, err := getJson(vrs)
 		if err != nil {
 			return err
 		}
@@ -113,7 +97,7 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		}
 		fmt.Fprintf(w, "%s", string(formattedVer))
 	case printers.YAML:
-		formattedVer, err := getFormattedYaml(wrappedVersions)
+		formattedVer, err := getYaml(vrs)
 		if err != nil {
 			return err
 		}
@@ -159,8 +143,9 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		fmt.Fprintln(w, "Server version:")
 		table.Render()
 
+		k8sV := vrs.GetKubernetesCluster()
 		if k8sV != nil {
-			fmt.Fprintf(w, "Kubernetes version: %s\n", k8sV.GitVersion)
+			fmt.Fprintf(w, "Kubernetes version: %s\n", k8sV.GetGitVersion())
 		}
 	}
 	return nil
@@ -174,7 +159,7 @@ func getDistributionName(name string, enterprise bool) string {
 }
 
 func getJson(pb proto.Message) ([]byte, error) {
-	data, err := protoutils.MarshalBytes(pb)
+	data, err := protoutils.MarshalBytesIndented(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return nil, err
@@ -194,22 +179,4 @@ func getYaml(pb proto.Message) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-func getFormattedJson(ver *VersionWrapper) ([]byte, error) {
-	marshalled, err := json.MarshalIndent(&ver, "", "  ")
-	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(err)
-		return nil, err
-	}
-	return marshalled, nil
-}
-
-func getFormattedYaml(ver *VersionWrapper) ([]byte, error) {
-	marshalled, err := kubeYaml.Marshal(&ver)
-	if err != nil {
-		contextutils.LoggerFrom(context.Background()).DPanic(err)
-		return nil, err
-	}
-	return marshalled, nil
 }

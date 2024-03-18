@@ -10,14 +10,14 @@ import (
 	"github.com/solo-io/k8s-utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube1vVersion "k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 )
 
 //go:generate mockgen -destination ./mocks/mock_watcher.go -source clients.go
 
 type ServerVersion interface {
-	Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersion.Info, error)
+	Get(ctx context.Context) ([]*version.ServerVersion, error)
+	GetClusterVersion() (*version.KubernetesClusterVersion, error)
 }
 
 type kube struct {
@@ -42,7 +42,7 @@ func NewKube(namespace, kubeContext string) *kube {
 	}
 }
 
-func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersion.Info, error) {
+func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if k.kubeContext != "" {
 		cfg, err = kubeutils.GetConfigWithContext("", "", k.kubeContext)
@@ -50,16 +50,11 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersio
 
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
-		return nil, nil, nil
+		return nil, nil
 	}
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	k8ServerVersion, err := client.ServerVersion()
-	if err != nil {
-		k8ServerVersion = nil
+		return nil, err
 	}
 
 	deployments, err := client.AppsV1().Deployments(k.namespace).List(ctx, metav1.ListOptions{
@@ -67,7 +62,7 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersio
 		LabelSelector: "app=gloo",
 	})
 	if err != nil {
-		return nil, k8ServerVersion, err
+		return nil, err
 	}
 
 	var kubeContainerList []*version.Kubernetes_Container
@@ -104,7 +99,7 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersio
 	}
 
 	if len(kubeContainerList) == 0 {
-		return nil, k8ServerVersion, nil
+		return nil, nil
 	}
 	serverVersion := &version.ServerVersion{
 		Type:       deploymentType,
@@ -116,17 +111,55 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, *kube1vVersio
 			},
 		},
 	}
-	return []*version.ServerVersion{serverVersion}, k8ServerVersion, nil
+	return []*version.ServerVersion{serverVersion}, nil
+}
+
+func (k *kube) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
+	cfg, err := kubeutils.GetConfig("", "")
+	if k.kubeContext != "" {
+		cfg, err = kubeutils.GetConfigWithContext("", "", k.kubeContext)
+	}
+
+	if err != nil {
+		// kubecfg is missing, therefore no cluster is present, only print client version
+		return nil, nil
+	}
+	client, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	k8ServerVersion, err := client.ServerVersion()
+	if err != nil {
+		k8ServerVersion = nil
+	}
+	clusterVersion := &version.KubernetesClusterVersion{
+		Minor:      k8ServerVersion.Minor,
+		Major:      k8ServerVersion.Major,
+		GitVersion: k8ServerVersion.GitVersion,
+		BuildDate:  k8ServerVersion.BuildDate,
+		Platform:   k8ServerVersion.Platform,
+	}
+	return clusterVersion, nil
 }
 
 func parseContainerString(container corev1.Container) *generate.Image {
 	img := &generate.Image{}
-	splitImageVersion := strings.Split(container.Image, ":")
+	splitImageVersion := handleContainerImageStrFormat(container.Image)
 
-	name, tag, digest := "", "latest", ""
+	name := splitImageVersion[0]
+	tag, digest := "latest", ""
 	if len(splitImageVersion) == 2 {
-		tag = splitImageVersion[1]
-	} else if len(splitImageVersion) == 3 { // includes digest
+		if strings.HasSuffix(splitImageVersion[0], "@sha256") { // handle <image>@sha256:<digest>
+			strs := strings.Split(splitImageVersion[0], "@")
+			if len(strs) == 2 {
+				name = strs[0]
+			}
+			digest = splitImageVersion[1]
+		} else {
+			tag = splitImageVersion[1]
+		}
+	} else if len(splitImageVersion) >= 3 && strings.HasSuffix(splitImageVersion[1], "@sha256") { // handle <image>:<tag>@sha256:<digest>
 		strs := strings.Split(splitImageVersion[1], "@")
 		if len(strs) == 2 {
 			tag = strs[0]
@@ -135,10 +168,21 @@ func parseContainerString(container corev1.Container) *generate.Image {
 	}
 	img.Tag = &tag
 	img.Digest = &digest
-	name = splitImageVersion[0]
 	splitRepoName := strings.Split(name, "/")
 	registry := strings.Join(splitRepoName[:len(splitRepoName)-1], "/")
 	img.Repository = &splitRepoName[len(splitRepoName)-1]
 	img.Registry = &registry
 	return img
+}
+
+func handleContainerImageStrFormat(str string) []string {
+	arr := strings.Split(str, ":")
+	// check for special case of image string following <registry:port/name>
+	if len(arr) >= 2 && strings.Index(str, "/") > strings.Index(str, ":") {
+		copyArr := make([]string, len(arr)-2)
+		copyArr[0] = arr[0] + ":" + arr[1]
+		copyArr = append(copyArr, arr[2:]...)
+		arr = copyArr
+	}
+	return arr
 }
