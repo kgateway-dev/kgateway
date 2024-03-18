@@ -46,8 +46,204 @@ func (m *GatewayConfigSpec) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetTestString(), target.GetTestString()) != 0 {
+	if h, ok := interface{}(m.GetProxyConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetProxyConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetProxyConfig(), target.GetProxyConfig()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ProxyConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ProxyConfig)
+	if !ok {
+		that2, ok := that.(ProxyConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetBootstrap()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBootstrap()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBootstrap(), target.GetBootstrap()) {
+			return false
+		}
+	}
+
+	switch m.EnvironmentType.(type) {
+
+	case *ProxyConfig_Kube:
+		if _, ok := target.EnvironmentType.(*ProxyConfig_Kube); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetKube()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetKube()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetKube(), target.GetKube()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.EnvironmentType != target.EnvironmentType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*KubernetesProxyConfig)
+	if !ok {
+		that2, ok := that.(KubernetesProxyConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetService()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetService()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetService(), target.GetService()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetServiceAccount()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetServiceAccount()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetServiceAccount(), target.GetServiceAccount()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAutoscaling()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAutoscaling()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAutoscaling(), target.GetAutoscaling()) {
+			return false
+		}
+	}
+
+	switch m.WorkloadType.(type) {
+
+	case *KubernetesProxyConfig_Deployment:
+		if _, ok := target.WorkloadType.(*KubernetesProxyConfig_Deployment); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDeployment()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDeployment()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDeployment(), target.GetDeployment()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.WorkloadType != target.WorkloadType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ProxyDeployment) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ProxyDeployment)
+	if !ok {
+		that2, ok := that.(ProxyDeployment)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetReplicas()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReplicas()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReplicas(), target.GetReplicas()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPodTemplate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPodTemplate(), target.GetPodTemplate()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetProxyContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetProxyContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetProxyContainer(), target.GetProxyContainer()) {
+			return false
+		}
 	}
 
 	return true
