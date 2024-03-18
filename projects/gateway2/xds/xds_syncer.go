@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -88,9 +89,9 @@ type XdsSyncer struct {
 	mgr                    manager.Manager
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
 
-	// proxyWriter is the client that writes Proxy resources into an in-memory cache
+	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
-	proxyWriter gloo_solo_io.ProxyWriter
+	proxyReconciler gloo_solo_io.ProxyReconciler
 }
 
 type XdsInputChannels struct {
@@ -128,7 +129,7 @@ func NewXdsSyncer(
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
-	proxyWriter gloo_solo_io.ProxyWriter,
+	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:         controllerName,
@@ -139,7 +140,7 @@ func NewXdsSyncer(
 		inputs:                 inputs,
 		mgr:                    mgr,
 		k8sGwExtensionsFactory: k8sGwExtensionsFactory,
-		proxyWriter:            proxyWriter,
+		proxyReconciler:        gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
 	}
 }
 
@@ -374,11 +375,36 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
 	ctx = contextutils.WithLogger(ctx, "proxyCache")
 	logger := contextutils.LoggerFrom(ctx)
+
+	// Proxy CR is located in the same namespace as the originating Gateway CR
+	// As a result, we may have a list of Proxies that are in different namespaces
+	// Since the reconciler accepts the namespace as an argument, we need to split
+	// the list so we have a lists of proxies, isolated to each namespace
+	var proxyListByNamespace map[string]gloo_solo_io.ProxyList
 	for _, proxy := range proxyList {
-		_, err := s.proxyWriter.Write(proxy, clients.WriteOpts{
-			Ctx:               ctx,
-			OverwriteExisting: true,
-		})
+		proxyNs := proxy.GetMetadata().GetNamespace()
+		nsList, ok := proxyListByNamespace[proxyNs]
+		if ok {
+			nsList = append(nsList, proxy)
+			proxyListByNamespace[proxyNs] = nsList
+		} else {
+			proxyListByNamespace[proxyNs] = gloo_solo_io.ProxyList{
+				proxy,
+			}
+		}
+	}
+
+	for ns, nsList := range proxyListByNamespace {
+		err := s.proxyReconciler.Reconcile(
+			ns,
+			nsList,
+			func(original, desired *gloo_solo_io.Proxy) (bool, error) {
+				// Do nothing to the new proxy, just always overwrite the old one
+				return true, nil
+			},
+			clients.ListOpts{
+				Ctx: ctx,
+			})
 		if err != nil {
 			// A write error to our cache should not impact translation
 			// We will emit a message, and continue
