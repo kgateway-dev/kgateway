@@ -282,3 +282,65 @@ func (m *Image) Hash(hasher hash.Hash64) (uint64, error) {
 
 	return hasher.Sum64(), nil
 }
+
+// Hash function
+func (m *ResourceRequirements) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.ResourceRequirements")); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetLimits() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetRequests() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}

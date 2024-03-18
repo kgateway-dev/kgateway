@@ -218,3 +218,49 @@ func (m *Image) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *ResourceRequirements) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ResourceRequirements)
+	if !ok {
+		that2, ok := that.(ResourceRequirements)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetLimits()) != len(target.GetLimits()) {
+		return false
+	}
+	for k, v := range m.GetLimits() {
+
+		if strings.Compare(v, target.GetLimits()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetRequests()) != len(target.GetRequests()) {
+		return false
+	}
+	for k, v := range m.GetRequests() {
+
+		if strings.Compare(v, target.GetRequests()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}

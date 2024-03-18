@@ -29,7 +29,7 @@ message Container {
 
   k8s.io.api.core.v1.SecurityContext security_context = 2;
 
-  k8s.io.api.core.v1.ResourceRequirements resources = 3;
+  ResourceRequirements resources = 3;
 }
 
 message Image {
@@ -39,4 +39,9 @@ message Image {
   // See
   // https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting
   string pull_policy = 4;
+}
+
+message ResourceRequirements {
+  map<string, string> limits = 1;
+  map<string, string> requests = 2;
 }
