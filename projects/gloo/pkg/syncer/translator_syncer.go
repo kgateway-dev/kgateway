@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 	"time"
 
@@ -39,6 +40,8 @@ type translatorSyncer struct {
 	latestSnap *v1snap.ApiSnapshot
 
 	statusSyncer *statusSyncer
+
+	k8sGatewayProxyReader v1.ProxyReader
 }
 
 type statusSyncer struct {
@@ -67,6 +70,7 @@ func NewTranslatorSyncer(
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
 	identity leaderelector.Identity,
+	k8sGatewayProxyReader v1.ProxyReader,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
@@ -86,6 +90,7 @@ func NewTranslatorSyncer(
 			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
 			reportsLock:         sync.RWMutex{},
 		},
+		k8sGatewayProxyReader: k8sGatewayProxyReader,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -116,12 +121,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	// This will update the xDS SnapshotCache for each entry that corresponds to a Proxy in the API Snapshot
 	s.syncEnvoy(ctx, snap, reports)
 
-	// Execute the SyncerExtensions
-	// Each of these are responsible for updating a single entry in the SnapshotCache
-	for _, syncerExtension := range s.syncerExtensions {
-		intermediateReports := make(reporter.ResourceReports)
-		syncerExtension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
-		reports.Merge(intermediateReports)
+	err := s.syncExtensions(ctx, snap, reports)
+	if err != nil {
+		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "syncing extensions"))
 	}
 
 	// Update resource status metrics
@@ -141,6 +143,32 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	s.statusSyncer.forceSync()
 
 	return multiErr.ErrorOrNil()
+}
+
+// syncExtensions executes ach of the TranslatorSyncerExtensions
+// These are responsible for updating xDS cache entries
+func (s *translatorSyncer) syncExtensions(ctx context.Context, snap *v1snap.ApiSnapshot, reports reporter.ResourceReports) error {
+	// At the moment, the SyncerExtensions base their translation off of the Proxy objects
+	// This means that we need to pass ALL proxies to the extensions, so we need to take the
+	// existing Proxies (produced by Edge Gateway translation), and append the other Proxies that
+	// have been produced by K8s Gateway translation.
+	k8sGatewayProxyList, err := s.k8sGatewayProxyReader.List(metav1.NamespaceAll, clients.ListOpts{
+		Ctx: ctx,
+	})
+	if err != nil {
+		return err
+	}
+	snap.Proxies = append(snap.Proxies, k8sGatewayProxyList...)
+
+	// Execute the SyncerExtensions
+	// Each of these are responsible for updating a single entry in the SnapshotCache
+	for _, syncerExtension := range s.syncerExtensions {
+		intermediateReports := make(reporter.ResourceReports)
+		syncerExtension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
+		reports.Merge(intermediateReports)
+	}
+
+	return nil
 }
 
 func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {

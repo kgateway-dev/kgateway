@@ -88,9 +88,9 @@ type XdsSyncer struct {
 	mgr                    manager.Manager
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
 
-	// proxyClient is the client that writes Proxy resources into an in-memory cache
+	// proxyWriter is the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
-	proxyClient gloo_solo_io.ProxyClient
+	proxyWriter gloo_solo_io.ProxyWriter
 }
 
 type XdsInputChannels struct {
@@ -128,7 +128,7 @@ func NewXdsSyncer(
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
 	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
-	proxyClient gloo_solo_io.ProxyClient,
+	proxyWriter gloo_solo_io.ProxyWriter,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:         controllerName,
@@ -139,15 +139,14 @@ func NewXdsSyncer(
 		inputs:                 inputs,
 		mgr:                    mgr,
 		k8sGwExtensionsFactory: k8sGwExtensionsFactory,
-		proxyClient:            proxyClient,
+		proxyWriter:            proxyWriter,
 	}
 }
 
-// syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
-func (s *XdsSyncer) Start(
-	ctx context.Context,
-) error {
+func (s *XdsSyncer) Start(ctx context.Context) error {
 	proxyApiSnapshot := &v1snap.ApiSnapshot{}
+	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
+
 	var (
 		discoveryWarmed bool
 		secretsWarmed   bool
@@ -156,7 +155,6 @@ func (s *XdsSyncer) Start(
 		if !discoveryWarmed || !secretsWarmed {
 			return
 		}
-		ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
 
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
@@ -169,8 +167,7 @@ func (s *XdsSyncer) Start(
 
 		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
 		pluginRegistry := k8sGatewayExtensions.CreatePluginRegistry(ctx)
-		gatewayTranslator := gloot.NewTranslator(
-			gatewayQueries, pluginRegistry)
+		gatewayTranslator := gloot.NewTranslator(gatewayQueries, pluginRegistry)
 
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
@@ -378,15 +375,15 @@ func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.P
 	ctx = contextutils.WithLogger(ctx, "proxyCache")
 	logger := contextutils.LoggerFrom(ctx)
 	for _, proxy := range proxyList {
-		_, err := s.proxyClient.Write(proxy, clients.WriteOpts{
-			Ctx: ctx,
+		_, err := s.proxyWriter.Write(proxy, clients.WriteOpts{
+			Ctx:               ctx,
+			OverwriteExisting: true,
 		})
 		if err != nil {
 			// A write error to our cache should not impact translation
 			// We will emit a message, and continue
 			logger.Error(err)
 		}
-
 	}
 }
 
