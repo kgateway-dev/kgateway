@@ -380,7 +380,8 @@ func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.P
 	// As a result, we may have a list of Proxies that are in different namespaces
 	// Since the reconciler accepts the namespace as an argument, we need to split
 	// the list so we have a lists of proxies, isolated to each namespace
-	var proxyListByNamespace map[string]gloo_solo_io.ProxyList
+	var proxyListByNamespace = make(map[string]gloo_solo_io.ProxyList)
+
 	for _, proxy := range proxyList {
 		proxyNs := proxy.GetMetadata().GetNamespace()
 		nsList, ok := proxyListByNamespace[proxyNs]
