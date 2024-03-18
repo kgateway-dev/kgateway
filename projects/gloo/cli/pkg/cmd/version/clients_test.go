@@ -20,16 +20,6 @@ var _ = Describe("container image parsing", func() {
 			expectedImageDigest     string
 		}{
 			{
-				name: "latest_image_tag_found",
-				container: corev1.Container{
-					Image: "quay.io/solo-io/gloo",
-				},
-				expectedImageRegistry:   "quay.io/solo-io",
-				expectedImageRepository: "gloo",
-				expectedImageTag:        "latest",
-				expectedImageDigest:     "",
-			},
-			{
 				name: "no_reg_with_latest_tag_found",
 				container: corev1.Container{
 					Image: "gloo",
@@ -50,13 +40,23 @@ var _ = Describe("container image parsing", func() {
 				expectedImageDigest:     "",
 			},
 			{
-				name: "reg_port_numb_with_valid_tag_found",
+				name: "no_reg_with_valid_digest_found",
 				container: corev1.Container{
-					Image: "solo-io:1010/gloo:1.0.0",
+					Image: "gloo@sha256:eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
 				},
-				expectedImageRegistry:   "solo-io:1010",
+				expectedImageRegistry:   "",
 				expectedImageRepository: "gloo",
-				expectedImageTag:        "1.0.0",
+				expectedImageTag:        "latest",
+				expectedImageDigest:     "eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
+			},
+			{
+				name: "latest_image_tag_found",
+				container: corev1.Container{
+					Image: "quay.io/solo-io/gloo",
+				},
+				expectedImageRegistry:   "quay.io/solo-io",
+				expectedImageRepository: "gloo",
+				expectedImageTag:        "latest",
 				expectedImageDigest:     "",
 			},
 			{
@@ -80,6 +80,16 @@ var _ = Describe("container image parsing", func() {
 				expectedImageDigest:     "",
 			},
 			{
+				name: "latest_image_tag_with_valid_digest_found",
+				container: corev1.Container{
+					Image: "quay.io/solo-io/gloo@sha256:eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
+				},
+				expectedImageRegistry:   "quay.io/solo-io",
+				expectedImageRepository: "gloo",
+				expectedImageTag:        "latest",
+				expectedImageDigest:     "eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
+			},
+			{
 				name: "valid_image_tag_with_valid_digest_found",
 				container: corev1.Container{
 					Image: "quay.io/solo-io/gloo:1.0.0@sha256:eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
@@ -90,14 +100,24 @@ var _ = Describe("container image parsing", func() {
 				expectedImageDigest:     "eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
 			},
 			{
-				name: "latest_image_tag_with_valid_digest_found",
+				name: "reg_port_numb_with_latest_tag_found",
 				container: corev1.Container{
-					Image: "quay.io/solo-io/gloo@sha256:eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
+					Image: "solo-io:1010/gloo",
 				},
-				expectedImageRegistry:   "quay.io/solo-io",
+				expectedImageRegistry:   "solo-io:1010",
 				expectedImageRepository: "gloo",
 				expectedImageTag:        "latest",
-				expectedImageDigest:     "eec124aab01d2cdc43f47b82012f5e15ecd5f61069786cecfe0f1c0267bb3c0d",
+				expectedImageDigest:     "",
+			},
+			{
+				name: "reg_port_numb_with_valid_tag_found",
+				container: corev1.Container{
+					Image: "solo-io:1010/gloo:1.0.0",
+				},
+				expectedImageRegistry:   "solo-io:1010",
+				expectedImageRepository: "gloo",
+				expectedImageTag:        "1.0.0",
+				expectedImageDigest:     "",
 			},
 			{
 				name: "reg_port_numb_with_latest_tag_valid_digest_found",

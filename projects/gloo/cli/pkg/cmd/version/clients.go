@@ -131,7 +131,7 @@ func (k *kube) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
 
 	k8ServerVersion, err := client.ServerVersion()
 	if err != nil {
-		k8ServerVersion = nil
+		return nil, err
 	}
 	clusterVersion := &version.KubernetesClusterVersion{
 		Minor:      k8ServerVersion.Minor,
@@ -143,9 +143,19 @@ func (k *kube) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
 	return clusterVersion, nil
 }
 
+// this func parses container image string when the following formats are used
+// - repo
+// - repo:tag
+// - repo@sha256:digest
+// - repo:tag@sha256:digest
+// - registry/repo
+// - registry/repo:tag
+// - registry/repo@sha256:digest
+// - registry/repo:tag@sha256:digest
+// - also variants when registry is in the form <registry:port>
 func parseContainerString(container corev1.Container) *generate.Image {
 	img := &generate.Image{}
-	splitImageVersion := handleContainerImageStrFormat(container.Image)
+	splitImageVersion := delimitContainerImageStr(container.Image)
 
 	name := splitImageVersion[0]
 	tag, digest := "latest", ""
@@ -175,13 +185,20 @@ func parseContainerString(container corev1.Container) *generate.Image {
 	return img
 }
 
-func handleContainerImageStrFormat(str string) []string {
+// this func delimits container image by ":"
+// - if the image format is of the form <registry:port/repo> then <registry:port> will be treated as the registry
+// - all other formats are treated normal when delimited by ":"
+func delimitContainerImageStr(str string) []string {
 	arr := strings.Split(str, ":")
-	// check for special case of image string following <registry:port/name>
+	// check for special case of image string following <registry:port/repo>
 	if len(arr) >= 2 && strings.Index(str, "/") > strings.Index(str, ":") {
-		copyArr := make([]string, len(arr)-2)
-		copyArr[0] = arr[0] + ":" + arr[1]
-		copyArr = append(copyArr, arr[2:]...)
+		// combine the <registry:port> as the registry, we copy into a new array and shift the rest of the
+		// elements.
+		var copyArr []string
+		copyArr = append(copyArr, arr[0]+":"+arr[1])
+		if len(arr) > 2 {
+			copyArr = append(copyArr, arr[2:]...)
+		}
 		arr = copyArr
 	}
 	return arr

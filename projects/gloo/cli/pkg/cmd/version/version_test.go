@@ -36,7 +36,7 @@ var _ = Describe("version command", func() {
 		It("will error if an error occurs while getting the version", func() {
 			fakeErr := eris.New("test")
 			client.EXPECT().Get(ctx).Return(nil, fakeErr).Times(1)
-			client.EXPECT().GetClusterVersion().Return(nil, nil).Times(0)
+			//client.EXPECT().GetClusterVersion().Return(nil, nil).Times(0)
 			_, err := GetClientServerVersions(ctx, client)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(fakeErr))
@@ -48,6 +48,18 @@ var _ = Describe("version command", func() {
 			vrs, err := GetClientServerVersions(ctx, client)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(v).To(Equal(vrs.Server))
+		})
+		It("will error if an error occurs while getting the kube version but server version will still be served", func() {
+			v := make([]*version.ServerVersion, 1)
+			client.EXPECT().Get(ctx).Return(v, nil).Times(1)
+			fakeErr := eris.New("test")
+			client.EXPECT().GetClusterVersion().Return(nil, fakeErr).Times(1)
+			vrs, err := GetClientServerVersions(ctx, client)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(fakeErr))
+			// still serving the server version
+			Expect(v).To(Equal(vrs.Server))
+			Expect(vrs.KubernetesCluster).To(BeNil())
 		})
 		It("can get kubernetes version", func() {
 			expectedVrs := make([]*version.ServerVersion, 1)
@@ -307,7 +319,7 @@ server:
 						},
 					}
 					client.EXPECT().Get(nil).Times(1).Return(nil, eris.Errorf("fake rbac error"))
-					client.EXPECT().GetClusterVersion().Times(0).Return(nil, nil)
+					client.EXPECT().GetClusterVersion().Times(0)
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(ContainSubstring(undefinedServer))
@@ -315,7 +327,7 @@ server:
 			})
 		}
 
-		It("can translate with valid server version (including kubernetes server version)", func() {
+		It("can translate with valid server version and kube server version", func() {
 			opts := &options.Options{
 				Top: options.Top{
 					Output: printers.JSON,
@@ -326,6 +338,20 @@ server:
 			err := printVersion(client, buf, opts)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(buf.String()).To(Equal(osJsonIncludeK8sOutput))
+		})
+
+		It("can translate with valid server version with nil kube version", func() {
+			opts := &options.Options{
+				Top: options.Top{
+					Output: printers.JSON,
+				},
+			}
+			client.EXPECT().Get(nil).Times(1).Return([]*version.ServerVersion{sv}, nil)
+			fakeErr := eris.New("err")
+			client.EXPECT().GetClusterVersion().Times(1).Return(nil, fakeErr)
+			err := printVersion(client, buf, opts)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(buf.String()).To(Equal(osJsonOutput))
 		})
 	})
 
