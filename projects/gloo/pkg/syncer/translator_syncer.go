@@ -2,9 +2,10 @@ package syncer
 
 import (
 	"context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
