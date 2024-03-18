@@ -1,0 +1,42 @@
+syntax = "proto3";
+package gateway.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+
+import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/api/core/v1/generated.proto";
+
+import "google/protobuf/wrappers.proto";
+
+message Pod {
+  map<string, string> annotations = 1;
+
+  k8s.io.api.core.v1.PodSecurityContext security_context = 2;
+
+  repeated k8s.io.api.core.v1.LocalObjectReference image_pull_secrets = 3;
+
+  map<string, string> node_selector = 4;
+
+  k8s.io.api.core.v1.Affinity affinity = 5;
+
+  repeated k8s.io.api.core.v1.Toleration tolerations = 6;
+}
+
+message Container {
+  Image image = 1;
+
+  k8s.io.api.core.v1.SecurityContext security_context = 2;
+
+  k8s.io.api.core.v1.ResourceRequirements resources = 3;
+}
+
+message Image {
+  string registry = 1;
+  string repository = 2;
+  string tag = 3;
+  // See
+  // https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting
+  string pull_policy = 4;
+}

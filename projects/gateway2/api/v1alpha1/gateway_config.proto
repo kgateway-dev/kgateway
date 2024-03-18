@@ -6,10 +6,51 @@ import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/autoscaling.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/bootstrap.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/pod.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/service.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/serviceaccount.proto";
+
+import "google/protobuf/wrappers.proto";
+
+// A GatewayConfig contains configuration that is used to dynamically provision
+// the data plane (Envoy proxy instance), based on a Kubernetes Gateway or
+// GatewayClass.
 message GatewayConfigSpec {
-
-  string test_string = 1;
+  ProxyConfig proxy_config = 1;
 }
 
-message GatewayConfigStatus {
+// Configuration for the proxy instance that implements a given Gateway.
+message ProxyConfig {
+  // The type of environment/platform in which the proxy will be provisioned.
+  oneof environment_type {
+    KubernetesProxyConfig kube = 1;
+  }
+  // Initial envoy configuration.
+  EnvoyBootstrap bootstrap = 2;
 }
+
+// Configuration for the set of Kubernetes resources that will be provisioned
+// for a given Gateway.
+message KubernetesProxyConfig {
+  // The workload type of the proxy
+  oneof workload_type {
+    ProxyDeployment deployment = 1;
+  }
+
+  Service service = 2;
+  ServiceAccount service_account = 3;
+  Autoscaling autoscaling = 4;
+}
+
+message ProxyDeployment {
+  // The number of desired pods. Defaults to 1.
+  google.protobuf.UInt32Value replicas = 1;
+
+  Pod pod_template = 2;
+
+  Container proxy_container = 3;
+}
+
+message GatewayConfigStatus {}
