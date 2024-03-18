@@ -145,9 +145,6 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 
 	/*
 		vals := map[string]any{
-			"controlPlane": map[string]any{
-				"enabled": false,
-			},
 			"gateway": map[string]any{
 				"enabled":     true,
 				"name":        gw.Name,
