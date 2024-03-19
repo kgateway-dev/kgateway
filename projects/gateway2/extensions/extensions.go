@@ -20,10 +20,10 @@ type K8sGatewayExtensions interface {
 type K8sGatewayExtensionsFactory func(mgr controllerruntime.Manager) (K8sGatewayExtensions, error)
 
 // NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
-func NewK8sGatewayExtensions(mgr controllerruntime.Manager) K8sGatewayExtensions {
+func NewK8sGatewayExtensions(mgr controllerruntime.Manager) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
 		mgr: mgr,
-	}
+	}, nil
 }
 
 type k8sGatewayExtensions struct {
