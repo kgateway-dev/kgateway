@@ -6,11 +6,12 @@ import (
 	"net"
 	"net/http"
 	"os"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 

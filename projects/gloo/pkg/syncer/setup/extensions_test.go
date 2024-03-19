@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,7 +23,7 @@ var _ = Describe("Extensions", func() {
 			K8sGatewayExtensionsFactory: nil,
 		}, MatchError(ErrNilExtension("K8sGatewayExtensionsFactory"))),
 		Entry("missing PluginRegistryFactory", Extensions{
-			K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) { // what if the return is nil? do we error? should we error?
+			K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) {
 				return extensions.NewK8sGatewayExtensions(mgr), nil
 			},
 			PluginRegistryFactory: nil,
