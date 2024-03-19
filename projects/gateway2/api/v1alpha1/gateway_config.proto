@@ -12,6 +12,7 @@ import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/container.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/pod.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/service.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/serviceaccount.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/api/core/v1/generated.proto";
 
 import "google/protobuf/wrappers.proto";
 
