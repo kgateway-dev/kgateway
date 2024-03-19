@@ -236,14 +236,106 @@ func (m *ProxyDeployment) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetProxyContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetProxyContainer()) {
+	if h, ok := interface{}(m.GetEnvoyContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnvoyContainer()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetProxyContainer(), target.GetProxyContainer()) {
+		if !proto.Equal(m.GetEnvoyContainer(), target.GetEnvoyContainer()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *EnvoyContainer) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*EnvoyContainer)
+	if !ok {
+		that2, ok := that.(EnvoyContainer)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetImage()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetImage()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetImage(), target.GetImage()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetLogging()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogging()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogging(), target.GetLogging()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetSecurityContext()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSecurityContext()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSecurityContext(), target.GetSecurityContext()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetResources()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResources()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResources(), target.GetResources()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *EnvoyLogging) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*EnvoyLogging)
+	if !ok {
+		that2, ok := that.(EnvoyLogging)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
+		return false
 	}
 
 	return true

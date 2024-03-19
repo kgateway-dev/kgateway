@@ -46,16 +46,6 @@ func (m *EnvoyBootstrap) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetLogging()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetLogging()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetLogging(), target.GetLogging()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetXdsServer()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetXdsServer()) {
 			return false
@@ -64,34 +54,6 @@ func (m *EnvoyBootstrap) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetXdsServer(), target.GetXdsServer()) {
 			return false
 		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *EnvoyLogging) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*EnvoyLogging)
-	if !ok {
-		that2, ok := that.(EnvoyLogging)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
-		return false
 	}
 
 	return true
