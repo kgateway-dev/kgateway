@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 
 	"golang.org/x/sync/errgroup"
@@ -441,10 +439,8 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) {
-			return extensions.NewK8sGatewayExtensions(mgr)
-		},
-		PluginRegistryFactory: registry.GetPluginRegistryFactory(opts),
+		K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
+		PluginRegistryFactory:       registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,

@@ -3,8 +3,6 @@ package setup
 import (
 	"context"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -23,15 +21,11 @@ var _ = Describe("Extensions", func() {
 			K8sGatewayExtensionsFactory: nil,
 		}, MatchError(ErrNilExtension("K8sGatewayExtensionsFactory"))),
 		Entry("missing PluginRegistryFactory", Extensions{
-			K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) {
-				return extensions.NewK8sGatewayExtensions(mgr)
-			},
-			PluginRegistryFactory: nil,
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
+			PluginRegistryFactory:       nil,
 		}, MatchError(ErrNilExtension("PluginRegistryFactory"))),
 		Entry("missing ApiEmitterChannel", Extensions{
-			K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) {
-				return extensions.NewK8sGatewayExtensions(mgr)
-			},
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 				// non-nil function
 				return nil
@@ -39,9 +33,7 @@ var _ = Describe("Extensions", func() {
 			ApiEmitterChannel: nil,
 		}, MatchError(ErrNilExtension("ApiEmitterChannel"))),
 		Entry("missing ApiEmitterChannel", Extensions{
-			K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) {
-				return extensions.NewK8sGatewayExtensions(mgr)
-			},
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 				// non-nil function
 				return nil
@@ -50,9 +42,7 @@ var _ = Describe("Extensions", func() {
 			SyncerExtensions:  nil,
 		}, MatchError(ErrNilExtension("SyncerExtensions"))),
 		Entry("missing nothing", Extensions{
-			K8sGatewayExtensionsFactory: func(mgr ctrl.Manager) (extensions.K8sGatewayExtensions, error) {
-				return extensions.NewK8sGatewayExtensions(mgr)
-			},
+			K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 			PluginRegistryFactory: func(ctx context.Context) plugins.PluginRegistry {
 				// non-nil function
 				return nil
