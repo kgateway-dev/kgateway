@@ -7,9 +7,11 @@ import (
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	envoytracegloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
 )
 
@@ -24,6 +26,7 @@ const (
 	DeprecatedMetadataGatewayName = "deprecated_metadata"
 	UndefinedGatewayName          = "undefined_gateway"
 	UnkownMetadataGatewayName     = "unknown_metadata"
+	NoListenerGatewayName         = "no_listener"
 )
 
 func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytracegloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
@@ -49,7 +52,12 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 // This is used by the otel plugin to set the service name. It requires that the gateway populate the listener's
 // SourceMetadata with the gateway's name. The resource_kind field is a string, and different gateways may use different
 // strings to represent their kind. This function should be updated to handle different gateway kinds as we become aware of them.
-func GetGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) string {
+func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) string {
+	if parent == nil {
+		contextutils.LoggerFrom(ctx).Warn("No parent listener found")
+		return NoListenerGatewayName
+	}
+
 	switch metadata := parent.GetOpaqueMetadata().(type) {
 	// Deprecated metadata format
 	case *gloov1.Listener_Metadata:
@@ -60,7 +68,7 @@ func GetGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 		gateways := []string{}
 		for _, source := range metadata.MetadataStatic.GetSources() {
 			// This rule works with gloo v1 gateway. It should be updated/expanded when we have v2 gateway.
-			if source.GetResourceKind() == "*v1.Gateway" {
+			if isResourceGateway(source) {
 				gateways = append(gateways, source.GetResourceRef().GetName())
 			}
 		}
@@ -81,7 +89,21 @@ func GetGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 
 }
 
-func ToEnvoyOpenTelemetryConfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName, serviceName string) (*envoytrace.OpenTelemetryConfig, error) {
+// isResourceKindGateway returns true if the resource is a gateway
+// This logic is split out to easily manage it as we add more gateway types
+func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
+	gatewayTypes := map[string]bool{
+		resources.Kind(new(gatewayv1.Gateway)): true,
+	}
+
+	_, ok := gatewayTypes[resource.GetResourceKind()]
+
+	return ok
+}
+
+func ToEnvoyOpenTelemetryConfiguration(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string, parentListener *gloov1.Listener) (*envoytrace.OpenTelemetryConfig, error) {
+	serviceName := getGatewayNameFromParent(ctx, parentListener)
+
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
 		GrpcService: &envoy_config_core_v3.GrpcService{
 			TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{

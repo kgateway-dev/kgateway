@@ -258,8 +258,7 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
-	serviceName := api_conversion.GetGatewayNameFromParent(params.Ctx, parent)
-	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryConfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, serviceName)
+	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryConfiguration(params.Ctx, openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, parent)
 	if err != nil {
 		return nil, err
 	}
