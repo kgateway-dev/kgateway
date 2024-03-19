@@ -30,6 +30,7 @@ func PatchResourceWithOffset(offset int, ctx context.Context, resourceRef *core.
 
 	EventuallyWithOffset(offset+1, func(g Gomega) {
 		resource, err := client.Read(resourceRef.GetNamespace(), resourceRef.GetName(), clients.ReadOpts{Ctx: ctx})
+
 		g.Expect(err).NotTo(HaveOccurred())
 		resourceVersion := resource.GetMetadata().GetResourceVersion()
 
