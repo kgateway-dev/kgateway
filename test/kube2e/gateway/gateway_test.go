@@ -1890,7 +1890,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	})
 
-	FContext("Validation Configuration", Ordered, func() {
+	Context("Validation Configuration", Ordered, func() {
 		// These tests explicitly test the behavior of Gloo Edge when our Validation API is modified
 		// Ideally all tests run with the most restrictive validation settings, so we try to isolate these tests
 		// Also, adjusting the validation configuration takes time to propagate (server restart), so we write tests
