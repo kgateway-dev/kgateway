@@ -8,8 +8,6 @@ option (extproto.hash_all) = true;
 
 import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/api/core/v1/generated.proto";
 
-import "google/protobuf/wrappers.proto";
-
 message Pod {
   map<string, string> annotations = 1;
 
@@ -22,26 +20,4 @@ message Pod {
   k8s.io.api.core.v1.Affinity affinity = 5;
 
   repeated k8s.io.api.core.v1.Toleration tolerations = 6;
-}
-
-message Container {
-  Image image = 1;
-
-  k8s.io.api.core.v1.SecurityContext security_context = 2;
-
-  ResourceRequirements resources = 3;
-}
-
-message Image {
-  string registry = 1;
-  string repository = 2;
-  string tag = 3;
-  // See
-  // https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting
-  string pull_policy = 4;
-}
-
-message ResourceRequirements {
-  map<string, string> limits = 1;
-  map<string, string> requests = 2;
 }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+package gateway.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+
+message Image {
+  string registry = 1;
+  string repository = 2;
+  string tag = 3;
+  // See
+  // https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting
+  string pull_policy = 4;
+}
+
+message ResourceRequirements {
+  map<string, string> limits = 1;
+  map<string, string> requests = 2;
+}

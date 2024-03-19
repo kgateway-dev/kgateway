@@ -11,17 +11,8 @@ import "google/protobuf/wrappers.proto";
 // Configuration for the Envoy proxy instance that is provisioned from a
 // Kubernetes Gateway.
 message EnvoyBootstrap {
-  // Logging configuration.
-  EnvoyLogging logging = 1;
-
   // xDS server configuration.
-  XdsServer xds_server = 2;
-}
-
-message EnvoyLogging {
-  // Envoy log level. Options include "trace", "debug", "info", "warn", "error",
-  // "critical" and "off". Defaults to "info".
-  string log_level = 1;
+  XdsServer xds_server = 1;
 }
 
 message XdsServer {

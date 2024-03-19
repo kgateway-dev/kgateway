@@ -8,6 +8,7 @@ option (extproto.hash_all) = true;
 
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/autoscaling.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/bootstrap.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/container.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/pod.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/service.proto";
 import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/serviceaccount.proto";
@@ -50,7 +51,24 @@ message ProxyDeployment {
 
   Pod pod_template = 2;
 
-  Container proxy_container = 3;
+  EnvoyContainer envoy_container = 3;
+}
+
+message EnvoyContainer {
+  Image image = 1;
+
+  // Logging configuration.
+  EnvoyLogging logging = 2;
+
+  k8s.io.api.core.v1.SecurityContext security_context = 3;
+
+  ResourceRequirements resources = 4;
+}
+
+message EnvoyLogging {
+  // Envoy log level. Options include "trace", "debug", "info", "warn", "error",
+  // "critical" and "off". Defaults to "info".
+  string log_level = 1;
 }
 
 message GatewayConfigStatus {}
