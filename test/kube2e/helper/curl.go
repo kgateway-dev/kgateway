@@ -26,6 +26,7 @@ type CurlOpts struct {
 	ConnectionTimeout int
 	Verbose           bool
 	LogResponses      bool
+	AllowInsecure     bool
 	// WithoutStats sets the -s flag to prevent download stats from printing
 	WithoutStats bool
 	// Optional SNI name to resolve domain to when sending request
@@ -174,6 +175,10 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	for h, v := range opts.Headers {
 		args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
 	}
+	if opts.AllowInsecure {
+		args = append(args, "-k")
+	}
+
 	port := opts.Port
 	if port == 0 {
 		port = 8080
