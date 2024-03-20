@@ -232,10 +232,16 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 
 func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy admissionregv1.FailurePolicyType) {
 	kubeClient := clienthelpers.MustKubeClient()
-	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	cfg := GetValidatingWebhook(ctx, webhookName)
 	cfg.Webhooks[0].FailurePolicy = &failurePolicy
 
-	_, err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
+	_, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
+func GetValidatingWebhook(ctx context.Context, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
+	kubeClient := clienthelpers.MustKubeClient()
+	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return cfg
 }
