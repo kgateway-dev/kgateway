@@ -36,7 +36,6 @@ var _ = Describe("version command", func() {
 		It("will error if an error occurs while getting the version", func() {
 			fakeErr := eris.New("test")
 			client.EXPECT().Get(ctx).Return(nil, fakeErr).Times(1)
-			//client.EXPECT().GetClusterVersion().Return(nil, nil).Times(0)
 			_, err := GetClientServerVersions(ctx, client)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(fakeErr))
