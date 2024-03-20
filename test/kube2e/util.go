@@ -16,7 +16,6 @@ import (
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
@@ -149,13 +148,6 @@ func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settin
 	UpdateSettingsWithPropagationDelay(updateSettings, waitForSettingsToPropagate, ctx, installNamespace)
 }
 
-func GetSettings(ctx context.Context, installNamespace string) *v1.Settings {
-	settingsClient := clienthelpers.MustSettingsClient(ctx)
-	settings, err := settingsClient.Read(installNamespace, defaults.SettingsName, clients.ReadOpts{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return settings
-}
-
 func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Settings), waitForSettingsToPropagate func(), ctx context.Context, installNamespace string) {
 	settingsClient := clienthelpers.MustSettingsClient(ctx)
 	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})
@@ -246,11 +238,4 @@ func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy 
 
 	_, err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-}
-
-func GetValidatingWebhook(ctx context.Context, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
-	kubeClient := clienthelpers.MustKubeClient()
-	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return cfg
 }
