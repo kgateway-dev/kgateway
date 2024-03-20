@@ -3,13 +3,13 @@ package setup
 import (
 	"context"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/go-utils/contextutils"
 	"golang.org/x/sync/errgroup"
 )
@@ -49,7 +49,6 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc() StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-
 		inMemoryProxyClient, err := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		})
