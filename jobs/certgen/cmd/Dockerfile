@@ -1,4 +1,7 @@
-FROM alpine:3.17.6
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
+
 
 ARG GOARCH=amd64
 
