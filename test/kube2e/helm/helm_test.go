@@ -516,7 +516,7 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 			Expect(container.Tag).To(Equal(v))
 		}
 	}
-	return v
+	return strings.ReplaceAll(v, "-"+variant, "")
 }
 
 func makeUnstructured(yam string) *unstructured.Unstructured {
@@ -565,6 +565,9 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 		"--values", helmValuesFile)
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
+	}
+	if variant != "" {
+		args = append(args, "--set", "global.image.variant="+variant)
 	}
 
 	args = append(args, additionalInstallArgs...)
@@ -621,6 +624,10 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
+	if variant != "" {
+		args = append(args, "--set", "global.image.variant="+variant)
+	}
+
 	args = append(args, additionalArgs...)
 	fmt.Printf("running helm with args: %v target %v\n", args, targetRelease)
 	runAndCleanCommand("helm", args...)
