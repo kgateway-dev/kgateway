@@ -55,12 +55,12 @@ type Image struct {
 	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
 	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
 	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
-	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
 	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
 	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
-	Extended   *bool   `json:"extended,omitempty" desc:"If true, deploys an extended version of the container with additional debug tools."`
-	Fips       *bool   `json:"fips,omitempty" desc:"If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)"`
+	Variant    *string `json:"variant,omitempty" desc:"Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)"`
+	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
+	Fips       *bool   `json:"fips,omitempty" desc:"[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)"`
 }
 
 type ResourceAllocation struct {
