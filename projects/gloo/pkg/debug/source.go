@@ -1,10 +1,5 @@
 package debug
 
-import (
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-)
-
 // ProxySource represents the type of translator that produced the Proxy resource
 type ProxySource int
 
@@ -24,9 +19,3 @@ var (
 		K8sGatewaySourceName:  K8sGatewayTranslation,
 	}
 )
-
-// ProxyReader exposes the subset of methods from a v1.ProxyClient that are read-only
-type ProxyReader interface {
-	Read(namespace, name string, opts clients.ReadOpts) (*v1.Proxy, error)
-	List(namespace string, opts clients.ListOpts) (v1.ProxyList, error)
-}

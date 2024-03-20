@@ -85,6 +85,13 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.GlooPluginRegistryFactory(ctx))
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
+
+	k8sGwExtensions, err := cfg.ExtensionsFactory(mgr)
+	if err != nil {
+		setupLog.Error(err, "unable to create k8s gw extensions")
+		return err
+	}
+
 	xdsSyncer := xds.NewXdsSyncer(
 		wellknown.GatewayControllerName,
 		glooTranslator,
@@ -93,7 +100,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		false,
 		inputChannels,
 		mgr,
-		cfg.ExtensionsFactory,
+		k8sGwExtensions,
 		cfg.ProxyClient,
 	)
 	if err := mgr.Add(xdsSyncer); err != nil {

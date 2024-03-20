@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Refactor k8sGatewayExtensions by updating the function signatures to accept a `manager` parameter.
+      This enables updating the manager when implementing it. For example, by adding to the scheme.
