@@ -31,6 +31,8 @@ import (
 
 const namespace = defaults.GlooSystem
 
+var variant = os.Getenv("IMAGE_VARIANT")
+
 var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	var (
@@ -291,6 +293,9 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
+	if variant != "" {
+		args = append(args, "--set", "global.image.variant="+variant)
+	}
 
 	fmt.Printf("running helm with args: %v\n", args)
 	runAndCleanCommand("helm", args...)
@@ -343,6 +348,10 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetRelea
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
+	if variant != "" {
+		args = append(args, "--set", "global.image.variant="+variant)
+	}
+
 	args = append(args, additionalArgs...)
 
 	fmt.Printf("running helm with args: %v\n", args)

@@ -1,0 +1,44 @@
+ARG ENVOY_IMAGE
+ARG BASE_IMAGE
+
+FROM $ENVOY_IMAGE as envoy
+# eventually may matter for now https://unix.stackexchange.com/a/701288
+# means its not too useful
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y  ca-certificates
+
+FROM busybox:1.35.0-uclibc as busybox
+
+FROM $BASE_IMAGE
+ARG GOARCH=amd64
+
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+
+# Copy over the required binaries for probes and lifecycle hooks
+COPY --from=busybox /bin/sh /bin/sh
+COPY --from=busybox /bin/wget /bin/wget
+COPY --from=busybox /bin/sleep /bin/sleep
+COPY --from=busybox /bin/nc /bin/nc
+COPY --from=busybox /bin/ls /bin/ls
+
+# Copy over the certs
+COPY --from=envoy /usr/share/ca-certificates /usr/share/ca-certificates
+COPY --from=envoy /usr/share/doc/ca-certificates/ /usr/share/doc/ca-certificates/
+COPY --from=envoy /etc/ssl /etc/ssl
+COPY --from=envoy /usr/lib/ssl /usr/lib/ssl
+
+# Copy over the required libraries
+# libssl1.1
+COPY --from=envoy /usr/lib/x86_64-linux-gnu/engines-1.1 /usr/lib/x86_64-linux-gnu/engines-1.1
+COPY --from=envoy /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+COPY --from=envoy /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
+# lib64z1
+COPY --from=envoy /usr/lib/x86_64-linux-gnu/libz.so* /usr/lib/x86_64-linux-gnu/
+
+COPY gloo-linux-$GOARCH /usr/local/bin/gloo
+
+USER 10101
+
+ENTRYPOINT ["/usr/local/bin/gloo"]

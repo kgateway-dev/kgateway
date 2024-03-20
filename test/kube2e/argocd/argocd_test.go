@@ -64,6 +64,11 @@ func installGloo() {
 		"--repo", repo, "--helm-chart", "gloo", "--revision", version,
 		"--dest-namespace", "gloo-system", "--dest-server", "https://kubernetes.default.svc",
 		"--sync-option", "CreateNamespace=true", "--upsert", "--values-literal-file", "helm-override.yaml"}
+	variant := os.Getenv("IMAGE_VARIANT")
+	if variant != "" {
+		command = append(command, "--helm-set", "global.image.variant="+variant)
+	}
+
 	fmt.Printf("Running argo command : %s\n", command)
 	runAndCleanCommand("argocd", command...)
 
