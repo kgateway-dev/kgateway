@@ -26,18 +26,18 @@ type ProxyEndpointServer interface {
 
 	// RegisterProxyReader registers a given ProxyReader for a particular source
 	// This is used by the ControlPlane to register the readers that will provide access to the proxies
-	RegisterProxyReader(source ProxySource, client ProxyReader)
+	RegisterProxyReader(source ProxySource, client v1.ProxyReader)
 }
 
 type proxyEndpointServer struct {
 	// readersBySource contains the set of ProxyReaders that have been registered for the server
-	readersBySource map[ProxySource]ProxyReader
+	readersBySource map[ProxySource]v1.ProxyReader
 }
 
 // NewProxyEndpointServer returns an implementation of the ProxyEndpointServer
 func NewProxyEndpointServer() ProxyEndpointServer {
 	return &proxyEndpointServer{
-		readersBySource: make(map[ProxySource]ProxyReader, 1),
+		readersBySource: make(map[ProxySource]v1.ProxyReader, 1),
 	}
 }
 
@@ -45,7 +45,7 @@ func (p *proxyEndpointServer) Register(grpcServer *grpc.Server) {
 	debug.RegisterProxyEndpointServiceServer(grpcServer, p)
 }
 
-func (p *proxyEndpointServer) RegisterProxyReader(source ProxySource, proxyReader ProxyReader) {
+func (p *proxyEndpointServer) RegisterProxyReader(source ProxySource, proxyReader v1.ProxyReader) {
 	p.readersBySource[source] = proxyReader
 }
 
@@ -111,8 +111,8 @@ func (p *proxyEndpointServer) getMany(ctx context.Context, namespace string, sel
 	return proxyList, nil
 }
 
-func (p *proxyEndpointServer) getProxyReadersForSource(source string) ([]ProxyReader, error) {
-	var proxyReaders []ProxyReader
+func (p *proxyEndpointServer) getProxyReadersForSource(source string) ([]v1.ProxyReader, error) {
+	var proxyReaders []v1.ProxyReader
 
 	if source == "" {
 		// If the source is empty, try all ProxyReaders
@@ -135,5 +135,5 @@ func (p *proxyEndpointServer) getProxyReadersForSource(source string) ([]ProxyRe
 		return nil, eris.Errorf("ProxyEndpointRequest.source (%s) does not have a registered reader", source)
 	}
 
-	return []ProxyReader{proxyReader}, nil
+	return []v1.ProxyReader{proxyReader}, nil
 }
