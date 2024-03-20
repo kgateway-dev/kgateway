@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/solo-projects/issues/5903
+    description: >-
+      Move resource cleanup job to pre-delete Helm hook. This fixes an issue where Helm uninstall would not complete when
+      the validation webhook's failure policy was set to "Fail".
