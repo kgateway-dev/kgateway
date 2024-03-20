@@ -30,8 +30,3 @@ type ProxyReader interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*Proxy, error)
 	List(namespace string, opts clients.ListOpts) (ProxyList, error)
 }
-
-// ProxyWriter exposes the subset of methods from a v1.ProxyClient that are write-only
-type ProxyWriter interface {
-	Write(resource *Proxy, opts clients.WriteOpts) (*Proxy, error)
-}
