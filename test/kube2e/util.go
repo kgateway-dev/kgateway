@@ -148,6 +148,13 @@ func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settin
 	UpdateSettingsWithPropagationDelay(updateSettings, waitForSettingsToPropagate, ctx, installNamespace)
 }
 
+func GetSettings(ctx context.Context, installNamespace string) *v1.Settings {
+	settingsClient := clienthelpers.MustSettingsClient(ctx)
+	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})
+	Expect(err).NotTo(HaveOccurred())
+	return settings
+}
+
 func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Settings), waitForSettingsToPropagate func(), ctx context.Context, installNamespace string) {
 	settingsClient := clienthelpers.MustSettingsClient(ctx)
 	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})

@@ -2114,6 +2114,8 @@ spec:
 				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
 				// The reason is still unknown, so we retry on flakes in the meantime.
 				It("should act as expected with secret validation", FlakeAttempts(3), func() {
+					verifyGlooValidationWorks()
+
 					By("waiting for the modified VS to be accepted")
 					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
@@ -2121,6 +2123,18 @@ spec:
 
 					By("failing to delete a secret that is in use")
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					if err == nil { // Extra logging to help debug flakes
+						settings := kube2e.GetSettings(ctx, testHelper.InstallNamespace)
+						fmt.Fprintf(GinkgoWriter, "Settings: allowWarnings: %t\n", settings.GetGateway().GetValidation().GetAllowWarnings().GetValue())
+						fmt.Fprintf(GinkgoWriter, "Settings alwaysAccept: %t\n", settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue())
+						vs, readErr := resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+						if readErr != nil {
+							fmt.Fprintf(GinkgoWriter, "Error reading VS: %v\n", readErr)
+						} else {
+							fmt.Fprintf(GinkgoWriter, "VS: %v\n", vs)
+						}
+					}
+
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
 
