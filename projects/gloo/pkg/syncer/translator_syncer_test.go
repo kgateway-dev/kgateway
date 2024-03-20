@@ -30,21 +30,20 @@ import (
 var _ = Describe("Translate Proxy", func() {
 
 	var (
-		ctx                   context.Context
-		cancel                context.CancelFunc
-		xdsCache              *MockXdsCache
-		sanitizer             *MockXdsSanitizer
-		syncer                v1snap.ApiSyncer
-		snap                  *v1snap.ApiSnapshot
-		settings              *v1.Settings
-		upstreamClient        clients.ResourceClient
-		proxyClient           v1.ProxyClient
-		k8sGatewayProxyClient v1.ProxyClient
-		proxyName             = "proxy-name"
-		ns                    = "any-ns"
-		ref                   = "syncer-test"
-		statusClient          resources.StatusClient
-		statusMetrics         metrics.ConfigStatusMetrics
+		ctx            context.Context
+		cancel         context.CancelFunc
+		xdsCache       *MockXdsCache
+		sanitizer      *MockXdsSanitizer
+		syncer         v1snap.ApiSyncer
+		snap           *v1snap.ApiSnapshot
+		settings       *v1.Settings
+		upstreamClient clients.ResourceClient
+		proxyClient    v1.ProxyClient
+		proxyName      = "proxy-name"
+		ns             = "any-ns"
+		ref            = "syncer-test"
+		statusClient   resources.StatusClient
+		statusMetrics  metrics.ConfigStatusMetrics
 	)
 
 	BeforeEach(func() {
@@ -58,7 +57,6 @@ var _ = Describe("Translate Proxy", func() {
 		}
 
 		proxyClient, _ = v1.NewProxyClient(ctx, resourceClientFactory)
-		k8sGatewayProxyClient, _ = v1.NewProxyClient(ctx, resourceClientFactory)
 
 		upstreamClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
 		Expect(err).NotTo(HaveOccurred())
@@ -78,7 +76,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), k8sGatewayProxyClient)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -113,7 +111,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), k8sGatewayProxyClient)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -154,22 +152,21 @@ var _ = Describe("Translate Proxy", func() {
 var _ = Describe("Translate multiple proxies with errors", func() {
 
 	var (
-		ctx                   context.Context
-		cancel                context.CancelFunc
-		xdsCache              *MockXdsCache
-		sanitizer             *MockXdsSanitizer
-		syncer                v1snap.ApiSyncer
-		snap                  *v1snap.ApiSnapshot
-		settings              *v1.Settings
-		proxyClient           v1.ProxyClient
-		k8sGatewayProxyClient v1.ProxyClient
-		upstreamClient        v1.UpstreamClient
-		proxyName             = "proxy-name"
-		upstreamName          = "upstream-name"
-		ns                    = "any-ns"
-		ref                   = "syncer-test"
-		statusClient          resources.StatusClient
-		statusMetrics         metrics.ConfigStatusMetrics
+		ctx            context.Context
+		cancel         context.CancelFunc
+		xdsCache       *MockXdsCache
+		sanitizer      *MockXdsSanitizer
+		syncer         v1snap.ApiSyncer
+		snap           *v1snap.ApiSnapshot
+		settings       *v1.Settings
+		proxyClient    v1.ProxyClient
+		upstreamClient v1.UpstreamClient
+		proxyName      = "proxy-name"
+		upstreamName   = "upstream-name"
+		ns             = "any-ns"
+		ref            = "syncer-test"
+		statusClient   resources.StatusClient
+		statusMetrics  metrics.ConfigStatusMetrics
 	)
 
 	proxiesShouldHaveErrors := func(proxies v1.ProxyList, numProxies int) {
@@ -213,7 +210,6 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		}
 
 		proxyClient, _ = v1.NewProxyClient(context.Background(), resourceClientFactory)
-		k8sGatewayProxyClient, _ = v1.NewProxyClient(ctx, resourceClientFactory)
 
 		usClient, err := resourceClientFactory.NewResourceClient(context.Background(), factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
 		Expect(err).NotTo(HaveOccurred())
@@ -246,7 +242,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), k8sGatewayProxyClient)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,

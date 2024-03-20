@@ -3,6 +3,9 @@ package setup
 import (
 	"context"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -44,8 +47,17 @@ func ExecuteAsynchronousStartFuncs(
 }
 
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
-func K8sGatewayControllerStartFunc(proxyClient v1.ProxyClient) StartFunc {
+func K8sGatewayControllerStartFunc() StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
+		// k8sGatewayProxyClient is the ResourceClient that will be used to read/write Proxy resources that are produced
+		// by the K8s Gateway integration.
+		proxyClient, err := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		})
+		if err != nil {
+			return err
+		}
+
 		if opts.ProxyDebugServer.Server != nil {
 			// If we have a debug server running, let's register the proxy client used by
 			// the k8s gateway translation. This will enable operators to query the debug endpoint

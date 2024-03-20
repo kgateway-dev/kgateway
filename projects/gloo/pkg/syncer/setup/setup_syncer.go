@@ -867,15 +867,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
-	// k8sGatewayProxyClient is the ResourceClient that will be used to read/write Proxy resources that are produced
-	// by the K8s Gateway integration.
-	k8sGatewayProxyClient, err := v1.NewProxyClient(watchOpts.Ctx, &factory.MemoryResourceClientFactory{
-		Cache: memory.NewInMemoryResourceCache(),
-	})
-	if err != nil {
-		return err
-	}
-
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
 		sharedTranslator,
@@ -889,8 +880,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwTranslatorSyncer,
 		proxyClient,
 		opts.WriteNamespace,
-		opts.Identity,
-		k8sGatewayProxyClient)
+		opts.Identity)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -922,7 +912,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	startFuncs := map[string]StartFunc{}
 
 	if opts.GlooGateway.EnableK8sGatewayController {
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(k8sGatewayProxyClient)
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc()
 	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
