@@ -86,9 +86,9 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs                 *XdsInputChannels
-	mgr                    manager.Manager
-	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory
+	inputs          *XdsInputChannels
+	mgr             manager.Manager
+	k8sGwExtensions extensions.K8sGatewayExtensions
 
 	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
@@ -129,19 +129,19 @@ func NewXdsSyncer(
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
 	mgr manager.Manager,
-	k8sGwExtensionsFactory extensions.K8sGatewayExtensionsFactory,
+	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
-		controllerName:         controllerName,
-		translator:             translator,
-		sanitizer:              sanitizer,
-		xdsCache:               xdsCache,
-		xdsGarbageCollection:   xdsGarbageCollection,
-		inputs:                 inputs,
-		mgr:                    mgr,
-		k8sGwExtensionsFactory: k8sGwExtensionsFactory,
-		proxyReconciler:        gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		controllerName:       controllerName,
+		translator:           translator,
+		sanitizer:            sanitizer,
+		xdsCache:             xdsCache,
+		xdsGarbageCollection: xdsGarbageCollection,
+		inputs:               inputs,
+		mgr:                  mgr,
+		k8sGwExtensions:      k8sGwExtensions,
+		proxyReconciler:      gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
 	}
 }
 
@@ -165,10 +165,9 @@ func (s *XdsSyncer) Start(ctx context.Context) error {
 			return
 		}
 
-		k8sGatewayExtensions := s.k8sGwExtensionsFactory(s.mgr)
-
 		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
-		pluginRegistry := k8sGatewayExtensions.CreatePluginRegistry(ctx)
+
+		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
 		gatewayTranslator := gloot.NewTranslator(gatewayQueries, pluginRegistry)
 
 		proxies := gloo_solo_io.ProxyList{}
