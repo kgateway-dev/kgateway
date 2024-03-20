@@ -115,10 +115,7 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 }
 
 func (k *kube) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
-	cfg, err := kubeutils.GetConfig("", "")
-	if k.kubeContext != "" {
-		cfg, err = kubeutils.GetConfigWithContext("", "", k.kubeContext)
-	}
+	cfg, err = kubeutils.GetConfigWithContext("", "", k.kubeContext)
 
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
