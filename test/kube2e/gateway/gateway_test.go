@@ -2113,7 +2113,7 @@ spec:
 				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
 				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
 				// The reason is still unknown, so we retry on flakes in the meantime.
-				It("should act as expected with secret validation", FlakeAttempts(3), func() {
+				It("should act as expected with secret validation", func() {
 					verifyGlooValidationWorks()
 
 					By("waiting for the modified VS to be accepted")
@@ -2133,6 +2133,9 @@ spec:
 						} else {
 							fmt.Fprintf(GinkgoWriter, "VS: %v\n", vs)
 						}
+						validatingWebhooks := kube2e.GetValidatingWebhook(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace)
+						Expect(validatingWebhooks.Webhooks).To(HaveLen(1), "Expected exactly one validating webhook")
+						fmt.Fprintf(GinkgoWriter, "ValidatingWebhook failure policy: %v\n", *validatingWebhooks.Webhooks[0].FailurePolicy)
 					}
 
 					Expect(err).To(HaveOccurred())
