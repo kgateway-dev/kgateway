@@ -49,9 +49,7 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc() StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-		// k8sGatewayProxyClient is the ResourceClient that will be used to read/write Proxy resources that are produced
-		// by the K8s Gateway integration.
-		proxyClient, err := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
+		inMemoryProxyClient, err := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 		if err != nil {
@@ -62,7 +60,7 @@ func K8sGatewayControllerStartFunc() StartFunc {
 			// If we have a debug server running, let's register the proxy client used by
 			// the k8s gateway translation. This will enable operators to query the debug endpoint
 			// and inspect the proxies that are stored in memory
-			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, proxyClient)
+			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, inMemoryProxyClient)
 		}
 
 		return controller.Start(ctx, controller.StartConfig{
@@ -70,7 +68,7 @@ func K8sGatewayControllerStartFunc() StartFunc {
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
 			Opts:                      opts,
 
-			ProxyClient: proxyClient,
+			ProxyClient: inMemoryProxyClient,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

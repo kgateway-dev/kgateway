@@ -139,7 +139,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	return multiErr.ErrorOrNil()
 }
 
-// syncExtensions executes ach of the TranslatorSyncerExtensions
+// syncExtensions executes each of the TranslatorSyncerExtensions
 // These are responsible for updating xDS cache entries
 func (s *translatorSyncer) syncExtensions(ctx context.Context, snap *v1snap.ApiSnapshot, reports reporter.ResourceReports) {
 	for _, syncerExtension := range s.syncerExtensions {
