@@ -44,11 +44,15 @@ import (
 // upgradeStartingVersion represents the default version of Gloo which will be initially installed and used to validate upgrades
 // In practice, this should be dynamic. However, it was introduced after realizing that tests were upgrading from 1.9, an extremely
 // old version of Gloo
-const upgradeStartingVersion = "1.12.0"
+const (
+	upgradeStartingVersion = "1.12.0"
+	namespace              = defaults.GlooSystem
+)
 
-const namespace = defaults.GlooSystem
-
-var glooDeploymentsToCheck []string
+var (
+	glooDeploymentsToCheck []string
+	variant                = os.Getenv("IMAGE_VARIANT")
+)
 
 var _ = Describe("Kube2e: helm", func() {
 

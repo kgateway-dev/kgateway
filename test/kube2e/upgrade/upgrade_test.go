@@ -31,6 +31,8 @@ import (
 
 const namespace = defaults.GlooSystem
 
+var variant = os.Getenv("IMAGE_VARIANT")
+
 var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	var (

@@ -3,7 +3,6 @@ package upgrade_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -42,8 +41,6 @@ var (
 	firstReleaseOfMinor                bool
 
 	skipIfFirstMinorFunc func()
-
-	variant string
 )
 
 var _ = BeforeSuite(func() {
@@ -73,8 +70,6 @@ var _ = BeforeSuite(func() {
 			Skip("First release of minor, skipping some upgrade tests")
 		}
 	}
-
-	variant = os.Getenv("IMAGE_VARIANT")
 })
 
 var _ = AfterSuite(func() {
