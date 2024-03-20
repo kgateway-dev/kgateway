@@ -38,6 +38,21 @@ var _ = Describe("Access Log", func() {
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
+		// This mutation must happen after the testContext.BeforeEach() becuase that
+		// is where our VirtualService is constructed.
+		vs := testContext.ResourcesToCreate().VirtualServices[0]
+		routeOptions := &gloov1.RouteOptions{
+			EnvoyMetadata: map[string]*structpb.Struct{
+				"foo-namespace": {
+					Fields: map[string]*structpb.Value{
+						"bar-metadata": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "greetings",
+							},
+						}},
+				},
+			}}
+		vs.GetVirtualHost().GetRoutes()[0].Options = routeOptions
 	})
 
 	AfterEach(func() {
@@ -46,21 +61,6 @@ var _ = Describe("Access Log", func() {
 
 	JustBeforeEach(func() {
 		testContext.JustBeforeEach()
-		testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-			routeOptions := &gloov1.RouteOptions{
-				EnvoyMetadata: map[string]*structpb.Struct{
-					"foo-namespace": {
-						Fields: map[string]*structpb.Value{
-							"bar-metadata": {
-								Kind: &structpb.Value_StringValue{
-									StringValue: "greetings",
-								},
-							}},
-					},
-				}}
-			vs.GetVirtualHost().GetRoutes()[0].Options = routeOptions
-			return vs
-		})
 	})
 
 	JustAfterEach(func() {
@@ -154,7 +154,9 @@ var _ = Describe("Access Log", func() {
 			Context("Formatter extensions", func() {
 				BeforeEach(func() {
 					gw.GetOptions().GetAccessLoggingService().GetAccessLog()[0].GetFileSink().OutputFormat = &als.FileSink_StringFormat{
-						StringFormat: "%REQ(:PATH)%; %REQ_WITHOUT_QUERY(:PATH)%; %METADATA(ROUTE:foo-namespace)%\n",
+						StringFormat: "req: %REQ(:PATH)%\n" +
+						"req_without_query: %REQ_WITHOUT_QUERY(:PATH)%\n" + 
+						"metadata: %METADATA(ROUTE:foo-namespace)%\n",
 					}
 				})
 				It("can create formatted string access logs", func() {
@@ -167,7 +169,9 @@ var _ = Describe("Access Log", func() {
 
 						logs, err := testContext.EnvoyInstance().Logs()
 						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(logs).To(ContainSubstring(`/1?sensitive=data&needs=removed; /1; {"bar-metadata":"greetings"}`))
+						g.Expect(logs).To(ContainSubstring(`req: /1?sensitive=data&needs=removed`))
+						g.Expect(logs).To(ContainSubstring(`req_without_query: /1`))
+						g.Expect(logs).To(ContainSubstring(`metadata: {"bar-metadata":"greetings"}`))
 					}, time.Second*30, time.Second/2).Should(Succeed())
 				})
 
