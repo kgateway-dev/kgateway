@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update to get the kube2e artifacts dumping again
