@@ -2123,20 +2123,6 @@ spec:
 
 					By("failing to delete a secret that is in use")
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					if err == nil { // Extra logging to help debug flakes
-						settings := kube2e.GetSettings(ctx, testHelper.InstallNamespace)
-						fmt.Fprintf(GinkgoWriter, "Settings: allowWarnings: %t\n", settings.GetGateway().GetValidation().GetAllowWarnings().GetValue())
-						fmt.Fprintf(GinkgoWriter, "Settings alwaysAccept: %t\n", settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue())
-						vs, readErr := resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testServerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-						if readErr != nil {
-							fmt.Fprintf(GinkgoWriter, "Error reading VS: %v\n", readErr)
-						} else {
-							fmt.Fprintf(GinkgoWriter, "VS: %v\n", vs)
-						}
-						validatingWebhooks := kube2e.GetValidatingWebhook(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace)
-						Expect(validatingWebhooks.Webhooks).To(HaveLen(1), "Expected exactly one validating webhook")
-						fmt.Fprintf(GinkgoWriter, "ValidatingWebhook failure policy: %v\n", *validatingWebhooks.Webhooks[0].FailurePolicy)
-					}
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))

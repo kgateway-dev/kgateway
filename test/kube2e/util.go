@@ -16,6 +16,7 @@ import (
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
@@ -150,8 +151,8 @@ func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settin
 
 func GetSettings(ctx context.Context, installNamespace string) *v1.Settings {
 	settingsClient := clienthelpers.MustSettingsClient(ctx)
-	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	settings, err := settingsClient.Read(installNamespace, defaults.SettingsName, clients.ReadOpts{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return settings
 }
 
