@@ -3007,7 +3007,23 @@ spec:
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
 
-					It("supports deploying the fips envoy image", func() {
+					DescribeTable("supports deploying the specified variant of the envoy image", func(variant string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.image.variant=" + variant,
+								"gatewayProxies.gatewayProxy.podTemplate.image.repository=gloo-ee-envoy-wrapper",
+							},
+						})
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = generateExpectedImage("quay.io/solo-io/gloo-ee-envoy-wrapper", version, variant)
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					},
+						Entry("No variant specified", ""),
+						Entry("Standard variant", "standard"),
+						Entry("Fips variant", "fips"),
+						Entry("Distroless variant", "distroless"),
+						Entry("Fips-Distroless variant", "fips-distroless"))
+
+					It("supports deploying the fips envoy image via the deprecated global.image.fips helm value", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.image.fips=true",
@@ -3444,14 +3460,14 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(corev1.Volume{Name: "workload-certs", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
 					})
 
-					DescribeTable("Uses the correct image for the sds-ee container", func(fipsValue string, expectedImageRepo string) {
+					DescribeTable("Uses the correct image for the sds-ee container", func(variant string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
 								"global.glooMtls.sds.image.registry=my-sds-reg",
 								"global.glooMtls.sds.image.tag=my-sds-tag",
 								"global.glooMtls.sds.image.repository=sds-ee",
-								"global.image.fips=" + fipsValue,
+								"global.image.variant=" + variant,
 							},
 						})
 
@@ -3464,13 +3480,15 @@ spec:
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
 						Expect(sdsContainer.Name).To(Equal("sds"))
-						Expect(sdsContainer.Image).To(Equal("my-sds-reg/" + expectedImageRepo + ":my-sds-tag"))
+						Expect(sdsContainer.Image).To(Equal(generateExpectedImage("my-sds-reg/sds-ee", "my-sds-tag", variant)))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
 
 					},
-						Entry("fips is true", "true", "sds-ee-fips"),
-						Entry("fips is false", "false", "sds-ee"),
-					)
+						Entry("No variant specified", ""),
+						Entry("Standard variant", "standard"),
+						Entry("Fips variant", "fips"),
+						Entry("Distroless variant", "distroless"),
+						Entry("Fips-Distroless variant", "fips-distroless"))
 
 					It("adds readConfig annotations", func() {
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-stats"] = "/stats"
@@ -5109,17 +5127,22 @@ metadata:
 
 					})
 
-					It("supports deploying the fips discovery-ee image", func() {
-						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/discovery-ee-fips:" + version
+					DescribeTable("supports deploying the correct discovery-ee image variant", func(variant string) {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = generateExpectedImage("quay.io/solo-io/discovery-ee", version, variant)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"global.image.fips=true",
+								"global.image.variant=" + variant,
 								"discovery.deployment.image.repository=discovery-ee",
 							},
 						})
 
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
-					})
+					},
+						Entry("No variant specified", ""),
+						Entry("Standard variant", "standard"),
+						Entry("Fips variant", "fips"),
+						Entry("Distroless variant", "distroless"),
+						Entry("Fips-Distroless variant", "fips-distroless"))
 
 					It("can set log level env var", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
@@ -7149,4 +7172,21 @@ func getSslGatewayName(name string) string {
 
 func getFailoverGatewayName(name string) string {
 	return name + "-failover"
+}
+
+func generateExpectedImage(name string, version string, variant string) string {
+	switch variant {
+	case "fips":
+		return fmt.Sprintf("%s-fips:%s", name, version)
+	case "distroless":
+		return fmt.Sprintf("%s:%s-distroless", name, version)
+	case "fips-distroless":
+		return fmt.Sprintf("%s-fips:%s-distroless", name, version)
+	case "":
+		fallthrough
+	case "standard":
+		fallthrough
+	default:
+		return fmt.Sprintf("%s:%s", name, version)
+	}
 }
