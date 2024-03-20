@@ -1,0 +1,9 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/8849
+  resolvesIssue: false
+  description: Add support for distroless images.
+- type: HELM
+  issueLink: https://github.com/solo-io/gloo/issues/8849
+  resolvesIssue: false
+  description: Adds a new helm variable `global.image.variant` to specify the variant of the image to be deployed. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to 'standard'. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature). This consequently deprecates the `global.image.fips` value. Use `global.image.variant=fips` instead.
