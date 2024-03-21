@@ -155,8 +155,8 @@ var _ = Describe("Access Log", func() {
 				BeforeEach(func() {
 					gw.GetOptions().GetAccessLoggingService().GetAccessLog()[0].GetFileSink().OutputFormat = &als.FileSink_StringFormat{
 						StringFormat: "req: %REQ(:PATH)%\n" +
-						"req_without_query: %REQ_WITHOUT_QUERY(:PATH)%\n" + 
-						"metadata: %METADATA(ROUTE:foo-namespace)%\n",
+							"req_without_query: %REQ_WITHOUT_QUERY(:PATH)%\n" + 
+							"metadata: %METADATA(ROUTE:foo-namespace)%\n",
 					}
 				})
 				It("can create formatted string access logs", func() {
