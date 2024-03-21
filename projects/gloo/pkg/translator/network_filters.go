@@ -11,7 +11,6 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -235,14 +234,13 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in Gloo Edge.
-	routerV3 := routerv3.Router{
-		// FIXME implement same way as SuppressEnvoyHeaders below
-		DynamicStats: wrapperspb.Bool(false),
-	}
+	routerV3 := routerv3.Router{}
 
 	if h.listener.GetOptions().GetRouter().GetSuppressEnvoyHeaders().GetValue() {
 		routerV3.SuppressEnvoyHeaders = true
 	}
+
+	routerV3.DynamicStats = h.listener.GetOptions().GetRouter().GetDynamicStats()
 
 	newStagedFilter, err := plugins.NewStagedFilter(
 		wellknown.Router,
