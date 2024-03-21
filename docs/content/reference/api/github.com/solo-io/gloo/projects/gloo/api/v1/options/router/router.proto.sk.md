@@ -31,12 +31,14 @@ Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/ht
 
 ```yaml
 "suppressEnvoyHeaders": .google.protobuf.BoolValue
+"dynamicStats": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `suppressEnvoyHeaders` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Do not add any additional x-envoy- headers to requests or responses. This only affects the router filter generated x-envoy- headers, other Envoy filters and the HTTP connection manager may continue to set x-envoy- headers. |
+| `dynamicStats` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Disable dynamic stats. Defaults to false. This should only be set to true for profiling or benchmarking scenarios. |
 
 
 
