@@ -9,4 +9,7 @@ import "google/protobuf/wrappers.proto";
 message Router{ 
     // Do not add any additional x-envoy- headers to requests or responses. This only affects the router filter generated x-envoy- headers, other Envoy filters and the HTTP connection manager may continue to set x-envoy- headers.
     google.protobuf.BoolValue suppress_envoy_headers = 1;
+
+    // Disable dynamic stats. Defaults to false. This should only be set to true for profiling or benchmarking scenarios
+    google.protobuf.BoolValue dynamic_stats = 2;
 }
