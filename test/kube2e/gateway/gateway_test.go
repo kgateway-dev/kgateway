@@ -2216,8 +2216,9 @@ spec:
 			)
 
 			var (
-				invalidUpstreamYaml string
-				vsYaml              string
+				invalidUpstreamYaml      string
+				vsYaml                   string
+				pretestFailurePolicyType admissionregv1.FailurePolicyType
 			)
 
 			// Before these secret deletion tests, set the failure policy to Fail and setup the resources with warnings
@@ -2255,6 +2256,9 @@ spec:
             name: my-us
             namespace:  ` + testHelper.InstallNamespace
 
+				// Store the current failure policy to restore after the tests
+				pretestFailurePolicyType = *kube2e.GetFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace)
+
 				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
 				// Allow warnings during setup so that we can install the resources
 				kube2e.UpdateAllowWarningsSetting(ctx, true, testHelper.InstallNamespace)
@@ -2276,7 +2280,7 @@ spec:
 			})
 
 			AfterAll(func() {
-				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
+				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, pretestFailurePolicyType)
 				err := install.KubectlDelete([]byte(invalidUpstreamYaml))
 				Expect(err).NotTo(HaveOccurred())
 				err = install.KubectlDelete([]byte(vsYaml))
