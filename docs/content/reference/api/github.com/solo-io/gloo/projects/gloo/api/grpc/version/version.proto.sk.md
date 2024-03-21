@@ -15,6 +15,7 @@ weight: 5
 - [Kubernetes](#kubernetes)
 - [Container](#container)
 - [ClientVersion](#clientversion)
+- [KubernetesClusterVersion](#kubernetesclusterversion)
 - [Version](#version)
   
 
@@ -114,6 +115,31 @@ weight: 5
 
 
 ---
+### KubernetesClusterVersion
+
+
+
+```yaml
+"major": string
+"minor": string
+"gitVersion": string
+"buildDate": string
+"platform": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `major` | `string` |  |
+| `minor` | `string` |  |
+| `gitVersion` | `string` |  |
+| `buildDate` | `string` |  |
+| `platform` | `string` |  |
+
+
+
+
+---
 ### Version
 
 
@@ -121,6 +147,7 @@ weight: 5
 ```yaml
 "client": .gloo.solo.io.ClientVersion
 "server": []gloo.solo.io.ServerVersion
+"kubernetesCluster": .gloo.solo.io.KubernetesClusterVersion
 
 ```
 
@@ -128,6 +155,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `client` | [.gloo.solo.io.ClientVersion](../version.proto.sk/#clientversion) |  |
 | `server` | [[]gloo.solo.io.ServerVersion](../version.proto.sk/#serverversion) | This field is an array of server versions because although there can only be 1 client version, there can potentially be many instances of gloo running on a single cluster. |
+| `kubernetesCluster` | [.gloo.solo.io.KubernetesClusterVersion](../version.proto.sk/#kubernetesclusterversion) |  |
 
 
 

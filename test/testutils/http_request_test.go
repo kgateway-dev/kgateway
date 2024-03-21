@@ -16,7 +16,7 @@ var _ = Describe("HttpRequestBuilder", func() {
 		// most likely needs to change to support this new field
 
 		Expect(reflect.TypeOf(testutils.HttpRequestBuilder{}).NumField()).To(
-			Equal(9),
+			Equal(10),
 			"wrong number of fields found",
 		)
 	})
