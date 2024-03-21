@@ -38,6 +38,21 @@ var _ = Describe("Access Log", func() {
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
+		// This mutation must happen after the testContext.BeforeEach() becuase that
+		// is where our VirtualService is constructed.
+		vs := testContext.ResourcesToCreate().VirtualServices[0]
+		routeOptions := &gloov1.RouteOptions{
+			EnvoyMetadata: map[string]*structpb.Struct{
+				"foo-namespace": {
+					Fields: map[string]*structpb.Value{
+						"bar-metadata": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "greetings",
+							},
+						}},
+				},
+			}}
+		vs.GetVirtualHost().GetRoutes()[0].Options = routeOptions
 	})
 
 	AfterEach(func() {
@@ -98,10 +113,10 @@ var _ = Describe("Access Log", func() {
 	})
 
 	Context("File", func() {
-
+		var gw *v1.Gateway
 		Context("String Format", func() {
 			BeforeEach(func() {
-				gw := gwdefaults.DefaultGateway(writeNamespace)
+				gw = gwdefaults.DefaultGateway(writeNamespace)
 				gw.Options = &gloov1.ListenerOptions{
 					AccessLoggingService: &als.AccessLoggingService{
 						AccessLog: []*als.AccessLog{
@@ -123,18 +138,43 @@ var _ = Describe("Access Log", func() {
 					gw,
 				}
 			})
-
 			It("can create string access logs", func() {
 				requestBuilder := testContext.GetHttpRequestBuilder().
 					WithPath("1").
+					WithQuery("foo=bar").
 					WithPostMethod()
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
 					logs, err := testContext.EnvoyInstance().Logs()
 					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
+					g.Expect(logs).To(ContainSubstring(`"POST /1?foo=bar HTTP/1.1" 200`))
 				}, time.Second*30, time.Second/2).Should(Succeed())
+			})
+			Context("Formatter extensions", func() {
+				BeforeEach(func() {
+					gw.GetOptions().GetAccessLoggingService().GetAccessLog()[0].GetFileSink().OutputFormat = &als.FileSink_StringFormat{
+						StringFormat: "req: %REQ(:PATH)%\n" +
+							"req_without_query: %REQ_WITHOUT_QUERY(:PATH)%\n" +
+							"metadata: %METADATA(ROUTE:foo-namespace)%\n",
+					}
+				})
+				It("can create formatted string access logs", func() {
+					requestBuilder := testContext.GetHttpRequestBuilder().
+						WithPath("1").
+						WithQuery("sensitive=data&needs=removed").
+						WithPostMethod()
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+
+						logs, err := testContext.EnvoyInstance().Logs()
+						g.Expect(err).NotTo(HaveOccurred())
+						g.Expect(logs).To(ContainSubstring(`req: /1?sensitive=data&needs=removed`))
+						g.Expect(logs).To(ContainSubstring(`req_without_query: /1`))
+						g.Expect(logs).To(ContainSubstring(`metadata: {"bar-metadata":"greetings"}`))
+					}, time.Second*30, time.Second/2).Should(Succeed())
+				})
+
 			})
 		})
 
@@ -162,6 +202,21 @@ var _ = Describe("Access Log", func() {
 															StringValue: "%REQ(:METHOD)%",
 														},
 													},
+													"path": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%REQ(:PATH)%",
+														},
+													},
+													"path_without_query": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%REQ_WITHOUT_QUERY(:PATH)%",
+														},
+													},
+													"route_md": {
+														Kind: &structpb.Value_StringValue{
+															StringValue: "%METADATA(ROUTE:foo-namespace)%",
+														},
+													},
 												},
 											},
 										},
@@ -178,7 +233,7 @@ var _ = Describe("Access Log", func() {
 			})
 			It("can create json access logs", func() {
 				requestBuilder := testContext.GetHttpRequestBuilder().
-					WithPath("1").
+					WithPath("1?foo=bar").
 					WithPostMethod()
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
@@ -186,7 +241,10 @@ var _ = Describe("Access Log", func() {
 					logs, err := testContext.EnvoyInstance().Logs()
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
+					g.Expect(logs).To(ContainSubstring(`"path":"/1?foo=bar"`))
+					g.Expect(logs).To(ContainSubstring(`"path_without_query":"/1"`))
 					g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
+					g.Expect(logs).To(ContainSubstring(`"route_md":{"bar-metadata":"greetings"}`))
 				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
 		})

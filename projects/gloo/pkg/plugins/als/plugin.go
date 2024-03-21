@@ -8,6 +8,7 @@ import (
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
@@ -243,16 +244,9 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.A
 func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog_FileSink) error {
 	cfg.Path = alsSettings.FileSink.GetPath()
 
-	query := &envoy_req_without_query.ReqWithoutQuery{}
-	typedConfig, err := utils.MessageToAny(query)
+	formatterExtensions, err := getFormatterExtensions()
 	if err != nil {
 		return err
-	}
-	formatterExtensions := []*envoycore.TypedExtensionConfig{
-		{
-			Name:        "envoy.formatter.req_without_query",
-			TypedConfig: typedConfig,
-		},
 	}
 
 	switch fileSinkType := alsSettings.FileSink.GetOutputFormat().(type) {
@@ -278,4 +272,30 @@ func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog
 		}
 	}
 	return cfg.Validate()
+}
+
+func getFormatterExtensions() ([]*envoycore.TypedExtensionConfig, error) {
+	reqWithoutQueryFormatter := &envoy_req_without_query.ReqWithoutQuery{}
+	reqWithoutQueryFormatterTc, err := utils.MessageToAny(reqWithoutQueryFormatter)
+	if err != nil {
+		return nil, err
+	}
+
+	mdFormatter := &envoy_metadata_formatter.Metadata{}
+	mdFormatterTc, err := utils.MessageToAny(mdFormatter)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*envoycore.TypedExtensionConfig{
+		{
+			Name:        "envoy.formatter.req_without_query",
+			TypedConfig: reqWithoutQueryFormatterTc,
+		},
+		{
+			Name:        "envoy.formatter.metadata",
+			TypedConfig: mdFormatterTc,
+		},
+	}, nil
+
 }

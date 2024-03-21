@@ -1,0 +1,11 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/9246
+  resolvesIssue: false
+  description: >-
+    Add ability to use `%METADATA()%` command directives in envoy access log format
+    config. These will eventually replace `%DYNAMIC_METADATA()%`, `%UPSTREAM_METADATA()%`,
+    and `%CLUSTER_METADATA()%` as well as adding support for `ROUTE` and `LISTENER`.
+
+    A Gloo user can now access metadata added in the route options via `envoyMetadata` 
+    through this formatter.
