@@ -1073,6 +1073,11 @@ spec:
                                       namespace:
                                         type: string
                                     type: object
+                                  serviceNameSource:
+                                    properties:
+                                      gatewayName:
+                                        type: object
+                                    type: object
                                 type: object
                               requestHeadersForTags:
                                 items:

@@ -12,6 +12,8 @@ weight: 5
 
 
 - [OpenTelemetryConfig](#opentelemetryconfig)
+- [ServiceNameSource](#servicenamesource)
+- [GatewayServiceNameSource](#gatewayservicenamesource)
   
 
 
@@ -32,6 +34,7 @@ Configuration for the OpenTelemetry tracer.
 ```yaml
 "collectorUpstreamRef": .core.solo.io.ResourceRef
 "clusterName": string
+"serviceNameSource": .solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource
 
 ```
 
@@ -39,6 +42,39 @@ Configuration for the OpenTelemetry tracer.
 | ----- | ---- | ----------- | 
 | `collectorUpstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to use for submitting traces to the OpenTelemetry agent. Only one of `collectorUpstreamRef` or `clusterName` can be set. |
 | `clusterName` | `string` | The name of the Envoy cluster to use for submitting traces to the OpenTelemetry agent. Only one of `clusterName` or `collectorUpstreamRef` can be set. |
+| `serviceNameSource` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource](../opentelemetry.proto.sk/#servicenamesource) |  |
+
+
+
+
+---
+### ServiceNameSource
+
+
+
+```yaml
+"gatewayName": .solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayServiceNameSource
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `gatewayName` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayServiceNameSource](../opentelemetry.proto.sk/#gatewayservicenamesource) | The source to use for the service name. |
+
+
+
+
+---
+### GatewayServiceNameSource
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
