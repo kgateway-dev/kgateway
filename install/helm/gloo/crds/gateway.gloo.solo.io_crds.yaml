@@ -4,20 +4,20 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 485e7b013bb9cfac
+    crd.solo.io/specHash: a3181d222d072f15
   labels:
     app: gateway2
     app.kubernetes.io/name: gateway2
-  name: gatewayconfigs.gateway.gloo.solo.io
+  name: dataplaneconfigs.gateway.gloo.solo.io
 spec:
   group: gateway.gloo.solo.io
   names:
-    kind: GatewayConfig
-    listKind: GatewayConfigList
-    plural: gatewayconfigs
+    kind: DataPlaneConfig
+    listKind: DataPlaneConfigList
+    plural: dataplaneconfigs
     shortNames:
-    - gwc
-    singular: gatewayconfig
+    - dpc
+    singular: dataplaneconfig
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -26,8 +26,8 @@ spec:
         properties:
           spec:
             description: |-
-              A GatewayConfig contains configuration that is used to dynamically provision
-              the data plane (Envoy proxy instance), based on a Kubernetes Gateway or
+              A DataPlaneConfig contains configuration that is used to dynamically provision
+              Gloo Gateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway or
               GatewayClass.
             properties:
               proxyConfig:

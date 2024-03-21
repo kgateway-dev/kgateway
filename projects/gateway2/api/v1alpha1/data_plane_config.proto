@@ -16,10 +16,10 @@ import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/api/co
 
 import "google/protobuf/wrappers.proto";
 
-// A GatewayConfig contains configuration that is used to dynamically provision
-// the data plane (Envoy proxy instance), based on a Kubernetes Gateway or
+// A DataPlaneConfig contains configuration that is used to dynamically provision
+// Gloo Gateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway or
 // GatewayClass.
-message GatewayConfigSpec {
+message DataPlaneConfigSpec {
   ProxyConfig proxy_config = 1;
 }
 
@@ -72,4 +72,4 @@ message EnvoyLogging {
   string log_level = 1;
 }
 
-message GatewayConfigStatus {}
+message DataPlaneConfigStatus {}

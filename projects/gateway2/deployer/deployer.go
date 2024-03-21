@@ -112,6 +112,14 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 	return ret, nil
 }
 
+func jsonConvert2(in *v1alpha1.DataPlaneConfig, out interface{}) error {
+	b, err := json.Marshal(in)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, out)
+}
+
 func jsonConvert(in []gatewayPort, out interface{}) error {
 	b, err := json.Marshal(in)
 	if err != nil {
@@ -191,9 +199,15 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 }
 
 func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {
-	gwc := &v1alpha1.GatewayConfig{}
-	err := d.cli.Get(ctx, client.ObjectKey{Namespace: "gloo-system", Name: "my-gateway-config"}, gwc)
-	fmt.Printf("xxxxxx gwc: %v, err: %v\n", gwc, err)
+	dpc := &v1alpha1.DataPlaneConfig{}
+	err := d.cli.Get(ctx, client.ObjectKey{Namespace: "gloo-system", Name: "my-dataplane-config"}, dpc)
+	fmt.Printf("xxxxxx dpc: %v, err: %v\n", dpc, err)
+
+	var dpcAny any
+	err = jsonConvert2(dpc, &dpcAny)
+	fmt.Printf("xxxxxx converted: %v, err: %v\n", dpcAny, err)
+	b, err := json.MarshalIndent(dpcAny, "", "  ")
+	fmt.Printf("xxxxxx pretty: %v, err: %v\n", string(b), err)
 	return map[string]any{}, nil
 }
 

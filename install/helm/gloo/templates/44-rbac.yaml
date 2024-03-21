@@ -69,7 +69,7 @@ rules:
 - apiGroups:
   - "gateway.gloo.solo.io"
   resources:
-  - gatewayconfigs
+  - dataplaneconfigs
   verbs: ["get", "list", "watch"]
 - apiGroups:
   - ""
