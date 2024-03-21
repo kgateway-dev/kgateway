@@ -13,6 +13,7 @@ import (
 var (
 	jsonpbMarshaler               = &jsonpb.Marshaler{OrigName: false}
 	jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
+	jsonpbMarshalerIndented       = &jsonpb.Marshaler{OrigName: false, Indent: "  "}
 
 	NilStructError = eris.New("cannot unmarshal nil struct")
 )
@@ -42,6 +43,12 @@ func MarshalStructEmitZeroValues(m proto.Message) (*structpb.Struct, error) {
 func MarshalBytes(pb proto.Message) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := jsonpbMarshaler.Marshal(buf, pb)
+	return buf.Bytes(), err
+}
+
+func MarshalBytesIndented(pb proto.Message) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := jsonpbMarshalerIndented.Marshal(buf, pb)
 	return buf.Bytes(), err
 }
 

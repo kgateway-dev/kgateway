@@ -806,6 +806,9 @@ apis:
   gloo.solo.io.Kubernetes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#Kubernetes
     package: gloo.solo.io
+  gloo.solo.io.KubernetesClusterVersion:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#KubernetesClusterVersion
+    package: gloo.solo.io
   gloo.solo.io.KubernetesServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#KubernetesServiceDestination
     package: gloo.solo.io

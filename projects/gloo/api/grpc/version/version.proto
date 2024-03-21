@@ -50,10 +50,19 @@ message ClientVersion {
     string version = 1;
 }
 
+message KubernetesClusterVersion {
+    string major = 1;
+    string minor = 2;
+    string git_version = 3;
+    string build_date = 4;
+    string platform = 5;
+}
+
 message Version {
     ClientVersion client = 1;
     // This field is an array of server versions because although there can only be 1 client version, there can
     // potentially be many instances of gloo running on a single cluster
     repeated ServerVersion server = 2;
+    KubernetesClusterVersion kubernetes_cluster = 3;
 }
 
