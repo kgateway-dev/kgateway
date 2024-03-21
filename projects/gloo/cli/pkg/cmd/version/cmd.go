@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -50,7 +49,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printVersion(NewKube(opts.Metadata.GetNamespace(), ""), os.Stdout, opts)
+			return printVersion(NewKube(opts.Metadata.GetNamespace(), opts.Top.KubeContext), os.Stdout, opts)
 		},
 	}
 
@@ -70,6 +69,11 @@ func GetClientServerVersions(ctx context.Context, sv ServerVersion) (*version.Ve
 		return v, err
 	}
 	v.Server = serverVersion
+	k8sServerVersion, err := sv.GetClusterVersion()
+	if err != nil {
+		return v, err
+	}
+	v.KubernetesCluster = k8sServerVersion
 	return v, nil
 }
 
@@ -84,49 +88,25 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersion, err := GetJson(vrs.GetClient())
+		formattedVer, err := getJson(vrs)
 		if err != nil {
 			return err
 		}
-		clientVersionStr := string(clientVersion)
-		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
-		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
-			fmt.Fprintln(w, undefinedServer)
-			return nil
+			fmt.Fprintf(w, "%s\n\n", undefinedServer)
 		}
-		fmt.Fprint(w, "Server: ")
-		for _, v := range vrs.GetServer() {
-			serverVersionStr, err := GetJson(v)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
-		}
+		fmt.Fprintf(w, "%s", string(formattedVer))
 	case printers.YAML:
-		clientVersion, err := GetYaml(vrs.GetClient())
+		formattedVer, err := getYaml(vrs)
 		if err != nil {
 			return err
 		}
-		clientVersionStr := string(clientVersion)
-		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
-		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
-			fmt.Fprintln(w, undefinedServer)
-			return nil
+			fmt.Fprintf(w, "%s\n\n", undefinedServer)
 		}
-		fmt.Fprintln(w, "Server:")
-		for _, v := range vrs.GetServer() {
-			serverVersion, err := GetYaml(v)
-			if err != nil {
-				return err
-			}
-			serverVersionStr := string(serverVersion)
-			clientVersionStr = strings.TrimRight(clientVersionStr, "\n")
-			fmt.Fprintf(w, "%s\n", serverVersionStr)
-		}
+		fmt.Fprintf(w, "%s", string(formattedVer))
 	default:
-		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().GetVersion())
+		fmt.Fprintf(w, "Client version: %s\n", vrs.GetClient().GetVersion())
 		if vrs.GetServer() == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
@@ -160,8 +140,13 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 		table.SetHeader(headers)
 		table.AppendBulk(rows)
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		fmt.Println("Server:")
+		fmt.Fprintln(w, "Server version:")
 		table.Render()
+
+		k8sV := vrs.GetKubernetesCluster()
+		if k8sV != nil {
+			fmt.Fprintf(w, "Kubernetes version: %s\n", k8sV.GetGitVersion())
+		}
 	}
 	return nil
 }
@@ -173,8 +158,8 @@ func getDistributionName(name string, enterprise bool) string {
 	return name
 }
 
-func GetJson(pb proto.Message) ([]byte, error) {
-	data, err := protoutils.MarshalBytes(pb)
+func getJson(pb proto.Message) ([]byte, error) {
+	data, err := protoutils.MarshalBytesIndented(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return nil, err
@@ -182,8 +167,8 @@ func GetJson(pb proto.Message) ([]byte, error) {
 	return data, nil
 }
 
-func GetYaml(pb proto.Message) ([]byte, error) {
-	jsn, err := GetJson(pb)
+func getYaml(pb proto.Message) ([]byte, error) {
+	jsn, err := getJson(pb)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).DPanic(err)
 		return nil, err

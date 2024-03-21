@@ -5,23 +5,27 @@ import (
 	"fmt"
 	"strings"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	version2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-	"github.com/solo-io/go-utils/versionutils"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	"github.com/solo-io/go-utils/versionutils"
 )
 
 type testVersionGetter struct {
-	versions []*version.ServerVersion
-	err      error
+	versions          []*version.ServerVersion
+	kubernetesVersion *version.KubernetesClusterVersion
+	err               error
 }
 
 func (t *testVersionGetter) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	return t.versions, t.err
+}
+
+func (t *testVersionGetter) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
+	return t.kubernetesVersion, t.err
 }
 
 var _ version2.ServerVersion = &testVersionGetter{}
