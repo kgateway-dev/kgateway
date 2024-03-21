@@ -29,6 +29,7 @@ runs:
   - name: Testing - kube e2e regression tests
     env:
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+      IMAGE_VARIANT: ${{ matrix.image-variant }}
     shell: bash
     run: make install-test-tools run-kube-e2e-tests
   - name: save results

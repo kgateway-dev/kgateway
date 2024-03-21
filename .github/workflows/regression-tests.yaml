@@ -50,6 +50,8 @@ jobs:
         # this is the github action version of ternary op
         kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade' ]
         kube-version: [ { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' } ]
+        image-variant:
+          - distroless
         merge-to-main:
           - ${{ github.event.pull_request.base.ref == 'main' }}
         exclude:
