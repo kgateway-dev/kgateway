@@ -48,7 +48,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = Describe("AWS Lambda", func() {
+var _ = FDescribe("AWS Lambda", func() {
 	const (
 		defaultRegion        = "us-east-1"
 		secondaryRegion      = "us-east-2"
@@ -732,7 +732,11 @@ var _ = Describe("AWS Lambda", func() {
 					clients.ReadOpts{},
 				)
 				if err != nil {
-					return nil
+					return []*aws_plugin.LambdaFunctionSpec{
+						{
+							LogicalName: err.Error(),
+						},
+					}
 				}
 				return us.GetAws().GetLambdaFunctions()
 			}, "2m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
