@@ -155,6 +155,50 @@ func (m *ClientVersion) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *KubernetesClusterVersion) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*KubernetesClusterVersion)
+	if !ok {
+		that2, ok := that.(KubernetesClusterVersion)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetMajor(), target.GetMajor()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMinor(), target.GetMinor()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetGitVersion(), target.GetGitVersion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetBuildDate(), target.GetBuildDate()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetPlatform(), target.GetPlatform()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Version) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -200,6 +244,16 @@ func (m *Version) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	if h, ok := interface{}(m.GetKubernetesCluster()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetKubernetesCluster()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetKubernetesCluster(), target.GetKubernetesCluster()) {
+			return false
+		}
 	}
 
 	return true
