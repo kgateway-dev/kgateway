@@ -230,12 +230,28 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 	}
 }
 
+func GetFailurePolicy(ctx context.Context, webhookName string) *admissionregv1.FailurePolicyType {
+	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
+	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
+	return cfg.Webhooks[0].FailurePolicy
+}
+
 func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy admissionregv1.FailurePolicyType) {
 	kubeClient := clienthelpers.MustKubeClient()
-	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
+	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
 	cfg.Webhooks[0].FailurePolicy = &failurePolicy
 
-	_, err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
+	_, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+func GetValidatingWebhook(ctx context.Context, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
+	return GetValidatingWebhookWithOffset(ctx, 1, webhookName)
+}
+
+func GetValidatingWebhookWithOffset(ctx context.Context, offset int, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
+	kubeClient := clienthelpers.MustKubeClient()
+	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
+	ExpectWithOffset(offset, err).NotTo(HaveOccurred())
+	return cfg
 }
