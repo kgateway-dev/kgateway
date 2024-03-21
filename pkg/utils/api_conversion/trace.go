@@ -102,7 +102,15 @@ func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
 }
 
 func ToEnvoyOpenTelemetryConfiguration(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string, parentListener *gloov1.Listener) (*envoytrace.OpenTelemetryConfig, error) {
-	serviceName := getGatewayNameFromParent(ctx, parentListener)
+
+	var serviceName string
+
+	switch sourceType := glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
+	case *envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName:
+		serviceName = getGatewayNameFromParent(ctx, parentListener)
+	default:
+		contextutils.LoggerFrom(ctx).Warnw("Unknown service name source type", zap.Any("source_type", sourceType))
+	}
 
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
 		GrpcService: &envoy_config_core_v3.GrpcService{

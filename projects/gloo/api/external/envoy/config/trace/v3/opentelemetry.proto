@@ -31,6 +31,18 @@ message OpenTelemetryConfig {
     // OpenTelemetry agent
     string cluster_name = 2;
   }
+
+  message ServiceNameSource {
+    message GatewayServiceNameSource {} // use the gateway name as the collector service name
+
+    oneof source_type {  
+      // The source to use for the service name
+      GatewayServiceNameSource gateway_name = 3;
+    }
+  }
+
+  ServiceNameSource service_name_source = 4;
+
 }
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3";
