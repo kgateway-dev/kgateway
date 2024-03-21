@@ -2262,10 +2262,8 @@ spec:
             name: my-us
             namespace:  ` + testHelper.InstallNamespace
 
-				// Store the current failure policy to restore after the test
-				currentWebhook := kube2e.GetValidatingWebhook(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace)
-				Expect(currentWebhook.Webhooks).To(HaveLen(1), "Expected exactly one validating webhook")
-				pretestFailurePolicyType = *currentWebhook.Webhooks[0].FailurePolicy
+				// Store the current failure policy to restore after the tests
+				pretestFailurePolicyType = *kube2e.GetFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace)
 
 				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
 				// Allow warnings during setup so that we can install the resources
