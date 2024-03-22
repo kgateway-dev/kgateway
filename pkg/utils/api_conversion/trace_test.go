@@ -13,7 +13,7 @@ import (
 
 var _ = Describe("Trace utils", func() {
 	Context("gets the gateway name from the parent listener", func() {
-		FDescribeTable("ToEnvoyOpenTelemetryConfiguration", func(listener *gloov1.Listener, expectedGatewayName string) {
+		DescribeTable("ToEnvoyOpenTelemetryConfiguration", func(listener *gloov1.Listener, expectedGatewayName string) {
 			glooOtelConfig := &envoytracegloo.OpenTelemetryConfig{
 				CollectorCluster: &envoytracegloo.OpenTelemetryConfig_CollectorUpstreamRef{
 					CollectorUpstreamRef: &core.ResourceRef{

@@ -581,18 +581,14 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Describe("when opentelemetry provider config", func() {
-			It("translates the plugin correctly", func() {
+			testClusterName := "test-cluster"
+			DescribeTable("translates the plugin correctly", func(otelConfig *envoytrace_gloo.OpenTelemetryConfig) {
 
-				testClusterName := "test-cluster"
 				cfg := &envoyhttp.HttpConnectionManager{}
 				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
-							OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
-								CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
-									ClusterName: testClusterName,
-								},
-							},
+							OpenTelemetryConfig: otelConfig,
 						},
 					},
 				}
@@ -618,7 +614,21 @@ var _ = Describe("Plugin", func() {
 				}
 				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
 				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
-			})
+			},
+				Entry("with ServiceNameSource defined", &envoytrace_gloo.OpenTelemetryConfig{
+					CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+						ClusterName: testClusterName,
+					},
+					ServiceNameSource: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource{
+						SourceType: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource_GatewayName{},
+					},
+				}),
+				Entry("with ServiceNameSource undefined (uses default)", &envoytrace_gloo.OpenTelemetryConfig{
+					CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+						ClusterName: testClusterName,
+					},
+				}),
+			)
 		})
 
 	})

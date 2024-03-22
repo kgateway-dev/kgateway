@@ -105,11 +105,11 @@ func ToEnvoyOpenTelemetryConfiguration(ctx context.Context, glooOpenTelemetryCon
 
 	var serviceName string
 
-	switch sourceType := glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
+	switch glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
 	case *envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName:
 		serviceName = getGatewayNameFromParent(ctx, parentListener)
 	default:
-		contextutils.LoggerFrom(ctx).Warnw("Unknown service name source type", zap.Any("source_type", sourceType))
+		serviceName = getGatewayNameFromParent(ctx, parentListener)
 	}
 
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
