@@ -2,6 +2,7 @@ package api_conversion
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -23,6 +24,12 @@ const (
 	UnkownMetadataGatewayName     = "unknown_metadata"
 	NoListenerGatewayName         = "no_listener"
 )
+
+type UnkownServiceNameSourceError string
+
+func (e UnkownServiceNameSourceError) Error() string {
+	return "Unknown OpenTelemetryConfig ServiceNameSource: " + string(e)
+}
 
 func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytracegloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
 	envoyDatadogConfig := &envoytrace.DatadogConfig{
@@ -46,7 +53,8 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 // getGatewayNameFromParent returns the name of the gateway that the listener is associated with
 // This is used by the otel plugin to set the service name. It requires that the gateway populate the listener's
 // SourceMetadata with the gateway's name. The resource_kind field is a string, and different gateways may use different
-// strings to represent their kind. This function should be updated to handle different gateway kinds as we become aware of them.
+// strings to represent their kind. In the case of unexpected metadata format (eg, no gateways or multiple gateways), we
+// will log a warning and return a service.name string to help identify the issue.
 func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) string {
 	if parent == nil {
 		contextutils.LoggerFrom(ctx).Warn("No parent listener found")
@@ -62,7 +70,6 @@ func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 	case *gloov1.Listener_MetadataStatic:
 		gateways := []string{}
 		for _, source := range metadata.MetadataStatic.GetSources() {
-			// This rule works with gloo v1 gateway. It should be updated/expanded when we have v2 gateway.
 			if isResourceGateway(source) {
 				gateways = append(gateways, source.GetResourceRef().GetName())
 			}
@@ -96,23 +103,29 @@ func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
 	return ok
 }
 
-func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, parentListener *gloov1.Listener) string {
-	var serviceName string
-
-	switch glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
-	case *envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName:
-		serviceName = getGatewayNameFromParent(ctx, parentListener)
-	default: // Default to "gateway name"
-		serviceName = getGatewayNameFromParent(ctx, parentListener)
+func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, parentListener *gloov1.Listener) (string, error) {
+	// Default if undefined
+	if glooOpenTelemetryConfig.GetServiceNameSource() == nil {
+		return getGatewayNameFromParent(ctx, parentListener), nil
 	}
 
-	return serviceName
+	switch sourceType := glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
+	case *envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName:
+		return getGatewayNameFromParent(ctx, parentListener), nil
+	default: // if we reach this error its most likely because the API was updated with a new type but this code wasn't
+		return "", UnkownServiceNameSourceError(fmt.Sprintf("%T", sourceType))
+	}
+
 }
 
 // ToEnvoyOpenTelemetryConfiguration converts a Gloo OpenTelemetryConfig to an Envoy OpenTelemetryConfig
 func ToEnvoyOpenTelemetryConfiguration(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string, parentListener *gloov1.Listener) (*envoytrace.OpenTelemetryConfig, error) {
 
-	serviceName := getServiceNameForOtel(ctx, glooOpenTelemetryConfig, parentListener)
+	serviceName, err := getServiceNameForOtel(ctx, glooOpenTelemetryConfig, parentListener)
+
+	if err != nil {
+		return nil, err
+	}
 
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
 		GrpcService: &envoy_config_core_v3.GrpcService{
