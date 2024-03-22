@@ -46,7 +46,15 @@ func (m *Service) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetType(), target.GetType()) != 0 {
+	if m.GetType() != target.GetType() {
+		return false
+	}
+
+	if strings.Compare(m.GetClusterIP(), target.GetClusterIP()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetExternalName(), target.GetExternalName()) != 0 {
 		return false
 	}
 

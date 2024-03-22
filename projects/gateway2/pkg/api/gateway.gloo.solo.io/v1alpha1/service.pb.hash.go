@@ -38,7 +38,16 @@ func (m *Service) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetType())); err != nil {
+	err = binary.Write(hasher, binary.LittleEndian, m.GetType())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClusterIP())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetExternalName())); err != nil {
 		return 0, err
 	}
 
