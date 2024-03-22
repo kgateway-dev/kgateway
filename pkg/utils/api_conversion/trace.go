@@ -43,7 +43,7 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 	return envoyZipkinConfig, nil
 }
 
-// GetGatewayNameFromParent returns the name of the gateway that the listener is associated with
+// getGatewayNameFromParent returns the name of the gateway that the listener is associated with
 // This is used by the otel plugin to set the service name. It requires that the gateway populate the listener's
 // SourceMetadata with the gateway's name. The resource_kind field is a string, and different gateways may use different
 // strings to represent their kind. This function should be updated to handle different gateway kinds as we become aware of them.
@@ -96,16 +96,23 @@ func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
 	return ok
 }
 
-func ToEnvoyOpenTelemetryConfiguration(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string, parentListener *gloov1.Listener) (*envoytrace.OpenTelemetryConfig, error) {
-
+func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, parentListener *gloov1.Listener) string {
 	var serviceName string
 
 	switch glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
 	case *envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName:
 		serviceName = getGatewayNameFromParent(ctx, parentListener)
-	default:
+	default: // Default to "gateway name"
 		serviceName = getGatewayNameFromParent(ctx, parentListener)
 	}
+
+	return serviceName
+}
+
+// ToEnvoyOpenTelemetryConfiguration converts a Gloo OpenTelemetryConfig to an Envoy OpenTelemetryConfig
+func ToEnvoyOpenTelemetryConfiguration(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string, parentListener *gloov1.Listener) (*envoytrace.OpenTelemetryConfig, error) {
+
+	serviceName := getServiceNameForOtel(ctx, glooOpenTelemetryConfig, parentListener)
 
 	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
 		GrpcService: &envoy_config_core_v3.GrpcService{
