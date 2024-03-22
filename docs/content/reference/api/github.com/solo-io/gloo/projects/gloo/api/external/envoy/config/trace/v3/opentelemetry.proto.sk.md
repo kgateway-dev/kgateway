@@ -42,7 +42,7 @@ Configuration for the OpenTelemetry tracer.
 | ----- | ---- | ----------- | 
 | `collectorUpstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to use for submitting traces to the OpenTelemetry agent. Only one of `collectorUpstreamRef` or `clusterName` can be set. |
 | `clusterName` | `string` | The name of the Envoy cluster to use for submitting traces to the OpenTelemetry agent. Only one of `clusterName` or `collectorUpstreamRef` can be set. |
-| `serviceNameSource` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource](../opentelemetry.proto.sk/#servicenamesource) |  |
+| `serviceNameSource` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource](../opentelemetry.proto.sk/#servicenamesource) | Source to use for the `service.name` of the collector. |
 
 
 
@@ -59,7 +59,7 @@ Configuration for the OpenTelemetry tracer.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `gatewayName` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayServiceNameSource](../opentelemetry.proto.sk/#gatewayservicenamesource) | The source to use for the service name. |
+| `gatewayName` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayServiceNameSource](../opentelemetry.proto.sk/#gatewayservicenamesource) | Use the name of the gateway under which the collector is configured as the `service.name`. |
 
 
 
@@ -67,7 +67,8 @@ Configuration for the OpenTelemetry tracer.
 ---
 ### GatewayServiceNameSource
 
-
+ 
+Use the name of the gateway under which the collector is configured as the `service.name`
 
 ```yaml
 

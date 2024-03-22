@@ -32,15 +32,18 @@ message OpenTelemetryConfig {
     string cluster_name = 2;
   }
 
+
   message ServiceNameSource {
-    message GatewayServiceNameSource {} // use the gateway name as the collector service name
+     // Use the name of the gateway under which the collector is configured as the `service.name`
+    message GatewayServiceNameSource {} 
 
     oneof source_type {  
-      // The source to use for the service name
+      // Use the name of the gateway under which the collector is configured as the `service.name`
       GatewayServiceNameSource gateway_name = 3;
     }
   }
 
+  // Source to use for the `service.name` of the collector
   ServiceNameSource service_name_source = 4;
 
 }

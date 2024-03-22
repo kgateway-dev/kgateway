@@ -38,7 +38,8 @@ type OpenTelemetryConfig struct {
 	//
 	//	*OpenTelemetryConfig_CollectorUpstreamRef
 	//	*OpenTelemetryConfig_ClusterName
-	CollectorCluster  isOpenTelemetryConfig_CollectorCluster `protobuf_oneof:"collector_cluster"`
+	CollectorCluster isOpenTelemetryConfig_CollectorCluster `protobuf_oneof:"collector_cluster"`
+	// Source to use for the `service.name` of the collector
 	ServiceNameSource *OpenTelemetryConfig_ServiceNameSource `protobuf:"bytes,4,opt,name=service_name_source,json=serviceNameSource,proto3" json:"service_name_source,omitempty"`
 }
 
@@ -183,13 +184,14 @@ type isOpenTelemetryConfig_ServiceNameSource_SourceType interface {
 }
 
 type OpenTelemetryConfig_ServiceNameSource_GatewayName struct {
-	// The source to use for the service name
+	// Use the name of the gateway under which the collector is configured as the `service.name`
 	GatewayName *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource `protobuf:"bytes,3,opt,name=gateway_name,json=gatewayName,proto3,oneof"`
 }
 
 func (*OpenTelemetryConfig_ServiceNameSource_GatewayName) isOpenTelemetryConfig_ServiceNameSource_SourceType() {
 }
 
+// Use the name of the gateway under which the collector is configured as the `service.name`
 type OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
