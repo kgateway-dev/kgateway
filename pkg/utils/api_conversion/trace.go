@@ -16,11 +16,6 @@ import (
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
-// This is required because go-control-plane dropped gogoproto in favor of goproto
-// in v0.9.0, but solokit depends on gogoproto (and the generated deep equals it creates).
-//
-// we should work to remove that assumption from solokit and delete this code:
-// https://github.com/solo-io/gloo/issues/1793
 
 const (
 	DeprecatedMetadataGatewayName = "deprecated_metadata"
