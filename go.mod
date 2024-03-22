@@ -331,7 +331,7 @@ replace (
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v24.0.7+incompatible
 
-	// Remove once we get to a version with extproc changes in upstream envoy (currently targeted 1.30)
+	// Remove once we get to envoy 1.30
 	github.com/envoyproxy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v1.29.0-patch1
 
 	// Newer versions result in changes to the names of generated metrics
