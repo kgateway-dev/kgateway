@@ -8,6 +8,8 @@ changelog:
   description: >-
     Bump envoy-gloo to bring us onto 1.29
 - type: BREAKING_CHANGE
+  issueLink: https://github.com/solo-io/gloo/issues/9232
+  resolvesIssue: false
   description: >-
     * External Processing servers which mutate the body must also send a header mutation to correctly set the Content-Length.
     * This upgrade will cause the HTTP cache to be flushed.
