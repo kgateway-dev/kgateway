@@ -85,6 +85,7 @@ func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 			return gateways[0]
 		}
 	default:
+		// if we reach this error its most likely because the API was updated with a new type but this code wasn't
 		contextutils.LoggerFrom(ctx).Warn("Unknown listener metadata format")
 		return UnkownMetadataGatewayName
 	}
@@ -94,11 +95,11 @@ func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 // isResourceKindGateway returns true if the resource is a gateway
 // This logic is split out to easily manage it as we add more gateway types
 func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
-	gatewayTypes := map[string]bool{
+	gatewayKinds := map[string]bool{
 		resources.Kind(new(gatewayv1.Gateway)): true,
 	}
 
-	_, ok := gatewayTypes[resource.GetResourceKind()]
+	_, ok := gatewayKinds[resource.GetResourceKind()]
 
 	return ok
 }
@@ -112,7 +113,8 @@ func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *envoytr
 	switch sourceType := glooOpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
 	case *envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName:
 		return getGatewayNameFromParent(ctx, parentListener), nil
-	default: // if we reach this error its most likely because the API was updated with a new type but this code wasn't
+	default:
+		// if we reach this error its most likely because the API was updated with a new type but this code wasn't
 		return "", UnkownServiceNameSourceError(fmt.Sprintf("%T", sourceType))
 	}
 
