@@ -93,7 +93,8 @@ func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 }
 
 // isResourceKindGateway returns true if the resource is a gateway
-// This logic is split out to easily manage it as we add more gateway types
+// This logic is split out to easily manage it as we add more gateway types.
+// If this function is updated, update this documentation we well: https://github.com/solo-io/gloo/blob/main/projects/gloo/static_metadata.md
 func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
 	gatewayKinds := map[string]bool{
 		resources.Kind(new(gatewayv1.Gateway)): true,
