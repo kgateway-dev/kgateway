@@ -3,17 +3,19 @@ changelog:
     resolvesIssue: false
     issueLink: https://github.com/solo-io/gloo/issues/7791
     description: >-
-      Add the ability to set the source of `service_name` field in the OpenTelemetry Config based on the Gateway name.
+      Add the ability to set the source of `service_name` field used to create the the [Envoy OpenTelemetryConfig](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html)
+      to the name of the Gateway under which the [Gloo OpenTelemetryConfig](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#package-soloioenvoyconfigtracev3)
+      is defined.
 
-      A new field has been added to the Gloo [Open Telemetry](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#package-soloioenvoyconfigtracev3) configuration,
-      which currently accepts one value, `GatewayName`, which is also the default.
+      A new field, `ServiceNameSource`, has been added to the Gloo OpenTelemetryConfig which currently accepts one value, `GatewayName`.
+      This value is also the default.
 
-      In the Gloo translation, the gateway name is taken from the `MetadataStatic` data of the parent [Listener](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#listener),
-      Specifically, the `resourceRef.name` field of the [SourceRef](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#sourceref) with
-      a `resourceKind` of `*v1.Gateway` is used to set the `service_name`.
+      In the Gloo translation the gateway name is taken from the `MetadataStatic` data of the parent [Listener](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#listener),
+      Specifically, the `resourceRef.name` field of the [SourceRef](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#sourceref)
+      with a `resourceKind` of `*v1.Gateway` is used to set the `service_name`.
 
       If the metadata is not present, or in a different format, the `service_name` will be set to the following:
-      - Metadata is in deprecate format: "deprecated_metadata"
+      - Metadata is in deprecated format: "deprecated_metadata"
       - Unknown metadata format: "unknown_metadata"
       - Gateway metadata is not found: "undefined_gateway"
 

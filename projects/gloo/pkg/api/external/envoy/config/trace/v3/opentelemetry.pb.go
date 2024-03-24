@@ -185,10 +185,8 @@ type isOpenTelemetryConfig_ServiceNameSource_SourceType interface {
 
 type OpenTelemetryConfig_ServiceNameSource_GatewayName struct {
 	// Use the name of the gateway under which the collector is configured as the `service.name`
-	// This functionality requires that the metadataStatic of the [listener](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#listener)
-	// is set to include a [SourceRef](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#sourceref
-	// with a `resourceKind` of `*v1.Gateway` and a `resourceRef` that is non-nil.
 	// This is the default behavior.
+	// The details of how the gateway name is determined are documented [here](https://github.com/solo-io/gloo/blob/main/projects/gloo/static_metadata.md)
 	GatewayName *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource `protobuf:"bytes,3,opt,name=gateway_name,json=gatewayName,proto3,oneof"`
 }
 

@@ -11,5 +11,5 @@ This metadata is not required and the `resourceKind`, `resourceRef.name`, and `r
 While the objects used to create the Proxy Api resources are and should be generally irrelevant to the functionality of Gloo Edge, they do provide user facing value as sources of names and labels.
 
 ## Current uses of this data
-* Open Telementy `service.name`..
-The [Open Telemetry](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#package-soloioenvoyconfigtracev3) resource has a `ServiceNameSource` field that defaults to the value `GatewayName`, which looks for a `StaticMetadataResource` with a `resourceKind` of `*v1.Gateway`, and uses the `resourceRef.name` for the `service.name` field of the Envoy `OpenTelemetryConfig`.
+### Open Telementy `service.name`..
+The [Open Telemetry](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#package-soloioenvoyconfigtracev3) resource has a `ServiceNameSource` field that defaults to the value `GatewayName`, which looks for a `StaticMetadataResource` with a `resourceKind` of `*v1.Gateway`, and uses the `resourceRef.name` for the `service.name` field of the Envoy `OpenTelemetryConfig`.ß
