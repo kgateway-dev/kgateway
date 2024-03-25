@@ -50,7 +50,12 @@ func (m *Image) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetPullPolicy())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetDigest())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetPullPolicy())
+	if err != nil {
 		return 0, err
 	}
 

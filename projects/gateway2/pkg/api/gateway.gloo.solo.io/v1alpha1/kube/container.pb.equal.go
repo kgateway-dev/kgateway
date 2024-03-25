@@ -58,7 +58,11 @@ func (m *Image) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetPullPolicy(), target.GetPullPolicy()) != 0 {
+	if strings.Compare(m.GetDigest(), target.GetDigest()) != 0 {
+		return false
+	}
+
+	if m.GetPullPolicy() != target.GetPullPolicy() {
 		return false
 	}
 

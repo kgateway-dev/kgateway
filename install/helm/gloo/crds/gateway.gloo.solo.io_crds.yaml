@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 60056dbcae0bd091
+    crd.solo.io/specHash: 1f3f4a12d40572e
   labels:
     app: gateway2
     app.kubernetes.io/name: gateway2
@@ -127,11 +127,20 @@ spec:
                                   https://kubernetes.io/docs/concepts/containers/images
                                   for details.
                                 properties:
+                                  digest:
+                                    description: The hash digest of the image, e.g.
+                                      `sha256:12345...`
+                                    type: string
                                   pullPolicy:
                                     description: |-
                                       The image pull policy for the container. See
                                       https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
                                       for details.
+                                    enum:
+                                    - Unspecified
+                                    - IfNotPresent
+                                    - Always
+                                    - Never
                                     type: string
                                   registry:
                                     description: The image registry.
