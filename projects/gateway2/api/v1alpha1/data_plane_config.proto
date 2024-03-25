@@ -27,6 +27,7 @@ message DataPlaneConfigSpec {
 message ProxyConfig {
   // The type of environment/platform in which the proxy will be provisioned.
   oneof environment_type {
+    // The proxy will be deployed on Kubernetes.
     KubernetesProxyConfig kube = 1;
   }
 }
@@ -36,6 +37,7 @@ message ProxyConfig {
 message KubernetesProxyConfig {
   // The workload type of the proxy
   oneof workload_type {
+    // Use a Kubernetes deployment as the proxy workload type.
     ProxyDeployment deployment = 1;
   }
 
@@ -61,7 +63,9 @@ message ProxyDeployment {
 
 // Configuration for the container running Envoy.
 message EnvoyContainer {
-  // The envoy image.
+  // The envoy container image. See
+  // https://kubernetes.io/docs/concepts/containers/images
+  // for details.
   kube.gateway.gloo.solo.io.Image image = 1;
 
   // Envoy log level. Options include "trace", "debug", "info", "warn", "error",
@@ -77,10 +81,14 @@ message EnvoyContainer {
   // for more information.
   string component_log_level = 3;
 
-  // The security context for this container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details.
+  // The security context for this container. See
+  // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+  // for details.
   k8s.io.api.core.v1.SecurityContext security_context = 4;
 
-  // The compute resources required by this container.
+  // The compute resources required by this container. See
+  // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  // for details.
   kube.gateway.gloo.solo.io.ResourceRequirements resources = 5;
 }
 

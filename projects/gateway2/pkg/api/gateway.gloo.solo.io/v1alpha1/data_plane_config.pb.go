@@ -141,6 +141,7 @@ type isProxyConfig_EnvironmentType interface {
 }
 
 type ProxyConfig_Kube struct {
+	// The proxy will be deployed on Kubernetes.
 	Kube *KubernetesProxyConfig `protobuf:"bytes,1,opt,name=kube,proto3,oneof"`
 }
 
@@ -231,6 +232,7 @@ type isKubernetesProxyConfig_WorkloadType interface {
 }
 
 type KubernetesProxyConfig_Deployment struct {
+	// Use a Kubernetes deployment as the proxy workload type.
 	Deployment *ProxyDeployment `protobuf:"bytes,1,opt,name=deployment,proto3,oneof"`
 }
 
@@ -309,7 +311,9 @@ type EnvoyContainer struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The envoy image.
+	// The envoy container image. See
+	// https://kubernetes.io/docs/concepts/containers/images
+	// for details.
 	Image *kube.Image `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
 	// Envoy log level. Options include "trace", "debug", "info", "warn", "error",
 	// "critical" and "off". Defaults to "info". See
@@ -322,9 +326,13 @@ type EnvoyContainer struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
 	// for more information.
 	ComponentLogLevel string `protobuf:"bytes,3,opt,name=component_log_level,json=componentLogLevel,proto3" json:"component_log_level,omitempty"`
-	// The security context for this container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details.
+	// The security context for this container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+	// for details.
 	SecurityContext *v1.SecurityContext `protobuf:"bytes,4,opt,name=security_context,json=securityContext,proto3" json:"security_context,omitempty"`
-	// The compute resources required by this container.
+	// The compute resources required by this container. See
+	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	// for details.
 	Resources *kube.ResourceRequirements `protobuf:"bytes,5,opt,name=resources,proto3" json:"resources,omitempty"`
 }
 

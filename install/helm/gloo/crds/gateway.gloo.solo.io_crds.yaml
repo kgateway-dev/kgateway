@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 557aad15fdda600b
+    crd.solo.io/specHash: 60056dbcae0bd091
   labels:
     app: gateway2
     app.kubernetes.io/name: gateway2
@@ -58,11 +58,17 @@ spec:
                   - kube
                 properties:
                   kube:
+                    description: The proxy will be deployed on Kubernetes.
                     properties:
                       autoscaling:
                         description: Autoscaling configuration.
                         properties:
                           horizontalPodAutoscaler:
+                            description: |-
+                              If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
+                              workload to match demand. See
+                              https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+                              for details.
                             properties:
                               maxReplicas:
                                 description: |-
@@ -101,6 +107,8 @@ spec:
                             type: object
                         type: object
                       deployment:
+                        description: Use a Kubernetes deployment as the proxy workload
+                          type.
                         properties:
                           envoyContainer:
                             description: Configuration for the container running Envoy.
@@ -114,7 +122,10 @@ spec:
                                   for more information.
                                 type: string
                               image:
-                                description: The envoy image.
+                                description: |-
+                                  The envoy container image. See
+                                  https://kubernetes.io/docs/concepts/containers/images
+                                  for details.
                                 properties:
                                   pullPolicy:
                                     description: |-
@@ -140,8 +151,10 @@ spec:
                                   for more information.
                                 type: string
                               resources:
-                                description: The compute resources required by this
-                                  container.
+                                description: |-
+                                  The compute resources required by this container. See
+                                  https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                  for details.
                                 properties:
                                   limits:
                                     additionalProperties:
@@ -157,8 +170,9 @@ spec:
                                     type: object
                                 type: object
                               securityContext:
-                                description: The security context for this container.
-                                  See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+                                description: |-
+                                  The security context for this container. See
+                                  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
                                   for details.
                                 properties:
                                   allowPrivilegeEscalation:

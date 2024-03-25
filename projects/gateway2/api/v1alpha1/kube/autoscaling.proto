@@ -10,6 +10,10 @@ import "google/protobuf/wrappers.proto";
 
 // Kubernetes autoscaling configuration.
 message Autoscaling {
+  // If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
+  // workload to match demand. See
+  // https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+  // for details.
   HorizontalPodAutoscaler horizontal_pod_autoscaler = 1;
 }
 

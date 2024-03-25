@@ -29,6 +29,10 @@ type Autoscaling struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
+	// workload to match demand. See
+	// https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+	// for details.
 	HorizontalPodAutoscaler *HorizontalPodAutoscaler `protobuf:"bytes,1,opt,name=horizontal_pod_autoscaler,json=horizontalPodAutoscaler,proto3" json:"horizontal_pod_autoscaler,omitempty"`
 }
 
