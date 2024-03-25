@@ -62,8 +62,8 @@ var _ = Describe("Router filter test", func() {
 		cancel()
 	})
 
-	// FIXME remove focus
-	FDescribeTable("GetAggregateListenerTranslators (success)",
+	DescribeTable("GetAggregateListenerTranslators (success)",
+		// func(aggregateListener *v1.AggregateListener, assertionHandler ResourceAssertionHandler) {
 		func(router *routerV1.Router, assertionHandler func(*routerv3.Router)) {
 			listener := &v1.Listener{
 				Name:        "aggregate-listener",
