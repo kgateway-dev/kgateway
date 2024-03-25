@@ -5,6 +5,7 @@ import (
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -176,17 +177,17 @@ var _ = Describe("Listener Subsystem", func() {
 			},
 		),
 		Entry(
-			"Add both dynamic_stats and suppress_envoy_headers to the router",
+			"Set dynamic_stats to false and suppress_envoy_headers to true",
 			&v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					HttpOptions: map[string]*v1.HttpListenerOptions{
 						"http-options-ref": {
 							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
 							Router: &routerV1.Router{
-								SuppressEnvoyHeaders: &wrappers.BoolValue{
-									Value: true,
-								},
 								DynamicStats: &wrappers.BoolValue{
+									Value: false,
+								},
+								SuppressEnvoyHeaders: &wrappers.BoolValue{
 									Value: true,
 								},
 							},
@@ -205,7 +206,7 @@ var _ = Describe("Listener Subsystem", func() {
 				}},
 			},
 			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
-				By("Should be able to set the router's DynamicStats and SuppressEnvoyHeaders options to true")
+				By("configuring the envoy router from gloo settings")
 				filterChain := listener.GetFilterChains()[0]
 				hcmFilter := filterChain.GetFilters()[0]
 				_, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
@@ -217,22 +218,20 @@ var _ = Describe("Listener Subsystem", func() {
 				Expect(hcm.HttpFilters).To(HaveLen(2))
 
 				routeFilter := hcm.GetHttpFilters()[1]
-				Expect(routeFilter).To(MatchRegexp("dynamic_stats:{value:true}"))
-				Expect(routeFilter).To(MatchRegexp("suppress_envoy_headers:true"))
+				typedRouterFilter := routerv3.Router{}
+				routeFilter.GetTypedConfig().UnmarshalTo(&typedRouterFilter)
+				Expect(typedRouterFilter.GetDynamicStats().GetValue()).To(BeFalse())
+				Expect(typedRouterFilter.SuppressEnvoyHeaders).To(BeTrue())
 			},
 		),
 		Entry(
-			"Add suppress envoy headers to the router",
+			"Leave envoy's dynamic_stats as nil if not specified in gloo",
 			&v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					HttpOptions: map[string]*v1.HttpListenerOptions{
 						"http-options-ref": {
 							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
-							Router: &routerV1.Router{
-								SuppressEnvoyHeaders: &wrappers.BoolValue{
-									Value: true,
-								},
-							},
+							Router:                        &routerV1.Router{},
 						},
 					},
 					VirtualHosts: map[string]*v1.VirtualHost{
@@ -248,7 +247,7 @@ var _ = Describe("Listener Subsystem", func() {
 				}},
 			},
 			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
-				By("Should be able to add and translate the router to an envoy config")
+				By("configuring the envoy router from gloo settings")
 				filterChain := listener.GetFilterChains()[0]
 				hcmFilter := filterChain.GetFilters()[0]
 				_, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
@@ -259,8 +258,10 @@ var _ = Describe("Listener Subsystem", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(hcm.HttpFilters).To(HaveLen(2))
 
+				typedRouterFiler := routerv3.Router{}
 				routeFilter := hcm.GetHttpFilters()[1]
-				Expect(routeFilter).To(MatchRegexp("suppress_envoy_headers:true"))
+				routeFilter.GetTypedConfig().UnmarshalTo(&typedRouterFiler)
+				Expect(typedRouterFiler.GetDynamicStats()).To(BeNil())
 			},
 		),
 		Entry(

@@ -11,6 +11,7 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -240,7 +241,9 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		routerV3.SuppressEnvoyHeaders = true
 	}
 
-	routerV3.DynamicStats = h.listener.GetOptions().GetRouter().GetDynamicStats()
+	if statsValue := h.listener.GetOptions().GetRouter().GetDynamicStats(); statsValue != nil {
+		routerV3.DynamicStats = wrapperspb.Bool(statsValue.GetValue())
+	}
 
 	newStagedFilter, err := plugins.NewStagedFilter(
 		wellknown.Router,
