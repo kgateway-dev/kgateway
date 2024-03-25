@@ -42,9 +42,8 @@ type gatewayPort struct {
 
 // A Deployer is responsible for deploying proxies
 type Deployer struct {
-	chart  *chart.Chart
-	scheme *runtime.Scheme
-	cli    client.Client
+	chart *chart.Chart
+	cli   client.Client
 
 	inputs *Inputs
 }
@@ -58,7 +57,7 @@ type Inputs struct {
 }
 
 // NewDeployer creates a new gateway deployer
-func NewDeployer(scheme *runtime.Scheme, cli client.Client, inputs *Inputs) (*Deployer, error) {
+func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		return nil, err
@@ -70,7 +69,6 @@ func NewDeployer(scheme *runtime.Scheme, cli client.Client, inputs *Inputs) (*De
 	}
 
 	return &Deployer{
-		scheme: scheme,
 		cli:    cli,
 		chart:  helmChart,
 		inputs: inputs,
@@ -226,7 +224,7 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 		return nil, fmt.Errorf("failed to render helm chart: %w", err)
 	}
 
-	objs, err := ConvertYAMLToObjects(d.scheme, []byte(release.Manifest))
+	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), []byte(release.Manifest))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml to objects: %w", err)
 	}

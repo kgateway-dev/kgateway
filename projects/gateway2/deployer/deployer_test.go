@@ -61,7 +61,7 @@ var _ = Describe("Deployer", func() {
 	BeforeEach(func() {
 		var err error
 		s := scheme.NewScheme()
-		d, err = deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d, err = deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
@@ -79,7 +79,7 @@ var _ = Describe("Deployer", func() {
 			},
 		}
 		s := scheme.NewScheme()
-		d, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), inputs)
+		d, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), inputs)
 		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
 
 		// Create a Gateway
@@ -262,7 +262,7 @@ var _ = Describe("Deployer", func() {
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
 		s := scheme.NewScheme()
-		d, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
@@ -384,14 +384,14 @@ var _ = Describe("Deployer", func() {
 
 	It("support segmenting by release", func() {
 		s := scheme.NewScheme()
-		d1, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d1, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(s, fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d2, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Port:           8080,
 			Dev:            false,

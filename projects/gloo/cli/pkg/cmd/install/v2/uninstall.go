@@ -31,7 +31,7 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	dep, err := deployer.NewDeployer(cli.Scheme(), cli, &deployer.Inputs{
+	dep, err := deployer.NewDeployer(cli, &deployer.Inputs{
 		ControllerName: "glooctl",
 	})
 	if err != nil {
