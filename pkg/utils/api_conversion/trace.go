@@ -19,10 +19,10 @@ import (
 // Converts between Envoy and Gloo/solokit versions of envoy protos
 
 const (
-	DeprecatedMetadataGatewayName = "deprecated_metadata"
-	UndefinedGatewayName          = "undefined_gateway"
-	UnkownMetadataGatewayName     = "unknown_metadata"
-	NoListenerGatewayName         = "no_listener"
+	DeprecatedMetadataServiceName = "deprecated_metadata"
+	UndefinedMetadataServiceName  = "undefined_gateway"
+	UnkownMetadataServiceName     = "unknown_metadata"
+	NoListenerServiceName         = "no_listener"
 )
 
 type UnkownServiceNameSourceError string
@@ -50,22 +50,22 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 	return envoyZipkinConfig, nil
 }
 
-// getGatewayNameFromParent returns the name of the gateway that the listener is associated with
+// getGatewayNameFromParent returns the name of the gateway that the listener is associated with.
 // This is used by the otel plugin to set the service name. It requires that the gateway populate the listener's
-// SourceMetadata with the gateway's name. The resource_kind field is a string, and different gateways may use different
+// SourceMetadata with the gateway's data. The resource_kind field is a string, and different gateways may use different
 // strings to represent their kind. In the case of unexpected metadata format (eg, no gateways or multiple gateways), we
 // will log a warning and return a service.name string to help identify the issue.
 func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) string {
 	if parent == nil {
 		contextutils.LoggerFrom(ctx).Warn("No parent listener found")
-		return NoListenerGatewayName
+		return NoListenerServiceName
 	}
 
 	switch metadata := parent.GetOpaqueMetadata().(type) {
 	// Deprecated metadata format
 	case *gloov1.Listener_Metadata:
 		contextutils.LoggerFrom(ctx).Warn("Using deprecated 'Metadata' format for gateway name in parent listener metadata. Please update your gateway to use the new format")
-		return DeprecatedMetadataGatewayName
+		return DeprecatedMetadataServiceName
 	// Expected/desired metadata format
 	case *gloov1.Listener_MetadataStatic:
 		gateways := []string{}
@@ -77,7 +77,7 @@ func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 		switch {
 		case len(gateways) == 0:
 			contextutils.LoggerFrom(ctx).Warn("No gateway found in parent listener metadata")
-			return UndefinedGatewayName
+			return UndefinedMetadataServiceName
 		case len(gateways) > 1:
 			contextutils.LoggerFrom(ctx).Warnw("Multiple gateways found in listener metadata", zap.Strings("gateways", gateways))
 			return strings.Join(gateways, ",")
@@ -87,12 +87,12 @@ func getGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 	default:
 		// if we reach this error its most likely because the API was updated with a new type but this code wasn't
 		contextutils.LoggerFrom(ctx).Warn("Unknown listener metadata format")
-		return UnkownMetadataGatewayName
+		return UnkownMetadataServiceName
 	}
 
 }
 
-// isResourceKindGateway returns true if the resource is a gateway
+// isResourceGateway returns true if the resource is a gateway
 // This logic is split out to easily manage it as we add more gateway types.
 // If this function is updated, update this documentation we well: https://github.com/solo-io/gloo/blob/main/projects/gloo/static_metadata.md
 func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
@@ -105,6 +105,7 @@ func isResourceGateway(resource *gloov1.SourceMetadata_SourceRef) bool {
 	return ok
 }
 
+// getServiceNameForOtel determines the source of the service name and calls the function to return the service name to use for the OpenTelemetry plugin.
 func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, parentListener *gloov1.Listener) (string, error) {
 	// Default if undefined
 	if glooOpenTelemetryConfig.GetServiceNameSource() == nil {
