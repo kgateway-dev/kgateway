@@ -1,0 +1,32 @@
+syntax = "proto3";
+package kube.gateway.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+
+// A container image. See https://kubernetes.io/docs/concepts/containers/images
+// for details.
+message Image {
+  // The image registry.
+  string registry = 1;
+  // The image repository (name).
+  string repository = 2;
+  // The image tag.
+  string tag = 3;
+  // The image pull policy for the container. See
+  // https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+  // for details.
+  string pull_policy = 4;
+}
+
+// Compute resources required by this container. See
+// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+// for details.
+message ResourceRequirements {
+  // The maximum amount of compute resources allowed.
+  map<string, string> limits = 1;
+  // The minimum amount of compute resources required.
+  map<string, string> requests = 2;
+}

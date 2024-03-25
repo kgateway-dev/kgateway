@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: b06bf5d52362b141
+    crd.solo.io/specHash: 557aad15fdda600b
   labels:
     app: gateway2
     app.kubernetes.io/name: gateway2
@@ -26,9 +26,9 @@ spec:
         properties:
           spec:
             description: |-
-              A DataPlaneConfig contains configuration that is used to dynamically provision
-              Gloo Gateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway or
-              GatewayClass.
+              A DataPlaneConfig contains configuration that is used to dynamically
+              provision Gloo Gateway's data plane (Envoy proxy instance), based on a
+              Kubernetes Gateway or GatewayClass.
             properties:
               proxyConfig:
                 oneOf:
@@ -57,52 +57,43 @@ spec:
                   required:
                   - kube
                 properties:
-                  bootstrap:
-                    description: Initial envoy configuration.
-                    properties:
-                      xdsServer:
-                        description: xDS server configuration.
-                        properties:
-                          address:
-                            description: |-
-                              Address of xDS server from which Envoy will receive its configuration. If
-                              not provided, defaults to `gloo.<ns>.svc.cluster.local`, where `<ns>` is
-                              the namespace in which the Gloo Gateway control plane is installed.
-                            nullable: true
-                            type: string
-                          portValue:
-                            description: |-
-                              Port number of xDS server from which Envoy will receive its configuration.
-                              If not provided, defaults to the `grpc-xds` port number in the `gloo`
-                              Service.
-                            maximum: 4294967295
-                            minimum: 0
-                            nullable: true
-                            type: integer
-                        type: object
-                    type: object
                   kube:
                     properties:
                       autoscaling:
+                        description: Autoscaling configuration.
                         properties:
                           horizontalPodAutoscaler:
                             properties:
                               maxReplicas:
+                                description: |-
+                                  The upper limit for the number of replicas to which the autoscaler can
+                                  scale up. Cannot be less than `minReplicas`. Defaults to 100.
                                 maximum: 4294967295
                                 minimum: 0
                                 nullable: true
                                 type: integer
                               minReplicas:
+                                description: |-
+                                  The lower limit for the number of replicas to which the autoscaler can
+                                  scale down. Defaults to 1.
                                 maximum: 4294967295
                                 minimum: 0
                                 nullable: true
                                 type: integer
                               targetCpuUtilizationPercentage:
+                                description: |-
+                                  The target value of the average CPU utilization across all relevant pods,
+                                  represented as a percentage of the requested value of the resource for the
+                                  pods. Defaults to 80.
                                 maximum: 4294967295
                                 minimum: 0
                                 nullable: true
                                 type: integer
                               targetMemoryUtilizationPercentage:
+                                description: |-
+                                  The target value of the average memory utilization across all relevant
+                                  pods, represented as a percentage of the requested value of the resource
+                                  for the pods. Defaults to 80.
                                 maximum: 4294967295
                                 minimum: 0
                                 nullable: true
@@ -112,42 +103,63 @@ spec:
                       deployment:
                         properties:
                           envoyContainer:
+                            description: Configuration for the container running Envoy.
                             properties:
+                              componentLogLevel:
+                                description: |-
+                                  Envoy component log level. The provided string will be used as a
+                                  passthrough value for the `--component-log-level` argument to Envoy, e.g.
+                                  `upstream:debug,connection:trace`. See
+                                  https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
+                                  for more information.
+                                type: string
                               image:
+                                description: The envoy image.
                                 properties:
                                   pullPolicy:
                                     description: |-
-                                      See
-                                      https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting
+                                      The image pull policy for the container. See
+                                      https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+                                      for details.
                                     type: string
                                   registry:
+                                    description: The image registry.
                                     type: string
                                   repository:
+                                    description: The image repository (name).
                                     type: string
                                   tag:
+                                    description: The image tag.
                                     type: string
                                 type: object
-                              logging:
-                                description: Logging configuration.
-                                properties:
-                                  logLevel:
-                                    description: |-
-                                      Envoy log level. Options include "trace", "debug", "info", "warn", "error",
-                                      "critical" and "off". Defaults to "info".
-                                    type: string
-                                type: object
+                              logLevel:
+                                description: |-
+                                  Envoy log level. Options include "trace", "debug", "info", "warn", "error",
+                                  "critical" and "off". Defaults to "info". See
+                                  https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
+                                  for more information.
+                                type: string
                               resources:
+                                description: The compute resources required by this
+                                  container.
                                 properties:
                                   limits:
                                     additionalProperties:
                                       type: string
+                                    description: The maximum amount of compute resources
+                                      allowed.
                                     type: object
                                   requests:
                                     additionalProperties:
                                       type: string
+                                    description: The minimum amount of compute resources
+                                      required.
                                     type: object
                                 type: object
                               securityContext:
+                                description: The security context for this container.
+                                  See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+                                  for details.
                                 properties:
                                   allowPrivilegeEscalation:
                                     description: |-
@@ -333,8 +345,14 @@ spec:
                                 type: object
                             type: object
                           podTemplate:
+                            description: Configuration for the pods created by the
+                              deployment.
                             properties:
                               affinity:
+                                description: |-
+                                  If specified, the pod's scheduling constraints. See
+                                  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core
+                                  for details.
                                 properties:
                                   nodeAffinity:
                                     description: |-
@@ -1031,11 +1049,24 @@ spec:
                                         type: array
                                     type: object
                                 type: object
-                              annotations:
+                              extraAnnotations:
                                 additionalProperties:
                                   type: string
+                                description: Additional annotations to add to the
+                                  Pod object metadata.
+                                type: object
+                              extraLabels:
+                                additionalProperties:
+                                  type: string
+                                description: Additional labels to add to the Pod object
+                                  metadata.
                                 type: object
                               imagePullSecrets:
+                                description: |-
+                                  An optional list of references to secrets in the same namespace to use for
+                                  pulling any of the images used by this Pod spec. See
+                                  https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+                                  for details.
                                 items:
                                   properties:
                                     name:
@@ -1050,8 +1081,16 @@ spec:
                               nodeSelector:
                                 additionalProperties:
                                   type: string
+                                description: |-
+                                  A selector which must be true for the pod to fit on a node. See
+                                  https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
+                                  details.
                                 type: object
                               securityContext:
+                                description: |-
+                                  The pod security context. See
+                                  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
+                                  for details.
                                 properties:
                                   fsGroup:
                                     description: |-
@@ -1236,6 +1275,10 @@ spec:
                                     type: object
                                 type: object
                               tolerations:
+                                description: |-
+                                  If specified, the pod's tolerations. See
+                                  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
+                                  for details.
                                 items:
                                   properties:
                                     effect:
@@ -1284,6 +1327,9 @@ spec:
                             type: integer
                         type: object
                       service:
+                        description: |-
+                          Configuration for the Kubernetes Service that exposes the Envoy proxy over
+                          the network.
                         properties:
                           clusterIP:
                             description: |-
@@ -1292,27 +1338,114 @@ spec:
                               https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address
                               and
                               https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
-                              on the implications of setting `clusterIP`. This field only applies when
-                              the service is of type ClusterIP, NodePort, or LoadBalancer.
+                              on the implications of setting `clusterIP`.
                             type: string
-                          externalName:
-                            description: |-
-                              The DNS name to which the service will be mapped. Only applies to services
-                              of type ExternalName.
-                            type: string
+                          extraAnnotations:
+                            additionalProperties:
+                              type: string
+                            description: Additional annotations to add to the Service
+                              object metadata.
+                            type: object
+                          extraLabels:
+                            additionalProperties:
+                              type: string
+                            description: Additional labels to add to the Service object
+                              metadata.
+                            type: object
                           type:
                             description: The Kubernetes Service type.
                             enum:
                             - ClusterIP
-                            - NodePort
                             - LoadBalancer
-                            - ExternalName
                             type: string
                         type: object
                     type: object
                 type: object
             type: object
           status:
+            properties:
+              conditions:
+                description: |-
+                  The current conditions of the DataPlaneConfig. This is not currently
+                  implemented.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                        +required
+                        +kubebuilder:validation:Required
+                        +kubebuilder:validation:Type=string
+                        +kubebuilder:validation:Format=date-time
+                      properties:
+                        nanos:
+                          description: |-
+                            Non-negative fractions of a second at nanosecond resolution. Negative
+                            second values with fractions must still have non-negative nanos values
+                            that count forward in time. Must be from 0 to 999,999,999
+                            inclusive. This field may be limited in precision depending on context.
+                          format: int32
+                          type: integer
+                        seconds:
+                          description: |-
+                            Represents seconds of UTC time since Unix epoch
+                            1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+                            9999-12-31T23:59:59Z inclusive.
+                          format: int64
+                          type: integer
+                      type: object
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                        +required
+                        +kubebuilder:validation:Required
+                        +kubebuilder:validation:MaxLength=32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                        +optional
+                        +kubebuilder:validation:Minimum=0
+                      format: int64
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                        +required
+                        +kubebuilder:validation:Required
+                        +kubebuilder:validation:MaxLength=1024
+                        +kubebuilder:validation:MinLength=1
+                        +kubebuilder:validation:Pattern=`^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$`
+                      type: string
+                    status:
+                      description: |-
+                        status of the condition, one of True, False, Unknown.
+                        +required
+                        +kubebuilder:validation:Required
+                        +kubebuilder:validation:Enum=True;False;Unknown
+                      type: string
+                    type:
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        ---
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+                        useful (see .node.status.conditions), the ability to deconflict is important.
+                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                        +required
+                        +kubebuilder:validation:Required
+                        +kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`
+                        +kubebuilder:validation:MaxLength=316
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true

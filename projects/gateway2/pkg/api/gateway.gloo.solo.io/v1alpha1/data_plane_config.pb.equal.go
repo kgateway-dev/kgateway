@@ -80,16 +80,6 @@ func (m *ProxyConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetBootstrap()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetBootstrap()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetBootstrap(), target.GetBootstrap()) {
-			return false
-		}
-	}
-
 	switch m.EnvironmentType.(type) {
 
 	case *ProxyConfig_Kube:
@@ -270,14 +260,12 @@ func (m *EnvoyContainer) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetLogging()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetLogging()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetLogging(), target.GetLogging()) {
-			return false
-		}
+	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetComponentLogLevel(), target.GetComponentLogLevel()) != 0 {
+		return false
 	}
 
 	if h, ok := interface{}(m.GetSecurityContext()).(equality.Equalizer); ok {
@@ -304,34 +292,6 @@ func (m *EnvoyContainer) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *EnvoyLogging) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*EnvoyLogging)
-	if !ok {
-		that2, ok := that.(EnvoyLogging)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
 func (m *DataPlaneConfigStatus) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -350,6 +310,23 @@ func (m *DataPlaneConfigStatus) Equal(that interface{}) bool {
 		return m == nil
 	} else if m == nil {
 		return false
+	}
+
+	if len(m.GetConditions()) != len(target.GetConditions()) {
+		return false
+	}
+	for idx, v := range m.GetConditions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetConditions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetConditions()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

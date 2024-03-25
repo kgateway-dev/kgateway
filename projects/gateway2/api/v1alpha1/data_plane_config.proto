@@ -6,18 +6,19 @@ import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/autoscaling.proto";
-import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/bootstrap.proto";
-import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/container.proto";
-import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/pod.proto";
-import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/service.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/kube/autoscaling.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/kube/container.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/kube/pod.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/kube/service.proto";
+
 import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/api/core/v1/generated.proto";
+import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/apimachinery/pkg/apis/meta/v1/generated.proto";
 
 import "google/protobuf/wrappers.proto";
 
-// A DataPlaneConfig contains configuration that is used to dynamically provision
-// Gloo Gateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway or
-// GatewayClass.
+// A DataPlaneConfig contains configuration that is used to dynamically
+// provision Gloo Gateway's data plane (Envoy proxy instance), based on a
+// Kubernetes Gateway or GatewayClass.
 message DataPlaneConfigSpec {
   ProxyConfig proxy_config = 1;
 }
@@ -28,8 +29,6 @@ message ProxyConfig {
   oneof environment_type {
     KubernetesProxyConfig kube = 1;
   }
-  // Initial envoy configuration.
-  EnvoyBootstrap bootstrap = 2;
 }
 
 // Configuration for the set of Kubernetes resources that will be provisioned
@@ -40,34 +39,53 @@ message KubernetesProxyConfig {
     ProxyDeployment deployment = 1;
   }
 
-  Service service = 2;
-  Autoscaling autoscaling = 3;
+  // Configuration for the Kubernetes Service that exposes the Envoy proxy over
+  // the network.
+  kube.gateway.gloo.solo.io.Service service = 2;
+
+  // Autoscaling configuration.
+  kube.gateway.gloo.solo.io.Autoscaling autoscaling = 3;
 }
 
+// Configuration for the Proxy deployment in Kubernetes.
 message ProxyDeployment {
   // The number of desired pods. Defaults to 1.
   google.protobuf.UInt32Value replicas = 1;
 
-  Pod pod_template = 2;
+  // Configuration for the pods created by the deployment.
+  kube.gateway.gloo.solo.io.Pod pod_template = 2;
 
+  // Configuration for the container running Envoy.
   EnvoyContainer envoy_container = 3;
 }
 
+// Configuration for the container running Envoy.
 message EnvoyContainer {
-  Image image = 1;
+  // The envoy image.
+  kube.gateway.gloo.solo.io.Image image = 1;
 
-  // Logging configuration.
-  EnvoyLogging logging = 2;
-
-  k8s.io.api.core.v1.SecurityContext security_context = 3;
-
-  ResourceRequirements resources = 4;
-}
-
-message EnvoyLogging {
   // Envoy log level. Options include "trace", "debug", "info", "warn", "error",
-  // "critical" and "off". Defaults to "info".
-  string log_level = 1;
+  // "critical" and "off". Defaults to "info". See
+  // https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
+  // for more information.
+  string log_level = 2;
+
+  // Envoy component log level. The provided string will be used as a
+  // passthrough value for the `--component-log-level` argument to Envoy, e.g.
+  // `upstream:debug,connection:trace`. See
+  // https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
+  // for more information.
+  string component_log_level = 3;
+
+  // The security context for this container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details.
+  k8s.io.api.core.v1.SecurityContext security_context = 4;
+
+  // The compute resources required by this container.
+  kube.gateway.gloo.solo.io.ResourceRequirements resources = 5;
 }
 
-message DataPlaneConfigStatus {}
+message DataPlaneConfigStatus {
+  // The current conditions of the DataPlaneConfig. This is not currently
+  // implemented.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 1;
+}
