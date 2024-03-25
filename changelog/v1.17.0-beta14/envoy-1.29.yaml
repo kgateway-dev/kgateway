@@ -12,6 +12,5 @@ changelog:
   resolvesIssue: false
   description: >-
     * External Processing servers which mutate the body must also send a header mutation to correctly set the Content-Length.
-    * This upgrade will cause the HTTP cache to be flushed.
     * Removing a query parameter in the ExtAuth filter no longer causes repeats of that query parameter to be removed.
     * Header mutations at multiple configuration levels are now all applied in order from least to most specific.
