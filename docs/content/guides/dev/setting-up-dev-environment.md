@@ -26,6 +26,7 @@ On macOS:
 xcode-select --install
 
 # install protoc
+# note that you can also try simply running `make install-protoc` instead of running the below instructions
 curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protoc-3.6.1-osx-x86_64.zip
 unzip protoc-3.6.1-osx-x86_64.zip
 sudo mv bin/protoc /usr/local/bin/
@@ -46,6 +47,7 @@ On Debian/Ubuntu linux:
 sudo apt install make unzip build-essential -y
 
 # install protoc
+# note that you can also try simply running `make install-protoc` instead of running the below instructions
 curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protoc-3.6.1-linux-x86_64.zip
 unzip protoc-3.6.1-linux-x86_64.zip
 sudo mv bin/protoc /usr/local/bin/
