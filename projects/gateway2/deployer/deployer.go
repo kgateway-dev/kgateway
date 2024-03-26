@@ -11,10 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/ports"
+	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
@@ -31,6 +32,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+)
+
+var (
+	NoGatewayClassError = func(gw *api.Gateway) error {
+		return eris.Errorf("gateway %s.%s does not contain a gatewayClassName", gw.Namespace, gw.Name)
+	}
+	GetGatewayClassError = func(err error, gw *api.Gateway, gatewayClassName string) error {
+		return eris.Wrapf(err, "could not retrieve gatewayclass %s for gateway %s.%s", gatewayClassName, gw.Namespace, gw.Name)
+	}
+	UnsupportedParametersRefKind = func(gatewayClassName string, parametersRef *api.ParametersReference) error {
+		return eris.Errorf("parametersRef for gatewayclass %s points to an unsupported kind: %v", gatewayClassName, parametersRef)
+	}
+	GetDataPlaneConfigError = func(err error, gatewayClassName string, dpcNamespace string, dpcName string) error {
+		return eris.Wrapf(err, "could not retrieve dataplaneconfig (%s.%s) for gatewayclass %s", dpcNamespace, dpcName, gatewayClassName)
+	}
 )
 
 type gatewayPort struct {
@@ -52,7 +68,6 @@ type Deployer struct {
 type Inputs struct {
 	ControllerName string
 	Dev            bool
-	Port           int
 	IstioValues    bootstrap.IstioValues
 }
 
@@ -87,7 +102,6 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 	// these are the minimal values that render the Deployment, Service, ServiceAccount, and ConfigMap
 	vals := map[string]any{
 		"gateway": map[string]any{
-			"enabled": true,
 			"serviceAccount": map[string]any{
 				"create": true,
 			},
@@ -118,7 +132,7 @@ func jsonConvert2(in *v1alpha1.DataPlaneConfig, out interface{}) error {
 	return json.Unmarshal(b, out)
 }
 
-func jsonConvert(in []gatewayPort, out interface{}) error {
+func jsonConvert3(in *v1alpha1kube.Autoscaling, out interface{}) error {
 	b, err := json.Marshal(in)
 	if err != nil {
 		return err
@@ -127,60 +141,6 @@ func jsonConvert(in []gatewayPort, out interface{}) error {
 }
 
 func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
-	// must not be nil for helm to not fail.
-	gwPorts := []gatewayPort{}
-	for _, l := range gw.Spec.Listeners {
-		listenerPort := uint16(l.Port)
-		if slices.IndexFunc(gwPorts, func(p gatewayPort) bool { return p.Port == listenerPort }) != -1 {
-			continue
-		}
-		var port gatewayPort
-		port.Port = listenerPort
-		port.TargetPort = ports.TranslatePort(listenerPort)
-		port.Name = string(l.Name)
-		port.Protocol = "TCP"
-		gwPorts = append(gwPorts, port)
-	}
-
-	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
-	var portsAny []any
-	err := jsonConvert(gwPorts, &portsAny)
-	if err != nil {
-		return nil, err
-	}
-
-	/*
-		vals := map[string]any{
-			"gateway": map[string]any{
-				"enabled":     true,
-				"name":        gw.Name,
-				"gatewayName": gw.Name,
-				"ports":       portsAny,
-				// Default to Load Balancer
-				"service": map[string]any{
-					"type": "LoadBalancer",
-				},
-				"istioSDS": map[string]any{
-					"enabled": d.inputs.IstioValues.SDSEnabled,
-				},
-				"xds": map[string]any{
-					// The xds host/port MUST map to the Service definition for the Control Plane
-					// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-					//
-					// NOTE: The current implementation in flawed in multiple ways:
-					//	1 - This assumes that the Control Plane is installed in `gloo-system`
-					//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
-					//		will always be what is exposed by the Kubernetes Service.
-					"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
-					"port": d.inputs.Port,
-				},
-				"image": getDeployerImageValues(),
-			},
-		}
-		if d.inputs.Dev {
-			vals["develop"] = true
-		}
-	*/
 	logger := log.FromContext(ctx)
 	logger.Info("rendering helm chart", "vals", vals)
 
@@ -196,17 +156,124 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 	return objs, nil
 }
 
-func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {
-	dpc := &v1alpha1.DataPlaneConfig{}
-	err := d.cli.Get(ctx, client.ObjectKey{Namespace: "gloo-system", Name: "my-dataplane-config"}, dpc)
-	fmt.Printf("xxxxxx dpc: %v, err: %v\n", dpc, err)
+// Gets the DataPlaneConfig object (if any) associated with a given Gateway.
+func (d *Deployer) getDataPlaneConfigForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.DataPlaneConfig, error) {
+	logger := log.FromContext(ctx)
 
-	var dpcAny any
-	err = jsonConvert2(dpc, &dpcAny)
-	fmt.Printf("xxxxxx converted: %v, err: %v\n", dpcAny, err)
-	b, err := json.MarshalIndent(dpcAny, "", "  ")
-	fmt.Printf("xxxxxx pretty: %v, err: %v\n", string(b), err)
-	return map[string]any{}, nil
+	// Get the GatewayClass for the Gateway
+	gwClassName := gw.Spec.GatewayClassName
+	if gwClassName == "" {
+		// this shouldn't happen as the gatewayClassName field is required, but throw an error in this case
+		return nil, NoGatewayClassError(gw)
+	}
+
+	gwc := &api.GatewayClass{}
+	err := d.cli.Get(ctx, client.ObjectKey{Name: string(gwClassName)}, gwc)
+	if err != nil {
+		return nil, GetGatewayClassError(err, gw, string(gwClassName))
+	}
+
+	// Get the DataPlaneConfig from the GatewayClass
+	paramsRef := gwc.Spec.ParametersRef
+	if paramsRef == nil {
+		// there is no custom data plane config (just use default values)
+		logger.V(1).Info("no parametersRef found for GatewayClass", "GatewayClass", gwClassName)
+		return nil, nil
+	}
+
+	if string(paramsRef.Group) != v1alpha1.DataPlaneConfigGVK.Group ||
+		string(paramsRef.Kind) != v1alpha1.DataPlaneConfigGVK.Kind {
+		return nil, UnsupportedParametersRefKind(string(gwClassName), paramsRef)
+	}
+
+	dpc := &v1alpha1.DataPlaneConfig{}
+	err = d.cli.Get(ctx, client.ObjectKey{Namespace: string(*paramsRef.Namespace), Name: paramsRef.Name}, dpc)
+	if err != nil {
+		return nil, GetDataPlaneConfigError(err, string(gwClassName), string(*paramsRef.Namespace), paramsRef.Name)
+	}
+
+	return dpc, nil
+}
+
+func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {
+	dpc, err := d.getDataPlaneConfigForGateway(ctx, gw)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("xxxxx got DataPlaneConfig: %v\n", dpc)
+	portsVals, err := GetPortsValues(gw)
+	if err != nil {
+		return nil, err
+	}
+
+	xdsPort, err := GetDefaultXdsPort(ctx, d.cli)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeProxyConfig := dpc.Spec.GetProxyConfig().GetKube()
+	deployConfig := kubeProxyConfig.GetDeployment()
+	podConfig := deployConfig.GetPodTemplate()
+	envoyContainerConfig := deployConfig.GetEnvoyContainer()
+	svcConfig := kubeProxyConfig.GetService()
+
+	var replicas any
+	autoscalingVals := GetAutoscalingValues(kubeProxyConfig.GetAutoscaling())
+	if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
+		replicas = deployConfig.GetReplicas().GetValue()
+	}
+
+	vals := map[string]any{
+		"gateway": map[string]any{
+			"name":        gw.Name,
+			"gatewayName": gw.Name,
+
+			// deployment/service values
+			"replicaCount": replicas,
+			"autoscaling":  autoscalingVals,
+			"ports":        portsVals,
+			"service": map[string]any{
+				// convert the service type enum to its string representation;
+				// if type is not set, it will default to 0 ("ClusterIP")
+				"type":             v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())],
+				"clusterIP":        svcConfig.GetClusterIP(),
+				"extraAnnotations": svcConfig.GetExtraAnnotations(),
+				"extraLabels":      svcConfig.GetExtraLabels(),
+			},
+
+			// pod template values
+			"extraPodAnnotations": podConfig.GetExtraAnnotations(),
+			"extraPodLabels":      podConfig.GetExtraLabels(),
+			//"imagePullSecrets": podConfig.GetImagePullSecrets(),
+			//"podSecurityContext": podConfig.GetSecurityContext(),
+			//"nodeSelector":podConfig.GetNodeSelector(),
+			//"affinity":podConfig.GetAffinity(),
+			//"tolerations":podConfig.GetTolerations(),
+
+			// envoy container values
+			"logLevel":          envoyContainerConfig.GetLogLevel(),
+			"componentLogLevel": envoyContainerConfig.GetComponentLogLevel(),
+			"image":             getDeployerImageValues(), // envoyContainerConfig.GetImage()
+			//"resources": envoyContainerConfig.GetResources(),
+			//"securityContext": envoyContainerConfig.GetSecurityContext(),
+
+			// istio values
+			"istioSDS": map[string]any{
+				"enabled": d.inputs.IstioValues.SDSEnabled,
+			},
+
+			// xds values
+			"xds": map[string]any{
+				// The xds host/port MUST map to the Service definition for the Control Plane
+				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+				"host": GetDefaultXdsHost(),
+				"port": xdsPort,
+			},
+		},
+	}
+
+	return vals, nil
 }
 
 func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
@@ -224,6 +291,7 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 		return nil, fmt.Errorf("failed to render helm chart: %w", err)
 	}
 
+	fmt.Printf("xxxxxx release manifest: %v\n", release.Manifest)
 	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), []byte(release.Manifest))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml to objects: %w", err)

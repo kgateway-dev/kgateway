@@ -90,7 +90,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
-		Port:           c.cfg.ControlPlane.GetBindPort(),
 		IstioValues:    c.cfg.IstioValues,
 	})
 	if err != nil {

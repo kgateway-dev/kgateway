@@ -3,6 +3,7 @@ package deployer_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -63,7 +64,6 @@ var _ = Describe("Deployer", func() {
 		s := scheme.NewScheme()
 		d, err = deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -73,7 +73,6 @@ var _ = Describe("Deployer", func() {
 		inputs := &deployer.Inputs{
 			Dev:            false,
 			ControllerName: "foo",
-			Port:           8080,
 			IstioValues: bootstrap.IstioValues{
 				SDSEnabled: true,
 			},
@@ -125,6 +124,7 @@ var _ = Describe("Deployer", func() {
 		Expect(gvks).NotTo(BeEmpty())
 	})
 
+	// TODO is this still needed?
 	It("rbac should have our gvks", func() {
 		gvks, err := d.GetGvksToWatch(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -139,6 +139,7 @@ var _ = Describe("Deployer", func() {
 		}
 		cpObjs, err := d.Render(context.Background(), "default", "default", vals)
 		Expect(err).NotTo(HaveOccurred())
+		fmt.Printf("CP objs: %v\n", cpObjs)
 
 		// find the rbac role with deploy in its name
 		for _, obj := range cpObjs {
@@ -264,7 +265,6 @@ var _ = Describe("Deployer", func() {
 		s := scheme.NewScheme()
 		d, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -386,14 +386,12 @@ var _ = Describe("Deployer", func() {
 		s := scheme.NewScheme()
 		d1, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
 		d2, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())

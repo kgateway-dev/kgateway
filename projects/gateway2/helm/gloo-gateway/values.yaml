@@ -2,10 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-develop: false
-
 gateway:
-  enabled: false
   nameOverride: ""
   fullnameOverride: ""
   gatewayName: ""
@@ -23,6 +20,7 @@ gateway:
   service:
     type: ClusterIP
   readinessPort: 8082
+  # ports should come from the Gateway
   ports:
   - port: 80
     targetPort: 80
