@@ -411,7 +411,8 @@ type Listener_Metadata struct {
 }
 
 type Listener_MetadataStatic struct {
-	// Inline metadata used by gloo controller to track ownership
+	// Inline metadata used by gloo controller to track ownership.
+	// See [uses of static metadata](https://github.com/solo-io/gloo/tree/main/devel/architecture/static_metadata.md) for specific uses
 	MetadataStatic *SourceMetadata `protobuf:"bytes,12,opt,name=metadata_static,json=metadataStatic,proto3,oneof"`
 }
 
