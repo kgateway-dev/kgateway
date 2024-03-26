@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Trace utils", func() {
@@ -21,11 +22,11 @@ var _ = Describe("Trace utils", func() {
 			Expect(gatewayName).To(Equal(expectedGatewayName))
 		},
 			Entry("listener with gateway",
-				TestListenerBasicMetadata,
+				testListenerBasicMetadata,
 				"gateway-name",
 			),
 			Entry("listener with no gateway",
-				TestListenerNoGateway,
+				testListenerNoGateway,
 				UndefinedMetadataServiceName,
 			),
 			Entry("listener with deprecated metadata",
@@ -35,7 +36,7 @@ var _ = Describe("Trace utils", func() {
 				DeprecatedMetadataServiceName,
 			),
 			Entry("listener with multiple gateways",
-				TestListenerMultipleGateways,
+				testListenerMultipleGateways,
 				"gateway-name-1,gateway-name-2",
 			),
 			Entry("nil listener", nil, UnkownMetadataServiceName),
@@ -63,3 +64,77 @@ var _ = Describe("Trace utils", func() {
 		})
 	})
 })
+
+var testListenerBasicMetadata = &gloov1.Listener{
+	OpaqueMetadata: &gloov1.Listener_MetadataStatic{
+		MetadataStatic: &gloov1.SourceMetadata{
+			Sources: []*gloov1.SourceMetadata_SourceRef{
+				{
+					ResourceRef: &core.ResourceRef{
+						Name:      "delegate-1",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.RouteTable",
+					ObservedGeneration: 0,
+				},
+				{
+					ResourceRef: &core.ResourceRef{
+						Name:      "gateway-name",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.Gateway",
+					ObservedGeneration: 0,
+				},
+			},
+		},
+	},
+}
+var testListenerNoGateway = &gloov1.Listener{
+	OpaqueMetadata: &gloov1.Listener_MetadataStatic{
+		MetadataStatic: &gloov1.SourceMetadata{
+			Sources: []*gloov1.SourceMetadata_SourceRef{
+				{
+					ResourceRef: &core.ResourceRef{
+						Name:      "delegate-1",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.RouteTable",
+					ObservedGeneration: 0,
+				},
+			},
+		},
+	},
+}
+
+var testListenerMultipleGateways = &gloov1.Listener{
+	OpaqueMetadata: &gloov1.Listener_MetadataStatic{
+		MetadataStatic: &gloov1.SourceMetadata{
+			Sources: []*gloov1.SourceMetadata_SourceRef{
+				{
+					ResourceRef: &core.ResourceRef{
+						Name:      "delegate-1",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.RouteTable",
+					ObservedGeneration: 0,
+				},
+				{
+					ResourceRef: &core.ResourceRef{
+						Name:      "gateway-name-1",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.Gateway",
+					ObservedGeneration: 0,
+				},
+				{
+					ResourceRef: &core.ResourceRef{
+						Name:      "gateway-name-2",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.Gateway",
+					ObservedGeneration: 0,
+				},
+			},
+		},
+	},
+}

@@ -46,16 +46,6 @@ func (m *OpenTelemetryConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetServiceNameSource()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetServiceNameSource()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetServiceNameSource(), target.GetServiceNameSource()) {
-			return false
-		}
-	}
-
 	switch m.CollectorCluster.(type) {
 
 	case *OpenTelemetryConfig_CollectorUpstreamRef:
@@ -87,78 +77,6 @@ func (m *OpenTelemetryConfig) Equal(that interface{}) bool {
 		if m.CollectorCluster != target.CollectorCluster {
 			return false
 		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *OpenTelemetryConfig_ServiceNameSource) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*OpenTelemetryConfig_ServiceNameSource)
-	if !ok {
-		that2, ok := that.(OpenTelemetryConfig_ServiceNameSource)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	switch m.SourceType.(type) {
-
-	case *OpenTelemetryConfig_ServiceNameSource_GatewayName_:
-		if _, ok := target.SourceType.(*OpenTelemetryConfig_ServiceNameSource_GatewayName_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetGatewayName()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGatewayName()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetGatewayName(), target.GetGatewayName()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.SourceType != target.SourceType {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *OpenTelemetryConfig_ServiceNameSource_GatewayName) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*OpenTelemetryConfig_ServiceNameSource_GatewayName)
-	if !ok {
-		that2, ok := that.(OpenTelemetryConfig_ServiceNameSource_GatewayName)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
 	}
 
 	return true

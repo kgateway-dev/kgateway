@@ -35,12 +35,6 @@ func (m *OpenTelemetryConfig) Clone() proto.Message {
 	}
 	target = &OpenTelemetryConfig{}
 
-	if h, ok := interface{}(m.GetServiceNameSource()).(clone.Cloner); ok {
-		target.ServiceNameSource = h.Clone().(*OpenTelemetryConfig_ServiceNameSource)
-	} else {
-		target.ServiceNameSource = proto.Clone(m.GetServiceNameSource()).(*OpenTelemetryConfig_ServiceNameSource)
-	}
-
 	switch m.CollectorCluster.(type) {
 
 	case *OpenTelemetryConfig_CollectorUpstreamRef:
@@ -62,44 +56,6 @@ func (m *OpenTelemetryConfig) Clone() proto.Message {
 		}
 
 	}
-
-	return target
-}
-
-// Clone function
-func (m *OpenTelemetryConfig_ServiceNameSource) Clone() proto.Message {
-	var target *OpenTelemetryConfig_ServiceNameSource
-	if m == nil {
-		return target
-	}
-	target = &OpenTelemetryConfig_ServiceNameSource{}
-
-	switch m.SourceType.(type) {
-
-	case *OpenTelemetryConfig_ServiceNameSource_GatewayName_:
-
-		if h, ok := interface{}(m.GetGatewayName()).(clone.Cloner); ok {
-			target.SourceType = &OpenTelemetryConfig_ServiceNameSource_GatewayName_{
-				GatewayName: h.Clone().(*OpenTelemetryConfig_ServiceNameSource_GatewayName),
-			}
-		} else {
-			target.SourceType = &OpenTelemetryConfig_ServiceNameSource_GatewayName_{
-				GatewayName: proto.Clone(m.GetGatewayName()).(*OpenTelemetryConfig_ServiceNameSource_GatewayName),
-			}
-		}
-
-	}
-
-	return target
-}
-
-// Clone function
-func (m *OpenTelemetryConfig_ServiceNameSource_GatewayName) Clone() proto.Message {
-	var target *OpenTelemetryConfig_ServiceNameSource_GatewayName
-	if m == nil {
-		return target
-	}
-	target = &OpenTelemetryConfig_ServiceNameSource_GatewayName{}
 
 	return target
 }
