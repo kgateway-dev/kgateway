@@ -581,43 +581,45 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Describe("when opentelemetry provider config", func() {
-			testClusterName := "test-cluster"
-			otelConfig := &envoytrace_gloo.OpenTelemetryConfig{
-				CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
-					ClusterName: testClusterName,
-				},
-			}
-
-			cfg := &envoyhttp.HttpConnectionManager{}
-			hcmSettings = &hcm.HttpConnectionManagerSettings{
-				Tracing: &tracing.ListenerTracingSettings{
-					ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
-						OpenTelemetryConfig: otelConfig,
+			It("translates the plugin correctly", func() {
+				testClusterName := "test-cluster"
+				otelConfig := &envoytrace_gloo.OpenTelemetryConfig{
+					CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+						ClusterName: testClusterName,
 					},
-				},
-			}
-			err := processHcmNetworkFilter(cfg)
-			Expect(err).NotTo(HaveOccurred())
+				}
 
-			expectedEnvoyConfig := &envoytrace.OpenTelemetryConfig{
-				GrpcService: &envoy_config_core_v3.GrpcService{
-					TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-							ClusterName: testClusterName,
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+							OpenTelemetryConfig: otelConfig,
 						},
 					},
-				},
-				ServiceName: "gateway",
-			}
-			expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
-			expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
-				Name: "envoy.tracers.opentelemetry",
-				ConfigType: &envoytrace.Tracing_Http_TypedConfig{
-					TypedConfig: expectedEnvoyConfigMarshalled,
-				},
-			}
-			Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
-			Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedEnvoyConfig := &envoytrace.OpenTelemetryConfig{
+					GrpcService: &envoy_config_core_v3.GrpcService{
+						TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+								ClusterName: testClusterName,
+							},
+						},
+					},
+					ServiceName: "gateway",
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.opentelemetry",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
 		})
 
 	})
