@@ -1,0 +1,14 @@
+changelog:
+  - type: BREAKING_CHANGE
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/7791
+    description: >-
+      Set the `service_name` field used to create the the [Envoy OpenTelemetryConfig](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html)
+      to the name of the Gateway under which the [Gloo OpenTelemetryConfig](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#package-soloioenvoyconfigtracev3)
+      is defined.
+
+      Breaking changes:
+      * The previous behavior, which was to set the `service_name` field to an empty string resulting in display name `unknown_service:envoy`, is no longer available.
+      * The `ToEnvoyOpenTelemetryonfiguration` function in "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing" has
+      been removed and replaced with `ToEnvoyOpenTelemetryConfiguration`, and the signature has been updated to:
+      `ToEnvoyOpenTelemetryConfiguration(clusterName, serviceName string) *envoytrace.OpenTelemetryConfig`

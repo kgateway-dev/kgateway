@@ -44,7 +44,30 @@ var _ = Describe("Plugin", func() {
 				HttpConnectionManagerSettings: hcmSettings,
 			},
 		}
-		listener := &v1.Listener{}
+		listener := &v1.Listener{
+			OpaqueMetadata: &v1.Listener_MetadataStatic{
+				MetadataStatic: &v1.SourceMetadata{
+					Sources: []*v1.SourceMetadata_SourceRef{
+						{
+							ResourceRef: &core.ResourceRef{
+								Name:      "delegate-1",
+								Namespace: "gloo-system",
+							},
+							ResourceKind:       "*v1.RouteTable",
+							ObservedGeneration: 0,
+						},
+						{
+							ResourceRef: &core.ResourceRef{
+								Name:      "gateway",
+								Namespace: "gloo-system",
+							},
+							ResourceKind:       "*v1.Gateway",
+							ObservedGeneration: 0,
+						},
+					},
+				},
+			},
+		}
 		return plugin.(plugins.HttpConnectionManagerPlugin).ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 	}
 
@@ -559,17 +582,18 @@ var _ = Describe("Plugin", func() {
 
 		Describe("when opentelemetry provider config", func() {
 			It("translates the plugin correctly", func() {
-
 				testClusterName := "test-cluster"
+				otelConfig := &envoytrace_gloo.OpenTelemetryConfig{
+					CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+						ClusterName: testClusterName,
+					},
+				}
+
 				cfg := &envoyhttp.HttpConnectionManager{}
 				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
-							OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
-								CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
-									ClusterName: testClusterName,
-								},
-							},
+							OpenTelemetryConfig: otelConfig,
 						},
 					},
 				}
@@ -584,6 +608,7 @@ var _ = Describe("Plugin", func() {
 							},
 						},
 					},
+					ServiceName: "gateway",
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
@@ -650,4 +675,5 @@ var _ = Describe("Plugin", func() {
 		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(20)))
 		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(30)))
 	})
+
 })

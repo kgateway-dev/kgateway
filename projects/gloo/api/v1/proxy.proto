@@ -114,7 +114,8 @@ message Listener {
         // Deprecated: prefer the any field below
         google.protobuf.Struct metadata = 9 [(extproto.skip_hashing) = true];
 
-        // Inline metadata used by gloo controller to track ownership
+        // Inline metadata used by gloo controller to track ownership.
+        // See [uses of static metadata](https://github.com/solo-io/gloo/tree/main/devel/architecture/static_metadata.md) for specific uses
         SourceMetadata metadata_static = 12 [(extproto.skip_hashing) = true];
     }
 
