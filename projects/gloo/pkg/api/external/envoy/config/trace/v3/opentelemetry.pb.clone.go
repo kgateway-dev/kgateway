@@ -76,15 +76,15 @@ func (m *OpenTelemetryConfig_ServiceNameSource) Clone() proto.Message {
 
 	switch m.SourceType.(type) {
 
-	case *OpenTelemetryConfig_ServiceNameSource_GatewayName:
+	case *OpenTelemetryConfig_ServiceNameSource_GatewayName_:
 
 		if h, ok := interface{}(m.GetGatewayName()).(clone.Cloner); ok {
-			target.SourceType = &OpenTelemetryConfig_ServiceNameSource_GatewayName{
-				GatewayName: h.Clone().(*OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource),
+			target.SourceType = &OpenTelemetryConfig_ServiceNameSource_GatewayName_{
+				GatewayName: h.Clone().(*OpenTelemetryConfig_ServiceNameSource_GatewayName),
 			}
 		} else {
-			target.SourceType = &OpenTelemetryConfig_ServiceNameSource_GatewayName{
-				GatewayName: proto.Clone(m.GetGatewayName()).(*OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource),
+			target.SourceType = &OpenTelemetryConfig_ServiceNameSource_GatewayName_{
+				GatewayName: proto.Clone(m.GetGatewayName()).(*OpenTelemetryConfig_ServiceNameSource_GatewayName),
 			}
 		}
 
@@ -94,12 +94,12 @@ func (m *OpenTelemetryConfig_ServiceNameSource) Clone() proto.Message {
 }
 
 // Clone function
-func (m *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource) Clone() proto.Message {
-	var target *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource
+func (m *OpenTelemetryConfig_ServiceNameSource_GatewayName) Clone() proto.Message {
+	var target *OpenTelemetryConfig_ServiceNameSource_GatewayName
 	if m == nil {
 		return target
 	}
-	target = &OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource{}
+	target = &OpenTelemetryConfig_ServiceNameSource_GatewayName{}
 
 	return target
 }

@@ -35,18 +35,18 @@ message OpenTelemetryConfig {
 
   message ServiceNameSource {
      // Use the name of the gateway under which the collector is configured as the `service.name`
-    message GatewayServiceNameSource {} 
+    message GatewayName {} 
 
     oneof source_type {  
       // Use the name of the gateway under which the collector is configured as the `service.name`
       // This is the default behavior.
-      // The details of how the gateway name is determined are documented [here](https://github.com/solo-io/gloo/blob/main/projects/gloo/static_metadata.md)
-      GatewayServiceNameSource gateway_name = 3;
+      // The details of how the gateway name is determined are documented [here](https://github.com/solo-io/gloo/tree/main/devel/architecture/static_metadata.md)
+      GatewayName gateway_name = 1;
     }
   }
 
   // Source to use for the `service.name` of the collector. Defaults to GatewayServiceNameSource
-  ServiceNameSource service_name_source = 4;
+  ServiceNameSource service_name_source = 3;
 
 }
 

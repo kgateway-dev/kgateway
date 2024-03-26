@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"context"
+
 	v12 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -12,6 +14,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -620,7 +623,7 @@ var _ = Describe("Plugin", func() {
 						ClusterName: testClusterName,
 					},
 					ServiceNameSource: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource{
-						SourceType: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource_GatewayName{},
+						SourceType: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource_GatewayName_{},
 					},
 				}),
 				Entry("with ServiceNameSource undefined (uses default)", &envoytrace_gloo.OpenTelemetryConfig{
@@ -684,4 +687,95 @@ var _ = Describe("Plugin", func() {
 		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(20)))
 		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(30)))
 	})
+
+	Context("gets the gateway name for the defined source", func() {
+
+		DescribeTable("getServiceNameForOtel: serviceNameSource cases", func(otelConfig *envoytrace_gloo.OpenTelemetryConfig, expectedServiceName string) {
+			tracingConfig := &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+				OpenTelemetryConfig: otelConfig,
+			}
+
+			serviceName := getServiceNameForOtel(context.Background(), tracingConfig, api_conversion.TestListenerBasicMetadata)
+
+			Expect(serviceName).To(Equal(expectedServiceName))
+		},
+			Entry("No ServiceNameSource set (use default)", &envoytrace_gloo.OpenTelemetryConfig{
+				CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_CollectorUpstreamRef{
+					CollectorUpstreamRef: &core.ResourceRef{
+						Name:      "Name",
+						Namespace: "Namespace",
+					},
+				},
+			}, "gateway-name"),
+			Entry("nil ServiceNameSource (user default)", &envoytrace_gloo.OpenTelemetryConfig{
+				CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_CollectorUpstreamRef{
+					CollectorUpstreamRef: &core.ResourceRef{
+						Name:      "Name",
+						Namespace: "Namespace",
+					},
+				},
+				ServiceNameSource: nil,
+			}, "gateway-name"),
+			Entry("GatewayName ServiceNameSource", &envoytrace_gloo.OpenTelemetryConfig{
+				CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_CollectorUpstreamRef{
+					CollectorUpstreamRef: &core.ResourceRef{
+						Name:      "Name",
+						Namespace: "Namespace",
+					},
+				},
+				ServiceNameSource: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource{
+					SourceType: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource_GatewayName_{},
+				},
+			}, "gateway-name"),
+			Entry("nil ServiceNameSourceType", &envoytrace_gloo.OpenTelemetryConfig{
+				CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_CollectorUpstreamRef{
+					CollectorUpstreamRef: &core.ResourceRef{
+						Name:      "Name",
+						Namespace: "Namespace",
+					},
+				},
+				ServiceNameSource: &envoytrace_gloo.OpenTelemetryConfig_ServiceNameSource{
+					SourceType: nil,
+				},
+			}, ""),
+		)
+
+		DescribeTable("getServiceNameForOtel: metadata cases", func(listener *v1.Listener, expectedGatewayName string) {
+			tracingConfig := &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+				OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
+					CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_CollectorUpstreamRef{
+						CollectorUpstreamRef: &core.ResourceRef{
+							Name:      "Name",
+							Namespace: "Namespace",
+						},
+					},
+				},
+			}
+
+			serviceName := getServiceNameForOtel(context.Background(), tracingConfig, listener)
+			Expect(serviceName).To(Equal(expectedGatewayName))
+		},
+			Entry("listener with gateway",
+				api_conversion.TestListenerBasicMetadata,
+				"gateway-name",
+			),
+			Entry("listener with no gateway",
+				api_conversion.TestListenerNoGateway,
+				api_conversion.UndefinedMetadataServiceName,
+			),
+			Entry("listener with deprecated metadata",
+				&v1.Listener{
+					OpaqueMetadata: &v1.Listener_Metadata{},
+				},
+				api_conversion.DeprecatedMetadataServiceName,
+			),
+			Entry("listener with multiple gateways",
+				api_conversion.TestListenerMultipleGateways,
+				"gateway-name-1,gateway-name-2",
+			),
+			Entry("nil listener", nil, api_conversion.UnkownMetadataServiceName),
+		)
+
+	})
+
 })

@@ -13,7 +13,7 @@ weight: 5
 
 - [OpenTelemetryConfig](#opentelemetryconfig)
 - [ServiceNameSource](#servicenamesource)
-- [GatewayServiceNameSource](#gatewayservicenamesource)
+- [GatewayName](#gatewayname)
   
 
 
@@ -53,19 +53,19 @@ Configuration for the OpenTelemetry tracer.
 
 
 ```yaml
-"gatewayName": .solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayServiceNameSource
+"gatewayName": .solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayName
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `gatewayName` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayServiceNameSource](../opentelemetry.proto.sk/#gatewayservicenamesource) | Use the name of the gateway under which the collector is configured as the `service.name` This is the default behavior. The details of how the gateway name is determined are documented [here](https://github.com/solo-io/gloo/blob/main/projects/gloo/static_metadata.md). |
+| `gatewayName` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig.ServiceNameSource.GatewayName](../opentelemetry.proto.sk/#gatewayname) | Use the name of the gateway under which the collector is configured as the `service.name` This is the default behavior. The details of how the gateway name is determined are documented [here](https://github.com/solo-io/gloo/tree/main/devel/architecture/static_metadata.md). |
 
 
 
 
 ---
-### GatewayServiceNameSource
+### GatewayName
 
  
 Use the name of the gateway under which the collector is configured as the `service.name`

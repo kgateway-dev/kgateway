@@ -108,7 +108,7 @@ func (m *OpenTelemetryConfig_ServiceNameSource) Hash(hasher hash.Hash64) (uint64
 
 	switch m.SourceType.(type) {
 
-	case *OpenTelemetryConfig_ServiceNameSource_GatewayName:
+	case *OpenTelemetryConfig_ServiceNameSource_GatewayName_:
 
 		if h, ok := interface{}(m.GetGatewayName()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("GatewayName")); err != nil {
@@ -136,7 +136,7 @@ func (m *OpenTelemetryConfig_ServiceNameSource) Hash(hasher hash.Hash64) (uint64
 }
 
 // Hash function
-func (m *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *OpenTelemetryConfig_ServiceNameSource_GatewayName) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -144,7 +144,7 @@ func (m *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource) Hash(ha
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3.OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3.OpenTelemetryConfig_ServiceNameSource_GatewayName")); err != nil {
 		return 0, err
 	}
 

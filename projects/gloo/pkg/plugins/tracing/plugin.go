@@ -1,6 +1,9 @@
 package tracing
 
 import (
+	"context"
+	"fmt"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -17,7 +20,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"go.uber.org/zap"
 )
 
 var (
@@ -258,10 +263,8 @@ func processEnvoyOpenTelemetryTracing(
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
-	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryConfiguration(params.Ctx, openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName, parent)
-	if err != nil {
-		return nil, err
-	}
+	serviceName := getServiceNameForOtel(params.Ctx, openTelemetryTracingSettings, parent)
+	envoyConfig := api_conversion.ToEnvoyOpenTelemetryConfiguration(collectorClusterName, serviceName)
 
 	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
 	if err != nil {
@@ -274,6 +277,24 @@ func processEnvoyOpenTelemetryTracing(
 			TypedConfig: marshalledEnvoyConfig,
 		},
 	}, nil
+}
+
+// getServiceNameForOtel determines the source of the service name and calls the function to return the service name to use for the OpenTelemetry plugin.
+func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *tracing.ListenerTracingSettings_OpenTelemetryConfig, parentListener *v1.Listener) string {
+	// Default if undefined
+	if glooOpenTelemetryConfig.OpenTelemetryConfig.GetServiceNameSource() == nil {
+		return api_conversion.GetGatewayNameFromParent(ctx, parentListener)
+	}
+
+	switch sourceType := glooOpenTelemetryConfig.OpenTelemetryConfig.GetServiceNameSource().GetSourceType().(type) {
+	case *v3.OpenTelemetryConfig_ServiceNameSource_GatewayName_:
+		return api_conversion.GetGatewayNameFromParent(ctx, parentListener)
+	default:
+		// Either a new type was added and we didn't catch it or `acceptAll` is set to true
+		contextutils.LoggerFrom(ctx).Warnf("Unknown or nil ServiceNameSource type for OpenTelemetry Tracing:", zap.String("sourceType", fmt.Sprintf("%T", sourceType)))
+		return ""
+	}
+
 }
 
 func processEnvoyOpenCensusTracing(

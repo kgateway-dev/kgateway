@@ -3,114 +3,29 @@ package api_conversion
 import (
 	"context"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	envoytracegloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
-
-var basicListener = &gloov1.Listener{
-	OpaqueMetadata: &gloov1.Listener_MetadataStatic{
-		MetadataStatic: &gloov1.SourceMetadata{
-			Sources: []*gloov1.SourceMetadata_SourceRef{
-				{
-					ResourceRef: &core.ResourceRef{
-						Name:      "delegate-1",
-						Namespace: "gloo-system",
-					},
-					ResourceKind:       "*v1.RouteTable",
-					ObservedGeneration: 0,
-				},
-				{
-					ResourceRef: &core.ResourceRef{
-						Name:      "gateway-name",
-						Namespace: "gloo-system",
-					},
-					ResourceKind:       "*v1.Gateway",
-					ObservedGeneration: 0,
-				},
-			},
-		},
-	},
-}
 
 var _ = Describe("Trace utils", func() {
 
 	Context("gets the gateway name for the defined source", func() {
-		DescribeTable("ToEnvoyOpenTelemetryConfiguration: serviceNamesource cases", func(glooOtelConfig *envoytracegloo.OpenTelemetryConfig, expectedGatewayName string) {
-			listener := basicListener
-			otelConfig, err := ToEnvoyOpenTelemetryConfiguration(context.TODO(), glooOtelConfig, "ClusterName", listener)
-			Expect(err).NotTo(HaveOccurred())
 
-			Expect(otelConfig.GetServiceName()).To(Equal(expectedGatewayName))
-		},
-			Entry("No ServiceNameSource set (use default)", &envoytracegloo.OpenTelemetryConfig{
-				CollectorCluster: &envoytracegloo.OpenTelemetryConfig_CollectorUpstreamRef{
-					CollectorUpstreamRef: &core.ResourceRef{
-						Name:      "Name",
-						Namespace: "Namespace",
-					},
-				},
-			}, "gateway-name"),
-			Entry("nil ServiceNameSource (user default)", &envoytracegloo.OpenTelemetryConfig{
-				CollectorCluster: &envoytracegloo.OpenTelemetryConfig_CollectorUpstreamRef{
-					CollectorUpstreamRef: &core.ResourceRef{
-						Name:      "Name",
-						Namespace: "Namespace",
-					},
-				},
-				ServiceNameSource: nil,
-			}, "gateway-name"),
-			Entry("GatewayName ServiceNameSource", &envoytracegloo.OpenTelemetryConfig{
-				CollectorCluster: &envoytracegloo.OpenTelemetryConfig_CollectorUpstreamRef{
-					CollectorUpstreamRef: &core.ResourceRef{
-						Name:      "Name",
-						Namespace: "Namespace",
-					},
-				},
-				ServiceNameSource: &envoytracegloo.OpenTelemetryConfig_ServiceNameSource{
-					SourceType: &envoytracegloo.OpenTelemetryConfig_ServiceNameSource_GatewayName{},
-				},
-			}, "gateway-name"),
-		)
+		DescribeTable("by calling GetGatewayNameFromParent", func(listener *gloov1.Listener, expectedGatewayName string) {
+			gatewayName := GetGatewayNameFromParent(context.TODO(), listener)
 
-		DescribeTable("ToEnvoyOpenTelemetryConfiguration: metadata cases", func(listener *gloov1.Listener, expectedGatewayName string) {
-			glooOtelConfig := &envoytracegloo.OpenTelemetryConfig{
-				CollectorCluster: &envoytracegloo.OpenTelemetryConfig_CollectorUpstreamRef{
-					CollectorUpstreamRef: &core.ResourceRef{
-						Name:      "Name",
-						Namespace: "Namespace",
-					},
-				},
-			}
-			otelConfig, err := ToEnvoyOpenTelemetryConfiguration(context.TODO(), glooOtelConfig, "ClusterName", listener)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(otelConfig.GetServiceName()).To(Equal(expectedGatewayName))
+			Expect(gatewayName).To(Equal(expectedGatewayName))
 		},
 			Entry("listener with gateway",
-				basicListener,
+				TestListenerBasicMetadata,
 				"gateway-name",
 			),
 			Entry("listener with no gateway",
-				&gloov1.Listener{
-					OpaqueMetadata: &gloov1.Listener_MetadataStatic{
-						MetadataStatic: &gloov1.SourceMetadata{
-							Sources: []*gloov1.SourceMetadata_SourceRef{
-								{
-									ResourceRef: &core.ResourceRef{
-										Name:      "delegate-1",
-										Namespace: "gloo-system",
-									},
-									ResourceKind:       "*v1.RouteTable",
-									ObservedGeneration: 0,
-								},
-							},
-						},
-					},
-				},
+				TestListenerNoGateway,
 				UndefinedMetadataServiceName,
 			),
 			Entry("listener with deprecated metadata",
@@ -120,42 +35,31 @@ var _ = Describe("Trace utils", func() {
 				DeprecatedMetadataServiceName,
 			),
 			Entry("listener with multiple gateways",
-				&gloov1.Listener{
-					OpaqueMetadata: &gloov1.Listener_MetadataStatic{
-						MetadataStatic: &gloov1.SourceMetadata{
-							Sources: []*gloov1.SourceMetadata_SourceRef{
-								{
-									ResourceRef: &core.ResourceRef{
-										Name:      "delegate-1",
-										Namespace: "gloo-system",
-									},
-									ResourceKind:       "*v1.RouteTable",
-									ObservedGeneration: 0,
-								},
-								{
-									ResourceRef: &core.ResourceRef{
-										Name:      "gateway-name-1",
-										Namespace: "gloo-system",
-									},
-									ResourceKind:       "*v1.Gateway",
-									ObservedGeneration: 0,
-								},
-								{
-									ResourceRef: &core.ResourceRef{
-										Name:      "gateway-name-2",
-										Namespace: "gloo-system",
-									},
-									ResourceKind:       "*v1.Gateway",
-									ObservedGeneration: 0,
-								},
-							},
+				TestListenerMultipleGateways,
+				"gateway-name-1,gateway-name-2",
+			),
+			Entry("nil listener", nil, UnkownMetadataServiceName),
+		)
+
+	})
+
+	Context("creates the OpenTelemetryConfig", func() {
+		It("calling ToEnvoyOpenTelemetryConfiguration", func() {
+			clusterName := "cluster-name"
+			serviceName := "service-name"
+			expectedConfig := &envoytrace.OpenTelemetryConfig{
+				GrpcService: &envoy_config_core_v3.GrpcService{
+					TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+						EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+							ClusterName: clusterName,
 						},
 					},
 				},
-				"gateway-name-1,gateway-name-2",
-			),
-			Entry("nil listener", nil, NoListenerServiceName),
-		)
+				ServiceName: serviceName,
+			}
 
+			actutalConfig := ToEnvoyOpenTelemetryConfiguration(clusterName, serviceName)
+			Expect(actutalConfig).To(Equal(expectedConfig))
+		})
 	})
 })

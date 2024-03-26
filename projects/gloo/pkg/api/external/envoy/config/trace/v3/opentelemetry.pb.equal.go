@@ -115,8 +115,8 @@ func (m *OpenTelemetryConfig_ServiceNameSource) Equal(that interface{}) bool {
 
 	switch m.SourceType.(type) {
 
-	case *OpenTelemetryConfig_ServiceNameSource_GatewayName:
-		if _, ok := target.SourceType.(*OpenTelemetryConfig_ServiceNameSource_GatewayName); !ok {
+	case *OpenTelemetryConfig_ServiceNameSource_GatewayName_:
+		if _, ok := target.SourceType.(*OpenTelemetryConfig_ServiceNameSource_GatewayName_); !ok {
 			return false
 		}
 
@@ -141,14 +141,14 @@ func (m *OpenTelemetryConfig_ServiceNameSource) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource) Equal(that interface{}) bool {
+func (m *OpenTelemetryConfig_ServiceNameSource_GatewayName) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource)
+	target, ok := that.(*OpenTelemetryConfig_ServiceNameSource_GatewayName)
 	if !ok {
-		that2, ok := that.(OpenTelemetryConfig_ServiceNameSource_GatewayServiceNameSource)
+		that2, ok := that.(OpenTelemetryConfig_ServiceNameSource_GatewayName)
 		if ok {
 			target = &that2
 		} else {
