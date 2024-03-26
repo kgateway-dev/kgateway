@@ -290,7 +290,7 @@ func getServiceNameForOtel(ctx context.Context, glooOpenTelemetryConfig *tracing
 	case *v3.OpenTelemetryConfig_ServiceNameSource_GatewayName_:
 		return api_conversion.GetGatewayNameFromParent(ctx, parentListener)
 	default:
-		// Either a new type was added and we didn't catch it or `acceptAll` is set to true
+		// Either a new type was added and we didn't catch it or a nil type was passed
 		contextutils.LoggerFrom(ctx).Warnf("Unknown or nil ServiceNameSource type for OpenTelemetry Tracing:", zap.String("sourceType", fmt.Sprintf("%T", sourceType)))
 		return ""
 	}

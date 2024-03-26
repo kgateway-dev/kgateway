@@ -46,7 +46,7 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, c
 	return envoyZipkinConfig, nil
 }
 
-// getGatewayNameFromParent returns the name of the gateway that the listener is associated with.
+// GetGatewayNameFromParent returns the name of the gateway that the listener is associated with.
 // This is used by the otel plugin to set the service name. It requires that the gateway populate the listener's
 // SourceMetadata with the gateway's data. The resource_kind field is a string, and different gateways may use different
 // strings to represent their kind. In the case of unexpected metadata format (eg, no gateways or multiple gateways), we
@@ -72,7 +72,7 @@ func GetGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 		case len(gateways) == 0:
 			contextutils.LoggerFrom(ctx).Warn("No gateway found in parent listener metadata")
 			return UndefinedMetadataServiceName
-		// Mulitple gateways found. This is unexpected, as there should only e one gateway
+		// Mulitple gateways found. This is unexpected, as there should only be one gateway
 		case len(gateways) > 1:
 			contextutils.LoggerFrom(ctx).Warnw("Multiple gateways found in listener metadata", zap.Strings("gateways", gateways))
 			return strings.Join(gateways, ",")
@@ -81,6 +81,7 @@ func GetGatewayNameFromParent(ctx context.Context, parent *gloov1.Listener) stri
 		}
 	default:
 		// if we reach this error its most likely because the API was updated with a new type but this code wasn't
+		// or the fucntion was called with a nil listener
 		contextutils.LoggerFrom(ctx).Warn("Unknown listener metadata format")
 		return UnkownMetadataServiceName
 	}
