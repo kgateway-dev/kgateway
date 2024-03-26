@@ -12,7 +12,8 @@ While the objects used to create the Proxy Api resources are and should be gener
 
 ## Current uses of this data
 ### Open Telemetry `service.name`
-The [Open Telemetry](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#package-soloioenvoyconfigtracev3) resource has a `ServiceNameSource` field that defaults to the value `GatewayName`, which looks for a `StaticMetadataResource` with a `resourceKind` of `*v1.Gateway`, and uses the `resourceRef.name` for the `service.name` field of the Envoy `OpenTelemetryConfig`.
+ When creating a [Envoy OpenTelemetryConfig](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html) resource, we use the 
+ static metadata to determine the value to use for the `service_name` field. A `StaticMetadataResource` is considered to be a Gateway when it has a `resourceKind` of `*v1.Gateway`. The value of that resource's `resourceRef.name` is then used as the  `service.name`.
 
 If the metadata is not present, or in a different format, the `service_name` will be set to the following:
 - Metadata is in deprecated format: "deprecated_metadata"
