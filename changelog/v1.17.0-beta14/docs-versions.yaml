@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Change versions for docs issue template
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
