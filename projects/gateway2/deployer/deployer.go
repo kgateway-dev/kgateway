@@ -211,8 +211,8 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 
 	kubeProxyConfig := dpc.Spec.GetProxyConfig().GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
-	podConfig := deployConfig.GetPodTemplate()
-	envoyContainerConfig := deployConfig.GetEnvoyContainer()
+	podConfig := kubeProxyConfig.GetPodTemplate()
+	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
 
 	// deployment values

@@ -128,6 +128,26 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPodTemplate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPodTemplate(), target.GetPodTemplate()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetEnvoyContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnvoyContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnvoyContainer(), target.GetEnvoyContainer()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetService()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetService()) {
 			return false
@@ -202,26 +222,6 @@ func (m *ProxyDeployment) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetReplicas(), target.GetReplicas()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPodTemplate()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetPodTemplate(), target.GetPodTemplate()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetEnvoyContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEnvoyContainer()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetEnvoyContainer(), target.GetEnvoyContainer()) {
 			return false
 		}
 	}

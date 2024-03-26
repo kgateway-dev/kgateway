@@ -41,24 +41,24 @@ message KubernetesProxyConfig {
     ProxyDeployment deployment = 1;
   }
 
+  // Configuration for the pods that will be created.
+  kube.gateway.gloo.solo.io.Pod pod_template = 2;
+
+  // Configuration for the container running Envoy.
+  EnvoyContainer envoy_container = 3;
+
   // Configuration for the Kubernetes Service that exposes the Envoy proxy over
   // the network.
-  kube.gateway.gloo.solo.io.Service service = 2;
+  kube.gateway.gloo.solo.io.Service service = 4;
 
   // Autoscaling configuration.
-  kube.gateway.gloo.solo.io.Autoscaling autoscaling = 3;
+  kube.gateway.gloo.solo.io.Autoscaling autoscaling = 5;
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
 message ProxyDeployment {
   // The number of desired pods. Defaults to 1.
   google.protobuf.UInt32Value replicas = 1;
-
-  // Configuration for the pods created by the deployment.
-  kube.gateway.gloo.solo.io.Pod pod_template = 2;
-
-  // Configuration for the container running Envoy.
-  EnvoyContainer envoy_container = 3;
 }
 
 // Configuration for the container running Envoy.
