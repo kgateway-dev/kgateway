@@ -60,6 +60,7 @@ func main() {
 				RenderClients:             false,
 				RenderController:          false,
 				MockgenDirective:          false,
+				SkipSchemaDescriptions:    true,
 			},
 		},
 	}
