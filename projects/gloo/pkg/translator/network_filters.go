@@ -236,9 +236,13 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// as the terminal filter in Gloo Edge.
 	routerV3 := routerv3.Router{}
 
+	// TODO it would be ideal of SuppressEnvoyHeaders and DynamicStats could be moved out of here set
+	// in a separate router plugin
 	if h.listener.GetOptions().GetRouter().GetSuppressEnvoyHeaders().GetValue() {
 		routerV3.SuppressEnvoyHeaders = true
 	}
+
+	routerV3.DynamicStats = h.listener.GetOptions().GetRouter().GetDynamicStats()
 
 	newStagedFilter, err := plugins.NewStagedFilter(
 		wellknown.Router,
