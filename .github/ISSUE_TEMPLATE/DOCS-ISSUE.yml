@@ -12,11 +12,11 @@ body:
       label: Version
       description: Which version of the Gloo Edge docs does this affect?
       options:
-        - main (1.16.x beta)
-        - 1.15.x (latest)
+        - main (1.17.x beta)
+        - 1.16.x (latest)
+        - 1.15.x
         - 1.14.x
         - 1.13.x 
-        - 1.12.x
     validations:
       required: true
   - type: textarea
