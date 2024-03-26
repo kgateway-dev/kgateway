@@ -312,22 +312,5 @@ func (m *DataPlaneConfigStatus) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetConditions()) != len(target.GetConditions()) {
-		return false
-	}
-	for idx, v := range m.GetConditions() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetConditions()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetConditions()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	return true
 }
