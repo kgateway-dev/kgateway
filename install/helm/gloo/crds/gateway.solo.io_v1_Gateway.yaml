@@ -1244,6 +1244,9 @@ spec:
                         type: object
                       router:
                         properties:
+                          dynamicStats:
+                            nullable: true
+                            type: boolean
                           suppressEnvoyHeaders:
                             nullable: true
                             type: boolean
@@ -3128,6 +3131,9 @@ spec:
                                   type: object
                                 router:
                                   properties:
+                                    dynamicStats:
+                                      nullable: true
+                                      type: boolean
                                     suppressEnvoyHeaders:
                                       nullable: true
                                       type: boolean
