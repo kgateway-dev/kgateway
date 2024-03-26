@@ -7,16 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
-	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
@@ -48,13 +44,6 @@ var (
 		return eris.Wrapf(err, "could not retrieve dataplaneconfig (%s.%s) for gatewayclass %s", dpcNamespace, dpcName, gatewayClassName)
 	}
 )
-
-type gatewayPort struct {
-	Port       uint16 `json:"port"`
-	Protocol   string `json:"protocol"`
-	Name       string `json:"name"`
-	TargetPort uint16 `json:"targetPort"`
-}
 
 // A Deployer is responsible for deploying proxies
 type Deployer struct {
@@ -124,15 +113,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 	return ret, nil
 }
 
-func jsonConvert2(in *v1alpha1.DataPlaneConfig, out interface{}) error {
-	b, err := json.Marshal(in)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, out)
-}
-
-func jsonConvert3(in *v1alpha1kube.Autoscaling, out interface{}) error {
+func jsonConvert(in *helmConfig, out interface{}) error {
 	b, err := json.Marshal(in)
 	if err != nil {
 		return err
@@ -195,22 +176,38 @@ func (d *Deployer) getDataPlaneConfigForGateway(ctx context.Context, gw *api.Gat
 	return dpc, nil
 }
 
-func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (map[string]any, error) {
-	dpc, err := d.getDataPlaneConfigForGateway(ctx, gw)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("xxxxx got DataPlaneConfig: %v\n", dpc)
-	portsVals, err := GetPortsValues(gw)
-	if err != nil {
-		return nil, err
-	}
-
+func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
+	xdsHost := GetDefaultXdsHost()
 	xdsPort, err := GetDefaultXdsPort(ctx, d.cli)
 	if err != nil {
 		return nil, err
 	}
+
+	vals := &helmConfig{
+		Gateway: &helmGateway{
+			Name:        &gw.Name,
+			GatewayName: &gw.Name,
+			Ports:       getPortsValues(gw),
+			Xds: &helmXds{
+				// The xds host/port MUST map to the Service definition for the Control Plane
+				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+				Host: &xdsHost,
+				Port: &xdsPort,
+			},
+			Image: getDeployerImageValues(),
+		},
+	}
+
+	// check if there is a DataPlaneConfig associated with this Gateway
+	dpc, err := d.getDataPlaneConfigForGateway(ctx, gw)
+	if err != nil {
+		return nil, err
+	}
+	// if there is no DataPlaneConfig, return the values as is
+	if dpc == nil {
+		return vals, nil
+	}
+	fmt.Printf("xxxxx got DataPlaneConfig: %v\n", dpc)
 
 	kubeProxyConfig := dpc.Spec.GetProxyConfig().GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
@@ -218,59 +215,39 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (map[string]a
 	envoyContainerConfig := deployConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
 
-	var replicas any
-	autoscalingVals := GetAutoscalingValues(kubeProxyConfig.GetAutoscaling())
+	// deployment values
+	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
+	vals.Gateway.Autoscaling = autoscalingVals
 	if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
-		replicas = deployConfig.GetReplicas().GetValue()
+		replicas := deployConfig.GetReplicas().GetValue()
+		vals.Gateway.ReplicaCount = &replicas
 	}
 
-	vals := map[string]any{
-		"gateway": map[string]any{
-			"name":        gw.Name,
-			"gatewayName": gw.Name,
+	// service values
+	vals.Gateway.Service = getServiceValues(svcConfig)
 
-			// deployment/service values
-			"replicaCount": replicas,
-			"autoscaling":  autoscalingVals,
-			"ports":        portsVals,
-			"service": map[string]any{
-				// convert the service type enum to its string representation;
-				// if type is not set, it will default to 0 ("ClusterIP")
-				"type":             v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())],
-				"clusterIP":        svcConfig.GetClusterIP(),
-				"extraAnnotations": svcConfig.GetExtraAnnotations(),
-				"extraLabels":      svcConfig.GetExtraLabels(),
-			},
+	// pod template values
+	vals.Gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
+	vals.Gateway.ExtraPodLabels = podConfig.GetExtraLabels()
+	vals.Gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
+	vals.Gateway.PodSecurityContext = podConfig.GetSecurityContext()
+	vals.Gateway.NodeSelector = podConfig.GetNodeSelector()
+	vals.Gateway.Affinity = podConfig.GetAffinity()
+	vals.Gateway.Tolerations = podConfig.GetTolerations()
 
-			// pod template values
-			"extraPodAnnotations": podConfig.GetExtraAnnotations(),
-			"extraPodLabels":      podConfig.GetExtraLabels(),
-			//"imagePullSecrets": podConfig.GetImagePullSecrets(),
-			//"podSecurityContext": podConfig.GetSecurityContext(),
-			//"nodeSelector":podConfig.GetNodeSelector(),
-			//"affinity":podConfig.GetAffinity(),
-			//"tolerations":podConfig.GetTolerations(),
+	// envoy container values
+	logLevel := envoyContainerConfig.GetLogLevel()
+	compLogLevel := envoyContainerConfig.GetComponentLogLevel()
+	vals.Gateway.LogLevel = &logLevel
+	vals.Gateway.ComponentLogLevel = &compLogLevel
+	vals.Gateway.Resources = envoyContainerConfig.GetResources()
+	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	// TODO
+	//vals.Gateway.Image = getDeployerImageValues() / envoyContainerConfig.GetImage()
 
-			// envoy container values
-			"logLevel":          envoyContainerConfig.GetLogLevel(),
-			"componentLogLevel": envoyContainerConfig.GetComponentLogLevel(),
-			"image":             getDeployerImageValues(), // envoyContainerConfig.GetImage()
-			//"resources": envoyContainerConfig.GetResources(),
-			//"securityContext": envoyContainerConfig.GetSecurityContext(),
-
-			// istio values
-			"istioSDS": map[string]any{
-				"enabled": d.inputs.IstioValues.SDSEnabled,
-			},
-
-			// xds values
-			"xds": map[string]any{
-				// The xds host/port MUST map to the Service definition for the Control Plane
-				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-				"host": GetDefaultXdsHost(),
-				"port": xdsPort,
-			},
-		},
+	// istio values
+	vals.Gateway.IstioSDS = &helmIstioSds{
+		Enabled: &d.inputs.IstioValues.SDSEnabled,
 	}
 
 	return vals, nil
@@ -308,7 +285,13 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	}
 	logger.V(1).Info("got deployer helm values", "values", vals)
 
-	objs, err := d.renderChartToObjects(ctx, gw, vals)
+	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
+	var convertedVals map[string]any
+	err = jsonConvert(vals, &convertedVals)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert helm values: %w", err)
+	}
+	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy: %w", err)
 	}
@@ -415,27 +398,4 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
-}
-
-func getDeployerImageValues() map[string]any {
-	image := os.Getenv(constants.GlooGatewayDeployerImage)
-	defaultImageValues := map[string]any{
-		// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
-		"tag": "",
-	}
-
-	if image == "" {
-		// If the env is not defined, return the default
-		return defaultImageValues
-	}
-
-	imageParts := strings.Split(image, ":")
-	if len(imageParts) != 2 {
-		// If the user provided an invalid override, fallback to the default
-		return defaultImageValues
-	}
-	return map[string]any{
-		"repository": imageParts[0],
-		"tag":        imageParts[1],
-	}
 }

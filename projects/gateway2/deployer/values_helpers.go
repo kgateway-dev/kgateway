@@ -1,10 +1,12 @@
 package deployer
 
 import (
-	"encoding/json"
+	"os"
+	"strings"
 
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	"golang.org/x/exp/slices"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -12,57 +14,89 @@ import (
 // This file contains helper functions that generate helm values in the format needed
 // by the deployer.
 
-func GetPortsValues(gw *api.Gateway) ([]any, error) {
-	gwPorts := []gatewayPort{}
+func getPortsValues(gw *api.Gateway) []helmPort {
+	gwPorts := []helmPort{}
 	for _, l := range gw.Spec.Listeners {
 		listenerPort := uint16(l.Port)
-		if slices.IndexFunc(gwPorts, func(p gatewayPort) bool { return p.Port == listenerPort }) != -1 {
+		if slices.IndexFunc(gwPorts, func(p helmPort) bool { return *p.Port == listenerPort }) != -1 {
 			continue
 		}
-		var port gatewayPort
-		port.Port = listenerPort
-		port.TargetPort = ports.TranslatePort(listenerPort)
-		port.Name = string(l.Name)
-		port.Protocol = "TCP"
+		targetPort := ports.TranslatePort(listenerPort)
+		portName := string(l.Name)
+		protocol := "TCP"
+
+		var port helmPort
+		port.Port = &listenerPort
+		port.TargetPort = &targetPort
+		port.Name = &portName
+		port.Protocol = &protocol
 		gwPorts = append(gwPorts, port)
 	}
-
-	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
-	var portsVals []any
-	err := jsonConvertPorts(gwPorts, &portsVals)
-	if err != nil {
-		return nil, err
-	}
-	return portsVals, nil
+	return gwPorts
 }
 
-func GetAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) map[string]any {
+func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscaling {
 	hpaConfig := autoscaling.GetHorizontalPodAutoscaler()
-	var autoscalingVals map[string]any
-	if hpaConfig != nil {
-		autoscalingVals = map[string]any{
-			"enabled": true,
-		}
-		if hpaConfig.GetMinReplicas() != nil {
-			autoscalingVals["minReplicas"] = hpaConfig.GetMinReplicas().GetValue()
-		}
-		if hpaConfig.GetMaxReplicas() != nil {
-			autoscalingVals["maxReplicas"] = hpaConfig.GetMaxReplicas().GetValue()
-		}
-		if hpaConfig.GetTargetCpuUtilizationPercentage() != nil {
-			autoscalingVals["targetCPUUtilizationPercentage"] = hpaConfig.GetTargetCpuUtilizationPercentage().GetValue()
-		}
-		if hpaConfig.GetTargetMemoryUtilizationPercentage() != nil {
-			autoscalingVals["targetMemoryUtilizationPercentage"] = hpaConfig.GetTargetMemoryUtilizationPercentage().GetValue()
-		}
+	if hpaConfig == nil {
+		return nil
 	}
+
+	trueVal := true
+	autoscalingVals := &helmAutoscaling{
+		Enabled: &trueVal,
+	}
+	if hpaConfig.GetMinReplicas() != nil {
+		minReplicas := hpaConfig.GetMinReplicas().GetValue()
+		autoscalingVals.MinReplicas = &minReplicas
+	}
+	if hpaConfig.GetMaxReplicas() != nil {
+		maxReplicas := hpaConfig.GetMaxReplicas().GetValue()
+		autoscalingVals.MaxReplicas = &maxReplicas
+	}
+	if hpaConfig.GetTargetCpuUtilizationPercentage() != nil {
+		cpuPercent := hpaConfig.GetTargetCpuUtilizationPercentage().GetValue()
+		autoscalingVals.TargetCPUUtilizationPercentage = &cpuPercent
+	}
+	if hpaConfig.GetTargetMemoryUtilizationPercentage() != nil {
+		memPercent := hpaConfig.GetTargetMemoryUtilizationPercentage().GetValue()
+		autoscalingVals.TargetMemoryUtilizationPercentage = &memPercent
+	}
+
 	return autoscalingVals
 }
 
-func jsonConvertPorts(in []gatewayPort, out interface{}) error {
-	b, err := json.Marshal(in)
-	if err != nil {
-		return err
+func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
+	// convert the service type enum to its string representation;
+	// if type is not set, it will default to 0 ("ClusterIP")
+	svcType := v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())]
+	clusterIp := svcConfig.GetClusterIP()
+	return &helmService{
+		Type:             &svcType,
+		ClusterIP:        &clusterIp,
+		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
+		ExtraLabels:      svcConfig.GetExtraLabels(),
 	}
-	return json.Unmarshal(b, out)
+}
+
+func getDeployerImageValues() *helmImage {
+	image := os.Getenv(constants.GlooGatewayDeployerImage)
+	defaultImageValues := &helmImage{
+		// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
+		//Tag: "",
+	}
+
+	if image == "" {
+		// If the env is not defined, return the default
+		return defaultImageValues
+	}
+
+	imageParts := strings.Split(image, ":")
+	if len(imageParts) != 2 {
+		// If the user provided an invalid override, fallback to the default
+		return defaultImageValues
+	}
+	return &helmImage{
+		Repository: &imageParts[0],
+		Tag:        &imageParts[1],
+	}
 }

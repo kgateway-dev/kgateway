@@ -58,11 +58,37 @@ func findGvkInRules(cr rbacv1.ClusterRole, gvk schema.GroupVersionKind) bool {
 var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
+
+		gwc     *api.GatewayClass
+		glooSvc *corev1.Service
 	)
+
 	BeforeEach(func() {
 		var err error
-		s := scheme.NewScheme()
-		d, err = deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+
+		gwc = &api.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "gloo-gateway",
+			},
+			Spec: api.GatewayClassSpec{
+				ControllerName: "solo.io/gloo-gateway",
+			},
+		}
+		glooSvc = &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gloo",
+				Namespace: "gloo-system",
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "grpc-xds",
+						Port: 1234,
+					},
+				},
+			},
+		}
+		d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
 		})
@@ -77,8 +103,7 @@ var _ = Describe("Deployer", func() {
 				SDSEnabled: true,
 			},
 		}
-		s := scheme.NewScheme()
-		d, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), inputs)
+		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), inputs)
 		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
 
 		// Create a Gateway
@@ -93,6 +118,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
+				GatewayClassName: "gloo-gateway",
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -262,8 +288,7 @@ var _ = Describe("Deployer", func() {
 
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
-		s := scheme.NewScheme()
-		d, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
 		})
@@ -383,14 +408,13 @@ var _ = Describe("Deployer", func() {
 	})
 
 	It("support segmenting by release", func() {
-		s := scheme.NewScheme()
-		d1, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(fake.NewClientBuilder().WithScheme(s).Build(), &deployer.Inputs{
+		d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
 		})
@@ -449,4 +473,10 @@ func getEnvoyConfig(objs []client.Object) string {
 		}
 	}
 	return ""
+}
+
+// initialize a fake controller-runtime client with the given list of objects
+func newFakeClientWithObjs(objs ...client.Object) client.Client {
+	s := scheme.NewScheme()
+	return fake.NewClientBuilder().WithScheme(s).WithObjects(objs...).Build()
 }
