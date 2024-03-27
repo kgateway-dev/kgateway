@@ -195,6 +195,9 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Port: &xdsPort,
 			},
 			Image: getDeployerImageValues(),
+			IstioSDS: &helmIstioSds{
+				Enabled: &d.inputs.IstioValues.SDSEnabled,
+			},
 		},
 	}
 
@@ -244,11 +247,6 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	// TODO
 	//vals.Gateway.Image = getDeployerImageValues() / envoyContainerConfig.GetImage()
-
-	// istio values
-	vals.Gateway.IstioSDS = &helmIstioSds{
-		Enabled: &d.inputs.IstioValues.SDSEnabled,
-	}
 
 	return vals, nil
 }
