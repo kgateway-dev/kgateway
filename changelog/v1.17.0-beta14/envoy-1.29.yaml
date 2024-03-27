@@ -13,7 +13,6 @@ changelog:
   description: >-
     * External Processing servers which mutate the body must also send a header mutation to correctly set the Content-Length.
     * Removing a query parameter in the ExtAuth filter no longer causes repeats of that query parameter to be removed.
-    * Header mutations at multiple configuration levels are now all applied in order from least to most specific.
     * JWT Authentication now validates the entire extracted token instead of only validating up to the first non-base64 character.
     * TE HTTP header from downstream is sanitized before proxying the request to upstream.
     * Host header is ignored if :authority header is included in HTTP/2 request.
