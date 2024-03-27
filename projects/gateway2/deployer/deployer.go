@@ -236,8 +236,8 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	vals.Gateway.Tolerations = podConfig.GetTolerations()
 
 	// envoy container values
-	logLevel := envoyContainerConfig.GetLogLevel()
-	compLogLevel := envoyContainerConfig.GetComponentLogLevel()
+	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
+	compLogLevel := envoyContainerConfig.GetBootstrap().GetComponentLogLevel()
 	vals.Gateway.LogLevel = &logLevel
 	vals.Gateway.ComponentLogLevel = &compLogLevel
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()

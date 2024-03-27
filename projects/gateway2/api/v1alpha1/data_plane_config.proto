@@ -63,33 +63,40 @@ message ProxyDeployment {
 
 // Configuration for the container running Envoy.
 message EnvoyContainer {
+  // Initial envoy configuration.
+  EnvoyBootstrap bootstrap = 1;
+
   // The envoy container image. See
   // https://kubernetes.io/docs/concepts/containers/images
   // for details.
-  kube.gateway.gloo.solo.io.Image image = 1;
+  kube.gateway.gloo.solo.io.Image image = 2;
 
+  // The security context for this container. See
+  // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+  // for details.
+  k8s.io.api.core.v1.SecurityContext security_context = 3;
+
+  // The compute resources required by this container. See
+  // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  // for details.
+  kube.gateway.gloo.solo.io.ResourceRequirements resources = 4;
+}
+
+// Configuration for the Envoy proxy instance that is provisioned from a
+// Kubernetes Gateway.
+message EnvoyBootstrap {
   // Envoy log level. Options include "trace", "debug", "info", "warn", "error",
   // "critical" and "off". Defaults to "info". See
   // https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
   // for more information.
-  string log_level = 2;
+  string log_level = 1;
 
   // Envoy component log level. The provided string will be used as a
   // passthrough value for the `--component-log-level` argument to Envoy, e.g.
   // `upstream:debug,connection:trace`. See
   // https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
   // for more information.
-  string component_log_level = 3;
-
-  // The security context for this container. See
-  // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
-  // for details.
-  k8s.io.api.core.v1.SecurityContext security_context = 4;
-
-  // The compute resources required by this container. See
-  // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-  // for details.
-  kube.gateway.gloo.solo.io.ResourceRequirements resources = 5;
+  string component_log_level = 2;
 }
 
 message DataPlaneConfigStatus {

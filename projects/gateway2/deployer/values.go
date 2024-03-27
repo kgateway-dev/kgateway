@@ -24,7 +24,6 @@ type helmGateway struct {
 	ReadinessPort *uint16          `json:"readinessPort,omitempty"`
 	Service       *helmService     `json:"service,omitempty"`
 
-	//pod
 	// pod template values
 	ExtraPodAnnotations map[string]string                 `json:"extraPodAnnotations,omitempty"`
 	ExtraPodLabels      map[string]string                 `json:"extraPodLabels,omitempty"`
@@ -34,7 +33,6 @@ type helmGateway struct {
 	Affinity            *extcorev1.Affinity               `json:"affinity,omitempty"`
 	Tolerations         []*extcorev1.Toleration           `json:"tolerations,omitempty"`
 
-	// envoyContainer
 	// envoy container values
 	LogLevel          *string                            `json:"logLevel,omitempty"`
 	ComponentLogLevel *string                            `json:"componentLogLevel,omitempty"`
