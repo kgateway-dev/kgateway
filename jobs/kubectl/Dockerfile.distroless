@@ -4,4 +4,6 @@ FROM bitnami/kubectl:1.28.4 as kubectl
 
 FROM $BASE_IMAGE
 
+RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
+
 COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
