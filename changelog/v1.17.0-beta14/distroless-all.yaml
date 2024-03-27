@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Adds distroless variants to all gloo edge created images
+
