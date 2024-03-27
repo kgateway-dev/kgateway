@@ -15,4 +15,4 @@ changelog:
     * Removing a query parameter in the ExtAuth filter no longer causes repeats of that query parameter to be removed.
     * JWT Authentication now validates the entire extracted token instead of only validating up to the first non-base64 character.
     * TE HTTP header from downstream is sanitized before proxying the request to upstream.
-    * Host header is ignored if :authority header is included in HTTP/2 request.
+    * Host header is ignored if :authority header is included in HTTP/2 request, to bring Envoy into compliance with https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1.
