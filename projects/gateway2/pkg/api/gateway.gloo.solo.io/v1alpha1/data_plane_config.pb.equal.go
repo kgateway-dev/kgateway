@@ -128,22 +128,22 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPodTemplate()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetPodTemplate(), target.GetPodTemplate()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetEnvoyContainer()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetEnvoyContainer()) {
 			return false
 		}
 	} else {
 		if !proto.Equal(m.GetEnvoyContainer(), target.GetEnvoyContainer()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPodTemplate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPodTemplate(), target.GetPodTemplate()) {
 			return false
 		}
 	}

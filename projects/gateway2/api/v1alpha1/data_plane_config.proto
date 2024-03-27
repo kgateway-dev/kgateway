@@ -41,11 +41,11 @@ message KubernetesProxyConfig {
     ProxyDeployment deployment = 1;
   }
 
-  // Configuration for the pods that will be created.
-  kube.gateway.gloo.solo.io.Pod pod_template = 2;
-
   // Configuration for the container running Envoy.
-  EnvoyContainer envoy_container = 3;
+  EnvoyContainer envoy_container = 2;
+
+  // Configuration for the pods that will be created.
+  kube.gateway.gloo.solo.io.Pod pod_template = 3;
 
   // Configuration for the Kubernetes Service that exposes the Envoy proxy over
   // the network.
