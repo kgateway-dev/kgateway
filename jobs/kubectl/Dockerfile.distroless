@@ -1,0 +1,7 @@
+ARG BASE_IMAGE
+
+FROM bitnami/kubectl:1.28.4 as kubectl
+
+FROM $BASE_IMAGE
+
+COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
