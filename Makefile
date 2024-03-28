@@ -78,7 +78,10 @@ TEST_ASSET_DIR := $(ROOTDIR)/_test
 
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
-DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest
+DONOR_IMAGE ?= debian:11
+DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest-amd64
+GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
+GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-binaries:$(VERSION)
 ALPINE_BASE_IMAGE ?= alpine:3.17.6
 
 #----------------------------------------------------------------------------------
@@ -374,6 +377,36 @@ STDERR_SILENCE_REDIRECT := 2> /dev/null
 endif
 
 #----------------------------------------------------------------------------------
+# Gloo distroless base images
+#----------------------------------------------------------------------------------
+
+DISTROLESS_DIR=projects/distroless
+DISTROLESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISTROLESS_DIR)
+
+$(DISTROLESS_OUTPUT_DIR)/Dockerfile: $(DISTROLESS_DIR)/Dockerfile
+	mkdir -p $(DISTROLESS_OUTPUT_DIR)
+	cp $< $@
+
+.PHONY: distroless-docker
+distroless-docker: $(DISTROLESS_OUTPUT_DIR)/Dockerfile
+	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile \
+		--build-arg DONOR_IMAGE=$(DONOR_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(GLOO_DISTROLESS_BASE_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
+$(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries: $(DISTROLESS_DIR)/Dockerfile.binaries
+	mkdir -p $(DISTROLESS_OUTPUT_DIR)
+	cp $< $@
+
+.PHONY: distroless-with-binaries-docker
+distroless-with-binaries-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries
+	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
+		--build-arg GOARCH=$(GOARCH) \
+		-t  $(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
+#----------------------------------------------------------------------------------
 # Ingress
 #----------------------------------------------------------------------------------
 
@@ -449,10 +482,10 @@ $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless: $(DISCOVERY_DIR)/cmd/Do
 	cp $< $@
 
 .PHONY: discovery-distroless-docker
-discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless
+discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless distroless-docker
 	docker buildx build --load $(PLATFORM) $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 
@@ -485,11 +518,11 @@ $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distro
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
 .PHONY: gloo-distroless-docker
-gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless
+gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless distroless-with-binaries-docker
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE)-amd64 \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
 		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
@@ -570,10 +603,10 @@ $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: $(SDS_DIR)/cmd/Dockerfile.distroles
 	cp $< $@
 
 .PHONY: sds-distroless-docker
-sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless
+sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless distroless-with-binaries-docker
 	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
 		-t $(IMAGE_REGISTRY)/sds:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
@@ -608,11 +641,11 @@ $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: $(ENVOYINIT_DIR)/Docker
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
 .PHONY: gloo-envoy-wrapper-distroless-docker
-gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-binaries-docker
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE)-amd64 \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
 		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
