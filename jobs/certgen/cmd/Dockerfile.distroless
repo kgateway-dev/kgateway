@@ -1,6 +1,7 @@
 ARG BASE_IMAGE
+ARG DONOR_IMAGE
 
-FROM debian:11 as debian
+FROM $DONOR_IMAGE as donor
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -11,10 +12,10 @@ ARG GOARCH=amd64
 
 # Needed for access to AWS
 # Copy over the certs
-COPY --from=debian /usr/share/ca-certificates /usr/share/ca-certificates
-COPY --from=debian /usr/share/doc/ca-certificates/ /usr/share/doc/ca-certificates/
-COPY --from=debian /etc/ssl /etc/ssl
-COPY --from=debian /usr/lib/ssl /usr/lib/ssl
+COPY --from=donor /usr/share/ca-certificates /usr/share/ca-certificates
+COPY --from=donor /usr/share/doc/ca-certificates/ /usr/share/doc/ca-certificates/
+COPY --from=donor /etc/ssl /etc/ssl
+COPY --from=donor /usr/lib/ssl /usr/lib/ssl
 
 COPY certgen-linux-$GOARCH /usr/local/bin/certgen
 

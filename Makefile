@@ -80,6 +80,7 @@ TEST_ASSET_DIR := $(ROOTDIR)/_test
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
 DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest
 ALPINE_BASE_IMAGE ?= alpine:3.17.6
+DONOR_IMAGE ?= debian:11
 
 #----------------------------------------------------------------------------------
 # Macros
@@ -437,6 +438,7 @@ $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless: $(ACCESS_LOG_DIR)/
 .PHONY: access-logger-distroless-docker
 access-logger-distroless-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless
 	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless \
+		--build-arg DONOR_IMAGE=$(DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
@@ -472,6 +474,7 @@ $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless: $(DISCOVERY_DIR)/cmd/Do
 discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless
 	docker buildx build --load $(PLATFORM) $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless \
 		--build-arg GOARCH=$(GOARCH) \
+		--build-arg DONOR_IMAGE=$(DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
@@ -665,6 +668,7 @@ $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless: $(CERTGEN_DIR)/Dockerfile.d
 .PHONY: certgen-distroless-docker
 certgen-distroless-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless
 	docker buildx build --load $(PLATFORM) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless \
+		--build-arg DONOR_IMAGE=$(DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
