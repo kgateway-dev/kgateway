@@ -1,9 +1,13 @@
 ARG BASE_IMAGE
 
+FROM busybox:1.35.0-uclibc as busybox
 FROM bitnami/kubectl:1.28.4 as kubectl
 
 FROM $BASE_IMAGE
 
-RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
+COPY --from=busybox /bin/sh /bin/sh
+COPY --from=busybox /bin/sleep /bin/sleep
+COPY --from=busybox /bin/sleep /bin/echo
+COPY --from=busybox /bin/sleep /bin/ls
 
 COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
