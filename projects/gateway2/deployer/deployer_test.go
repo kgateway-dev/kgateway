@@ -2,7 +2,9 @@ package deployer_test
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/version"
@@ -158,15 +160,12 @@ var _ = Describe("Deployer", func() {
 			dInputs        *deployer.Inputs
 			gwc            *api.GatewayClass
 			gw             *api.Gateway
-			dpc            *gw2_v1alpha1.DataPlaneConfig
 			glooSvc        *corev1.Service
 			arbitrarySetup func()
 		}
 
 		type expectedOutput struct {
-			newDeployerErr error
-			convertErr     error
-			objs           clientObjects
+			err            error
 			validationFunc func(objs clientObjects) error
 		}
 
@@ -191,10 +190,10 @@ var _ = Describe("Deployer", func() {
 			defaultGatewayClass = func() *api.GatewayClass {
 				return &api.GatewayClass{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "gloo-gateway",
+						Name: wellknown.GatewayClassName,
 					},
 					Spec: api.GatewayClassSpec{
-						ControllerName: "solo.io/gloo-gateway",
+						ControllerName: wellknown.GatewayControllerName,
 					},
 				}
 			}
@@ -216,7 +215,7 @@ var _ = Describe("Deployer", func() {
 						APIVersion: "gateway.solo.io/v1beta1",
 					},
 					Spec: api.GatewaySpec{
-						GatewayClassName: "gloo-gateway",
+						GatewayClassName: wellknown.GatewayClassName,
 						Listeners: []api.Listener{
 							{
 								Name: "listener-1",
@@ -229,8 +228,9 @@ var _ = Describe("Deployer", func() {
 			defaultDataPlaneConfig = func() *gw2_v1alpha1.DataPlaneConfig {
 				return &gw2_v1alpha1.DataPlaneConfig{
 					TypeMeta: metav1.TypeMeta{
-						Kind:       "DataPlaneConfig",
-						APIVersion: "gateway.solo.io/v1alpha1",
+						Kind: gw2_v1alpha1.DataPlaneConfigGVK.Kind,
+						// The parsing expects GROUP/VERSION format in this field
+						APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.DataPlaneConfigGVK.Group, gw2_v1alpha1.DataPlaneConfigGVK.Version),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "gloo-data-plane",
@@ -241,7 +241,11 @@ var _ = Describe("Deployer", func() {
 						ProxyConfig: &gw2_v1alpha1.ProxyConfig{
 							EnvironmentType: &gw2_v1alpha1.ProxyConfig_Kube{
 								Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-									WorkloadType: nil,
+									WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
+										Deployment: &gw2_v1alpha1.ProxyDeployment{
+											Replicas: &wrappers.UInt32Value{Value: 3},
+										},
+									},
 									EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 										Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
 											LogLevel:          "debug",
@@ -254,13 +258,22 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
+			defaultGatewayClassWithDataPlaneConfig = func(dpc *gw2_v1alpha1.DataPlaneConfig) *api.GatewayClass {
+				gwc := defaultGatewayClass()
+				gwc.Spec.ParametersRef = &api.ParametersReference{
+					Group:     api.Group(dpc.TypeMeta.GroupVersionKind().Group),
+					Kind:      api.Kind(dpc.TypeMeta.GroupVersionKind().Kind),
+					Name:      dpc.Name,
+					Namespace: &apiNamespace,
+				}
+				return gwc
+			}
 			defaultInput = func() *input {
 				return &input{
 					dInputs: defaultDeployerInputs(),
 					gwc:     defaultGatewayClass(),
 					glooSvc: defaultGlooSvc(),
 					gw:      defaultGateway(),
-					dpc:     defaultDataPlaneConfig(),
 				}
 			}
 		)
@@ -270,49 +283,50 @@ var _ = Describe("Deployer", func() {
 				inp.arbitrarySetup()
 			}
 
-			checkErr := func(err, expectedErr error) (shouldReturn bool) {
-				if expectedErr != nil {
-					Expect(err).To(MatchError(expectedErr))
-					return true
-				}
-				Expect(err).NotTo(HaveOccurred())
-				return false
-			}
-
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(inp.gwc, inp.glooSvc), inp.dInputs)
-			if checkErr(err, expected.newDeployerErr) {
-				return
-			}
+			// We don't have any interesting error cases in the NewDeployer to test for but if we get
+			// some then we will need to handle those outside the table or be more clever about expected
+			// errors
+			Expect(err).NotTo(HaveOccurred())
 
 			objs, err := d.GetObjsToDeploy(context.Background(), inp.gw)
-			if checkErr(err, expected.convertErr) {
+			if expected.err != nil {
+				Expect(err).To(MatchError(expected.err))
+				// return here since we matched our expected error
 				return
+			} else {
+				Expect(err).NotTo(HaveOccurred())
 			}
 
-			if expected.objs != nil {
-				// handle object comparisons
-				Expect(objs).NotTo(BeEmpty())
-				Expect(objs).To(HaveLen(len(expected.objs)))
-				for i := range objs {
-					// Not sure if this will work with interfaces
-					Expect(objs[i]).To(BeIdenticalTo(expected.objs[i]))
-				}
-			} else {
-				// handle custom test validation func
-				Expect(expected.validationFunc(objs)).NotTo(HaveOccurred())
-			}
+			// handle custom test validation func
+			Expect(expected.validationFunc(objs)).NotTo(HaveOccurred())
 		},
-			// DO_NOT_SUBMIT until adding some validation here
-			Entry("happypath", &input{
+			Entry("No DataPlaneConfig", &input{
 				dInputs: defaultDeployerInputs(),
 				gwc:     defaultGatewayClass(),
 				glooSvc: defaultGlooSvc(),
 				gw:      defaultGateway(),
 			}, &expectedOutput{
-				newDeployerErr: nil,
-				convertErr:     nil,
-				objs:           nil,
 				validationFunc: func(objs clientObjects) error {
+					Expect(objs).NotTo(BeEmpty())
+					// Check we have Deployment, ConfigMap, ServiceAccount, Service
+					// TODO(jbohanon): validate everything??
+					Expect(objs).To(HaveLen(4))
+					return nil
+				},
+			}),
+			Entry("DataPlaneConfig overrides", &input{
+				dInputs: defaultDeployerInputs(),
+				gwc:     defaultGatewayClassWithDataPlaneConfig(defaultDataPlaneConfig()),
+				glooSvc: defaultGlooSvc(),
+				gw:      defaultGateway(),
+			}, &expectedOutput{
+				err: nil,
+				validationFunc: func(objs clientObjects) error {
+					Expect(objs).NotTo(BeEmpty())
+					// Check we have Deployment, ConfigMap, ServiceAccount, Service
+					Expect(objs).To(HaveLen(4))
+					Expect(objs)
 					return nil
 				},
 			}),
@@ -415,9 +429,6 @@ var _ = Describe("Deployer", func() {
 				gw:             defaultGateway(),
 				arbitrarySetup: func() { version.Version = "testversion" },
 			}, &expectedOutput{
-				newDeployerErr: nil,
-				convertErr:     nil,
-				objs:           nil,
 				validationFunc: func(objs clientObjects) error {
 					dep := objs.deployment()
 					Expect(dep).NotTo(BeNil())
@@ -459,7 +470,6 @@ var _ = Describe("Deployer", func() {
 
 					// make sure it's valid yaml
 					var envoyConfig map[string]any
-
 					err := yaml.Unmarshal([]byte(envoyYaml), &envoyConfig)
 					Expect(err).NotTo(HaveOccurred(), "envoy config is not valid yaml: %s", envoyYaml)
 
@@ -540,7 +550,7 @@ var _ = Describe("Deployer", func() {
 					},
 				},
 			}, &expectedOutput{
-				convertErr: deployer.NoGatewayClassError,
+				err: deployer.NoGatewayClassError,
 			}),
 			Entry("failed to get gateway class", &input{
 				dInputs: defaultDeployerInputs(),
@@ -567,7 +577,7 @@ var _ = Describe("Deployer", func() {
 					},
 				},
 			}, &expectedOutput{
-				convertErr: deployer.GetGatewayClassError,
+				err: deployer.GetGatewayClassError,
 			}),
 			Entry("unsupported parametersRef Kind; bad group", &input{
 				dInputs: defaultDeployerInputs(),
@@ -587,7 +597,7 @@ var _ = Describe("Deployer", func() {
 				glooSvc: defaultGlooSvc(),
 				gw:      defaultGateway(),
 			}, &expectedOutput{
-				convertErr: deployer.UnsupportedParametersRefKind,
+				err: deployer.UnsupportedParametersRefKind,
 			}),
 			Entry("unsupported parametersRef Kind; bad kind", &input{
 				dInputs: defaultDeployerInputs(),
@@ -607,33 +617,28 @@ var _ = Describe("Deployer", func() {
 				glooSvc: defaultGlooSvc(),
 				gw:      defaultGateway(),
 			}, &expectedOutput{
-				convertErr: deployer.UnsupportedParametersRefKind,
+				err: deployer.UnsupportedParametersRefKind,
 			}),
 			Entry("failed to get dataplaneconfig", &input{
 				dInputs: defaultDeployerInputs(),
-				gwc: &api.GatewayClass{
+				gwc: defaultGatewayClassWithDataPlaneConfig(&gw2_v1alpha1.DataPlaneConfig{
+					TypeMeta: metav1.TypeMeta{
+						Kind: gw2_v1alpha1.DataPlaneConfigGVK.Kind,
+						// The parsing expects GROUP/VERSION format in this field
+						APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.DataPlaneConfigGVK.Group, gw2_v1alpha1.DataPlaneConfigGVK.Version),
+					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "gloo-gateway",
+						Name:      "foo",
+						Namespace: "gloo-system",
 					},
-					Spec: api.GatewayClassSpec{
-						ControllerName: "solo.io/gloo-gateway",
-						ParametersRef: &api.ParametersReference{
-							Group:     api.Group(gw2_v1alpha1.DataPlaneConfigGVK.Group),
-							Kind:      api.Kind(gw2_v1alpha1.DataPlaneConfigGVK.Kind),
-							Name:      "foo",
-							Namespace: &apiNamespace,
-						},
-					},
-				},
+				}),
 				glooSvc: defaultGlooSvc(),
 				gw:      defaultGateway(),
-				dpc:     defaultDataPlaneConfig(),
 			}, &expectedOutput{
-				convertErr: deployer.GetDataPlaneConfigError,
+				err: deployer.GetDataPlaneConfigError,
 			}),
 		)
 	})
-
 })
 
 // initialize a fake controller-runtime client with the given list of objects
