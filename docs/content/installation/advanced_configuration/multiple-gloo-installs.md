@@ -32,7 +32,7 @@ Currently, installing Gloo Edge with specific `watchNamespaces` requires install
 
 In this section we'll deploy Gloo Edge twice, each instance to a different namespace, with two different Helm value files. 
 
-For Gloo Edge Enterprise users, you often use Gloo with the enterprise observability tools, Grafana and Prometheus. However, you cannot use the same observability instance for your separate Gloo instances. You can disable the observability tool for additional instances, or create separate instances with name and RBAC overrides, as shown in the following examples.
+For Gloo Edge Enterprise users, you often use Gloo with the enterprise observability tools, Grafana and Prometheus. However, you cannot use the same observability instance for multiple Gloo instances. You can disable the observability tool for additional Gloo instances, or create separate observability tool instances by using name and RBAC overrides, as shown in the following examples.
 
 For Gloo Edge Open Source users, remove the [Grafana]({{% versioned_link_path fromRoot="/guides/observability/grafana/" %}}) and [Prometheus]({{% versioned_link_path fromRoot="/guides/observability/prometheus/" %}}) settings from the examples. Grafana and Prometheus are enterprise-only features.
 
@@ -45,10 +45,10 @@ settings:
   watchNamespaces:
   - default
   - gloo1
-grafana: # The grafana settings can be removed for Gloo Edge OSS
+grafana: # Remove the grafana settings for Gloo Edge OSS
   rbac:
     namespaced: true
-prometheus: # The prometheus settings can be removed for Gloo Edge OSS
+prometheus: # Remove the prometheus settings for Gloo Edge OSS
   kube-state-metrics:
     fullnameOverride: glooe-prometheus-kube-state-metrics-1
   server:
@@ -117,10 +117,10 @@ settings:
   watchNamespaces:
   - default
   - gloo2
-grafana: # The grafana settings can be removed for Gloo Edge OSS
+grafana: # Remove the grafana settings for Gloo Edge OSS
   rbac:
     namespaced: true
-prometheus: # The prometheus settings can be removed for Gloo Edge OSS
+prometheus: # Remove the prometheus settings for Gloo Edge OSS
   kube-state-metrics:
     fullnameOverride: glooe-prometheus-kube-state-metrics-2
   server:
