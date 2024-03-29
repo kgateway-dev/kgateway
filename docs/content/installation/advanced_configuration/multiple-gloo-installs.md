@@ -30,11 +30,15 @@ Currently, installing Gloo Edge with specific `watchNamespaces` requires install
 
 ## Installing Namespace-Scoped Gloo Edge with Helm
 
-In this section we'll deploy Gloo Edge twice, each instance to a different namespace, with two different Helm value files. For Gloo Edge Enterprise users, we have included a settings for the Grafana RBAC configuration. Gloo Edge Open Source users can safely remove those settings.
+In this section we'll deploy Gloo Edge twice, each instance to a different namespace, with two different Helm value files. 
+
+For Gloo Edge Enterprise users, you often use Gloo with the enterprise observability tools, Grafana and Prometheus. However, you cannot use the same observability instance for your separate Gloo instances. You can disable the observability tool for additional instances, or create separate instances with name and RBAC overrides, as shown in the following examples.
+
+For Gloo Edge Open Source users, remove the [Grafana]({{% versioned_link_path fromRoot="/guides/observability/grafana/" %}}) and [Prometheus]({{% versioned_link_path fromRoot="/guides/observability/prometheus/" %}}) settings from the examples. Grafana and Prometheus are enterprise-only features.
 
 Create a file named `gloo1-overrides.yaml` and paste the following inside:
 
-```shell
+```yaml
 settings:
   create: true
   writeNamespace: gloo1
@@ -44,6 +48,11 @@ settings:
 grafana: # The grafana settings can be removed for Gloo Edge OSS
   rbac:
     namespaced: true
+prometheus: # The prometheus settings can be removed for Gloo Edge OSS
+  kube-state-metrics:
+    fullnameOverride: glooe-prometheus-kube-state-metrics-1
+  server:
+    fullnameOverride: glooe-prometheus-server-1
 ```
 
 Now, let's install Gloo Edge. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) if you need a refresher.
@@ -111,6 +120,11 @@ settings:
 grafana: # The grafana settings can be removed for Gloo Edge OSS
   rbac:
     namespaced: true
+prometheus: # The prometheus settings can be removed for Gloo Edge OSS
+  kube-state-metrics:
+    fullnameOverride: glooe-prometheus-kube-state-metrics-2
+  server:
+    fullnameOverride: glooe-prometheus-server-2
 ```
 
 Now, let's install Gloo Edge for the second time. First create the second namespace:
