@@ -1,0 +1,10 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/9288
+  resolvesIssue: true
+  description: >-
+    Fixes Github asset release action broken by updates to https://github.com/solo-io/gloo/pull/9212. 
+    Also adds a dry_run option to the script that broke so we can catch these errors on PRs
+
+    skipCI-kube-tests:true
+    skipCI-docs-build:true

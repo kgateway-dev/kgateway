@@ -741,7 +741,11 @@ publish-docker-retag: docker-retag docker-push
 
 # publish glooctl
 publish-glooctl: build-cli
-	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true
+	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true false # assets only, not dry run
+else
+# dry run publish glooctl
+publish-glooctl: build-cli
+	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true true # assets only, dry run
 endif # RELEASE exclusive make targets
 
 
