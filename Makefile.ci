@@ -10,17 +10,17 @@ CLI_DIR=projects/gloo/cli
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
-$(OUTPUT_DIR)/glooctl-linux-arm64: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux GOARCH=amd64 go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+$(OUTPUT_DIR)/glooctl-linux-arm64: $(SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux GOARCH=arm64 go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=darwin GOARCH=amd64 go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 $(OUTPUT_DIR)/glooctl-darwin-arm64: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=darwin GOARCH=arm64 go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=windows GOARCH=$(GOARCH) go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 
 .PHONY: glooctl
