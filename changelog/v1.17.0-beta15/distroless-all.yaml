@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Adds distroless variants to all remaining gloo edge created images (certgen, kubectl, accesslogger, discovery, ingress)
-
