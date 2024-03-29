@@ -524,6 +524,6 @@ spec:
 ---
 {{- $kubeResourceOverride := $gatewaySpec.kubeResourceOverride  }}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.deploymentSpec") -}}
+{{ include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.deploymentSpec") -}}
 {{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }} {{/* if .Values.gateway.enabled */}}
