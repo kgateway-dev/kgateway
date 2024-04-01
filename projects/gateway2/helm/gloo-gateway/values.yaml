@@ -18,7 +18,7 @@ gateway:
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
   service:
-    type: ClusterIP
+    type: LoadBalancer
   readinessPort: 8082
   # ports should come from the Gateway
   ports:

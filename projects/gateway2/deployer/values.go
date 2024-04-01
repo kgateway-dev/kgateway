@@ -50,6 +50,7 @@ type helmGateway struct {
 	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
 }
 
+// helmPort represents a Gateway Listener port
 type helmPort struct {
 	Port       *uint16 `json:"port,omitempty"`
 	Protocol   *string `json:"protocol,omitempty"`
@@ -72,11 +73,14 @@ type helmService struct {
 	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
 }
 
+// helmXds represents the xds host and port to which envoy will connect
+// to receive xds config updates
 type helmXds struct {
 	Host *string `json:"host,omitempty"`
 	Port *int32  `json:"port,omitempty"`
 }
 
+<<<<<<< HEAD
 type helmAutoscaling struct {
 	Enabled                           *bool   `json:"enabled,omitempty"`
 	MinReplicas                       *uint32 `json:"minReplicas,omitempty"`
@@ -94,3 +98,8 @@ type helmServiceAccount struct {
 	Name        *string           `json:"name,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
+=======
+type helmIstioSds struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+>>>>>>> 890cd27318f42c592266746115088b3e5382d71d

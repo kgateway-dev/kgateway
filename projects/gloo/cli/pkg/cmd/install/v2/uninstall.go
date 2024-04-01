@@ -16,11 +16,6 @@ import (
 func uninstall(opts *options.Options, installOpts *Options) error {
 	ctx := context.Background()
 
-	vals := map[string]any{
-		"controlPlane": map[string]any{"enabled": true},
-		"gateway":      map[string]any{"enabled": false},
-	}
-
 	cfg, err := config.GetConfigWithContext(opts.Top.KubeContext)
 	if err != nil {
 		return err
@@ -38,7 +33,7 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	objs, err := dep.Render(ctx, "default", installOpts.Namespace, vals)
+	objs, err := dep.Render(ctx, "default", installOpts.Namespace, map[string]any{})
 	if err != nil {
 		return err
 	}

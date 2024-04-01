@@ -58,6 +58,7 @@ type Inputs struct {
 	ControllerName string
 	Dev            bool
 	IstioValues    bootstrap.IstioValues
+	ControlPlane   bootstrap.ControlPlane
 }
 
 // NewDeployer creates a new gateway deployer
@@ -81,14 +82,25 @@ func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 
 // GetGvksToWatch returns the list of GVKs that the deployer will watch for
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
-	fakeGw := &api.Gateway{
+	// The deployer watches all resources (Deployment, Service, ServiceAccount, and ConfigMap)
+	// that it creates via the deployer helm chart.
+	//
+	// In order to get the GVKs for the resources to watch, we need:
+	// - a placeholder Gateway (only the name and namespace are used, but the actual values don't matter,
+	//   as we only care about the GVKs of the rendered resources)
+	// - the minimal values that render all the proxy resources (HPA is not included because it's not
+	//   fully integrated/working at the moment)
+	//
+	// Note: another option is to hardcode the GVKs here, but rendering the helm chart is a
+	// _slightly_ more dynamic way of getting the GVKs. It isn't a perfect solution since if
+	// we add more resources to the helm chart that are gated by a flag, we may forget to
+	// update the values here to enable them.
+	emptyGw := &api.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default",
 			Namespace: "default",
 		},
 	}
-
-	// these are the minimal values that render the Deployment, Service, ServiceAccount, and ConfigMap
 	vals := map[string]any{
 		"gateway": map[string]any{
 			"serviceAccount": map[string]any{
@@ -97,7 +109,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 		},
 	}
 
-	objs, err := d.renderChartToObjects(ctx, fakeGw, vals)
+	objs, err := d.renderChartToObjects(ctx, emptyGw, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -122,9 +134,6 @@ func jsonConvert(in *helmConfig, out interface{}) error {
 }
 
 func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
-	logger := log.FromContext(ctx)
-	logger.Info("rendering helm chart", "vals", vals)
-
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
@@ -177,12 +186,6 @@ func (d *Deployer) getDataPlaneConfigForGateway(ctx context.Context, gw *api.Gat
 }
 
 func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
-	xdsHost := GetDefaultXdsHost()
-	xdsPort, err := GetDefaultXdsPort(ctx, d.cli)
-	if err != nil {
-		return nil, err
-	}
-
 	vals := &helmConfig{
 		Gateway: &helmGateway{
 			Name:        &gw.Name,
@@ -191,10 +194,10 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 			Xds: &helmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-				Host: &xdsHost,
-				Port: &xdsPort,
+				Host: &d.inputs.ControlPlane.Kube.XdsHost,
+				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
-			Image: getDeployerImageValues(),
+			Image: getDeployerImageValues(ctx),
 			IstioSDS: &helmIstioSds{
 				Enabled: &d.inputs.IstioValues.SDSEnabled,
 			},
@@ -263,13 +266,12 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 	client.ClientOnly = true
 	release, err := client.RunWithContext(ctx, d.chart, vals)
 	if err != nil {
-		return nil, fmt.Errorf("failed to render helm chart: %w", err)
+		return nil, fmt.Errorf("failed to render helm chart for gateway %s.%s: %w", ns, name, err)
 	}
 
-	fmt.Printf("xxxxxx release manifest: %v\n", release.Manifest)
 	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), []byte(release.Manifest))
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert yaml to objects: %w", err)
+		return nil, fmt.Errorf("failed to convert helm manifest yaml to objects for gateway %s.%s: %w", ns, name, err)
 	}
 	return objs, nil
 }
@@ -291,7 +293,11 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	}
 	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get objects to deploy: %w", err)
+		return nil, fmt.Errorf("failed to convert helm values for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
+	}
+	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get objects to deploy for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
 
 	// Set owner ref

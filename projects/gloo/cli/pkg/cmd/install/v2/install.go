@@ -25,7 +25,7 @@ func install(opts *options.Options, installOpts *Options) error {
 
 	valueOpts := &values.Options{
 		ValueFiles: installOpts.Values,
-		Values:     append(installOpts.Set, "controlPlane.enabled=true", "gateway.enabled=false"),
+		Values:     installOpts.Set,
 	}
 	helmEnv := cli.New()
 	vals, err := valueOpts.MergeValues(getter.All(helmEnv))

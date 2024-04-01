@@ -91,6 +91,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
 		IstioValues:    c.cfg.IstioValues,
+		ControlPlane:   c.cfg.ControlPlane,
 	})
 	if err != nil {
 		return err

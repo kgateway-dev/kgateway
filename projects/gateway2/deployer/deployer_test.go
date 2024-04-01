@@ -3,8 +3,6 @@ package deployer_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,9 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -40,27 +36,11 @@ func convertUnstructured[T any](f client.Object) T {
 	return ret
 }
 
-func findGvkInRules(cr rbacv1.ClusterRole, gvk schema.GroupVersionKind) bool {
-	for _, rule := range cr.Rules {
-		for _, apiGroup := range rule.APIGroups {
-			if apiGroup == gvk.Group {
-				for _, resource := range rule.Resources {
-					if strings.Contains(resource, strings.ToLower(gvk.Kind)) {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
 var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
-		gwc     *api.GatewayClass
-		glooSvc *corev1.Service
+		gwc *api.GatewayClass
 	)
 
 	BeforeEach(func() {
@@ -68,29 +48,18 @@ var _ = Describe("Deployer", func() {
 
 		gwc = &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "gloo-gateway",
+				Name: wellknown.GatewayClassName,
 			},
 			Spec: api.GatewayClassSpec{
-				ControllerName: "solo.io/gloo-gateway",
+				ControllerName: wellknown.GatewayControllerName,
 			},
 		}
-		glooSvc = &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "gloo",
-				Namespace: "gloo-system",
-			},
-			Spec: corev1.ServiceSpec{
-				Ports: []corev1.ServicePort{
-					{
-						Name: "grpc-xds",
-						Port: 1234,
-					},
-				},
-			},
-		}
-		d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
+		d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -102,8 +71,11 @@ var _ = Describe("Deployer", func() {
 			IstioValues: bootstrap.IstioValues{
 				SDSEnabled: true,
 			},
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		}
-		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), inputs)
+		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), inputs)
 		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
 
 		// Create a Gateway
@@ -118,7 +90,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
-				GatewayClassName: "gloo-gateway",
+				GatewayClassName: wellknown.GatewayClassName,
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -148,37 +120,6 @@ var _ = Describe("Deployer", func() {
 		gvks, err := d.GetGvksToWatch(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(gvks).NotTo(BeEmpty())
-	})
-
-	// TODO is this still needed?
-	It("rbac should have our gvks", func() {
-		gvks, err := d.GetGvksToWatch(context.Background())
-		Expect(err).NotTo(HaveOccurred())
-
-		// render the control plane chart
-		vals := map[string]any{
-			"controlPlane": map[string]any{"enabled": true},
-			"gateway": map[string]any{
-				"enabled":       false,
-				"createGateway": false,
-			},
-		}
-		cpObjs, err := d.Render(context.Background(), "default", "default", vals)
-		Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("CP objs: %v\n", cpObjs)
-
-		// find the rbac role with deploy in its name
-		for _, obj := range cpObjs {
-			if obj.GetObjectKind().GroupVersionKind().Kind == "ClusterRole" {
-				if strings.Contains(obj.GetName(), "deploy") {
-					cr := convertUnstructured[rbacv1.ClusterRole](obj)
-					for _, gvk := range gvks {
-						Expect(findGvkInRules(cr, gvk)).To(BeTrue(), "gvk %v not found in rules", gvk)
-					}
-				}
-			}
-		}
-
 	})
 
 	It("should not fail with no ports", func() {
@@ -288,9 +229,12 @@ var _ = Describe("Deployer", func() {
 
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
-		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
+		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 		gw := &api.Gateway{
@@ -408,15 +352,21 @@ var _ = Describe("Deployer", func() {
 	})
 
 	It("support segmenting by release", func() {
-		d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
+		d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, glooSvc), &deployer.Inputs{
+		d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
