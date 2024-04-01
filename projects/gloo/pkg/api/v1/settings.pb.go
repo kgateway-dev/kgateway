@@ -185,7 +185,7 @@ type Settings struct {
 	//	*Settings_DirectorySecretSource
 	SecretSource isSettings_SecretSource `protobuf_oneof:"secret_source"`
 	// Settings for secrets storage.
-	// This API is experimental and not suitable for production use
+	// This API is beta and should be tested thoroughly before production use
 	SecretOptions *Settings_SecretOptions `protobuf:"bytes,38,opt,name=secret_options,json=secretOptions,proto3" json:"secret_options,omitempty"`
 	// Where to read artifacts from.
 	//

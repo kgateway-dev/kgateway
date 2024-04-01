@@ -59,7 +59,7 @@ message Settings {
     };
 
     // Settings for secrets storage.
-    // This API is experimental and not suitable for production use
+    // This API is beta and should be tested thoroughly before production use
     SecretOptions secret_options = 38;
 
     message SecretOptions {
