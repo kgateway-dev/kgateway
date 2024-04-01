@@ -1,5 +1,4 @@
 {{- $gateway := .Values.gateway }}
-{{- if $gateway.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -393,4 +392,3 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
-{{- end }}

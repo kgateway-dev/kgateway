@@ -361,7 +361,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
 			Port: int(runOptions.ports.Gloo),
-		}, nil, true),
+		}, bootstrap.KubernetesControlPlaneConfig{}, nil, true),
 		ValidationServer: setup.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
 			IP:   net.IPv4zero,
 			Port: int(runOptions.ports.Validation),

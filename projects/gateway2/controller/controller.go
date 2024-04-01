@@ -87,11 +87,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
 	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
-	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), &deployer.Inputs{
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
-		Port:           c.cfg.ControlPlane.GetBindPort(),
 		IstioValues:    c.cfg.IstioValues,
+		ControlPlane:   c.cfg.ControlPlane,
 	})
 	if err != nil {
 		return err
