@@ -281,17 +281,16 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 
 	vals, err := d.getValues(ctx, gw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get values to render objects: %w", err)
+		return nil, fmt.Errorf("failed to get values to render objects for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
-	logger.V(1).Info("got deployer helm values", "values", vals)
+	logger.V(1).Info("got deployer helm values",
+		"gatewayName", gw.GetName(),
+		"gatewayNamespace", gw.GetNamespace(),
+		"values", vals)
 
 	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
 	var convertedVals map[string]any
 	err = jsonConvert(vals, &convertedVals)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert helm values: %w", err)
-	}
-	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert helm values for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}

@@ -11,7 +11,6 @@ import (
 
 //go:generate go run ./generate.go
 func main() {
-	//os.RemoveAll("vendor_any")
 	log.Println("starting generate for k8s gateway controller")
 
 	anyvendorImports := skv2_anyvendor.CreateDefaultMatchOptions(
@@ -19,9 +18,6 @@ func main() {
 			"projects/gateway2/**/*.proto",
 		},
 	)
-	// anyvendorImports.External["github.com/solo-io/skv2"] = []string{
-	// 	"api/**/*.proto",
-	// }
 
 	skv2Cmd := codegen.Command{
 		AppName:      "gateway2",

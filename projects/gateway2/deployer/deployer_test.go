@@ -133,6 +133,9 @@ var _ = Describe("Deployer", func() {
 				Kind:       "Gateway",
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
+			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
+			},
 		}
 
 		objs, err := d.GetObjsToDeploy(context.Background(), gw)
@@ -153,6 +156,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -194,6 +198,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -248,6 +253,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -288,6 +294,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -323,6 +330,9 @@ var _ = Describe("Deployer", func() {
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Gateway",
 				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 			},
 		}
 
@@ -380,6 +390,9 @@ var _ = Describe("Deployer", func() {
 				Kind:       "Gateway",
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
+			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
+			},
 		}
 
 		gw2 := &api.Gateway{
@@ -391,6 +404,9 @@ var _ = Describe("Deployer", func() {
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Gateway",
 				APIVersion: "gateway.solo.io/v1beta1",
+			},
+			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 			},
 		}
 
