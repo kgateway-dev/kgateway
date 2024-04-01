@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/helm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -25,26 +26,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/helm"
-	"github.com/solo-io/gloo/projects/gateway2/ports"
-	"github.com/solo-io/gloo/projects/gloo/constants"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
-
-type gatewayPort struct {
-	Port       uint16 `json:"port"`
-	Protocol   string `json:"protocol"`
-	Name       string `json:"name"`
-	TargetPort uint16 `json:"targetPort"`
-}
 
 // A Deployer is responsible for deploying proxies
 type Deployer struct {
-	chart  *chart.Chart
-	scheme *runtime.Scheme
+	chart *chart.Chart
+	cli   client.Client
 
 	inputs *Inputs
 }
@@ -53,12 +40,12 @@ type Deployer struct {
 type Inputs struct {
 	ControllerName string
 	Dev            bool
-	Port           int
 	IstioValues    bootstrap.IstioValues
+	ControlPlane   bootstrap.ControlPlane
 }
 
 // NewDeployer creates a new gateway deployer
-func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
+func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		return nil, err
@@ -70,7 +57,7 @@ func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
 	}
 
 	return &Deployer{
-		scheme: scheme,
+		cli:    cli,
 		chart:  helmChart,
 		inputs: inputs,
 	}, nil
@@ -78,14 +65,34 @@ func NewDeployer(scheme *runtime.Scheme, inputs *Inputs) (*Deployer, error) {
 
 // GetGvksToWatch returns the list of GVKs that the deployer will watch for
 func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKind, error) {
-	fakeGw := &api.Gateway{
+	// The deployer watches all resources (Deployment, Service, ServiceAccount, and ConfigMap)
+	// that it creates via the deployer helm chart.
+	//
+	// In order to get the GVKs for the resources to watch, we need:
+	// - a placeholder Gateway (only the name and namespace are used, but the actual values don't matter,
+	//   as we only care about the GVKs of the rendered resources)
+	// - the minimal values that render all the proxy resources (HPA is not included because it's not
+	//   fully integrated/working at the moment)
+	//
+	// Note: another option is to hardcode the GVKs here, but rendering the helm chart is a
+	// _slightly_ more dynamic way of getting the GVKs. It isn't a perfect solution since if
+	// we add more resources to the helm chart that are gated by a flag, we may forget to
+	// update the values here to enable them.
+	emptyGw := &api.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default",
 			Namespace: "default",
 		},
 	}
+	vals := map[string]any{
+		"gateway": map[string]any{
+			"serviceAccount": map[string]any{
+				"create": true,
+			},
+		},
+	}
 
-	objs, err := d.renderChartToObjects(ctx, fakeGw)
+	objs, err := d.renderChartToObjects(ctx, emptyGw, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -96,10 +103,12 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 			ret = append(ret, gvk)
 		}
 	}
+
+	log.FromContext(ctx).V(1).Info("watching GVKs", "GVKs", ret)
 	return ret, nil
 }
 
-func jsonConvert(in []gatewayPort, out interface{}) error {
+func jsonConvert(in *helmConfig, out interface{}) error {
 	b, err := json.Marshal(in)
 	if err != nil {
 		return err
@@ -107,65 +116,7 @@ func jsonConvert(in []gatewayPort, out interface{}) error {
 	return json.Unmarshal(b, out)
 }
 
-func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
-
-	// must not be nil for helm to not fail.
-	gwPorts := []gatewayPort{}
-	for _, l := range gw.Spec.Listeners {
-		listenerPort := uint16(l.Port)
-		if slices.IndexFunc(gwPorts, func(p gatewayPort) bool { return p.Port == listenerPort }) != -1 {
-			continue
-		}
-		var port gatewayPort
-		port.Port = listenerPort
-		port.TargetPort = ports.TranslatePort(listenerPort)
-		port.Name = string(l.Name)
-		port.Protocol = "TCP"
-		gwPorts = append(gwPorts, port)
-	}
-
-	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
-	var portsAny []any
-	err := jsonConvert(gwPorts, &portsAny)
-	if err != nil {
-		return nil, err
-	}
-
-	vals := map[string]any{
-		"controlPlane": map[string]any{
-			"enabled": false,
-		},
-		"gateway": map[string]any{
-			"enabled":     true,
-			"name":        gw.Name,
-			"gatewayName": gw.Name,
-			"ports":       portsAny,
-			// Default to Load Balancer
-			"service": map[string]any{
-				"type": "LoadBalancer",
-			},
-			"istioSDS": map[string]any{
-				"enabled": d.inputs.IstioValues.SDSEnabled,
-			},
-			"xds": map[string]any{
-				// The xds host/port MUST map to the Service definition for the Control Plane
-				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-				//
-				// NOTE: The current implementation in flawed in multiple ways:
-				//	1 - This assumes that the Control Plane is installed in `gloo-system`
-				//	2 - The port is the bindAddress of the Go server, but there is not a strong guarantee that that port
-				//		will always be what is exposed by the Kubernetes Service.
-				"host": fmt.Sprintf("gloo.%s.svc.%s", defaults.GlooSystem, "cluster.local"),
-				"port": d.inputs.Port,
-			},
-			"image": getDeployerImageValues(),
-		},
-	}
-	if d.inputs.Dev {
-		vals["develop"] = true
-	}
-	log := log.FromContext(ctx)
-	log.Info("rendering helm chart", "vals", vals)
+func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
 	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
@@ -176,6 +127,28 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway) ([
 	}
 
 	return objs, nil
+}
+
+func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) *helmConfig {
+	vals := &helmConfig{
+		Gateway: &helmGateway{
+			Name:        &gw.Name,
+			GatewayName: &gw.Name,
+			Ports:       getPortsValues(gw),
+			Xds: &helmXds{
+				// The xds host/port MUST map to the Service definition for the Control Plane
+				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+				Host: &d.inputs.ControlPlane.Kube.XdsHost,
+				Port: &d.inputs.ControlPlane.Kube.XdsPort,
+			},
+			Image: getDeployerImageValues(ctx),
+			IstioSDS: &helmIstioSds{
+				Enabled: &d.inputs.IstioValues.SDSEnabled,
+			},
+		},
+	}
+
+	return vals
 }
 
 func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
@@ -190,28 +163,39 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 	client.ClientOnly = true
 	release, err := client.RunWithContext(ctx, d.chart, vals)
 	if err != nil {
-		return nil, fmt.Errorf("failed to render helm chart: %w", err)
+		return nil, fmt.Errorf("failed to render helm chart for gateway %s.%s: %w", ns, name, err)
 	}
 
-	objs, err := ConvertYAMLToObjects(d.scheme, []byte(release.Manifest))
+	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), []byte(release.Manifest))
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert yaml to objects: %w", err)
+		return nil, fmt.Errorf("failed to convert helm manifest yaml to objects for gateway %s.%s: %w", ns, name, err)
 	}
 	return objs, nil
 }
 
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
-	objs, err := d.renderChartToObjects(ctx, gw)
+	logger := log.FromContext(ctx)
+
+	vals := d.getValues(ctx, gw)
+	logger.V(1).Info("got deployer helm values",
+		"gatewayName", gw.GetName(),
+		"gatewayNamespace", gw.GetNamespace(),
+		"values", vals)
+
+	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
+	var convertedVals map[string]any
+	err := jsonConvert(vals, &convertedVals)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get objects to deploy: %w", err)
+		return nil, fmt.Errorf("failed to convert helm values for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
+	}
+	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get objects to deploy for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
 
 	// Set owner ref
 	trueVal := true
 	for _, obj := range objs {
-		fmt.Printf("xxxxx objToDeploy: kind=%v, namespace=%s, name=%s\n", obj.GetObjectKind(),
-			obj.GetNamespace(), obj.GetName())
-
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,
@@ -224,21 +208,15 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	return objs, nil
 }
 
-func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object, cli client.Client) error {
+func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
+	logger := log.FromContext(ctx)
 	for _, obj := range objs {
-		if err := cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
+		logger.V(1).Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+		if err := d.cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(d.inputs.ControllerName)); err != nil {
 			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
 		}
 	}
 	return nil
-}
-
-func (d *Deployer) Deploy(ctx context.Context, gw *api.Gateway, cli client.Client) error {
-	objs, err := d.GetObjsToDeploy(ctx, gw)
-	if err != nil {
-		return err
-	}
-	return d.DeployObjs(ctx, objs, cli)
 }
 
 func loadFs(filesystem fs.FS) (*chart.Chart, error) {
@@ -317,27 +295,4 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
-}
-
-func getDeployerImageValues() map[string]any {
-	image := os.Getenv(constants.GlooGatewayDeployerImage)
-	defaultImageValues := map[string]any{
-		// If tag is not defined, we fall back to the default behavior, which is to use that Chart version
-		"tag": "",
-	}
-
-	if image == "" {
-		// If the env is not defined, return the default
-		return defaultImageValues
-	}
-
-	imageParts := strings.Split(image, ":")
-	if len(imageParts) != 2 {
-		// If the user provided an invalid override, fallback to the default
-		return defaultImageValues
-	}
-	return map[string]any{
-		"repository": imageParts[0],
-		"tag":        imageParts[1],
-	}
 }

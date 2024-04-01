@@ -16,11 +16,6 @@ import (
 func uninstall(opts *options.Options, installOpts *Options) error {
 	ctx := context.Background()
 
-	vals := map[string]any{
-		"controlPlane": map[string]any{"enabled": true},
-		"gateway":      map[string]any{"enabled": false},
-	}
-
 	cfg, err := config.GetConfigWithContext(opts.Top.KubeContext)
 	if err != nil {
 		return err
@@ -31,14 +26,14 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	dep, err := deployer.NewDeployer(cli.Scheme(), &deployer.Inputs{
+	dep, err := deployer.NewDeployer(cli, &deployer.Inputs{
 		ControllerName: "glooctl",
 	})
 	if err != nil {
 		return err
 	}
 
-	objs, err := dep.Render(ctx, "default", installOpts.Namespace, vals)
+	objs, err := dep.Render(ctx, "default", installOpts.Namespace, map[string]any{})
 	if err != nil {
 		return err
 	}
@@ -59,7 +54,7 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 	if err != nil {
 		fmt.Printf("Failed\n")
 	} else {
-		if err := dep.DeployObjs(ctx, crds, cli); err != nil {
+		if err := dep.DeployObjs(ctx, crds); err != nil {
 			fmt.Printf("Failed\n")
 		}
 		fmt.Printf("Done\n")

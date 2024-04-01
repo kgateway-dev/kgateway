@@ -3,24 +3,21 @@ package deployer_test
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	api "sigs.k8s.io/gateway-api/apis/v1"
-
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func convertUnstructured[T any](f client.Object) T {
@@ -39,31 +36,30 @@ func convertUnstructured[T any](f client.Object) T {
 	return ret
 }
 
-func findGvkInRules(cr rbacv1.ClusterRole, gvk schema.GroupVersionKind) bool {
-	for _, rule := range cr.Rules {
-		for _, apiGroup := range rule.APIGroups {
-			if apiGroup == gvk.Group {
-				for _, resource := range rule.Resources {
-					if strings.Contains(resource, strings.ToLower(gvk.Kind)) {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
 var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
+
+		gwc *api.GatewayClass
 	)
+
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+
+		gwc = &api.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: wellknown.GatewayClassName,
+			},
+			Spec: api.GatewayClassSpec{
+				ControllerName: wellknown.GatewayControllerName,
+			},
+		}
+		d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -72,12 +68,14 @@ var _ = Describe("Deployer", func() {
 		inputs := &deployer.Inputs{
 			Dev:            false,
 			ControllerName: "foo",
-			Port:           8080,
 			IstioValues: bootstrap.IstioValues{
 				SDSEnabled: true,
 			},
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		}
-		d, err := deployer.NewDeployer(scheme.NewScheme(), inputs)
+		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), inputs)
 		Expect(err).ToNot(HaveOccurred(), "failed to create deployer with EnableAutoMtls and SdsEnabled")
 
 		// Create a Gateway
@@ -92,6 +90,7 @@ var _ = Describe("Deployer", func() {
 				APIVersion: "gateway.solo.io/v1beta1",
 			},
 			Spec: api.GatewaySpec{
+				GatewayClassName: wellknown.GatewayClassName,
 				Listeners: []api.Listener{
 					{
 						Name: "listener-1",
@@ -121,35 +120,6 @@ var _ = Describe("Deployer", func() {
 		gvks, err := d.GetGvksToWatch(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(gvks).NotTo(BeEmpty())
-	})
-
-	It("rbac should have our gvks", func() {
-		gvks, err := d.GetGvksToWatch(context.Background())
-		Expect(err).NotTo(HaveOccurred())
-
-		// render the control plane chart
-		vals := map[string]any{
-			"controlPlane": map[string]any{"enabled": true},
-			"gateway": map[string]any{
-				"enabled":       false,
-				"createGateway": false,
-			},
-		}
-		cpObjs, err := d.Render(context.Background(), "default", "default", vals)
-		Expect(err).NotTo(HaveOccurred())
-
-		// find the rbac role with deploy in its name
-		for _, obj := range cpObjs {
-			if obj.GetObjectKind().GroupVersionKind().Kind == "ClusterRole" {
-				if strings.Contains(obj.GetName(), "deploy") {
-					cr := convertUnstructured[rbacv1.ClusterRole](obj)
-					for _, gvk := range gvks {
-						Expect(findGvkInRules(cr, gvk)).To(BeTrue(), "gvk %v not found in rules", gvk)
-					}
-				}
-			}
-		}
-
 	})
 
 	It("should not fail with no ports", func() {
@@ -259,11 +229,12 @@ var _ = Describe("Deployer", func() {
 
 	It("should propagate version.Version to get deployment", func() {
 		version.Version = "testversion"
-
-		d, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 		gw := &api.Gateway{
@@ -381,17 +352,21 @@ var _ = Describe("Deployer", func() {
 	})
 
 	It("support segmenting by release", func() {
-		d1, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(scheme.NewScheme(), &deployer.Inputs{
+		d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
 			ControllerName: wellknown.GatewayControllerName,
-			Port:           8080,
 			Dev:            false,
+			ControlPlane: bootstrap.ControlPlane{
+				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -448,4 +423,10 @@ func getEnvoyConfig(objs []client.Object) string {
 		}
 	}
 	return ""
+}
+
+// initialize a fake controller-runtime client with the given list of objects
+func newFakeClientWithObjs(objs ...client.Object) client.Client {
+	s := scheme.NewScheme()
+	return fake.NewClientBuilder().WithScheme(s).WithObjects(objs...).Build()
 }
