@@ -208,7 +208,7 @@ In the previous examples, you wrote the rule set directly into the WAF filter co
    ```
 2. Create a Kubernetes configmap from your rule set files.
    ```bash
-   kubectl --namespace=gloo-system create configmap wafrulesets --from-file=wafruleset2.conf --from-file=wafruleset.conf 
+   kubectl --namespace=gloo-system create configmap wafruleset --from-file=wafruleset2.conf --from-file=wafruleset.conf 
    ```
 3. Verify that the configmap contains all of your rules. Each filename becomes a separate entry in the `data` section.
 And view this configmap
