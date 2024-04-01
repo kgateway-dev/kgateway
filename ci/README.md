@@ -44,3 +44,9 @@ This is enabled as a GitHub App on the project, and if changes are required, ple
 **Skip Docs Build**: Include `skipCI-docs-build:true` in the changelog entry of the PR.
 
 **Skip Kubernetes E2E Tests**: Include `skipCI-kube-tests:true` in the changelog entry of the PR.
+
+
+### Assets and Package Management
+`glooctl` is built and published to the GitHub release via the script `upload_github_release_assets.go`. This is sensitive to changes to the output of `glooctl version`.
+
+`glooctl` is also available through the package management tool [Homebrew](https://formulae.brew.sh/formula/glooctl). `glooctl` is on the [Autobump list](https://github.com/Homebrew/homebrew-core/blob/8064f66cd04d0f32dc1be25ce8363a7a9e370fae/.github/autobump.txt#L790) which means it is automatically updated within 3 hours of a stable release via [GitHub Actions within Homebrew](https://github.com/Homebrew/homebrew-core/blob/8064f66cd04d0f32dc1be25ce8363a7a9e370fae/.github/workflows/autobump.yml)

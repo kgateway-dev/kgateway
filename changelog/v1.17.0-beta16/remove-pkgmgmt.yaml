@@ -1,0 +1,9 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/9301
+  resolvesIssue: false
+  description: >-
+    Remove misleading package management code in ci/upload_github_release_assets.go
+
+    skipCI-kube-tests: true
+    skipCI-docs-build: true
