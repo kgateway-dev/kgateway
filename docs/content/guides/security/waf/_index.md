@@ -25,9 +25,6 @@ Gloo supports the popular Web Application Firewall framework and ruleset [ModSec
 
 You have several options for using ModSecurity to write WAF policies:
 * Use publicly available rule sets that provide a generic set of detection rules to protect against the most common security threats. For example, the [OWASP Core Rule Set](https://github.com/coreruleset/coreruleset) is an open source project that protects apps against a wide range of attacks, including the "OWASP Top Ten."
-  {{% notice tip %}}
-  For your convenience, Gloo applies the OWASP Core Rule Set to your routes by default, but you can disable this feature by using the `disableCoreRuleSet` in your WAF policy.
-  {{% /notice %}}
 * Write your own custom rules by following the [ModSecurity rules language](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v3.x)). For examples, see [Configure WAF policies](#configure-waf-policies).
 
 For more information, see the [Gloo API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/" %}}).
