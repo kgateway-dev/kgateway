@@ -444,7 +444,7 @@ $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless: $(INGRESS_DIR)/cmd/Dockerfi
 	cp $< $@
 
 .PHONY: ingress-distroless-docker
-ingress-distroless-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless
+ingress-distroless-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless distroless-docker
 	docker buildx build --load $(PLATFORM) $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
@@ -478,9 +478,9 @@ $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless: $(ACCESS_LOG_DIR)/
 	cp $< $@
 
 .PHONY: access-logger-distroless-docker
-access-logger-distroless-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless
+access-logger-distroless-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless distroless-docker
 	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
