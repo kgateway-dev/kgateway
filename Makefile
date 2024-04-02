@@ -78,7 +78,8 @@ TEST_ASSET_DIR := $(ROOTDIR)/_test
 
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
-DONOR_IMAGE ?= debian:11
+PACKAGE_DONOR_IMAGE ?= debian:11
+BINARY_DONOR_IMAGE ?= busybox:1.35.0-uclibc
 DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest-amd64
 GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
 GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-binaries:$(VERSION)
@@ -390,7 +391,7 @@ $(DISTROLESS_OUTPUT_DIR)/Dockerfile: $(DISTROLESS_DIR)/Dockerfile
 .PHONY: distroless-docker
 distroless-docker: $(DISTROLESS_OUTPUT_DIR)/Dockerfile
 	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile \
-		--build-arg DONOR_IMAGE=$(DONOR_IMAGE) \
+		--build-arg PACKAGE_DONOR_IMAGE=$(PACKAGE_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(GLOO_DISTROLESS_BASE_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
@@ -402,6 +403,7 @@ $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries: $(DISTROLESS_DIR)/Dockerfile.binar
 .PHONY: distroless-with-binaries-docker
 distroless-with-binaries-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries
 	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries \
+		--build-arg BINARY_DONOR_IMAGE=$(BINARY_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t  $(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)

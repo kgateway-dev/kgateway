@@ -1,7 +1,7 @@
-ARG DONOR_IMAGE
+ARG PACKAGE_DONOR_IMAGE
 ARG BASE_IMAGE
 
-FROM $DONOR_IMAGE as donor
+FROM $PACKAGE_DONOR_IMAGE as donor
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get upgrade -y \
