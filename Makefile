@@ -84,6 +84,7 @@ BINARY_DONOR_IMAGE ?= busybox:1.35.0-uclibc
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
 # This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE
+# Since we only publish amd64 images, we use the amd64 variant
 DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest-amd64
 # DISTROLESS_BASE_IMAGE + ca-certificates
 GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
@@ -403,13 +404,13 @@ distroless-docker: $(DISTROLESS_OUTPUT_DIR)/Dockerfile
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(GLOO_DISTROLESS_BASE_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
-$(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries: $(DISTROLESS_DIR)/Dockerfile.binaries
+$(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils: $(DISTROLESS_DIR)/Dockerfile.utils
 	mkdir -p $(DISTROLESS_OUTPUT_DIR)
 	cp $< $@
 
 .PHONY: distroless-with-utils-docker
-distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries
-	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries \
+distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils
+	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils \
 		--build-arg BINARY_DONOR_IMAGE=$(BINARY_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
