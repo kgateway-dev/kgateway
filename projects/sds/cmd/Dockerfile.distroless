@@ -5,13 +5,6 @@ FROM busybox:1.35.0-uclibc as busybox
 FROM $BASE_IMAGE
 ARG GOARCH=amd64
 
-# Copy over the required binaries for probes and lifecycle hooks
-COPY --from=busybox /bin/sh /bin/sh
-COPY --from=busybox /bin/wget /bin/wget
-COPY --from=busybox /bin/sleep /bin/sleep
-COPY --from=busybox /bin/nc /bin/nc
-COPY --from=busybox /bin/ls /bin/ls
-
 COPY sds-linux-$GOARCH /usr/local/bin/sds
 
 USER 10101
