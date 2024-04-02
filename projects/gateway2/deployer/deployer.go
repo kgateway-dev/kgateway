@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
@@ -31,17 +32,9 @@ import (
 )
 
 var (
-	NoGatewayClassError = func(gw *api.Gateway) error {
-		return eris.Errorf("gateway %s.%s does not contain a gatewayClassName", gw.Namespace, gw.Name)
-	}
-	GetGatewayClassError = func(err error, gw *api.Gateway, gatewayClassName string) error {
-		return eris.Wrapf(err, "could not retrieve gatewayclass %s for gateway %s.%s", gatewayClassName, gw.Namespace, gw.Name)
-	}
-	UnsupportedParametersRefKind = func(gatewayClassName string, parametersRef *api.ParametersReference) error {
-		return eris.Errorf("parametersRef for gatewayclass %s points to an unsupported kind: %v", gatewayClassName, parametersRef)
-	}
-	GetGatewayParametersError = func(err error, gatewayClassName string, gwpNamespace string, gwpName string) error {
-		return eris.Wrapf(err, "could not retrieve GatewayParameters (%s.%s) for gatewayclass %s", gwpNamespace, gwpName, gatewayClassName)
+	GetGatewayParametersError = func(err error, gwpNamespace string, gwpName string, gwNamespace string, gwName string) error {
+		return eris.Wrapf(err, "could not retrieve GatewayParameters (%s.%s) for Gateway (%s.%s)",
+			gwpNamespace, gwpName, gwNamespace, gwName)
 	}
 )
 
@@ -150,36 +143,22 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
 
-	// Get the GatewayClass for the Gateway
-	gwClassName := gw.Spec.GatewayClassName
-	if gwClassName == "" {
-		// this shouldn't happen as the gatewayClassName field is required, but throw an error in this case
-		return nil, NoGatewayClassError(gw)
-	}
-
-	gwc := &api.GatewayClass{}
-	err := d.cli.Get(ctx, client.ObjectKey{Name: string(gwClassName)}, gwc)
-	if err != nil {
-		return nil, GetGatewayClassError(err, gw, string(gwClassName))
-	}
-
-	// Get the GatewayParameters from the GatewayClass
-	paramsRef := gwc.Spec.ParametersRef
-	if paramsRef == nil {
-		// there is no custom data plane config (just use default values)
-		logger.V(1).Info("no parametersRef found for GatewayClass", "GatewayClass", gwClassName)
+	// check for a gateway params annotation on the Gateway
+	gwpName := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
+	if gwpName == "" {
+		// there is no custom GatewayParameters; just use default values
+		logger.V(1).Info("no GatewayParameters found for Gateway",
+			"gatewayName", gw.GetName(),
+			"gatewayNamespace", gw.GetNamespace())
 		return nil, nil
 	}
 
-	if string(paramsRef.Group) != v1alpha1.GatewayParametersGVK.Group ||
-		string(paramsRef.Kind) != v1alpha1.GatewayParametersGVK.Kind {
-		return nil, UnsupportedParametersRefKind(string(gwClassName), paramsRef)
-	}
-
+	// the GatewayParameters must live in the same namespace as the Gateway
+	gwpNamespace := gw.GetNamespace()
 	gwp := &v1alpha1.GatewayParameters{}
-	err = d.cli.Get(ctx, client.ObjectKey{Namespace: string(*paramsRef.Namespace), Name: paramsRef.Name}, gwp)
+	err := d.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, GetGatewayParametersError(err, string(gwClassName), string(*paramsRef.Namespace), paramsRef.Name)
+		return nil, GetGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName())
 	}
 
 	return gwp, nil
