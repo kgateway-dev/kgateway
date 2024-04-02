@@ -400,8 +400,8 @@ $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries: $(DISTROLESS_DIR)/Dockerfile.binar
 	mkdir -p $(DISTROLESS_OUTPUT_DIR)
 	cp $< $@
 
-.PHONY: distroless-with-binaries-docker
-distroless-with-binaries-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries
+.PHONY: distroless-with-utils-docker
+distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries
 	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.binaries \
 		--build-arg BINARY_DONOR_IMAGE=$(BINARY_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
@@ -520,7 +520,7 @@ $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distro
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
 .PHONY: gloo-distroless-docker
-gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless distroless-with-binaries-docker
+gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless distroless-with-utils-docker
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
@@ -605,7 +605,7 @@ $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: $(SDS_DIR)/cmd/Dockerfile.distroles
 	cp $< $@
 
 .PHONY: sds-distroless-docker
-sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless distroless-with-binaries-docker
+sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless distroless-with-utils-docker
 	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
@@ -643,7 +643,7 @@ $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: $(ENVOYINIT_DIR)/Docker
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
 .PHONY: gloo-envoy-wrapper-distroless-docker
-gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-binaries-docker
+gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-utils-docker
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
