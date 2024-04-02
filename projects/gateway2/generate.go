@@ -37,14 +37,14 @@ func main() {
 				},
 				Resources: []model.Resource{
 					{
-						Kind: "DataPlaneConfig",
+						Kind: "GatewayParameters",
 						Spec: model.Field{
-							Type: model.Type{Name: "DataPlaneConfigSpec"},
+							Type: model.Type{Name: "GatewayParametersSpec"},
 						},
 						Status: &model.Field{
-							Type: model.Type{Name: "DataPlaneConfigStatus"},
+							Type: model.Type{Name: "GatewayParametersStatus"},
 						},
-						ShortNames: []string{"dpc"},
+						ShortNames: []string{"gwp"},
 						Stored:     true,
 					},
 				},

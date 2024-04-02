@@ -27,24 +27,24 @@ var (
 	strictUnmarshaller = &jsonpb.Unmarshaler{}
 )
 
-// MarshalJSON is a custom marshaler for DataPlaneConfigSpec
-func (this *DataPlaneConfigSpec) MarshalJSON() ([]byte, error) {
+// MarshalJSON is a custom marshaler for GatewayParametersSpec
+func (this *GatewayParametersSpec) MarshalJSON() ([]byte, error) {
 	str, err := marshaller.MarshalToString(this)
 	return []byte(str), err
 }
 
-// UnmarshalJSON is a custom unmarshaler for DataPlaneConfigSpec
-func (this *DataPlaneConfigSpec) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON is a custom unmarshaler for GatewayParametersSpec
+func (this *GatewayParametersSpec) UnmarshalJSON(b []byte) error {
 	return unmarshaller.Unmarshal(bytes.NewReader(b), this)
 }
 
-// MarshalJSON is a custom marshaler for DataPlaneConfigStatus
-func (this *DataPlaneConfigStatus) MarshalJSON() ([]byte, error) {
+// MarshalJSON is a custom marshaler for GatewayParametersStatus
+func (this *GatewayParametersStatus) MarshalJSON() ([]byte, error) {
 	str, err := marshaller.MarshalToString(this)
 	return []byte(str), err
 }
 
-// UnmarshalJSON is a custom unmarshaler for DataPlaneConfigStatus
-func (this *DataPlaneConfigStatus) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON is a custom unmarshaler for GatewayParametersStatus
+func (this *GatewayParametersStatus) UnmarshalJSON(b []byte) error {
 	return unmarshaller.Unmarshal(bytes.NewReader(b), this)
 }

@@ -51,7 +51,7 @@ func init() {
 		"routeoptions.gateway.solo.io",
 		"graphqlapis.graphql.gloo.solo.io",
 		// gloo gateway CRDs:
-		"dataplaneconfigs.gateway.gloo.solo.io",
+		"gatewayparameters.gateway.gloo.solo.io",
 		// gloo-fed CRDs:
 		"glooinstances.fed.solo.io",
 		"failoverschemes.fed.solo.io",

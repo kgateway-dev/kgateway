@@ -8,9 +8,9 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
-// Generated Deepcopy methods for DataPlaneConfig
+// Generated Deepcopy methods for GatewayParameters
 
-func (in *DataPlaneConfig) DeepCopyInto(out *DataPlaneConfig) {
+func (in *GatewayParameters) DeepCopyInto(out *GatewayParameters) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 
@@ -22,29 +22,29 @@ func (in *DataPlaneConfig) DeepCopyInto(out *DataPlaneConfig) {
 	return
 }
 
-func (in *DataPlaneConfig) DeepCopy() *DataPlaneConfig {
+func (in *GatewayParameters) DeepCopy() *GatewayParameters {
 	if in == nil {
 		return nil
 	}
-	out := new(DataPlaneConfig)
+	out := new(GatewayParameters)
 	in.DeepCopyInto(out)
 	return out
 }
 
-func (in *DataPlaneConfig) DeepCopyObject() runtime.Object {
+func (in *GatewayParameters) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}
 	return nil
 }
 
-func (in *DataPlaneConfigList) DeepCopyInto(out *DataPlaneConfigList) {
+func (in *GatewayParametersList) DeepCopyInto(out *GatewayParametersList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]DataPlaneConfig, len(*in))
+		*out = make([]GatewayParameters, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -52,16 +52,16 @@ func (in *DataPlaneConfigList) DeepCopyInto(out *DataPlaneConfigList) {
 	return
 }
 
-func (in *DataPlaneConfigList) DeepCopy() *DataPlaneConfigList {
+func (in *GatewayParametersList) DeepCopy() *GatewayParametersList {
 	if in == nil {
 		return nil
 	}
-	out := new(DataPlaneConfigList)
+	out := new(GatewayParametersList)
 	in.DeepCopyInto(out)
 	return out
 }
 
-func (in *DataPlaneConfigList) DeepCopyObject() runtime.Object {
+func (in *GatewayParametersList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}

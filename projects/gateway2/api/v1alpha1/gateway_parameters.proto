@@ -16,10 +16,10 @@ import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/apimac
 
 import "google/protobuf/wrappers.proto";
 
-// A DataPlaneConfig contains configuration that is used to dynamically
+// A GatewayParameters contains configuration that is used to dynamically
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a
 // Kubernetes Gateway or GatewayClass.
-message DataPlaneConfigSpec {
+message GatewayParametersSpec {
   ProxyConfig proxy_config = 1;
 }
 
@@ -99,8 +99,8 @@ message EnvoyBootstrap {
   string component_log_level = 2;
 }
 
-message DataPlaneConfigStatus {
-  // The current conditions of the DataPlaneConfig. This is not currently
+message GatewayParametersStatus {
+  // The current conditions of the GatewayParameters. This is not currently
   // implemented.
   // repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 1;
 }

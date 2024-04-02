@@ -9,24 +9,24 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 )
 
-// DeepCopyInto for the DataPlaneConfig.Spec
-func (in *DataPlaneConfigSpec) DeepCopyInto(out *DataPlaneConfigSpec) {
-	var p *DataPlaneConfigSpec
+// DeepCopyInto for the GatewayParameters.Spec
+func (in *GatewayParametersSpec) DeepCopyInto(out *GatewayParametersSpec) {
+	var p *GatewayParametersSpec
 	if h, ok := interface{}(in).(clone.Cloner); ok {
-		p = h.Clone().(*DataPlaneConfigSpec)
+		p = h.Clone().(*GatewayParametersSpec)
 	} else {
-		p = proto.Clone(in).(*DataPlaneConfigSpec)
+		p = proto.Clone(in).(*GatewayParametersSpec)
 	}
 	*out = *p
 }
 
-// DeepCopyInto for the DataPlaneConfig.Status
-func (in *DataPlaneConfigStatus) DeepCopyInto(out *DataPlaneConfigStatus) {
-	var p *DataPlaneConfigStatus
+// DeepCopyInto for the GatewayParameters.Status
+func (in *GatewayParametersStatus) DeepCopyInto(out *GatewayParametersStatus) {
+	var p *GatewayParametersStatus
 	if h, ok := interface{}(in).(clone.Cloner); ok {
-		p = h.Clone().(*DataPlaneConfigStatus)
+		p = h.Clone().(*GatewayParametersStatus)
 	} else {
-		p = proto.Clone(in).(*DataPlaneConfigStatus)
+		p = proto.Clone(in).(*GatewayParametersStatus)
 	}
 	*out = *p
 }

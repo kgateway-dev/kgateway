@@ -13,36 +13,36 @@ import (
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 
-// GroupVersionKind for DataPlaneConfig
-var DataPlaneConfigGVK = schema.GroupVersionKind{
+// GroupVersionKind for GatewayParameters
+var GatewayParametersGVK = schema.GroupVersionKind{
 	Group:   "gateway.gloo.solo.io",
 	Version: "v1alpha1",
-	Kind:    "DataPlaneConfig",
+	Kind:    "GatewayParameters",
 }
 
-// DataPlaneConfig is the Schema for the dataPlaneConfig API
-type DataPlaneConfig struct {
+// GatewayParameters is the Schema for the gatewayParameters API
+type GatewayParameters struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DataPlaneConfigSpec   `json:"spec,omitempty"`
-	Status DataPlaneConfigStatus `json:"status,omitempty"`
+	Spec   GatewayParametersSpec   `json:"spec,omitempty"`
+	Status GatewayParametersStatus `json:"status,omitempty"`
 }
 
 // GVK returns the GroupVersionKind associated with the resource type.
-func (DataPlaneConfig) GVK() schema.GroupVersionKind {
-	return DataPlaneConfigGVK
+func (GatewayParameters) GVK() schema.GroupVersionKind {
+	return GatewayParametersGVK
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// DataPlaneConfigList contains a list of DataPlaneConfig
-type DataPlaneConfigList struct {
+// GatewayParametersList contains a list of GatewayParameters
+type GatewayParametersList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []DataPlaneConfig `json:"items"`
+	Items           []GatewayParameters `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&DataPlaneConfig{}, &DataPlaneConfigList{})
+	SchemeBuilder.Register(&GatewayParameters{}, &GatewayParametersList{})
 }

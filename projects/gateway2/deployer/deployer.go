@@ -40,8 +40,8 @@ var (
 	UnsupportedParametersRefKind = func(gatewayClassName string, parametersRef *api.ParametersReference) error {
 		return eris.Errorf("parametersRef for gatewayclass %s points to an unsupported kind: %v", gatewayClassName, parametersRef)
 	}
-	GetDataPlaneConfigError = func(err error, gatewayClassName string, dpcNamespace string, dpcName string) error {
-		return eris.Wrapf(err, "could not retrieve dataplaneconfig (%s.%s) for gatewayclass %s", dpcNamespace, dpcName, gatewayClassName)
+	GetGatewayParametersError = func(err error, gatewayClassName string, gwpNamespace string, gwpName string) error {
+		return eris.Wrapf(err, "could not retrieve GatewayParameters (%s.%s) for gatewayclass %s", gwpNamespace, gwpName, gatewayClassName)
 	}
 )
 
@@ -146,8 +146,8 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 	return objs, nil
 }
 
-// Gets the DataPlaneConfig object (if any) associated with a given Gateway.
-func (d *Deployer) getDataPlaneConfigForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.DataPlaneConfig, error) {
+// Gets the GatewayParameters object (if any) associated with a given Gateway.
+func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
 
 	// Get the GatewayClass for the Gateway
@@ -163,7 +163,7 @@ func (d *Deployer) getDataPlaneConfigForGateway(ctx context.Context, gw *api.Gat
 		return nil, GetGatewayClassError(err, gw, string(gwClassName))
 	}
 
-	// Get the DataPlaneConfig from the GatewayClass
+	// Get the GatewayParameters from the GatewayClass
 	paramsRef := gwc.Spec.ParametersRef
 	if paramsRef == nil {
 		// there is no custom data plane config (just use default values)
@@ -171,18 +171,18 @@ func (d *Deployer) getDataPlaneConfigForGateway(ctx context.Context, gw *api.Gat
 		return nil, nil
 	}
 
-	if string(paramsRef.Group) != v1alpha1.DataPlaneConfigGVK.Group ||
-		string(paramsRef.Kind) != v1alpha1.DataPlaneConfigGVK.Kind {
+	if string(paramsRef.Group) != v1alpha1.GatewayParametersGVK.Group ||
+		string(paramsRef.Kind) != v1alpha1.GatewayParametersGVK.Kind {
 		return nil, UnsupportedParametersRefKind(string(gwClassName), paramsRef)
 	}
 
-	dpc := &v1alpha1.DataPlaneConfig{}
-	err = d.cli.Get(ctx, client.ObjectKey{Namespace: string(*paramsRef.Namespace), Name: paramsRef.Name}, dpc)
+	gwp := &v1alpha1.GatewayParameters{}
+	err = d.cli.Get(ctx, client.ObjectKey{Namespace: string(*paramsRef.Namespace), Name: paramsRef.Name}, gwp)
 	if err != nil {
-		return nil, GetDataPlaneConfigError(err, string(gwClassName), string(*paramsRef.Namespace), paramsRef.Name)
+		return nil, GetGatewayParametersError(err, string(gwClassName), string(*paramsRef.Namespace), paramsRef.Name)
 	}
 
-	return dpc, nil
+	return gwp, nil
 }
 
 func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
@@ -204,18 +204,18 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 		},
 	}
 
-	// check if there is a DataPlaneConfig associated with this Gateway
-	dpc, err := d.getDataPlaneConfigForGateway(ctx, gw)
+	// check if there is a GatewayParameters associated with this Gateway
+	gwp, err := d.getGatewayParametersForGateway(ctx, gw)
 	if err != nil {
 		return nil, err
 	}
-	// if there is no DataPlaneConfig, return the values as is
-	if dpc == nil {
+	// if there is no GatewayParameters, return the values as is
+	if gwp == nil {
 		return vals, nil
 	}
-	fmt.Printf("xxxxx got DataPlaneConfig: %v\n", dpc)
+	fmt.Printf("xxxxx got GatewayParameters: %v\n", gwp)
 
-	kubeProxyConfig := dpc.Spec.GetProxyConfig().GetKube()
+	kubeProxyConfig := gwp.Spec.GetProxyConfig().GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
