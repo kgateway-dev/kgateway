@@ -10,6 +10,9 @@ layered_runtime:
       upstream:
         healthy_panic_threshold:
           value: 50
+      envoy:
+        reloadable_features:
+          sanitize_te: false
   - name: admin_layer
     admin_layer: {}
 node:
@@ -192,6 +195,9 @@ layered_runtime:
       upstream:
         healthy_panic_threshold:
           value: 50
+      envoy:
+        reloadable_features:
+          sanitize_te: false
   - name: admin_layer
     admin_layer: {}
 node:
@@ -335,6 +341,9 @@ layered_runtime:
       upstream:
         healthy_panic_threshold:
           value: 50
+      envoy:
+        reloadable_features:
+          sanitize_te: false
   - name: admin_layer
     admin_layer: {}
 node:
@@ -492,6 +501,9 @@ layered_runtime:
       upstream:
         healthy_panic_threshold:
           value: 50
+      envoy:
+        reloadable_features:
+          sanitize_te: false
   - name: admin_layer
     admin_layer: {}
 node:
@@ -686,6 +698,9 @@ layered_runtime:
       upstream:
         healthy_panic_threshold:
           value: 50
+      envoy:
+        reloadable_features:
+          sanitize_te: false
   - name: admin_layer
     admin_layer: {}
 node:
