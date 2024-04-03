@@ -11,6 +11,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -52,6 +53,7 @@ type Inputs struct {
 	Dev            bool
 	IstioValues    bootstrap.IstioValues
 	ControlPlane   bootstrap.ControlPlane
+	Extensions     extensions.K8sGatewayExtensions
 }
 
 // NewDeployer creates a new gateway deployer
@@ -176,7 +178,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Host: &d.inputs.ControlPlane.Kube.XdsHost,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
-			Image: getDeployerImageValues(ctx),
+			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
 			IstioSDS: &helmIstioSds{
 				Enabled: &d.inputs.IstioValues.SDSEnabled,
 			},
@@ -227,8 +229,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	vals.Gateway.ComponentLogLevel = &compLogLevel
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	// TODO
-	//vals.Gateway.Image = getDeployerImageValues() / envoyContainerConfig.GetImage()
+	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())
 
 	return vals, nil
 }
