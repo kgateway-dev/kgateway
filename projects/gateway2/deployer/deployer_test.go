@@ -328,7 +328,6 @@ var _ = Describe("Deployer", func() {
 					Expect(objs).NotTo(BeEmpty())
 					// Check we have Deployment, ConfigMap, ServiceAccount, Service
 					Expect(objs).To(HaveLen(4))
-					Expect(objs)
 					return nil
 				},
 			}),
