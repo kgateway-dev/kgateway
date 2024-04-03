@@ -3,11 +3,12 @@ package ingress_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -16,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("ResourceClient", func() {
@@ -26,7 +26,7 @@ var _ = Describe("ResourceClient", func() {
 
 		var (
 			namespace string
-			cfg       *rest.Config
+			kube      *kubernetes.Clientset
 			ctx       context.Context
 			cancel    context.CancelFunc
 		)
@@ -35,11 +35,7 @@ var _ = Describe("ResourceClient", func() {
 			namespace = helpers.RandString(8)
 			ctx, cancel = context.WithCancel(context.Background())
 			var err error
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-
-			kube, err := kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
+			kube = kubeutils.MustClientset()
 			_, err = kube.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namespace,
@@ -53,11 +49,8 @@ var _ = Describe("ResourceClient", func() {
 		})
 
 		It("can CRUD on v1 ingresses", func() {
-			kube, err := kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
 			baseClient := NewResourceClient(kube, &v1.Ingress{})
 			ingressClient := v1.NewIngressClientWithBase(baseClient)
-			Expect(err).NotTo(HaveOccurred())
 			kubeIngressClient := kube.NetworkingV1().Ingresses(namespace)
 			backend := &networkingv1.IngressBackend{
 				Service: &networkingv1.IngressServiceBackend{

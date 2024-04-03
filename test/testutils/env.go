@@ -1,8 +1,7 @@
 package testutils
 
 import (
-	"os"
-	"strconv"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 )
 
 const (
@@ -100,13 +99,13 @@ func IsRunningInCloudbuild() bool {
 
 // IsEnvTruthy returns true if a given environment variable has a truthy value
 // Examples of truthy values are: "1", "t", "T", "true", "TRUE", "True". Anything else is considered false.
+// Deprecated: Prefer envutils.IsEnvTruthy
 func IsEnvTruthy(envVarName string) bool {
-	envValue, _ := strconv.ParseBool(os.Getenv(envVarName))
-	return envValue
+	return envutils.IsEnvTruthy(envVarName)
 }
 
 // IsEnvDefined returns true if a given environment variable has any value
+// Deprecated: Prefer envutils.IsEnvDefined
 func IsEnvDefined(envVarName string) bool {
-	envValue := os.Getenv(envVarName)
-	return len(envValue) > 0
+	return envutils.IsEnvDefined(envVarName)
 }

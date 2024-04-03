@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -30,7 +32,6 @@ import (
 	knativetranslator "github.com/solo-io/gloo/projects/knative/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -164,7 +165,7 @@ func RunIngress(opts Opts) error {
 			"basic kubernetes ingress. set DISABLE_KUBE_INGRESS=0 or ENABLE_KNATIVE_INGRESS=1")
 	}
 
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return errors.Wrapf(err, "getting kube config")
 	}

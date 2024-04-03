@@ -4,10 +4,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/stringutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -43,7 +44,7 @@ func NewKube(namespace, kubeContext string) *kube {
 }
 
 func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
-	cfg, err := kubeutils.GetConfigWithContext("", "", k.kubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(k.kubeContext)
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
 		return nil, err
@@ -111,7 +112,7 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 }
 
 func (k *kube) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
-	cfg, err := kubeutils.GetConfigWithContext("", "", k.kubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(k.kubeContext)
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
 		return nil, err

@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/gloo/projects/gateway2/crds"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func uninstall(opts *options.Options, installOpts *Options) error {
 	ctx := context.Background()
 
-	cfg, err := config.GetConfigWithContext(opts.Top.KubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(opts.Top.KubeContext)
 	if err != nil {
 		return err
 	}

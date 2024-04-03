@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/hashicorp/go-multierror"
@@ -31,7 +33,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 var (
@@ -1000,7 +1001,7 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 
 // copied from projects/gloo/cli/pkg/cmd/install/v2/install.go (TODO: dedupe/clean up)
 func detectCrdsV2(kubeContext string) bool {
-	cfg, err := config.GetConfigWithContext(kubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(kubeContext)
 	if err != nil {
 		return false
 	}

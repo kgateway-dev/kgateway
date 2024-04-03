@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -1296,7 +1298,7 @@ func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
 	return bootstrap.GlooGateway{
 		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
 		// In the interim, we use an env variable to control the value
-		EnableK8sGatewayController: isEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
+		EnableK8sGatewayController: envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
 		IstioValues:                constructIstioBootstrapOpts(),
 	}
 }
@@ -1305,18 +1307,11 @@ func constructIstioBootstrapOpts() bootstrap.IstioValues {
 	istioValues := bootstrap.IstioValues{
 		// TODO: This value should be inherited at installation time, to determine if the istio integration is enabled
 		// In the interim, we use an env variable to control the value
-		SDSEnabled: isEnvTruthy(constants.IstioMtlsEnabled),
+		SDSEnabled: envutils.IsEnvTruthy(constants.IstioMtlsEnabled),
 
 		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
-		SidecarOnGatewayEnabled: isEnvTruthy(constants.IstioInjectionEnabled),
+		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),
 	}
 
 	return istioValues
-}
-
-// IsEnvTruthy returns true if a given environment variable has a truthy value
-// Examples of truthy values are: "1", "t", "T", "true", "TRUE", "True". Anything else is considered false.
-func isEnvTruthy(envVarName string) bool {
-	envValue, _ := strconv.ParseBool(os.Getenv(envVarName))
-	return envValue
 }

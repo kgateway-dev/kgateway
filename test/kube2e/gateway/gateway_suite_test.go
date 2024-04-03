@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
+
 	kubeutils2 "github.com/solo-io/gloo/test/testutils"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -95,6 +97,6 @@ func uninstallGloo() {
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
