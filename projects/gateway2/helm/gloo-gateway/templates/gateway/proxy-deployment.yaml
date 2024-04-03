@@ -48,7 +48,7 @@ spec:
         - "--component-log-level"
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
-        image: {{ template "gloo-gateway.gateway.image" $gateway.image }}
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.image }}"
         imagePullPolicy: {{ $gateway.image.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy

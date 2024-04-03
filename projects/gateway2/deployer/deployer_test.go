@@ -10,7 +10,9 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,6 +23,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
+
+type fakeK8sGatewayExtensions struct{}
+
+// CreatePluginRegistry returns the PluginRegistry
+func (f *fakeK8sGatewayExtensions) CreatePluginRegistry(ctx context.Context) registry.PluginRegistry {
+	panic("not implemented") // TODO: Implement
+}
+
+// GetEnvoyImage returns the envoy image and tag used by the proxy deployment.
+func (f *fakeK8sGatewayExtensions) GetEnvoyImage() extensions.Image {
+	return extensions.Image{
+		Repository: "gloo-envoy-wrapper",
+		Tag:        version.Version,
+	}
+}
 
 type clientObjects []client.Object
 
@@ -97,6 +114,7 @@ var _ = Describe("Deployer", func() {
 			ControlPlane: bootstrap.ControlPlane{
 				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 			},
+			Extensions: &fakeK8sGatewayExtensions{},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -106,6 +124,7 @@ var _ = Describe("Deployer", func() {
 			ControlPlane: bootstrap.ControlPlane{
 				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 			},
+			Extensions: &fakeK8sGatewayExtensions{},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -202,6 +221,7 @@ var _ = Describe("Deployer", func() {
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,
 					Dev:            false,
+					Extensions:     &fakeK8sGatewayExtensions{},
 				}
 			}
 			defaultGateway = func() *api.Gateway {
@@ -338,6 +358,7 @@ var _ = Describe("Deployer", func() {
 					IstioValues: bootstrap.IstioValues{
 						SDSEnabled: true,
 					},
+					Extensions: &fakeK8sGatewayExtensions{},
 				},
 				gwc:     defaultGatewayClass(),
 				glooSvc: defaultGlooSvc(),
