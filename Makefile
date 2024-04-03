@@ -79,17 +79,17 @@ TEST_ASSET_DIR := $(ROOTDIR)/_test
 # Used to install ca-certificates in GLOO_DISTROLESS_BASE_IMAGE
 PACKAGE_DONOR_IMAGE ?= debian:11
 # Harvested for utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
-# in GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE
-BINARY_DONOR_IMAGE ?= busybox:1.35.0-uclibc
+# in GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
+UTILS_DONOR_IMAGE ?= busybox:1.35.0-uclibc
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
-# This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE
+# This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
 # Since we only publish amd64 images, we use the amd64 variant
 DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest-amd64
 # DISTROLESS_BASE_IMAGE + ca-certificates
 GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
 # GLOO_DISTROLESS_BASE_IMAGE + utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
-GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-binaries:$(VERSION)
+GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-binaries:$(VERSION)
 # BASE_IMAGE used in non distroless variants
 ALPINE_BASE_IMAGE ?= alpine:3.17.6
 
@@ -411,10 +411,10 @@ $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils: $(DISTROLESS_DIR)/Dockerfile.utils
 .PHONY: distroless-with-utils-docker
 distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils
 	docker buildx build --load $(PLATFORM) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils \
-		--build-arg BINARY_DONOR_IMAGE=$(BINARY_DONOR_IMAGE) \
+		--build-arg UTILS_DONOR_IMAGE=$(UTILS_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
-		-t  $(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -440,6 +440,16 @@ ingress-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_D
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/ingress:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
+$(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless: $(INGRESS_DIR)/cmd/Dockerfile.distroless
+	cp $< $@
+
+.PHONY: ingress-distroless-docker
+ingress-distroless-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless distroless-docker
+	docker buildx build --load $(PLATFORM) $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/ingress:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
 #----------------------------------------------------------------------------------
 # Access Logger
 #----------------------------------------------------------------------------------
@@ -463,6 +473,16 @@ access-logger-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(A
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
+$(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless: $(ACCESS_LOG_DIR)/cmd/Dockerfile.distroless
+	cp $< $@
+
+.PHONY: access-logger-distroless-docker
+access-logger-distroless-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless distroless-docker
+	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -532,7 +552,7 @@ gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DI
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
 		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
@@ -616,7 +636,7 @@ $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: $(SDS_DIR)/cmd/Dockerfile.distroles
 sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless distroless-with-utils-docker
 	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
 		-t $(IMAGE_REGISTRY)/sds:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
@@ -655,7 +675,7 @@ gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_BINARIES_IMAGE) \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
 		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
@@ -682,6 +702,16 @@ certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_D
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/certgen:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
+$(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless: $(CERTGEN_DIR)/Dockerfile.distroless
+	cp $< $@
+
+.PHONY: certgen-distroless-docker
+certgen-distroless-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless distroless-docker
+	docker buildx build --load $(PLATFORM) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
 #----------------------------------------------------------------------------------
 # Kubectl - Used in jobs during helm install/upgrade/uninstall
 #----------------------------------------------------------------------------------
@@ -699,6 +729,17 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
+
+$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless: $(KUBECTL_DIR)/Dockerfile.distroless
+	mkdir -p $(KUBECTL_OUTPUT_DIR)
+	cp $< $@
+
+.PHONY: kubectl-distroless-docker
+kubectl-distroless-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless distroless-with-utils-docker
+	docker buildx build --load $(PLATFORM) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless \
+		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -825,52 +866,83 @@ docker-push-%-distroless:
 docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
+IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
 docker: check-go-version
+docker: # Standard images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker: gloo-docker
 docker: discovery-docker
 docker: gloo-envoy-wrapper-docker
 docker: sds-docker
-docker: gloo-distroless-docker
-docker: discovery-distroless-docker
-docker: gloo-envoy-wrapper-distroless-docker
-docker: sds-distroless-docker
 docker: certgen-docker
 docker: ingress-docker
 docker: access-logger-docker
 docker: kubectl-docker
+endif # standard images
+docker: # Distroless images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
+docker: gloo-distroless-docker
+docker: discovery-distroless-docker
+docker: gloo-envoy-wrapper-distroless-docker
+docker: sds-distroless-docker
+docker: certgen-distroless-docker
+docker: ingress-distroless-docker
+docker: access-logger-distroless-docker
+docker: kubectl-distroless-docker
+endif # distroless images
 
 # Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
+docker-push: # Standard images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker-push: docker-push-gloo
 docker-push: docker-push-discovery
 docker-push: docker-push-gloo-envoy-wrapper
 docker-push: docker-push-sds
-docker-push: docker-push-gloo-distroless
-docker-push: docker-push-discovery-distroless
-docker-push: docker-push-gloo-envoy-wrapper-distroless
-docker-push: docker-push-sds-distroless
 docker-push: docker-push-certgen
 docker-push: docker-push-ingress
 docker-push: docker-push-access-logger
 docker-push: docker-push-kubectl
+endif # standard images
+docker-push: # Distroless images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
+docker-push: docker-push-gloo-distroless
+docker-push: docker-push-discovery-distroless
+docker-push: docker-push-gloo-envoy-wrapper-distroless
+docker-push: docker-push-sds-distroless
+docker-push: docker-push-certgen-distroless
+docker-push: docker-push-ingress-distroless
+docker-push: docker-push-access-logger-distroless
+docker-push: docker-push-kubectl-distroless
+endif # distroless images
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
 .PHONY: docker-retag
+docker-retag: # Standard images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker-retag: docker-retag-gloo
 docker-retag: docker-retag-discovery
 docker-retag: docker-retag-gloo-envoy-wrapper
 docker-retag: docker-retag-sds
-docker-retag: docker-retag-gloo-distroless
-docker-retag: docker-retag-discovery-distroless
-docker-retag: docker-retag-gloo-envoy-wrapper-distroless
-docker-retag: docker-retag-sds-distroless
 docker-retag: docker-retag-certgen
 docker-retag: docker-retag-ingress
 docker-retag: docker-retag-access-logger
 docker-retag: docker-retag-kubectl
+endif # standard images
+docker-retag: # Distroless images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
+docker-retag: docker-retag-gloo-distroless
+docker-retag: docker-retag-discovery-distroless
+docker-retag: docker-retag-gloo-envoy-wrapper-distroless
+docker-retag: docker-retag-sds-distroless
+docker-retag: docker-retag-certgen-distroless
+docker-retag: docker-retag-ingress-distroless
+docker-retag: docker-retag-access-logger-distroless
+docker-retag: docker-retag-kubectl-distroless
+endif # distroless images
 
 #----------------------------------------------------------------------------------
 # Build assets for Kube2e tests
@@ -923,18 +995,28 @@ kind-reload-gloo-envoy-wrapper:
 	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
+kind-build-and-load: # Standard images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 kind-build-and-load: kind-build-and-load-gloo
 kind-build-and-load: kind-build-and-load-discovery
 kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
-kind-build-and-load: kind-build-and-load-gloo-distroless
-kind-build-and-load: kind-build-and-load-discovery-distroless
-kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper-distroless
-kind-build-and-load: kind-build-and-load-sds-distroless
 kind-build-and-load: kind-build-and-load-certgen
 kind-build-and-load: kind-build-and-load-ingress
 kind-build-and-load: kind-build-and-load-access-logger
 kind-build-and-load: kind-build-and-load-kubectl
+endif # standard images
+kind-build-and-load: # Distroless images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
+kind-build-and-load: kind-build-and-load-gloo-distroless
+kind-build-and-load: kind-build-and-load-discovery-distroless
+kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper-distroless
+kind-build-and-load: kind-build-and-load-sds-distroless
+kind-build-and-load: kind-build-and-load-certgen-distroless
+kind-build-and-load: kind-build-and-load-ingress-distroless
+kind-build-and-load: kind-build-and-load-access-logger-distroless
+kind-build-and-load: kind-build-and-load-kubectl-distroless
+endif # distroless images
 
 define kind_reload_msg
 The kind-reload-% targets exist in order to assist developers with the work cycle of
