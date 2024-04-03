@@ -1,8 +1,6 @@
 ARG ENVOY_IMAGE
 ARG BASE_IMAGE
 
-FROM busybox:1.35.0-uclibc as busybox
-
 FROM $ENVOY_IMAGE as envoy
 
 FROM $BASE_IMAGE
@@ -11,11 +9,7 @@ ARG GOARCH=amd64
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 # Copy over the required libraries
-# libssl1.1
-COPY --from=envoy /usr/lib/x86_64-linux-gnu/engines-1.1 /usr/lib/x86_64-linux-gnu/engines-1.1
-COPY --from=envoy /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
-COPY --from=envoy /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
-# lib64z1
+# lib64z1 - Required by libsaxon for xslt transformations
 COPY --from=envoy /usr/lib/x86_64-linux-gnu/libz.so* /usr/lib/x86_64-linux-gnu/
 
 COPY envoyinit-linux-$GOARCH /usr/local/bin/envoyinit

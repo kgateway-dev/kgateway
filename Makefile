@@ -80,7 +80,8 @@ TEST_ASSET_DIR := $(ROOTDIR)/_test
 PACKAGE_DONOR_IMAGE ?= debian:11
 # Harvested for utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
 # in GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
-UTILS_DONOR_IMAGE ?= busybox:1.35.0-uclibc
+# We use the uclibc variant as it is statically compiled so the binaries can be copied over and run on another image without issues (unlike glibc)
+UTILS_DONOR_IMAGE ?= busybox:uclibc
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
 # This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
@@ -89,7 +90,7 @@ DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest-amd64
 # DISTROLESS_BASE_IMAGE + ca-certificates
 GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
 # GLOO_DISTROLESS_BASE_IMAGE + utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
-GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-binaries:$(VERSION)
+GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base-with-utils:$(VERSION)
 # BASE_IMAGE used in non distroless variants
 ALPINE_BASE_IMAGE ?= alpine:3.17.6
 
