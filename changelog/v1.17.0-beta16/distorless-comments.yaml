@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Bump busybox utils donor image used to build distroless images. Refactor the distroless dockerfile and add more comments about the files copied over
+

@@ -81,7 +81,7 @@ PACKAGE_DONOR_IMAGE ?= debian:11
 # Harvested for utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
 # in GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
 # We use the uclibc variant as it is statically compiled so the binaries can be copied over and run on another image without issues (unlike glibc)
-UTILS_DONOR_IMAGE ?= busybox:1.36.1-uclibc
+UTILS_DONOR_IMAGE ?= busybox:uclibc
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
 # This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
