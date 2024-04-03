@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/go-utils/contextutils"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -66,6 +67,14 @@ func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 	if version.Version != version.UndefinedVersion {
 		helmChart.Metadata.AppVersion = version.Version
 		helmChart.Metadata.Version = version.Version
+	}
+
+	if inputs == nil {
+		contextutils.LoggerFrom(context.Background()).DPanic("nil inputs to NewDeployer")
+	}
+
+	if inputs.Extensions == nil {
+		contextutils.LoggerFrom(context.Background()).DPanic("nil inputs.Extensions to NewDeployer")
 	}
 
 	return &Deployer{
