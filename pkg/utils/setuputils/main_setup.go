@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/go-logr/zapr"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
@@ -14,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -111,7 +112,7 @@ func fileOrKubeSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 		})
 	}
 
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func startLeaderElection(ctx context.Context, settingsDir string, electionConfig
 		return singlereplica.NewElectionFactory().StartElection(ctx, electionConfig)
 	}
 
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return nil, err
 	}

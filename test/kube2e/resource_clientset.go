@@ -3,7 +3,8 @@ package kube2e
 import (
 	"context"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -19,7 +20,6 @@ import (
 	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -50,12 +50,10 @@ type KubeResourceClientSet struct {
 }
 
 func NewDefaultKubeResourceClientSet(ctx context.Context) (*KubeResourceClientSet, error) {
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return nil, err
 	}
-	cfg.QPS = clients.DefaultK8sQPS
-	cfg.Burst = clients.DefaultK8sBurst
 
 	return NewKubeResourceClientSet(ctx, cfg)
 }

@@ -22,6 +22,8 @@ package conformance_test
 import (
 	"testing"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -32,11 +34,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func TestConformance(t *testing.T) {
-	cfg, err := config.GetConfig()
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		t.Fatalf("Error loading Kubernetes config: %v", err)
 	}

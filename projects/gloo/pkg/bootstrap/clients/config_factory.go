@@ -3,10 +3,12 @@ package clients
 import (
 	"path/filepath"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	consulapi "github.com/hashicorp/consul/api"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/k8s-utils/kubeutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -77,13 +79,11 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 		kubeCache := params.kube.kubeCache
 		cfg := params.kube.restCfg
 		if *cfg == nil {
-			c, err := kubeutils.GetConfig("", "")
+			c, err := kubeutils.GetRestConfigWithKubeContext("")
 			if err != nil {
 				return nil, err
 			}
 
-			c.QPS = DefaultK8sQPS
-			c.Burst = DefaultK8sBurst
 			if kubeSettingsConfig := settings.GetKubernetes(); kubeSettingsConfig != nil {
 				if rl := kubeSettingsConfig.GetRateLimits(); rl != nil {
 					c.QPS = rl.GetQPS()

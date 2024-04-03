@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -20,7 +22,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *options.Options) {
@@ -36,7 +37,7 @@ func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *o
 		return
 	}
 
-	cfg, err := config.GetConfigWithContext(opts.Top.KubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(opts.Top.KubeContext)
 	if err != nil {
 		fmt.Printf("Warning: could not get kubernetes config to check multicluster resources: %v. "+
 			"Skipping Gloo Instance check.\n", err)
