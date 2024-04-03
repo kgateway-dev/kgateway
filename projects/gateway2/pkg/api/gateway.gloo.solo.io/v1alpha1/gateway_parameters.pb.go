@@ -316,6 +316,13 @@ type EnvoyContainer struct {
 	// The envoy container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
+	//
+	// Default values, which may be overridden individually:
+	//
+	//	registry: quay.io/solo-io
+	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
+	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
+	//	pullPolicy: IfNotPresent
 	Image *kube.Image `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core

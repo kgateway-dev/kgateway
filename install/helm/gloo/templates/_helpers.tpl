@@ -45,7 +45,7 @@ rather than falling back (incorrectly) onto the digests of non-fips images
 {{- end -}}{{- /* if .fips */ -}}
 {{- $image = printf "%s:%s" $image .tag -}}
 {{- if has .variant (list "distroless" "fips-distroless") -}}
-{{- $distrolessSupportedImages := list "gloo" "gloo-envoy-wrapper" "discovery" "sds" "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" "discovery-ee" "sds-ee" "observability-ee" "caching-ee" -}}
+{{- $distrolessSupportedImages := list "gloo" "gloo-envoy-wrapper" "discovery" "sds" "certgen" "kubectl" "access-logger" "ingress" "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" "discovery-ee" "sds-ee" "observability-ee" "caching-ee" -}}
 {{- if (has .repository $distrolessSupportedImages) -}}
 {{- $image = printf "%s-distroless" $image -}} {{- /* Add distroless suffix to the tag since it contains the same binaries in a different container */ -}}
 {{- end -}}{{- /* if (has .repository $distrolessSupportedImages) */ -}}
