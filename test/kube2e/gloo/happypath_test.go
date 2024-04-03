@@ -5,6 +5,8 @@ import (
 	"net"
 	"strings"
 
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
+
 	"github.com/solo-io/gloo/test/services/envoy"
 	corev1 "k8s.io/api/core/v1"
 
@@ -16,7 +18,6 @@ import (
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -24,7 +25,6 @@ import (
 	"github.com/solo-io/solo-kit/test/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Happy path", func() {
@@ -54,7 +54,6 @@ var _ = Describe("Happy path", func() {
 		var (
 			testNamespace  string
 			writeNamespace string
-			cfg            *rest.Config
 			kubeClient     kubernetes.Interface
 			svc            *corev1.Service
 		)
@@ -62,12 +61,8 @@ var _ = Describe("Happy path", func() {
 		BeforeEach(func() {
 			testNamespace = ""
 			writeNamespace = ""
-			var err error
 			svc = nil
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-			kubeClient, err = kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
+			kubeClient = kubeutils.MustClientset()
 		})
 
 		AfterEach(func() {

@@ -3,7 +3,7 @@ package gloo_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,8 +29,8 @@ var _ = Describe("Generated Kube Code", func() {
 	)
 
 	BeforeEach(func() {
-		cfg, err := kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
+		var err error
+		cfg := kubeutils.MustRestConfig()
 
 		glooV1Client, err = gloov1kube.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
