@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
@@ -23,8 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/solo-io/k8s-utils/kubeutils"
 )
 
 const (
@@ -74,7 +74,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 
 // GetIngressHost returns the host address of the ingress
 func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort string, localCluster bool, clusterName string) (string, error) {
-	restCfg, err := kubeutils.GetConfig("", "")
+	restCfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kube rest config")
 	}

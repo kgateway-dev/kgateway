@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
+
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
@@ -17,7 +19,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,8 +84,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		BeforeEach(func() {
 			var err error
 
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
+			cfg = kubeutils.MustRestConfig()
 			kubeClient = resourceClientset.KubeClients()
 
 			testNamespace = skhelpers.RandString(8)
@@ -181,8 +181,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		// as-is, this function is not idempotent and should be run only once
 		setupKubeSecret := func() {
 			var err error
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
+			cfg = kubeutils.MustRestConfig()
 			kubeClient = resourceClientset.KubeClients()
 
 			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{

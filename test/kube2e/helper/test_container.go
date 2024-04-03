@@ -7,11 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 
 	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +49,7 @@ type TestUpstreamServer interface {
 }
 
 func newTestContainer(namespace, imageTag, echoName string, port int32) (*testContainer, error) {
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return nil, err
 	}
