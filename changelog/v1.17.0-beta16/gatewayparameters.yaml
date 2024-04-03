@@ -1,7 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/5909
-    resolvesIssue: false
-    description: >-
-      Add new GatewayParameters CRD to allow configuration of dynamically provisioned proxies
-      in Gloo Gateway.
