@@ -3,8 +3,8 @@ package extensions
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/query"
-
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
@@ -14,6 +14,9 @@ import (
 type K8sGatewayExtensions interface {
 	// CreatePluginRegistry returns the PluginRegistry
 	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
+
+	// GetEnvoyImage returns the envoy image and tag used by the proxy deployment.
+	GetEnvoyImage() Image
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
@@ -37,4 +40,19 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.
 		e.mgr.GetScheme(),
 	))
 	return registry.NewPluginRegistry(plugins)
+}
+
+// GetEnvoyImage returns the image repo and tag to use for the envoy container image
+// in the proxy deployment.
+func (e *k8sGatewayExtensions) GetEnvoyImage() Image {
+	return Image{
+		Repository: "gloo-envoy-wrapper",
+		Tag:        version.Version,
+	}
+}
+
+// Image contains an image repository (e.g. "gloo-envoy-wrapper") and tag (e.g. "1.17.0")
+type Image struct {
+	Repository string
+	Tag        string
 }

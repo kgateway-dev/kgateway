@@ -69,6 +69,12 @@ message EnvoyContainer {
   // The envoy container image. See
   // https://kubernetes.io/docs/concepts/containers/images
   // for details.
+  //
+  // Default values, which may be overridden individually:
+  //   registry: quay.io/solo-io
+  //   repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
+  //   tag: <gloo version> (OSS) / <gloo-ee version> (EE)
+  //   pullPolicy: IfNotPresent
   kube.gateway.gloo.solo.io.Image image = 2;
 
   // The security context for this container. See
