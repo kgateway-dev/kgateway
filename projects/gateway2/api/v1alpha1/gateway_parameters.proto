@@ -18,7 +18,7 @@ import "google/protobuf/wrappers.proto";
 
 // A GatewayParameters contains configuration that is used to dynamically
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a
-// Kubernetes Gateway or GatewayClass.
+// Kubernetes Gateway.
 message GatewayParametersSpec {
   ProxyConfig proxy_config = 1;
 }

@@ -28,7 +28,7 @@ const (
 
 // A GatewayParameters contains configuration that is used to dynamically
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a
-// Kubernetes Gateway or GatewayClass.
+// Kubernetes Gateway.
 type GatewayParametersSpec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
