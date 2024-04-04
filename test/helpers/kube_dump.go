@@ -25,8 +25,8 @@ var (
 // Look at `KubeDumpOnFail` && `EnvoyDumpOnFail` for more details
 func StandardGlooDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
-		KubeDumpOnFail(out, namespaces...)
-		EnvoyDumpOnFail(out, namespaces...)
+		KubeDumpOnFail(out, namespaces...)()
+		EnvoyDumpOnFail(out, namespaces...)()
 	}
 }
 

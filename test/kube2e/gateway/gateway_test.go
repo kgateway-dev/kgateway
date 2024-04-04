@@ -2114,9 +2114,17 @@ spec:
 				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
 				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
 				// The reason is still unknown, so we retry on flakes in the meantime.
-				It("should act as expected with secret validation", FlakeAttempts(3), func() {
+				It("should act as expected with secret validation", func() {
+					verifyGlooValidationWorks()
+
+					By("waiting for the modified VS to be accepted")
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					})
+
 					By("failing to delete a secret that is in use")
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
 
@@ -2216,8 +2224,9 @@ spec:
 			)
 
 			var (
-				invalidUpstreamYaml string
-				vsYaml              string
+				invalidUpstreamYaml      string
+				vsYaml                   string
+				pretestFailurePolicyType admissionregv1.FailurePolicyType
 			)
 
 			// Before these secret deletion tests, set the failure policy to Fail and setup the resources with warnings
@@ -2255,6 +2264,9 @@ spec:
             name: my-us
             namespace:  ` + testHelper.InstallNamespace
 
+				// Store the current failure policy to restore after the tests
+				pretestFailurePolicyType = *kube2e.GetFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace)
+
 				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
 				// Allow warnings during setup so that we can install the resources
 				kube2e.UpdateAllowWarningsSetting(ctx, true, testHelper.InstallNamespace)
@@ -2276,7 +2288,7 @@ spec:
 			})
 
 			AfterAll(func() {
-				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, admissionregv1.Fail)
+				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, pretestFailurePolicyType)
 				err := install.KubectlDelete([]byte(invalidUpstreamYaml))
 				Expect(err).NotTo(HaveOccurred())
 				err = install.KubectlDelete([]byte(vsYaml))
