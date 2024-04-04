@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -271,10 +272,10 @@ func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Opti
 	}
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus("HTTPRoute", fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus(wellknown.HTTPRouteKind, fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus("HTTPRoute", "OK")
+	printer.AppendStatus(wellknown.HTTPRouteKind, "OK")
 	return nil
 
 }

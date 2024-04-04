@@ -7,6 +7,7 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/query"
+	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -57,6 +58,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchNamespaces,
 		controllerBuilder.watchRouteOptions,
 		controllerBuilder.addIndexes,
+		controllerBuilder.addRtOptIndexes,
 	)
 
 }
@@ -78,6 +80,13 @@ type controllerBuilder struct {
 
 func (c *controllerBuilder) addIndexes(ctx context.Context) error {
 	return query.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
+		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
+	})
+}
+
+// TODO: move to RtOpt plugin when breaking the logic to RouteOption-specific controller
+func (c *controllerBuilder) addRtOptIndexes(ctx context.Context) error {
+	return rtoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
 		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
 	})
 }

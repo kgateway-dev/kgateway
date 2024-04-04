@@ -110,6 +110,12 @@ apis:
   core.skv2.solo.io.ObjectSelector:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectSelector
     package: core.skv2.solo.io
+  core.skv2.solo.io.PolicyTargetReference:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#PolicyTargetReference
+    package: core.skv2.solo.io
+  core.skv2.solo.io.PolicyTargetReferenceWithSectionName:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#PolicyTargetReferenceWithSectionName
+    package: core.skv2.solo.io
   core.skv2.solo.io.Status:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#Status
     package: core.skv2.solo.io

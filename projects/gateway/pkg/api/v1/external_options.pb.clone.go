@@ -15,6 +15,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
+	github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -82,6 +84,12 @@ func (m *RouteOption) Clone() proto.Message {
 		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
 	} else {
 		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
+	}
+
+	if h, ok := interface{}(m.GetTargetRef()).(clone.Cloner); ok {
+		target.TargetRef = h.Clone().(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference)
+	} else {
+		target.TargetRef = proto.Clone(m.GetTargetRef()).(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference)
 	}
 
 	return target

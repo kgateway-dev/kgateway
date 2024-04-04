@@ -61,7 +61,10 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "crds")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "gloo", "crds"),
+		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
 		BinaryAssetsDirectory: getAssetsDir(),
