@@ -6,9 +6,11 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
+	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -64,13 +66,13 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		}
 	}
 
-	queries := testutils.BuildGatewayQueries(dependencies)
-	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries))
+	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices)
+	queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient))
 
 	results := make(map[types.NamespacedName]bool)
 	for _, gw := range gateways {
-
-		ref := types.NamespacedName{
+		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
@@ -95,9 +97,9 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 			// Reports:     reportsMap.Gateways,
 		}
 
-		expected, ok := tc.ResultsByGateway[ref]
+		expected, ok := tc.ResultsByGateway[gwNN]
 		if !ok {
-			return nil, errors.Errorf("no expected result found for gateway %v", ref)
+			return nil, errors.Errorf("no expected result found for gateway %v", gwNN)
 		}
 
 		equal, err := expected.Equals(actual)
@@ -105,7 +107,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 			return nil, err
 		}
 
-		results[ref] = equal
+		results[gwNN] = equal
 	}
 
 	return results, nil

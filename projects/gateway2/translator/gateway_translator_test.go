@@ -66,4 +66,27 @@ var _ = Describe("GatewayTranslator", func() {
 			Name:      "example-gateway",
 		}]).To(BeTrue())
 	})
+
+	It("should translate an http gateway with multiple routing rules and use the HeaderModifier filter", func() {
+		results, err := TestCase{
+			Name:       "http-routing-with-header-modifier-filter",
+			InputFiles: []string{dir + "/testutils/inputs/http-with-header-modifier"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "gw",
+				}: {
+					Proxy: dir + "/testutils/outputs/http-with-header-modifier-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results[types.NamespacedName{
+			Namespace: "default",
+			Name:      "gw",
+		}]).To(BeTrue())
+	})
 })
