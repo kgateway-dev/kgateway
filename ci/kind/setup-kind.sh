@@ -53,7 +53,7 @@ else
   VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION USE_SILENCE_REDIRECTS=true make -s build-test-chart
+  VERSION=$VERSION USE_SILENCE_REDIRECTS=true make build-test-chart
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
