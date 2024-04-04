@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
-
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
@@ -32,9 +31,10 @@ type k8sGatewayExtensions struct {
 
 // CreatePluginRegistry returns the PluginRegistry
 func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
-	plugins := registry.BuildPlugins(query.NewData(
+	queries := query.NewData(
 		e.mgr.GetClient(),
 		e.mgr.GetScheme(),
-	))
+	)
+	plugins := registry.BuildPlugins(queries, e.mgr.GetClient())
 	return registry.NewPluginRegistry(plugins)
 }

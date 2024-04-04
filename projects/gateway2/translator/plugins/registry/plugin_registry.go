@@ -1,13 +1,14 @@
 package registry
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/query"
+	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // PluginRegistry is used to provide Plugins to the K8s Gateway translator.
@@ -50,12 +51,12 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 // New plugins should be added to this list (and only this list).
 // If modification of this list is needed for testing etc,
 // we can add a new registry constructor that accepts this function
-func BuildPlugins(queries query.GatewayQueries) []plugins.Plugin {
+func BuildPlugins(queries gwquery.GatewayQueries, client client.Client) []plugins.Plugin {
 	return []plugins.Plugin{
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),
 		redirect.NewPlugin(),
-		routeoptions.NewPlugin(queries),
+		routeoptions.NewPlugin(queries, client),
 		urlrewrite.NewPlugin(),
 	}
 }
