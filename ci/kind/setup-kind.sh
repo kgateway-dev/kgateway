@@ -18,6 +18,8 @@ KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, us
 # The version of istio to install for glooctl tests
 # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
 ISTIO_VERSION="${ISTIO_VERSION:-1.18.2}"
+# Set the default image variant to standard
+IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
