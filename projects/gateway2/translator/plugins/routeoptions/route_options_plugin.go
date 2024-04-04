@@ -46,9 +46,8 @@ func (p *plugin) ApplyRoutePlugin(
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,
 ) error {
-	var routeOptions *v1.RouteOptions
 	// check for RouteOptions applied to full Route
-	routeOptions = p.handleAttachment(ctx, routeCtx)
+	routeOptions := p.handleAttachment(ctx, routeCtx)
 
 	// allow for ExtensionRef filter override
 	filterRouteOptions, err := p.handleFilter(ctx, routeCtx)
