@@ -1,7 +1,5 @@
 ARG BASE_IMAGE
 
-FROM busybox:1.35.0-uclibc as busybox
-
 FROM $BASE_IMAGE
 ARG GOARCH=amd64
 
