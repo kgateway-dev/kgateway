@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -66,11 +67,11 @@ func translateGatewayHTTPRouteRule(
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
+		match := match // pike
 		outputRoute := &v1.Route{
 			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
 			Action:   nil,
-			// The RouteOptions plugin is responsible for populating these options
-			Options: &v1.RouteOptions{},
+			Options:  &v1.RouteOptions{},
 		}
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(
@@ -92,7 +93,7 @@ func translateGatewayHTTPRouteRule(
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
-				// TODO Log
+				contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
 			}
 		}
 

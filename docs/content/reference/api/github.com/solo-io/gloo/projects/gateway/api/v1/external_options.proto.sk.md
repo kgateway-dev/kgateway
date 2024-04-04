@@ -249,6 +249,7 @@ Notice how the order of RouteOption delegations matters, and that the Route-leve
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "metadata": .core.solo.io.Metadata
 "options": .gloo.solo.io.RouteOptions
+"targetRef": .core.skv2.solo.io.PolicyTargetReference
 
 ```
 
@@ -257,6 +258,7 @@ Notice how the order of RouteOption delegations matters, and that the Route-leve
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route options. See Route for delegation behavior. |
+| `targetRef` | [.core.skv2.solo.io.PolicyTargetReference](../../../../../../skv2/api/core/v1/core.proto.sk/#policytargetreference) | When using Kubernetes Gateway API mode, targetRef can be used to attach this RouteOption to a gateway.networking.k8s.io/HTTPRoute object. The `options` specified will then be used for all `Rules` in the `HTTPRoute`. |
 
 
 
