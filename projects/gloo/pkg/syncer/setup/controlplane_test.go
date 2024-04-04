@@ -137,7 +137,7 @@ var _ = Describe("ControlPlane", func() {
 
 			_, err = setup.GetControlPlaneXdsPort(ctx, svcClient)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(setup.NoXdsPortFoundError(kubeutils.GlooXdsPortName, "other-ns", kubeutils.GlooServiceName)))
+			Expect(err).To(MatchError(setup.NoXdsPortFoundError))
 		})
 	})
 

@@ -16,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/go-utils/contextutils"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -34,8 +33,10 @@ import (
 )
 
 var (
-	GetGatewayParametersError = func(err error, gwpNamespace string, gwpName string, gwNamespace string, gwName string) error {
-		return eris.Wrapf(err, "could not retrieve GatewayParameters (%s.%s) for Gateway (%s.%s)",
+	GetGatewayParametersError = eris.New("could not retrieve GatewayParameters")
+	getGatewayParametersError = func(err error, gwpNamespace string, gwpName string, gwNamespace string, gwName string) error {
+		wrapped := eris.Wrap(err, GetGatewayParametersError.Error())
+		return eris.Wrapf(wrapped, "(%s.%s) for Gateway (%s.%s)",
 			gwpNamespace, gwpName, gwNamespace, gwName)
 	}
 )
@@ -67,14 +68,6 @@ func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 	if version.Version != version.UndefinedVersion {
 		helmChart.Metadata.AppVersion = version.Version
 		helmChart.Metadata.Version = version.Version
-	}
-
-	if inputs == nil {
-		contextutils.LoggerFrom(context.Background()).DPanic("nil inputs to NewDeployer")
-	}
-
-	if inputs.Extensions == nil {
-		contextutils.LoggerFrom(context.Background()).DPanic("nil inputs.Extensions to NewDeployer")
 	}
 
 	return &Deployer{
@@ -169,7 +162,7 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 	gwp := &v1alpha1.GatewayParameters{}
 	err := d.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, GetGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName())
+		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName())
 	}
 
 	return gwp, nil
@@ -203,7 +196,6 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	if gwp == nil {
 		return vals, nil
 	}
-	fmt.Printf("xxxxx got GatewayParameters: %v\n", gwp)
 
 	kubeProxyConfig := gwp.Spec.GetProxyConfig().GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
