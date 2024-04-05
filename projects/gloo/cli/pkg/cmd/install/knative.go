@@ -12,8 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+
 	"github.com/avast/retry-go"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/spf13/cobra"
@@ -26,7 +29,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/yaml"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -152,6 +154,8 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 func installKnativeServing(opts *options.Options) error {
 	knativeOpts := opts.Install.Knative
 
+	kubeCli := kubectl.NewCli(cliutil.GetLogger()).WithKubeContext(opts.Top.KubeContext)
+
 	// store the opts as a label on the knative-serving namespace
 	// we can use this to uninstall later on
 	knativeOptsJson, err := json.Marshal(knativeOpts)
@@ -177,7 +181,7 @@ func installKnativeServing(opts *options.Options) error {
 
 	// install crds first
 	fmt.Fprintln(os.Stderr, "installing Knative CRDs...")
-	if err := install.KubectlApply([]byte(knativeCrdManifests)); err != nil {
+	if err := kubeCli.Apply(opts.Top.Ctx, []byte(knativeCrdManifests)); err != nil {
 		return eris.Wrapf(err, "installing knative crds with kubectl apply")
 	}
 
@@ -187,17 +191,21 @@ func installKnativeServing(opts *options.Options) error {
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
 
-	if err := install.KubectlApply([]byte(manifests)); err != nil {
+	if err := kubeCli.Apply(opts.Top.Ctx, []byte(manifests)); err != nil {
 		// may need to retry the apply once in order to work around webhook race issue
 		// https://github.com/knative/serving/issues/6353
 		// https://knative.slack.com/archives/CA9RHBGJX/p1577458311043200
-		if err2 := install.KubectlApply([]byte(manifests)); err2 != nil {
+		if err2 := kubeCli.Apply(opts.Top.Ctx, []byte(manifests)); err2 != nil {
 			return eris.Wrapf(err, "installing knative resources failed with retried kubectl apply: %v", err2)
 		}
 	}
 	// label the knative-serving namespace as belonging to us
-	if err := install.Kubectl(nil, "annotate", "namespace",
-		"knative-serving", installedByUsAnnotationKey+"="+string(knativeOptsJson)); err != nil {
+	if err := kubeCli.ExecuteCommand(
+		opts.Top.Ctx,
+		"annotate",
+		"namespace",
+		"knative-serving",
+		installedByUsAnnotationKey+"="+string(knativeOptsJson)); err != nil {
 		return eris.Wrapf(err, "annotating installation namespace")
 	}
 
