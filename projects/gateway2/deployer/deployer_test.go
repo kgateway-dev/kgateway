@@ -107,11 +107,10 @@ var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
-		gwc *api.GatewayClass
+		gwc           *api.GatewayClass
+		k8sGatewayExt extensions.K8sGatewayExtensions
 	)
 	BeforeEach(func() {
-		var err error
-
 		gwc = &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: wellknown.GatewayClassName,
@@ -120,104 +119,116 @@ var _ = Describe("Deployer", func() {
 				ControllerName: wellknown.GatewayControllerName,
 			},
 		}
-		d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
-			ControllerName: wellknown.GatewayControllerName,
-			Dev:            false,
-			ControlPlane: bootstrap.ControlPlane{
-				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
-			},
-		})
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should get gvks", func() {
-		gvks, err := d.GetGvksToWatch(context.Background())
-		Expect(err).NotTo(HaveOccurred())
-		Expect(gvks).NotTo(BeEmpty())
-	})
-
-	It("support segmenting by release", func() {
 		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
 		Expect(err).NotTo(HaveOccurred())
-		k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(mgr)
+		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
-		d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
-			ControllerName: wellknown.GatewayControllerName,
-			Dev:            false,
-			ControlPlane: bootstrap.ControlPlane{
-				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
-			},
-			Extensions: k8sGatewayExt,
+	})
+	Context("special cases", func() {
+		BeforeEach(func() {
+			var err error
+
+			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: bootstrap.ControlPlane{
+					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				},
+				Extensions: k8sGatewayExt,
+			})
+			Expect(err).NotTo(HaveOccurred())
 		})
-		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
-			ControllerName: wellknown.GatewayControllerName,
-			Dev:            false,
-			ControlPlane: bootstrap.ControlPlane{
-				Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
-			},
-			Extensions: k8sGatewayExt,
+		It("should get gvks", func() {
+			gvks, err := d.GetGvksToWatch(context.Background())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gvks).NotTo(BeEmpty())
 		})
-		Expect(err).NotTo(HaveOccurred())
 
-		gw1 := &api.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "default",
-				UID:       "1235",
-			},
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Gateway",
-				APIVersion: "gateway.solo.io/v1beta1",
-			},
-			Spec: api.GatewaySpec{
-				GatewayClassName: wellknown.GatewayClassName,
-			},
-		}
+		It("support segmenting by release", func() {
+			mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
+			Expect(err).NotTo(HaveOccurred())
+			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(mgr)
+			Expect(err).NotTo(HaveOccurred())
 
-		gw2 := &api.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "bar",
-				Namespace: "default",
-				UID:       "1235",
-			},
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Gateway",
-				APIVersion: "gateway.solo.io/v1beta1",
-			},
-			Spec: api.GatewaySpec{
-				GatewayClassName: wellknown.GatewayClassName,
-			},
-		}
+			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: bootstrap.ControlPlane{
+					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				},
+				Extensions: k8sGatewayExt,
+			})
+			Expect(err).NotTo(HaveOccurred())
 
-		proxyName := func(name string) string {
-			return fmt.Sprintf("gloo-proxy-%s", name)
-		}
-		var objs1, objs2 clientObjects
-		objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(objs1).NotTo(BeEmpty())
-		Expect(objs1.findDeployment(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-		Expect(objs1.findService(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-		Expect(objs1.findConfigMap(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-		// Expect(objs1.findServiceAccount("default")).ToNot(BeNil())
-		objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(objs2).NotTo(BeEmpty())
-		Expect(objs2.findDeployment(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-		Expect(objs2.findService(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-		Expect(objs2.findConfigMap(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-		// Expect(objs2.findServiceAccount("default")).ToNot(BeNil())
+			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: bootstrap.ControlPlane{
+					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				},
+				Extensions: k8sGatewayExt,
+			})
+			Expect(err).NotTo(HaveOccurred())
 
-		for _, obj := range objs1 {
-			Expect(obj.GetName()).To(Equal("gloo-proxy-foo"))
-		}
-		for _, obj := range objs2 {
-			Expect(obj.GetName()).To(Equal("gloo-proxy-bar"))
-		}
+			gw1 := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "default",
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+				},
+			}
 
+			gw2 := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bar",
+					Namespace: "default",
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+				},
+			}
+
+			proxyName := func(name string) string {
+				return fmt.Sprintf("gloo-proxy-%s", name)
+			}
+			var objs1, objs2 clientObjects
+			objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(objs1).NotTo(BeEmpty())
+			Expect(objs1.findDeployment(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
+			Expect(objs1.findService(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
+			Expect(objs1.findConfigMap(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
+			// Expect(objs1.findServiceAccount("default")).ToNot(BeNil())
+			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(objs2).NotTo(BeEmpty())
+			Expect(objs2.findDeployment(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
+			Expect(objs2.findService(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
+			Expect(objs2.findConfigMap(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
+			// Expect(objs2.findServiceAccount("default")).ToNot(BeNil())
+
+			for _, obj := range objs1 {
+				Expect(obj.GetName()).To(Equal("gloo-proxy-foo"))
+			}
+			for _, obj := range objs2 {
+				Expect(obj.GetName()).To(Equal("gloo-proxy-bar"))
+			}
+
+		})
 	})
 
 	Context("Single gwc and gw", func() {
@@ -229,7 +240,8 @@ var _ = Describe("Deployer", func() {
 		}
 
 		type expectedOutput struct {
-			err            error
+			getObjsErr     error
+			newDeployerErr error
 			validationFunc func(objs clientObjects, inp *input) error
 		}
 
@@ -252,6 +264,7 @@ var _ = Describe("Deployer", func() {
 			defaultDeployerInputsWithSds = func() *deployer.Inputs {
 				inp := defaultDeployerInputs()
 				inp.IstioValues.SDSEnabled = true
+
 				return inp
 			}
 			defaultGateway = func() *api.Gateway {
@@ -352,6 +365,15 @@ var _ = Describe("Deployer", func() {
 			defaultServiceAccountName = defaultDeploymentName
 		)
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
+			checkErr := func(err, expectedErr error) (shouldReturn bool) {
+				if expectedErr != nil {
+					Expect(err).To(MatchError(expectedErr))
+					return true
+				}
+				Expect(err).NotTo(HaveOccurred())
+				return false
+			}
+
 			// run break-glass setup
 			if inp.arbitrarySetup != nil {
 				inp.arbitrarySetup()
@@ -364,18 +386,13 @@ var _ = Describe("Deployer", func() {
 			}
 
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), inp.dInputs)
-			// We don't have any interesting error cases in the NewDeployer to test for but if we get
-			// some then we will need to handle those outside the table or be more clever about expected
-			// errors
-			Expect(err).NotTo(HaveOccurred())
+			if checkErr(err, expected.newDeployerErr) {
+				return
+			}
 
 			objs, err := d.GetObjsToDeploy(context.Background(), inp.gw)
-			if expected.err != nil {
-				Expect(err).To(MatchError(expected.err))
-				// return here since we matched our expected error
+			if checkErr(err, expected.getObjsErr) {
 				return
-			} else {
-				Expect(err).NotTo(HaveOccurred())
 			}
 
 			// handle custom test validation func
@@ -628,7 +645,19 @@ var _ = Describe("Deployer", func() {
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGatewayWithGatewayParams("bad-gwp"),
 			}, &expectedOutput{
-				err: deployer.GetGatewayParametersError,
+				getObjsErr: deployer.GetGatewayParametersError,
+			}),
+			Entry("nil inputs to NewDeployer", &input{
+				dInputs: nil,
+				gw:      defaultGateway(),
+			}, &expectedOutput{
+				newDeployerErr: deployer.NilDeployerInputsErr,
+			}),
+			Entry("nil K8sGatewayExtensions input to NewDeployer", &input{
+				dInputs: &deployer.Inputs{},
+				gw:      defaultGateway(),
+			}, &expectedOutput{
+				newDeployerErr: deployer.NilK8sExtensionsErr,
 			}),
 		)
 	})

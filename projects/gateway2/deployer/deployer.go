@@ -39,6 +39,8 @@ var (
 		return eris.Wrapf(wrapped, "(%s.%s) for Gateway (%s.%s)",
 			gwpNamespace, gwpName, gwNamespace, gwName)
 	}
+	NilDeployerInputsErr = eris.New("nil inputs to NewDeployer")
+	NilK8sExtensionsErr  = eris.New("nil K8sGatewayExtensions to NewDeployer")
 )
 
 // A Deployer is responsible for deploying proxies
@@ -60,6 +62,13 @@ type Inputs struct {
 
 // NewDeployer creates a new gateway deployer
 func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
+	if inputs == nil {
+		return nil, NilDeployerInputsErr
+	}
+	if inputs.Extensions == nil {
+		return nil, NilK8sExtensionsErr
+	}
+
 	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		return nil, err
