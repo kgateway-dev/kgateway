@@ -12,7 +12,7 @@ Complete the following tasks before configuring an Istio sidecar for your Gloo E
 
 1. Create or use an existing cluster that runs Kubernetes version 1.20 or later. 
 2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Currently, Istio version 1.11 and 1.12 are supported in Gloo Edge.
-3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/managed_kubernetes/) to configure a service mesh that is based on Envoy and Istio, and that you can span across multiple service meshes and clusters. 
+3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/) to configure a service mesh that is based on Envoy and Istio, and that you can span across multiple service meshes and clusters. 
 4. Install an application in your mesh, such as Bookinfo. 
    ```shell
    kubectl label namespace default istio-injection=enabled
