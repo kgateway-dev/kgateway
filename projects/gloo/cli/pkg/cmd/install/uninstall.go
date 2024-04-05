@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -204,7 +206,7 @@ func (u *uninstaller) uninstallKnativeIfNecessary(ctx context.Context) {
 			_, _ = fmt.Fprintf(u.output, "Could not determine which knative components to remove. Continuing...\n")
 			return
 		}
-		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
+		if err := kubectl.NewCli(u.output).Delete(ctx, []byte(manifests), "--ignore-not-found"); err != nil {
 			_, _ = fmt.Fprintf(u.output, "Unable to delete knative. Continuing...\n")
 		}
 	}

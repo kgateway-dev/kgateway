@@ -3,12 +3,17 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
-	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/go-utils/threadsafe"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
+
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/google/uuid"
 
@@ -32,8 +37,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	"google.golang.org/grpc"
 
-	"github.com/solo-io/solo-kit/test/setup"
-
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -45,7 +48,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -358,7 +360,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				//goland:noinspection GoUnhandledErrorResult
 				defer os.Remove(caFile)
 
-				err := setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testserver:/tmp/ca.crt")
+				err := kubeCli.Copy(ctx, caFile, testHelper.InstallNamespace+"/testserver:/tmp/ca.crt")
 				Expect(err).NotTo(HaveOccurred())
 
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -371,7 +373,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+				}, ContainSubstring(kube2e.TestServerHttpResponse()), 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -498,7 +500,10 @@ var _ = Describe("Kube2e: gateway", func() {
 						Port:              gatewayPort,
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
-					}, "Gloo Gateway has invalid configuration", 1, 60*time.Second, 1*time.Second)
+					}, &testmatchers.HttpResponse{
+						Body:       ContainSubstring("Gloo Gateway has invalid configuration"),
+						StatusCode: http.StatusNotFound,
+					}, 1, 60*time.Second, 1*time.Second)
 				})
 			})
 
@@ -698,20 +703,17 @@ var _ = Describe("Kube2e: gateway", func() {
 		Context("proxy debug endpoint", func() {
 
 			It("Returns proxies", func() {
-				dialContext := context.Background()
-				portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
-					"deployment/gloo", "9966")
-				portFwd.Stdout = os.Stderr
-				portFwd.Stderr = os.Stderr
-				err := portFwd.Start()
-				Expect(err).ToNot(HaveOccurred())
+				portForwarder, err := kubeCli.StartPortForward(ctx,
+					portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
+					portforward.WithRemotePort(defaults2.GlooProxyDebugPort),
+				)
+				Expect(err).NotTo(HaveOccurred())
 				defer func() {
-					if portFwd.Process != nil {
-						portFwd.Process.Kill()
-					}
+					portForwarder.Close()
+					portForwarder.WaitForStop()
 				}()
 
-				cc, err := grpc.DialContext(dialContext, "localhost:9966", grpc.WithInsecure())
+				cc, err := grpc.DialContext(ctx, portForwarder.Address(), grpc.WithInsecure())
 				Expect(err).NotTo(HaveOccurred())
 				debugClient := debug.NewProxyEndpointServiceClient(cc)
 
@@ -1897,20 +1899,24 @@ var _ = Describe("Kube2e: gateway", func() {
 		// in order, which allows us to use BeforeAll instead of BeforeEach (https://onsi.github.io/ginkgo/#setup-in-ordered-containers-beforeall-and-afterall)
 
 		expectResourceRejected := func(yaml string, errorMatcher types.GomegaMatcher) {
-			out, err := install.KubectlApplyOut([]byte(yaml))
+			GinkgoHelper()
 
-			ExpectWithOffset(1, string(out)).To(errorMatcher)
-			ExpectWithOffset(1, err).To(HaveOccurred())
+			var stderr threadsafe.Buffer
+
+			_ = kubeCli.ApplyCmd(ctx, []byte(yaml), "-f", "-").WithStderr(&stderr).Run()
+			Expect(string(stderr.Bytes())).To(errorMatcher)
 		}
 
 		expectResourceAccepted := func(yaml string) {
-			err := install.KubectlApply([]byte(yaml))
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			GinkgoHelper()
+
+			err := kubeCli.Apply(ctx, []byte(yaml))
+			Expect(err).NotTo(HaveOccurred())
 
 			// To ensure that we do not leave artifacts between tests
 			// we clean up the resource after it is accepted
-			err = install.KubectlDelete([]byte(yaml))
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			err = kubeCli.Delete(ctx, []byte(yaml))
+			Expect(err).NotTo(HaveOccurred())
 		}
 
 		verifyGlooValidationWorks := func() {
@@ -2125,7 +2131,7 @@ spec:
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+					Expect(err.Error()).To(testmatchers.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
 
 					By("successfully deleting a secret that is no longer in use")
 					// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
@@ -2273,26 +2279,22 @@ spec:
 				kube2e.UpdateAllowWarningsSetting(ctx, true, testHelper.InstallNamespace)
 
 				// This should work regardless of whether the warnings are allowed or not, as an invalid upstream is not a warning until it part of a route
-				err := install.KubectlApply([]byte(invalidUpstreamYaml))
+				err := kubeCli.Apply(ctx, []byte(invalidUpstreamYaml))
 				Expect(err).NotTo(HaveOccurred())
 
 				// Use an "Eventually" here, as this is the step that actually causes the warnings, so the changes need to have been propagated
-				Eventually(func() error {
-					err := install.KubectlApply([]byte(vsYaml))
-					if err != nil {
-						return err
-					}
-
-					return nil
-				}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).ShouldNot(HaveOccurred())
+				Eventually(func(g Gomega) {
+					err := kubeCli.Apply(ctx, []byte(vsYaml))
+					g.Expect(err).NotTo(HaveOccurred())
+				}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			})
 
 			AfterAll(func() {
 				kube2e.UpdateFailurePolicy(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, pretestFailurePolicyType)
-				err := install.KubectlDelete([]byte(invalidUpstreamYaml))
+				err := kubeCli.Delete(ctx, []byte(invalidUpstreamYaml))
 				Expect(err).NotTo(HaveOccurred())
-				err = install.KubectlDelete([]byte(vsYaml))
+				err = kubeCli.Delete(ctx, []byte(vsYaml))
 				Expect(err).NotTo(HaveOccurred())
 
 				// Our tests default to using allowWarnings=true, so we just need to ensure we leave it that way
@@ -2363,12 +2365,12 @@ spec:
 					},
 					resourceClientset.VirtualServiceClient().BaseClient())
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"references the service", "which does not exist in namespace"}))
+				Expect(err.Error()).To(testmatchers.ContainSubstrings([]string{"references the service", "which does not exist in namespace"}))
 
 				By("failing to delete a secret that is in use")
 				err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+				Expect(err.Error()).To(testmatchers.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
 
 				// No test for removing a secret from use and deleting it, as the modification to remove the secret from the route would not be allowed due to allowWarnings=false
 				By("deleting a secret that is not in use")
@@ -2625,7 +2627,7 @@ spec:
 						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 						WithoutStats:      true,
 						Verbose:           true,
-					}, `HTTP/1.1 404 Not Found`, 1, 60*time.Second, 1*time.Second)
+					}, ContainSubstring(`HTTP/1.1 404 Not Found`), 1, 60*time.Second, 1*time.Second)
 				})
 
 				It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {

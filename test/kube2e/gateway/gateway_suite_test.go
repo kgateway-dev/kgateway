@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+
 	"github.com/solo-io/gloo/test/testutils/kubeutils"
 
 	kubeutils2 "github.com/solo-io/gloo/test/testutils"
@@ -46,6 +48,8 @@ var (
 	testHelper        *helper.SoloTestHelper
 	resourceClientset *kube2e.KubeResourceClientSet
 	snapshotWriter    helpers.SnapshotWriter
+
+	kubeCli *kubectl.Cli
 )
 
 var _ = BeforeSuite(StartTestHelper)
@@ -58,6 +62,8 @@ func StartTestHelper() {
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+
+	kubeCli = kubectl.NewCli(GinkgoWriter)
 
 	// Allow skipping of install step for running multiple times
 	if !kubeutils2.ShouldSkipInstall() {
