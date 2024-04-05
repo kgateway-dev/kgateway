@@ -11,18 +11,18 @@ type Cmd interface {
 	// It returns a *RunError if there is any error, nil otherwise
 	Run() *RunError
 
-	// SetEnv sets the Env variables for the Cmd
+	// WithEnv sets the Env variables for the Cmd
 	// Each entry should be of the form "key=value"
-	SetEnv(...string) Cmd
+	WithEnv(...string) Cmd
 
-	// SetStdin sets the io.Reader used for stdin
-	SetStdin(reader io.Reader) Cmd
+	// WithStdin sets the io.Reader used for stdin
+	WithStdin(reader io.Reader) Cmd
 
-	// SetStdout sets the io.Writer used for stdout
-	SetStdout(io.Writer) Cmd
+	// WithStdout sets the io.Writer used for stdout
+	WithStdout(io.Writer) Cmd
 
-	// SetStderr sets the io.Reader used for stderr
-	SetStderr(io.Writer) Cmd
+	// WithStderr sets the io.Reader used for stderr
+	WithStderr(io.Writer) Cmd
 }
 
 // Cmder abstracts over creating commands

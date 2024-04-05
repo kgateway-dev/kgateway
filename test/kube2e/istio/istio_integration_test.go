@@ -286,7 +286,10 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				Verbose:           false,
 				WithoutStats:      true,
 				ReturnHeaders:     true,
-			}, ContainSubstring(fmt.Sprintf("HTTP/1.1 %d", expected)), 1, time.Minute*1)
+			}, &testmatchers.HttpResponse{
+				Body:       ContainSubstring(fmt.Sprintf("HTTP/1.1 %d", expected)),
+				StatusCode: expected,
+			}, 1, time.Minute*1)
 		},
 			Entry("with non-matching, yet valid, port and target (app) port", int32(helper.TestServerPort+1), helper.TestServerPort, http.StatusOK),
 			Entry("with matching port and target port", int32(helper.TestServerPort), helper.TestServerPort, http.StatusOK),
@@ -520,7 +523,10 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				Verbose:           false,
 				WithoutStats:      true,
 				ReturnHeaders:     true,
-			}, ContainSubstring(fmt.Sprintf("HTTP/1.1 %d", http.StatusOK)), 1, time.Minute*1)
+			}, &testmatchers.HttpResponse{
+				Body:       ContainSubstring(fmt.Sprintf("HTTP/1.1 %d", http.StatusOK)),
+				StatusCode: http.StatusOK,
+			}, 1, time.Minute*1)
 		})
 	})
 

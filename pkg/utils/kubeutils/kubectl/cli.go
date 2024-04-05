@@ -8,7 +8,6 @@ import (
 
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -33,7 +32,7 @@ func NewCli(receiver io.Writer) *Cli {
 	}
 }
 
-func (c *Cli) SetKubeContext(kubeContext string) *Cli {
+func (c *Cli) WithKubeContext(kubeContext string) *Cli {
 	c.kubeContext = kubeContext
 	return c
 }
@@ -44,21 +43,12 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 	}
 
 	cmd := cmdutils.Command(ctx, "kubectl", args...)
-
-	//disable DEBUG=1 from getting through to kube
-	env := os.Environ()
-	for i, pair := range env {
-		if strings.HasPrefix(pair, "DEBUG") {
-			env = append(env[:i], env[i+1:]...)
-			break
-		}
-	}
-	cmd.SetEnv(env...)
+	cmd.WithEnv(os.Environ()...)
 
 	// For convenience, we set the stdout and stderr to the receiver
 	// This can still be overwritten by consumers who use the commands
-	cmd.SetStdout(c.receiver)
-	cmd.SetStderr(c.receiver)
+	cmd.WithStdout(c.receiver)
+	cmd.WithStderr(c.receiver)
 	return cmd
 }
 
@@ -70,7 +60,7 @@ func (c *Cli) ApplyCmd(ctx context.Context, content []byte, extraArgs ...string)
 	args := append([]string{"apply"}, extraArgs...)
 
 	cmd := c.Command(ctx, args...)
-	cmd.SetStdin(bytes.NewBuffer(content))
+	cmd.WithStdin(bytes.NewBuffer(content))
 	return cmd
 }
 
@@ -79,35 +69,25 @@ func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) er
 	return c.ApplyCmd(ctx, content, applyArgs...).Run().Cause()
 }
 
-func (c *Cli) ApplyFile(ctx context.Context, file string, extraArgs ...string) error {
-	applyFileArgs := append([]string{"-f"}, extraArgs...)
-	return c.ApplyCmd(ctx, []byte(file), applyFileArgs...).Run().Cause()
-}
-
-func (c *Cli) DeleteCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
+func (c *Cli) deleteCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
 	args := append([]string{"delete"}, extraArgs...)
 
 	cmd := c.Command(ctx, args...)
-	cmd.SetStdin(bytes.NewBuffer(content))
+	cmd.WithStdin(bytes.NewBuffer(content))
 	return cmd
 }
 
 func (c *Cli) Delete(ctx context.Context, content []byte, extraArgs ...string) error {
 	deleteYamlArgs := append([]string{"-f", "-"}, extraArgs...)
-	return c.DeleteCmd(ctx, content, deleteYamlArgs...).Run().Cause()
+	return c.deleteCmd(ctx, content, deleteYamlArgs...).Run().Cause()
 }
 
-func (c *Cli) DeleteFile(ctx context.Context, file string, extraArgs ...string) error {
-	deleteFileArgs := append([]string{"-f"}, extraArgs...)
-	return c.DeleteCmd(ctx, []byte(file), deleteFileArgs...).Run().Cause()
-}
-
-func (c *Cli) CopyCmd(ctx context.Context, from, to string) cmdutils.Cmd {
+func (c *Cli) copyCmd(ctx context.Context, from, to string) cmdutils.Cmd {
 	return c.Command(ctx, "cp", from, to)
 }
 
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
-	return c.CopyCmd(ctx, from, to).Run().Cause()
+	return c.copyCmd(ctx, from, to).Run().Cause()
 }
 
 func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Option) (portforward.PortForwarder, error) {

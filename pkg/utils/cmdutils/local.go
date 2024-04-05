@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/threadsafe"
@@ -35,26 +36,34 @@ type LocalCmd struct {
 	*exec.Cmd
 }
 
-// SetEnv sets env
-func (cmd *LocalCmd) SetEnv(env ...string) Cmd {
+// WithEnv sets env
+func (cmd *LocalCmd) WithEnv(env ...string) Cmd {
+	//disable DEBUG=1 from getting through to command
+	for i, pair := range env {
+		if strings.HasPrefix(pair, "DEBUG") {
+			env = append(env[:i], env[i+1:]...)
+			break
+		}
+	}
+
 	cmd.Env = env
 	return cmd
 }
 
-// SetStdin sets stdin
-func (cmd *LocalCmd) SetStdin(r io.Reader) Cmd {
+// WithStdin sets stdin
+func (cmd *LocalCmd) WithStdin(r io.Reader) Cmd {
 	cmd.Stdin = r
 	return cmd
 }
 
-// SetStdout set stdout
-func (cmd *LocalCmd) SetStdout(w io.Writer) Cmd {
+// WithStdout set stdout
+func (cmd *LocalCmd) WithStdout(w io.Writer) Cmd {
 	cmd.Stdout = w
 	return cmd
 }
 
-// SetStderr sets stderr
-func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
+// WithStderr sets stderr
+func (cmd *LocalCmd) WithStderr(w io.Writer) Cmd {
 	cmd.Stderr = w
 	return cmd
 }
@@ -69,10 +78,10 @@ func (cmd *LocalCmd) Run() *RunError {
 
 	if err := cmd.Cmd.Run(); err != nil {
 		return &RunError{
-			Command:    cmd.Args,
-			Output:     combinedOutput.Bytes(),
-			Inner:      err,
-			StackTrace: errors.WithStack(err),
+			command:    cmd.Args,
+			output:     combinedOutput.Bytes(),
+			inner:      err,
+			stackTrace: errors.WithStack(err),
 		}
 	}
 	return nil

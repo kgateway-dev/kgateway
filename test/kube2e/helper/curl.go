@@ -155,21 +155,31 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 	}, currentTimeout, pollingInterval).Should(Succeed())
 }
 
+// getExpectedResponseMatcher takes an interface and converts it into the types.GomegaMatcher
+// that will be used to assert that a given Curl response, matches an expected shape
 func getExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher {
 	switch a := expectedOutput.(type) {
-	case types.GomegaMatcher:
-		// To handle all edge cases, developers must define the expected matcher explicitly
-		return a
-	case *matchers.HttpResponse:
-		// If a response is provided, we assume we can convert the string into an http.Response
-		return WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(a))
-
 	case string:
-		// If a string is provided, we assume it was a successful response
+		// In the past, this Curl utility accepted a string, and only asserted that the http response body
+		// contained that as a substring.
+		// To ensure that all tests which relied on this functionality still work, we accept a string, but
+		// improve the assertion to also validate that the StatusCode was a 200
 		return WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(&matchers.HttpResponse{
 			Body:       ContainSubstring(a),
 			StatusCode: http.StatusOK,
 		}))
+	case *matchers.HttpResponse:
+		// There are some cases in tests where we require asserting that a response was not a 200
+		// To support that case, we allow developers to supply an HttpResponse object, which defines the
+		// expected response. See matchers.HaveHttpResponse for more details
+		// This is actually the preferred input, as it means that the WithCurlHttpResponse transform
+		// can process the Curl response
+		return WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(a))
+	case types.GomegaMatcher:
+		// As a fallback, we also allow developers to define the expected matcher explicitly
+		// If this is necessary, it means that the WithCurlHttpResponse transform likely needs to
+		// be expanded. In that case, we should seriously consider expanding that functionality
+		return a
 	default:
 		ginkgo.Fail(fmt.Sprintf("Invalid expectedOutput: %+v", expectedOutput))
 	}

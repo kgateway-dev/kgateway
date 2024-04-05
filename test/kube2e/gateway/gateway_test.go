@@ -705,7 +705,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("Returns proxies", func() {
 				portForwarder, err := kubeCli.StartPortForward(ctx,
 					portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
-					portforward.WithRemotePort(9966),
+					portforward.WithRemotePort(defaults2.GlooProxyDebugPort),
 				)
 				Expect(err).NotTo(HaveOccurred())
 				defer func() {
@@ -1903,7 +1903,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			var stderr threadsafe.Buffer
 
-			_ = kubeCli.ApplyCmd(ctx, []byte(yaml), "-f", "-").SetStderr(&stderr).Run()
+			_ = kubeCli.ApplyCmd(ctx, []byte(yaml), "-f", "-").WithStderr(&stderr).Run()
 			Expect(string(stderr.Bytes())).To(errorMatcher)
 		}
 
