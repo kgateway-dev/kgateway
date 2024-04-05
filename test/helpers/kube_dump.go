@@ -11,6 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+
+	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
 	"github.com/solo-io/skv2/codegen/util"
@@ -200,28 +203,33 @@ func recordCRs(namespaceDir string, namespace string) error {
 
 // kubeLogs runs $(kubectl -n $namespace logs $pod --all-containers) and returns the string result
 func kubeLogs(namespace string, pod string) (string, error) {
-	kubeCli := &install.CmdKubectl{}
-	toReturn, err := kubeCli.KubectlOut(nil, "-n", namespace, "logs", pod, "--all-containers")
-	return string(toReturn), err
+	args := []string{"-n", namespace, "logs", pod, "--all-containers"}
+	return kubeExecute(args)
 }
 
 // kubeGet runs $(kubectl -n $namespace get $kubeType $name -oyaml) and returns the string result
 func kubeGet(namespace string, kubeType string, name string) (string, error) {
-	kubeCli := &install.CmdKubectl{}
-	toReturn, err := kubeCli.KubectlOut(nil, "-n", namespace, "get", kubeType, name, "-oyaml")
-	return string(toReturn), err
+	args := []string{"-n", namespace, "get", kubeType, name, "-oyaml"}
+	return kubeExecute(args)
+}
+
+func kubeExecute(args []string) (string, error) {
+	cli := kubectl.NewCli(ginkgo.GinkgoWriter)
+
+	runError := cli.Command(context.Background(), args...).Run()
+	return runError.OutputString(), runError.Cause()
 }
 
 // kubeList runs $(kubectl -n $namespace $target) and returns a slice of kubernetes object names
 func kubeList(namespace string, target string) ([]string, error) {
-	kubeCli := &install.CmdKubectl{}
-	line, err := kubeCli.KubectlOut(nil, "-n", namespace, "get", target)
+	args := []string{"-n", namespace, "get", target}
+	line, err := kubeExecute(args)
 	if err != nil {
 		return nil, err
 	}
 
 	var toReturn []string
-	for _, line := range strings.Split(strings.TrimSuffix(string(line), "\n"), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(line, "\n"), "\n") {
 		if strings.HasPrefix(line, "NAME") || strings.HasPrefix(line, "No resources found") {
 			continue // skip header line and cases where there are no resources
 		}
