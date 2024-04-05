@@ -20,7 +20,7 @@ func main() {
 	)
 
 	skv2Cmd := codegen.Command{
-		AppName:      "gateway2",
+		AppName:      "gloo-gateway",
 		ManifestRoot: "install/helm/gloo",
 		AnyVendorConfig: &skv2_anyvendor.Imports{
 			Local:    anyvendorImports.Local,

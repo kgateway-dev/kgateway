@@ -6,8 +6,8 @@ metadata:
   annotations:
     crd.solo.io/specHash: 2c6d037668ce167d
   labels:
-    app: gateway2
-    app.kubernetes.io/name: gateway2
+    app: gloo-gateway
+    app.kubernetes.io/name: gloo-gateway
   name: gatewayparameters.gateway.gloo.solo.io
 spec:
   group: gateway.gloo.solo.io
