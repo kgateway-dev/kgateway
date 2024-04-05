@@ -86,7 +86,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 
-	k8sGwExtensions, err := cfg.ExtensionsFactory(mgr)
+	k8sGwExtensions, err := cfg.ExtensionsFactory(mgr, inputChannels.Kick)
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
 		return err
