@@ -1,6 +1,7 @@
 package glooctl_test
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -20,7 +21,7 @@ var (
 	petstoreCurlOpts = helper.CurlOpts{
 		Protocol:          "http",
 		Path:              "/api/pets",
-		Method:            "GET",
+		Method:            http.MethodGet,
 		Host:              defaults.GatewayProxyName,
 		Service:           defaults.GatewayProxyName,
 		Verbose:           true,
