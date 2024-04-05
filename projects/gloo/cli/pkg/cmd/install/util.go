@@ -50,7 +50,7 @@ func init() {
 		"virtualhostoptions.gateway.solo.io",
 		"routeoptions.gateway.solo.io",
 		"graphqlapis.graphql.gloo.solo.io",
-		// gloo gateway CRDs:
+		// CRDs used for k8s gateway API integration:
 		"gatewayparameters.gateway.gloo.solo.io",
 		// gloo-fed CRDs:
 		"glooinstances.fed.solo.io",
