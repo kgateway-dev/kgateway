@@ -42,7 +42,7 @@ func ConsistOfHeaders(headers http.Header) types.GomegaMatcher {
 	return gomega.And(headerMatchers...)
 }
 
-// ContainHeaders produces a matcher that will only match if all provided header keys exist.
+// ContainHeaderKeys produces a matcher that will only match if all provided header keys exist.
 func ContainHeaderKeys(keys []string) types.GomegaMatcher {
 	if len(keys) == 0 {
 		// If no keys are defined, we create a matcher that always succeeds
