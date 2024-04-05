@@ -1,6 +1,6 @@
 changelog:
-- type: NON_USER_FACING
-  skipCI-kube-tests:true
+- type: NON_USER_FACING  
+  description: >- 
+    Weekly doc fixes.
+    skipCI-kube-tests:true
   resolvesIssue: false
-  description: >-
-    Fixes link. 
