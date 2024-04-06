@@ -1,14 +1,13 @@
-package testutils
+package requestutils
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/onsi/ginkgo/v2"
+	"strings"
 )
 
-// CurlRequestBuilder simplifies the process of generating curl requests in tests
+// CurlRequestBuilder simplifies the process of generating curl requests
 type CurlRequestBuilder struct {
 	verbose           bool
 	allowInsecure     bool
@@ -27,6 +26,10 @@ type CurlRequestBuilder struct {
 	path              string
 
 	scheme string
+
+	retry        int
+	retryDelay   int
+	retryMaxTime int
 
 	additionalArgs []string
 }
@@ -49,6 +52,10 @@ func DefaultCurlRequestBuilder() *CurlRequestBuilder {
 		sni:               "",
 		caFile:            "",
 		path:              "",
+
+		retry:        0,
+		retryDelay:   -1,
+		retryMaxTime: 0,
 
 		additionalArgs: []string{},
 	}
@@ -110,7 +117,14 @@ func (c *CurlRequestBuilder) WithCaFile(caFile string) *CurlRequestBuilder {
 }
 
 func (c *CurlRequestBuilder) WithPath(path string) *CurlRequestBuilder {
-	c.path = path
+	c.path = strings.TrimPrefix(path, "/")
+	return c
+}
+
+func (c *CurlRequestBuilder) WithRetries(retry, retryDelay, retryMaxTime int) *CurlRequestBuilder {
+	c.retry = retry
+	c.retryDelay = retryDelay
+	c.retryMaxTime = retryMaxTime
 	return c
 }
 
@@ -157,14 +171,9 @@ func (c *CurlRequestBuilder) errorIfInvalid() error {
 	return nil
 }
 
-func (c *CurlRequestBuilder) BuildArgs() []string {
-	ginkgo.GinkgoHelper()
-
+func (c *CurlRequestBuilder) BuildArgs() ([]string, error) {
 	if err := c.errorIfInvalid(); err != nil {
-		// We error loudly here
-		// These types of errors are intended to prevent developers from creating resources
-		// which are semantically correct, but lead to test flakes/confusion
-		ginkgo.Fail(err.Error())
+		return nil, err
 	}
 
 	args := []string{"curl"}
@@ -203,13 +212,24 @@ func (c *CurlRequestBuilder) BuildArgs() []string {
 	if len(c.additionalArgs) > 0 {
 		args = append(args, c.additionalArgs...)
 	}
+
+	if c.retry != 0 {
+		args = append(args, "--retry", fmt.Sprintf("%d", c.retry))
+	}
+	if c.retryDelay != -1 {
+		args = append(args, "--retry-delay", fmt.Sprintf("%d", c.retryDelay))
+	}
+	if c.retryMaxTime != 0 {
+		args = append(args, "--retry-max-time", fmt.Sprintf("%d", c.retryMaxTime))
+	}
+
 	if c.sni != "" {
 		sniResolution := fmt.Sprintf("%s:%d:%s", c.sni, c.port, c.service)
 		fullAddress := fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
 		args = append(args, "--resolve", sniResolution, fullAddress)
 	} else {
-		args = append(args, fmt.Sprintf("%v://%s:%v%s", c.scheme, c.service, c.port, c.path))
+		args = append(args, fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.service, c.port, c.path))
 	}
 
-	return args
+	return args, nil
 }

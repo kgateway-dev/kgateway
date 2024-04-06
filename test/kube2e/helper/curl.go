@@ -3,6 +3,7 @@ package helper
 import (
 	"bytes"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/requestutils"
 	"io"
 	"net/http"
 	"strings"
@@ -11,12 +12,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/types"
 
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
-	"github.com/solo-io/gloo/test/testutils"
-
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/go-utils/log"
 )
 
@@ -187,7 +186,7 @@ func getExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher 
 }
 
 func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
-	curlRequestBuilder := testutils.DefaultCurlRequestBuilder()
+	curlRequestBuilder := requestutils.DefaultCurlRequestBuilder()
 
 	// The testContainer relies on the transforms.WithCurlHttpResponse to validate the response is what
 	// we would expect
@@ -247,7 +246,9 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 		curlRequestBuilder.WithSni(opts.Sni)
 	}
 
-	args := curlRequestBuilder.BuildArgs()
+	args, err := curlRequestBuilder.BuildArgs()
+	Expect(err).NotTo(HaveOccurred())
+
 	log.Printf("running: %v", strings.Join(args, " "))
 	return args
 }

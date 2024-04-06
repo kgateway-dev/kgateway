@@ -1,9 +1,9 @@
-package adminctl
+package admincli
 
 import (
 	"context"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/pkg/utils/requestutils"
 	"github.com/solo-io/go-utils/contextutils"
 	"io"
 	"os"
@@ -24,16 +24,16 @@ type Cli struct {
 	receiver io.Writer
 
 	// requestBuilder is the set of default request properties for the Envoy Admin API
-	requestBuilder *testutils.CurlRequestBuilder
+	requestBuilder *requestutils.CurlRequestBuilder
 }
 
-// NewCli returns an implementation of the adminctl.Cli
+// NewCli returns an implementation of the admincli.Cli
 func NewCli(receiver io.Writer, address string) *Cli {
 	addressParts := strings.Split(address, ":")
 	service := addressParts[0]
 	port, _ := strconv.Atoi(addressParts[1])
 
-	requestBuilder := testutils.DefaultCurlRequestBuilder().
+	requestBuilder := requestutils.DefaultCurlRequestBuilder().
 		WithScheme("http").
 		WithService(service).
 		WithPort(port).
@@ -46,7 +46,7 @@ func NewCli(receiver io.Writer, address string) *Cli {
 	}
 }
 
-func (c *Cli) Command(ctx context.Context, builder *testutils.CurlRequestBuilder) cmdutils.Cmd {
+func (c *Cli) Command(ctx context.Context, builder *requestutils.CurlRequestBuilder) cmdutils.Cmd {
 	args, err := builder.BuildArgs()
 	if err != nil {
 		// An error is returned here to improve the dev experience, as the CurlRequest that was
