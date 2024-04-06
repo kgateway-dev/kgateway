@@ -17,12 +17,28 @@ type RunError struct {
 var _ error = &RunError{}
 
 func (e *RunError) Error() string {
+	if e == nil {
+		return ""
+	}
 	return fmt.Sprintf("command \"%s\" failed with error: %v", e.PrettyCommand(), e.inner)
 }
 
 // PrettyCommand pretty prints the command in a way that could be pasted
 // into a shell
 func (e *RunError) PrettyCommand() string {
+	if e == nil {
+		return "RunError is nil"
+	}
+
+	if len(e.command) == 0 {
+		return "no command args"
+	}
+
+	if len(e.command) == 1 {
+		return e.command[0]
+	}
+
+	// The above cases should not happen, but we defend against it
 	return PrettyCommand(e.command[0], e.command[1:]...)
 }
 

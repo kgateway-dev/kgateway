@@ -31,7 +31,7 @@ func (c *LocalCmder) Command(ctx context.Context, name string, arg ...string) Cm
 	}
 }
 
-// LocalCmd wraps os/exec.Cmd, implementing the kind/pkg/exec.Cmd interface
+// LocalCmd wraps os/exec.Cmd, implementing the cmdutils.Cmd interface
 type LocalCmd struct {
 	*exec.Cmd
 }
