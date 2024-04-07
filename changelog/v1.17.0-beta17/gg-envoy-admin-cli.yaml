@@ -19,3 +19,8 @@ changelog:
       Attempt to resolve a test flake which occurs when a port-forward command fails.
       The proposed solution is to rely on a new port forwarding utility, which includes
       retries in the request, by default.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9292
+    resolvesIssue: false
+    description: >-
+      Add a FlakeAttempts decorator, to try to reduce the impact of the staged_transformation test flakes
