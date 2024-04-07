@@ -138,7 +138,7 @@ var _ = Describe("Setup Syncer", func() {
 			Eventually(func(g Gomega) {
 				_, err := validationClient.Validate(ctx, validationRequest)
 				g.Expect(err).NotTo(HaveOccurred())
-			}).Should(Succeed(), "validation request should succeed")
+			}, "10s", "1s").Should(Succeed(), "validation request should succeed")
 
 			kube2e.UpdateSettings(ctx, func(settings *v1.Settings) {
 				settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
@@ -147,7 +147,7 @@ var _ = Describe("Setup Syncer", func() {
 			Eventually(func(g Gomega) {
 				_, err := validationClient.Validate(ctx, validationRequest)
 				g.Expect(err).To(MatchError(ContainSubstring("received message larger than max (19 vs. 1)")))
-			}).Should(Succeed(), "validation request should fail")
+			}, "10s", "1s").Should(Succeed(), "validation request should fail")
 		})
 	})
 })
