@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"net/http"
+
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 // BuildArgsOrError accepts a set of curl.Option and generates the list of arguments

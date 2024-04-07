@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"io"
 	"net"
 	"os/exec"
 
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+
 	"github.com/solo-io/gloo/test/services"
 
-	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"sync"
 	"text/template"
 	"time"
+
+	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 
 	"github.com/onsi/ginkgo/v2"
 

@@ -1,7 +1,9 @@
-package admincli
+package admincli_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -38,7 +40,7 @@ var _ = Describe("Client", func() {
 				)
 
 				// Create a client that points to an address where Envoy is NOT running
-				client := NewClient(&defaultOutputLocation, []curl.Option{
+				client := admincli.NewClient(&defaultOutputLocation, []curl.Option{
 					curl.WithScheme("http"),
 					curl.WithService("localhost"),
 					curl.WithPort(1111),

@@ -3,13 +3,14 @@ package admincli
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
-	"io"
-	"net/http"
 )
 
 const (
@@ -72,7 +73,7 @@ func (c *Client) StatsCmd(ctx context.Context) cmdutils.Cmd {
 
 func (c *Client) GetStats(ctx context.Context) (string, error) {
 	var outLocation threadsafe.Buffer
-	
+
 	err := c.StatsCmd(ctx).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return "", err

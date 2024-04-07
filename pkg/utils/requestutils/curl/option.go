@@ -16,7 +16,7 @@ func VerboseOutput() Option {
 
 func AllowInsecure() Option {
 	return func(config *requestConfig) {
-		config.verbose = true
+		config.allowInsecure = true
 	}
 }
 

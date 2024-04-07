@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/types"

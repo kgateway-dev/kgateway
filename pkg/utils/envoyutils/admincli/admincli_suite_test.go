@@ -1,4 +1,4 @@
-package admincli
+package admincli_test
 
 import (
 	"testing"
