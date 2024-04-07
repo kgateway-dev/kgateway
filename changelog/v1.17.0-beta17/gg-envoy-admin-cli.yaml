@@ -12,3 +12,10 @@ changelog:
       network issues, will not cause tests to fail. This has demonstrated to reduce flakes,
       though it has not proven that it will fix this test flake completely, so it is not
       marked as resolving the issue.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9306
+    resolvesIssue: false
+    description: >-
+      Attempt to resolve a test flake which occurs when a port-forward command fails.
+      The proposed solution is to rely on a new port forwarding utility, which includes
+      retries in the request, by default.
