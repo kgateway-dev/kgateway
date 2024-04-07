@@ -2,6 +2,7 @@ package curl_test
 
 import (
 	"context"
+
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"

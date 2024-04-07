@@ -8,6 +8,8 @@ import (
 	"net"
 	"os/exec"
 
+	"github.com/solo-io/go-utils/threadsafe"
+
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 
@@ -200,14 +202,14 @@ func (ei *Instance) DisablePanicMode() error {
 }
 
 func (ei *Instance) setRuntimeConfiguration(queryParameters string) error {
-	return ei.adminApiClient.ModifyRuntimeConfiguration(context.Background(), queryParameters)
+	return ei.AdminClient().ModifyRuntimeConfiguration(context.Background(), queryParameters)
 }
 
 func (ei *Instance) Clean() {
 	if ei == nil {
 		return
 	}
-	_ = ei.adminApiClient.ShutdownServer(context.Background())
+	_ = ei.AdminClient().ShutdownServer(context.Background())
 
 	if ei.cmd != nil {
 		ei.cmd.Process.Kill()
@@ -297,23 +299,27 @@ func (ei *Instance) Logs() (string, error) {
 	return ei.logs.String(), nil
 }
 
+// Deprecated: Prefer StructuredConfigDump
 func (ei *Instance) ConfigDump() (string, error) {
-	structuredData, err := ei.StructuredConfigDump()
+	var outLocation threadsafe.Buffer
+
+	err := ei.AdminClient().ConfigDumpCmd(context.Background()).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return "", err
 	}
-	return structuredData.String(), nil
+
+	return outLocation.String(), nil
 }
 
 func (ei *Instance) StructuredConfigDump() (*adminv3.ConfigDump, error) {
-	return ei.adminApiClient.GetConfigDump(context.Background())
+	return ei.AdminClient().GetConfigDump(context.Background())
 }
 
 func (ei *Instance) Statistics() (string, error) {
-	return ei.adminApiClient.GetStats(context.Background())
+	return ei.AdminClient().GetStats(context.Background())
 }
 
-func (ei *Instance) getAdminClient() *admincli.Client {
+func (ei *Instance) AdminClient() *admincli.Client {
 	return ei.adminApiClient
 }
 
