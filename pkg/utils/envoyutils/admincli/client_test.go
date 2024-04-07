@@ -62,7 +62,7 @@ var _ = Describe("Client", func() {
 						curl.WithService("localhost"),
 						curl.WithPort(1111),
 						// Since we expect this test to fail, we don't need to use all the reties that the client defaults to use
-						curl.WithRetries(0, 0, 0),
+						curl.WithoutRetries(),
 					)
 
 				statsCmd := client.StatsCmd(ctx).

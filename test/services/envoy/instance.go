@@ -157,6 +157,7 @@ func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBu
 			curl.WithScheme("http"),
 			curl.WithService("localhost"),
 			curl.WithPort(int(ei.AdminPort)),
+			curl.WithRetries(3, 0, 10),
 		)
 
 	if ei.UseDocker {

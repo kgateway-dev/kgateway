@@ -101,6 +101,12 @@ func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	}
 }
 
+func WithoutRetries() Option {
+	return func(config *requestConfig) {
+		WithRetries(0, -1, 0)(config)
+	}
+}
+
 func WithPostBody(body string) Option {
 	return func(config *requestConfig) {
 		WithBody(body)(config)

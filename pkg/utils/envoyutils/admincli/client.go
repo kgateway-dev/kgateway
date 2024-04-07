@@ -40,17 +40,21 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithService("localhost"),
-			// 5 retries, exponential back-off, 10 second max
-			curl.WithRetries(5, 0, 10),
+			// 3 retries, exponential back-off, 10 second max
+			curl.WithRetries(3, 0, 10),
 		},
 	}
 }
 
+// WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
+// of cmdutils.Cmd created by the Client
 func (c *Client) WithReceiver(receiver io.Writer) *Client {
 	c.receiver = receiver
 	return c
 }
 
+// WithCurlOptions sets the default set of curl.Option that will be used by default with
+// the cmdutils.Cmd created by the Client
 func (c *Client) WithCurlOptions(options ...curl.Option) *Client {
 	c.curlOptions = append(c.curlOptions, options...)
 	return c
@@ -119,7 +123,7 @@ func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error)
 	}
 
 	unmarshaler := &jsonpb.Unmarshaler{
-		// Ever since upgrading the go-control-plane to v0.10.1 this test fails with the following error:
+		// Ever since upgrading the go-control-plane to v0.10.1 the standard unmarshal fails with the following error:
 		// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
 		// Set AllowUnknownFields to true to get around this
 		AllowUnknownFields: true,
