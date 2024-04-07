@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	ConfigDumpPath    = "config_dump"
-	StatsPath         = "stats"
-	ClustersPath      = "clusters"
-	ListenersPath     = "listeners"
-	ModifyRuntimePath = "runtime_modify"
-	TerminateEndpoint = "quitquitquit"
+	ConfigDumpPath     = "config_dump"
+	StatsPath          = "stats"
+	ClustersPath       = "clusters"
+	ListenersPath      = "listeners"
+	ModifyRuntimePath  = "runtime_modify"
+	ShutdownServerPath = "quitquitquit"
 )
 
 // Client is a utility for executing requests against the Envoy Admin API
@@ -71,14 +71,9 @@ func (c *Client) StatsCmd(ctx context.Context) cmdutils.Cmd {
 }
 
 func (c *Client) GetStats(ctx context.Context) (string, error) {
-	var (
-		outLocation threadsafe.Buffer
-	)
-
-	err := c.StatsCmd(ctx).
-		WithStdout(&outLocation).
-		Run().
-		Cause()
+	var outLocation threadsafe.Buffer
+	
+	err := c.StatsCmd(ctx).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return "", err
 	}
@@ -104,10 +99,7 @@ func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error)
 		outLocation threadsafe.Buffer
 	)
 
-	err := c.ConfigDumpCmd(ctx).
-		WithStdout(&outLocation).
-		Run().
-		Cause()
+	err := c.ConfigDumpCmd(ctx).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return nil, err
 	}
@@ -134,6 +126,6 @@ func (c *Client) ModifyRuntimeConfiguration(ctx context.Context, queryParameters
 
 func (c *Client) ShutdownServer(ctx context.Context) error {
 	return c.RunCommand(ctx,
-		curl.WithPath(TerminateEndpoint),
+		curl.WithPath(ShutdownServerPath),
 		curl.WithMethod(http.MethodPost))
 }
