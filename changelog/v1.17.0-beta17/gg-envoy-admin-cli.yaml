@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5723
+    resolvesIssue: false
+    description: >-
+      Introduce a client for the Envoy Admin APi, improve how curl requests are built.
