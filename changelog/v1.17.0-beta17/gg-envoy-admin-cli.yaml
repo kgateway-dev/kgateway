@@ -4,3 +4,11 @@ changelog:
     resolvesIssue: false
     description: >-
       Introduce a client for the Envoy Admin APi, improve how curl requests are built.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9291
+    resolvesIssue: false
+    description: >-
+      Introduce retries to the kube2e curl helper, so that curl requests which may fail due to
+      network issues, will not cause tests to fail. This has demonstrated to reduce flakes,
+      though it has not proven that it will fix this test flake completely, so it is not
+      marked as resolving the issue.
