@@ -3,10 +3,9 @@ package admincli_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
 )
@@ -21,7 +20,22 @@ var _ = Describe("Client", func() {
 		ctx = context.Background()
 	})
 
-	Context("Unit tests", func() {
+	Context("Client tests", func() {
+
+		It("WithCurlOptions can append and override default curl.Option", func() {
+			client := admincli.NewClient().WithCurlOptions(
+				curl.WithRetries(5, 5, 5), // override
+				curl.WithoutStats(),       // new value
+			)
+
+			curlCommand := client.Command(ctx).Run().PrettyCommand()
+			Expect(curlCommand).To(And(
+				ContainSubstring("\"--retry\" \"5\""),
+				ContainSubstring("\"--retry-delay\" \"5\""),
+				ContainSubstring("\"--retry-max-time\" \"5\""),
+				ContainSubstring(" \"-s\""),
+			))
+		})
 
 	})
 
@@ -41,13 +55,15 @@ var _ = Describe("Client", func() {
 				)
 
 				// Create a client that points to an address where Envoy is NOT running
-				client := admincli.NewClient(&defaultOutputLocation, []curl.Option{
-					curl.WithScheme("http"),
-					curl.WithService("localhost"),
-					curl.WithPort(1111),
-					// Since we expect this test to fail, we don't need to use all the reties that the client defaults to use
-					curl.WithRetries(0, 0, 0),
-				})
+				client := admincli.NewClient().
+					WithReceiver(&defaultOutputLocation).
+					WithCurlOptions(
+						curl.WithScheme("http"),
+						curl.WithService("localhost"),
+						curl.WithPort(1111),
+						// Since we expect this test to fail, we don't need to use all the reties that the client defaults to use
+						curl.WithRetries(0, 0, 0),
+					)
 
 				statsCmd := client.StatsCmd(ctx).
 					WithStdout(&outLocation).

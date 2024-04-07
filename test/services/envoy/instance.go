@@ -151,13 +151,13 @@ func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBu
 	ei.envoycfg = bootstrapBuilder.Build(ei)
 
 	// construct a client that can be used to access the Admin API
-	ei.adminApiClient = admincli.NewClient(
-		ginkgo.GinkgoWriter,
-		[]curl.Option{
+	ei.adminApiClient = admincli.NewClient().
+		WithReceiver(ginkgo.GinkgoWriter).
+		WithCurlOptions(
 			curl.WithScheme("http"),
 			curl.WithService("localhost"),
 			curl.WithPort(int(ei.AdminPort)),
-		})
+		)
 
 	if ei.UseDocker {
 		return ei.runContainer(runConfig.Context)

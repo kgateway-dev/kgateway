@@ -23,6 +23,8 @@ const (
 )
 
 // Client is a utility for executing requests against the Envoy Admin API
+// The Admin API handlers can be found here:
+// https://github.com/envoyproxy/envoy/blob/63bc9b564b1a76a22a0d029bcac35abeffff2a61/source/server/admin/admin.cc#L127
 type Client struct {
 	// receiver is the default destination for the curl stdout and stderr
 	receiver io.Writer
@@ -32,19 +34,29 @@ type Client struct {
 }
 
 // NewClient returns an implementation of the admincli.Client
-func NewClient(receiver io.Writer, curlOptions []curl.Option) *Client {
-	defaultCurlOptions := []curl.Option{
-		curl.WithScheme("http"),
-		// 5 retries, exponential back-off, 10 second max
-		curl.WithRetries(5, 0, 10),
-	}
-
+func NewClient() *Client {
 	return &Client{
-		receiver:    receiver,
-		curlOptions: append(defaultCurlOptions, curlOptions...),
+		receiver: io.Discard,
+		curlOptions: []curl.Option{
+			curl.WithScheme("http"),
+			curl.WithService("localhost"),
+			// 5 retries, exponential back-off, 10 second max
+			curl.WithRetries(5, 0, 10),
+		},
 	}
 }
 
+func (c *Client) WithReceiver(receiver io.Writer) *Client {
+	c.receiver = receiver
+	return c
+}
+
+func (c *Client) WithCurlOptions(options ...curl.Option) *Client {
+	c.curlOptions = append(c.curlOptions, options...)
+	return c
+}
+
+// Command returns a curl Command, using the provided curl.Option as well as the client.curlOptions
 func (c *Client) Command(ctx context.Context, options ...curl.Option) cmdutils.Cmd {
 	commandCurlOptions := append(
 		c.curlOptions,
@@ -59,6 +71,7 @@ func (c *Client) Command(ctx context.Context, options ...curl.Option) cmdutils.C
 		WithStderr(c.receiver)
 }
 
+// RunCommand executes a curl Command, using the provided curl.Option as well as the client.curlOptions
 func (c *Client) RunCommand(ctx context.Context, options ...curl.Option) error {
 	return c.Command(ctx, options...).Run().Cause()
 }
@@ -105,14 +118,14 @@ func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error)
 		return nil, err
 	}
 
-	jsonpbMarshaler := &jsonpb.Unmarshaler{
+	unmarshaler := &jsonpb.Unmarshaler{
 		// Ever since upgrading the go-control-plane to v0.10.1 this test fails with the following error:
 		// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
 		// Set AllowUnknownFields to true to get around this
 		AllowUnknownFields: true,
 	}
 
-	if err = jsonpbMarshaler.Unmarshal(&outLocation, &cfgDump); err != nil {
+	if err = unmarshaler.Unmarshal(&outLocation, &cfgDump); err != nil {
 		return nil, err
 	}
 

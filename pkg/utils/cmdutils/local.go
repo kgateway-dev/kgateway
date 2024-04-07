@@ -41,10 +41,6 @@ type LocalCmd struct {
 	*exec.Cmd
 }
 
-func (cmd *LocalCmd) GetArgs() []string {
-	return cmd.Args
-}
-
 // WithEnv sets env
 func (cmd *LocalCmd) WithEnv(env ...string) Cmd {
 	//disable DEBUG=1 from getting through to command
@@ -87,7 +83,7 @@ func (cmd *LocalCmd) Run() *RunError {
 
 	if err := cmd.Cmd.Run(); err != nil {
 		return &RunError{
-			command:    cmd.GetArgs(),
+			command:    cmd.Args,
 			output:     combinedOutput.Bytes(),
 			inner:      err,
 			stackTrace: errors.WithStack(err),

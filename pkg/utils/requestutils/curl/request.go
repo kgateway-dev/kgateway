@@ -2,19 +2,13 @@ package curl
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/solo-io/go-utils/contextutils"
 )
 
-// BuildArgsOrError accepts a set of curl.Option and generates the list of arguments
+// BuildArgs accepts a set of curl.Option and generates the list of arguments
 // that can be used to execute a curl request
-// An error is returned if the arguments for the curl request are known to fail
-// This is meant to aid the developer experience, since we explicitly error if some
-// required parameters were ignored.
-func BuildArgsOrError(_ context.Context, options ...Option) ([]string, error) {
+func BuildArgs(_ context.Context, options ...Option) []string {
 	config := &requestConfig{
 		verbose:           false,
 		allowInsecure:     false,
@@ -27,7 +21,7 @@ func BuildArgsOrError(_ context.Context, options ...Option) ([]string, error) {
 		port:              8080,
 		headers:           make(map[string]string),
 		scheme:            "http", // https://github.com/golang/go/issues/40587
-		service:           "",
+		service:           "localhost",
 		sni:               "",
 		caFile:            "",
 		path:              "",
@@ -42,20 +36,7 @@ func BuildArgsOrError(_ context.Context, options ...Option) ([]string, error) {
 		opt(config)
 	}
 
-	return config.generateArgsOrError()
-}
-
-// BuildArgs invokes BuildArgsOrError and uses a log.DPanic in case an error was encountered
-func BuildArgs(ctx context.Context, options ...Option) []string {
-	args, err := BuildArgsOrError(ctx, options...)
-	if err != nil {
-		// An error is returned here to improve the dev experience,
-		// as the CurlRequest that was constructed is known to be invalid
-		// Therefore, for developers we error loudly using a DPanic
-		contextutils.LoggerFrom(ctx).DPanic(err)
-	}
-
-	return args
+	return config.generateArgs()
 }
 
 // requestConfig contains the set of options that can be used to configure a curl request
@@ -85,19 +66,7 @@ type requestConfig struct {
 	additionalArgs []string
 }
 
-func (c *requestConfig) errorIfInvalid() error {
-	if c.service == "" {
-		return errors.New("service is empty, but required")
-	}
-
-	return nil
-}
-
-func (c *requestConfig) generateArgsOrError() ([]string, error) {
-	if err := c.errorIfInvalid(); err != nil {
-		return nil, err
-	}
-
+func (c *requestConfig) generateArgs() []string {
 	var args []string
 
 	if c.verbose {
@@ -153,5 +122,5 @@ func (c *requestConfig) generateArgsOrError() ([]string, error) {
 		args = append(args, fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.service, c.port, c.path))
 	}
 
-	return args, nil
+	return args
 }
