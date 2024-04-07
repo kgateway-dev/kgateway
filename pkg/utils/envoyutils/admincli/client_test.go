@@ -24,15 +24,15 @@ var _ = Describe("Client", func() {
 
 		It("WithCurlOptions can append and override default curl.Option", func() {
 			client := admincli.NewClient().WithCurlOptions(
-				curl.WithRetries(5, 5, 5), // override
+				curl.WithRetries(1, 1, 1), // override
 				curl.WithoutStats(),       // new value
 			)
 
 			curlCommand := client.Command(ctx).Run().PrettyCommand()
 			Expect(curlCommand).To(And(
-				ContainSubstring("\"--retry\" \"5\""),
-				ContainSubstring("\"--retry-delay\" \"5\""),
-				ContainSubstring("\"--retry-max-time\" \"5\""),
+				ContainSubstring("\"--retry\" \"1\""),
+				ContainSubstring("\"--retry-delay\" \"1\""),
+				ContainSubstring("\"--retry-max-time\" \"1\""),
 				ContainSubstring(" \"-s\""),
 			))
 		})
