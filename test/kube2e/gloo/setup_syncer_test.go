@@ -115,7 +115,7 @@ var _ = Describe("Setup Syncer", func() {
 
 		It("restarts validation grpc server when settings change", func() {
 			portForwarder, err := kubeCli.StartPortForward(ctx,
-				portforward.WithDeployment(kubeutils.GlooDeploymentName, namespace),
+				portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
 				portforward.WithRemotePort(defaults.GlooValidationPort),
 			)
 			Expect(err).NotTo(HaveOccurred())
@@ -127,7 +127,13 @@ var _ = Describe("Setup Syncer", func() {
 			cc, err := grpc.DialContext(ctx, portForwarder.Address(), grpc.WithInsecure())
 			Expect(err).NotTo(HaveOccurred())
 			validationClient := validation.NewGlooValidationServiceClient(cc)
-			validationRequest := &validation.GlooValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
+			validationRequest := &validation.GlooValidationServiceRequest{
+				Proxy: &v1.Proxy{
+					Listeners: []*v1.Listener{
+						{Name: "test-listener"},
+					},
+				},
+			}
 
 			Eventually(func(g Gomega) {
 				_, err := validationClient.Validate(ctx, validationRequest)
@@ -136,7 +142,7 @@ var _ = Describe("Setup Syncer", func() {
 
 			kube2e.UpdateSettings(ctx, func(settings *v1.Settings) {
 				settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
-			}, namespace)
+			}, testHelper.InstallNamespace)
 
 			Eventually(func(g Gomega) {
 				_, err := validationClient.Validate(ctx, validationRequest)
