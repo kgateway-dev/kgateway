@@ -24,13 +24,21 @@ type Cli struct {
 }
 
 // NewCli returns an implementation of the kubectl.Cli
-func NewCli(receiver io.Writer) *Cli {
+func NewCli() *Cli {
 	return &Cli{
-		receiver:    receiver,
+		receiver:    io.Discard,
 		kubeContext: "",
 	}
 }
 
+// WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
+// of cmdutils.Cmd created by the Cli
+func (c *Cli) WithReceiver(receiver io.Writer) *Cli {
+	c.receiver = receiver
+	return c
+}
+
+// WithKubeContext sets the --context for the kubectl command invoked by the Cli
 func (c *Cli) WithKubeContext(kubeContext string) *Cli {
 	c.kubeContext = kubeContext
 	return c

@@ -142,6 +142,7 @@ var _ = Describe("Setup Syncer", func() {
 
 		It("restarts validation grpc server when settings change", func() {
 			// setup port forward
+
 			portFwdProc := startPortFwd()
 			defer func() {
 				if portFwdProc != nil {
