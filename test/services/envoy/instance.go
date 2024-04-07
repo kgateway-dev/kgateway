@@ -8,14 +8,11 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"io"
 	"net"
-	"net/http"
 	"os/exec"
 
 	"github.com/solo-io/gloo/test/services"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	"github.com/golang/protobuf/jsonpb"
-
 	"sync"
 	"text/template"
 	"time"
@@ -201,22 +198,14 @@ func (ei *Instance) DisablePanicMode() error {
 }
 
 func (ei *Instance) setRuntimeConfiguration(queryParameters string) error {
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?%s", ei.AdminPort, queryParameters), "", nil)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-	return nil
+	return ei.adminApiClient.ModifyRuntimeConfiguration(context.Background(), queryParameters)
 }
 
 func (ei *Instance) Clean() {
 	if ei == nil {
 		return
 	}
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/quitquitquit", ei.AdminPort), "", nil)
-	if err == nil {
-		resp.Body.Close()
-	}
+	_ = ei.adminApiClient.ShutdownServer(context.Background())
 
 	if ei.cmd != nil {
 		ei.cmd.Process.Kill()
@@ -307,51 +296,19 @@ func (ei *Instance) Logs() (string, error) {
 }
 
 func (ei *Instance) ConfigDump() (string, error) {
-	return ei.getAdminEndpointData("config_dump")
+	structuredData, err := ei.StructuredConfigDump()
+	if err != nil {
+		return "", err
+	}
+	return structuredData.String(), nil
 }
 
 func (ei *Instance) StructuredConfigDump() (*adminv3.ConfigDump, error) {
-	adminUrl := fmt.Sprintf("http://%s:%d/%s", ei.LocalAddr(), ei.AdminPort, "config_dump")
-	response, err := http.Get(adminUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	jsonpbMarshaler := &jsonpb.Unmarshaler{
-		// Ever since upgrading the go-control-plane to v0.10.1 this test fails with the following error:
-		// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
-		// Set AllowUnknownFields to true to get around this
-		AllowUnknownFields: true,
-	}
-
-	var cfgDump adminv3.ConfigDump
-	if err = jsonpbMarshaler.Unmarshal(response.Body, &cfgDump); err != nil {
-		return nil, err
-	}
-
-	return &cfgDump, nil
+	return ei.adminApiClient.GetConfigDump(context.Background())
 }
 
 func (ei *Instance) Statistics() (string, error) {
-	return ei.getAdminEndpointData("stats")
-}
-
-func (ei *Instance) getAdminEndpointData(endpoint string) (string, error) {
-	adminUrl := fmt.Sprintf("http://%s:%d/%s", ei.LocalAddr(), ei.AdminPort, endpoint)
-	response, err := http.Get(adminUrl)
-	if err != nil {
-		return "", err
-	}
-
-	responseBytes := new(bytes.Buffer)
-	defer response.Body.Close()
-	if _, err := io.Copy(responseBytes, response.Body); err != nil {
-		return "", err
-	}
-
-	return responseBytes.String(), nil
+	return ei.adminApiClient.GetStats(context.Background())
 }
 
 func (ei *Instance) getAdminClient() *admincli.Client {
