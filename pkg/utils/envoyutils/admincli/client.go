@@ -62,7 +62,7 @@ func (c *Client) Command(ctx context.Context, options ...curl.Option) cmdutils.C
 		c.curlOptions,
 		// Ensure any options defined for this command can override any defaults that the Client has defined
 		options...)
-	curlArgs := curl.BuildArgs(ctx, commandCurlOptions...)
+	curlArgs := curl.BuildArgs(commandCurlOptions...)
 
 	return cmdutils.Command(ctx, "curl", curlArgs...).
 		// For convenience, we set the stdout and stderr to the receiver

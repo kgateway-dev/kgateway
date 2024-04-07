@@ -2,7 +2,6 @@ package helper
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -252,7 +251,7 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 		appendOption(curl.WithSni(opts.Sni))
 	}
 
-	args := append([]string{"curl"}, curl.BuildArgs(context.Background(), curlOptions...)...)
+	args := append([]string{"curl"}, curl.BuildArgs(curlOptions...)...)
 	log.Printf("running: %v", strings.Join(args, " "))
 
 	return args

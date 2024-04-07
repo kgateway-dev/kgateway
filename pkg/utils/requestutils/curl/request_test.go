@@ -1,8 +1,6 @@
 package curl_test
 
 import (
-	"context"
-
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -11,14 +9,6 @@ import (
 )
 
 var _ = Describe("Curl", func() {
-
-	var (
-		ctx context.Context
-	)
-
-	BeforeEach(func() {
-		ctx = context.Background()
-	})
 
 	Context("BuildArgs", func() {
 
@@ -30,7 +20,7 @@ var _ = Describe("Curl", func() {
 					curl.WithService("service"),
 				}
 
-				args := curl.BuildArgs(ctx, append(requiredOptions, option)...)
+				args := curl.BuildArgs(append(requiredOptions, option)...)
 				Expect(args).To(expectedMatcher)
 			},
 			Entry("VerboseOutput",

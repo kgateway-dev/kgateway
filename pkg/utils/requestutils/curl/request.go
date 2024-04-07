@@ -1,14 +1,13 @@
 package curl
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 )
 
 // BuildArgs accepts a set of curl.Option and generates the list of arguments
 // that can be used to execute a curl request
-func BuildArgs(_ context.Context, options ...Option) []string {
+func BuildArgs(options ...Option) []string {
 	config := &requestConfig{
 		verbose:           false,
 		allowInsecure:     false,
