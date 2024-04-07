@@ -7,7 +7,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 
 	"io"
-	"os"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -42,17 +41,14 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 		args = append([]string{"--context", c.kubeContext}, args...)
 	}
 
-	cmd := cmdutils.Command(ctx, "kubectl", args...)
-	cmd.WithEnv(os.Environ()...)
-
-	// For convenience, we set the stdout and stderr to the receiver
-	// This can still be overwritten by consumers who use the commands
-	cmd.WithStdout(c.receiver)
-	cmd.WithStderr(c.receiver)
-	return cmd
+	return cmdutils.Command(ctx, "kubectl", args...).
+		// For convenience, we set the stdout and stderr to the receiver
+		// This can still be overwritten by consumers who use the commands
+		WithStdout(c.receiver).
+		WithStderr(c.receiver)
 }
 
-func (c *Cli) ExecuteCommand(ctx context.Context, args ...string) error {
+func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 

@@ -11,6 +11,9 @@ type Cmd interface {
 	// It returns a *RunError if there is any error, nil otherwise
 	Run() *RunError
 
+	// GetArgs returns the arguments of the Cmd
+	GetArgs() []string
+
 	// WithEnv sets the Env variables for the Cmd
 	// Each entry should be of the form "key=value"
 	WithEnv(...string) Cmd

@@ -200,7 +200,7 @@ func installKnativeServing(opts *options.Options) error {
 		}
 	}
 	// label the knative-serving namespace as belonging to us
-	if err := kubeCli.ExecuteCommand(
+	if err := kubeCli.RunCommand(
 		opts.Top.Ctx,
 		"annotate",
 		"namespace",

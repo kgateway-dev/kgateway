@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"io"
 	"net"
 	"net/http"
@@ -57,6 +59,9 @@ type Instance struct {
 	DockerContainerName string
 
 	*RequestPorts
+
+	// adminApiClient represents the client that can be used to access the Envoy Admin API
+	adminApiClient *admincli.Client
 }
 
 // RequestPorts are the ports that the Instance will listen on for requests
@@ -143,6 +148,15 @@ func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBu
 	ei.Port = runConfig.Port
 	ei.RestXdsPort = runConfig.RestXdsPort
 	ei.envoycfg = bootstrapBuilder.Build(ei)
+
+	// construct a client that can be used to access the Admin API
+	ei.adminApiClient = admincli.NewClient(
+		ginkgo.GinkgoWriter,
+		[]curl.Option{
+			curl.WithScheme("http"),
+			curl.WithService("localhost"),
+			curl.WithPort(int(ei.AdminPort)),
+		})
 
 	if ei.UseDocker {
 		return ei.runContainer(runConfig.Context)
@@ -338,6 +352,10 @@ func (ei *Instance) getAdminEndpointData(endpoint string) (string, error) {
 	}
 
 	return responseBytes.String(), nil
+}
+
+func (ei *Instance) getAdminClient() *admincli.Client {
+	return ei.adminApiClient
 }
 
 // SafeBuffer is a goroutine safe bytes.Buffer
