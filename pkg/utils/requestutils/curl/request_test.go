@@ -14,14 +14,7 @@ var _ = Describe("Curl", func() {
 
 		DescribeTable("it builds the args using the provided option",
 			func(option curl.Option, expectedMatcher types.GomegaMatcher) {
-				// requiredOptions is the set of curl.Option that is necessary for BuildArgsOrError
-				// to not return an error
-				requiredOptions := []curl.Option{
-					curl.WithService("service"),
-				}
-
-				args := curl.BuildArgs(append(requiredOptions, option)...)
-				Expect(args).To(expectedMatcher)
+				Expect(curl.BuildArgs(option)).To(expectedMatcher)
 			},
 			Entry("VerboseOutput",
 				curl.VerboseOutput(),
