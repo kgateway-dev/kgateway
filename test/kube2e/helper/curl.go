@@ -198,6 +198,10 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	// For this transform to behave appropriately, we must execute the request with verbose=true
 	appendOption(curl.VerboseOutput())
 
+	// Curls to a remote container may be subject to network flakes
+	// We rely on some minimal retry logic to reduce the chance that those flakes impact tests
+	appendOption(curl.WithRetries(3, 0, 5))
+
 	if opts.WithoutStats {
 		appendOption(curl.WithoutStats())
 
