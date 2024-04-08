@@ -50,7 +50,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.29.2-patch2
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
-GCFLAGS := all="-N -l"
+GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
 # if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
