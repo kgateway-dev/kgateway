@@ -207,29 +207,6 @@ var _ = Describe("version command", func() {
 
 	It("should return proper oss tag based on gloo container", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
-			{
-				Tag:      "v1.0.0-ci",
-				Name:     "gloo",
-				Registry: "test-registry",
-				OssTag:   "1.0.0-ci",
-			},
-		})
-
-		versions, err := prerun.GetOpenSourceVersions(versionGetter.versions)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(versions).To(ContainElement(
-			&versionutils.Version{
-				Major:        1,
-				Minor:        0,
-				Patch:        0,
-				Label:        "ci",
-				LabelVersion: 0,
-			},
-		))
-	})
-
-	It("should return proper oss tag based on gloo container", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
 			// We define a version, that includes a label
 			{
 				Tag:      "v1.0.0-ci",
