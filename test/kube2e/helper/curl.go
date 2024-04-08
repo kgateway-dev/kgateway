@@ -40,6 +40,15 @@ type CurlOpts struct {
 	// Optional SNI name to resolve domain to when sending request
 	Sni        string
 	SelfSigned bool
+
+	// Retries on Curl requests are disabled by default because they historically were not configurable
+	// Curls to a remote container may be subject to network flakes and therefore using retries
+	// can be a useful mechanism to avoid test flakes
+	Retries struct {
+		Retry        int
+		RetryDelay   int
+		RetryMaxTime int
+	}
 }
 
 var (
@@ -198,9 +207,9 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	// For this transform to behave appropriately, we must execute the request with verbose=true
 	appendOption(curl.VerboseOutput())
 
-	// Curls to a remote container may be subject to network flakes
-	// We rely on some minimal retry logic to reduce the chance that those flakes impact tests
-	appendOption(curl.WithRetries(3, 0, 5))
+	if opts.Retries.Retry != 0 {
+		appendOption(curl.WithRetries(opts.Retries.Retry, opts.Retries.RetryDelay, opts.Retries.RetryMaxTime))
+	}
 
 	if opts.WithoutStats {
 		appendOption(curl.Silent())

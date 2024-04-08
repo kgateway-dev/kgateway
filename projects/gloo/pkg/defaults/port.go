@@ -1,6 +1,7 @@
 package defaults
 
 import (
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"time"
 )
 
@@ -8,7 +9,7 @@ const GlooRestXdsName = "rest_xds_cluster"
 
 var HttpPort uint32 = 8080
 var HttpsPort uint32 = 8443
-var EnvoyAdminPort uint32 = 19000
+var EnvoyAdminPort uint32 = admincli.DefaultAdminPort
 var GlooAdminPort uint32 = 9091
 var GlooProxyDebugPort = 9966
 var GlooRestXdsPort = 9976

@@ -193,14 +193,20 @@ func (ei *Instance) LocalAddr() string {
 }
 
 func (ei *Instance) EnablePanicMode() error {
-	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 100))
+	return ei.setRuntimeConfiguration(
+		map[string]string{
+			"upstream.healthy_panic_threshold": "100",
+		})
 }
 
 func (ei *Instance) DisablePanicMode() error {
-	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 0))
+	return ei.setRuntimeConfiguration(
+		map[string]string{
+			"upstream.healthy_panic_threshold": "0",
+		})
 }
 
-func (ei *Instance) setRuntimeConfiguration(queryParameters string) error {
+func (ei *Instance) setRuntimeConfiguration(queryParameters map[string]string) error {
 	return ei.AdminClient().ModifyRuntimeConfiguration(context.Background(), queryParameters)
 }
 

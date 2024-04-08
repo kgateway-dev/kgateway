@@ -90,9 +90,10 @@ func (c *requestConfig) generateArgs() []string {
 	if c.headersOnly {
 		args = append(args, "-I")
 	}
-	if c.method != http.MethodGet && c.method != "" {
-		args = append(args, fmt.Sprintf("-X %s", c.method))
-	}
+
+	// We prefer to be explicit, and always set the method
+	args = append(args, fmt.Sprintf("-X %s", c.method))
+
 	for h, v := range c.headers {
 		args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
 	}
@@ -116,7 +117,9 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, c.additionalArgs...)
 	}
 
+	// Todo: rely on url.Url to construct the address
 	var fullAddress string
+
 	if c.sni != "" {
 		sniResolution := fmt.Sprintf("%s:%d:%s", c.sni, c.port, c.host)
 		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
@@ -124,7 +127,7 @@ func (c *requestConfig) generateArgs() []string {
 	} else {
 		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.host, c.port, c.path)
 	}
-	
+
 	if len(c.queryParameters) > 0 {
 		values := url.Values{}
 		for k, v := range c.queryParameters {

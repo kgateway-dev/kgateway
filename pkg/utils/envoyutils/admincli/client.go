@@ -2,16 +2,13 @@ package admincli
 
 import (
 	"context"
-	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
-	"io"
-	"net/http"
-	"net/url"
-
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
+	"io"
+	"net/http"
 )
 
 const (
@@ -21,6 +18,8 @@ const (
 	ListenersPath      = "listeners"
 	ModifyRuntimePath  = "runtime_modify"
 	ShutdownServerPath = "quitquitquit"
+
+	DefaultAdminPort = 19000
 )
 
 // Client is a utility for executing requests against the Envoy Admin API
@@ -41,6 +40,7 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
+			curl.WithPort(DefaultAdminPort),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},
@@ -81,14 +81,17 @@ func (c *Client) RunCommand(ctx context.Context, options ...curl.Option) error {
 	return c.Command(ctx, options...).Run().Cause()
 }
 
+// RequestPathCmd returns the cmdutils.Cmd that can be run, and will execute a request against the provided path
 func (c *Client) RequestPathCmd(ctx context.Context, path string) cmdutils.Cmd {
 	return c.Command(ctx, curl.WithPath(path))
 }
 
+// StatsCmd returns the cmdutils.Cmd that can be run to request data from the stats endpoint
 func (c *Client) StatsCmd(ctx context.Context) cmdutils.Cmd {
 	return c.RequestPathCmd(ctx, StatsPath)
 }
 
+// GetStats returns the data that is available at the stats endpoint
 func (c *Client) GetStats(ctx context.Context) (string, error) {
 	var outLocation threadsafe.Buffer
 
@@ -100,18 +103,22 @@ func (c *Client) GetStats(ctx context.Context) (string, error) {
 	return outLocation.String(), nil
 }
 
+// ClustersCmd returns the cmdutils.Cmd that can be run to request data from the clusters endpoint
 func (c *Client) ClustersCmd(ctx context.Context) cmdutils.Cmd {
 	return c.RequestPathCmd(ctx, ClustersPath)
 }
 
+// ListenersCmd returns the cmdutils.Cmd that can be run to request data from the listeners endpoint
 func (c *Client) ListenersCmd(ctx context.Context) cmdutils.Cmd {
 	return c.RequestPathCmd(ctx, ListenersPath)
 }
 
+// ConfigDumpCmd returns the cmdutils.Cmd that can be run to request data from the config_dump endpoint
 func (c *Client) ConfigDumpCmd(ctx context.Context) cmdutils.Cmd {
 	return c.RequestPathCmd(ctx, ConfigDumpPath)
 }
 
+// GetConfigDump returns the structured data that is available at the config_dump endpoint
 func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error) {
 	var (
 		cfgDump     adminv3.ConfigDump
@@ -133,17 +140,15 @@ func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error)
 	return &cfgDump, nil
 }
 
+// ModifyRuntimeConfiguration passes the queryParameters to the runtime_modify endpoint
 func (c *Client) ModifyRuntimeConfiguration(ctx context.Context, queryParameters map[string]string) error {
-	values := url.Values{}
-	for k, v := range queryParameters {
-		values.Add(k, v)
-	}
-
 	return c.RunCommand(ctx,
-		curl.WithPath(fmt.Sprintf("%s?%s", ModifyRuntimePath, values.Encode())),
+		curl.WithPath(ModifyRuntimePath),
+		curl.WithQueryParameters(queryParameters),
 		curl.WithMethod(http.MethodPost))
 }
 
+// ShutdownServer calls the shutdown server endpoint
 func (c *Client) ShutdownServer(ctx context.Context) error {
 	return c.RunCommand(ctx,
 		curl.WithPath(ShutdownServerPath),
