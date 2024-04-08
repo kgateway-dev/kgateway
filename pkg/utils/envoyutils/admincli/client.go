@@ -3,11 +3,12 @@ package admincli
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"io"
 	"net/http"
+	"net/url"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
@@ -39,7 +40,7 @@ func NewClient() *Client {
 		receiver: io.Discard,
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
-			curl.WithService("localhost"),
+			curl.WithHost("127.0.0.1"),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},
@@ -122,23 +123,24 @@ func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error)
 		return nil, err
 	}
 
-	unmarshaler := &jsonpb.Unmarshaler{
-		// Ever since upgrading the go-control-plane to v0.10.1 the standard unmarshal fails with the following error:
-		// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
-		// Set AllowUnknownFields to true to get around this
-		AllowUnknownFields: true,
-	}
-
-	if err = unmarshaler.Unmarshal(&outLocation, &cfgDump); err != nil {
+	// Ever since upgrading the go-control-plane to v0.10.1 the standard unmarshal fails with the following error:
+	// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
+	// To get around this, we rely on an unmarshaler with AllowUnknownFields set to true
+	if err = protoutils.UnmarshalAllowUnknown(&outLocation, &cfgDump); err != nil {
 		return nil, err
 	}
 
 	return &cfgDump, nil
 }
 
-func (c *Client) ModifyRuntimeConfiguration(ctx context.Context, queryParameters string) error {
+func (c *Client) ModifyRuntimeConfiguration(ctx context.Context, queryParameters map[string]string) error {
+	values := url.Values{}
+	for k, v := range queryParameters {
+		values.Add(k, v)
+	}
+
 	return c.RunCommand(ctx,
-		curl.WithPath(fmt.Sprintf("%s?%s", ModifyRuntimePath, queryParameters)),
+		curl.WithPath(fmt.Sprintf("%s?%s", ModifyRuntimePath, values.Encode())),
 		curl.WithMethod(http.MethodPost))
 }
 

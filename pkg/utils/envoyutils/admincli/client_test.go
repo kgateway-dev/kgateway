@@ -25,7 +25,7 @@ var _ = Describe("Client", func() {
 		It("WithCurlOptions can append and override default curl.Option", func() {
 			client := admincli.NewClient().WithCurlOptions(
 				curl.WithRetries(1, 1, 1), // override
-				curl.WithoutStats(),       // new value
+				curl.Silent(),             // new value
 			)
 
 			curlCommand := client.Command(ctx).Run().PrettyCommand()
@@ -59,7 +59,7 @@ var _ = Describe("Client", func() {
 					WithReceiver(&defaultOutputLocation).
 					WithCurlOptions(
 						curl.WithScheme("http"),
-						curl.WithService("localhost"),
+						curl.WithHost("127.0.0.1"),
 						curl.WithPort(1111),
 						// Since we expect this test to fail, we don't need to use all the reties that the client defaults to use
 						curl.WithoutRetries(),

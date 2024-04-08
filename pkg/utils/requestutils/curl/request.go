@@ -3,24 +3,31 @@ package curl
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // BuildArgs accepts a set of curl.Option and generates the list of arguments
 // that can be used to execute a curl request
+// If multiple Option modify the same argument, the last defined one will win:
+//
+//	Example:
+//		BuildArgs(WithMethod("GET"), WithMethod("POST"))
+//		will return a curl with using a post method
+//
+// A notable exception to this is the WithHeader option, which will always modify
+// the map of headers used in the curl request.
 func BuildArgs(options ...Option) []string {
 	config := &requestConfig{
 		verbose:           false,
-		allowInsecure:     false,
-		selfSigned:        false,
-		withoutStats:      false,
+		ignoreServerCert:  false,
+		silent:            false,
 		connectionTimeout: 3,
-		returnHeaders:     false,
+		headersOnly:       false,
 		method:            http.MethodGet,
-		host:              "",
+		host:              "127.0.0.1",
 		port:              8080,
 		headers:           make(map[string]string),
 		scheme:            "http", // https://github.com/golang/go/issues/40587
-		service:           "localhost",
 		sni:               "",
 		caFile:            "",
 		path:              "",
@@ -41,20 +48,19 @@ func BuildArgs(options ...Option) []string {
 // requestConfig contains the set of options that can be used to configure a curl request
 type requestConfig struct {
 	verbose           bool
-	allowInsecure     bool
-	selfSigned        bool
-	withoutStats      bool
+	ignoreServerCert  bool
+	silent            bool
 	connectionTimeout int // seconds
-	returnHeaders     bool
+	headersOnly       bool
 	method            string
 	host              string
 	port              int
 	headers           map[string]string
 	body              string
-	service           string
 	sni               string
 	caFile            string
 	path              string
+	queryParameters   map[string]string
 
 	scheme string
 
@@ -71,21 +77,21 @@ func (c *requestConfig) generateArgs() []string {
 	if c.verbose {
 		args = append(args, "-v")
 	}
-	if c.allowInsecure {
+	if c.ignoreServerCert {
 		args = append(args, "-k")
 	}
-	if c.withoutStats {
+	if c.silent {
 		args = append(args, "-s")
 	}
 	if c.connectionTimeout > 0 {
 		seconds := fmt.Sprintf("%v", c.connectionTimeout)
 		args = append(args, "--connect-timeout", seconds, "--max-time", seconds)
 	}
-	if c.returnHeaders {
+	if c.headersOnly {
 		args = append(args, "-I")
 	}
 	if c.method != http.MethodGet && c.method != "" {
-		args = append(args, "-X"+c.method)
+		args = append(args, fmt.Sprintf("-X %s", c.method))
 	}
 	for h, v := range c.headers {
 		args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
@@ -96,13 +102,6 @@ func (c *requestConfig) generateArgs() []string {
 	if c.body != "" {
 		args = append(args, "-d", c.body)
 	}
-	if c.selfSigned {
-		args = append(args, "-k")
-	}
-	if len(c.additionalArgs) > 0 {
-		args = append(args, c.additionalArgs...)
-	}
-
 	if c.retry != 0 {
 		args = append(args, "--retry", fmt.Sprintf("%d", c.retry))
 	}
@@ -113,13 +112,28 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--retry-max-time", fmt.Sprintf("%d", c.retryMaxTime))
 	}
 
-	if c.sni != "" {
-		sniResolution := fmt.Sprintf("%s:%d:%s", c.sni, c.port, c.service)
-		fullAddress := fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
-		args = append(args, "--resolve", sniResolution, fullAddress)
-	} else {
-		args = append(args, fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.service, c.port, c.path))
+	if len(c.additionalArgs) > 0 {
+		args = append(args, c.additionalArgs...)
 	}
 
+	var fullAddress string
+	if c.sni != "" {
+		sniResolution := fmt.Sprintf("%s:%d:%s", c.sni, c.port, c.host)
+		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
+		args = append(args, "--resolve", sniResolution)
+	} else {
+		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.host, c.port, c.path)
+	}
+	
+	if len(c.queryParameters) > 0 {
+		values := url.Values{}
+		for k, v := range c.queryParameters {
+			values.Add(k, v)
+		}
+
+		fullAddress = fmt.Sprintf("%s?%s", fullAddress, values.Encode())
+	}
+
+	args = append(args, fullAddress)
 	return args
 }

@@ -25,7 +25,7 @@ func Command(ctx context.Context, command string, args ...string) Cmd {
 // LocalCmder is a factory for LocalCmd, implementing Cmder
 type LocalCmder struct{}
 
-// Command return a Cmd
+// Command returns a Cmd which includes the running process's `Environment`
 func (c *LocalCmder) Command(ctx context.Context, name string, arg ...string) Cmd {
 	cmd := &LocalCmd{
 		Cmd: exec.CommandContext(ctx, name, arg...),

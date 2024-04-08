@@ -154,8 +154,6 @@ func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBu
 	ei.adminApiClient = admincli.NewClient().
 		WithReceiver(ginkgo.GinkgoWriter).
 		WithCurlOptions(
-			curl.WithScheme("http"),
-			curl.WithService("localhost"),
 			curl.WithPort(int(ei.AdminPort)),
 			curl.WithRetries(3, 0, 10),
 		)

@@ -1,98 +1,109 @@
 package curl
 
 import (
-	"strconv"
+	"net/http"
 	"strings"
 )
 
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
 
+// VerboseOutput returns the Option to emit a verbose output for the  curl request
+// https://curl.se/docs/manpage.html#-v
 func VerboseOutput() Option {
 	return func(config *requestConfig) {
 		config.verbose = true
 	}
 }
 
-func AllowInsecure() Option {
+// IgnoreServerCert returns the Option to ignore the server certificate in the curl request
+// https://curl.se/docs/manpage.html#-k
+func IgnoreServerCert() Option {
 	return func(config *requestConfig) {
-		config.allowInsecure = true
+		config.ignoreServerCert = true
 	}
 }
 
-func SelfSigned() Option {
+// Silent returns the Option to enable silent mode for the curl request
+// https://curl.se/docs/manpage.html#-s
+func Silent() Option {
 	return func(config *requestConfig) {
-		config.selfSigned = true
+		config.silent = true
 	}
 }
 
-func WithoutStats() Option {
+// WithHeadersOnly returns the Option to only return headers with the curl response
+// https://curl.se/docs/manpage.html#-I
+func WithHeadersOnly() Option {
 	return func(config *requestConfig) {
-		config.withoutStats = true
+		config.headersOnly = true
 	}
 }
 
-func WithReturnHeaders() Option {
-	return func(config *requestConfig) {
-		config.returnHeaders = true
-	}
-}
-
+// WithConnectionTimeout returns the Option to set a connection timeout on the curl request
+// https://curl.se/docs/manpage.html#--connect-timeout
+// https://curl.se/docs/manpage.html#-m
 func WithConnectionTimeout(seconds int) Option {
 	return func(config *requestConfig) {
 		config.connectionTimeout = seconds
 	}
 }
 
+// WithMethod returns the Option to set the method for the curl request
+// https://curl.se/docs/manpage.html#-X
 func WithMethod(method string) Option {
 	return func(config *requestConfig) {
 		config.method = method
 	}
 }
 
+// WithPort returns the Option to set the port for the curl request
 func WithPort(port int) Option {
 	return func(config *requestConfig) {
 		config.port = port
 	}
 }
 
-func WithService(service string) Option {
+// WithHost returns the Option to set the host for the curl request
+func WithHost(host string) Option {
 	return func(config *requestConfig) {
-		config.service = service
+		config.host = host
 	}
 }
 
-func WithAddress(address string) Option {
-	return func(config *requestConfig) {
-		addressParts := strings.Split(address, ":")
-		service := addressParts[0]
-		// We intentionally drop the error here
-		// If one occurred, it means that the developer-defined address was invalid
-		// And when the curl request is built and executed, it will fail
-		port, _ := strconv.Atoi(addressParts[1])
-		WithService(service)(config)
-		WithPort(port)(config)
-	}
-}
-
+// WithSni returns the Option to configure a custom address to connect to
+// https://curl.se/docs/manpage.html#--resolve
 func WithSni(sni string) Option {
 	return func(config *requestConfig) {
 		config.sni = sni
 	}
 }
 
+// WithCaFile returns the Option to configure the certificate file used to verify the peer
+// https://curl.se/docs/manpage.html#--cacert
 func WithCaFile(caFile string) Option {
 	return func(config *requestConfig) {
 		config.caFile = caFile
 	}
 }
 
+// WithPath returns the Option to configure the path of the curl request
+// The provided path is expected to not contain a leading `/`,
+// so if it is provided, it will be trimmed
 func WithPath(path string) Option {
 	return func(config *requestConfig) {
 		config.path = strings.TrimPrefix(path, "/")
 	}
 }
 
+// WithQueryParameters returns the Option to configure the query parameters of the curl request
+func WithQueryParameters(parameters map[string]string) Option {
+	return func(config *requestConfig) {
+		config.queryParameters = parameters
+	}
+}
+
+// WithRetries returns the Option to configure the retries for the curl request
 func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	return func(config *requestConfig) {
 		config.retry = retry
@@ -101,43 +112,53 @@ func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	}
 }
 
+// WithoutRetries returns the Option to disable retries for the curl request
 func WithoutRetries() Option {
 	return func(config *requestConfig) {
 		WithRetries(0, -1, 0)(config)
 	}
 }
 
+// WithPostBody returns the Option to configure a curl request to execute a post request with the provided json body
 func WithPostBody(body string) Option {
 	return func(config *requestConfig) {
+		WithMethod(http.MethodPost)(config)
 		WithBody(body)(config)
 		WithContentType("application/json")(config)
 	}
 }
 
+// WithBody returns the Option to configure the body for a curl request
+// https://curl.se/docs/manpage.html#-d
 func WithBody(body string) Option {
 	return func(config *requestConfig) {
 		config.body = body
 	}
 }
 
+// WithContentType returns the Option to configure the Content-Type header for the curl request
 func WithContentType(contentType string) Option {
 	return func(config *requestConfig) {
 		WithHeader("Content-Type", contentType)(config)
 	}
 }
 
-func WithHost(host string) Option {
+// WithHostHeader returns the Option to configure the Host header for the curl request
+func WithHostHeader(host string) Option {
 	return func(config *requestConfig) {
 		WithHeader("Host", host)(config)
 	}
 }
 
+// WithHeader returns the Option to configure a header for the curl request
+// https://curl.se/docs/manpage.html#-H
 func WithHeader(key, value string) Option {
 	return func(config *requestConfig) {
 		config.headers[key] = value
 	}
 }
 
+// WithScheme returns the Option to configure the scheme for the curl request
 func WithScheme(scheme string) Option {
 	return func(config *requestConfig) {
 		config.scheme = scheme
@@ -145,8 +166,8 @@ func WithScheme(scheme string) Option {
 }
 
 // WithArgs allows developers to append arbitrary args to the curl request
-// This should mainly be used for debugging purposes. If there is an argument that the builder
-// doesn't yet support, it should be added explicitly, to make it easier for developers to utilize
+// This should mainly be used for debugging purposes. If there is an argument that the current Option
+// set doesn't yet support, it should be added explicitly, to make it easier for developers to utilize
 func WithArgs(args []string) Option {
 	return func(config *requestConfig) {
 		config.additionalArgs = args

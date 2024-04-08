@@ -203,11 +203,11 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	appendOption(curl.WithRetries(3, 0, 5))
 
 	if opts.WithoutStats {
-		appendOption(curl.WithoutStats())
+		appendOption(curl.Silent())
 
 	}
 	if opts.ReturnHeaders {
-		appendOption(curl.WithReturnHeaders())
+		appendOption(curl.WithHeadersOnly())
 	}
 
 	appendOption(curl.WithConnectionTimeout(opts.ConnectionTimeout))
@@ -220,7 +220,7 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 		appendOption(curl.WithCaFile(opts.CaFile))
 	}
 	if opts.Host != "" {
-		appendOption(curl.WithHost(opts.Host))
+		appendOption(curl.WithHostHeader(opts.Host))
 	}
 	if opts.Body != "" {
 		appendOption(curl.WithPostBody(opts.Body))
@@ -229,7 +229,7 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 		appendOption(curl.WithHeader(h, v))
 	}
 	if opts.AllowInsecure {
-		appendOption(curl.AllowInsecure())
+		appendOption(curl.IgnoreServerCert())
 	}
 
 	port := opts.Port
@@ -246,10 +246,10 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	if service == "" {
 		service = "test-ingress"
 	}
-	appendOption(curl.WithService(service))
+	appendOption(curl.WithHost(service))
 
 	if opts.SelfSigned {
-		appendOption(curl.SelfSigned())
+		appendOption(curl.IgnoreServerCert())
 	}
 	if opts.Sni != "" {
 		appendOption(curl.WithSni(opts.Sni))
