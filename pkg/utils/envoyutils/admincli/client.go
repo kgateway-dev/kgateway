@@ -2,13 +2,15 @@ package admincli
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
-	"io"
-	"net/http"
 )
 
 const (
@@ -18,6 +20,8 @@ const (
 	ListenersPath      = "listeners"
 	ModifyRuntimePath  = "runtime_modify"
 	ShutdownServerPath = "quitquitquit"
+	HealthCheckPath    = "healthcheck"
+	LoggingPath        = "logging"
 
 	DefaultAdminPort = 19000
 )
@@ -152,5 +156,29 @@ func (c *Client) ModifyRuntimeConfiguration(ctx context.Context, queryParameters
 func (c *Client) ShutdownServer(ctx context.Context) error {
 	return c.RunCommand(ctx,
 		curl.WithPath(ShutdownServerPath),
+		curl.WithMethod(http.MethodPost))
+}
+
+// FailHealthCheck calls the endpoint to have the server start failing health checks
+func (c *Client) FailHealthCheck(ctx context.Context) error {
+	return c.RunCommand(ctx,
+		curl.WithPath(fmt.Sprintf("%s/fail", HealthCheckPath)),
+		curl.WithMethod(http.MethodPost))
+}
+
+// PassHealthCheck calls the endpoint to have the server start passing health checks
+func (c *Client) PassHealthCheck(ctx context.Context) error {
+	return c.RunCommand(ctx,
+		curl.WithPath(fmt.Sprintf("%s/ok", HealthCheckPath)),
+		curl.WithMethod(http.MethodPost))
+}
+
+// SetLogLevel calls the endpoint to change the log level for the server
+func (c *Client) SetLogLevel(ctx context.Context, logLevel string) error {
+	return c.RunCommand(ctx,
+		curl.WithPath(LoggingPath),
+		curl.WithQueryParameters(map[string]string{
+			"level": logLevel,
+		}),
 		curl.WithMethod(http.MethodPost))
 }

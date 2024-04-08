@@ -1,8 +1,9 @@
 package defaults
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 )
 
 const GlooRestXdsName = "rest_xds_cluster"
