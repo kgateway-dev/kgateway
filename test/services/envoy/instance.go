@@ -155,6 +155,10 @@ func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBu
 		WithReceiver(ginkgo.GinkgoWriter).
 		WithCurlOptions(
 			curl.WithPort(int(ei.AdminPort)),
+			// We include the verbose output of requests so that we have more information
+			// if a test fails
+			curl.VerboseOutput(),
+			// To reduce potential test flakes, we rely on some basic retries in requests to the Envoy Admin API
 			curl.WithRetries(3, 0, 10),
 		)
 

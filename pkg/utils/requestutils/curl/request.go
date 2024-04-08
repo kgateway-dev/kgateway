@@ -92,7 +92,7 @@ func (c *requestConfig) generateArgs() []string {
 	}
 
 	// We prefer to be explicit, and always set the method
-	args = append(args, fmt.Sprintf("-X %s", c.method))
+	args = append(args, "--request", c.method)
 
 	for h, v := range c.headers {
 		args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
@@ -126,15 +126,13 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--resolve", sniResolution)
 	} else {
 		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.host, c.port, c.path)
-	}
-
-	if len(c.queryParameters) > 0 {
-		values := url.Values{}
-		for k, v := range c.queryParameters {
-			values.Add(k, v)
+		if len(c.queryParameters) > 0 {
+			values := url.Values{}
+			for k, v := range c.queryParameters {
+				values.Add(k, v)
+			}
+			fullAddress = fmt.Sprintf("%s?%s", fullAddress, values.Encode())
 		}
-
-		fullAddress = fmt.Sprintf("%s?%s", fullAddress, values.Encode())
 	}
 
 	args = append(args, fullAddress)
