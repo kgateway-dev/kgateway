@@ -145,7 +145,7 @@ type ContainerVersion struct {
 }
 
 // GetOpenSourceVersions returns an array of open source gloo versions found in the cluster
-// this is determined by looking at either the annotation on the gloo pod.
+// this is determined by looking at the annotation on the gloo pod.
 func GetOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
 	var potentialErrors *multierror.Error
 
