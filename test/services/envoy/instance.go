@@ -6,17 +6,20 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os/exec"
 
-	"github.com/solo-io/gloo/test/services"
+	"github.com/solo-io/go-utils/threadsafe"
 
-	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+
+	"github.com/solo-io/gloo/test/services"
 
 	"sync"
 	"text/template"
 	"time"
+
+	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 
 	"github.com/onsi/ginkgo/v2"
 
@@ -57,6 +60,9 @@ type Instance struct {
 	DockerContainerName string
 
 	*RequestPorts
+
+	// adminApiClient represents the client that can be used to access the Envoy Admin API
+	adminApiClient *admincli.Client
 }
 
 // RequestPorts are the ports that the Instance will listen on for requests
@@ -144,6 +150,18 @@ func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBu
 	ei.RestXdsPort = runConfig.RestXdsPort
 	ei.envoycfg = bootstrapBuilder.Build(ei)
 
+	// construct a client that can be used to access the Admin API
+	ei.adminApiClient = admincli.NewClient().
+		WithReceiver(ginkgo.GinkgoWriter).
+		WithCurlOptions(
+			curl.WithPort(int(ei.AdminPort)),
+			// We include the verbose output of requests so that we have more information
+			// if a test fails
+			curl.VerboseOutput(),
+			// To reduce potential test flakes, we rely on some basic retries in requests to the Envoy Admin API
+			curl.WithRetries(3, 0, 10),
+		)
+
 	if ei.UseDocker {
 		return ei.runContainer(runConfig.Context)
 	}
@@ -179,30 +197,28 @@ func (ei *Instance) LocalAddr() string {
 }
 
 func (ei *Instance) EnablePanicMode() error {
-	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 100))
+	return ei.setRuntimeConfiguration(
+		map[string]string{
+			"upstream.healthy_panic_threshold": "100",
+		})
 }
 
 func (ei *Instance) DisablePanicMode() error {
-	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 0))
+	return ei.setRuntimeConfiguration(
+		map[string]string{
+			"upstream.healthy_panic_threshold": "0",
+		})
 }
 
-func (ei *Instance) setRuntimeConfiguration(queryParameters string) error {
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?%s", ei.AdminPort, queryParameters), "", nil)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-	return nil
+func (ei *Instance) setRuntimeConfiguration(queryParameters map[string]string) error {
+	return ei.AdminClient().ModifyRuntimeConfiguration(context.Background(), queryParameters)
 }
 
 func (ei *Instance) Clean() {
 	if ei == nil {
 		return
 	}
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/quitquitquit", ei.AdminPort), "", nil)
-	if err == nil {
-		resp.Body.Close()
-	}
+	_ = ei.AdminClient().ShutdownServer(context.Background())
 
 	if ei.cmd != nil {
 		ei.cmd.Process.Kill()
@@ -292,52 +308,28 @@ func (ei *Instance) Logs() (string, error) {
 	return ei.logs.String(), nil
 }
 
+// Deprecated: Prefer StructuredConfigDump
 func (ei *Instance) ConfigDump() (string, error) {
-	return ei.getAdminEndpointData("config_dump")
+	var outLocation threadsafe.Buffer
+
+	err := ei.AdminClient().ConfigDumpCmd(context.Background()).WithStdout(&outLocation).Run().Cause()
+	if err != nil {
+		return "", err
+	}
+
+	return outLocation.String(), nil
 }
 
 func (ei *Instance) StructuredConfigDump() (*adminv3.ConfigDump, error) {
-	adminUrl := fmt.Sprintf("http://%s:%d/%s", ei.LocalAddr(), ei.AdminPort, "config_dump")
-	response, err := http.Get(adminUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	jsonpbMarshaler := &jsonpb.Unmarshaler{
-		// Ever since upgrading the go-control-plane to v0.10.1 this test fails with the following error:
-		// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
-		// Set AllowUnknownFields to true to get around this
-		AllowUnknownFields: true,
-	}
-
-	var cfgDump adminv3.ConfigDump
-	if err = jsonpbMarshaler.Unmarshal(response.Body, &cfgDump); err != nil {
-		return nil, err
-	}
-
-	return &cfgDump, nil
+	return ei.AdminClient().GetConfigDump(context.Background())
 }
 
 func (ei *Instance) Statistics() (string, error) {
-	return ei.getAdminEndpointData("stats")
+	return ei.AdminClient().GetStats(context.Background())
 }
 
-func (ei *Instance) getAdminEndpointData(endpoint string) (string, error) {
-	adminUrl := fmt.Sprintf("http://%s:%d/%s", ei.LocalAddr(), ei.AdminPort, endpoint)
-	response, err := http.Get(adminUrl)
-	if err != nil {
-		return "", err
-	}
-
-	responseBytes := new(bytes.Buffer)
-	defer response.Body.Close()
-	if _, err := io.Copy(responseBytes, response.Body); err != nil {
-		return "", err
-	}
-
-	return responseBytes.String(), nil
+func (ei *Instance) AdminClient() *admincli.Client {
+	return ei.adminApiClient
 }
 
 // SafeBuffer is a goroutine safe bytes.Buffer
