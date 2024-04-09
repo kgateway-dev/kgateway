@@ -105,17 +105,17 @@ func (b *ScaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 	}
 
 	endpointList := make(v1.EndpointList, b.epCount)
-	for i := 0; i < b.epCount; i++ {
+	for i := range b.epCount {
 		endpointList[i] = b.epBuilder.Build(i)
 	}
 
 	upstreamList := make(v1.UpstreamList, b.usCount)
-	for i := 0; i < b.usCount; i++ {
+	for i := range b.usCount {
 		upstreamList[i] = b.usBuilder.Build(i)
 	}
 
 	secretList := make(v1.SecretList, b.secretCount)
-	for i := 0; i < b.secretCount; i++ {
+	for i := range b.secretCount {
 		secretList[i] = b.secretBuilder.Build(i)
 	}
 
@@ -217,7 +217,7 @@ func route(i int) *v1.Route {
 
 func routes(n int) []*v1.Route {
 	routes := make([]*v1.Route, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		routes[i] = route(i)
 	}
 	return routes
