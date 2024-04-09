@@ -13,6 +13,9 @@ weight: 5
 
 - [AuthConfig](#authconfig) **Top-Level Resource**
 - [Config](#config)
+- [FailedStartOnUpdatePolicy](#failedstartonupdatepolicy)
+- [ReplaceExisting](#replaceexisting)
+- [ContinueExisting](#continueexisting)
 - [ExtAuthExtension](#extauthextension)
 - [Settings](#settings)
 - [ApiVersion](#apiversion)
@@ -125,6 +128,9 @@ weight: 5
 - [HmacAuthConfig](#hmacauthconfig)
 - [InMemorySecretList](#inmemorysecretlist)
 - [Config](#config)
+- [FailedStartOnUpdatePolicy](#failedstartonupdatepolicy)
+- [ReplaceExisting](#replaceexisting)
+- [ContinueExisting](#continueexisting)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
 - [ApiKeyCreateResponse](#apikeycreateresponse)
 - [ApiKeyReadRequest](#apikeyreadrequest)
@@ -157,6 +163,7 @@ format that will be included in the extauth snapshot.
 "configs": []enterprise.gloo.solo.io.AuthConfig.Config
 "booleanExpr": .google.protobuf.StringValue
 "failOnRedirect": bool
+"failedStartOnUpdatePolicy": .enterprise.gloo.solo.io.AuthConfig.FailedStartOnUpdatePolicy
 
 ```
 
@@ -167,6 +174,7 @@ format that will be included in the extauth snapshot.
 | `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 | `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
+| `failedStartOnUpdatePolicy` | [.enterprise.gloo.solo.io.AuthConfig.FailedStartOnUpdatePolicy](../extauth.proto.sk/#failedstartonupdatepolicy) | Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running. |
 
 
 
@@ -206,6 +214,56 @@ format that will be included in the extauth snapshot.
 | `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `hmacAuth` | [.enterprise.gloo.solo.io.HmacAuth](../extauth.proto.sk/#hmacauth) |  Only one of `hmacAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, or `opaServerAuth` can be set. |
 | `opaServerAuth` | [.enterprise.gloo.solo.io.OpaServerAuth](../extauth.proto.sk/#opaserverauth) |  Only one of `opaServerAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, or `hmacAuth` can be set. |
+
+
+
+
+---
+### FailedStartOnUpdatePolicy
+
+ 
+Approach to take when a modified authconfig fails to start and an existing authconfig is running
+
+```yaml
+"replaceExisting": .enterprise.gloo.solo.io.AuthConfig.FailedStartOnUpdatePolicy.ReplaceExisting
+"continueExisting": .enterprise.gloo.solo.io.AuthConfig.FailedStartOnUpdatePolicy.ContinueExisting
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `replaceExisting` | [.enterprise.gloo.solo.io.AuthConfig.FailedStartOnUpdatePolicy.ReplaceExisting](../extauth.proto.sk/#replaceexisting) |  Only one of `replaceExisting` or `continueExisting` can be set. |
+| `continueExisting` | [.enterprise.gloo.solo.io.AuthConfig.FailedStartOnUpdatePolicy.ContinueExisting](../extauth.proto.sk/#continueexisting) |  Only one of `continueExisting` or `replaceExisting` can be set. |
+
+
+
+
+---
+### ReplaceExisting
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### ContinueExisting
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
@@ -2049,6 +2107,7 @@ rules about breaking changes still apply to ensure we do not get errors during u
 "configs": []enterprise.gloo.solo.io.ExtAuthConfig.Config
 "booleanExpr": .google.protobuf.StringValue
 "failOnRedirect": bool
+"failedStartOnUpdatePolicy": .enterprise.gloo.solo.io.ExtAuthConfig.FailedStartOnUpdatePolicy
 
 ```
 
@@ -2058,6 +2117,7 @@ rules about breaking changes still apply to ensure we do not get errors during u
 | `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. Defaults to an empty string, which is interpreted as `and`-ing the configs. |
 | `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
+| `failedStartOnUpdatePolicy` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailedStartOnUpdatePolicy](../extauth.proto.sk/#failedstartonupdatepolicy) | Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running. |
 
 
 
@@ -2861,6 +2921,56 @@ Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the e
 | `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `oauth`, `oauth2`, `basicAuth`, `basicAuthInternal`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `hmacAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.HmacAuthConfig](../extauth.proto.sk/#hmacauthconfig) |  Only one of `hmacAuth`, `oauth`, `oauth2`, `basicAuth`, `basicAuthInternal`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, or `opaServerAuth` can be set. |
 | `opaServerAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaServerAuthConfig](../extauth.proto.sk/#opaserverauthconfig) |  Only one of `opaServerAuth`, `oauth`, `oauth2`, `basicAuth`, `basicAuthInternal`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, or `hmacAuth` can be set. |
+
+
+
+
+---
+### FailedStartOnUpdatePolicy
+
+ 
+Approach to take when a modified authconfig fails to start and an existing authconfig is running
+
+```yaml
+"replaceExisting": .enterprise.gloo.solo.io.ExtAuthConfig.FailedStartOnUpdatePolicy.ReplaceExisting
+"continueExisting": .enterprise.gloo.solo.io.ExtAuthConfig.FailedStartOnUpdatePolicy.ContinueExisting
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `replaceExisting` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailedStartOnUpdatePolicy.ReplaceExisting](../extauth.proto.sk/#replaceexisting) |  Only one of `replaceExisting` or `continueExisting` can be set. |
+| `continueExisting` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailedStartOnUpdatePolicy.ContinueExisting](../extauth.proto.sk/#continueexisting) |  Only one of `continueExisting` or `replaceExisting` can be set. |
+
+
+
+
+---
+### ReplaceExisting
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### ContinueExisting
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

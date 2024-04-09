@@ -80,6 +80,21 @@ message AuthConfig {
     // If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where
     // API calls are being made or other such occurrences where the client cannot handle the redirect.
     bool fail_on_redirect = 11;
+
+    // Approach to take when a modified authconfig fails to start and an existing authconfig is running
+    message FailedStartOnUpdatePolicy {
+        message ReplaceExisting {}
+        message ContinueExisting {}
+
+        oneof update_policy {
+            ReplaceExisting replace_existing = 1;
+            ContinueExisting continue_existing = 2;
+        }
+    }
+
+    // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
+    FailedStartOnUpdatePolicy failed_start_on_update_policy = 14;
+
 }
 
 // Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
@@ -2153,6 +2168,20 @@ message ExtAuthConfig {
     // If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where
     // API calls are being made or other such occurrences where the client cannot handle the redirect.
     bool fail_on_redirect = 11;
+
+    // Approach to take when a modified authconfig fails to start and an existing authconfig is running
+    message FailedStartOnUpdatePolicy {
+        message ReplaceExisting {}
+        message ContinueExisting {}
+    
+        oneof update_policy {
+            ReplaceExisting replace_existing = 1;
+                ContinueExisting continue_existing = 2;
+        }
+    }
+    
+    // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
+     FailedStartOnUpdatePolicy failed_start_on_update_policy = 14;
 }
 
 /*
