@@ -178,6 +178,7 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 }
 
 func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
+	// construct the default values
 	vals := &helmConfig{
 		Gateway: &helmGateway{
 			Name:        &gw.Name,
@@ -206,6 +207,9 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 		return vals, nil
 	}
 
+	// extract all the custom values from the GatewayParameters
+	// (note: if we add new fields to GatewayParameters, they will
+	// need to be plumbed through here as well)
 	kubeProxyConfig := gwp.Spec.GetProxyConfig().GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
