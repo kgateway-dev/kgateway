@@ -312,8 +312,11 @@ var _ = Describe("Deployer", func() {
 									},
 									EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 										Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-											LogLevel:          "debug",
-											ComponentLogLevel: "router:info,listener:warn",
+											LogLevel: "debug",
+											ComponentLogLevels: map[string]string{
+												"router":   "info",
+												"listener": "warn",
+											},
 										},
 										Image: &kube.Image{
 											Registry:   "foo",
@@ -468,7 +471,7 @@ var _ = Describe("Deployer", func() {
 						"--log-level",
 						inp.gwp.Spec.GetProxyConfig().GetKube().GetEnvoyContainer().GetBootstrap().GetLogLevel(),
 						"--component-log-level",
-						inp.gwp.Spec.GetProxyConfig().GetKube().GetEnvoyContainer().GetBootstrap().GetComponentLogLevel(),
+						"listener:warn,router:info",
 					))
 					return nil
 				},

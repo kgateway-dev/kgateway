@@ -238,9 +238,14 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
-	compLogLevel := envoyContainerConfig.GetBootstrap().GetComponentLogLevel()
+	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+
 	vals.Gateway.LogLevel = &logLevel
-	vals.Gateway.ComponentLogLevel = &compLogLevel
+	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
+	if err != nil {
+		return nil, err
+	}
+	vals.Gateway.ComponentLogLevel = &compLogLevelStr
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())

@@ -97,12 +97,21 @@ message EnvoyBootstrap {
   // for more information.
   string log_level = 1;
 
-  // Envoy component log level. The provided string will be used as a
-  // passthrough value for the `--component-log-level` argument to Envoy, e.g.
-  // `upstream:debug,connection:trace`. See
+  // Envoy log levels for specific components. The keys are component names and
+  // the values are one of "trace", "debug", "info", "warn", "error",
+  // "critical", or "off", e.g.
+  //    ```yaml
+  //    componentLogLevels:
+  //      upstream: debug
+  //      connection: trace
+  //    ```
+  // These will be converted to the `--component-log-level` Envoy argument
+  // value. See
   // https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
   // for more information.
-  string component_log_level = 2;
+  //
+  // Note: the keys and values cannot be empty, but they are not otherwise validated.
+  map<string, string> component_log_levels = 2;
 }
 
 message GatewayParametersStatus {

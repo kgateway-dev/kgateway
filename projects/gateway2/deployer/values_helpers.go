@@ -1,6 +1,11 @@
 package deployer
 
 import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
@@ -10,6 +15,12 @@ import (
 
 // This file contains helper functions that generate helm values in the format needed
 // by the deployer.
+
+var (
+	ComponentLogLevelEmptyError = func(key string, value string) error {
+		return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
+	}
+)
 
 // Extract the listener ports from a Gateway. These will be used to populate:
 // 1. the ports exposed on the envoy container
@@ -131,4 +142,25 @@ func getMergedEnvoyImageValues(defaultImage extensions.Image, overrideImage *v1a
 		Digest:     &digest,
 		PullPolicy: &pullPolicy,
 	}
+}
+
+// ComponentLogLevelsToString converts the key-value pairs in the map into a string of the
+// format: key1:value1,key2:value2,key3:value3, where the keys are sorted alphabetically.
+// If an empty map is passed in, then an empty string is returned.
+// Map keys and values may not be empty.
+// No other validation is currently done on the keys/values.
+func ComponentLogLevelsToString(vals map[string]string) (string, error) {
+	if len(vals) == 0 {
+		return "", nil
+	}
+
+	parts := make([]string, 0, len(vals))
+	for k, v := range vals {
+		if k == "" || v == "" {
+			return "", ComponentLogLevelEmptyError(k, v)
+		}
+		parts = append(parts, fmt.Sprintf("%s:%s", k, v))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ","), nil
 }

@@ -318,8 +318,15 @@ func (m *EnvoyBootstrap) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetComponentLogLevel(), target.GetComponentLogLevel()) != 0 {
+	if len(m.GetComponentLogLevels()) != len(target.GetComponentLogLevels()) {
 		return false
+	}
+	for k, v := range m.GetComponentLogLevels() {
+
+		if strings.Compare(v, target.GetComponentLogLevels()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
