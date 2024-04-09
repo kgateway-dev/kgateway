@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9337
-    resolvesIssue: true
-    description: >-
-      Fix the glooctl kube tests by ensuring that we supply a tag for the SDS image that has been built in the cluster.
-      There are tests that prove the subtle behavior of our version stringer method. The solution was to
-      ensure that when we supply a version for our images in CI, that we include both a label AND labelVersion.
