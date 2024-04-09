@@ -28,7 +28,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
 
-var _ = Describe("Staged Transformation", func() {
+var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
+	// We added the FlakeAttempts decorator to try to reduce the impact of the flakes outlined in:
+	// https://github.com/solo-io/gloo/issues/9292
 
 	var (
 		testContext *e2e.TestContext
