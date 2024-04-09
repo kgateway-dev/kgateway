@@ -38,45 +38,9 @@ func (m *GatewayParametersSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetProxyConfig()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ProxyConfig")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetProxyConfig(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ProxyConfig")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *ProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.ProxyConfig")); err != nil {
-		return 0, err
-	}
-
 	switch m.EnvironmentType.(type) {
 
-	case *ProxyConfig_Kube:
+	case *GatewayParametersSpec_Kube:
 
 		if h, ok := interface{}(m.GetKube()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Kube")); err != nil {

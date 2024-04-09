@@ -302,44 +302,42 @@ var _ = Describe("Deployer", func() {
 						UID:       "1236",
 					},
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						ProxyConfig: &gw2_v1alpha1.ProxyConfig{
-							EnvironmentType: &gw2_v1alpha1.ProxyConfig_Kube{
-								Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-									WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
-										Deployment: &gw2_v1alpha1.ProxyDeployment{
-											Replicas: &wrappers.UInt32Value{Value: 3},
+						EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_Kube{
+							Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+								WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
+									Deployment: &gw2_v1alpha1.ProxyDeployment{
+										Replicas: &wrappers.UInt32Value{Value: 3},
+									},
+								},
+								EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
+									Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+										LogLevel: "debug",
+										ComponentLogLevels: map[string]string{
+											"router":   "info",
+											"listener": "warn",
 										},
 									},
-									EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-										Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-											LogLevel: "debug",
-											ComponentLogLevels: map[string]string{
-												"router":   "info",
-												"listener": "warn",
-											},
-										},
-										Image: &kube.Image{
-											Registry:   "foo",
-											Repository: "bar",
-											Tag:        "bat",
-											PullPolicy: kube.Image_Always,
-										},
+									Image: &kube.Image{
+										Registry:   "foo",
+										Repository: "bar",
+										Tag:        "bat",
+										PullPolicy: kube.Image_Always,
 									},
-									PodTemplate: &kube.Pod{
-										ExtraAnnotations: map[string]string{
-											"foo": "bar",
-										},
-										SecurityContext: &v1.PodSecurityContext{
-											RunAsUser:  func() *int64 { var i int64 = 1; return &i }(),
-											RunAsGroup: func() *int64 { var i int64 = 2; return &i }(),
-										},
+								},
+								PodTemplate: &kube.Pod{
+									ExtraAnnotations: map[string]string{
+										"foo": "bar",
 									},
-									Service: &kube.Service{
-										Type:      kube.Service_ClusterIP,
-										ClusterIP: "99.99.99.99",
-										ExtraAnnotations: map[string]string{
-											"foo": "bar",
-										},
+									SecurityContext: &v1.PodSecurityContext{
+										RunAsUser:  func() *int64 { var i int64 = 1; return &i }(),
+										RunAsGroup: func() *int64 { var i int64 = 2; return &i }(),
+									},
+								},
+								Service: &kube.Service{
+									Type:      kube.Service_ClusterIP,
+									ClusterIP: "99.99.99.99",
+									ExtraAnnotations: map[string]string{
+										"foo": "bar",
 									},
 								},
 							},
@@ -448,19 +446,19 @@ var _ = Describe("Deployer", func() {
 					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 					Expect(dep).ToNot(BeNil())
 					Expect(dep.Spec.Replicas).ToNot(BeNil())
-					Expect(*dep.Spec.Replicas).To(Equal(int32(inp.gwp.Spec.ProxyConfig.GetKube().GetDeployment().Replicas.GetValue())))
+					Expect(*dep.Spec.Replicas).To(Equal(int32(inp.gwp.Spec.GetKube().GetDeployment().Replicas.GetValue())))
 					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(Equal("foo/bar:bat"))
-					Expect(string(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal(inp.gwp.Spec.GetProxyConfig().GetKube().GetEnvoyContainer().GetImage().GetPullPolicy().String()))
+					Expect(string(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal(inp.gwp.Spec.GetKube().GetEnvoyContainer().GetImage().GetPullPolicy().String()))
 					Expect(dep.Spec.Template.Annotations["foo"]).To(Equal("bar"))
-					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(inp.gwp.Spec.GetProxyConfig().GetKube().GetPodTemplate().GetSecurityContext().GetRunAsUser()))
-					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(inp.gwp.Spec.GetProxyConfig().GetKube().GetPodTemplate().GetSecurityContext().GetRunAsGroup()))
+					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(inp.gwp.Spec.GetKube().GetPodTemplate().GetSecurityContext().GetRunAsUser()))
+					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(inp.gwp.Spec.GetKube().GetPodTemplate().GetSecurityContext().GetRunAsGroup()))
 
 					svc := objs.findService(defaultNamespace, defaultServiceName)
 					Expect(svc).ToNot(BeNil())
 					Expect(svc.GetAnnotations()).ToNot(BeNil())
 					Expect(svc.Annotations["foo"]).To(Equal("bar"))
-					Expect(string(svc.Spec.Type)).To(Equal(inp.gwp.Spec.GetProxyConfig().GetKube().GetService().GetType().String()))
-					Expect(svc.Spec.ClusterIP).To(Equal(inp.gwp.Spec.GetProxyConfig().GetKube().GetService().GetClusterIP()))
+					Expect(string(svc.Spec.Type)).To(Equal(inp.gwp.Spec.GetKube().GetService().GetType().String()))
+					Expect(svc.Spec.ClusterIP).To(Equal(inp.gwp.Spec.GetKube().GetService().GetClusterIP()))
 
 					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 					Expect(sa).ToNot(BeNil())
@@ -469,7 +467,7 @@ var _ = Describe("Deployer", func() {
 					Expect(cm).ToNot(BeNil())
 					Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
 						"--log-level",
-						inp.gwp.Spec.GetProxyConfig().GetKube().GetEnvoyContainer().GetBootstrap().GetLogLevel(),
+						inp.gwp.Spec.GetKube().GetEnvoyContainer().GetBootstrap().GetLogLevel(),
 						"--component-log-level",
 						"listener:warn,router:info",
 					))

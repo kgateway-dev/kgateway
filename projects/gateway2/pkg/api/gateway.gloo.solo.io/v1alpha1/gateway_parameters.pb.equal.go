@@ -46,44 +46,10 @@ func (m *GatewayParametersSpec) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetProxyConfig()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetProxyConfig()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetProxyConfig(), target.GetProxyConfig()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ProxyConfig) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ProxyConfig)
-	if !ok {
-		that2, ok := that.(ProxyConfig)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
 	switch m.EnvironmentType.(type) {
 
-	case *ProxyConfig_Kube:
-		if _, ok := target.EnvironmentType.(*ProxyConfig_Kube); !ok {
+	case *GatewayParametersSpec_Kube:
+		if _, ok := target.EnvironmentType.(*GatewayParametersSpec_Kube); !ok {
 			return false
 		}
 

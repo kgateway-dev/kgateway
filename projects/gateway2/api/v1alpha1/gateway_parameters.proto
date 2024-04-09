@@ -20,11 +20,6 @@ import "google/protobuf/wrappers.proto";
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a
 // Kubernetes Gateway.
 message GatewayParametersSpec {
-  ProxyConfig proxy_config = 1;
-}
-
-// Configuration for the proxy instance that implements a given Gateway.
-message ProxyConfig {
   // The type of environment/platform in which the proxy will be provisioned.
   oneof environment_type {
     // The proxy will be deployed on Kubernetes.

@@ -210,7 +210,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	// extract all the custom values from the GatewayParameters
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
-	kubeProxyConfig := gwp.Spec.GetProxyConfig().GetKube()
+	kubeProxyConfig := gwp.Spec.GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
