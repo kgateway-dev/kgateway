@@ -64,7 +64,7 @@ func translateGatewayHTTPRouteRule(
 	gwListener gwv1.Listener,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
-	parentRefReporter reports.ParentRefReporter,
+	reporter reports.ParentRefReporter,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
@@ -84,7 +84,7 @@ func translateGatewayHTTPRouteRule(
 				gwroute,
 				rule.BackendRefs,
 				outputRoute,
-				parentRefReporter,
+				reporter,
 			)
 		}
 
@@ -93,7 +93,7 @@ func translateGatewayHTTPRouteRule(
 			Route:    gwroute,
 			Rule:     &rule,
 			Match:    &match,
-			Reporter: parentRefReporter,
+			Reporter: reporter,
 		}
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
