@@ -24,7 +24,7 @@ func TranslateGatewayHTTPRouteRules(
 	queries query.GatewayQueries,
 	gwListener gwv1.Listener,
 	route gwv1.HTTPRoute,
-	parentRefReporter reports.ParentRefReporter,
+	reporter reports.ParentRefReporter,
 ) []*v1.Route {
 	var finalRoutes []*v1.Route
 	for _, rule := range route.Spec.Rules {
@@ -42,7 +42,7 @@ func TranslateGatewayHTTPRouteRules(
 			gwListener,
 			&route,
 			rule,
-			parentRefReporter,
+			reporter,
 		)
 		for _, outputRoute := range outputRoutes {
 			// The above function will return a nil route if a matcher fails to apply plugins
