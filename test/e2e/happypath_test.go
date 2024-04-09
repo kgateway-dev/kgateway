@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"time"
@@ -139,18 +138,11 @@ var _ = Describe("Happy path", func() {
 			// This will hit the virtual host with the above virtual cluster config
 			TestUpstreamReachable()
 
-			response, err := http.Get(fmt.Sprintf("http://localhost:%d/stats", envoyInstance.AdminPort))
+			stats, err := envoyInstance.AdminClient().GetStats(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(response).NotTo(BeNil())
-			//goland:noinspection GoUnhandledErrorResult
-			defer response.Body.Close()
-
-			body, err := io.ReadAll(response.Body)
-			Expect(err).NotTo(HaveOccurred())
-			statsString := string(body)
 
 			// Verify that stats for the above virtual cluster are present
-			Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
+			Expect(stats).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
 		})
 
 		It("it correctly passes the suppress envoy headers config", func() {

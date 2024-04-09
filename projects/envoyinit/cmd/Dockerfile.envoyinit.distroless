@@ -1,0 +1,23 @@
+ARG ENVOY_IMAGE
+ARG BASE_IMAGE
+
+FROM $ENVOY_IMAGE as envoy
+
+FROM $BASE_IMAGE
+ARG GOARCH=amd64
+
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+
+# Copy over the required libraries
+# lib64z1 - Required by libsaxon for xslt transformations
+COPY --from=envoy /usr/lib/x86_64-linux-gnu/libz.so* /usr/lib/x86_64-linux-gnu/
+
+COPY envoyinit-linux-$GOARCH /usr/local/bin/envoyinit
+
+# SDS-specific setup, only used if ENVOY_SIDECAR=true
+COPY docker-entrypoint.sh /
+
+USER 10101
+
+ENTRYPOINT [ "/docker-entrypoint.sh"]
+CMD []

@@ -21,11 +21,11 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/stats"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap/zapcore"
-	"k8s.io/client-go/kubernetes"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -42,14 +42,6 @@ func GetHttpEchoImage() string {
 		httpEchoImage = "gcr.io/solo-test-236622/http-echo"
 	}
 	return httpEchoImage
-}
-
-func MustKubeClient() kubernetes.Interface {
-	restConfig, err := kubeutils.GetConfig("", "")
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return kubeClient
 }
 
 // GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
@@ -111,6 +103,13 @@ func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNa
 	UpdateSettings(ctx, func(settings *v1.Settings) {
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
+	}, installNamespace)
+}
+
+func UpdateAllowWarningsSetting(ctx context.Context, allowWarnings bool, installNamespace string) {
+	UpdateSettings(ctx, func(settings *v1.Settings) {
+		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
+		settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: allowWarnings}
 	}, installNamespace)
 }
 
@@ -219,4 +218,30 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 			return defaults
 		})
 	}
+}
+
+func GetFailurePolicy(ctx context.Context, webhookName string) *admissionregv1.FailurePolicyType {
+	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
+	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
+	return cfg.Webhooks[0].FailurePolicy
+}
+
+func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy admissionregv1.FailurePolicyType) {
+	kubeClient := clienthelpers.MustKubeClient()
+	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
+	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
+	cfg.Webhooks[0].FailurePolicy = &failurePolicy
+
+	_, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+func GetValidatingWebhook(ctx context.Context, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
+	return GetValidatingWebhookWithOffset(ctx, 1, webhookName)
+}
+
+func GetValidatingWebhookWithOffset(ctx context.Context, offset int, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
+	kubeClient := clienthelpers.MustKubeClient()
+	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
+	ExpectWithOffset(offset, err).NotTo(HaveOccurred())
+	return cfg
 }

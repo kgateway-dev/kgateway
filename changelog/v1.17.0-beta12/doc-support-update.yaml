@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Adding additional information int he support ticket docs.
+      Also syncing sections from the support policy as per LP's request.
+      skipCI-kube-tests:true
+    issueLink: https://github.com/solo-io/solo-reference-architectures/issues/66
+    resolvesIssue: false

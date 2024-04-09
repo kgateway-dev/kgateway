@@ -8,7 +8,7 @@ CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # The version of the Node Docker image to use for booting the cluster
 CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.28.0}"
 # The version used to tag images
-VERSION="${VERSION:-1.0.0-ci}"
+VERSION="${VERSION:-1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster
@@ -50,7 +50,7 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true make -s kind-build-and-load
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
   VERSION=$VERSION USE_SILENCE_REDIRECTS=true make -s build-test-chart

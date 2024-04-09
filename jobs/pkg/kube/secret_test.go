@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/certutils"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -44,7 +44,7 @@ var _ = Describe("Secret", func() {
 		defer func() { cancel() }()
 		secret, err := kube.CoreV1().Secrets(secretCfg.SecretNamespace).Get(ctx, secretCfg.SecretName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(secret).To(Equal(&v1.Secret{
+		Expect(secret).To(Equal(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mysecret",
 				Namespace: "mynamespace",

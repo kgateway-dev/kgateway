@@ -49,3 +49,18 @@ func (mr *MockServerVersionMockRecorder) Get(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockServerVersion)(nil).Get), ctx)
 }
+
+// GetClusterVersion mocks base method.
+func (m *MockServerVersion) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusterVersion")
+	ret0, _ := ret[0].(*version.KubernetesClusterVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetClusterVersion indicates an expected call of GetClusterVersion.
+func (mr *MockServerVersionMockRecorder) GetClusterVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterVersion", reflect.TypeOf((*MockServerVersion)(nil).GetClusterVersion))
+}

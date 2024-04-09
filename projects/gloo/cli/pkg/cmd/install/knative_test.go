@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/testutils"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -50,7 +50,7 @@ var _ = Describe("Knative", func() {
 			optsJson, err := json.Marshal(knativeInstallOpts)
 			Expect(err).NotTo(HaveOccurred())
 			kc := fake.NewSimpleClientset()
-			_, err = kc.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
+			_, err = kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "knative-serving",
 					Annotations: map[string]string{installedByUsAnnotationKey: string(optsJson)},
@@ -65,7 +65,7 @@ var _ = Describe("Knative", func() {
 		})
 		It("returns true, nil if knative was installed but not by us", func() {
 			kc := fake.NewSimpleClientset()
-			_, err := kc.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
+			_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "knative-serving",
 				},

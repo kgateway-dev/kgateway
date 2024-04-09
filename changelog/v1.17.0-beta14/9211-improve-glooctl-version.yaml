@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/9211
+    resolvesIssue: true
+    description: |
+      Fixes and improvements to glooctl version command:
+      - glooctl version previously had a bug displaying the tag when a digest image is used. It would show "latest" instead of showing the actual version.
+      - Both yaml and json options have been fixed to pretty the output. Previously both options did not format the display.
+      - This improvement also now includes kubernetes server version information.

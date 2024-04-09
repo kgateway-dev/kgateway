@@ -395,6 +395,20 @@ func (m *Extraction) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetReplacementText()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReplacementText()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReplacementText(), target.GetReplacementText()) {
+			return false
+		}
+	}
+
+	if m.GetMode() != target.GetMode() {
+		return false
+	}
+
 	switch m.Source.(type) {
 
 	case *Extraction_Header:

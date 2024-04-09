@@ -294,6 +294,16 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetDisableIstioAutoMtls()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDisableIstioAutoMtls()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDisableIstioAutoMtls(), target.GetDisableIstioAutoMtls()) {
+			return false
+		}
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:

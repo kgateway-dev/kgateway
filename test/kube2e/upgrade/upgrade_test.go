@@ -9,14 +9,13 @@ import (
 	"strings"
 	"time"
 
-	exec_utils "github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,6 +29,8 @@ import (
 )
 
 const namespace = defaults.GlooSystem
+
+var variant = os.Getenv("IMAGE_VARIANT")
 
 var _ = Describe("Kube2e: Upgrade Tests", func() {
 
@@ -96,15 +97,10 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	})
 
 	Context("Validation webhook upgrade tests", func() {
-		var cfg *rest.Config
-		var err error
 		var kubeClientset kubernetes.Interface
 
 		BeforeEach(func() {
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-			kubeClientset, err = kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
+			kubeClientset = kubeutils.MustClientset()
 			strictValidation = true
 		})
 
@@ -216,7 +212,7 @@ func addSecondGatewayProxySeparateNamespaceTest(ctx context.Context, crdDir stri
 	// Ensures namespace is cleaned up before continuing
 	runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
 	Eventually(func() bool {
-		_, err := kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
+		_, err := kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
 		return apierrors.IsNotFound(err)
 	}, "60s", "1s").Should(BeTrue())
 }
@@ -291,6 +287,9 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
+	if variant != "" {
+		args = append(args, "--set", "global.image.variant="+variant)
+	}
 
 	fmt.Printf("running helm with args: %v\n", args)
 	runAndCleanCommand("helm", args...)
@@ -343,6 +342,10 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetRelea
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
+	if variant != "" {
+		args = append(args, "--set", "global.image.variant="+variant)
+	}
+
 	args = append(args, additionalArgs...)
 
 	fmt.Printf("running helm with args: %v\n", args)
@@ -356,7 +359,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
 }

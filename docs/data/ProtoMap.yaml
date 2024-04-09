@@ -110,6 +110,12 @@ apis:
   core.skv2.solo.io.ObjectSelector:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectSelector
     package: core.skv2.solo.io
+  core.skv2.solo.io.PolicyTargetReference:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#PolicyTargetReference
+    package: core.skv2.solo.io
+  core.skv2.solo.io.PolicyTargetReferenceWithSectionName:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#PolicyTargetReferenceWithSectionName
+    package: core.skv2.solo.io
   core.skv2.solo.io.Status:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#Status
     package: core.skv2.solo.io
@@ -805,6 +811,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.Kubernetes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#Kubernetes
+    package: gloo.solo.io
+  gloo.solo.io.KubernetesClusterVersion:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#KubernetesClusterVersion
     package: gloo.solo.io
   gloo.solo.io.KubernetesServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#KubernetesServiceDestination

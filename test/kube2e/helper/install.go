@@ -11,12 +11,13 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/pkg/errors"
-	"github.com/solo-io/k8s-utils/testutils/kube"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/spf13/afero"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/k8s-utils/testutils/kube"
 )
 
 const (
@@ -188,6 +189,14 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, deploymentType string,
 	if h.Verbose {
 		glooctlCommand = append(glooctlCommand, "-v")
 	}
+	variant := os.Getenv("IMAGE_VARIANT")
+	if variant != "" {
+		variantValuesFile, err := GenerateVariantValuesFile(variant)
+		if err != nil {
+			return err
+		}
+		options = append(options, ExtraArgs("--values", variantValuesFile))
+	}
 
 	io := &InstallOptions{
 		GlooctlCommand: glooctlCommand,
@@ -238,7 +247,7 @@ func glooctlInstallWithTimeout(rootDir string, io *InstallOptions, timeout time.
 func waitForDefaultServiceAccount(ctx context.Context, installNamespace string) error {
 	kubeClient := kube.MustKubeClient()
 	getDefaultServiceAccount := func() error {
-		_, err := kubeClient.CoreV1().ServiceAccounts(installNamespace).Get(ctx, "default", v1.GetOptions{})
+		_, err := kubeClient.CoreV1().ServiceAccounts(installNamespace).Get(ctx, "default", metav1.GetOptions{})
 		return err
 	}
 	return retry.Do(getDefaultServiceAccount)
@@ -316,4 +325,27 @@ func validateDir(dir string) error {
 		return eris.Errorf("expected a directory. Got: %s", dir)
 	}
 	return nil
+}
+
+func GenerateVariantValuesFile(variant string) (string, error) {
+	content := `global:
+  image:
+    variant: ` + variant
+
+	fs := afero.NewOsFs()
+	dir, err := afero.TempDir(fs, "", "")
+	if err != nil {
+		return "", err
+	}
+
+	tmpFile, err := afero.TempFile(fs, dir, "")
+	if err != nil {
+		return "", err
+	}
+	_, err = tmpFile.WriteString(content)
+	if err != nil {
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
 }

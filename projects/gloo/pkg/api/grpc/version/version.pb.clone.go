@@ -96,6 +96,27 @@ func (m *ClientVersion) Clone() proto.Message {
 }
 
 // Clone function
+func (m *KubernetesClusterVersion) Clone() proto.Message {
+	var target *KubernetesClusterVersion
+	if m == nil {
+		return target
+	}
+	target = &KubernetesClusterVersion{}
+
+	target.Major = m.GetMajor()
+
+	target.Minor = m.GetMinor()
+
+	target.GitVersion = m.GetGitVersion()
+
+	target.BuildDate = m.GetBuildDate()
+
+	target.Platform = m.GetPlatform()
+
+	return target
+}
+
+// Clone function
 func (m *Version) Clone() proto.Message {
 	var target *Version
 	if m == nil {
@@ -120,6 +141,12 @@ func (m *Version) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	if h, ok := interface{}(m.GetKubernetesCluster()).(clone.Cloner); ok {
+		target.KubernetesCluster = h.Clone().(*KubernetesClusterVersion)
+	} else {
+		target.KubernetesCluster = proto.Clone(m.GetKubernetesCluster()).(*KubernetesClusterVersion)
 	}
 
 	return target

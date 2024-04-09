@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	kubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -477,7 +477,7 @@ var _ = Describe("Translate", func() {
 	})
 })
 
-func getFirstPort(svc *kubev1.Service) int32 {
+func getFirstPort(svc *corev1.Service) int32 {
 	return svc.Spec.Ports[0].Port
 }
 
@@ -527,13 +527,13 @@ func makeIng(name, namespace, ingressClass, host string, svcName string, service
 }
 
 func makeService(name, namespace, servicePortName string, servicePort int32) *v1.KubeService {
-	svc, _ := service.FromKube(&kubev1.Service{
+	svc, _ := service.FromKube(&corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Spec: kubev1.ServiceSpec{
-			Ports: []kubev1.ServicePort{{
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{{
 				Name: servicePortName,
 				Port: servicePort,
 			}},

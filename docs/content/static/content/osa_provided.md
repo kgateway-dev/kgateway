@@ -3,6 +3,7 @@ Name|Version|License
 [semver/v3](https://github.com/Masterminds/semver)|v3.2.1|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
+[retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [census-instrumentation/opencensus-proto](https://github.com/census-instrumentation/opencensus-proto)|v0.2.0|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20230607035331-e9ce68804cb4|Apache License 2.0
@@ -36,11 +37,11 @@ Name|Version|License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [go-ruleguard/dsl](https://github.com/quasilyte/go-ruleguard)|v0.3.22|BSD 3-clause "New" or "Revised" License
-[rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License
+[rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
 [saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.1.0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.9.2|Apache License 2.0
-[spf13/cobra](https://github.com/spf13/cobra)|v1.7.0|Apache License 2.0
+[spf13/cobra](https://github.com/spf13/cobra)|v1.8.0|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
@@ -56,7 +57,7 @@ Name|Version|License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.59.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.32.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
-[helm/v3](https://helm.sh/helm/v3)|v3.13.2|Apache License 2.0
+[helm/v3](https://helm.sh/helm/v3)|v3.14.2|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.28.3|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.28.3|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.28.3|Apache License 2.0

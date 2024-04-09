@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5874
+    resolvesIssue: false
+    description: >-
+      Run the PluginRegistryFactory supplied by the setup.Extensions, to ensure that the Enterprise ControlPlane
+      runs all the Enterprise plugins.
+      Create an experimental API (temporary) to configure the image used for the proxy workloads. This will be used
+      by the Enterprise ControlPlane, while the workload provisioning API is being discussed.

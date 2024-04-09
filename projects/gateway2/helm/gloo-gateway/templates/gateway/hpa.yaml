@@ -1,5 +1,5 @@
 {{- if .Values.gateway.autoscaling.enabled }}
-apiVersion: autoscaling/v2beta1
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
@@ -18,12 +18,14 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: {{ .Values.gateway.autoscaling.targetCPUUtilizationPercentage }}
+        target:
+          averageUtilization: {{ .Values.gateway.autoscaling.targetCPUUtilizationPercentage }}
     {{- end }}
     {{- if .Values.gateway.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
-        targetAverageUtilization: {{ .Values.gateway.autoscaling.targetMemoryUtilizationPercentage }}
+        target:
+          averageUtilization: {{ .Values.gateway.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
 {{- end }}

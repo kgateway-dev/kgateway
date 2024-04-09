@@ -5,7 +5,10 @@ import (
 	"net"
 	"strings"
 
+	"github.com/solo-io/gloo/test/testutils/kubeutils"
+
 	"github.com/solo-io/gloo/test/services/envoy"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,16 +18,13 @@ import (
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
-	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Happy path", func() {
@@ -54,20 +54,15 @@ var _ = Describe("Happy path", func() {
 		var (
 			testNamespace  string
 			writeNamespace string
-			cfg            *rest.Config
 			kubeClient     kubernetes.Interface
-			svc            *kubev1.Service
+			svc            *corev1.Service
 		)
 
 		BeforeEach(func() {
 			testNamespace = ""
 			writeNamespace = ""
-			var err error
 			svc = nil
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-			kubeClient, err = kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
+			kubeClient = kubeutils.MustClientset()
 		})
 
 		AfterEach(func() {
@@ -82,20 +77,20 @@ var _ = Describe("Happy path", func() {
 				testNamespace = "gloo-e2e-" + helpers.RandString(8)
 			}
 
-			_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+			_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
 				},
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			svc, err = kubeClient.CoreV1().Services(testNamespace).Create(ctx, &kubev1.Service{
+			svc, err = kubeClient.CoreV1().Services(testNamespace).Create(ctx, &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testNamespace,
 					Name:      "headlessservice",
 				},
-				Spec: kubev1.ServiceSpec{
-					Ports: []kubev1.ServicePort{
+				Spec: corev1.ServiceSpec{
+					Ports: []corev1.ServicePort{
 						{
 							Name: "foo",
 							Port: int32(tu.Port),
@@ -105,17 +100,17 @@ var _ = Describe("Happy path", func() {
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = kubeClient.CoreV1().Endpoints(testNamespace).Create(ctx, &kubev1.Endpoints{
+			_, err = kubeClient.CoreV1().Endpoints(testNamespace).Create(ctx, &corev1.Endpoints{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testNamespace,
 					Name:      svc.Name,
 				},
-				Subsets: []kubev1.EndpointSubset{{
-					Addresses: []kubev1.EndpointAddress{{
+				Subsets: []corev1.EndpointSubset{{
+					Addresses: []corev1.EndpointAddress{{
 						IP:       getNonSpecialIP(envoyInstance),
 						Hostname: "localhost",
 					}},
-					Ports: []kubev1.EndpointPort{{
+					Ports: []corev1.EndpointPort{{
 						Port: int32(tu.Port),
 					}},
 				}},

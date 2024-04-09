@@ -13,6 +13,8 @@ import (
 	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"net/http"
@@ -26,7 +28,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
 
-var _ = Describe("Staged Transformation", func() {
+var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
+	// We added the FlakeAttempts decorator to try to reduce the impact of the flakes outlined in:
+	// https://github.com/solo-io/gloo/issues/9292
 
 	var (
 		testContext *e2e.TestContext
@@ -309,6 +313,330 @@ var _ = Describe("Staged Transformation", func() {
 					"X-New-Custom-Header": ContainSubstring("test2"),
 				}))
 			}, "15s", ".5s").Should(Succeed())
+		})
+
+		Context("Extractors", func() {
+			var (
+				extraction             *transformation.Extraction
+				transformationTemplate *transformation.TransformationTemplate
+				vHostOpts              *gloov1.VirtualHostOptions
+			)
+
+			BeforeEach(func() {
+				extraction = &transformation.Extraction{
+					Source: &transformation.Extraction_Body{},
+					Regex:  ".*",
+				}
+
+				transformationTemplate = &transformation.TransformationTemplate{
+					ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+					BodyTransformation: &transformation.TransformationTemplate_Body{
+						Body: &transformation.InjaTemplate{
+							Text: "{{ foo }}",
+						},
+					},
+					Extractors: map[string]*transformation.Extraction{"foo": extraction},
+				}
+
+				vHostOpts = &gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Regular: &transformation.RequestResponseTransformations{
+							RequestTransforms: []*transformation.RequestMatch{{
+								RequestTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: transformationTemplate,
+									},
+								},
+							}},
+						},
+					},
+				}
+			})
+
+			Describe("Extract mode", func() {
+				It("Can extract text from a subset of the input", func() {
+					extraction.Mode = transformation.Extraction_EXTRACT
+					extraction.Regex = ".*(test).*"
+					extraction.Subgroup = 1
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       "test",
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Defaults to extract mode", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       body,
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Doesn't extract if regex doesn't match", func() {
+					extraction.Mode = transformation.Extraction_EXTRACT
+					extraction.Regex = "will not match"
+					extraction.Subgroup = 0
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       "",
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Doesn't extract if regex doesn't match entire input", func() {
+					extraction.Mode = transformation.Extraction_EXTRACT
+					extraction.Regex = "is a test"
+					extraction.Subgroup = 0
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       "",
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Rejects config if replacement_text is set", func() {
+					extraction.Mode = transformation.Extraction_EXTRACT
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "test"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+						vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, e2e.DefaultVirtualServiceName, clients.ReadOpts{})
+						return vs, err
+					})
+				})
+
+			})
+			Describe("Single Replace mode", func() {
+				It("Can extract a substring from the body and replace it in the response", func() {
+					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					extraction.Regex = ".*(test).*"
+					extraction.Subgroup = 1
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       "this is a replaced",
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Can replace from subgroup 0 when regex matches entire body", func() {
+					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					extraction.Regex = "this is a (test)"
+					extraction.Subgroup = 0
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       "replaced",
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Returns input if regex doesn't match", func() {
+					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					extraction.Regex = "will not match"
+					extraction.Subgroup = 0
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       body,
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Returns input if regex doesn't match entire input", func() {
+					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					extraction.Regex = "is a test"
+					extraction.Subgroup = 0
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "this is a test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       body,
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Rejects config if replacement_text is not set", func() {
+					extraction.Mode = transformation.Extraction_SINGLE_REPLACE
+					extraction.Regex = ".*(test).*"
+					extraction.Subgroup = 1
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+						vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, e2e.DefaultVirtualServiceName, clients.ReadOpts{})
+						return vs, err
+					})
+				})
+			})
+			Describe("Replace ALL mode", func() {
+				It("Can replace multiple instances of the regex in the body", func() {
+					extraction.Mode = transformation.Extraction_REPLACE_ALL
+					extraction.Regex = "test"
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "test test test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       "replaced replaced replaced",
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Returns input if regex doesn't match", func() {
+					extraction.Mode = transformation.Extraction_REPLACE_ALL
+					extraction.Regex = "will not match"
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					body := "test test test"
+					requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(body)
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+							StatusCode: http.StatusOK,
+							Body:       body,
+						}))
+					}, "5s", ".5s").Should(Succeed())
+				})
+
+				It("Rejects config if replacement_text is not set", func() {
+					extraction.Mode = transformation.Extraction_REPLACE_ALL
+					extraction.Regex = "test"
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+						vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, e2e.DefaultVirtualServiceName, clients.ReadOpts{})
+						return vs, err
+					})
+				})
+
+				It("Rejects config if subgroup is set", func() {
+					extraction.Mode = transformation.Extraction_REPLACE_ALL
+					extraction.Regex = "test"
+					extraction.Subgroup = 1
+					extraction.ReplacementText = &wrapperspb.StringValue{Value: "replaced"}
+
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vsBuilder := helpers.BuilderFromVirtualService(vs)
+						vsBuilder.WithVirtualHostOptions(vHostOpts)
+						return vsBuilder.Build()
+					})
+
+					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+						vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, e2e.DefaultVirtualServiceName, clients.ReadOpts{})
+						return vs, err
+					})
+				})
+			})
 		})
 
 		// helper function for the "can enable enhanced logging" table test

@@ -2,13 +2,20 @@ package xds
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
+
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+
+	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -30,7 +37,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -50,11 +56,6 @@ var (
 		emptyResource,
 		emptyResource,
 	)
-)
-
-const (
-	// The port used to expose a developer server
-	devModePort = 10010
 )
 
 var (
@@ -85,9 +86,13 @@ type XdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	inputs *XdsInputChannels
-	cli    client.Client
-	scheme *runtime.Scheme
+	inputs          *XdsInputChannels
+	mgr             manager.Manager
+	k8sGwExtensions extensions.K8sGatewayExtensions
+
+	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
+	// This cache is utilized by the debug.ProxyEndpointServer
+	proxyReconciler gloo_solo_io.ProxyReconciler
 }
 
 type XdsInputChannels struct {
@@ -123,8 +128,9 @@ func NewXdsSyncer(
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
-	cli client.Client,
-	scheme *runtime.Scheme,
+	mgr manager.Manager,
+	k8sGwExtensions extensions.K8sGatewayExtensions,
+	proxyClient gloo_solo_io.ProxyClient,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:       controllerName,
@@ -133,16 +139,16 @@ func NewXdsSyncer(
 		xdsCache:             xdsCache,
 		xdsGarbageCollection: xdsGarbageCollection,
 		inputs:               inputs,
-		cli:                  cli,
-		scheme:               scheme,
+		mgr:                  mgr,
+		k8sGwExtensions:      k8sGwExtensions,
+		proxyReconciler:      gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
 	}
 }
 
-// syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
-func (s *XdsSyncer) Start(
-	ctx context.Context,
-) error {
+func (s *XdsSyncer) Start(ctx context.Context) error {
 	proxyApiSnapshot := &v1snap.ApiSnapshot{}
+	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
+
 	var (
 		discoveryWarmed bool
 		secretsWarmed   bool
@@ -151,29 +157,44 @@ func (s *XdsSyncer) Start(
 		if !discoveryWarmed || !secretsWarmed {
 			return
 		}
+
 		var gwl apiv1.GatewayList
-		err := s.cli.List(ctx, &gwl)
+		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {
 			// This should never happen, try again?
 			return
 		}
-		queries := query.NewData(s.cli, s.scheme)
-		pluginRegistry := registry.NewPluginRegistry(queries)
-		t := gloot.NewTranslator(*pluginRegistry)
+
+		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
+
+		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
+		gatewayTranslator := gloot.NewTranslator(gatewayQueries, pluginRegistry)
+
 		proxies := gloo_solo_io.ProxyList{}
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
+
+		var translatedGateways []gwplugins.TranslatedGateway
 		for _, gw := range gwl.Items {
-			proxy := t.TranslateProxy(ctx, &gw, queries, r)
+			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, r)
 			if proxy != nil {
 				proxies = append(proxies, proxy)
+				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
+					Gateway: gw,
+				})
 				//TODO: handle reports and process statuses
 			}
 		}
 		proxyApiSnapshot.Proxies = proxies
+
+		applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
+			TranslatedGateways: translatedGateways,
+		})
+
 		s.syncEnvoy(ctx, proxyApiSnapshot)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
+		s.syncProxyCache(ctx, proxies)
 	}
 
 	for {
@@ -308,52 +329,17 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 	return reports
 }
 
-// ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// TODO(ilackarms): move this somewhere else, make it part of dev-mode
-// https://github.com/solo-io/gloo/issues/6494
-func (s *XdsSyncer) ServeXdsSnapshots() error {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%v", "Developer API")
-	})
-	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.xdsCache.GetStatusKeys()))
-	})
-	r.HandleFunc("/xds/{key}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		xdsCacheKey := vars["key"]
-
-		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
-		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
-	})
-	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
-	})
-
-	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
-}
-
 func measureResource(ctx context.Context, resource string, length int) {
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
 		stats.Record(ctxWithTags, envoySnapshotOut.M(int64(length)))
 	}
 }
 
-func prettify(original interface{}) string {
-	b, err := json.MarshalIndent(original, "", "    ")
-	if err != nil {
-		return ""
-	}
-
-	return string(b)
-}
-
 func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	rl := apiv1.HTTPRouteList{}
-	err := s.cli.List(ctx, &rl)
+	err := s.mgr.GetClient().List(ctx, &rl)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -363,7 +349,7 @@ func (s *XdsSyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
 			route.Status = *status
-			if err := s.cli.Status().Update(ctx, &route); err != nil {
+			if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
 				logger.Error(err)
 			}
 		}
@@ -377,9 +363,66 @@ func (s *XdsSyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl ap
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
 			gw.Status = *status
-			if err := s.cli.Status().Patch(ctx, &gw, client.Merge); err != nil {
+			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
 				logger.Error(err)
 			}
+		}
+	}
+}
+
+// syncProxyCache persists the proxies that were generated during translations and stores them in an in-memory cache
+// This cache is utilized by the debug.ProxyEndpointServer
+func (s *XdsSyncer) syncProxyCache(ctx context.Context, proxyList gloo_solo_io.ProxyList) {
+	ctx = contextutils.WithLogger(ctx, "proxyCache")
+	logger := contextutils.LoggerFrom(ctx)
+
+	// Proxy CR is located in the same namespace as the originating Gateway CR
+	// As a result, we may have a list of Proxies that are in different namespaces
+	// Since the reconciler accepts the namespace as an argument, we need to split
+	// the list so we have a lists of proxies, isolated to each namespace
+	var proxyListByNamespace = make(map[string]gloo_solo_io.ProxyList)
+
+	for _, proxy := range proxyList {
+		proxyNs := proxy.GetMetadata().GetNamespace()
+		nsList, ok := proxyListByNamespace[proxyNs]
+		if ok {
+			nsList = append(nsList, proxy)
+			proxyListByNamespace[proxyNs] = nsList
+		} else {
+			proxyListByNamespace[proxyNs] = gloo_solo_io.ProxyList{
+				proxy,
+			}
+		}
+	}
+
+	for ns, nsList := range proxyListByNamespace {
+		err := s.proxyReconciler.Reconcile(
+			ns,
+			nsList,
+			func(original, desired *gloo_solo_io.Proxy) (bool, error) {
+				// Do nothing to the new proxy, just always overwrite the old one
+				return true, nil
+			},
+			clients.ListOpts{
+				Ctx: ctx,
+			})
+		if err != nil {
+			// A write error to our cache should not impact translation
+			// We will emit a message, and continue
+			logger.Error(err)
+		}
+	}
+}
+
+func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
+	ctx = contextutils.WithLogger(ctx, "postTranslation")
+	logger := contextutils.LoggerFrom(ctx)
+
+	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
+		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
+		if err != nil {
+			logger.Errorf("Error applying post-translation plugin: %v", err)
+			continue
 		}
 	}
 }

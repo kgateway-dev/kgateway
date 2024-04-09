@@ -3,17 +3,8 @@ package kube2e
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
-	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
-
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -21,6 +12,15 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1"
+
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
+	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/test/helpers"
 )
 
 var _ helpers.ResourceClientSet = new(KubeResourceClientSet)
@@ -44,16 +44,16 @@ type KubeResourceClientSet struct {
 	artifactClient          gloov1.ArtifactClient
 	secretClient            gloov1.SecretClient
 
+	kubernetesGatewayClient gatewayclient.GatewayV1Interface
+
 	kubeClient *kubernetes.Clientset
 }
 
 func NewDefaultKubeResourceClientSet(ctx context.Context) (*KubeResourceClientSet, error) {
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 	if err != nil {
 		return nil, err
 	}
-	cfg.QPS = clients.DefaultK8sQPS
-	cfg.Burst = clients.DefaultK8sBurst
 
 	return NewKubeResourceClientSet(ctx, cfg)
 }
@@ -303,6 +303,9 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	// Kube Service
 	resourceClientSet.serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
+	clset := gwclient.NewForConfigOrDie(cfg)
+	resourceClientSet.kubernetesGatewayClient = clset.GatewayV1()
+
 	return resourceClientSet, nil
 }
 
@@ -368,6 +371,10 @@ func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
 
 func (k KubeResourceClientSet) KubeClients() *kubernetes.Clientset {
 	return k.kubeClient
+}
+
+func (k KubeResourceClientSet) KubernetesGatewayClient() gatewayclient.GatewayV1Interface {
+	return k.kubernetesGatewayClient
 }
 
 func (k KubeResourceClientSet) ServiceClient() skkube.ServiceClient {

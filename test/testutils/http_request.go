@@ -23,6 +23,7 @@ type HttpRequestBuilder struct {
 	hostname string
 	port     uint32
 	path     string
+	query    string
 
 	body string
 
@@ -77,6 +78,11 @@ func (h *HttpRequestBuilder) WithPort(port uint32) *HttpRequestBuilder {
 
 func (h *HttpRequestBuilder) WithPath(path string) *HttpRequestBuilder {
 	h.path = path
+	return h
+}
+
+func (h *HttpRequestBuilder) WithQuery(query string) *HttpRequestBuilder {
+	h.query = query
 	return h
 }
 
@@ -153,6 +159,7 @@ func (h *HttpRequestBuilder) Clone() *HttpRequestBuilder {
 	clone.path = h.path
 	clone.body = h.body
 	clone.host = h.host
+	clone.query = h.query
 	clone.headers = make(map[string][]string)
 	for key, value := range h.headers {
 		clone.headers[key] = value
@@ -161,6 +168,8 @@ func (h *HttpRequestBuilder) Clone() *HttpRequestBuilder {
 }
 
 func (h *HttpRequestBuilder) Build() *http.Request {
+	ginkgo.GinkgoHelper()
+
 	if err := h.errorIfInvalid(); err != nil {
 		// We error loudly here
 		// These types of errors are intended to prevent developers from creating resources
@@ -174,10 +183,13 @@ func (h *HttpRequestBuilder) Build() *http.Request {
 		requestBody = bytes.NewBufferString(h.body)
 	}
 
+	if h.query != "" && h.query[0] != '?' {
+		h.query = "?" + h.query
+	}
 	request, err := http.NewRequestWithContext(
 		h.ctx,
 		h.method,
-		fmt.Sprintf("%s://%s:%d/%s", h.scheme, h.hostname, h.port, h.path),
+		fmt.Sprintf("%s://%s:%d/%s%s", h.scheme, h.hostname, h.port, h.path, h.query),
 		requestBody)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "generating http request")
 

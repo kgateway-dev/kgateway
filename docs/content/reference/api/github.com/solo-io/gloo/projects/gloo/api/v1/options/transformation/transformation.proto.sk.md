@@ -18,6 +18,7 @@ weight: 5
 - [TransformationStages](#transformationstages)
 - [Transformation](#transformation)
 - [Extraction](#extraction)
+- [Mode](#mode)
 - [TransformationTemplate](#transformationtemplate)
 - [HeaderToAppend](#headertoappend)
 - [DynamicMetadataValue](#dynamicmetadatavalue)
@@ -181,6 +182,8 @@ The extracted information can then be referenced in template fields.
 "body": .google.protobuf.Empty
 "regex": string
 "subgroup": int
+"replacementText": .google.protobuf.StringValue
+"mode": .transformation.options.gloo.solo.io.Extraction.Mode
 
 ```
 
@@ -188,8 +191,25 @@ The extracted information can then be referenced in template fields.
 | ----- | ---- | ----------- | 
 | `header` | `string` | Extract information from headers. Only one of `header` or `body` can be set. |
 | `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Extract information from the request/response body. Only one of `body` or `header` can be set. |
-| `regex` | `string` | Only strings matching this regular expression will be part of the extraction. This regex **must match the entire source** in order for a value to be extracted. The most simple value for this field is '.*', which matches the whole source. The field is required. If extraction fails the result is an empty value. |
-| `subgroup` | `int` | If your regex contains capturing groups, use this field to determine which group should be selected. |
+| `regex` | `string` | The regex field specifies the regular expression used for matching against the source content. - In EXTRACT mode, the entire source must match the regex. `subgroup` selects the n-th capturing group, which determines the part of the match that you want to extract. If the regex does not match the source, the result of the extraction will be an empty value. - In SINGLE_REPLACE mode, the regex also needs to match the entire source. `subgroup` selects the n-th capturing group that is replaced with the content of `replacement_text`. If the regex does not match the source, the result of the replacement will be the source itself. - In REPLACE_ALL mode, the regex is applied repeatedly to find all occurrences within the source that match. Each matching occurrence is replaced with the value in `replacement_text`. In this mode, the configuration is rejected if `subgroup` is set. If the regex does not match the source, the result of the replacement will be the source itself. |
+| `subgroup` | `int` | If your regex contains capturing groups, use this field to determine the group that you want to select. Defaults to 0. If set in `EXTRACT` and `SINGLE_REPLACE` modes, the subgroup represents the capturing group that you want to extract or replace in the source. The configuration is rejected if you set subgroup to a non-zero value when using thev `REPLACE_ALL` mode. |
+| `replacementText` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The value `replacement_text` is used to format the substitution for matched sequences in in an input string. This value is only legal in `SINGLE_REPLACE` and `REPLACE_ALL` modes. - In `SINGLE_REPLACE` mode, the `subgroup` selects the n-th capturing group, which represents the value that you want to replace with the string provided in `replacement_text`. - In `REPLACE_ALL` mode, each sequence that matches the specified regex in the input is replaced with the value in`replacement_text`. The `replacement_text` can include special syntax, such as $1, $2, etc., to refer to capturing groups within the regular expression. The value that is specified in `replacement_text` is treated as a string, and is passed to `std::regex_replace` as the replacement string. For more informatino, see https://en.cppreference.com/w/cpp/regex/regex_replace. |
+| `mode` | [.transformation.options.gloo.solo.io.Extraction.Mode](../transformation.proto.sk/#mode) | The mode of operation for the extraction. Defaults to EXTRACT. |
+
+
+
+
+---
+### Mode
+
+ 
+The mode of operation for the extraction.
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXTRACT` | Default mode. Extract the content of a specified capturing group. In this mode, `subgroup` selects the n-th capturing group, which represents the value that you want to extract. |
+| `SINGLE_REPLACE` | Replace the content of a specified capturing group. In this mode, `subgroup` selects the n-th capturing group, which represents the value that you want to replace with the string provided in `replacement_text`. Note: `replacement_text` must be set for this mode. |
+| `REPLACE_ALL` | Replace all regex matches with the value provided in `replacement_text`. Note: `replacement_text` must be set for this mode. Note: The configuration fails if `subgroup` is set to a non-zero value. Note: restrictions on the regex are different for this mode. See the regex field for more details. |
 
 
 

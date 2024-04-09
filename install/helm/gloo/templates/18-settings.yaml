@@ -75,6 +75,7 @@ spec:
   {{- if .Values.global.istioIntegration }}
     istioOptions:
       appendXForwardedHost: {{ .Values.global.istioIntegration.appendXForwardedHost }}
+      enableAutoMtls: {{ .Values.global.istioIntegration.enableAutoMtls }}
   {{- end }}
 
   {{- if .Values.settings.integrations.consul }}

@@ -35,6 +35,9 @@ data:
           upstream:
             healthy_panic_threshold:
               value: {{ $spec.healthyPanicThreshold }}
+          envoy:
+            reloadable_features:
+              sanitize_te: false
       - name: admin_layer
         admin_layer: {}
     node:

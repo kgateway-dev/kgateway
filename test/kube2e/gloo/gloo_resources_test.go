@@ -2,33 +2,28 @@ package gloo_test
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/test/matchers"
-
 	"time"
 
-	kubev1 "k8s.io/api/core/v1"
-
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/gloo/test/helpers"
-
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("GlooResourcesTest", func() {
@@ -92,7 +87,7 @@ var _ = Describe("GlooResourcesTest", func() {
 	Context("rotating secrets on upstream sslConfig", func() {
 
 		var (
-			tlsSecret *kubev1.Secret
+			tlsSecret *corev1.Secret
 		)
 
 		BeforeEach(func() {
@@ -184,8 +179,8 @@ var _ = Describe("GlooResourcesTest", func() {
 
 			By("Update the kube secret with the new values")
 			tlsSecret.Data = map[string][]byte{
-				kubev1.TLSCertKey:       []byte(crt),
-				kubev1.TLSPrivateKeyKey: []byte(crtKey),
+				corev1.TLSCertKey:       []byte(crt),
+				corev1.TLSPrivateKeyKey: []byte(crtKey),
 			}
 			_, err := resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -211,7 +206,7 @@ var _ = Describe("GlooResourcesTest", func() {
 	})
 })
 
-func setAnnotations(service *kubev1.Service, annotations map[string]string) {
+func setAnnotations(service *corev1.Service, annotations map[string]string) {
 	if service.Annotations == nil {
 		service.Annotations = make(map[string]string)
 	}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 
 	"github.com/spf13/cobra"
@@ -18,12 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"strings"
-)
-
-const (
-	// If the gateway pod is present use the image tag on that to get the gloo server version
-	// Otherwise, look for the annotation on the gloo pod
-	ContainerNameToCheckTag = "gateway"
 )
 
 var (
@@ -45,7 +41,7 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 		nsToCheck = opts.Install.Gloo.Namespace
 	}
 
-	return WarnOnMismatch(opts.Top.Ctx, os.Args[0], versioncmd.NewKube(nsToCheck, ""), &defaultLogger{})
+	return WarnOnMismatch(opts.Top.Ctx, os.Args[0], versioncmd.NewKube(nsToCheck, opts.Top.KubeContext), &defaultLogger{})
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output
@@ -148,31 +144,31 @@ type ContainerVersion struct {
 	Version       *versionutils.Version
 }
 
-// return an array of open source gloo versions found in the cluster
-// this is determined by looking at either the version of gateway (if the pod is present) or the annotation in the gloo pod.
+// GetOpenSourceVersions returns an array of open source gloo versions found in the cluster
+// this is determined by looking at the annotation on the gloo pod.
 func GetOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
+	var potentialErrors *multierror.Error
+
 	for _, podVersion := range podVersions {
 		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().GetContainers() {
-				if _, ok := ContainerNamesToCheckAnnotation[container.GetName()]; ok {
-					containerOssVersion, err := versionutils.ParseVersion("v" + container.GetOssTag())
-					if err != nil {
-						// If the annotation wasn't present or didn't contain a valid version, move on
-						continue
-					}
-					versions = append(versions, containerOssVersion)
-				} else if container.GetName() == ContainerNameToCheckTag {
-					containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
-					if err != nil {
-						continue
-					}
-					versions = append(versions, containerVersion)
+				if _, ok := ContainerNamesToCheckAnnotation[container.GetName()]; !ok {
+					// If this is not a container we want to parse, continue processing
+					continue
 				}
+				containerOssVersion, parseErr := versionutils.ParseVersion("v" + container.GetOssTag())
+				if parseErr != nil {
+					// If the annotation wasn't present or didn't contain a valid version,
+					// move on, but capture an error to present to the user
+					potentialErrors = multierror.Append(potentialErrors, parseErr)
+					continue
+				}
+				versions = append(versions, containerOssVersion)
 			}
 		default:
 			return nil, eris.Errorf("Unhandled server version type: %v", podVersion.GetVersionType())
 		}
 	}
-	return versions, nil
+	return versions, potentialErrors.ErrorOrNil()
 }

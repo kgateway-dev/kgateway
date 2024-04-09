@@ -10,15 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-
 	"github.com/hashicorp/go-multierror"
-
 	"github.com/rotisserie/eris"
-
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
@@ -26,7 +23,7 @@ const promStatsPath = "/stats/prometheus"
 
 const metricsUpdateInterval = time.Millisecond * 250
 
-func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
+func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *appsv1.DeploymentList) (error, *multierror.Error) {
 	gatewayProxyDeploymentsFound := 0
 	var multiWarn *multierror.Error
 	var readOnlyErr error
@@ -64,16 +61,16 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+deploymentName,
+	stats, portForwarder, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+deploymentName,
 		localPort, adminPort, false, promStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
 		return err
 	}
-	if portFwdCmd.Process != nil {
-		defer portFwdCmd.Process.Release()
-		defer portFwdCmd.Process.Kill()
-	}
+	defer func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}()
 
 	if err := checkProxyConnectedState(stats, deploymentName, errMessage,
 		"Your "+deploymentName+" is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+

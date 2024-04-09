@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -20,6 +21,7 @@ func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
 ) []*v1.Route {
@@ -36,6 +38,7 @@ func TranslateGatewayHTTPRouteRules(
 			ctx,
 			pluginRegistry,
 			queries,
+			gwListener,
 			&route,
 			rule,
 			reporter,
@@ -57,12 +60,14 @@ func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
+		match := match // pike
 		outputRoute := &v1.Route{
 			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
 			Action:   nil,
@@ -79,6 +84,7 @@ func translateGatewayHTTPRouteRule(
 		}
 
 		rtCtx := &plugins.RouteContext{
+			Listener: &gwListener,
 			Route:    gwroute,
 			Rule:     &rule,
 			Match:    &match,
@@ -87,7 +93,7 @@ func translateGatewayHTTPRouteRule(
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
-				// TODO Log
+				contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
 			}
 		}
 

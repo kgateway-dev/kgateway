@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/rotisserie/eris"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -32,7 +33,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			/** Get the port **/
 
-			cfg, err := kubeutils.GetConfig("", "")
+			cfg, err := kubeutils.GetRestConfigWithKubeContext("")
 			if err != nil {
 				// kubecfg is missing, therefore no cluster is present, only print client version
 				return err
@@ -66,12 +67,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			/** port-forward command **/
 
-			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.GetNamespace(), "deployment/gloo-fed-console",
+			_, portForwarder, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.GetNamespace(), "deployment/gloo-fed-console",
 				staticPort, staticPort, opts.Top.Verbose, "")
 			if err != nil {
 				return err
 			}
-			defer portFwdCmd.Wait()
+			defer portForwarder.WaitForStop()
 
 			/** open in browser **/
 

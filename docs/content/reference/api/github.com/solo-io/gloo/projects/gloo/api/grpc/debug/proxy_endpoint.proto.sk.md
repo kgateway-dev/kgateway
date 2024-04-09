@@ -32,14 +32,16 @@ weight: 5
 "namespace": string
 "name": string
 "selector": map<string, string>
+"source": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `namespace` | `string` | The namespace to look for proxies. |
-| `name` | `string` | Optional. The name of the proxy to look up. |
+| `namespace` | `string` | Optional. The namespace to look for proxies. If this is omitted, all namespaces will be considered. |
+| `name` | `string` | Optional. The name of the proxy to look up. If this is provided, a namespace must be included as well. |
 | `selector` | `map<string, string>` | Optional. Selector to use to filter returned proxies. This will be ignored if a name is provided. |
+| `source` | `string` | Optional. The translator source that produced the requested Proxy. Available values are: 1. edge-gw: If the Proxy was created using the Edge Gateway resources 2. k8s-gw: If the Proxy was created using the K8s Gateway resources If this is omitted, all sources will be considered. |
 
 
 

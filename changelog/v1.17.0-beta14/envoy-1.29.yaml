@@ -1,0 +1,18 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.29.2-patch2
+  issueLink: https://github.com/solo-io/gloo/issues/9232
+  resolvesIssue: false
+  description: >-
+    Bump envoy-gloo to bring us onto 1.29
+- type: BREAKING_CHANGE
+  issueLink: https://github.com/solo-io/gloo/issues/9232
+  resolvesIssue: false
+  description: >-
+    * External Processing servers which mutate the body must also send a header mutation to correctly set the Content-Length.
+    * Removing a query parameter in the ExtAuth filter no longer causes repeats of that query parameter to be removed.
+    * JWT Authentication now validates the entire extracted token instead of only validating up to the first non-base64 character.
+    * TE HTTP header from downstream is sanitized before proxying the request to upstream.
+    * Host header is ignored if :authority header is included in HTTP/2 request, to bring Envoy into compliance with https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1.

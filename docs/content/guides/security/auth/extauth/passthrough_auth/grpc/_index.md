@@ -210,6 +210,40 @@ curl -H "Host: foo" -H "authorization: authorize me" $(glooctl proxy url)/posts/
 
 The request should now be authorized!
 
+## Configuring retries for unresponsive passthrough services
+
+You can configure the Gloo ExtAuth server to retry the connection to the passthrough service in the case that the passthrough service becomes unavailable. Consider the following two scenarios to learn more about how retries to the passthrough service are executed: 
+
+
+* **Passthrough service becomes unavailable after initial connection**: In this scenario, the Gloo ExtAuth server successfully established an initial connection to the passthrough service. However later on, the passthrough service becomes unavailable. You can add a retry policy to your AuthConfig to retry the connection to the passthrough service if the service becomes unavailable. In the following AuthConfig, the Gloo ExtAuth server is configured to retry the connection to the passthrough service 10 times. To not overload the passthrough service, an optional exponential backoff strategy is defined. The backoff strategy configures the ExtAuth server to start retries after 1 second (`baseInterval`). Retries are then executed exponentially, such as after 2 seconds, 4 seconds, 8 seconds, etc up to the `maxInterval` that defaults to 10 times the `baseInterval`. In this example, the `maxInterval` configures a maximum delay of 2 seconds between retries. Note that the global settings `global.extensions.extAuth.requestTimeout` must be greater than the `retryPolicy.numRetries` * `retryPolicy.retryBackOff.baseInterval` to ensure that the failed gRPC call has sufficient time to retry.
+
+  For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" >}}).
+
+  {{< highlight yaml "hl_lines=13-18" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: passthrough-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - passThroughAuth:
+      grpc:
+        # Address of the grpc auth server to query
+        address: example-grpc-auth-service.default.svc.cluster.local:9001
+        # Set a connection timeout to external service, default is 5 seconds
+        connectionTimeout: 3s
+        retryPolicy: 
+          numRetries: 10
+          retryBackOff:
+            baseInterval: 1s
+            maxInterval: 2s
+  {{< /highlight >}}
+
+
+* **Passthrough service is unavailable during the initial connection**: When you configure your AuthConfig with a retry policy, auth requests are retried only after the initial connection between the Gloo auth server and passthrough service is established successfully. If establishing the initial connection fails, the ExtAuth server retries the connection up to the defined `connectionTimeout` in the AuthConfig. The settings in the retry policy are ignored and any auth requests that are sent to the ExtAuth server during that time fail immediately. Auth requests continue to fail when the `connectionTimeout` is reached, even if the passthrough service becomes available afterwards. To mitigate this issue, you can try increasing the `connectionTimeout` setting if you think that your passthrough service can recover and become available within the specified connection timeout.
+
+
 ## Sharing state with other auth steps
 
 {{% notice note %}}

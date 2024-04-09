@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/certutils"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +27,7 @@ type TlsSecret struct {
 // service name/namespace, then return it. Otherwise return nil.
 // The second return value is a bool indicating whether the secret is expiring soon (i.e. within the renewBeforeDuration).
 func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string,
-	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, bool, error) {
+	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*corev1.Secret, bool, error) {
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infow("looking for existing valid tls secret",
@@ -47,12 +47,12 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 		return nil, false, errors.Wrapf(err, "failed to retrieve existing secret")
 	}
 
-	if existing.Type != v1.SecretTypeTLS {
-		return nil, false, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
+	if existing.Type != corev1.SecretTypeTLS {
+		return nil, false, errors.Errorf("unexpected secret type, expected %s and got %s", corev1.SecretTypeTLS, existing.Type)
 	}
 
 	// decode the server cert(s)
-	certPemBytes := existing.Data[v1.TLSCertKey]
+	certPemBytes := existing.Data[corev1.TLSCertKey]
 	decodedCerts, err := decodeCertChain(certPemBytes)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to decode cert chain")
@@ -94,7 +94,7 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 }
 
 // Returns the created or updated secret
-func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) (*v1.Secret, error) {
+func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) (*corev1.Secret, error) {
 	secret := makeTlsSecret(secretCfg)
 
 	secretClient := kube.CoreV1().Secrets(secret.Namespace)
@@ -146,7 +146,7 @@ func RotateCerts(ctx context.Context,
 	kubeClient kubernetes.Interface,
 	currentTlsSecret TlsSecret,
 	nextCerts *certutils.Certificates,
-	gracePeriod time.Duration) (*v1.Secret, error) {
+	gracePeriod time.Duration) (*corev1.Secret, error) {
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infow("rotating secret", zap.String("secretName", currentTlsSecret.SecretName), zap.String("secretNamespace", currentTlsSecret.SecretNamespace))
@@ -219,13 +219,13 @@ func waitGracePeriod(ctx context.Context, gracePeriod time.Duration, description
 	}
 }
 
-func makeTlsSecret(args TlsSecret) *v1.Secret {
-	return &v1.Secret{
+func makeTlsSecret(args TlsSecret) *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      args.SecretName,
 			Namespace: args.SecretNamespace,
 		},
-		Type: v1.SecretTypeTLS,
+		Type: corev1.SecretTypeTLS,
 		Data: map[string][]byte{
 			args.PrivateKeyFileName: args.PrivateKey,
 			args.CertFileName:       args.Cert,

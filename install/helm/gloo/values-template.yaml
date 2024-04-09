@@ -224,7 +224,6 @@ global:
   image:
     registry: quay.io/solo-io
     pullPolicy: IfNotPresent
-    extended: false
   glooRbac:
     create: true
     namespaced: false
@@ -257,6 +256,7 @@ global:
     disableAutoinjection: false
     enableIstioSidecarOnGateway: false
     appendXForwardedHost: true
+    enableAutoMtls: false
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true

@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/9251
+    description: >-
+      The flake seems to be occuring due to improper cleanup of setting the validatingAdmissionEebhook failure policy to `Ignore`` after setting it to `Fail`` for a set of tests
+      This PR fixes the flake by setting the failure policy to `Ignore` in the `AfterAll`

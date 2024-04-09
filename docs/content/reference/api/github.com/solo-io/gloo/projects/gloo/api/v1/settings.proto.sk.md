@@ -113,7 +113,7 @@ Represents global settings for all the Gloo components.
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` can be set. |
 | `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, `kubernetesSecretSource`, or `directorySecretSource` can be set. |
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, `kubernetesSecretSource`, or `vaultSecretSource` can be set. |
-| `secretOptions` | [.gloo.solo.io.Settings.SecretOptions](../settings.proto.sk/#secretoptions) | Settings for secrets storage. This API is experimental and not suitable for production use. |
+| `secretOptions` | [.gloo.solo.io.Settings.SecretOptions](../settings.proto.sk/#secretoptions) | Settings for secrets storage. This API is beta and should be tested thoroughly before production use. |
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
@@ -721,7 +721,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `endpointsWarmingTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout to get initial snapshot of resources. If set to zero, Gloo will not wait for initial snapshot - if nonzero and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. If unset, Gloo defaults to 5 minutes. |
 | `awsOptions` | [.gloo.solo.io.GlooOptions.AWSOptions](../settings.proto.sk/#awsoptions) |  |
 | `invalidConfigPolicy` | [.gloo.solo.io.GlooOptions.InvalidConfigPolicy](../settings.proto.sk/#invalidconfigpolicy) | set these options to fine-tune the way Gloo handles invalid user configuration. |
-| `disableKubernetesDestinations` | `bool` | Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off. |
+| `disableKubernetesDestinations` | `bool` | Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Edge watches, the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) Upstream resources as a routing destination to forward requests to the pod directly. For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/). |
 | `disableGrpcWeb` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default policy for grpc-web. set to true if you do not wish grpc-web to be automatically enabled. set to false if you wish grpc-web enabled unless disabled on the listener level. If not specified, defaults to `false`. |
 | `disableProxyGarbageCollection` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set this option to determine the state of the envoy configuration when a virtual service is deleted, resulting in a proxy with no configured routes. set to true if you wish to keep envoy serving the routes from the latest valid configuration. set to false if you wish to reset the envoy configuration to a clean slate with no routes. If not specified, defaults to `false`. |
 | `regexMaxProgramSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Set this option to specify the default max program size for regexes. If not specified, defaults to 100. |
@@ -792,12 +792,14 @@ Policy for how Gloo should handle invalid config
 
 ```yaml
 "appendXForwardedHost": .google.protobuf.BoolValue
+"enableAutoMtls": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true. |
+| `enableAutoMtls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect. Defaults to false. |
 
 
 

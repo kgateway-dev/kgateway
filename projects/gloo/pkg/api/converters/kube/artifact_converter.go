@@ -4,18 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	errors "github.com/rotisserie/eris"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
-	errors "github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
 	skcfgmap "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
-	kubev1 "k8s.io/api/core/v1"
-
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 func NewArtifactConverter() skcfgmap.ConfigMapConverter {
@@ -24,7 +22,7 @@ func NewArtifactConverter() skcfgmap.ConfigMapConverter {
 
 type converter struct{}
 
-func (c *converter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
+func (c *converter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, configMap *corev1.ConfigMap) (resources.Resource, error) {
 	if _, ok := rc.NewResource().(*v1.Artifact); !ok {
 		// should never happen
 		return nil, errors.Errorf("expected [artifact] resource client, got: [%s]", rc.Kind())
@@ -47,7 +45,7 @@ func (c *converter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceCl
 	return KubeConfigMapToArtifact(configMap), nil
 }
 
-func KubeConfigMapToArtifact(configMap *kubev1.ConfigMap) *v1.Artifact {
+func KubeConfigMapToArtifact(configMap *corev1.ConfigMap) *v1.Artifact {
 	artifact := new(v1.Artifact)
 	artifact.Data = configMap.Data
 	artifact.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta, true))
@@ -55,11 +53,11 @@ func KubeConfigMapToArtifact(configMap *kubev1.ConfigMap) *v1.Artifact {
 	return artifact
 }
 
-func (c *converter) ToKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*kubev1.ConfigMap, error) {
+func (c *converter) ToKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*corev1.ConfigMap, error) {
 	return ArtifactToKubeConfigMap(resource)
 }
 
-func ArtifactToKubeConfigMap(resource resources.Resource) (*kubev1.ConfigMap, error) {
+func ArtifactToKubeConfigMap(resource resources.Resource) (*corev1.ConfigMap, error) {
 
 	resourceMap, err := skprotoutils.MarshalMapEmitZeroValues(resource)
 	if err != nil {
@@ -83,7 +81,7 @@ func ArtifactToKubeConfigMap(resource resources.Resource) (*kubev1.ConfigMap, er
 	}
 
 	meta := skkubeutils.ToKubeMeta(resource.GetMetadata())
-	return &kubev1.ConfigMap{
+	return &corev1.ConfigMap{
 		ObjectMeta: meta,
 		Data:       configMapData,
 	}, nil

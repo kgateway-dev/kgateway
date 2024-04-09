@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -259,7 +260,7 @@ func (r *gatewayQueries) allowedRoutes(gw *apiv1.Gateway, l *apiv1.Listener) (fu
 	case apiv1.HTTPSProtocolType:
 		fallthrough
 	case apiv1.HTTPProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: "HTTPRoute", Group: "gateway.networking.k8s.io"}}
+		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: apiv1.GroupName}}
 	case apiv1.TLSProtocolType:
 		fallthrough
 	case apiv1.TCPProtocolType:
@@ -277,7 +278,7 @@ func (r *gatewayQueries) allowedRoutes(gw *apiv1.Gateway, l *apiv1.Listener) (fu
 				if k.Group != nil {
 					gk.Group = string(*k.Group)
 				} else {
-					gk.Group = "gateway.networking.k8s.io"
+					gk.Group = apiv1.GroupName
 				}
 				allowedKinds = append(allowedKinds, gk)
 			}
@@ -471,14 +472,14 @@ func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName stri
 }
 
 func isHttpRouteAllowed(allowedKinds []metav1.GroupKind) bool {
-	return isRouteAllowed("gateway.networking.k8s.io", "HTTPRoute", allowedKinds)
+	return isRouteAllowed(apiv1.GroupName, wellknown.HTTPRouteKind, allowedKinds)
 }
 
 func isRouteAllowed(group, kind string, allowedKinds []metav1.GroupKind) bool {
 	for _, k := range allowedKinds {
 		var allowedGroup string = k.Group
 		if allowedGroup == "" {
-			allowedGroup = "gateway.networking.k8s.io"
+			allowedGroup = apiv1.GroupName
 		}
 
 		if allowedGroup == group && k.Kind == kind {

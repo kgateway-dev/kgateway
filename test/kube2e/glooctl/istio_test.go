@@ -1,6 +1,7 @@
 package glooctl_test
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -20,7 +21,7 @@ var (
 	petstoreCurlOpts = helper.CurlOpts{
 		Protocol:          "http",
 		Path:              "/api/pets",
-		Method:            "GET",
+		Method:            http.MethodGet,
 		Host:              defaults.GatewayProxyName,
 		Service:           defaults.GatewayProxyName,
 		Verbose:           true,
@@ -37,7 +38,7 @@ var (
 var _ = Describe("Istio", Ordered, func() {
 
 	// Tests for: `glooctl istio [..]`
-	// These tests assume that Gloo and Istio are pre-instaled in the cluster
+	// These tests assume that Gloo and Istio are pre-installed in the cluster
 
 	BeforeAll(func() {
 		err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", petstoreYaml)

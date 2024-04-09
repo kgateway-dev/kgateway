@@ -5,23 +5,27 @@ import (
 	"fmt"
 	"strings"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	version2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-	"github.com/solo-io/go-utils/versionutils"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	"github.com/solo-io/go-utils/versionutils"
 )
 
 type testVersionGetter struct {
-	versions []*version.ServerVersion
-	err      error
+	versions          []*version.ServerVersion
+	kubernetesVersion *version.KubernetesClusterVersion
+	err               error
 }
 
 func (t *testVersionGetter) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	return t.versions, t.err
+}
+
+func (t *testVersionGetter) GetClusterVersion() (*version.KubernetesClusterVersion, error) {
+	return t.kubernetesVersion, t.err
 }
 
 var _ version2.ServerVersion = &testVersionGetter{}
@@ -103,6 +107,7 @@ var _ = Describe("version command", func() {
 			Tag:      v_20_12,
 			Name:     "gloo",
 			Registry: "test-registry",
+			OssTag:   v_20_12,
 		}})
 
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
@@ -114,6 +119,7 @@ var _ = Describe("version command", func() {
 			Tag:      v_20_13,
 			Name:     "gloo",
 			Registry: "test-registry",
+			OssTag:   v_20_13,
 		}})
 
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
@@ -182,33 +188,13 @@ var _ = Describe("version command", func() {
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 	})
 
-	It("should warn when the versions differ in gateway pod", func() {
-		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
-			Tag:      v_1_0_0,
-			Name:     prerun.ContainerNameToCheckTag,
-			Registry: "test-registry",
-			OssTag:   v_1_0_0,
-		}})
-
-		mismatches := []*versionutils.Version{{
-			Major: 1,
-			Minor: 0,
-			Patch: 0,
-		}}
-
-		expectedOutputLines = []string{
-			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
-		}
-
-		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
-	})
-
 	It("should ignore containers other than the one we specifically look for", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
 			{
 				Tag:      v_20_12,
 				Name:     "gloo",
 				Registry: "test-registry",
+				OssTag:   v_20_12,
 			},
 			{
 				Tag:      v_1_0_0,
@@ -220,5 +206,49 @@ var _ = Describe("version command", func() {
 
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
 		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions match exactly")
+	})
+
+	It("should return proper oss tag based on gloo container", func() {
+		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
+			// We define a version, that includes a label
+			{
+				Tag:      "v1.0.0-ci",
+				Name:     "gloo",
+				Registry: "test-registry",
+				OssTag:   "1.0.0-ci",
+			},
+			// We define a version, that includes a label AND non-zero labelVersion
+			{
+				Tag:      "v1.0.0-ci1",
+				Name:     "gloo",
+				Registry: "test-registry",
+				OssTag:   "1.0.0-ci1",
+			},
+		})
+
+		versions, err := prerun.GetOpenSourceVersions(versionGetter.versions)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(versions).To(And(
+			HaveLen(2),
+			ContainElement(&versionutils.Version{
+				Major:        1,
+				Minor:        0,
+				Patch:        0,
+				Label:        "ci",
+				LabelVersion: 0,
+			}),
+			ContainElement(&versionutils.Version{
+				Major:        1,
+				Minor:        0,
+				Patch:        0,
+				Label:        "ci",
+				LabelVersion: 1,
+			}),
+		))
+		// This test demonstrates a potential gotcha when working with versions that supply a label
+		// but do not supply a labelVersion. When invoking the Stringer, the entire label is removed
+		Expect(versions[0].String()).To(Equal("v1.0.0"))
+
+		Expect(versions[1].String()).To(Equal("v1.0.0-ci1"))
 	})
 })

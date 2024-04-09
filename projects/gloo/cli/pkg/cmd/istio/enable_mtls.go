@@ -6,6 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -13,12 +14,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-)
-
-const (
-	istioCertSecret        = "istio_server_cert"
-	istioValidationContext = "istio_validation_context"
-	sdsTargetURI           = "127.0.0.1:8234"
 )
 
 // EnableMTLS adds an sslConfig to the given upstream which will
@@ -58,11 +53,11 @@ func istioEnableMTLS(_ []string, opts *options.Options) error {
 		AlpnProtocols: []string{"istio"},
 		SslSecrets: &ssl.UpstreamSslConfig_Sds{
 			Sds: &ssl.SDSConfig{
-				CertificatesSecretName: istioCertSecret,
-				ValidationContextName:  istioValidationContext,
-				TargetUri:              sdsTargetURI,
+				CertificatesSecretName: constants.IstioCertSecret,
+				ValidationContextName:  constants.IstioValidationContext,
+				TargetUri:              constants.SdsTargetURI,
 				SdsBuilder: &ssl.SDSConfig_ClusterName{
-					ClusterName: sdsClusterName,
+					ClusterName: constants.SdsClusterName,
 				},
 			},
 		},

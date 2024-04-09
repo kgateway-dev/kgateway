@@ -7,12 +7,13 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stats"
-	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -70,9 +71,9 @@ func RunMain() {
 		glooMtlsSecret := server.Secret{
 			ServerCert:        c.GlooServerCert,
 			ValidationContext: c.GlooValidationContext,
-			SslCaFile:         c.GlooMtlsSecretDir + v1.ServiceAccountRootCAKey,
-			SslCertFile:       c.GlooMtlsSecretDir + v1.TLSCertKey,
-			SslKeyFile:        c.GlooMtlsSecretDir + v1.TLSPrivateKeyKey,
+			SslCaFile:         c.GlooMtlsSecretDir + corev1.ServiceAccountRootCAKey,
+			SslCertFile:       c.GlooMtlsSecretDir + corev1.TLSCertKey,
+			SslKeyFile:        c.GlooMtlsSecretDir + corev1.TLSPrivateKeyKey,
 		}
 		secrets = append(secrets, glooMtlsSecret)
 	}

@@ -6,6 +6,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -29,7 +33,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 var (
@@ -892,8 +895,18 @@ func checkProxies(ctx context.Context, printer printers.P, opts *options.Options
 					}
 				}
 			} else {
-				errMessage := fmt.Sprintf("Found proxy with no status: %s\n", renderMetadata(proxy.GetMetadata()))
-				multiErr = multierror.Append(multiErr, errors.New(errMessage))
+				// Proxy has no status. We want to warn users that something is causing the Proxy to not be processed by the ControlPlane
+				translatorValue := utils.GetTranslatorValue(proxy.GetMetadata())
+				if translatorValue == utils.GlooGatewayTranslatorValue {
+					// This proxy was created by the k8s Gateway translation
+					// That feature does not yet support propagating statuses onto the Proxy CR, so we ignore it
+
+				} else {
+					// This proxy was created by the Edge Gateway translation
+					// That feature does support propagating statuses on the Proxy CR, so if a status is not there, we should error
+					errMessage := fmt.Sprintf("Found proxy with no status: %s\n", renderMetadata(proxy.GetMetadata()))
+					multiErr = multierror.Append(multiErr, errors.New(errMessage))
+				}
 			}
 		}
 	}
@@ -988,7 +1001,7 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 
 // copied from projects/gloo/cli/pkg/cmd/install/v2/install.go (TODO: dedupe/clean up)
 func detectCrdsV2(kubeContext string) bool {
-	cfg, err := config.GetConfigWithContext(kubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(kubeContext)
 	if err != nil {
 		return false
 	}

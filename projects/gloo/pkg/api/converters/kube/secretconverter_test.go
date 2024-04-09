@@ -4,17 +4,17 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	. "github.com/solo-io/solo-kit/test/matchers"
-	kubev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("SecretConverter", func() {
@@ -28,12 +28,12 @@ var _ = Describe("SecretConverter", func() {
 		Expect(convertersValue.Len()).To(Equal(8))
 	})
 	It("should convert kube secret to gloo secret", func() {
-		secret := &kubev1.Secret{
-			Type: kubev1.SecretTypeTLS,
+		secret := &corev1.Secret{
+			Type: corev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:              []byte("cert"),
-				kubev1.TLSPrivateKeyKey:        []byte("key"),
-				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+				corev1.TLSCertKey:              []byte("cert"),
+				corev1.TLSPrivateKeyKey:        []byte("key"),
+				corev1.ServiceAccountRootCAKey: []byte("ca"),
 				OCSPStapleKey:                  []byte("ocsp"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -49,18 +49,18 @@ var _ = Describe("SecretConverter", func() {
 		Expect(resource.GetMetadata().Name).To(Equal(secret.ObjectMeta.Name))
 		Expect(resource.GetMetadata().Namespace).To(Equal(secret.ObjectMeta.Namespace))
 
-		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
-		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
-		Expect(glooSecret.RootCa).To(BeEquivalentTo(secret.Data[kubev1.ServiceAccountRootCAKey]))
+		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[corev1.TLSCertKey]))
+		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[corev1.TLSPrivateKeyKey]))
+		Expect(glooSecret.RootCa).To(BeEquivalentTo(secret.Data[corev1.ServiceAccountRootCAKey]))
 		Expect(glooSecret.OcspStaple).To(BeEquivalentTo(secret.Data[OCSPStapleKey]))
 	})
 
 	It("should convert kube secret to gloo secret without optional root ca or optional ocsp staple", func() {
-		secret := &kubev1.Secret{
-			Type: kubev1.SecretTypeTLS,
+		secret := &corev1.Secret{
+			Type: corev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:       []byte("cert"),
-				kubev1.TLSPrivateKeyKey: []byte("key"),
+				corev1.TLSCertKey:       []byte("cert"),
+				corev1.TLSPrivateKeyKey: []byte("key"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -75,8 +75,8 @@ var _ = Describe("SecretConverter", func() {
 		Expect(resource.GetMetadata().Name).To(Equal(secret.ObjectMeta.Name))
 		Expect(resource.GetMetadata().Namespace).To(Equal(secret.ObjectMeta.Namespace))
 
-		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
-		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
+		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[corev1.TLSCertKey]))
+		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[corev1.TLSPrivateKeyKey]))
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(""))
 		Expect(glooSecret.OcspStaple).To(BeEquivalentTo(""))
 	})
@@ -99,7 +99,7 @@ var _ = Describe("SecretConverter", func() {
 		var t TLSSecretConverter
 		kubeSecret, err := t.ToKubeSecret(context.Background(), nil, secret)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(kubeSecret).To(MatchProto(&kubev1.Secret{
+		Expect(kubeSecret).To(MatchProto(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "s1",
 				Namespace: "ns",
@@ -115,12 +115,12 @@ var _ = Describe("SecretConverter", func() {
 	})
 
 	It("should round trip kube ssl secret back to kube ssl secret", func() {
-		secret := &kubev1.Secret{
-			Type: kubev1.SecretTypeTLS,
+		secret := &corev1.Secret{
+			Type: corev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:              []byte("cert"),
-				kubev1.TLSPrivateKeyKey:        []byte("key"),
-				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+				corev1.TLSCertKey:              []byte("cert"),
+				corev1.TLSPrivateKeyKey:        []byte("key"),
+				corev1.ServiceAccountRootCAKey: []byte("ca"),
 				OCSPStapleKey:                  []byte("ocsp"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -141,11 +141,11 @@ var _ = Describe("SecretConverter", func() {
 	})
 
 	It("should round trip kube ssl secret back to kube ssl secret without optional root ca or ocsp staple", func() {
-		secret := &kubev1.Secret{
-			Type: kubev1.SecretTypeTLS,
+		secret := &corev1.Secret{
+			Type: corev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:       []byte("cert"),
-				kubev1.TLSPrivateKeyKey: []byte("key"),
+				corev1.TLSCertKey:       []byte("cert"),
+				corev1.TLSPrivateKeyKey: []byte("key"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -170,8 +170,8 @@ var _ = Describe("SecretConverter", func() {
 			SecretKey:    "secret",
 			SessionToken: "token",
 		}
-		kubeSecret := &kubev1.Secret{
-			Type: kubev1.SecretTypeOpaque,
+		kubeSecret := &corev1.Secret{
+			Type: corev1.SecretTypeOpaque,
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
 				Namespace:       "ns",
@@ -196,7 +196,7 @@ var _ = Describe("SecretConverter", func() {
 	})
 
 	It("converter chain should exit in expected order", func() {
-		secret := &kubev1.Secret{
+		secret := &corev1.Secret{
 			Data: map[string][]byte{
 				AwsAccessKeyName: []byte("access"),
 				AwsSecretKeyName: []byte("secret"),
@@ -209,7 +209,7 @@ var _ = Describe("SecretConverter", func() {
 			},
 		}
 		var awsConverter AwsSecretConverter
-		mockKube := &kubev1.Secret{Type: "this is a mock"}
+		mockKube := &corev1.Secret{Type: "this is a mock"}
 		mockResource := &v1.Secret{Metadata: &core.Metadata{Name: "mock-name"}}
 		mockConverter := newMockConverter(mockKube, mockResource)
 		chainedConverterMockFirst := NewSecretConverterChain(mockConverter, &awsConverter)
@@ -225,21 +225,21 @@ var _ = Describe("SecretConverter", func() {
 // This can be used to test the secret converter chain.
 // It will always return the secrets that you construct it with.
 type mockConverter struct {
-	terminalKubeSecret *kubev1.Secret
+	terminalKubeSecret *corev1.Secret
 	terminalGlooSecret resources.Resource
 }
 
 var _ kubesecret.SecretConverter = &mockConverter{}
 
-func newMockConverter(kube *kubev1.Secret, resource resources.Resource) *mockConverter {
+func newMockConverter(kube *corev1.Secret, resource resources.Resource) *mockConverter {
 	return &mockConverter{
 		terminalKubeSecret: kube,
 		terminalGlooSecret: resource,
 	}
 }
-func (t *mockConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *mockConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *corev1.Secret) (resources.Resource, error) {
 	return t.terminalGlooSecret, nil
 }
-func (t *mockConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *mockConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
 	return t.terminalKubeSecret, nil
 }

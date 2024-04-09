@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/solo-io/gloo/projects/gateway2/crds"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -16,7 +18,6 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -25,7 +26,7 @@ func install(opts *options.Options, installOpts *Options) error {
 
 	valueOpts := &values.Options{
 		ValueFiles: installOpts.Values,
-		Values:     append(installOpts.Set, "controlPlane.enabled=true", "gateway.enabled=false"),
+		Values:     installOpts.Set,
 	}
 	helmEnv := cli.New()
 	vals, err := valueOpts.MergeValues(getter.All(helmEnv))
@@ -33,7 +34,7 @@ func install(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	cfg, err := config.GetConfigWithContext(opts.Top.KubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(opts.Top.KubeContext)
 	if err != nil {
 		return err
 	}
@@ -47,7 +48,8 @@ func install(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	dep, err := deployer.NewDeployer(cli.Scheme(), &deployer.Inputs{
+	// TODO(npolshak): Need to support providing SDSEnabled here to the cli options
+	dep, err := deployer.NewDeployer(cli, &deployer.Inputs{
 		ControllerName: "glooctl",
 	})
 	if err != nil {
@@ -69,7 +71,7 @@ func install(opts *options.Options, installOpts *Options) error {
 			fmt.Printf("Failed\n")
 			return err
 		}
-		if err := dep.DeployObjs(ctx, crds, cli); err != nil {
+		if err := dep.DeployObjs(ctx, crds); err != nil {
 			fmt.Printf("Failed\n")
 			return err
 		}
@@ -88,7 +90,7 @@ func install(opts *options.Options, installOpts *Options) error {
 	}
 
 	fmt.Printf("Applying Manifest... ")
-	if err := dep.DeployObjs(ctx, objs, cli); err != nil {
+	if err := dep.DeployObjs(ctx, objs); err != nil {
 		fmt.Printf("Failed\n")
 		return err
 	}
