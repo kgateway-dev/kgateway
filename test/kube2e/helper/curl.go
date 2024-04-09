@@ -8,15 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/types"
 
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
-	"github.com/solo-io/gloo/test/testutils"
-
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/go-utils/log"
 )
 
@@ -40,6 +40,15 @@ type CurlOpts struct {
 	// Optional SNI name to resolve domain to when sending request
 	Sni        string
 	SelfSigned bool
+
+	// Retries on Curl requests are disabled by default because they historically were not configurable
+	// Curls to a remote container may be subject to network flakes and therefore using retries
+	// can be a useful mechanism to avoid test flakes
+	Retries struct {
+		Retry        int
+		RetryDelay   int
+		RetryMaxTime int
+	}
 }
 
 var (
@@ -187,68 +196,77 @@ func getExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher 
 }
 
 func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
-	curlRequestBuilder := testutils.DefaultCurlRequestBuilder()
+	var curlOptions []curl.Option
+
+	appendOption := func(option curl.Option) {
+		curlOptions = append(curlOptions, option)
+	}
 
 	// The testContainer relies on the transforms.WithCurlHttpResponse to validate the response is what
 	// we would expect
 	// For this transform to behave appropriately, we must execute the request with verbose=true
-	curlRequestBuilder.VerboseOutput()
+	appendOption(curl.VerboseOutput())
+
+	if opts.Retries.Retry != 0 {
+		appendOption(curl.WithRetries(opts.Retries.Retry, opts.Retries.RetryDelay, opts.Retries.RetryMaxTime))
+	}
 
 	if opts.WithoutStats {
-		curlRequestBuilder.WithoutStats()
+		appendOption(curl.Silent())
+
 	}
 	if opts.ReturnHeaders {
-		curlRequestBuilder.WithReturnHeaders()
+		appendOption(curl.WithHeadersOnly())
 	}
 
-	curlRequestBuilder.WithConnectionTimeout(opts.ConnectionTimeout)
-
-	curlRequestBuilder.WithPath(opts.Path)
+	appendOption(curl.WithConnectionTimeout(opts.ConnectionTimeout))
+	appendOption(curl.WithPath(opts.Path))
 
 	if opts.Method != "" {
-		curlRequestBuilder.WithMethod(opts.Method)
+		appendOption(curl.WithMethod(opts.Method))
 	}
 	if opts.CaFile != "" {
-		curlRequestBuilder.WithCaFile(opts.CaFile)
+		appendOption(curl.WithCaFile(opts.CaFile))
 	}
 	if opts.Host != "" {
-		curlRequestBuilder.WithHost(opts.Host)
+		appendOption(curl.WithHostHeader(opts.Host))
 	}
 	if opts.Body != "" {
-		curlRequestBuilder.WithPostBody(opts.Body)
+		appendOption(curl.WithPostBody(opts.Body))
 	}
 	for h, v := range opts.Headers {
-		curlRequestBuilder.WithHeader(h, v)
+		appendOption(curl.WithHeader(h, v))
 	}
 	if opts.AllowInsecure {
-		curlRequestBuilder.AllowInsecure()
+		appendOption(curl.IgnoreServerCert())
 	}
 
 	port := opts.Port
 	if port == 0 {
 		port = 8080
 	}
-	curlRequestBuilder.WithPort(port)
+	appendOption(curl.WithPort(port))
 
 	if opts.Protocol != "" {
-		curlRequestBuilder.WithScheme(opts.Protocol)
+		appendOption(curl.WithScheme(opts.Protocol))
 	}
 
 	service := opts.Service
 	if service == "" {
 		service = "test-ingress"
 	}
-	curlRequestBuilder.WithService(service)
+	appendOption(curl.WithHost(service))
 
 	if opts.SelfSigned {
-		curlRequestBuilder.SelfSigned()
+		appendOption(curl.IgnoreServerCert())
 	}
 	if opts.Sni != "" {
-		curlRequestBuilder.WithSni(opts.Sni)
+		appendOption(curl.WithSni(opts.Sni))
 	}
 
-	args := curlRequestBuilder.BuildArgs()
+	args := append([]string{"curl"}, curl.BuildArgs(curlOptions...)...)
 	log.Printf("running: %v", strings.Join(args, " "))
+
 	return args
 }
 
