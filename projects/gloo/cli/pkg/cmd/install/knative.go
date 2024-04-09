@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/cliutil"
+
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	"github.com/avast/retry-go"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/spf13/cobra"
@@ -154,7 +155,9 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 func installKnativeServing(opts *options.Options) error {
 	knativeOpts := opts.Install.Knative
 
-	kubeCli := kubectl.NewCli(cliutil.GetLogger()).WithKubeContext(opts.Top.KubeContext)
+	kubeCli := kubectl.NewCli().
+		WithReceiver(cliutil.GetLogger()).
+		WithKubeContext(opts.Top.KubeContext)
 
 	// store the opts as a label on the knative-serving namespace
 	// we can use this to uninstall later on
@@ -200,7 +203,7 @@ func installKnativeServing(opts *options.Options) error {
 		}
 	}
 	// label the knative-serving namespace as belonging to us
-	if err := kubeCli.ExecuteCommand(
+	if err := kubeCli.RunCommand(
 		opts.Top.Ctx,
 		"annotate",
 		"namespace",

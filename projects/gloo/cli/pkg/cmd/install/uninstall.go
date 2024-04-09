@@ -206,7 +206,7 @@ func (u *uninstaller) uninstallKnativeIfNecessary(ctx context.Context) {
 			_, _ = fmt.Fprintf(u.output, "Could not determine which knative components to remove. Continuing...\n")
 			return
 		}
-		if err := kubectl.NewCli(u.output).Delete(ctx, []byte(manifests), "--ignore-not-found"); err != nil {
+		if err := kubectl.NewCli().WithReceiver(u.output).Delete(ctx, []byte(manifests), "--ignore-not-found"); err != nil {
 			_, _ = fmt.Fprintf(u.output, "Unable to delete knative. Continuing...\n")
 		}
 	}
