@@ -1,6 +1,6 @@
 module github.com/solo-io/gloo
 
-go 1.21
+go 1.22.1
 
 // Note for developers: upgrading go will also require upgrading go in the following files:
 // ./cloudbuild-cache.yaml,
