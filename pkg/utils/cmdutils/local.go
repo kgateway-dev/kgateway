@@ -3,6 +3,7 @@ package cmdutils
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -24,14 +25,18 @@ func Command(ctx context.Context, command string, args ...string) Cmd {
 // LocalCmder is a factory for LocalCmd, implementing Cmder
 type LocalCmder struct{}
 
-// Command is like Command but includes a context
+// Command returns a Cmd which includes the running process's `Environment`
 func (c *LocalCmder) Command(ctx context.Context, name string, arg ...string) Cmd {
-	return &LocalCmd{
+	cmd := &LocalCmd{
 		Cmd: exec.CommandContext(ctx, name, arg...),
 	}
+
+	// By default, assign the env variables for the command
+	// Consumers of this Cmd can then override it, if they want
+	return cmd.WithEnv(os.Environ()...)
 }
 
-// LocalCmd wraps os/exec.Cmd, implementing the kind/pkg/exec.Cmd interface
+// LocalCmd wraps os/exec.Cmd, implementing the cmdutils.Cmd interface
 type LocalCmd struct {
 	*exec.Cmd
 }

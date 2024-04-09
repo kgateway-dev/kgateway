@@ -3,11 +3,11 @@ package gloo_test
 import (
 	"context"
 	"net"
-	"os"
-	"os/exec"
-	"strconv"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
@@ -113,53 +113,41 @@ var _ = Describe("Setup Syncer", func() {
 			}).NotTo(Panic())
 		})
 
-		setupTestGrpcClient := func() func() error {
-			var cc *grpc.ClientConn
-			var err error
-			Eventually(func() error {
-				cc, err = grpc.DialContext(ctx, "localhost:9988", grpc.WithInsecure(), grpc.WithBlock(), grpc.FailOnNonTempDialError(true))
-				return err
-			}, "10s", "1s").Should(BeNil())
-			// setup a gRPC client to make sure connection is persistent across invocations
-			client := validation.NewGlooValidationServiceClient(cc)
-			req := &validation.GlooValidationServiceRequest{Proxy: &v1.Proxy{Listeners: []*v1.Listener{{Name: "test-listener"}}}}
-			return func() error {
-				_, err := client.Validate(ctx, req)
-				return err
-			}
-		}
-
-		startPortFwd := func() *os.Process {
-			validationPort := strconv.Itoa(defaults.GlooValidationPort)
-			portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
-				"deployment/gloo", validationPort)
-			portFwd.Stdout = os.Stderr
-			portFwd.Stderr = os.Stderr
-			err := portFwd.Start()
-			Expect(err).ToNot(HaveOccurred())
-			return portFwd.Process
-		}
-
 		It("restarts validation grpc server when settings change", func() {
-			// setup port forward
-			portFwdProc := startPortFwd()
+			portForwarder, err := kubeCli.StartPortForward(ctx,
+				portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
+				portforward.WithRemotePort(defaults.GlooValidationPort),
+			)
+			Expect(err).NotTo(HaveOccurred())
 			defer func() {
-				if portFwdProc != nil {
-					portFwdProc.Kill()
-				}
+				portForwarder.Close()
+				portForwarder.WaitForStop()
 			}()
 
-			testFunc := setupTestGrpcClient()
-			err := testFunc()
+			cc, err := grpc.DialContext(ctx, portForwarder.Address(), grpc.WithInsecure())
 			Expect(err).NotTo(HaveOccurred())
+			validationClient := validation.NewGlooValidationServiceClient(cc)
+			validationRequest := &validation.GlooValidationServiceRequest{
+				Proxy: &v1.Proxy{
+					Listeners: []*v1.Listener{
+						{Name: "test-listener"},
+					},
+				},
+			}
+
+			Eventually(func(g Gomega) {
+				_, err := validationClient.Validate(ctx, validationRequest)
+				g.Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(Succeed(), "validation request should succeed")
 
 			kube2e.UpdateSettings(ctx, func(settings *v1.Settings) {
 				settings.Gateway.Validation.ValidationServerGrpcMaxSizeBytes = &wrappers.Int32Value{Value: 1}
-			}, namespace)
+			}, testHelper.InstallNamespace)
 
-			err = testFunc()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("received message larger than max (19 vs. 1)"))
+			Eventually(func(g Gomega) {
+				_, err := validationClient.Validate(ctx, validationRequest)
+				g.Expect(err).To(MatchError(ContainSubstring("received message larger than max (19 vs. 1)")))
+			}, "10s", "1s").Should(Succeed(), "validation request should fail")
 		})
 	})
 })
