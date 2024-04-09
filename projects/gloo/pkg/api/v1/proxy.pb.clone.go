@@ -1173,8 +1173,6 @@ func (m *SourceMetadata_SourceRef) Clone() proto.Message {
 
 	target.ResourceKind = m.GetResourceKind()
 
-	target.ResourceGroup = m.GetResourceGroup()
-
 	target.ObservedGeneration = m.GetObservedGeneration()
 
 	return target

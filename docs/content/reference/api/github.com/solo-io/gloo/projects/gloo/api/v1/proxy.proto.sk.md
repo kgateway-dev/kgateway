@@ -661,7 +661,6 @@ SourceMetadata is an internal message used to track ownership of nested proxy ob
 - Listener
 - VirtualHost
 - Route
-The optional resource_group field allows tracking of sources outside of the Gloo-specific API types.
 
 ```yaml
 "sources": []gloo.solo.io.SourceMetadata.SourceRef
@@ -683,7 +682,6 @@ The optional resource_group field allows tracking of sources outside of the Gloo
 ```yaml
 "resourceRef": .core.solo.io.ResourceRef
 "resourceKind": string
-"resourceGroup": string
 "observedGeneration": int
 
 ```
@@ -692,7 +690,6 @@ The optional resource_group field allows tracking of sources outside of the Gloo
 | ----- | ---- | ----------- | 
 | `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The resource being referenced. |
 | `resourceKind` | `string` | The resource Kind. |
-| `resourceGroup` | `string` | The resource Group. |
 | `observedGeneration` | `int` | The observed generation of the resource. |
 
 

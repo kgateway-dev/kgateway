@@ -74,12 +74,6 @@ func (m *RouteOption) Clone() proto.Message {
 		target.NamespacedStatuses = proto.Clone(m.GetNamespacedStatuses()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.NamespacedStatuses)
 	}
 
-	if h, ok := interface{}(m.GetPolicyStatus()).(clone.Cloner); ok {
-		target.PolicyStatus = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.PolicyStatus)
-	} else {
-		target.PolicyStatus = proto.Clone(m.GetPolicyStatus()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.PolicyStatus)
-	}
-
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
 		target.Metadata = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	} else {

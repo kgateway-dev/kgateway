@@ -1856,10 +1856,6 @@ func (m *SourceMetadata_SourceRef) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetResourceGroup(), target.GetResourceGroup()) != 0 {
-		return false
-	}
-
 	if m.GetObservedGeneration() != target.GetObservedGeneration() {
 		return false
 	}

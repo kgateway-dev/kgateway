@@ -18,7 +18,6 @@ func AppendSourceToRoute(route *v1.Route, source client.Object) {
 			Namespace: source.GetNamespace(),
 		},
 		ResourceKind:       source.GetObjectKind().GroupVersionKind().Kind,
-		ResourceGroup:      source.GetObjectKind().GroupVersionKind().Group,
 		ObservedGeneration: source.GetGeneration(),
 	})
 	route.OpaqueMetadata = &v1.Route_MetadataStatic{

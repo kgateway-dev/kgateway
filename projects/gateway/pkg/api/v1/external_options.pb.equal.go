@@ -110,16 +110,6 @@ func (m *RouteOption) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetPolicyStatus()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPolicyStatus()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetPolicyStatus(), target.GetPolicyStatus()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetMetadata()) {
 			return false

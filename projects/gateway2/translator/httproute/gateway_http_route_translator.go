@@ -89,11 +89,11 @@ func translateGatewayHTTPRouteRule(
 		}
 
 		rtCtx := &plugins.RouteContext{
-			Listener:          &gwListener,
-			Route:             gwroute,
-			Rule:              &rule,
-			Match:             &match,
-			ParentRefReporter: parentRefReporter,
+			Listener: &gwListener,
+			Route:    gwroute,
+			Rule:     &rule,
+			Match:    &match,
+			Reporter: parentRefReporter,
 		}
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
