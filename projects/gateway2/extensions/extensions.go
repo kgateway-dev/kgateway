@@ -52,7 +52,15 @@ func (e *k8sGatewayExtensions) GetEnvoyImage() Image {
 	}
 }
 
-// Image contains an image repository (e.g. "gloo-envoy-wrapper") and tag (e.g. "1.17.0")
+// Image contains an image repository (e.g. "gloo-envoy-wrapper") and tag (e.g. "1.17.0").
+//
+// The Image struct is provided here so that OSS and Enterprise Gloo Gateway can each inject
+// their default image repo/tag (e.g. "gloo-envoy-wrapper" for OSS, "gloo-ee-envoy-wrapper" for EE),
+// for images that differ between OSS and EE. For now, it's only used for the Envoy wrapper image,
+// but could potentially be used for other images in the future.
+//
+// Users may override the default OSS/EE Envoy image repo/tag (as well as other fields) completely via
+// a GatewayParameters CR attached to a Gateway.
 type Image struct {
 	Repository string
 	Tag        string

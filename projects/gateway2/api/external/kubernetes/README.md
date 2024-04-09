@@ -7,7 +7,7 @@ Instead of mirroring/redefining these messages in our own protos, we import copi
 ### Usage
 
 #### Go
-The protos in this directory are compiled by the k8s gateway integration codegen in [generate.go](../../../generate.go), which produces Go types under [projects/gateway2/pkg/api/external/kubernetes/](../../../pkg/api/external/kubernetes/) which can be used in Go code.
+The protos in this directory are compiled by the k8s gateway integration codegen in [generate.go](/projects/gateway2/generate.go), which produces Go types under [projects/gateway2/pkg/api/external/kubernetes/](/projects/gateway2/pkg/api/external/kubernetes/) which can be used in Go code.
 
 #### Protobuf
 To use these proto messages in other protos, add the appropriate import to your proto definition, e.g.
