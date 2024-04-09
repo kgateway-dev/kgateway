@@ -76,10 +76,10 @@ func (m *AuthConfig) Clone() proto.Message {
 
 	target.FailOnRedirect = m.GetFailOnRedirect()
 
-	if h, ok := interface{}(m.GetFailedStartOnUpdatePolicy()).(clone.Cloner); ok {
-		target.FailedStartOnUpdatePolicy = h.Clone().(*AuthConfig_FailedStartOnUpdatePolicy)
+	if h, ok := interface{}(m.GetFailureOnUpdatePolicy()).(clone.Cloner); ok {
+		target.FailureOnUpdatePolicy = h.Clone().(*AuthConfig_FailureOnUpdatePolicy)
 	} else {
-		target.FailedStartOnUpdatePolicy = proto.Clone(m.GetFailedStartOnUpdatePolicy()).(*AuthConfig_FailedStartOnUpdatePolicy)
+		target.FailureOnUpdatePolicy = proto.Clone(m.GetFailureOnUpdatePolicy()).(*AuthConfig_FailureOnUpdatePolicy)
 	}
 
 	return target
@@ -1773,10 +1773,10 @@ func (m *ExtAuthConfig) Clone() proto.Message {
 
 	target.FailOnRedirect = m.GetFailOnRedirect()
 
-	if h, ok := interface{}(m.GetFailedStartOnUpdatePolicy()).(clone.Cloner); ok {
-		target.FailedStartOnUpdatePolicy = h.Clone().(*ExtAuthConfig_FailedStartOnUpdatePolicy)
+	if h, ok := interface{}(m.GetFailureOnUpdatePolicy()).(clone.Cloner); ok {
+		target.FailureOnUpdatePolicy = h.Clone().(*ExtAuthConfig_FailureOnUpdatePolicy)
 	} else {
-		target.FailedStartOnUpdatePolicy = proto.Clone(m.GetFailedStartOnUpdatePolicy()).(*ExtAuthConfig_FailedStartOnUpdatePolicy)
+		target.FailureOnUpdatePolicy = proto.Clone(m.GetFailureOnUpdatePolicy()).(*ExtAuthConfig_FailureOnUpdatePolicy)
 	}
 
 	return target
@@ -2145,36 +2145,48 @@ func (m *AuthConfig_Config) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AuthConfig_FailedStartOnUpdatePolicy) Clone() proto.Message {
-	var target *AuthConfig_FailedStartOnUpdatePolicy
+func (m *AuthConfig_FailureOnUpdatePolicy) Clone() proto.Message {
+	var target *AuthConfig_FailureOnUpdatePolicy
 	if m == nil {
 		return target
 	}
-	target = &AuthConfig_FailedStartOnUpdatePolicy{}
+	target = &AuthConfig_FailureOnUpdatePolicy{}
 
-	switch m.UpdatePolicy.(type) {
+	switch m.Policy.(type) {
 
-	case *AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting_:
-
-		if h, ok := interface{}(m.GetReplaceExisting()).(clone.Cloner); ok {
-			target.UpdatePolicy = &AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting_{
-				ReplaceExisting: h.Clone().(*AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting),
-			}
-		} else {
-			target.UpdatePolicy = &AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting_{
-				ReplaceExisting: proto.Clone(m.GetReplaceExisting()).(*AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting),
-			}
-		}
-
-	case *AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting_:
+	case *AuthConfig_FailureOnUpdatePolicy_ContinueExisting_:
 
 		if h, ok := interface{}(m.GetContinueExisting()).(clone.Cloner); ok {
-			target.UpdatePolicy = &AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting_{
-				ContinueExisting: h.Clone().(*AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting),
+			target.Policy = &AuthConfig_FailureOnUpdatePolicy_ContinueExisting_{
+				ContinueExisting: h.Clone().(*AuthConfig_FailureOnUpdatePolicy_ContinueExisting),
 			}
 		} else {
-			target.UpdatePolicy = &AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting_{
-				ContinueExisting: proto.Clone(m.GetContinueExisting()).(*AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting),
+			target.Policy = &AuthConfig_FailureOnUpdatePolicy_ContinueExisting_{
+				ContinueExisting: proto.Clone(m.GetContinueExisting()).(*AuthConfig_FailureOnUpdatePolicy_ContinueExisting),
+			}
+		}
+
+	case *AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_:
+
+		if h, ok := interface{}(m.GetReplaceIfRecoverable()).(clone.Cloner); ok {
+			target.Policy = &AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_{
+				ReplaceIfRecoverable: h.Clone().(*AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable),
+			}
+		} else {
+			target.Policy = &AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_{
+				ReplaceIfRecoverable: proto.Clone(m.GetReplaceIfRecoverable()).(*AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable),
+			}
+		}
+
+	case *AuthConfig_FailureOnUpdatePolicy_ReplaceExisting_:
+
+		if h, ok := interface{}(m.GetReplaceExisting()).(clone.Cloner); ok {
+			target.Policy = &AuthConfig_FailureOnUpdatePolicy_ReplaceExisting_{
+				ReplaceExisting: h.Clone().(*AuthConfig_FailureOnUpdatePolicy_ReplaceExisting),
+			}
+		} else {
+			target.Policy = &AuthConfig_FailureOnUpdatePolicy_ReplaceExisting_{
+				ReplaceExisting: proto.Clone(m.GetReplaceExisting()).(*AuthConfig_FailureOnUpdatePolicy_ReplaceExisting),
 			}
 		}
 
@@ -2184,23 +2196,34 @@ func (m *AuthConfig_FailedStartOnUpdatePolicy) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting) Clone() proto.Message {
-	var target *AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting
+func (m *AuthConfig_FailureOnUpdatePolicy_ContinueExisting) Clone() proto.Message {
+	var target *AuthConfig_FailureOnUpdatePolicy_ContinueExisting
 	if m == nil {
 		return target
 	}
-	target = &AuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting{}
+	target = &AuthConfig_FailureOnUpdatePolicy_ContinueExisting{}
 
 	return target
 }
 
 // Clone function
-func (m *AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting) Clone() proto.Message {
-	var target *AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting
+func (m *AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable) Clone() proto.Message {
+	var target *AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable
 	if m == nil {
 		return target
 	}
-	target = &AuthConfig_FailedStartOnUpdatePolicy_ContinueExisting{}
+	target = &AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable{}
+
+	return target
+}
+
+// Clone function
+func (m *AuthConfig_FailureOnUpdatePolicy_ReplaceExisting) Clone() proto.Message {
+	var target *AuthConfig_FailureOnUpdatePolicy_ReplaceExisting
+	if m == nil {
+		return target
+	}
+	target = &AuthConfig_FailureOnUpdatePolicy_ReplaceExisting{}
 
 	return target
 }
@@ -3875,36 +3898,48 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ExtAuthConfig_FailedStartOnUpdatePolicy) Clone() proto.Message {
-	var target *ExtAuthConfig_FailedStartOnUpdatePolicy
+func (m *ExtAuthConfig_FailureOnUpdatePolicy) Clone() proto.Message {
+	var target *ExtAuthConfig_FailureOnUpdatePolicy
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_FailedStartOnUpdatePolicy{}
+	target = &ExtAuthConfig_FailureOnUpdatePolicy{}
 
-	switch m.UpdatePolicy.(type) {
+	switch m.Policy.(type) {
 
-	case *ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting_:
+	case *ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting_:
 
-		if h, ok := interface{}(m.GetReplaceExisting()).(clone.Cloner); ok {
-			target.UpdatePolicy = &ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting_{
-				ReplaceExisting: h.Clone().(*ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting),
+		if h, ok := interface{}(m.GetContinueExisting()).(clone.Cloner); ok {
+			target.Policy = &ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting_{
+				ContinueExisting: h.Clone().(*ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting),
 			}
 		} else {
-			target.UpdatePolicy = &ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting_{
-				ReplaceExisting: proto.Clone(m.GetReplaceExisting()).(*ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting),
+			target.Policy = &ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting_{
+				ContinueExisting: proto.Clone(m.GetContinueExisting()).(*ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting),
 			}
 		}
 
-	case *ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting_:
+	case *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_:
 
-		if h, ok := interface{}(m.GetContinueExisting()).(clone.Cloner); ok {
-			target.UpdatePolicy = &ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting_{
-				ContinueExisting: h.Clone().(*ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting),
+		if h, ok := interface{}(m.GetReplaceIfRecoverable()).(clone.Cloner); ok {
+			target.Policy = &ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_{
+				ReplaceIfRecoverable: h.Clone().(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable),
 			}
 		} else {
-			target.UpdatePolicy = &ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting_{
-				ContinueExisting: proto.Clone(m.GetContinueExisting()).(*ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting),
+			target.Policy = &ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_{
+				ReplaceIfRecoverable: proto.Clone(m.GetReplaceIfRecoverable()).(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable),
+			}
+		}
+
+	case *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting_:
+
+		if h, ok := interface{}(m.GetReplaceExisting()).(clone.Cloner); ok {
+			target.Policy = &ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting_{
+				ReplaceExisting: h.Clone().(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting),
+			}
+		} else {
+			target.Policy = &ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting_{
+				ReplaceExisting: proto.Clone(m.GetReplaceExisting()).(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting),
 			}
 		}
 
@@ -4279,23 +4314,34 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting) Clone() proto.Message {
-	var target *ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting
+func (m *ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting) Clone() proto.Message {
+	var target *ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_FailedStartOnUpdatePolicy_ReplaceExisting{}
+	target = &ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting{}
 
 	return target
 }
 
 // Clone function
-func (m *ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting) Clone() proto.Message {
-	var target *ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting
+func (m *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable) Clone() proto.Message {
+	var target *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_FailedStartOnUpdatePolicy_ContinueExisting{}
+	target = &ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable{}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting) Clone() proto.Message {
+	var target *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting{}
 
 	return target
 }

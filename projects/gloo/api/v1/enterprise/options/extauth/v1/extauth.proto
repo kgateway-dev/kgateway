@@ -81,19 +81,24 @@ message AuthConfig {
     // API calls are being made or other such occurrences where the client cannot handle the redirect.
     bool fail_on_redirect = 11;
 
-    // Approach to take when a modified authconfig fails to start and an existing authconfig is running
-    message FailedStartOnUpdatePolicy {
-        message ReplaceExisting {}
+    // Approach to take when a modified authconfig fails translation from internal configuration to authservice and an existing authservice
+    // for this resource is already running
+    message FailureOnUpdatePolicy 
+    {
+        
         message ContinueExisting {}
+        message ReplaceIfRecoverable {}
+        message ReplaceExisting {}
 
-        oneof update_policy {
-            ReplaceExisting replace_existing = 1;
-            ContinueExisting continue_existing = 2;
+        oneof policy {
+            ContinueExisting continue_existing = 1;
+            ReplaceIfRecoverable replace_if_recoverable = 2;
+            ReplaceExisting replace_existing = 3;
         }
     }
 
     // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
-    FailedStartOnUpdatePolicy failed_start_on_update_policy = 14;
+    FailureOnUpdatePolicy failure_on_update_policy = 14;
 
 }
 
@@ -2169,19 +2174,24 @@ message ExtAuthConfig {
     // API calls are being made or other such occurrences where the client cannot handle the redirect.
     bool fail_on_redirect = 11;
 
-    // Approach to take when a modified authconfig fails to start and an existing authconfig is running
-    message FailedStartOnUpdatePolicy {
-        message ReplaceExisting {}
+    // Approach to take when a modified authconfig fails translation from internal configuration to authservice and an existing authservice
+    // for this resource is already running
+    message FailureOnUpdatePolicy 
+    {
+        
         message ContinueExisting {}
-    
-        oneof update_policy {
-            ReplaceExisting replace_existing = 1;
-                ContinueExisting continue_existing = 2;
+        message ReplaceIfRecoverable {}
+        message ReplaceExisting {}
+
+        oneof policy {
+            ContinueExisting continue_existing = 1;
+            ReplaceIfRecoverable replace_if_recoverable = 2;
+            ReplaceExisting replace_existing = 3;
         }
     }
-    
+
     // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
-     FailedStartOnUpdatePolicy failed_start_on_update_policy = 14;
+    FailureOnUpdatePolicy failure_on_update_policy = 12;
 }
 
 /*

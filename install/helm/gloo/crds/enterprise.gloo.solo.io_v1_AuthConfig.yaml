@@ -873,11 +873,13 @@ spec:
                 type: array
               failOnRedirect:
                 type: boolean
-              failedStartOnUpdatePolicy:
+              failureOnUpdatePolicy:
                 properties:
                   continueExisting:
                     type: object
                   replaceExisting:
+                    type: object
+                  replaceIfRecoverable:
                     type: object
                 type: object
               namespacedStatuses:
