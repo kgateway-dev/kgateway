@@ -418,6 +418,7 @@ error types for the given route config
 ```yaml
 "type": .gloo.solo.io.RouteReport.Error.Type
 "reason": string
+"metadata": .gloo.solo.io.SourceMetadata
 
 ```
 
@@ -425,6 +426,7 @@ error types for the given route config
 | ----- | ---- | ----------- | 
 | `type` | [.gloo.solo.io.RouteReport.Error.Type](../gloo_validation.proto.sk/#type) | the type of the error. |
 | `reason` | `string` | any extra info as a string. |
+| `metadata` | [.gloo.solo.io.SourceMetadata](../../../v1/proxy.proto.sk/#sourcemetadata) | Source metadata for the RouteReport, can be used by external components to associate sources with the RouteError. |
 
 
 

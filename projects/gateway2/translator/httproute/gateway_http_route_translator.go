@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -23,7 +24,8 @@ func TranslateGatewayHTTPRouteRules(
 	queries query.GatewayQueries,
 	gwListener gwv1.Listener,
 	route gwv1.HTTPRoute,
-	reporter reports.ParentRefReporter,
+	parentRefReporter reports.ParentRefReporter,
+	reporter reports.Reporter,
 ) []*v1.Route {
 	var finalRoutes []*v1.Route
 	for _, rule := range route.Spec.Rules {
@@ -41,6 +43,7 @@ func TranslateGatewayHTTPRouteRules(
 			gwListener,
 			&route,
 			rule,
+			parentRefReporter,
 			reporter,
 		)
 		for _, outputRoute := range outputRoutes {
@@ -63,7 +66,8 @@ func translateGatewayHTTPRouteRule(
 	gwListener gwv1.Listener,
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
-	reporter reports.ParentRefReporter,
+	parentRefReporter reports.ParentRefReporter,
+	reporter reports.Reporter,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
@@ -73,22 +77,27 @@ func translateGatewayHTTPRouteRule(
 			Action:   nil,
 			Options:  &v1.RouteOptions{},
 		}
+
+		// track this HTTPRoute as the source for this *v1.Route
+		routeutils.AppendSourceToRoute(outputRoute, gwroute)
+
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(
 				queries,
 				gwroute,
 				rule.BackendRefs,
 				outputRoute,
-				reporter,
+				parentRefReporter,
 			)
 		}
 
 		rtCtx := &plugins.RouteContext{
-			Listener: &gwListener,
-			Route:    gwroute,
-			Rule:     &rule,
-			Match:    &match,
-			Reporter: reporter,
+			Listener:          &gwListener,
+			Route:             gwroute,
+			Rule:              &rule,
+			Match:             &match,
+			ParentRefReporter: parentRefReporter,
+			Reporter:          reporter,
 		}
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)

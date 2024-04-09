@@ -125,11 +125,23 @@ apis:
   core.skv2.solo.io.TypedObjectRef:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#TypedObjectRef
     package: core.skv2.solo.io
+  core.solo.io.KubeCondition:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/status.proto.sk/#KubeCondition
+    package: core.solo.io
   core.solo.io.Metadata:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/#Metadata
     package: core.solo.io
   core.solo.io.NamespacedStatuses:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/status.proto.sk/#NamespacedStatuses
+    package: core.solo.io
+  core.solo.io.ParentReference:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/status.proto.sk/#ParentReference
+    package: core.solo.io
+  core.solo.io.PolicyAncestorStatus:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/status.proto.sk/#PolicyAncestorStatus
+    package: core.solo.io
+  core.solo.io.PolicyStatus:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/status.proto.sk/#PolicyStatus
     package: core.solo.io
   core.solo.io.Resource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/solo-kit.proto.sk/#Resource

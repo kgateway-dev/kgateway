@@ -2028,6 +2028,10 @@ func (m *SourceMetadata_SourceRef) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetResourceGroup())); err != nil {
+		return 0, err
+	}
+
 	err = binary.Write(hasher, binary.LittleEndian, m.GetObservedGeneration())
 	if err != nil {
 		return 0, err

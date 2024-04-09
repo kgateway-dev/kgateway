@@ -390,6 +390,15 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			if isWarningErr(err) {
 				continue
 			}
+			if staticMetadata := in.GetMetadataStatic(); staticMetadata != nil {
+				validation.AppendRouteErrorWithMetadata(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					fmt.Sprintf("%T: %v", plugin, err.Error()),
+					out.GetName(),
+					staticMetadata,
+				)
+				continue
+			}
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_ProcessingError,
 				fmt.Sprintf("%T: %v", plugin, err.Error()),

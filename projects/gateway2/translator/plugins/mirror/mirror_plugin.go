@@ -49,7 +49,7 @@ func (p *plugin) ApplyRoutePlugin(
 	clusterName := query.ProcessBackendRef(
 		obj,
 		err,
-		routeCtx.Reporter,
+		routeCtx.ParentRefReporter,
 		config.BackendRef,
 	)
 	if clusterName == nil {

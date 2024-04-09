@@ -74,9 +74,9 @@ var _ = Describe("RouteOptionsPlugin", func() {
 			parentRefReporter := reporter.Route(route).ParentRef(parentRef())
 
 			rtCtx := &plugins.RouteContext{
-				Route:    route,
-				Rule:     routeRuleWithExtRef(),
-				Reporter: parentRefReporter,
+				Route:             route,
+				Rule:              routeRuleWithExtRef(),
+				ParentRefReporter: parentRefReporter,
 			}
 
 			outputRoute := &v1.Route{

@@ -172,7 +172,8 @@ func (ml *mergedListeners) translateListeners(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
-	reporter reports.Reporter) []*v1.Listener {
+	reporter reports.Reporter,
+) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
 		listener := mergedListener.translateListener(ctx, pluginRegistry, queries, reporter)
@@ -428,6 +429,7 @@ func buildRoutesPerHost(
 			gwListener,
 			routeWithHosts.Route,
 			parentRefReporter,
+			reporter,
 		)
 
 		if len(routes) == 0 {
@@ -518,5 +520,6 @@ func makeVhostName(
 	domain string,
 ) string {
 	// TODO is this a valid vh name?
+	// Looks like it... see: projects/gloo/pkg/utils/sanitize.go
 	return parentName + "~" + domain
 }

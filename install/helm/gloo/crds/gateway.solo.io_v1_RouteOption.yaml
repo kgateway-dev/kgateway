@@ -2268,6 +2268,46 @@ spec:
                         type: array
                     type: object
                 type: object
+              policyStatus:
+                properties:
+                  ancestors:
+                    items:
+                      properties:
+                        ancestorRef:
+                          properties:
+                            group:
+                              type: string
+                            kind:
+                              type: string
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                            sectionName:
+                              type: string
+                          type: object
+                        conditions:
+                          items:
+                            properties:
+                              message:
+                                type: string
+                              observedGeneration:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                              reason:
+                                type: string
+                              status:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          type: array
+                        controllerName:
+                          type: string
+                      type: object
+                    type: array
+                type: object
               targetRef:
                 properties:
                   group:

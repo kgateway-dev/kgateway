@@ -54,6 +54,8 @@ spec:
                                 format: int64
                                 type: integer
                                 x-kubernetes-int-or-string: true
+                              resourceGroup:
+                                type: string
                               resourceKind:
                                 type: string
                               resourceRef:

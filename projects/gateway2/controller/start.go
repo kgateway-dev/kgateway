@@ -9,6 +9,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
@@ -20,6 +21,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 const (
@@ -48,7 +50,10 @@ type StartConfig struct {
 
 	// ProxyClient is the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
-	ProxyClient v1.ProxyClient
+	ProxyClient       v1.ProxyClient
+	RouteOptionClient gatewayv1.RouteOptionClient
+
+	StatusReporter reporter.StatusReporter
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -86,7 +91,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	var sanz sanitizer.XdsSanitizers
 	inputChannels := xds.NewXdsInputChannels()
 
-	k8sGwExtensions, err := cfg.ExtensionsFactory(mgr)
+	k8sGwExtensions, err := cfg.ExtensionsFactory(mgr, cfg.RouteOptionClient, cfg.StatusReporter)
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
 		return err
