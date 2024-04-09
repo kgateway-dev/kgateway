@@ -107,6 +107,7 @@ var _ = Describe("version command", func() {
 			Tag:      v_20_12,
 			Name:     "gloo",
 			Registry: "test-registry",
+			OssTag:   v_20_12,
 		}})
 
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
@@ -118,6 +119,7 @@ var _ = Describe("version command", func() {
 			Tag:      v_20_13,
 			Name:     "gloo",
 			Registry: "test-registry",
+			OssTag:   v_20_13,
 		}})
 
 		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
@@ -192,6 +194,7 @@ var _ = Describe("version command", func() {
 				Tag:      v_20_12,
 				Name:     "gloo",
 				Registry: "test-registry",
+				OssTag:   v_20_12,
 			},
 			{
 				Tag:      v_1_0_0,
