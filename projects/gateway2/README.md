@@ -13,7 +13,7 @@ This will create the kind cluster, build the docker images.
 Next use helm to install the gateway control plane where `GG_EXPERIMENTAL_K8S_GW_CONTROLLER` is the env that controls the k8s gateway controller:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci.tgz --create-namespace -f ./projects/gateway2/tests/conformance/test-values.yaml
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace -f ./projects/gateway2/tests/conformance/test-values.yaml
 ```
 
 To create a gateway, use the Gateway resource: 
@@ -85,7 +85,7 @@ Next we need to install Istio in the cluster along with the bookinfo test applic
 Next use helm to install the gateway control plane with istio integration enabled:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci.tgz --create-namespace --set global.istioSDS.enabled=true
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set global.istioSDS.enabled=true
 ```
 
 In order to enable automtls, set it to true in the settings:
