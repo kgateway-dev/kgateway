@@ -18,6 +18,12 @@ listeners:
           routes:
           - matchers:
             - prefix: /
+            metadataStatic:
+              sources:
+              - resourceKind: HTTPRoute
+                resourceRef:
+                  name: example-route
+                  namespace: default
             options: {}
             routeAction:
               single:

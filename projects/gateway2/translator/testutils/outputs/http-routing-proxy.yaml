@@ -19,6 +19,12 @@ listeners:
               - name: env
                 value: canary
               prefix: /
+            metadataStatic:
+              sources:
+              - resourceKind: HTTPRoute
+                resourceRef:
+                  name: bar-route
+                  namespace: default
             options: {}
             routeAction:
               single:
@@ -27,6 +33,12 @@ listeners:
                   namespace: default
           - matchers:
             - prefix: /
+            metadataStatic:
+              sources:
+              - resourceKind: HTTPRoute
+                resourceRef:
+                  name: bar-route
+                  namespace: default
             options: {}
             routeAction:
               single:
@@ -40,6 +52,12 @@ listeners:
           routes:
           - matchers:
             - prefix: /
+            metadataStatic:
+              sources:
+              - resourceKind: HTTPRoute
+                resourceRef:
+                  name: example-route
+                  namespace: default
             options: {}
             routeAction:
               single:
@@ -53,6 +71,12 @@ listeners:
           routes:
           - matchers:
             - prefix: /login
+            metadataStatic:
+              sources:
+              - resourceKind: HTTPRoute
+                resourceRef:
+                  name: foo-route
+                  namespace: default
             options: {}
             routeAction:
               single:

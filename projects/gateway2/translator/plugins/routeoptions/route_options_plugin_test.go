@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
@@ -20,18 +21,46 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var _ = Describe("RouteOptionsPlugin", func() {
+	var (
+		ctx               context.Context
+		cancel            context.CancelFunc
+		routeOptionClient sologatewayv1.RouteOptionClient
+		statusReporter    reporter.StatusReporter
+	)
+
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+
+		resourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		routeOptionClient, _ = sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
+		statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
+		statusReporter = reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+	})
+
+	AfterEach(func() {
+		cancel()
+	})
+
 	When("applying RouteOptions as Filter", func() {
 		It("applies fault injecton RouteOptions directly from resource to output route", func() {
 			deps := []client.Object{routeOption()}
 			fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 			gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-			plugin := NewPlugin(gwQueries, fakeClient)
+			plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 			rtCtx := &plugins.RouteContext{
 				Route: &gwv1.HTTPRoute{},
@@ -66,7 +95,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 			deps := []client.Object{}
 			fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 			gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-			plugin := NewPlugin(gwQueries, fakeClient)
+			plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 			route := routeWithFilter()
 			reportsMap := reports.NewReportMap()
@@ -74,9 +103,9 @@ var _ = Describe("RouteOptionsPlugin", func() {
 			parentRefReporter := reporter.Route(route).ParentRef(parentRef())
 
 			rtCtx := &plugins.RouteContext{
-				Route:             route,
-				Rule:              routeRuleWithExtRef(),
-				ParentRefReporter: parentRefReporter,
+				Route:    route,
+				Rule:     routeRuleWithExtRef(),
+				Reporter: parentRefReporter,
 			}
 
 			outputRoute := &v1.Route{
@@ -92,10 +121,11 @@ var _ = Describe("RouteOptionsPlugin", func() {
 	Describe("Attaching RouteOptions via policy attachemnt", func() {
 		When("RouteOptions exist in the same namespace and are attached correctly", func() {
 			It("correctly adds faultinjection", func() {
+				routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})
 				deps := []client.Object{attachedRouteOption()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-				plugin := NewPlugin(gwQueries, fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 				ctx := context.Background()
 				routeCtx := &plugins.RouteContext{
@@ -126,10 +156,11 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 		When("RouteOptions exist in the same namespace and are attached correctly but omit the namespace in targetRef", func() {
 			It("correctly adds faultinjection", func() {
+				routeOptionClient.Write(attachedOmitNamespaceInternal(), clients.WriteOpts{})
 				deps := []client.Object{attachedRouteOptionOmitNamespace()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-				plugin := NewPlugin(gwQueries, fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 				ctx := context.Background()
 				routeCtx := &plugins.RouteContext{
@@ -160,10 +191,12 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 		When("Two RouteOptions are attached correctly with different creation timestamps", func() {
 			It("correctly adds faultinjection from the earliest created object", func() {
+				routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})
+				routeOptionClient.Write(attachedBeforeInternal(), clients.WriteOpts{})
 				deps := []client.Object{attachedRouteOption(), attachedRouteOptionBefore()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-				plugin := NewPlugin(gwQueries, fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 				ctx := context.Background()
 				routeCtx := &plugins.RouteContext{
@@ -194,10 +227,11 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 		When("RouteOptions exist in the same namespace but are not attached correctly", func() {
 			It("does not add faultinjection", func() {
+				routeOptionClient.Write(nonAttachedInternal(), clients.WriteOpts{})
 				deps := []client.Object{nonAttachedRouteOption()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-				plugin := NewPlugin(gwQueries, fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 				ctx := context.Background()
 				routeCtx := &plugins.RouteContext{
@@ -220,10 +254,11 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 		When("RouteOptions exist in a different namespace than the provided routeCtx", func() {
 			It("does not add faultinjection", func() {
+				routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})
 				deps := []client.Object{attachedRouteOption()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-				plugin := NewPlugin(gwQueries, fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 				ctx := context.Background()
 				routeCtx := &plugins.RouteContext{
@@ -247,10 +282,11 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 	Describe("HTTPRoute with RouteOptions filter AND attached RouteOptions", func() {
 		It("Only applies RouteOptions from filter", func() {
+			routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})
 			deps := []client.Object{routeOption(), attachedRouteOption()}
 			fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
 			gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-			plugin := NewPlugin(gwQueries, fakeClient)
+			plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
 
 			ctx := context.Background()
 			routeCtx := &plugins.RouteContext{
@@ -338,6 +374,29 @@ func routeWithFilter() *gwv1.HTTPRoute {
 	return rwf
 }
 
+func attachedInternal() *sologatewayv1.RouteOption {
+	return &sologatewayv1.RouteOption{
+		Metadata: &core.Metadata{
+			Name:      "policy",
+			Namespace: "default",
+		},
+		TargetRef: &corev1.PolicyTargetReference{
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      wellknown.HTTPRouteKind,
+			Name:      "route",
+			Namespace: wrapperspb.String("default"),
+		},
+		Options: &v1.RouteOptions{
+			Faults: &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{
+					Percentage: 4.19,
+					HttpStatus: 500,
+				},
+			},
+		},
+	}
+}
+
 func attachedRouteOption() *solokubev1.RouteOption {
 	now := metav1.Now()
 	return &solokubev1.RouteOption{
@@ -346,19 +405,27 @@ func attachedRouteOption() *solokubev1.RouteOption {
 			Namespace:         "default",
 			CreationTimestamp: now,
 		},
-		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "route",
-				Namespace: wrapperspb.String("default"),
-			},
-			Options: &v1.RouteOptions{
-				Faults: &faultinjection.RouteFaults{
-					Abort: &faultinjection.RouteAbort{
-						Percentage: 4.19,
-						HttpStatus: 500,
-					},
+		Spec: *attachedInternal(),
+	}
+}
+
+func attachedBeforeInternal() *sologatewayv1.RouteOption {
+	return &sologatewayv1.RouteOption{
+		Metadata: &core.Metadata{
+			Name:      "policy-older",
+			Namespace: "default",
+		},
+		TargetRef: &corev1.PolicyTargetReference{
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      wellknown.HTTPRouteKind,
+			Name:      "route",
+			Namespace: wrapperspb.String("default"),
+		},
+		Options: &v1.RouteOptions{
+			Faults: &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{
+					Percentage: 6.55,
+					HttpStatus: 500,
 				},
 			},
 		},
@@ -373,19 +440,26 @@ func attachedRouteOptionBefore() *solokubev1.RouteOption {
 			Namespace:         "default",
 			CreationTimestamp: anHourAgo,
 		},
-		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "route",
-				Namespace: wrapperspb.String("default"),
-			},
-			Options: &v1.RouteOptions{
-				Faults: &faultinjection.RouteFaults{
-					Abort: &faultinjection.RouteAbort{
-						Percentage: 6.55,
-						HttpStatus: 500,
-					},
+		Spec: *attachedBeforeInternal(),
+	}
+}
+
+func attachedOmitNamespaceInternal() *sologatewayv1.RouteOption {
+	return &sologatewayv1.RouteOption{
+		Metadata: &core.Metadata{
+			Name:      "policy",
+			Namespace: "default",
+		},
+		TargetRef: &corev1.PolicyTargetReference{
+			Group: gwv1.GroupVersion.Group,
+			Kind:  wellknown.HTTPRouteKind,
+			Name:  "route",
+		},
+		Options: &v1.RouteOptions{
+			Faults: &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{
+					Percentage: 4.19,
+					HttpStatus: 500,
 				},
 			},
 		},
@@ -398,18 +472,27 @@ func attachedRouteOptionOmitNamespace() *solokubev1.RouteOption {
 			Name:      "policy",
 			Namespace: "default",
 		},
-		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "route",
-			},
-			Options: &v1.RouteOptions{
-				Faults: &faultinjection.RouteFaults{
-					Abort: &faultinjection.RouteAbort{
-						Percentage: 4.19,
-						HttpStatus: 500,
-					},
+		Spec: *attachedOmitNamespaceInternal(),
+	}
+}
+
+func nonAttachedInternal() *sologatewayv1.RouteOption {
+	return &sologatewayv1.RouteOption{
+		Metadata: &core.Metadata{
+			Name:      "bad-policy",
+			Namespace: "default",
+		},
+		TargetRef: &corev1.PolicyTargetReference{
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      wellknown.HTTPRouteKind,
+			Name:      "bad-route",
+			Namespace: wrapperspb.String("default"),
+		},
+		Options: &v1.RouteOptions{
+			Faults: &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{
+					Percentage: 1.00,
+					HttpStatus: 500,
 				},
 			},
 		},
@@ -422,21 +505,6 @@ func nonAttachedRouteOption() *solokubev1.RouteOption {
 			Name:      "bad-policy",
 			Namespace: "default",
 		},
-		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "bad-route",
-				Namespace: wrapperspb.String("default"),
-			},
-			Options: &v1.RouteOptions{
-				Faults: &faultinjection.RouteFaults{
-					Abort: &faultinjection.RouteAbort{
-						Percentage: 1.00,
-						HttpStatus: 500,
-					},
-				},
-			},
-		},
+		Spec: *nonAttachedInternal(),
 	}
 }
