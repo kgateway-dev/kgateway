@@ -574,7 +574,6 @@ message DirectResponseAction {
 // - Listener
 // - VirtualHost
 // - Route
-// The optional resource_group field allows tracking of sources outside of the Gloo-specific API types.
 message SourceMetadata {
 
     message SourceRef {
@@ -582,8 +581,6 @@ message SourceMetadata {
         core.solo.io.ResourceRef resource_ref = 1;
         // The resource Kind
         string resource_kind = 2;
-        // The resource Group
-        string resource_group = 4;
         // The observed generation of the resource
         int64 observed_generation = 3;
     }

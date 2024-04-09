@@ -429,7 +429,6 @@ func buildRoutesPerHost(
 			gwListener,
 			routeWithHosts.Route,
 			parentRefReporter,
-			reporter,
 		)
 
 		if len(routes) == 0 {

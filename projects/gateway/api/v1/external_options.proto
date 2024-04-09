@@ -242,8 +242,6 @@ message RouteOption {
   // NamespacedStatuses indicates the validation status of this resource.
   // NamespacedStatuses is read-only by clients, and set by gateway during validation
   core.solo.io.NamespacedStatuses namespaced_statuses = 4 [(extproto.skip_hashing) = true];
-  
-  core.solo.io.PolicyStatus policy_status = 6 [(extproto.skip_hashing) = true];
 
   // Metadata contains the object metadata for this resource
   core.solo.io.Metadata metadata = 2;

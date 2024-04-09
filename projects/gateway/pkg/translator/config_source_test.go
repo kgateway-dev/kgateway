@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("ConfigSource", func() {
 
-	FIt("appends sources to the gateway metadata", func() {
+	It("appends sources to the gateway metadata", func() {
 		for _, obj := range []ObjectWithMetadata{
 			&gloov1.Route{},
 			&gloov1.Listener{},

@@ -253,9 +253,9 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) []t
 		debugLogger.Info("snap", "snap", syncutil.StringifySnapshot(snap))
 	}
 
-	reportss := make(reporter.ResourceReports)
-	reportss.Accept(snap.Upstreams.AsInputResources()...)
-	reportss.Accept(snap.Proxies.AsInputResources()...)
+	oldReports := make(reporter.ResourceReports)
+	oldReports.Accept(snap.Upstreams.AsInputResources()...)
+	oldReports.Accept(snap.Proxies.AsInputResources()...)
 
 	if !s.xdsGarbageCollection {
 		allKeys := map[string]bool{
@@ -304,7 +304,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) []t
 		// 	logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		// }
 
-		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reportss)
+		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, oldReports)
 		// if the snapshot is not consistent, make it so
 		xdsSnapshot.MakeConsistent()
 
@@ -315,7 +315,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) []t
 		debugLogger.Info("snap", "key", sanitizedSnapshot)
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
-		reportss.Merge(reportss)
+		oldReports.Merge(oldReports)
 		key := xds.SnapshotCacheKey(utils.GlooGatewayTranslatorValue, proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
@@ -343,7 +343,7 @@ func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) []t
 		debugLogger.Info("Full snapshot for proxy", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
-	debugLogger.Info("gloo reports to be written", "reports", reportss)
+	debugLogger.Info("gloo reports to be written", "reports", oldReports)
 
 	return proxiesWithReports
 }

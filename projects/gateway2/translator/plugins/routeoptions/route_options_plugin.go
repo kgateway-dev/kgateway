@@ -13,8 +13,9 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	xdsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
@@ -38,21 +39,6 @@ var routeOptionGK = schema.GroupKind{
 	Kind:  sologatewayv1.RouteOptionGVK.Kind,
 }
 
-type PolicyReport struct {
-	Ancestors          map[types.NamespacedName]*PolicyAncestorReport
-	ObservedGeneration int64
-}
-
-type PolicyAncestorReport struct {
-	Condition metav1.Condition
-}
-
-// RouteOption resource ->  PolicyReport
-// PolictReport: AncestorRef(HTTPRoute) -> Actual condition
-// NOTE: This assumes the only ancestor type of a RouteOption is HTTPRoute; if this changes, we need
-// to track Group & Kind along with the types.NN
-type policyStatusCache = map[types.NamespacedName]*PolicyReport
-
 type legacyStatus struct {
 	subresourceStatus map[string]*core.Status
 	routeErrors       []*validation.RouteReport_Error
@@ -62,7 +48,6 @@ type legacyStatusCache = map[types.NamespacedName]legacyStatus
 type plugin struct {
 	gwQueries         gwquery.GatewayQueries
 	rtOptQueries      rtoptquery.RouteOptionQueries
-	policyStatusCache policyStatusCache
 	legacyStatusCache legacyStatusCache
 	routeOptionClient sologatewayv1.RouteOptionClient
 	statusReporter    reporter.StatusReporter
@@ -74,12 +59,10 @@ func NewPlugin(
 	routeOptionClient sologatewayv1.RouteOptionClient,
 	statusReporter reporter.StatusReporter,
 ) *plugin {
-	policyStatusCache := make(policyStatusCache)
 	legacyStatusCache := make(legacyStatusCache)
 	return &plugin{
 		gwQueries,
 		rtoptquery.NewQuery(client),
-		policyStatusCache,
 		legacyStatusCache,
 		routeOptionClient,
 		statusReporter,
@@ -152,9 +135,9 @@ func extractRouteErrors(proxyReport *validation.ProxyReport) map[types.Namespace
 func (p *plugin) ApplyRoutePlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-	outputRoute *v1.Route,
+	outputRoute *gloov1.Route,
 ) error {
-	var routeOptions *v1.RouteOptions
+	var routeOptions *gloov1.RouteOptions
 	// check for RouteOptions applied to full Route
 	routeOptions, routeOptionKube := p.handleAttachment(ctx, routeCtx)
 
@@ -179,7 +162,6 @@ func (p *plugin) ApplyRoutePlugin(
 			// report success on attaching this policy, although it may be overturned
 			// later if the Proxy translation results in a processing error for these RouteOptions
 			// we will track the ancestor as the targeted HTTPRoute; we may want change to Gateway later
-			p.setPolicyStatusAccepted(routeOptionKube, routeCtx.Route)
 			p.setLegacyStatusAccepted(routeOptionKube)
 		}
 	}
@@ -189,7 +171,7 @@ func (p *plugin) ApplyRoutePlugin(
 func (p *plugin) handleAttachment(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-) (*v1.RouteOptions, *solokubev1.RouteOption) {
+) (*gloov1.RouteOptions, *solokubev1.RouteOption) {
 	// TODO: This is far too naive and we should optimize the amount of querying we do.
 	// Route plugins run on every match for every Rule in a Route but the attached options are
 	// the same each time; i.e. HTTPRoute <-1:1-> RouteOptions.
@@ -212,7 +194,7 @@ func (p *plugin) handleAttachment(
 func (p *plugin) handleFilter(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-) (*v1.RouteOptions, error) {
+) (*gloov1.RouteOptions, error) {
 	filter := utils.FindExtensionRefFilter(routeCtx, routeOptionGK)
 	if filter == nil {
 		return nil, nil
@@ -224,7 +206,7 @@ func (p *plugin) handleFilter(
 		switch {
 		case apierrors.IsNotFound(err):
 			notFoundMsg := formatNotFoundMessage(routeCtx, filter)
-			routeCtx.ParentRefReporter.SetCondition(reports.HTTPRouteCondition{
+			routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
@@ -275,4 +257,28 @@ func formatNotFoundMessage(routeCtx *plugins.RouteContext, filter *gwv1.HTTPRout
 		filter.ExtensionRef.Name,
 		routeCtx.Route.GetNamespace(),
 	)
+}
+
+// RouteError metadata should have a single HTTPRoute & possibly RouteOption resource
+// TODO: add error handling, this always assumes happy path
+func extractSourceKeys(
+	metadata *gloov1.SourceMetadata,
+) (route, routeOption types.NamespacedName) {
+	var routeRef, routeOptionRef *gloov1.SourceMetadata_SourceRef
+	for _, src := range metadata.GetSources() {
+		if src.GetResourceKind() == wellknown.HTTPRouteKind {
+			routeRef = src
+		} else if src.GetResourceKind() == sologatewayv1.RouteOptionGVK.Kind {
+			routeOptionRef = src
+		}
+	}
+	route = types.NamespacedName{
+		Namespace: routeRef.GetResourceRef().GetNamespace(),
+		Name:      routeRef.GetResourceRef().GetName(),
+	}
+	routeOption = types.NamespacedName{
+		Namespace: routeOptionRef.GetResourceRef().GetNamespace(),
+		Name:      routeOptionRef.GetResourceRef().GetName(),
+	}
+	return route, routeOption
 }

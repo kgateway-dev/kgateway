@@ -25,9 +25,7 @@ type RouteContext struct {
 	// for this context, such as when an entire HTTPRoute is being processed
 	Match *gwv1.HTTPRouteMatch
 	// Reporter for the correct ParentRef associated with this HTTPRoute
-	ParentRefReporter reports.ParentRefReporter
-	// Main reporter to allow for Policy reporting
-	Reporter reports.Reporter
+	Reporter reports.ParentRefReporter
 }
 
 type RoutePlugin interface {
