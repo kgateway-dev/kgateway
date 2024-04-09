@@ -4614,13 +4614,14 @@ spec:
 `)
 						testManifest.ExpectUnstructured(mtlsJob.GetKind(), mtlsJob.GetNamespace(), mtlsJob.GetName()).To(BeEquivalentTo(mtlsJob))
 
-						clusterRole := makeUnstructured(`
+						role := makeUnstructured(`
 
 # this role requires access to cluster-scoped resources
-kind: ClusterRole
+kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-gateway-secret-create-` + namespace + `
+    namespace: ` + namespace + `
     labels:
         app: gloo
         gloo: rbac
@@ -4632,14 +4633,15 @@ rules:
   resources: ["secrets"]
   verbs: ["create", "get", "update"]
 `)
-						testManifest.ExpectUnstructured(clusterRole.GetKind(), clusterRole.GetNamespace(), clusterRole.GetName()).To(BeEquivalentTo(clusterRole))
+						testManifest.ExpectUnstructured(role.GetKind(), role.GetNamespace(), role.GetName()).To(BeEquivalentTo(role))
 
-						clusterRoleBinding := makeUnstructured(`
+						roleBinding := makeUnstructured(`
 # this role requires access to cluster-scoped resources
-kind: ClusterRoleBinding
+kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-gateway-secret-create-` + namespace + `
+  namespace: ` + namespace + `
   labels:
     app: gloo
     gloo: rbac
@@ -4651,12 +4653,12 @@ subjects:
   name: certgen
   namespace: ` + namespace + `
 roleRef:
-  kind: ClusterRole
+  kind: Role
   name: gloo-gateway-secret-create-` + namespace + `
   apiGroup: rbac.authorization.k8s.io
 ---
 `)
-						testManifest.ExpectUnstructured(clusterRoleBinding.GetKind(), clusterRoleBinding.GetNamespace(), clusterRoleBinding.GetName()).To(BeEquivalentTo(clusterRoleBinding))
+						testManifest.ExpectUnstructured(roleBinding.GetKind(), roleBinding.GetNamespace(), roleBinding.GetName()).To(BeEquivalentTo(roleBinding))
 
 						serviceAccount := makeUnstructured(`
 

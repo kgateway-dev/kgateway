@@ -562,13 +562,15 @@ var _ = Describe("RBAC Test", func() {
 				It("Cluster scope", func() {
 					prepareMakefile("global.glooRbac.namespaced=false")
 					By("roles", func() {
-						testManifest.ExpectClusterRole(&rbacv1.ClusterRole{
+						testManifest.ExpectRole(&rbacv1.
+							Role{
 							TypeMeta: metav1.TypeMeta{
-								Kind:       "ClusterRole",
+								Kind:       "Role",
 								APIVersion: "rbac.authorization.k8s.io/v1",
 							},
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "gloo-gateway-secret-create-gloo-system",
+								Name:      "gloo-gateway-secret-create-gloo-system",
+								Namespace: "gloo-system",
 								Labels: map[string]string{
 									"app":  "gloo",
 									"gloo": "rbac",
@@ -586,7 +588,6 @@ var _ = Describe("RBAC Test", func() {
 									ResourceNames:   nil,
 									NonResourceURLs: nil,
 								}},
-							AggregationRule: nil,
 						})
 						testManifest.ExpectClusterRole(&rbacv1.ClusterRole{
 							TypeMeta: metav1.TypeMeta{
@@ -616,13 +617,14 @@ var _ = Describe("RBAC Test", func() {
 						})
 					})
 					By("role bindings", func() {
-						testManifest.ExpectClusterRoleBinding(&rbacv1.ClusterRoleBinding{
+						testManifest.ExpectRoleBinding(&rbacv1.RoleBinding{
 							TypeMeta: metav1.TypeMeta{
-								Kind:       "ClusterRoleBinding",
+								Kind:       "RoleBinding",
 								APIVersion: "rbac.authorization.k8s.io/v1",
 							},
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "gloo-gateway-secret-create-gloo-system",
+								Name:      "gloo-gateway-secret-create-gloo-system",
+								Namespace: "gloo-system",
 								Labels: map[string]string{
 									"app":  "gloo",
 									"gloo": "rbac",
@@ -640,7 +642,7 @@ var _ = Describe("RBAC Test", func() {
 							}},
 							RoleRef: rbacv1.RoleRef{
 								APIGroup: "rbac.authorization.k8s.io",
-								Kind:     "ClusterRole",
+								Kind:     "Role",
 								Name:     "gloo-gateway-secret-create-gloo-system",
 							},
 						})
