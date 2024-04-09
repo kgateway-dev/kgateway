@@ -108,7 +108,7 @@ EOF
 
 3. Install Gloo
 
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci.tgz --create-namespace --set global.istioSDS.enabled=true -f ./projects/gateway2/tests/conformance/test-values.yaml
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set global.istioSDS.enabled=true -f ./projects/gateway2/tests/conformance/test-values.yaml
 
 4. Show "Classic" Mode
 

@@ -38,7 +38,7 @@ var (
 var _ = Describe("Istio", Ordered, func() {
 
 	// Tests for: `glooctl istio [..]`
-	// These tests assume that Gloo and Istio are pre-instaled in the cluster
+	// These tests assume that Gloo and Istio are pre-installed in the cluster
 
 	BeforeAll(func() {
 		err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", petstoreYaml)
