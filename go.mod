@@ -56,7 +56,7 @@ require (
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.28-bump`)
 	github.com/solo-io/solo-apis v0.0.0-20231206142556-d2e3ed6d4476
-	github.com/solo-io/solo-kit v0.34.3-0.20240407193518-67e9d404d179
+	github.com/solo-io/solo-kit v0.34.2
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5

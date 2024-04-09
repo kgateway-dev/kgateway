@@ -14,10 +14,6 @@ weight: 5
 - [NamespacedStatuses](#namespacedstatuses)
 - [Status](#status)
 - [State](#state)
-- [ParentReference](#parentreference)
-- [KubeCondition](#kubecondition)
-- [PolicyAncestorStatus](#policyancestorstatus)
-- [PolicyStatus](#policystatus)
   
 
 
@@ -89,94 +85,6 @@ Statuses are meant to be read-only by users
 | `Accepted` | Accepted indicates the resource has been validated |
 | `Rejected` | Rejected indicates an invalid configuration by the user Rejected resources may be propagated to the xDS server depending on their severity |
 | `Warning` | Warning indicates a partially invalid configuration by the user Resources with Warnings may be partially accepted by a controller, depending on the implementation |
-
-
-
-
----
-### ParentReference
-
-
-
-```yaml
-"group": string
-"kind": string
-"namespace": string
-"name": string
-"sectionName": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `group` | `string` |  |
-| `kind` | `string` |  |
-| `namespace` | `string` |  |
-| `name` | `string` |  |
-| `sectionName` | `string` |  |
-
-
-
-
----
-### KubeCondition
-
-
-
-```yaml
-"type": string
-"status": string
-"observedGeneration": int
-"reason": string
-"message": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `type` | `string` |  |
-| `status` | `string` |  |
-| `observedGeneration` | `int` |  |
-| `reason` | `string` |  |
-| `message` | `string` |  |
-
-
-
-
----
-### PolicyAncestorStatus
-
-
-
-```yaml
-"ancestorRef": .core.solo.io.ParentReference
-"controllerName": string
-"conditions": []core.solo.io.KubeCondition
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `ancestorRef` | [.core.solo.io.ParentReference](../status.proto.sk/#parentreference) |  |
-| `controllerName` | `string` |  |
-| `conditions` | [[]core.solo.io.KubeCondition](../status.proto.sk/#kubecondition) |  |
-
-
-
-
----
-### PolicyStatus
-
-
-
-```yaml
-"ancestors": []core.solo.io.PolicyAncestorStatus
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `ancestors` | [[]core.solo.io.PolicyAncestorStatus](../status.proto.sk/#policyancestorstatus) |  |
 
 
 
