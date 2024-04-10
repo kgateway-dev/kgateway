@@ -1345,12 +1345,11 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("correctly routes to the service (tcp)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, gatewayProxy)
 
-				httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
+				httpEcho.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Service:           gatewayProxy,
 					Port:              int(defaults2.TcpPort),
 					ConnectionTimeout: 1,
-					Verbose:           true,
 				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
 
@@ -1399,17 +1398,16 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("correctly routes to the service (tcp/tls)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, httpEchoClusterName)
 
-				httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
+				httpEcho.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "https",
 					Sni:               httpEchoClusterName,
 					Service:           clusterIp,
 					Port:              int(defaults2.TcpPort),
 					ConnectionTimeout: 1,
 					SelfSigned:        true,
-					Verbose:           true,
 				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
-
+			
 		})
 
 	})
