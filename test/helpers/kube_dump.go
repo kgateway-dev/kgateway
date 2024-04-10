@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/threadsafe"
 	"io"
 	"os"
 	"os/exec"
@@ -56,11 +57,10 @@ func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
 		setupOutDir(kubeOutDir)
 
-		//recordDockerState(fileAtPath(filepath.Join(kubeOutDir, "docker-state.log")))
-		//recordProcessState(fileAtPath(filepath.Join(kubeOutDir, "process-state.log")))
-		//recordKubeState(fileAtPath(filepath.Join(kubeOutDir, "kube-state.log")))
+		recordDockerState(fileAtPath(filepath.Join(kubeOutDir, "docker-state.log")))
+		recordProcessState(fileAtPath(filepath.Join(kubeOutDir, "process-state.log")))
+		recordKubeState(fileAtPath(filepath.Join(kubeOutDir, "kube-state.log")))
 
-		fmt.Printf("ABOUT TO DUMP LOGS FOR NAMESPACES %v\n", namespaces)
 		recordKubeDump(namespaces...)
 	}
 }
@@ -135,7 +135,6 @@ func recordKubeState(f *os.File) {
 func recordKubeDump(namespaces ...string) {
 	// for each namespace, create a namespace directory that contains...
 	for _, ns := range namespaces {
-		fmt.Printf("ABOUT TO RECORD PODS FOR %s\n", ns)
 		// ...a pod logs subdirectoy
 		if err := recordPods(filepath.Join(kubeOutDir, ns, "_pods"), ns); err != nil {
 			fmt.Printf("error recording pod logs: %f, \n", err)
@@ -154,7 +153,6 @@ func recordPods(podDir, namespace string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("HAVE PODS: %v\n", pods)
 
 	for _, pod := range pods {
 		if err := os.MkdirAll(podDir, os.ModePerm); err != nil {
@@ -166,7 +164,6 @@ func recordPods(podDir, namespace string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("WRITING LOGS FOR %s\n%s\n", pod, logs)
 		f.WriteString(logs)
 		f.Close()
 	}
@@ -230,8 +227,13 @@ func kubeGet(namespace string, kubeType string, name string) (string, error) {
 func kubeExecute(args []string) (string, error) {
 	cli := kubectl.NewCli().WithReceiver(ginkgo.GinkgoWriter)
 
-	runError := cli.Command(context.Background(), args...).Run()
-	return runError.OutputString(), runError.Cause()
+	var outLocation threadsafe.Buffer
+	runError := cli.Command(context.Background(), args...).WithStdout(&outLocation).Run()
+	if runError != nil {
+		return runError.OutputString(), runError.Cause()
+	}
+
+	return outLocation.String(), nil
 }
 
 // kubeList runs $(kubectl -n $namespace $target) and returns a slice of kubernetes object names
