@@ -1,8 +1,9 @@
 package errutils
 
 import (
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sync"
+
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 // AggregateConcurrent runs fns concurrently, returning a NewAggregate if there are > 1 errors

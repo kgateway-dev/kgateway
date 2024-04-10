@@ -1,10 +1,11 @@
 package errutils
 
 import (
+	"sync/atomic"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"sync/atomic"
 )
 
 var _ = Describe("Concurrent", func() {
