@@ -104,6 +104,9 @@ func WithQueryParameters(parameters map[string]string) Option {
 }
 
 // WithRetries returns the Option to configure the retries for the curl request
+// https://curl.se/docs/manpage.html#--retry
+// https://curl.se/docs/manpage.html#--retry-delay
+// https://curl.se/docs/manpage.html#--retry-max-time
 func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	return func(config *requestConfig) {
 		config.retry = retry
@@ -112,10 +115,20 @@ func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	}
 }
 
+// WithRetryConnectionRefused returns the Option to configure the retry behavior
+// for the curl request, when the connection is refused
+// https://curl.se/docs/manpage.html#--retry-connrefused
+func WithRetryConnectionRefused(retryConnectionRefused bool) Option {
+	return func(config *requestConfig) {
+		config.retryConnectionRefused = retryConnectionRefused
+	}
+}
+
 // WithoutRetries returns the Option to disable retries for the curl request
 func WithoutRetries() Option {
 	return func(config *requestConfig) {
 		WithRetries(0, -1, 0)(config)
+		WithRetryConnectionRefused(false)
 	}
 }
 

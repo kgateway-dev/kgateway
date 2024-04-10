@@ -64,9 +64,10 @@ type requestConfig struct {
 
 	scheme string
 
-	retry        int
-	retryDelay   int
-	retryMaxTime int
+	retry                  int
+	retryDelay             int
+	retryMaxTime           int
+	retryConnectionRefused bool
 
 	additionalArgs []string
 }
@@ -111,6 +112,11 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.retryMaxTime != 0 {
 		args = append(args, "--retry-max-time", fmt.Sprintf("%d", c.retryMaxTime))
+	}
+	if c.retryConnectionRefused {
+		args = append(args, "--retry-connrefused")
+	} else {
+		args = append(args, "--no-retry-connrefused")
 	}
 
 	if len(c.additionalArgs) > 0 {

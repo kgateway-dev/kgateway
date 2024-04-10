@@ -209,6 +209,7 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 
 	if opts.Retries.Retry != 0 {
 		appendOption(curl.WithRetries(opts.Retries.Retry, opts.Retries.RetryDelay, opts.Retries.RetryMaxTime))
+		appendOption(curl.WithRetryConnectionRefused(true))
 	}
 
 	if opts.WithoutStats {
