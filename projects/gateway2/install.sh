@@ -7,5 +7,5 @@ set -eux
 
 helm upgrade --install --create-namespace \
   --namespace gloo-system gloo \
-  ./_test/gloo-1.0.0-ci.tgz \
+  ./_test/gloo-1.0.0-ci1.tgz \
   -f ./projects/gateway2/tests/conformance/test-values.yaml

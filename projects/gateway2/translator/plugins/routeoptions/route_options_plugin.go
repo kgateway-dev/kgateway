@@ -13,7 +13,6 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	xdsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -39,10 +38,20 @@ var routeOptionGK = schema.GroupKind{
 	Kind:  sologatewayv1.RouteOptionGVK.Kind,
 }
 
+// holds the data structures needed to derive and report a classic GE status
 type legacyStatus struct {
+	// maps proxyName -> proxyStatus
 	subresourceStatus map[string]*core.Status
-	routeErrors       []*validation.RouteReport_Error
+	// *All* of the route errors encountered during processing for gloov1.Routes which receive their
+	// options for this RouteOption
+	routeErrors []*validation.RouteReport_Error
 }
+
+// holds status structure for each RouteOption we have processed and attached
+// this is used because a RouteOption is attached to a Route, but a Route may be
+// attached to multiple Gateways/Listeners, so we need a single status object
+// to contain the subresourceStatus for each Proxy it was translated too, but also
+// all the errors specifically encountered
 type legacyStatusCache = map[types.NamespacedName]legacyStatus
 
 type plugin struct {
@@ -69,75 +78,11 @@ func NewPlugin(
 	}
 }
 
-func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) {
-	// gather all RouteOptions we need to report status for
-	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
-		// get proxy status to use for RouteOption status
-		proxyStatus := p.statusReporter.StatusFromReport(proxyWithReport.Reports.ResourceReports[proxyWithReport.Proxy], nil)
-
-		// get the route errors for this specific proxy
-		routeErrors := extractRouteErrors(proxyWithReport.Reports.ProxyReport)
-		for roKey, rerrs := range routeErrors {
-			// set the subresource status for this proxy on the RO
-			statusForRO := p.legacyStatusCache[roKey]
-			thisSubresourceStatus := statusForRO.subresourceStatus
-			thisSubresourceStatus[xds.SnapshotCacheKey(xdsutils.GlooGatewayTranslatorValue, proxyWithReport.Proxy)] = proxyStatus
-			statusForRO.subresourceStatus = thisSubresourceStatus
-			statusForRO.routeErrors = rerrs
-			p.legacyStatusCache[roKey] = statusForRO
-		}
-	}
-	routeOptionReport := make(reporter.ResourceReports)
-	for k, v := range p.legacyStatusCache {
-		// get the obj by namespacedName
-		roObj, _ := p.routeOptionClient.Read(k.Namespace, k.Name, clients.ReadOpts{Ctx: ctx})
-
-		// mark this object to be processed
-		routeOptionReport.Accept(roObj)
-
-		// add any route errors for this obj
-		for _, rerr := range v.routeErrors {
-			routeOptionReport.AddError(roObj, errors.New(rerr.GetReason()))
-		}
-
-		// actually write out the reports!
-		p.statusReporter.WriteReports(ctx, routeOptionReport, v.subresourceStatus)
-	}
-}
-
-func (p *plugin) setLegacyStatusAccepted(
-	routeOption *solokubev1.RouteOption,
-) {
-	newStatus := legacyStatus{}
-	newStatus.subresourceStatus = make(map[string]*core.Status)
-	p.legacyStatusCache[client.ObjectKeyFromObject(routeOption)] = newStatus
-}
-
-func extractRouteErrors(proxyReport *validation.ProxyReport) map[types.NamespacedName][]*validation.RouteReport_Error {
-	routeErrors := make(map[types.NamespacedName][]*validation.RouteReport_Error)
-	for _, lr := range proxyReport.GetListenerReports() {
-		for _, hlr := range lr.GetAggregateListenerReport().GetHttpListenerReports() {
-			for _, vhr := range hlr.GetVirtualHostReports() {
-				for _, rr := range vhr.GetRouteReports() {
-					for _, rerr := range rr.GetErrors() {
-						_, roKey := extractSourceKeys(rerr.GetMetadata())
-						errors := routeErrors[roKey]
-						errors = append(errors, rerr)
-						routeErrors[roKey] = errors
-					}
-				}
-			}
-		}
-	}
-	return routeErrors
-}
-
 func (p *plugin) ApplyRoutePlugin(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 	outputRoute *gloov1.Route,
 ) error {
-	var routeOptions *gloov1.RouteOptions
 	// check for RouteOptions applied to full Route
 	routeOptions, routeOptionKube := p.handleAttachment(ctx, routeCtx)
 
@@ -159,13 +104,68 @@ func (p *plugin) ApplyRoutePlugin(
 			// RouteOption policy object that was used so we can report status on it
 			routeutils.AppendSourceToRoute(outputRoute, routeOptionKube)
 
-			// report success on attaching this policy, although it may be overturned
-			// later if the Proxy translation results in a processing error for these RouteOptions
-			// we will track the ancestor as the targeted HTTPRoute; we may want change to Gateway later
-			p.setLegacyStatusAccepted(routeOptionKube)
+			// track that we used this RouteOption is our status cache
+			// we do this so we can persist status later for all attached RouteOptions
+			p.trackAcceptedRouteOption(routeOptionKube)
 		}
 	}
 	return nil
+}
+
+func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) {
+	// gather all RouteOptions we need to report status for
+	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// get proxy status to use for RouteOption status
+		proxyStatus := p.statusReporter.StatusFromReport(proxyWithReport.Reports.ResourceReports[proxyWithReport.Proxy], nil)
+
+		// for this specific proxy, get all the route errors and their associated RouteOption sources
+		routeErrors := extractRouteErrors(proxyWithReport.Reports.ProxyReport)
+		for roKey, rerrs := range routeErrors {
+			// grab the existing status object for this RouteOption
+			statusForRO, ok := p.legacyStatusCache[roKey]
+			if !ok {
+				// we are processing an error that has a RouteOption source that we hadn't encountered until now
+				// this shouldn't happen
+				contextutils.LoggerFrom(ctx).DPanic("while trying to apply status for RouteOptions, we found a Route error sourced by an unknown RouteOption", "RouteOption", roKey)
+			}
+
+			// set the subresource status for this specific proxy on the RO
+			thisSubresourceStatus := statusForRO.subresourceStatus
+			thisSubresourceStatus[xds.SnapshotCacheKey(xdsutils.GlooGatewayTranslatorValue, proxyWithReport.Proxy)] = proxyStatus
+			statusForRO.subresourceStatus = thisSubresourceStatus
+
+			// add any routeErrors from this Proxy translation
+			statusForRO.routeErrors = append(statusForRO.routeErrors, rerrs...)
+
+			// update the cache
+			p.legacyStatusCache[roKey] = statusForRO
+		}
+	}
+	routeOptionReport := make(reporter.ResourceReports)
+	for k, v := range p.legacyStatusCache {
+		// get the obj by namespacedName
+		roObj, _ := p.routeOptionClient.Read(k.Namespace, k.Name, clients.ReadOpts{Ctx: ctx})
+
+		// mark this object to be processed
+		routeOptionReport.Accept(roObj)
+
+		// add any route errors for this obj
+		for _, rerr := range v.routeErrors {
+			routeOptionReport.AddError(roObj, errors.New(rerr.GetReason()))
+		}
+
+		// actually write out the reports!
+		p.statusReporter.WriteReports(ctx, routeOptionReport, v.subresourceStatus)
+	}
+}
+
+// tracks the attachment of a RouteOption so we know which RouteOptions to report status for
+func (p *plugin) trackAcceptedRouteOption(
+	routeOption *solokubev1.RouteOption,
+) {
+	newStatus := legacyStatus{}
+	newStatus.subresourceStatus = make(map[string]*core.Status)
+	p.legacyStatusCache[client.ObjectKeyFromObject(routeOption)] = newStatus
 }
 
 func (p *plugin) handleAttachment(
@@ -259,26 +259,44 @@ func formatNotFoundMessage(routeCtx *plugins.RouteContext, filter *gwv1.HTTPRout
 	)
 }
 
-// RouteError metadata should have a single HTTPRoute & possibly RouteOption resource
-// TODO: add error handling, this always assumes happy path
-func extractSourceKeys(
-	metadata *gloov1.SourceMetadata,
-) (route, routeOption types.NamespacedName) {
-	var routeRef, routeOptionRef *gloov1.SourceMetadata_SourceRef
-	for _, src := range metadata.GetSources() {
-		if src.GetResourceKind() == wellknown.HTTPRouteKind {
-			routeRef = src
-		} else if src.GetResourceKind() == sologatewayv1.RouteOptionGVK.Kind {
-			routeOptionRef = src
+// given a ProxyReport, extract and aggregate all Route errors that have RouteOption source metadata
+// and key them by the source RouteOption NamespacedName
+func extractRouteErrors(proxyReport *validation.ProxyReport) map[types.NamespacedName][]*validation.RouteReport_Error {
+	routeErrors := make(map[types.NamespacedName][]*validation.RouteReport_Error)
+	for _, lr := range proxyReport.GetListenerReports() {
+		for _, hlr := range lr.GetAggregateListenerReport().GetHttpListenerReports() {
+			for _, vhr := range hlr.GetVirtualHostReports() {
+				for _, rr := range vhr.GetRouteReports() {
+					for _, rerr := range rr.GetErrors() {
+						roKey := extractRouteOptionSourceKeys(rerr)
+						if roKey != nil {
+							errors := routeErrors[*roKey]
+							errors = append(errors, rerr)
+							routeErrors[*roKey] = errors
+						}
+					}
+				}
+			}
 		}
 	}
-	route = types.NamespacedName{
-		Namespace: routeRef.GetResourceRef().GetNamespace(),
-		Name:      routeRef.GetResourceRef().GetName(),
+	return routeErrors
+}
+
+// if the Route error has a RouteOption source associated with it, extract the source and return it
+func extractRouteOptionSourceKeys(routeErr *validation.RouteReport_Error) *types.NamespacedName {
+	metadata := routeErr.GetMetadata()
+	if metadata == nil {
+		return nil
 	}
-	routeOption = types.NamespacedName{
-		Namespace: routeOptionRef.GetResourceRef().GetNamespace(),
-		Name:      routeOptionRef.GetResourceRef().GetName(),
+
+	for _, src := range metadata.GetSources() {
+		if src.GetResourceKind() == sologatewayv1.RouteOptionGVK.Kind {
+			return &types.NamespacedName{
+				Namespace: src.GetResourceRef().GetNamespace(),
+				Name:      src.GetResourceRef().GetName(),
+			}
+		}
 	}
-	return route, routeOption
+
+	return nil
 }
