@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Trace testutils", func() {
+var _ = Describe("Trace utils", func() {
 
 	Context("gets the gateway name for the defined source", func() {
 
