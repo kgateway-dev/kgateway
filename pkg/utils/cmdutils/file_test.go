@@ -14,39 +14,43 @@ var _ = Describe("File", func() {
 	Context("RunCommandOutputToFile", func() {
 
 		var (
+			cmd     Cmd
 			tmpFile string
 		)
+
+		BeforeEach(func() {
+			cmd = Command(context.Background(), "ps", "-a").WithStdout(GinkgoWriter).WithStderr(GinkgoWriter)
+			tmpFile = ""
+		})
 
 		AfterEach(func() {
 			_ = os.RemoveAll(tmpFile)
 		})
 
 		It("runs command to file, if file does exist", func() {
-			f, err := os.CreateTemp("", "cmdutils-test")
+			f, err := os.CreateTemp(os.TempDir(), "cmdutils-test")
 			Expect(err).NotTo(HaveOccurred())
-
 			tmpFile = f.Name()
-			writeActiveProcessesToFileAndAssertOutput(context.Background(), tmpFile)
+
+			cmdFn := RunCommandOutputToFile(cmd, tmpFile)
+			Expect(cmdFn()).NotTo(HaveOccurred(), "Can execute the function without an error")
+
+			fileInfo, err := os.Stat(tmpFile)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileInfo.Size()).NotTo(BeZero(), "process data was written to file")
 		})
 
 		It("runs command to file, if file does NOT exist", func() {
 			tmpFile = filepath.Join(os.TempDir(), "file-does-not-exist.txt")
-			writeActiveProcessesToFileAndAssertOutput(context.Background(), tmpFile)
+
+			cmdFn := RunCommandOutputToFile(cmd, tmpFile)
+			Expect(cmdFn()).NotTo(HaveOccurred(), "Can execute the function without an error")
+
+			fileInfo, err := os.Stat(tmpFile)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileInfo.Size()).NotTo(BeZero(), "process data was written to file")
 		})
 
 	})
 
 })
-
-func writeActiveProcessesToFileAndAssertOutput(ctx context.Context, fileName string) {
-	GinkgoHelper()
-
-	cmdFn := RunCommandOutputToFile(
-		Command(ctx, "ps", "-a").WithStdout(GinkgoWriter).WithStderr(GinkgoWriter),
-		fileName)
-	Expect(cmdFn()).NotTo(HaveOccurred(), "Can execute the function without an error")
-
-	fileInfo, err := os.Stat(fileName)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(fileInfo.Size()).NotTo(BeZero(), "process data was written to file")
-}

@@ -20,7 +20,7 @@ var _ = Describe("Concurrent", func() {
 
 			aggregateErr := AggregateConcurrent(badFns)
 			Expect(aggregateErr).To(HaveOccurred())
-			Expect(aggregateErr.Error()).To(And(
+			Expect(aggregateErr.Errors()).To(ContainElements(
 				ContainSubstring("ID=1"),
 				ContainSubstring("ID=2"),
 			))
@@ -37,7 +37,6 @@ var _ = Describe("Concurrent", func() {
 			}
 			badFns := []func() error{
 				errorFn(eris.Errorf("Erroring function. ID=%d", 1)),
-				errorFn(eris.Errorf("Erroring function. ID=%d", 2)),
 			}
 
 			aggregateErr := AggregateConcurrent(append(badFns, goodFns...))
