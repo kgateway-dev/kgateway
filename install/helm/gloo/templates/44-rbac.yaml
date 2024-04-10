@@ -67,6 +67,11 @@ metadata:
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
 rules:
 - apiGroups:
+  - "gateway.gloo.solo.io"
+  resources:
+  - gatewayparameters
+  verbs: ["get", "list", "watch"]
+- apiGroups:
   - ""
   resources:
   - services

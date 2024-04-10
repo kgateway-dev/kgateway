@@ -15,12 +15,15 @@ spec:
       {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with $gateway.podAnnotations }}
+      {{- with $gateway.extraPodAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
+        {{- with $gateway.extraPodLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with $gateway.imagePullSecrets }}
       imagePullSecrets:
@@ -37,11 +40,15 @@ spec:
         - "--disable-hot-restart"
         - "--service-node"
         - $(POD_NAME).$(POD_NAMESPACE)
-        {{- if .Values.develop }}
+        {{- with $gateway.logLevel }}
         - "--log-level"
-        - "debug"
-        {{- end }}
-        image: "{{ $gateway.image.repository }}:{{ $gateway.image.tag | default .Chart.AppVersion }}"
+        - "{{ . }}"
+        {{- end }}{{/* with $gateway.logLevel */}}
+        {{- with $gateway.componentLogLevel }}
+        - "--component-log-level"
+        - "{{ . }}"
+        {{- end }}{{/* with $gateway.componentLogLevel */}}
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.image }}"
         imagePullPolicy: {{ $gateway.image.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -264,11 +271,21 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
+  {{- with $gateway.service.extraAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- with $gateway.service.extraLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  {{- with $gateway.service.clusterIP }}
+  clusterIP: {{ . }}
+  {{- end }}
   ports:
   {{- range $p := $gateway.ports }}
   - name: {{ $p.name }}

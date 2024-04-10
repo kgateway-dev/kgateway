@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -96,12 +97,16 @@ var _ = BeforeSuite(func() {
 	mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 
 	var gatewayClassObjName api.ObjectName = api.ObjectName(gatewayClassName)
+
+	exts, err := extensions.NewK8sGatewayExtensions(mgr)
+	Expect(err).ToNot(HaveOccurred())
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
 		GWClass:        gatewayClassObjName,
 		AutoProvision:  true,
 		Kick:           func(ctx context.Context) { return },
+		Extensions:     exts,
 	}
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())
