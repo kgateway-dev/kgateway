@@ -2,6 +2,7 @@ package routeoptions
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -17,7 +18,9 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
@@ -151,6 +154,36 @@ var _ = Describe("RouteOptionsPlugin", func() {
 					},
 				}
 				Expect(proto.Equal(outputRoute.GetOptions(), expectedOptions)).To(BeTrue())
+
+				expectedSource := &v1.SourceMetadata_SourceRef{
+					ResourceRef: &core.ResourceRef{
+						Name:      "policy",
+						Namespace: "default",
+					},
+					ResourceKind: "RouteOption",
+				}
+
+				Expect(outputRoute.GetMetadataStatic().GetSources()).To(HaveLen(1))
+				Expect(proto.Equal(outputRoute.GetMetadataStatic().GetSources()[0], expectedSource)).To(BeTrue())
+
+				px := &v1.Proxy{}
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: px,
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				plugin.ApplyStatusPlugin(ctx, &statusCtx)
+
+				robj, _ := routeOptionClient.Read("default", "policy", clients.ReadOpts{Ctx: ctx})
+				status := robj.GetNamespacedStatuses().Statuses["gloo-system"]
+				Expect(status.State).To(Equal(core.Status_Accepted))
 			})
 		})
 
@@ -186,6 +219,36 @@ var _ = Describe("RouteOptionsPlugin", func() {
 					},
 				}
 				Expect(proto.Equal(outputRoute.GetOptions(), expectedOptions)).To(BeTrue())
+
+				expectedSource := &v1.SourceMetadata_SourceRef{
+					ResourceRef: &core.ResourceRef{
+						Name:      "policy",
+						Namespace: "default",
+					},
+					ResourceKind: "RouteOption",
+				}
+
+				Expect(outputRoute.GetMetadataStatic().GetSources()).To(HaveLen(1))
+				Expect(proto.Equal(outputRoute.GetMetadataStatic().GetSources()[0], expectedSource)).To(BeTrue())
+
+				px := &v1.Proxy{}
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: px,
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				plugin.ApplyStatusPlugin(ctx, &statusCtx)
+
+				robj, _ := routeOptionClient.Read("default", "policy", clients.ReadOpts{Ctx: ctx})
+				status := robj.GetNamespacedStatuses().Statuses["gloo-system"]
+				Expect(status.State).To(Equal(core.Status_Accepted))
 			})
 		})
 
@@ -222,6 +285,36 @@ var _ = Describe("RouteOptionsPlugin", func() {
 					},
 				}
 				Expect(proto.Equal(outputRoute.GetOptions(), expectedOptions)).To(BeTrue())
+
+				expectedSource := &v1.SourceMetadata_SourceRef{
+					ResourceRef: &core.ResourceRef{
+						Name:      "policy",
+						Namespace: "default",
+					},
+					ResourceKind: "RouteOption",
+				}
+
+				Expect(outputRoute.GetMetadataStatic().GetSources()).To(HaveLen(1))
+				Expect(proto.Equal(outputRoute.GetMetadataStatic().GetSources()[0], expectedSource)).To(BeTrue())
+
+				px := &v1.Proxy{}
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: px,
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				plugin.ApplyStatusPlugin(ctx, &statusCtx)
+
+				robj, _ := routeOptionClient.Read("default", "policy", clients.ReadOpts{Ctx: ctx})
+				status := robj.GetNamespacedStatuses().Statuses["gloo-system"]
+				Expect(status.State).To(Equal(core.Status_Accepted))
 			})
 		})
 
@@ -249,6 +342,26 @@ var _ = Describe("RouteOptionsPlugin", func() {
 				plugin.ApplyRoutePlugin(ctx, routeCtx, outputRoute)
 
 				Expect(proto.Equal(outputRoute.GetOptions(), &v1.RouteOptions{})).To(BeTrue())
+
+				Expect(outputRoute.GetMetadataStatic().GetSources()).To(BeEmpty())
+
+				px := &v1.Proxy{}
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: px,
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				plugin.ApplyStatusPlugin(ctx, &statusCtx)
+
+				robj, _ := routeOptionClient.Read("default", "bad-policy", clients.ReadOpts{Ctx: ctx})
+				Expect(robj.GetNamespacedStatuses()).To(BeNil())
 			})
 		})
 
@@ -276,6 +389,127 @@ var _ = Describe("RouteOptionsPlugin", func() {
 				plugin.ApplyRoutePlugin(ctx, routeCtx, outputRoute)
 
 				Expect(proto.Equal(outputRoute.GetOptions(), &v1.RouteOptions{})).To(BeTrue())
+
+				Expect(outputRoute.GetMetadataStatic().GetSources()).To(BeEmpty())
+
+				px := &v1.Proxy{}
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: px,
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				plugin.ApplyStatusPlugin(ctx, &statusCtx)
+
+				robj, _ := routeOptionClient.Read("default", "bad-policy", clients.ReadOpts{Ctx: ctx})
+				Expect(robj.GetNamespacedStatuses()).To(BeNil())
+			})
+		})
+
+		When("RouteOptions exist in the same namespace and are attached correctly but hvae processing errors during xds translation", func() {
+			FIt("propagates faultinjection config but reports the processing error on resource status", func() {
+				routeOptionClient.Write(attachedInvalidInternal(), clients.WriteOpts{})
+				deps := []client.Object{attachedInvalidRouteOption()}
+				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
+				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
+
+				ctx := context.Background()
+				routeCtx := &plugins.RouteContext{
+					Route: &gwv1.HTTPRoute{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "route",
+							Namespace: "default",
+						},
+					},
+				}
+
+				outputRoute := &v1.Route{
+					Options: &v1.RouteOptions{},
+				}
+				plugin.ApplyRoutePlugin(ctx, routeCtx, outputRoute)
+
+				expectedOptions := &v1.RouteOptions{
+					Faults: &faultinjection.RouteFaults{
+						Abort: &faultinjection.RouteAbort{
+							Percentage: 4.19,
+						},
+					},
+				}
+				Expect(proto.Equal(outputRoute.GetOptions(), expectedOptions)).To(BeTrue())
+
+				expectedSource := &v1.SourceMetadata_SourceRef{
+					ResourceRef: &core.ResourceRef{
+						Name:      "invalid-policy",
+						Namespace: "default",
+					},
+					ResourceKind: "RouteOption",
+				}
+
+				Expect(outputRoute.GetMetadataStatic().GetSources()).To(HaveLen(1))
+				Expect(proto.Equal(outputRoute.GetMetadataStatic().GetSources()[0], expectedSource)).To(BeTrue())
+
+				px := &v1.Proxy{}
+
+				proxyResourceReport := reporter.ResourceReports{}
+				proxyResourceReport.AddError(px, errors.New("route processing error"))
+
+				proxyValidationReport := validation.ProxyReport{}
+				proxyValidationReport.ListenerReports = []*validation.ListenerReport{}
+				// this is ugly; should be replaced by an actual report from translation
+				// but should that go in a higher-level test?
+				// e.g. an "integration" test for route translation / one that isn't manually running the plugin?
+				proxyValidationReport.ListenerReports = append(proxyValidationReport.ListenerReports, &validation.ListenerReport{
+					ListenerTypeReport: &validation.ListenerReport_AggregateListenerReport{
+						AggregateListenerReport: &validation.AggregateListenerReport{
+							HttpListenerReports: map[string]*validation.HttpListenerReport{
+								"test": {
+									VirtualHostReports: []*validation.VirtualHostReport{{
+										RouteReports: []*validation.RouteReport{{
+											Errors: []*validation.RouteReport_Error{{
+												Type:   validation.RouteReport_Error_ProcessingError,
+												Reason: "route processing error",
+												Metadata: &v1.SourceMetadata{
+													Sources: []*v1.SourceMetadata_SourceRef{{
+														ResourceRef: &core.ResourceRef{
+															Name:      "invalid-policy",
+															Namespace: "default",
+														},
+														ResourceKind: sologatewayv1.RouteOptionGVK.Kind,
+													},
+													}}},
+											},
+										}}},
+									},
+								},
+							},
+						},
+					},
+				})
+
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: px,
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &proxyValidationReport,
+								ResourceReports: proxyResourceReport,
+							},
+						},
+					},
+				}
+
+				plugin.ApplyStatusPlugin(ctx, &statusCtx)
+
+				robj, _ := routeOptionClient.Read("default", "invalid-policy", clients.ReadOpts{Ctx: ctx})
+				status := robj.GetNamespacedStatuses().Statuses["gloo-system"]
+				Expect(status.State).To(Equal(core.Status_Rejected))
 			})
 		})
 	})
@@ -400,6 +634,9 @@ func attachedInternal() *sologatewayv1.RouteOption {
 func attachedRouteOption() *solokubev1.RouteOption {
 	now := metav1.Now()
 	return &solokubev1.RouteOption{
+		TypeMeta: metav1.TypeMeta{
+			Kind: sologatewayv1.RouteOptionGVK.Kind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "policy",
 			Namespace:         "default",
@@ -435,6 +672,9 @@ func attachedBeforeInternal() *sologatewayv1.RouteOption {
 func attachedRouteOptionBefore() *solokubev1.RouteOption {
 	anHourAgo := metav1.NewTime(time.Now().Add(-1 * time.Hour))
 	return &solokubev1.RouteOption{
+		TypeMeta: metav1.TypeMeta{
+			Kind: sologatewayv1.RouteOptionGVK.Kind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "policy-older",
 			Namespace:         "default",
@@ -468,6 +708,9 @@ func attachedOmitNamespaceInternal() *sologatewayv1.RouteOption {
 
 func attachedRouteOptionOmitNamespace() *solokubev1.RouteOption {
 	return &solokubev1.RouteOption{
+		TypeMeta: metav1.TypeMeta{
+			Kind: sologatewayv1.RouteOptionGVK.Kind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "policy",
 			Namespace: "default",
@@ -501,10 +744,50 @@ func nonAttachedInternal() *sologatewayv1.RouteOption {
 
 func nonAttachedRouteOption() *solokubev1.RouteOption {
 	return &solokubev1.RouteOption{
+		TypeMeta: metav1.TypeMeta{
+			Kind: sologatewayv1.RouteOptionGVK.Kind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "bad-policy",
 			Namespace: "default",
 		},
 		Spec: *nonAttachedInternal(),
+	}
+}
+
+func attachedInvalidInternal() *sologatewayv1.RouteOption {
+	return &sologatewayv1.RouteOption{
+		Metadata: &core.Metadata{
+			Name:      "invalid-policy",
+			Namespace: "default",
+		},
+		TargetRef: &corev1.PolicyTargetReference{
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      wellknown.HTTPRouteKind,
+			Name:      "route",
+			Namespace: wrapperspb.String("default"),
+		},
+		Options: &v1.RouteOptions{
+			Faults: &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{
+					Percentage: 4.19,
+				},
+			},
+		},
+	}
+}
+
+func attachedInvalidRouteOption() *solokubev1.RouteOption {
+	now := metav1.Now()
+	return &solokubev1.RouteOption{
+		TypeMeta: metav1.TypeMeta{
+			Kind: sologatewayv1.RouteOptionGVK.Kind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "invalid-policy",
+			Namespace:         "default",
+			CreationTimestamp: now,
+		},
+		Spec: *attachedInvalidInternal(),
 	}
 }

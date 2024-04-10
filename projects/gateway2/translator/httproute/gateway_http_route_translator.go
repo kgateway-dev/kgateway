@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -74,9 +73,6 @@ func translateGatewayHTTPRouteRule(
 			Action:   nil,
 			Options:  &v1.RouteOptions{},
 		}
-
-		// track this HTTPRoute as the source for this *v1.Route
-		routeutils.AppendSourceToRoute(outputRoute, gwroute)
 
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(
