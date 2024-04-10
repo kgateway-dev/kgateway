@@ -1345,13 +1345,12 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("correctly routes to the service (tcp)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, gatewayProxy)
 
-				httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
+				httpEcho.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Service:           gatewayProxy,
 					Port:              int(defaults2.TcpPort),
-					ConnectionTimeout: 10,
-					Verbose:           true,
-				}, responseString, 1, 30*time.Second)
+					ConnectionTimeout: 1,
+				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
 
 		})
@@ -1399,15 +1398,14 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("correctly routes to the service (tcp/tls)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, httpEchoClusterName)
 
-				httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
+				httpEcho.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "https",
 					Sni:               httpEchoClusterName,
 					Service:           clusterIp,
 					Port:              int(defaults2.TcpPort),
-					ConnectionTimeout: 10,
+					ConnectionTimeout: 1,
 					SelfSigned:        true,
-					Verbose:           true,
-				}, responseString, 1, 30*time.Second)
+				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
 
 		})
@@ -1671,13 +1669,14 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// now make sure we only get the red pod
 			redOpts := helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/red",
-				Method:            "GET",
-				Host:              gatewayProxy,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 1,
+				Protocol: "http",
+				Path:     "/red",
+				Method:   "GET",
+				Host:     gatewayProxy,
+				Service:  gatewayProxy,
+				Port:     gatewayPort,
+				// This value matches our RetryMaxTime
+				ConnectionTimeout: 5,
 				WithoutStats:      true,
 				// These redOpts are used in a curl that is expected to consistently pass
 				// We rely on curl retries to prevent network flakes from causing test flakes
@@ -1779,7 +1778,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
@@ -1791,7 +1790,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              int(hybridProxyServicePort.Port),
-				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
@@ -1880,7 +1879,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
@@ -1892,7 +1891,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              helper.TestServerName,
 				Service:           gatewayProxy,
 				Port:              int(hybridProxyServicePort.Port),
-				ConnectionTimeout: 5, // this is important, as sometimes curl hangs
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 		})
@@ -2621,7 +2620,7 @@ spec:
 						Host:              "valid1.com",
 						Service:           gatewayProxy,
 						Port:              gatewayPort,
-						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+						ConnectionTimeout: 1,
 						WithoutStats:      true,
 					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 					testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -2631,7 +2630,7 @@ spec:
 						Host:              "invalid.com",
 						Service:           gatewayProxy,
 						Port:              gatewayPort,
-						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+						ConnectionTimeout: 1,
 						WithoutStats:      true,
 						Verbose:           true,
 					}, ContainSubstring(`HTTP/1.1 404 Not Found`), 1, 60*time.Second, 1*time.Second)
@@ -2664,7 +2663,7 @@ spec:
 						Host:              "valid1.com",
 						Service:           gatewayProxy,
 						Port:              gatewayPort,
-						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+						ConnectionTimeout: 1,
 						WithoutStats:      true,
 					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 
@@ -2676,7 +2675,7 @@ spec:
 						Host:              "all-good-in-the-hood.com",
 						Service:           gatewayProxy,
 						Port:              gatewayPort,
-						ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+						ConnectionTimeout: 1,
 						WithoutStats:      true,
 					}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 				})

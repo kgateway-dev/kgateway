@@ -36,6 +36,7 @@ type TestContainer interface {
 	CurlEventuallyShouldRespond(opts CurlOpts, response interface{}, ginkgoOffset int, timeout ...time.Duration)
 	// CurlEventuallyShouldOutput checks all the output of the curl command eventually meets expectation
 	// The response is type interface{}. See the actual implementation for which types are supported
+	// Deprecated: Prefer CurlEventuallyShouldRespond
 	CurlEventuallyShouldOutput(opts CurlOpts, output interface{}, ginkgoOffset int, timeout ...time.Duration)
 	Curl(opts CurlOpts) (string, error)
 	Exec(command ...string) (string, error)
