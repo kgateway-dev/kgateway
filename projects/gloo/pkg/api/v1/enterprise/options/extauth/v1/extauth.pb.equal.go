@@ -97,12 +97,12 @@ func (m *AuthConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetFailureOnUpdatePolicy()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetFailureOnUpdatePolicy()) {
+	if h, ok := interface{}(m.GetUpdatePolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUpdatePolicy()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetFailureOnUpdatePolicy(), target.GetFailureOnUpdatePolicy()) {
+		if !proto.Equal(m.GetUpdatePolicy(), target.GetUpdatePolicy()) {
 			return false
 		}
 	}
@@ -3001,12 +3001,12 @@ func (m *ExtAuthConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetFailureOnUpdatePolicy()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetFailureOnUpdatePolicy()) {
+	if h, ok := interface{}(m.GetUpdatePolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUpdatePolicy()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetFailureOnUpdatePolicy(), target.GetFailureOnUpdatePolicy()) {
+		if !proto.Equal(m.GetUpdatePolicy(), target.GetUpdatePolicy()) {
 			return false
 		}
 	}
@@ -3570,14 +3570,14 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AuthConfig_FailureOnUpdatePolicy) Equal(that interface{}) bool {
+func (m *AuthConfig_UpdatePolicy) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AuthConfig_FailureOnUpdatePolicy)
+	target, ok := that.(*AuthConfig_UpdatePolicy)
 	if !ok {
-		that2, ok := that.(AuthConfig_FailureOnUpdatePolicy)
+		that2, ok := that.(AuthConfig_UpdatePolicy)
 		if ok {
 			target = &that2
 		} else {
@@ -3590,129 +3590,7 @@ func (m *AuthConfig_FailureOnUpdatePolicy) Equal(that interface{}) bool {
 		return false
 	}
 
-	switch m.Policy.(type) {
-
-	case *AuthConfig_FailureOnUpdatePolicy_ContinueExisting_:
-		if _, ok := target.Policy.(*AuthConfig_FailureOnUpdatePolicy_ContinueExisting_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetContinueExisting()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetContinueExisting()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetContinueExisting(), target.GetContinueExisting()) {
-				return false
-			}
-		}
-
-	case *AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_:
-		if _, ok := target.Policy.(*AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetReplaceIfRecoverable()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetReplaceIfRecoverable()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetReplaceIfRecoverable(), target.GetReplaceIfRecoverable()) {
-				return false
-			}
-		}
-
-	case *AuthConfig_FailureOnUpdatePolicy_ReplaceExisting_:
-		if _, ok := target.Policy.(*AuthConfig_FailureOnUpdatePolicy_ReplaceExisting_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetReplaceExisting()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetReplaceExisting()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetReplaceExisting(), target.GetReplaceExisting()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.Policy != target.Policy {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AuthConfig_FailureOnUpdatePolicy_ContinueExisting) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AuthConfig_FailureOnUpdatePolicy_ContinueExisting)
-	if !ok {
-		that2, ok := that.(AuthConfig_FailureOnUpdatePolicy_ContinueExisting)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable)
-	if !ok {
-		that2, ok := that.(AuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AuthConfig_FailureOnUpdatePolicy_ReplaceExisting) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AuthConfig_FailureOnUpdatePolicy_ReplaceExisting)
-	if !ok {
-		that2, ok := that.(AuthConfig_FailureOnUpdatePolicy_ReplaceExisting)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
+	if m.GetAllowRecoverableErrors() != target.GetAllowRecoverableErrors() {
 		return false
 	}
 
@@ -6547,14 +6425,14 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ExtAuthConfig_FailureOnUpdatePolicy) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_UpdatePolicy) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_FailureOnUpdatePolicy)
+	target, ok := that.(*ExtAuthConfig_UpdatePolicy)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_FailureOnUpdatePolicy)
+		that2, ok := that.(ExtAuthConfig_UpdatePolicy)
 		if ok {
 			target = &that2
 		} else {
@@ -6567,58 +6445,8 @@ func (m *ExtAuthConfig_FailureOnUpdatePolicy) Equal(that interface{}) bool {
 		return false
 	}
 
-	switch m.Policy.(type) {
-
-	case *ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting_:
-		if _, ok := target.Policy.(*ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetContinueExisting()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetContinueExisting()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetContinueExisting(), target.GetContinueExisting()) {
-				return false
-			}
-		}
-
-	case *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_:
-		if _, ok := target.Policy.(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetReplaceIfRecoverable()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetReplaceIfRecoverable()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetReplaceIfRecoverable(), target.GetReplaceIfRecoverable()) {
-				return false
-			}
-		}
-
-	case *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting_:
-		if _, ok := target.Policy.(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting_); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetReplaceExisting()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetReplaceExisting()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetReplaceExisting(), target.GetReplaceExisting()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.Policy != target.Policy {
-			return false
-		}
+	if m.GetAllowRecoverableErrors() != target.GetAllowRecoverableErrors() {
+		return false
 	}
 
 	return true
@@ -7304,78 +7132,6 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Equal(that interface{}) boo
 			return false
 		}
 
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_FailureOnUpdatePolicy_ContinueExisting)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_FailureOnUpdatePolicy_ReplaceIfRecoverable)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_FailureOnUpdatePolicy_ReplaceExisting)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
 	}
 
 	return true

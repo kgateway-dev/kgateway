@@ -13,10 +13,7 @@ weight: 5
 
 - [AuthConfig](#authconfig) **Top-Level Resource**
 - [Config](#config)
-- [FailureOnUpdatePolicy](#failureonupdatepolicy)
-- [ContinueExisting](#continueexisting)
-- [ReplaceIfRecoverable](#replaceifrecoverable)
-- [ReplaceExisting](#replaceexisting)
+- [UpdatePolicy](#updatepolicy)
 - [ExtAuthExtension](#extauthextension)
 - [Settings](#settings)
 - [ApiVersion](#apiversion)
@@ -129,10 +126,7 @@ weight: 5
 - [HmacAuthConfig](#hmacauthconfig)
 - [InMemorySecretList](#inmemorysecretlist)
 - [Config](#config)
-- [FailureOnUpdatePolicy](#failureonupdatepolicy)
-- [ContinueExisting](#continueexisting)
-- [ReplaceIfRecoverable](#replaceifrecoverable)
-- [ReplaceExisting](#replaceexisting)
+- [UpdatePolicy](#updatepolicy)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
 - [ApiKeyCreateResponse](#apikeycreateresponse)
 - [ApiKeyReadRequest](#apikeyreadrequest)
@@ -165,7 +159,7 @@ format that will be included in the extauth snapshot.
 "configs": []enterprise.gloo.solo.io.AuthConfig.Config
 "booleanExpr": .google.protobuf.StringValue
 "failOnRedirect": bool
-"failureOnUpdatePolicy": .enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy
+"updatePolicy": .enterprise.gloo.solo.io.AuthConfig.UpdatePolicy
 
 ```
 
@@ -176,7 +170,7 @@ format that will be included in the extauth snapshot.
 | `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 | `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
-| `failureOnUpdatePolicy` | [.enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy](../extauth.proto.sk/#failureonupdatepolicy) | Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running. |
+| `updatePolicy` | [.enterprise.gloo.solo.io.AuthConfig.UpdatePolicy](../extauth.proto.sk/#updatepolicy) | Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running. |
 
 
 
@@ -221,69 +215,20 @@ format that will be included in the extauth snapshot.
 
 
 ---
-### FailureOnUpdatePolicy
+### UpdatePolicy
 
  
 Approach to take when a modified authconfig fails translation from internal configuration to authservice and an existing authservice
 for this resource is already running
 
 ```yaml
-"continueExisting": .enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy.ContinueExisting
-"replaceIfRecoverable": .enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy.ReplaceIfRecoverable
-"replaceExisting": .enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy.ReplaceExisting
+"allowRecoverableErrors": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `continueExisting` | [.enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy.ContinueExisting](../extauth.proto.sk/#continueexisting) |  Only one of `continueExisting`, `replaceIfRecoverable`, or `replaceExisting` can be set. |
-| `replaceIfRecoverable` | [.enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy.ReplaceIfRecoverable](../extauth.proto.sk/#replaceifrecoverable) |  Only one of `replaceIfRecoverable`, `continueExisting`, or `replaceExisting` can be set. |
-| `replaceExisting` | [.enterprise.gloo.solo.io.AuthConfig.FailureOnUpdatePolicy.ReplaceExisting](../extauth.proto.sk/#replaceexisting) |  Only one of `replaceExisting`, `continueExisting`, or `replaceIfRecoverable` can be set. |
-
-
-
-
----
-### ContinueExisting
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
-### ReplaceIfRecoverable
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
-### ReplaceExisting
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
+| `allowRecoverableErrors` | `bool` |  |
 
 
 
@@ -2127,7 +2072,7 @@ rules about breaking changes still apply to ensure we do not get errors during u
 "configs": []enterprise.gloo.solo.io.ExtAuthConfig.Config
 "booleanExpr": .google.protobuf.StringValue
 "failOnRedirect": bool
-"failureOnUpdatePolicy": .enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy
+"updatePolicy": .enterprise.gloo.solo.io.ExtAuthConfig.UpdatePolicy
 
 ```
 
@@ -2137,7 +2082,7 @@ rules about breaking changes still apply to ensure we do not get errors during u
 | `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. Defaults to an empty string, which is interpreted as `and`-ing the configs. |
 | `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
-| `failureOnUpdatePolicy` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy](../extauth.proto.sk/#failureonupdatepolicy) | Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running. |
+| `updatePolicy` | [.enterprise.gloo.solo.io.ExtAuthConfig.UpdatePolicy](../extauth.proto.sk/#updatepolicy) | Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running. |
 
 
 
@@ -2946,69 +2891,20 @@ Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the e
 
 
 ---
-### FailureOnUpdatePolicy
+### UpdatePolicy
 
  
 Approach to take when a modified authconfig fails translation from internal configuration to authservice and an existing authservice
 for this resource is already running
 
 ```yaml
-"continueExisting": .enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy.ContinueExisting
-"replaceIfRecoverable": .enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy.ReplaceIfRecoverable
-"replaceExisting": .enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy.ReplaceExisting
+"allowRecoverableErrors": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `continueExisting` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy.ContinueExisting](../extauth.proto.sk/#continueexisting) |  Only one of `continueExisting`, `replaceIfRecoverable`, or `replaceExisting` can be set. |
-| `replaceIfRecoverable` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy.ReplaceIfRecoverable](../extauth.proto.sk/#replaceifrecoverable) |  Only one of `replaceIfRecoverable`, `continueExisting`, or `replaceExisting` can be set. |
-| `replaceExisting` | [.enterprise.gloo.solo.io.ExtAuthConfig.FailureOnUpdatePolicy.ReplaceExisting](../extauth.proto.sk/#replaceexisting) |  Only one of `replaceExisting`, `continueExisting`, or `replaceIfRecoverable` can be set. |
-
-
-
-
----
-### ContinueExisting
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
-### ReplaceIfRecoverable
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
-### ReplaceExisting
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
+| `allowRecoverableErrors` | `bool` |  |
 
 
 

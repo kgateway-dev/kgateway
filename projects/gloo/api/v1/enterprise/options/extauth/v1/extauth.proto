@@ -83,22 +83,26 @@ message AuthConfig {
 
     // Approach to take when a modified authconfig fails translation from internal configuration to authservice and an existing authservice
     // for this resource is already running
-    message FailureOnUpdatePolicy 
+    message UpdatePolicy 
     {
-        
-        message ContinueExisting {}
-        message ReplaceIfRecoverable {}
-        message ReplaceExisting {}
+        bool allow_recoverable_errors = 1;
 
-        oneof policy {
-            ContinueExisting continue_existing = 1;
-            ReplaceIfRecoverable replace_if_recoverable = 2;
-            ReplaceExisting replace_existing = 3;
-        }
+        // message FailureOnTranslatePolicy {
+        //     // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
+        //     message ContinueExisting {}
+        //     message ReplaceExisting {}
+
+        //     oneof policy {
+        //         ContinueExisting continue_existing = 1;
+        //         ReplaceExisting replace_existing = 2;
+        //     }
+        // }
+
+        // FailureOnTranslatePolicy failure_on_translate_policy = 2;
     }
 
     // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
-    FailureOnUpdatePolicy failure_on_update_policy = 14;
+    UpdatePolicy update_policy = 14;
 
 }
 
@@ -2176,22 +2180,26 @@ message ExtAuthConfig {
 
     // Approach to take when a modified authconfig fails translation from internal configuration to authservice and an existing authservice
     // for this resource is already running
-    message FailureOnUpdatePolicy 
+    message UpdatePolicy 
     {
-        
-        message ContinueExisting {}
-        message ReplaceIfRecoverable {}
-        message ReplaceExisting {}
+        bool allow_recoverable_errors = 1;
 
-        oneof policy {
-            ContinueExisting continue_existing = 1;
-            ReplaceIfRecoverable replace_if_recoverable = 2;
-            ReplaceExisting replace_existing = 3;
-        }
+        // message FailureOnTranslatePolicy {
+        //     // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
+        //     message ContinueExisting {}
+        //     message ReplaceExisting {}
+
+        //     oneof policy {
+        //         ContinueExisting continue_existing = 1;
+        //         ReplaceExisting replace_existing = 2;
+        //     }
+        // }
+
+        // FailureOnTranslatePolicy failure_on_translate_policy = 2;
     }
 
     // Defines the approach to take when a modified authconfig fails to start and an existing authconfig is running
-    FailureOnUpdatePolicy failure_on_update_policy = 12;
+    UpdatePolicy update_policy = 12;
 }
 
 /*
