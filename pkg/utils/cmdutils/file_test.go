@@ -19,7 +19,7 @@ var _ = Describe("File", func() {
 		)
 
 		BeforeEach(func() {
-			cmd = Command(context.Background(), "ps", "-a").WithStdout(GinkgoWriter).WithStderr(GinkgoWriter)
+			cmd = Command(context.Background(), "ps").WithStdout(GinkgoWriter).WithStderr(GinkgoWriter)
 			tmpFile = ""
 		})
 
