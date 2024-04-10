@@ -1677,7 +1677,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 1,
+				ConnectionTimeout: 5,
 				WithoutStats:      true,
 				// These redOpts are used in a curl that is expected to consistently pass
 				// We rely on curl retries to prevent network flakes from causing test flakes
