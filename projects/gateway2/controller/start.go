@@ -116,6 +116,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		ControlPlane:   cfg.Opts.ControlPlane,
 		IstioValues:    cfg.Opts.GlooGateway.IstioValues,
 		Kick:           inputChannels.Kick,
+		Extensions:     k8sGwExtensions,
 	}
 	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
