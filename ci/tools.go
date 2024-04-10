@@ -26,4 +26,5 @@ import (
 	_ "github.com/solo-io/protoc-gen-openapi"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )
