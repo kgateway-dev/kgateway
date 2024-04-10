@@ -32,9 +32,12 @@ type CurlOpts struct {
 	Port              int
 	ReturnHeaders     bool
 	ConnectionTimeout int
-	Verbose           bool
-	LogResponses      bool
-	AllowInsecure     bool
+
+	// Verbose is used to configure the verbosity of the curl request
+	// Deprecated: see buildCurlArgs() for details about why we always default this to true
+	Verbose       bool
+	LogResponses  bool
+	AllowInsecure bool
 	// WithoutStats sets the -s flag to prevent download stats from printing
 	WithoutStats bool
 	// Optional SNI name to resolve domain to when sending request
