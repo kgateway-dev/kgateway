@@ -27,7 +27,8 @@ gateway:
     protocol: TCP
     name: http
   image:
-    repository: quay.io/solo-io/gloo-envoy-wrapper
+    registry: quay.io/solo-io
+    repository: gloo-envoy-wrapper
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""

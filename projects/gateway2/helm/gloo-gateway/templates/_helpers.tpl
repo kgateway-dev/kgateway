@@ -74,3 +74,15 @@ Create the name of the service account to use
 {{- default "default" .Values.gateway.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{/*
+Return a container image value as a string
+*/}}
+{{- define "gloo-gateway.gateway.image" -}}
+{{- $image := printf "%s/%s:%s" .registry .repository .tag -}}
+{{- if .digest -}}
+{{- $image = printf "%s@%s" $image .digest -}}
+{{- end -}}{{- /* if .digest */ -}}
+{{ $image }}
+{{- end -}}{{- /* define "gloo-gateway.gateway.image" */ -}}
