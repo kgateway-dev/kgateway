@@ -1407,7 +1407,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					SelfSigned:        true,
 				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
-			
+
 		})
 
 	})
