@@ -1,4 +1,4 @@
-package selectionutils_test
+package errutils
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSelectionUtils(t *testing.T) {
+func TestErrUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Selection testutils Suite")
+	RunSpecs(t, "ErrUtils Suite")
 }

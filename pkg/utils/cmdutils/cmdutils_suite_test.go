@@ -1,4 +1,4 @@
-package selectionutils_test
+package cmdutils
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSelectionUtils(t *testing.T) {
+func TestCmdUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Selection testutils Suite")
+	RunSpecs(t, "CmdUtils Suite")
 }

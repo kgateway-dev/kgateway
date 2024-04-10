@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate mockgen -destination mocks/mock_virtual_service.go -package mocks github.com/solo-io/gloo/pkg/utils/selectionutils VirtualServiceSelector
+//go:generate mockgen -destination mocks/mock_virtual_service.go -package mocks github.com/solo-io/gloo/pkg/testutils/selectionutils VirtualServiceSelector
 
 type VirtualServiceSelector interface {
 	SelectOrBuildVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error)

@@ -3,6 +3,7 @@ package kubectl
 import (
 	"bytes"
 	"context"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 
@@ -73,6 +74,25 @@ func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) er
 	return c.ApplyCmd(ctx, content, applyArgs...).Run().Cause()
 }
 
+func (c *Cli) ApplyFileCmd(ctx context.Context, fileName string, extraArgs ...string) (cmdutils.Cmd, error) {
+	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
+
+	fileInput, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Command(ctx, applyArgs...).WithStdin(fileInput), nil
+}
+
+func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	cmd, err := c.ApplyFileCmd(ctx, fileName, extraArgs...)
+	if err != nil {
+		return err
+	}
+	return cmd.Run().Cause()
+}
+
 func (c *Cli) deleteCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
 	args := append([]string{"delete"}, extraArgs...)
 
@@ -84,6 +104,25 @@ func (c *Cli) deleteCmd(ctx context.Context, content []byte, extraArgs ...string
 func (c *Cli) Delete(ctx context.Context, content []byte, extraArgs ...string) error {
 	deleteYamlArgs := append([]string{"-f", "-"}, extraArgs...)
 	return c.deleteCmd(ctx, content, deleteYamlArgs...).Run().Cause()
+}
+
+func (c *Cli) DeleteFileCmd(ctx context.Context, fileName string, extraArgs ...string) (cmdutils.Cmd, error) {
+	applyArgs := append([]string{"delete", "-f", fileName}, extraArgs...)
+
+	fileInput, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Command(ctx, applyArgs...).WithStdin(fileInput), nil
+}
+
+func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	cmd, err := c.DeleteFileCmd(ctx, fileName, extraArgs...)
+	if err != nil {
+		return err
+	}
+	return cmd.Run().Cause()
 }
 
 func (c *Cli) copyCmd(ctx context.Context, from, to string) cmdutils.Cmd {

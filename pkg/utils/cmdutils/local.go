@@ -19,7 +19,9 @@ var (
 
 // Command is a convenience wrapper over DefaultCmder.Command
 func Command(ctx context.Context, command string, args ...string) Cmd {
-	return DefaultCmder.Command(ctx, command, args...)
+	return DefaultCmder.Command(ctx, command, args...).
+		WithStdout(io.Discard).
+		WithStderr(io.Discard)
 }
 
 // LocalCmder is a factory for LocalCmd, implementing Cmder
