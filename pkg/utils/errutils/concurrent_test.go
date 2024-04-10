@@ -21,8 +21,8 @@ var _ = Describe("Concurrent", func() {
 			aggregateErr := AggregateConcurrent(badFns)
 			Expect(aggregateErr).To(HaveOccurred())
 			Expect(aggregateErr.Errors()).To(ContainElements(
-				ContainSubstring("ID=1"),
-				ContainSubstring("ID=2"),
+				MatchError(ContainSubstring("ID=1")),
+				MatchError(ContainSubstring("ID=2")),
 			))
 
 		})

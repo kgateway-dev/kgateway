@@ -28,7 +28,7 @@ func AggregateConcurrent(funcs []func() error) errors.Aggregate {
 			errs = append(errs, err)
 		}
 	}
-	if len(errs) > 1 {
+	if len(errs) > 0 {
 		return errors.NewAggregate(errs)
 	}
 	return nil
