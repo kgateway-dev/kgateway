@@ -9,8 +9,12 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
@@ -28,6 +32,17 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+var (
+	GetGatewayParametersError = eris.New("could not retrieve GatewayParameters")
+	getGatewayParametersError = func(err error, gwpNamespace string, gwpName string, gwNamespace string, gwName string) error {
+		wrapped := eris.Wrap(err, GetGatewayParametersError.Error())
+		return eris.Wrapf(wrapped, "(%s.%s) for Gateway (%s.%s)",
+			gwpNamespace, gwpName, gwNamespace, gwName)
+	}
+	NilDeployerInputsErr = eris.New("nil inputs to NewDeployer")
+	NilK8sExtensionsErr  = eris.New("nil K8sGatewayExtensions to NewDeployer")
+)
+
 // A Deployer is responsible for deploying proxies
 type Deployer struct {
 	chart *chart.Chart
@@ -42,10 +57,18 @@ type Inputs struct {
 	Dev            bool
 	IstioValues    bootstrap.IstioValues
 	ControlPlane   bootstrap.ControlPlane
+	Extensions     extensions.K8sGatewayExtensions
 }
 
 // NewDeployer creates a new gateway deployer
 func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
+	if inputs == nil {
+		return nil, NilDeployerInputsErr
+	}
+	if inputs.Extensions == nil {
+		return nil, NilK8sExtensionsErr
+	}
+
 	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
 	if err != nil {
 		return nil, err
@@ -129,7 +152,33 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 	return objs, nil
 }
 
-func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) *helmConfig {
+// Gets the GatewayParameters object (if any) associated with a given Gateway.
+func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
+	logger := log.FromContext(ctx)
+
+	// check for a gateway params annotation on the Gateway
+	gwpName := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
+	if gwpName == "" {
+		// there is no custom GatewayParameters; just use default values
+		logger.V(1).Info("no GatewayParameters found for Gateway",
+			"gatewayName", gw.GetName(),
+			"gatewayNamespace", gw.GetNamespace())
+		return nil, nil
+	}
+
+	// the GatewayParameters must live in the same namespace as the Gateway
+	gwpNamespace := gw.GetNamespace()
+	gwp := &v1alpha1.GatewayParameters{}
+	err := d.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
+	if err != nil {
+		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName())
+	}
+
+	return gwp, nil
+}
+
+func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
+	// construct the default values
 	vals := &helmConfig{
 		Gateway: &helmGateway{
 			Name:        &gw.Name,
@@ -141,14 +190,67 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) *helmConfig {
 				Host: &d.inputs.ControlPlane.Kube.XdsHost,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
-			Image: getDeployerImageValues(ctx),
+			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
 			IstioSDS: &helmIstioSds{
 				Enabled: &d.inputs.IstioValues.SDSEnabled,
 			},
 		},
 	}
 
-	return vals
+	// check if there is a GatewayParameters associated with this Gateway
+	gwp, err := d.getGatewayParametersForGateway(ctx, gw)
+	if err != nil {
+		return nil, err
+	}
+	// if there is no GatewayParameters, return the values as is
+	if gwp == nil {
+		return vals, nil
+	}
+
+	// extract all the custom values from the GatewayParameters
+	// (note: if we add new fields to GatewayParameters, they will
+	// need to be plumbed through here as well)
+	kubeProxyConfig := gwp.Spec.GetKube()
+	deployConfig := kubeProxyConfig.GetDeployment()
+	podConfig := kubeProxyConfig.GetPodTemplate()
+	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
+	svcConfig := kubeProxyConfig.GetService()
+
+	// deployment values
+	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
+	vals.Gateway.Autoscaling = autoscalingVals
+	if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
+		replicas := deployConfig.GetReplicas().GetValue()
+		vals.Gateway.ReplicaCount = &replicas
+	}
+
+	// service values
+	vals.Gateway.Service = getServiceValues(svcConfig)
+
+	// pod template values
+	vals.Gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
+	vals.Gateway.ExtraPodLabels = podConfig.GetExtraLabels()
+	vals.Gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
+	vals.Gateway.PodSecurityContext = podConfig.GetSecurityContext()
+	vals.Gateway.NodeSelector = podConfig.GetNodeSelector()
+	vals.Gateway.Affinity = podConfig.GetAffinity()
+	vals.Gateway.Tolerations = podConfig.GetTolerations()
+
+	// envoy container values
+	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
+	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+
+	vals.Gateway.LogLevel = &logLevel
+	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
+	if err != nil {
+		return nil, err
+	}
+	vals.Gateway.ComponentLogLevel = &compLogLevelStr
+	vals.Gateway.Resources = envoyContainerConfig.GetResources()
+	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())
+
+	return vals, nil
 }
 
 func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
@@ -176,7 +278,10 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
 	logger := log.FromContext(ctx)
 
-	vals := d.getValues(ctx, gw)
+	vals, err := d.getValues(ctx, gw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get values to render objects for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
+	}
 	logger.V(1).Info("got deployer helm values",
 		"gatewayName", gw.GetName(),
 		"gatewayNamespace", gw.GetNamespace(),
@@ -184,7 +289,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 
 	// convert to json for helm (otherwise go template fails, as the field names are uppercase)
 	var convertedVals map[string]any
-	err := jsonConvert(vals, &convertedVals)
+	err = jsonConvert(vals, &convertedVals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert helm values for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
