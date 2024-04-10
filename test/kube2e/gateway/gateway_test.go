@@ -1351,7 +1351,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              int(defaults2.TcpPort),
 					ConnectionTimeout: 1,
 					Verbose:           true,
-				}, responseString, 0, 30*time.Second)
+				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
 
 		})
@@ -1407,7 +1407,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					ConnectionTimeout: 1,
 					SelfSigned:        true,
 					Verbose:           true,
-				}, responseString, 0, 30*time.Second)
+				}, ContainSubstring(responseString), 0, 30*time.Second)
 			})
 
 		})
