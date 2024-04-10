@@ -114,6 +114,7 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.retryConnectionRefused {
 		args = append(args, "--retry-connrefused")
+	}
 
 	if len(c.additionalArgs) > 0 {
 		args = append(args, c.additionalArgs...)
