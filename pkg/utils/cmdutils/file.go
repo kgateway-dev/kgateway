@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 )
 
-// RunCommandOutputToFile executes a Cmd, and pipes the stdout of the Cmd to the file
+// RunCommandOutputToFileFunc executes a Cmd, and pipes the stdout of the Cmd to the file
 // If the file does not exist on the host, it will be created
-func RunCommandOutputToFile(cmd Cmd, path string) func() error {
+func RunCommandOutputToFileFunc(cmd Cmd, path string) func() error {
 	return func() error {
 		f, err := fileOnHost(path)
 		if err != nil {

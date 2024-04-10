@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("File", func() {
 
-	Context("RunCommandOutputToFile", func() {
+	Context("RunCommandOutputToFileFunc", func() {
 
 		var (
 			cmd     Cmd
@@ -32,7 +32,7 @@ var _ = Describe("File", func() {
 			Expect(err).NotTo(HaveOccurred())
 			tmpFile = f.Name()
 
-			cmdFn := RunCommandOutputToFile(cmd, tmpFile)
+			cmdFn := RunCommandOutputToFileFunc(cmd, tmpFile)
 			Expect(cmdFn()).NotTo(HaveOccurred(), "Can execute the function without an error")
 
 			fileInfo, err := os.Stat(tmpFile)
@@ -43,7 +43,7 @@ var _ = Describe("File", func() {
 		It("runs command to file, if file does NOT exist", func() {
 			tmpFile = filepath.Join(os.TempDir(), "file-does-not-exist.txt")
 
-			cmdFn := RunCommandOutputToFile(cmd, tmpFile)
+			cmdFn := RunCommandOutputToFileFunc(cmd, tmpFile)
 			Expect(cmdFn()).NotTo(HaveOccurred(), "Can execute the function without an error")
 
 			fileInfo, err := os.Stat(tmpFile)
