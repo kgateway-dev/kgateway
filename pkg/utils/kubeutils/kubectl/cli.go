@@ -61,76 +61,58 @@ func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 
-func (c *Cli) ApplyCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
-	args := append([]string{"apply"}, extraArgs...)
-
-	cmd := c.Command(ctx, args...)
-	cmd.WithStdin(bytes.NewBuffer(content))
-	return cmd
-}
-
 func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) error {
-	applyArgs := append([]string{"-f", "-"}, extraArgs...)
-	return c.ApplyCmd(ctx, content, applyArgs...).Run().Cause()
+	args := append([]string{"apply", "-f", "-"}, extraArgs...)
+	return c.Command(ctx, args...).
+		WithStdin(bytes.NewBuffer(content)).
+		Run().
+		Cause()
 }
 
-func (c *Cli) ApplyFileCmd(ctx context.Context, fileName string, extraArgs ...string) (cmdutils.Cmd, error) {
+func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
 	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {
-		return nil, err
-	}
-
-	return c.Command(ctx, applyArgs...).WithStdin(fileInput), nil
-}
-
-func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
-	cmd, err := c.ApplyFileCmd(ctx, fileName, extraArgs...)
-	if err != nil {
 		return err
 	}
-	return cmd.Run().Cause()
-}
+	defer func() {
+		_ = fileInput.Close()
+	}()
 
-func (c *Cli) deleteCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
-	args := append([]string{"delete"}, extraArgs...)
-
-	cmd := c.Command(ctx, args...)
-	cmd.WithStdin(bytes.NewBuffer(content))
-	return cmd
+	return c.Command(ctx, applyArgs...).
+		WithStdin(fileInput).
+		Run().
+		Cause()
 }
 
 func (c *Cli) Delete(ctx context.Context, content []byte, extraArgs ...string) error {
-	deleteYamlArgs := append([]string{"-f", "-"}, extraArgs...)
-	return c.deleteCmd(ctx, content, deleteYamlArgs...).Run().Cause()
+	args := append([]string{"delete", "-f", "-"}, extraArgs...)
+	return c.Command(ctx, args...).
+		WithStdin(bytes.NewBuffer(content)).
+		Run().
+		Cause()
 }
 
-func (c *Cli) DeleteFileCmd(ctx context.Context, fileName string, extraArgs ...string) (cmdutils.Cmd, error) {
+func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...string) error {
 	applyArgs := append([]string{"delete", "-f", fileName}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {
-		return nil, err
-	}
-
-	return c.Command(ctx, applyArgs...).WithStdin(fileInput), nil
-}
-
-func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...string) error {
-	cmd, err := c.DeleteFileCmd(ctx, fileName, extraArgs...)
-	if err != nil {
 		return err
 	}
-	return cmd.Run().Cause()
-}
+	defer func() {
+		_ = fileInput.Close()
+	}()
 
-func (c *Cli) copyCmd(ctx context.Context, from, to string) cmdutils.Cmd {
-	return c.Command(ctx, "cp", from, to)
+	return c.Command(ctx, applyArgs...).
+		WithStdin(fileInput).
+		Run().
+		Cause()
 }
 
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
-	return c.copyCmd(ctx, from, to).Run().Cause()
+	return c.RunCommand(ctx, "cp", from, to)
 }
 
 func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Option) (portforward.PortForwarder, error) {
