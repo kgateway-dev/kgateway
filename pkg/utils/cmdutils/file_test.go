@@ -28,7 +28,7 @@ var _ = Describe("File", func() {
 		})
 
 		It("runs command to file, if file does exist", func() {
-			f, err := os.CreateTemp(os.TempDir(), "cmdutils-test")
+			f, err := os.CreateTemp("", "cmdutils")
 			Expect(err).NotTo(HaveOccurred())
 			tmpFile = f.Name()
 
