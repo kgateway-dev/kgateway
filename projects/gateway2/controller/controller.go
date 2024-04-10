@@ -6,23 +6,33 @@ import (
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+)
+
+const (
+	// field name used for indexing
+	GatewayParamsField = "gateway-params"
 )
 
 type GatewayConfig struct {
@@ -35,6 +45,8 @@ type GatewayConfig struct {
 
 	ControlPlane bootstrap.ControlPlane
 	IstioValues  bootstrap.IstioValues
+
+	Extensions extensions.K8sGatewayExtensions
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -59,6 +71,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchRouteOptions,
 		controllerBuilder.addIndexes,
 		controllerBuilder.addRtOptIndexes,
+		controllerBuilder.addGwParamsIndexes,
 	)
 
 }
@@ -84,6 +97,23 @@ func (c *controllerBuilder) addIndexes(ctx context.Context) error {
 	})
 }
 
+func (c *controllerBuilder) addGwParamsIndexes(ctx context.Context) error {
+	return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.Gateway{}, GatewayParamsField, gatewayToParams)
+}
+
+// gatewayToParams is an IndexerFunc that gets a GatewayParameters name from a Gateway
+func gatewayToParams(obj client.Object) []string {
+	gw, ok := obj.(*apiv1.Gateway)
+	if !ok {
+		panic(fmt.Sprintf("wrong type %T provided to indexer. expected Gateway", obj))
+	}
+	gwpName := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
+	if gwpName != "" {
+		return []string{gwpName}
+	}
+	return []string{}
+}
+
 // TODO: move to RtOpt plugin when breaking the logic to RouteOption-specific controller
 func (c *controllerBuilder) addRtOptIndexes(ctx context.Context) error {
 	return rtoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
@@ -101,6 +131,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		Dev:            c.cfg.Dev,
 		IstioValues:    c.cfg.IstioValues,
 		ControlPlane:   c.cfg.ControlPlane,
+		Extensions:     c.cfg.Extensions,
 	})
 	if err != nil {
 		return err
@@ -119,6 +150,27 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			}
 			return false
 		}), predicate.GenerationChangedPredicate{}))
+
+	// watch for changes in GatewayParameters
+	cli := c.cfg.Mgr.GetClient()
+	buildr.Watches(&v1alpha1.GatewayParameters{}, handler.EnqueueRequestsFromMapFunc(
+		func(ctx context.Context, obj client.Object) []reconcile.Request {
+			gwpName := obj.GetName()
+			gwpNamespace := obj.GetNamespace()
+			// look up the Gateways that are using this GatewayParameters object
+			var gwList apiv1.GatewayList
+			err := cli.List(ctx, &gwList, client.InNamespace(gwpNamespace), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(GatewayParamsField, gwpName)})
+			if err != nil {
+				log.Error(err, "could not list Gateways using GatewayParameters", "gwpNamespace", gwpNamespace, "gwpName", gwpName)
+				return []reconcile.Request{}
+			}
+			// reconcile each Gateway that is using this GatewayParameters object
+			var reqs []reconcile.Request
+			for _, gw := range gwList.Items {
+				reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKey{Namespace: gw.Namespace, Name: gw.Name}})
+			}
+			return reqs
+		}))
 
 	for _, gvk := range gvks {
 		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
