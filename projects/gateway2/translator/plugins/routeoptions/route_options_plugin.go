@@ -268,11 +268,10 @@ func extractRouteErrors(proxyReport *validation.ProxyReport) map[types.Namespace
 			for _, vhr := range hlr.GetVirtualHostReports() {
 				for _, rr := range vhr.GetRouteReports() {
 					for _, rerr := range rr.GetErrors() {
-						roKey := extractRouteOptionSourceKeys(rerr)
-						if roKey != nil {
-							errors := routeErrors[*roKey]
+						if roKey, ok := extractRouteOptionSourceKeys(rerr); ok {
+							errors := routeErrors[roKey]
 							errors = append(errors, rerr)
-							routeErrors[*roKey] = errors
+							routeErrors[roKey] = errors
 						}
 					}
 				}
@@ -283,20 +282,21 @@ func extractRouteErrors(proxyReport *validation.ProxyReport) map[types.Namespace
 }
 
 // if the Route error has a RouteOption source associated with it, extract the source and return it
-func extractRouteOptionSourceKeys(routeErr *validation.RouteReport_Error) *types.NamespacedName {
+func extractRouteOptionSourceKeys(routeErr *validation.RouteReport_Error) (types.NamespacedName, bool) {
 	metadata := routeErr.GetMetadata()
 	if metadata == nil {
-		return nil
+		return types.NamespacedName{}, false
 	}
 
 	for _, src := range metadata.GetSources() {
 		if src.GetResourceKind() == sologatewayv1.RouteOptionGVK.Kind {
-			return &types.NamespacedName{
+			key := types.NamespacedName{
 				Namespace: src.GetResourceRef().GetNamespace(),
 				Name:      src.GetResourceRef().GetName(),
 			}
+			return key, true
 		}
 	}
 
-	return nil
+	return types.NamespacedName{}, false
 }
