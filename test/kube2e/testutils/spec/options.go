@@ -3,8 +3,11 @@ package spec
 type Option func(properties *specProperties)
 
 type specProperties struct {
-	name     string
-	manifest string
+	name                 string
+	manifest             string
+	initializedAssertion ScenarioAssertion
+	assertion            ScenarioAssertion
+	finalizedAssertion   ScenarioAssertion
 }
 
 func WithName(name string) Option {
@@ -15,38 +18,24 @@ func WithName(name string) Option {
 
 func WithManifestFile(manifestFile string) Option {
 	return func(properties *specProperties) {
-		properties.manifestFiles = append(properties.manifestFiles, manifestFile)
+		properties.manifest = manifestFile
 	}
 }
 
 func WithInitializedAssertion(assertion ScenarioAssertion) Option {
 	return func(properties *specProperties) {
-		properties.manifestFiles = append(properties.manifestFiles, manifestFile)
+		properties.initializedAssertion = assertion
 	}
 }
 
 func WithAssertion(assertion ScenarioAssertion) Option {
 	return func(properties *specProperties) {
-		properties.manifestFiles = append(properties.manifestFiles, manifestFile)
+		properties.assertion = assertion
 	}
 }
 
 func WithFinalizedAssertion(assertion ScenarioAssertion) Option {
 	return func(properties *specProperties) {
-		properties.manifestFiles = append(properties.manifestFiles, manifestFile)
+		properties.finalizedAssertion = assertion
 	}
-}
-
-func NewScenarioOrError(options ...Option) (Scenario, error) {
-
-	properties := &specProperties{
-		name:          "unnamed-test-scenario",
-		manifestFiles: nil,
-	}
-
-	for _, opt := range options {
-		opt(properties)
-	}
-
-	return nil, nil
 }

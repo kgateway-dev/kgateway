@@ -52,7 +52,7 @@ func MustKindClusterContext(clusterName string) *ClusterContext {
 		Name:        clusterName,
 		KubeContext: kubeCtx,
 		RestConfig:  restCfg,
-		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx),
+		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx).WithReceiver(ginkgo.GinkgoWriter),
 		Client:      clt,
 		Clientset:   clientset,
 	}

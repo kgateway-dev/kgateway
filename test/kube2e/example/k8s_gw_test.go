@@ -9,6 +9,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"path/filepath"
 )
 
 var _ = Describe("Example Test", Ordered, func() {
@@ -16,15 +17,15 @@ var _ = Describe("Example Test", Ordered, func() {
 	var (
 		ctx context.Context
 
-		scenarioRunner   *spec.ScenarioRunner
 		scenarioProvider *spec.ScenarioProvider
 
 		assertionProvider *specassertions.Provider
 	)
 
+	// This code demonstrates the proposal for scenarios and assertions
+
 	BeforeAll(func() {
-		//
-		scenarioRunner = spec.NewGinkgoScenarioRunner()
+		ctx = context.Background()
 
 		// Set the scenario provider to point to the running cluster
 		scenarioProvider = spec.NewProvider().WithClusterContext(clusterContext)
@@ -32,14 +33,8 @@ var _ = Describe("Example Test", Ordered, func() {
 		// Set the assertion provider to point to the running cluster
 		assertionProvider = specassertions.NewProvider().WithClusterContext(clusterContext)
 
-		// Install with values
-
-	})
-
-	AfterAll(func() {
-
-		// Uninstall with values
-
+		// TODO: if there is anything in the Gloo Gateway install context that is useful for these
+		// providers, we should update that here
 	})
 
 	Context("Spec Scenarios", func() {
@@ -50,19 +45,25 @@ var _ = Describe("Example Test", Ordered, func() {
 			proxyDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "proxyName", Namespace: "httpbin"}}
 			proxyService := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "proxyName", Namespace: "httpbin"}}
 
-			spec := scenarioProvider.NewScenario(
+			spec, err := scenarioProvider.NewScenario(
 				spec.WithName("basic-test"),
-				spec.WithManifestFile("manifests/basic-test.txt"),
-				spec.WithInitializedAssertion(assertionProvider.ObjectsExist(proxyDeployment, proxyService)),
+				spec.WithManifestFile(filepath.Join(cwd, "manifests", "basic-test.yaml")),
+				spec.WithInitializedAssertion(
+					assertionProvider.ObjectsExist(proxyDeployment, proxyService),
+				),
 				spec.WithAssertion(func(ctx context.Context) {
-					// This test is mainly an Integration-style test, in that we just assert objects are
-					// created and destroyed
+					// This test is mainly an Integration-style test,
+					// in that we just assert objects are created and destroyed
 
+					// If we wanted to expand the usage, this is the function where we would assert traffic behaviors
 				}),
-				spec.WithFinalizedAssertion(assertionProvider.ObjectsNotExist(proxyDeployment, proxyService)),
+				spec.WithFinalizedAssertion(
+					assertionProvider.ObjectsNotExist(proxyDeployment, proxyService),
+				),
 			)
+			Expect(err).NotTo(HaveOccurred())
 
-			err := scenarioRunner.RunScenario(ctx, spec)
+			err = scenarioRunner.RunScenario(ctx, spec)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
