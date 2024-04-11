@@ -57,6 +57,12 @@ func (m *VirtualHostOption) Clone() proto.Message {
 		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.VirtualHostOptions)
 	}
 
+	if h, ok := interface{}(m.GetTargetRef()).(clone.Cloner); ok {
+		target.TargetRef = h.Clone().(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName)
+	} else {
+		target.TargetRef = proto.Clone(m.GetTargetRef()).(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName)
+	}
+
 	return target
 }
 
