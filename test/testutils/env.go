@@ -72,6 +72,9 @@ const (
 
 	// Gloo Gateway setup
 	GlooGatewaySetup = "GLOO_GATEWAY_SETUP"
+
+	// ClusterName is used to identify the name of the Kubernetes cluster used in tests
+	ClusterName = "CLUSTER_NAME"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
