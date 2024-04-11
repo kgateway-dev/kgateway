@@ -70,5 +70,5 @@ type StatusPlugin interface {
 	ApplyStatusPlugin(
 		ctx context.Context,
 		statusCtx *StatusContext,
-	)
+	) error
 }

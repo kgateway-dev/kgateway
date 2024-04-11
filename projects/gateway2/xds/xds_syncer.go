@@ -224,11 +224,18 @@ func (s *XdsSyncer) applyStatusPlugins(
 	pluginRegistry registry.PluginRegistry,
 	proxiesWithReports []translatorutils.ProxyWithReports,
 ) {
+	ctx = contextutils.WithLogger(ctx, "k8sGatewayStatusPlugins")
+	logger := contextutils.LoggerFrom(ctx)
+
 	statusCtx := &gwplugins.StatusContext{
 		ProxiesWithReports: proxiesWithReports,
 	}
 	for _, plugin := range pluginRegistry.GetStatusPlugins() {
-		plugin.ApplyStatusPlugin(ctx, statusCtx)
+		err := plugin.ApplyStatusPlugin(ctx, statusCtx)
+		if err != nil {
+			logger.Errorf("Error applying status plugin: %v", err)
+			continue
+		}
 	}
 }
 

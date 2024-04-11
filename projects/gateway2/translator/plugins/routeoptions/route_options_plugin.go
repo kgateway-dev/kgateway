@@ -112,7 +112,7 @@ func (p *plugin) ApplyRoutePlugin(
 	return nil
 }
 
-func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) {
+func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
 	// gather all RouteOptions we need to report status for
 	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
 		// get proxy status to use for RouteOption status
@@ -155,11 +155,12 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		}
 
 		// actually write out the reports!
-		p.statusReporter.WriteReports(ctx, routeOptionReport, v.subresourceStatus)
-		// if err {
-
-		// }
+		err := p.statusReporter.WriteReports(ctx, routeOptionReport, v.subresourceStatus)
+		if err != nil {
+			return fmt.Errorf("error writing status report from RouteOptionPlugin: %w", err)
+		}
 	}
+	return nil
 }
 
 // tracks the attachment of a RouteOption so we know which RouteOptions to report status for
