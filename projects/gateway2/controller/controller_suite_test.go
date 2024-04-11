@@ -98,7 +98,7 @@ var _ = BeforeSuite(func() {
 
 	var gatewayClassObjName api.ObjectName = api.ObjectName(gatewayClassName)
 
-	exts, err := extensions.NewK8sGatewayExtensions(mgr, nil, nil)
+	exts, err := extensions.NewK8sGatewayExtensions(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
