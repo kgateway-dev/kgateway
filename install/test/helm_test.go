@@ -74,6 +74,12 @@ func GetValidationEnvVar() corev1.EnvVar {
 		Value: "true",
 	}
 }
+func GetK8sGwControllerEnvVar() corev1.EnvVar {
+	return corev1.EnvVar{
+		Name:  "GG_EXPERIMENTAL_K8S_GW_CONTROLLER",
+		Value: "true",
+	}
+}
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
@@ -178,7 +184,7 @@ var _ = Describe("Helm Test", func() {
 			It("should have all resources marked with a namespace", func() {
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
-						// TODO: re-enable once GG supports namespaced rbac
+						// TODO: re-enable once our k8s gw integration supports namespaced rbac
 						"kubeGateway.enabled=false",
 					},
 				})
@@ -4377,6 +4383,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
+            value: "true"
           - name: START_STATS_SERVER
             value: "true"
           - name: VALIDATION_MUST_START
@@ -4752,7 +4760,7 @@ metadata:
 						selector = map[string]string{
 							"gloo": "gloo",
 						}
-						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
+						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetK8sGwControllerEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 						glooAnnotations := make(map[string]string)
 						for k, v := range statsAnnotations {
 							glooAnnotations[k] = v
@@ -4922,7 +4930,7 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 					It("can disable validation", func() {
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{GetPodNamespaceEnvVar(), GetK8sGwControllerEnvVar(), GetPodNamespaceStats()}
 						glooDeployment.Spec.Template.Spec.Volumes = []corev1.Volume{{
 							Name: "labels-volume",
 							VolumeSource: corev1.VolumeSource{
@@ -5777,6 +5785,10 @@ metadata:
 													ValueFrom: &corev1.EnvVarSource{
 														FieldRef: &corev1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 													},
+												},
+												{
+													Name:  "GG_EXPERIMENTAL_K8S_GW_CONTROLLER",
+													Value: "true",
 												},
 												{
 													Name:  "START_STATS_SERVER",
