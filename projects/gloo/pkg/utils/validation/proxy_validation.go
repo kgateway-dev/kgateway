@@ -410,6 +410,14 @@ func AppendRouteError(routeReport *validation.RouteReport, errType validation.Ro
 	})
 }
 
+func AppendRouteErrorWithMetadata(routeReport *validation.RouteReport, errType validation.RouteReport_Error_Type, reason string, routeName string, metadata *v1.SourceMetadata) {
+	routeReport.Errors = append(routeReport.GetErrors(), &validation.RouteReport_Error{
+		Type:     errType,
+		Reason:   fmt.Sprintf("%s. %s: %s", reason, RouteIdentifierTxt, routeName),
+		Metadata: metadata,
+	})
+}
+
 func AppendRouteWarning(routeReport *validation.RouteReport, errType validation.RouteReport_Warning_Type, reason string) {
 	routeReport.Warnings = append(routeReport.GetWarnings(), &validation.RouteReport_Warning{
 		Type:   errType,
