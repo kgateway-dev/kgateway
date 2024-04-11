@@ -694,6 +694,12 @@ func (m *RouteReport_Error) Clone() proto.Message {
 
 	target.Reason = m.GetReason()
 
+	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	} else {
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	}
+
 	return target
 }
 

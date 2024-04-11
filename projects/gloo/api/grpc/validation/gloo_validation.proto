@@ -189,6 +189,8 @@ message RouteReport {
         Type type = 1;
         // any extra info as a string
         string reason = 2;
+        // Source metadata for the RouteReport, can be used by external components to associate sources with the RouteError
+        SourceMetadata metadata = 3;
     }
 
     // warning types for the given route config
