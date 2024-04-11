@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRouteOptionsPlugin(t *testing.T) {
+func TestVirtualHostOptionsPlugin(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "RouteOptions Plugin Suite")
+	RunSpecs(t, "VirtualHostOptions Plugin Suite")
 }

@@ -3,6 +3,7 @@ package virtualhostoptions
 import (
 	"context"
 
+	"github.com/rotisserie/eris"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -49,30 +50,14 @@ func (p *plugin) ApplyListenerPlugin(
 		return nil
 	}
 
-	var vhs []*v1.VirtualHost
-	switch outListener.GetListenerType().(type) {
-	case *v1.Listener_HttpListener:
-		vhs = outListener.GetHttpListener().GetVirtualHosts()
-	case *v1.Listener_HybridListener:
-		matchedListeners := outListener.GetHybridListener().GetMatchedListeners()
-		for _, ml := range matchedListeners {
-			if httpListener := ml.GetHttpListener(); httpListener != nil {
-				vhs = append(vhs, httpListener.GetVirtualHosts()...)
-			}
-		}
-
-	case *v1.Listener_AggregateListener:
-		for _, v := range outListener.GetAggregateListener().GetHttpResources().GetVirtualHosts() {
-			v := v
-			vhs = append(vhs, v)
-		}
-	default:
-		// no http on listener
-		return nil
+	aggListener := outListener.GetAggregateListener()
+	// TODO(jbohanon) add package level error and test this case
+	if aggListener == nil {
+		return eris.Errorf("got unexpected listener type; expected aggregate listener, got %T", outListener.GetListenerType())
 	}
 
-	for _, vh := range vhs {
-		vh.Options = attachedOption.Spec.GetOptions()
+	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
+		v.Options = attachedOption.Spec.GetOptions()
 	}
 
 	return nil
