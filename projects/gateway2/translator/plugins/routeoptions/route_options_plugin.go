@@ -142,20 +142,20 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		}
 	}
 	routeOptionReport := make(reporter.ResourceReports)
-	for k, v := range p.legacyStatusCache {
+	for roKey, status := range p.legacyStatusCache {
 		// get the obj by namespacedName
-		roObj, _ := p.routeOptionClient.Read(k.Namespace, k.Name, clients.ReadOpts{Ctx: ctx})
+		roObj, _ := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
 
 		// mark this object to be processed
 		routeOptionReport.Accept(roObj)
 
 		// add any route errors for this obj
-		for _, rerr := range v.routeErrors {
+		for _, rerr := range status.routeErrors {
 			routeOptionReport.AddError(roObj, errors.New(rerr.GetReason()))
 		}
 
 		// actually write out the reports!
-		err := p.statusReporter.WriteReports(ctx, routeOptionReport, v.subresourceStatus)
+		err := p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
 		if err != nil {
 			return fmt.Errorf("error writing status report from RouteOptionPlugin: %w", err)
 		}
@@ -267,22 +267,32 @@ func formatNotFoundMessage(routeCtx *plugins.RouteContext, filter *gwv1.HTTPRout
 // and key them by the source RouteOption NamespacedName
 func extractRouteErrors(proxyReport *validation.ProxyReport) map[types.NamespacedName][]*validation.RouteReport_Error {
 	routeErrors := make(map[types.NamespacedName][]*validation.RouteReport_Error)
-	for _, lr := range proxyReport.GetListenerReports() {
-		for _, hlr := range lr.GetAggregateListenerReport().GetHttpListenerReports() {
-			for _, vhr := range hlr.GetVirtualHostReports() {
-				for _, rr := range vhr.GetRouteReports() {
-					for _, rerr := range rr.GetErrors() {
-						if roKey, ok := extractRouteOptionSourceKeys(rerr); ok {
-							errors := routeErrors[roKey]
-							errors = append(errors, rerr)
-							routeErrors[roKey] = errors
-						}
-					}
-				}
+	routeReports := getAllRouteReports(proxyReport.GetListenerReports())
+	for _, rr := range routeReports {
+		for _, rerr := range rr.GetErrors() {
+			// if we've found a RouteReport with an Error, let's check if it has a sourced RouteOption
+			// if so, we will add that error to the list of errors associated to that RouteOption
+			if roKey, ok := extractRouteOptionSourceKeys(rerr); ok {
+				errors := routeErrors[roKey]
+				errors = append(errors, rerr)
+				routeErrors[roKey] = errors
 			}
 		}
 	}
 	return routeErrors
+}
+
+// given a list of ListenerReports, iterate all HttpListeners to find and return all RouteReports
+func getAllRouteReports(listenerReports []*validation.ListenerReport) []*validation.RouteReport {
+	routeReports := []*validation.RouteReport{}
+	for _, lr := range listenerReports {
+		for _, hlr := range lr.GetAggregateListenerReport().GetHttpListenerReports() {
+			for _, vhr := range hlr.GetVirtualHostReports() {
+				routeReports = append(routeReports, vhr.GetRouteReports()...)
+			}
+		}
+	}
+	return routeReports
 }
 
 // if the Route error has a RouteOption source associated with it, extract the source and return it
