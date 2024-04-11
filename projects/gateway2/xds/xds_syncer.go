@@ -17,6 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gloot "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -94,6 +95,9 @@ type XdsSyncer struct {
 	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
 	proxyReconciler gloo_solo_io.ProxyReconciler
+
+	routeOptionClient gatewayv1.RouteOptionClient
+	statusReporter    reporter.StatusReporter
 }
 
 type XdsInputChannels struct {
@@ -132,6 +136,8 @@ func NewXdsSyncer(
 	mgr manager.Manager,
 	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
+	routeOptionClient gatewayv1.RouteOptionClient,
+	statusReporter reporter.StatusReporter,
 ) *XdsSyncer {
 	return &XdsSyncer{
 		controllerName:       controllerName,
@@ -143,6 +149,8 @@ func NewXdsSyncer(
 		mgr:                  mgr,
 		k8sGwExtensions:      k8sGwExtensions,
 		proxyReconciler:      gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		routeOptionClient:    routeOptionClient,
+		statusReporter:       statusReporter,
 	}
 }
 
@@ -168,7 +176,11 @@ func (s *XdsSyncer) Start(ctx context.Context) error {
 
 		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
 
-		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
+		pluginParams := extensions.PluginBuilderParams{
+			RouteOptionClient: s.routeOptionClient,
+			StatusReporter:    s.statusReporter,
+		}
+		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx, pluginParams)
 		gatewayTranslator := gloot.NewTranslator(gatewayQueries, pluginRegistry)
 
 		proxies := gloo_solo_io.ProxyList{}
