@@ -879,15 +879,15 @@ docker-standard: access-logger-docker
 docker-standard: kubectl-docker
 
 .PHONY: docker-distroless
-docker-standard: check-go-version
-docker-standard: gloo-distroless-docker
-docker-standard: discovery-distroless-docker
-docker-standard: gloo-envoy-wrapper-distroless-docker
-docker-standard: sds-distroless-docker
-docker-standard: certgen-distroless-docker
-docker-standard: ingress-distroless-docker
-docker-standard: access-logger-distroless-docker
-docker-standard: kubectl-distroless-docker
+docker-distroless: check-go-version
+docker-distroless: gloo-distroless-docker
+docker-distroless: discovery-distroless-docker
+docker-distroless: gloo-envoy-wrapper-distroless-docker
+docker-distroless: sds-distroless-docker
+docker-distroless: certgen-distroless-docker
+docker-distroless: ingress-distroless-docker
+docker-distroless: access-logger-distroless-docker
+docker-distroless: kubectl-distroless-docker
 
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
@@ -944,14 +944,14 @@ docker-standard-retag: docker-retag-access-logger
 docker-standard-retag: docker-retag-kubectl
 
 .PHONY: docker-distroless-retag
-docker-distroless-retag: docker-retag-gloo
-docker-distroless-retag: docker-retag-discovery
-docker-distroless-retag: docker-retag-gloo-envoy-wrapper
-docker-distroless-retag: docker-retag-sds
-docker-distroless-retag: docker-retag-certgen
-docker-distroless-retag: docker-retag-ingress
-docker-distroless-retag: docker-retag-access-logger
-docker-distroless-retag: docker-retag-kubectl
+docker-distroless-retag: docker-retag-gloo-distroless
+docker-distroless-retag: docker-retag-discovery-distroless
+docker-distroless-retag: docker-retag-gloo-envoy-wrapper-distroless
+docker-distroless-retag: docker-retag-sds-distroless
+docker-distroless-retag: docker-retag-certgen-distroless
+docker-distroless-retag: docker-retag-ingress-distroless
+docker-distroless-retag: docker-retag-access-logger-distroless
+docker-distroless-retag: docker-retag-kubectl-distroless
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
