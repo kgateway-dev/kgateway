@@ -23,10 +23,11 @@ import (
 var _ = Describe("Query Get VirtualHostOptions", func() {
 
 	var (
-		ctx  context.Context
-		deps []client.Object
-		gw   *gwv1.Gateway
-		qry  query.VirtualHostOptionQueries
+		ctx      context.Context
+		deps     []client.Object
+		gw       *gwv1.Gateway
+		listener *gwv1.Listener
+		qry      query.VirtualHostOptionQueries
 	)
 
 	BeforeEach(func() {
@@ -36,6 +37,9 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 				Namespace: "default",
 				Name:      "test",
 			},
+		}
+		listener = &gwv1.Listener{
+			Name: "foo",
 		}
 	})
 
@@ -58,15 +62,11 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should find the only attached option", func() {
-			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOptionList).NotTo(BeNil())
-			items := virtualHostOptionList.Items
-
-			Expect(items).To(HaveLen(1))
-			vhOpt := &items[0]
-			Expect(vhOpt.GetName()).To(Equal("good-policy"))
-			Expect(vhOpt.GetNamespace()).To(Equal("default"))
+			Expect(virtualHostOption).NotTo(BeNil())
+			Expect(virtualHostOption.GetName()).To(Equal("good-policy"))
+			Expect(virtualHostOption.GetNamespace()).To(Equal("default"))
 		})
 	})
 
@@ -78,12 +78,9 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should not find an attached option", func() {
-			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOptionList).NotTo(BeNil())
-			items := virtualHostOptionList.Items
-
-			Expect(items).To(BeEmpty())
+			Expect(virtualHostOption).To(BeNil())
 		})
 
 	})
@@ -97,16 +94,12 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should find the attached option", func() {
-			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOptionList).NotTo(BeNil())
-			items := virtualHostOptionList.Items
+			Expect(virtualHostOption).NotTo(BeNil())
 
-			Expect(err).NotTo(HaveOccurred())
-			Expect(items).To(HaveLen(1))
-			vhOpt := &items[0]
-			Expect(vhOpt.GetName()).To(Equal("good-policy-no-ns"))
-			Expect(vhOpt.GetNamespace()).To(Equal("default"))
+			Expect(virtualHostOption.GetName()).To(Equal("good-policy-no-ns"))
+			Expect(virtualHostOption.GetNamespace()).To(Equal("default"))
 		})
 
 	})
@@ -119,13 +112,9 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should not find an attached option", func() {
-			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOptionList).NotTo(BeNil())
-			items := virtualHostOptionList.Items
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(items).To(BeEmpty())
+			Expect(virtualHostOption).To(BeNil())
 		})
 	})
 })

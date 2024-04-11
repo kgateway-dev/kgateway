@@ -3,18 +3,14 @@ package virtualhostoptions
 import (
 	"context"
 
-	"github.com/rotisserie/eris"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/contextutils"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var _ plugins.ListenerPlugin = &plugin{}
@@ -42,33 +38,17 @@ func (p *plugin) ApplyListenerPlugin(
 	outListener *v1.Listener,
 ) error {
 
-	// attachedOptions represents all VirtualHostOptions targeting the Gateway on which this listener resides
-	attachedOptions := getAttachedVirtualHostOptions(ctx, listenerCtx.Gateway, p.vhOptQueries)
-	if len(attachedOptions) == 0 {
+	// attachedOption represents the VirtualHostOptions targeting the Gateway on which this listener resides, and/or
+	// the VirtualHostOptions which specifies this listener in section name
+	attachedOption, err := p.vhOptQueries.GetVirtualHostOptionsForListener(ctx, listenerCtx.GwListener, listenerCtx.Gateway)
+	if err != nil {
+		return err
+	}
+
+	if attachedOption == nil {
 		return nil
 	}
 
-	optsWithSectionName := map[string]*solokubev1.VirtualHostOption{}
-	optsWithoutSectionName := []*solokubev1.VirtualHostOption{}
-	for _, opt := range attachedOptions {
-		if sectionName := opt.Spec.GetTargetRef().GetSectionName(); sectionName != nil && sectionName.GetValue() != "" {
-			optsWithSectionName[sectionName.GetValue()] = opt
-		} else {
-			optsWithoutSectionName = append(optsWithoutSectionName, opt)
-		}
-	}
-
-	if len(optsWithoutSectionName) > 1 {
-		return eris.Errorf("expected 1 VirtualHostOption resource targeting Gateway (%s.%s); got %d", listenerCtx.Gateway.Namespace, listenerCtx.Gateway.Name, len(optsWithoutSectionName))
-	}
-
-	var optToUse *solokubev1.VirtualHostOption
-	// If there is not a section name or the specified section name matches our listener, apply the vhost options
-	if targetedOpt, ok := optsWithSectionName[string(listenerCtx.GwListener.Name)]; ok {
-		optToUse = targetedOpt
-	} else if len(optsWithoutSectionName) == 1 {
-		optToUse = optsWithoutSectionName[0]
-	}
 	var vhs []*v1.VirtualHost
 	switch outListener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
@@ -92,7 +72,7 @@ func (p *plugin) ApplyListenerPlugin(
 	}
 
 	for _, vh := range vhs {
-		vh.Options = optToUse.Spec.GetOptions()
+		vh.Options = attachedOption.Spec.GetOptions()
 	}
 
 	return nil
@@ -105,23 +85,4 @@ func (p *plugin) handleAttachment(
 ) {
 
 	return
-}
-
-func getAttachedVirtualHostOptions(ctx context.Context, gw *gwv1.Gateway, queries vhoptquery.VirtualHostOptionQueries) []*solokubev1.VirtualHostOption {
-	vhOptionList, err := queries.GetVirtualHostOptionsForGateway(ctx, gw)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("error while Listing VirtualHostOptions: %v", err)
-		// TODO: add status to policy on error
-		return nil
-	}
-
-	// as the VirtualHostOptionList does not contain pointers, and VirtualHostOption is a concrete proto message,
-	// we need to turn it into a pointer slice to avoid copying proto message state around, copying locks, etc.
-	// while we perform operations on the VirtualHostOptionList
-	ptrSlice := []*solokubev1.VirtualHostOption{}
-	items := vhOptionList.Items
-	for i := range items {
-		ptrSlice = append(ptrSlice, &items[i])
-	}
-	return ptrSlice
 }
