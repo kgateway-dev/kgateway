@@ -14,12 +14,14 @@ import (
 var (
 	_            Cmd   = &LocalCmd{}
 	_            Cmder = &LocalCmder{}
-	DefaultCmder       = &LocalCmder{}
+	defaultCmder       = &LocalCmder{}
 )
 
-// Command is a convenience wrapper over DefaultCmder.Command
+// Command is a convenience wrapper over defaultCmder.Command
 func Command(ctx context.Context, command string, args ...string) Cmd {
-	return DefaultCmder.Command(ctx, command, args...)
+	return defaultCmder.Command(ctx, command, args...).
+		WithStdout(io.Discard).
+		WithStderr(io.Discard)
 }
 
 // LocalCmder is a factory for LocalCmd, implementing Cmder
