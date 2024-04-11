@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -176,7 +177,8 @@ func (ml *mergedListeners) translateListeners(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
-	reporter reports.Reporter) []*v1.Listener {
+	reporter reports.Reporter,
+) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
 		listener := mergedListener.translateListener(ctx, pluginRegistry, queries, reporter)
@@ -326,7 +328,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	)
 	for host, vhostRoutes := range routesByHost {
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(parentName, host)
+		vhostName := makeVhostName(ctx, parentName, host)
 		virtualHosts[vhostName] = &v1.VirtualHost{
 			Name:    vhostName,
 			Domains: []string{host},
@@ -380,7 +382,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	)
 	for host, vhostRoutes := range routesByHost {
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(parentName, host)
+		vhostName := makeVhostName(ctx, parentName, host)
 		virtualHosts[vhostName] = &v1.VirtualHost{
 			Name:    vhostName,
 			Domains: []string{host},
@@ -529,9 +531,9 @@ func translateSslConfig(
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
 func makeVhostName(
+	ctx context.Context,
 	parentName string,
 	domain string,
 ) string {
-	// TODO is this a valid vh name?
-	return parentName + "~" + domain
+	return utils.SanitizeForEnvoy(ctx, parentName+"~"+domain, "vHost")
 }
