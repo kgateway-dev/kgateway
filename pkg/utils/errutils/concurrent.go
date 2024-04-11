@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 )
 
-// AggregateConcurrent runs fns concurrently, returning a NewAggregate if there are > 1 errors
+// AggregateConcurrent runs fns concurrently, returning a NewAggregate if there are > 0 errors
 func AggregateConcurrent(funcs []func() error) errors.Aggregate {
 	// run all fns concurrently
 	ch := make(chan error, len(funcs))

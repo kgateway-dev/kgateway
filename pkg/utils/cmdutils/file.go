@@ -9,7 +9,7 @@ import (
 // If the file does not exist on the host, it will be created
 func RunCommandOutputToFileFunc(cmd Cmd, path string) func() error {
 	return func() error {
-		f, err := fileOnHost(path)
+		f, err := getOrCreateFileOnHost(path)
 		if err != nil {
 			return err
 		}
@@ -24,9 +24,9 @@ func RunCommandOutputToFileFunc(cmd Cmd, path string) func() error {
 	}
 }
 
-// FileOnHost is a helper to create a file at path even if the parent directory doesn't exist
+// getOrCreateFileOnHost is a helper to create a file at path even if the parent directory doesn't exist
 // in which case it will be created with ModePerm
-func fileOnHost(path string) (*os.File, error) {
+func getOrCreateFileOnHost(path string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return nil, err
 	}
