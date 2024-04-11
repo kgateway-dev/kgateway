@@ -1,0 +1,375 @@
+<p>Packages:</p>
+<ul>
+<li>
+<a href="#gateway.gloo.solo.io%2fv1alpha1">gateway.gloo.solo.io/v1alpha1</a>
+</li>
+</ul>
+<h2 id="gateway.gloo.solo.io/v1alpha1">gateway.gloo.solo.io/v1alpha1</h2>
+<div>
+</div>
+Resource Types:
+<ul></ul>
+<h3 id="gateway.gloo.solo.io/v1alpha1.EnvoyBootstrap">EnvoyBootstrap
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>log_level</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Envoy log level. Options include &ldquo;trace&rdquo;, &ldquo;debug&rdquo;, &ldquo;info&rdquo;, &ldquo;warn&rdquo;, &ldquo;error&rdquo;,
+&ldquo;critical&rdquo; and &ldquo;off&rdquo;. Defaults to &ldquo;info&rdquo;. See
+<a href="https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy">https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy</a>
+for more information.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>component_log_levels</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>Envoy log levels for specific components. The keys are component names and
+the values are one of &ldquo;trace&rdquo;, &ldquo;debug&rdquo;, &ldquo;info&rdquo;, &ldquo;warn&rdquo;, &ldquo;error&rdquo;,
+&ldquo;critical&rdquo;, or &ldquo;off&rdquo;, e.g.</p>
+<pre><code>```yaml
+componentLogLevels:
+upstream: debug
+connection: trace
+```
+</code></pre>
+<p>These will be converted to the <code>--component-log-level</code> Envoy argument
+value. See
+<a href="https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy">https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy</a>
+for more information.</p>
+<p>Note: the keys and values cannot be empty, but they are not otherwise validated.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>bootstrap</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.EnvoyBootstrap">
+EnvoyBootstrap
+</a>
+</em>
+</td>
+<td>
+<p>Initial envoy configuration.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>security_context</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
+Kubernetes core/v1.SecurityContext
+</a>
+</em>
+</td>
+<td>
+<p>The envoy container image. See
+<a href="https://kubernetes.io/docs/concepts/containers/images">https://kubernetes.io/docs/concepts/containers/images</a>
+for details.</p>
+<p>Default values, which may be overridden individually:</p>
+<pre><code>registry: quay.io/solo-io
+repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
+tag: &lt;gloo version&gt; (OSS) / &lt;gloo-ee version&gt; (EE)
+pullPolicy: IfNotPresent
+Image *kube.Image `json:&quot;image,omitempty&quot;`
+</code></pre>
+<p>The security context for this container. See
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core</a>
+for details.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.GatewayParameters">GatewayParameters
+</h3>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>metadata</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#objectmeta-v1-meta">
+Kubernetes meta/v1.ObjectMeta
+</a>
+</em>
+</td>
+<td>
+Refer to the Kubernetes API documentation for the fields of the
+<code>metadata</code> field.
+</td>
+</tr>
+<tr>
+<td>
+<code>spec</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.GatewayParametersSpec">
+GatewayParametersSpec
+</a>
+</em>
+</td>
+<td>
+<br/>
+<br/>
+<table>
+<tr>
+<td>
+<code>kube</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">
+KubernetesProxyConfig
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<code>status</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.GatewayParametersStatus">
+GatewayParametersStatus
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.GatewayParametersSpec">GatewayParametersSpec
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.GatewayParameters">GatewayParameters</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>kube</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">
+KubernetesProxyConfig
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.GatewayParametersStatus">GatewayParametersStatus
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.GatewayParameters">GatewayParameters</a>)
+</p>
+<div>
+</div>
+<h3 id="gateway.gloo.solo.io/v1alpha1.Image">Image
+</h3>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>registry</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The image registry.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>repository</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The image repository (name).</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>tag</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The image tag.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>digest</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The hash digest of the image, e.g. <code>sha256:12345...</code></p>
+</td>
+</tr>
+<tr>
+<td>
+<code>pullPolicy</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#pullpolicy-v1-core">
+Kubernetes core/v1.PullPolicy
+</a>
+</em>
+</td>
+<td>
+<p>The image pull policy for the container. See
+<a href="https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy">https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy</a>
+for details.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.GatewayParametersSpec">GatewayParametersSpec</a>)
+</p>
+<div>
+<p>Configuration for the set of Kubernetes resources that will be provisioned
+for a given Gateway.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>deployment</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.ProxyDeployment">
+ProxyDeployment
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>envoyContainer</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">
+EnvoyContainer
+</a>
+</em>
+</td>
+<td>
+<p>Configuration for the container running Envoy.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.ProxyDeployment">ProxyDeployment
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>replicas</code><br/>
+<em>
+int32
+</em>
+</td>
+<td>
+<p>The number of desired pods. Defaults to 1.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<p><em>
+Generated with <code>gen-crd-api-reference-docs</code>
+on git commit <code>924d10c46</code>.
+</em></p>
