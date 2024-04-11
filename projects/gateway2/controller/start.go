@@ -50,9 +50,11 @@ type StartConfig struct {
 
 	// ProxyClient is the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
-	ProxyClient       v1.ProxyClient
+	ProxyClient v1.ProxyClient
+	// RouteOptionClient is the client used for retrieving RouteOption objects within the RouteOptionsPlugin
+	// NOTE: We may be able to move this entirely to the RouteOptionsPlugin
 	RouteOptionClient gatewayv1.RouteOptionClient
-
+	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
 	StatusReporter reporter.StatusReporter
 }
 
