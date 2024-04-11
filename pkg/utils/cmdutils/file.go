@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-// RunCommandOutputToFileFunc returns a Cmd that pipes the stdout of the Cmd to the file specified.
+// RunCommandOutputToFileFunc returns a func that runs the given Cmd pipes its stdout to the file specified.
 // If the file does not exist on the host, it will be created
 func RunCommandOutputToFileFunc(cmd Cmd, path string) func() error {
 	return func() error {
