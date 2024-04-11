@@ -8,22 +8,16 @@ listeners:
             name: https
             namespace: default
       virtualHostRefs:
-      - https~example.com
+      - https~example_com
     httpResources:
       virtualHosts:
-        https~example.com:
+        https~example_com:
           domains:
           - example.com
-          name: https~example.com
+          name: https~example_com
           routes:
           - matchers:
             - prefix: /
-            metadataStatic:
-              sources:
-              - resourceKind: HTTPRoute
-                resourceRef:
-                  name: example-route
-                  namespace: default
             options: {}
             routeAction:
               single:

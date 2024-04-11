@@ -288,7 +288,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 				expectedSource := &v1.SourceMetadata_SourceRef{
 					ResourceRef: &core.ResourceRef{
-						Name:      "policy",
+						Name:      "policy-older",
 						Namespace: "default",
 					},
 					ResourceKind: "RouteOption",
@@ -312,7 +312,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 				plugin.ApplyStatusPlugin(ctx, &statusCtx)
 
-				robj, _ := routeOptionClient.Read("default", "policy", clients.ReadOpts{Ctx: ctx})
+				robj, _ := routeOptionClient.Read("default", "policy-older", clients.ReadOpts{Ctx: ctx})
 				status := robj.GetNamespacedStatuses().Statuses["gloo-system"]
 				Expect(status.State).To(Equal(core.Status_Accepted))
 			})
@@ -413,7 +413,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		})
 
 		When("RouteOptions exist in the same namespace and are attached correctly but hvae processing errors during xds translation", func() {
-			FIt("propagates faultinjection config but reports the processing error on resource status", func() {
+			It("propagates faultinjection config but reports the processing error on resource status", func() {
 				routeOptionClient.Write(attachedInvalidInternal(), clients.WriteOpts{})
 				deps := []client.Object{attachedInvalidRouteOption()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
@@ -482,8 +482,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 															Namespace: "default",
 														},
 														ResourceKind: sologatewayv1.RouteOptionGVK.Kind,
-													},
-													}}},
+													}}}},
 											},
 										}}},
 									},

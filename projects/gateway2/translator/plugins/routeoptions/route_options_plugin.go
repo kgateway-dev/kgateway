@@ -156,6 +156,9 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 
 		// actually write out the reports!
 		p.statusReporter.WriteReports(ctx, routeOptionReport, v.subresourceStatus)
+		// if err {
+
+		// }
 	}
 }
 

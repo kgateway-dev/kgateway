@@ -4,27 +4,21 @@ listeners:
     httpFilterChains:
     - matcher: {}
       virtualHostRefs:
-      - http~bar.example.com
-      - http~example.com
-      - http~foo.example.com
+      - http~bar_example_com
+      - http~example_com
+      - http~foo_example_com
     httpResources:
       virtualHosts:
-        http~bar.example.com:
+        http~bar_example_com:
           domains:
           - bar.example.com
-          name: http~bar.example.com
+          name: http~bar_example_com
           routes:
           - matchers:
             - headers:
               - name: env
                 value: canary
               prefix: /
-            metadataStatic:
-              sources:
-              - resourceKind: HTTPRoute
-                resourceRef:
-                  name: bar-route
-                  namespace: default
             options: {}
             routeAction:
               single:
@@ -33,50 +27,32 @@ listeners:
                   namespace: default
           - matchers:
             - prefix: /
-            metadataStatic:
-              sources:
-              - resourceKind: HTTPRoute
-                resourceRef:
-                  name: bar-route
-                  namespace: default
             options: {}
             routeAction:
               single:
                 upstream:
                   name: default-bar-svc-8080
                   namespace: default
-        http~example.com:
+        http~example_com:
           domains:
           - example.com
-          name: http~example.com
+          name: http~example_com
           routes:
           - matchers:
             - prefix: /
-            metadataStatic:
-              sources:
-              - resourceKind: HTTPRoute
-                resourceRef:
-                  name: example-route
-                  namespace: default
             options: {}
             routeAction:
               single:
                 upstream:
                   name: default-example-svc-80
                   namespace: default
-        http~foo.example.com:
+        http~foo_example_com:
           domains:
           - foo.example.com
-          name: http~foo.example.com
+          name: http~foo_example_com
           routes:
           - matchers:
             - prefix: /login
-            metadataStatic:
-              sources:
-              - resourceKind: HTTPRoute
-                resourceRef:
-                  name: foo-route
-                  namespace: default
             options: {}
             routeAction:
               single:
