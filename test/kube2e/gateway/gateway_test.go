@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -1909,7 +1910,10 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			var stderr threadsafe.Buffer
 
-			_ = kubeCli.ApplyCmd(ctx, []byte(yaml), "-f", "-").WithStderr(&stderr).Run()
+			_ = kubeCli.Command(ctx, "apply", "-f", "-").
+				WithStdin(bytes.NewBuffer([]byte(yaml))).
+				WithStderr(&stderr).
+				Run()
 			Expect(string(stderr.Bytes())).To(errorMatcher)
 		}
 
