@@ -2,10 +2,11 @@ package spec
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	"io"
-	"time"
 )
 
 const (
@@ -25,15 +26,26 @@ const (
 //
 // - // TODO: add a test to demonstrate that does not break
 type ScenarioRunner struct {
-	progressWriter io.Writer
-	timeout        time.Duration
+	progressWriter       io.Writer
+	assertionInterceptor func(func()) error
 }
 
 // NewScenarioRunner returns a ScenarioRunner
 func NewScenarioRunner() *ScenarioRunner {
 	return &ScenarioRunner{
 		progressWriter: io.Discard,
+		assertionInterceptor: func(f func()) error {
+			// do nothing, assertions will bubble up
+			return nil
+		},
 	}
+}
+
+// NewGinkgoScenarioRunner returns a ScenarioRunner used for the Ginkgo framework
+func NewGinkgoScenarioRunner() *ScenarioRunner {
+	return NewScenarioRunner().
+		WithProgressWriter(ginkgo.GinkgoWriter).
+		WithAssertionInterceptor(gomega.InterceptGomegaFailure)
 }
 
 // WithProgressWriter sets the io.Writer used by the ScenarioRunner
@@ -42,18 +54,24 @@ func (s *ScenarioRunner) WithProgressWriter(writer io.Writer) *ScenarioRunner {
 	return s
 }
 
-// WithTimeout sets the maximum time that a Scenario will be run for
-func (s *ScenarioRunner) WithTimeout(timeout time.Duration) *ScenarioRunner {
-	s.timeout = timeout
+// WithAssertionInterceptor sets the function that will be used to intercept ScenarioAssertion failures
+func (s *ScenarioRunner) WithAssertionInterceptor(assertionInterceptor func(func()) error) *ScenarioRunner {
+	s.assertionInterceptor = assertionInterceptor
 	return s
 }
 
 // RunScenario executes a Scenario
 func (s *ScenarioRunner) RunScenario(ctx context.Context, scenario Scenario) error {
-	scenarioCtx, scenarioCancel := context.WithTimeout(ctx, s.timeout)
-	defer scenarioCancel()
-
-	return s.runScenarioRecursive(scenarioCtx, scenario, 1)
+	// Intercept failures, so that we can return an error to the test code,
+	// and it can decide what to do with it
+	var scenarioErr error
+	interceptedErr := s.assertionInterceptor(func() {
+		scenarioErr = s.runScenarioRecursive(ctx, scenario, 1)
+	})
+	if interceptedErr != nil {
+		return interceptedErr
+	}
+	return scenarioErr
 }
 
 func (s *ScenarioRunner) runScenarioRecursive(ctx context.Context, scenario Scenario, currentScenarioDepth int) (err error) {
@@ -62,7 +80,7 @@ func (s *ScenarioRunner) runScenarioRecursive(ctx context.Context, scenario Scen
 	}
 
 	if currentScenarioDepth > maxScenarioDepth {
-		return errors.New("scenario can be composed of one another, but 3 levels is the maximum")
+		return eris.Errorf("scenario can be nested, but %d levels is the maximum", maxScenarioDepth)
 	}
 
 	s.writeProgress(scenario, "running setup")
@@ -76,18 +94,17 @@ func (s *ScenarioRunner) runScenarioRecursive(ctx context.Context, scenario Scen
 		// An assertion within the Scenario may cause the test itself to panic, and we want to ensure
 		// that no resources are left behind in the cluster, after a Scenario runs
 		s.writeProgress(scenario, "running cleanup")
-		err = s.cleanupScenario(ctx, scenario)
+		cleanupErr := s.cleanupScenario(ctx, scenario)
+		if cleanupErr != nil {
+			err = cleanupErr
+		}
 	}()
 
 	s.writeProgress(scenario, "running assertion")
 	scenario.Assertion()(ctx)
 
 	s.writeProgress(scenario, "running child scenarios")
-	if childScenarioErr := s.runScenarioRecursive(ctx, scenario.ChildScenario(), currentScenarioDepth+1); childScenarioErr != nil {
-		return childScenarioErr
-	}
-
-	return err
+	return s.runScenarioRecursive(ctx, scenario.ChildScenario(), currentScenarioDepth+1)
 }
 
 func (s *ScenarioRunner) setupScenario(ctx context.Context, scenario Scenario) error {

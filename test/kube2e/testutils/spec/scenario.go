@@ -15,13 +15,13 @@ type Scenario interface {
 	// InitializeResources returns the function that will create any resources that the Scenario used
 	InitializeResources() func(ctx context.Context) error
 
-	// WaitForInitialized returns the Assertion that must pass before the Scenario can proceed
+	// WaitForInitialized returns the ScenarioAssertion that must pass before the Scenario can proceed
 	WaitForInitialized() ScenarioAssertion
 
 	// Assertion returns the ScenarioAssertion that will run during the Scenario
 	Assertion() ScenarioAssertion
 
-	// ChildScenario returns a ScenarioAssertion that will be run during the scenario, after the Assertion() is executed
+	// ChildScenario returns a Scenario that will be run during the scenario, after the Assertion() is executed
 	// This is an optional property, that allows nesting of Scenario
 	ChildScenario() Scenario
 

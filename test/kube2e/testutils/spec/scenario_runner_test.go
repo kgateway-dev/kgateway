@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"time"
+	"strconv"
 )
 
 var _ = Describe("ScenarioRunner", func() {
@@ -17,9 +17,21 @@ var _ = Describe("ScenarioRunner", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		scenarioRunner = NewScenarioRunner().
-			WithProgressWriter(GinkgoWriter).
-			WithTimeout(time.Minute)
+		scenarioRunner = NewGinkgoScenarioRunner()
+	})
+
+	It("does not return error on valid setup", func() {
+		s := &testScenario{
+			initResources: func(ctx context.Context) error {
+				return nil
+			},
+			finalizeResources: func(ctx context.Context) error {
+				return nil
+			},
+		}
+
+		err := scenarioRunner.RunScenario(ctx, s)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("returns error on invalid setup", func() {
@@ -46,17 +58,60 @@ var _ = Describe("ScenarioRunner", func() {
 		Expect(err).To(MatchError("Failed to finalize resources"))
 	})
 
-	FIt("cancels long running scenario", func() {
+	It("returns error if assertion fails", func() {
 		s := &testScenario{
-			initResources: func(ctx context.Context) error {
-				// block for forever, unless the context is cancelled
-				select {}
+			assertion: func(ctx context.Context) {
+				Expect(1).To(Equal(2), "one does not equal two")
 			},
 		}
 
-		err := scenarioRunner.WithTimeout(time.Second).RunScenario(ctx, s)
+		err := scenarioRunner.RunScenario(ctx, s)
+		Expect(err).To(And(
+			// Prove that the error includes the description of the failing assertion
+			MatchError(ContainSubstring("one does not equal")),
+			// Prove that the error includes the assertion that failed
+			MatchError(ContainSubstring("Expected\n    <int>: 1\nto equal\n    <int>: 2")),
+		))
+	})
+
+	It("executes child scenario", func() {
+		failingScenario := &testScenario{
+			name: "failing",
+			assertion: func(ctx context.Context) {
+				Expect(1).To(Equal(2), "one does not equal two")
+			},
+		}
+		s := &testScenario{
+			name:          "parent",
+			childScenario: failingScenario,
+		}
+
+		err := scenarioRunner.RunScenario(ctx, s)
+		Expect(err).To(And(
+			// Prove that the error includes the description of the failing assertion
+			MatchError(ContainSubstring("one does not equal")),
+			// Prove that the error includes the assertion that failed
+			MatchError(ContainSubstring("Expected\n    <int>: 1\nto equal\n    <int>: 2")),
+		))
+	})
+
+	It("returns error if max depth is exceeded ", func() {
+		scenario := &testScenario{
+			name: "0",
+		}
+		var curScenario = scenario
+
+		// TODO: When go1.22 is introduced, use range
+		for i := 1; i <= 5; i++ {
+			curScenario.childScenario = &testScenario{
+				name: strconv.Itoa(i),
+			}
+			curScenario = curScenario.childScenario
+		}
+
+		err := scenarioRunner.RunScenario(ctx, scenario)
 		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError("Failed to finalize resources"))
+		Expect(err).To(MatchError(ContainSubstring("scenario can be nested, but 3 levels is the maximum")))
 	})
 })
 
@@ -67,6 +122,8 @@ type testScenario struct {
 	name              string
 	initResources     func(ctx context.Context) error
 	finalizeResources func(ctx context.Context) error
+	assertion         func(ctx context.Context)
+	childScenario     *testScenario
 }
 
 func (t *testScenario) Name() string {
@@ -92,12 +149,18 @@ func (t *testScenario) WaitForInitialized() ScenarioAssertion {
 }
 
 func (t *testScenario) Assertion() ScenarioAssertion {
+	if t.assertion != nil {
+		return t.assertion
+	}
 	return func(ctx context.Context) {
 		// do nothing
 	}
 }
 
 func (t *testScenario) ChildScenario() Scenario {
+	if t.childScenario != nil {
+		return t.childScenario
+	}
 	return nil
 }
 
