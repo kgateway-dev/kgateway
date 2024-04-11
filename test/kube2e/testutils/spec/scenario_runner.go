@@ -81,7 +81,8 @@ func (s *ScenarioRunner) runScenarioRecursive(ctx context.Context, scenario Scen
 		return eris.Errorf("scenario can be nested, but %d levels is the maximum", maxScenarioDepth)
 	}
 
-	s.writeProgress(scenario, "running setup")
+	s.writeProgress(scenario, "running scenario")
+
 	if setupErr := s.setupScenario(ctx, scenario); setupErr != nil {
 		return setupErr
 	}
@@ -91,7 +92,6 @@ func (s *ScenarioRunner) runScenarioRecursive(ctx context.Context, scenario Scen
 		// https://go.dev/blog/defer-panic-and-recover
 		// An assertion within the Scenario may cause the test itself to panic, and we want to ensure
 		// that no resources are left behind in the cluster, after a Scenario runs
-		s.writeProgress(scenario, "running cleanup")
 		cleanupErr := s.cleanupScenario(ctx, scenario)
 		if cleanupErr != nil {
 			err = cleanupErr
@@ -101,27 +101,32 @@ func (s *ScenarioRunner) runScenarioRecursive(ctx context.Context, scenario Scen
 	s.writeProgress(scenario, "running assertion")
 	scenario.Assertion()(ctx)
 
-	s.writeProgress(scenario, "running child scenarios")
 	return s.runScenarioRecursive(ctx, scenario.ChildScenario(), currentScenarioDepth+1)
 }
 
 func (s *ScenarioRunner) setupScenario(ctx context.Context, scenario Scenario) error {
+	s.writeProgress(scenario, "running setup")
 	err := scenario.InitializeResources()(ctx)
 	if err != nil {
 		return err
 	}
 
-	scenario.InitializedAssertion()(ctx)
+	s.writeProgress(scenario, "waiting for setup to complete")
+	assertion := scenario.InitializedAssertion()
+	assertion(ctx)
 	return nil
 }
 
 func (s *ScenarioRunner) cleanupScenario(ctx context.Context, scenario Scenario) error {
+	s.writeProgress(scenario, "running cleanup")
 	err := scenario.FinalizeResources()(ctx)
 	if err != nil {
 		return err
 	}
 
-	scenario.FinalizedAssertion()(ctx)
+	s.writeProgress(scenario, "waiting for cleanup to complete")
+	assertion := scenario.FinalizedAssertion()
+	assertion(ctx)
 	return nil
 }
 

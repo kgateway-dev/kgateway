@@ -22,8 +22,6 @@ var _ = Describe("Example Test", Ordered, func() {
 		assertionProvider *specassertions.Provider
 	)
 
-	// This code demonstrates the proposal for scenarios and assertions
-
 	BeforeAll(func() {
 		ctx = context.Background()
 
@@ -42,8 +40,8 @@ var _ = Describe("Example Test", Ordered, func() {
 		It("works", func() {
 			// These are the resources that we expect to be dynamically provisioned when we run the test
 			// The name and namespace of these objects is determined from the manifest file
-			proxyDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "proxyName", Namespace: "httpbin"}}
-			proxyService := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "proxyName", Namespace: "httpbin"}}
+			proxyDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gloo-proxy-gw", Namespace: "default"}}
+			proxyService := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "gloo-proxy-gw", Namespace: "default"}}
 
 			spec, err := scenarioProvider.NewScenario(
 				spec.WithName("basic-test"),

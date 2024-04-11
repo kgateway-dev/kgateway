@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	"os"
 )
 
 type ScenarioProvider struct {
@@ -39,6 +40,11 @@ func (p *ScenarioProvider) NewScenario(options ...Option) (Scenario, error) {
 
 	for _, opt := range options {
 		opt(properties)
+	}
+
+	_, err := os.Stat(properties.manifest)
+	if err != nil {
+		return nil, err
 	}
 
 	return &scenarioImpl{

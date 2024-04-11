@@ -14,17 +14,16 @@ func (p *Provider) ObjectsExist(objects ...client.Object) spec.ScenarioAssertion
 	return func(ctx context.Context) {
 		GinkgoHelper()
 
-		Eventually(func(g Gomega) {
-			for _, o := range objects {
-				g.Eventually(ctx, func() error {
-					return p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
-				}).Should(Succeed())
-			}
-		}).
-			WithContext(ctx).
-			WithTimeout(time.Second * 10).
-			WithPolling(time.Millisecond * 200).
-			Should(Succeed())
+		for _, o := range objects {
+			Eventually(ctx, func(g Gomega) {
+				err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
+				g.Expect(err).NotTo(HaveOccurred())
+			}).
+				WithContext(ctx).
+				WithTimeout(time.Second * 10).
+				WithPolling(time.Millisecond * 200).
+				Should(Succeed())
+		}
 	}
 }
 
@@ -32,16 +31,15 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) spec.ScenarioAssert
 	return func(ctx context.Context) {
 		GinkgoHelper()
 
-		Eventually(func(g Gomega) {
-			for _, o := range objects {
-				g.Eventually(ctx, func() error {
-					return p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
-				}).Should(MatchError(apierrors.IsNotFound))
-			}
-		}).
-			WithContext(ctx).
-			WithTimeout(time.Second * 10).
-			WithPolling(time.Millisecond * 200).
-			Should(Succeed())
+		for _, o := range objects {
+			Eventually(ctx, func(g Gomega) {
+				err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
+				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			}).
+				WithContext(ctx).
+				WithTimeout(time.Second * 10).
+				WithPolling(time.Millisecond * 200).
+				Should(Succeed())
+		}
 	}
 }
