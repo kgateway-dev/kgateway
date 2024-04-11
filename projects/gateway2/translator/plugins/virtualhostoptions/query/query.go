@@ -14,7 +14,7 @@ import (
 type VirtualHostOptionQueries interface {
 	// Populates the provided VirtualHostOptionList with the VirtualHostOption resources attached to the provided Gateway.
 	// Note that currently, only VirtualHostOptions in the same namespace as the Gateway can be attached.
-	GetVirtualHostOptionsForGateway(ctx context.Context, gw *gwv1.Gateway, list *solokubev1.VirtualHostOptionList) error
+	GetVirtualHostOptionsForGateway(ctx context.Context, gw *gwv1.Gateway) (*solokubev1.VirtualHostOptionList, error)
 }
 
 type virtualHostOptionQueries struct {
@@ -25,15 +25,20 @@ func NewQuery(c client.Client) VirtualHostOptionQueries {
 	return &virtualHostOptionQueries{c}
 }
 
-func (r *virtualHostOptionQueries) GetVirtualHostOptionsForGateway(ctx context.Context, gw *gwv1.Gateway, list *solokubev1.VirtualHostOptionList) error {
+func (r *virtualHostOptionQueries) GetVirtualHostOptionsForGateway(ctx context.Context, gw *gwv1.Gateway) (*solokubev1.VirtualHostOptionList, error) {
 	nn := types.NamespacedName{
 		Namespace: gw.Namespace,
 		Name:      gw.Name,
 	}
-	return r.c.List(
+	list := &solokubev1.VirtualHostOptionList{}
+	if err := r.c.List(
 		ctx,
 		list,
 		client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(VirtualHostOptionTargetField, nn.String())},
 		client.InNamespace(gw.GetNamespace()),
-	)
+	); err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }

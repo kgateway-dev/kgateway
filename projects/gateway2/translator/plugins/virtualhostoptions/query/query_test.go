@@ -20,97 +20,108 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ = Describe("Query", func() {
+var _ = Describe("Query Get VirtualHostOptions", func() {
 
-	var builder *fake.ClientBuilder
+	var (
+		ctx  context.Context
+		deps []client.Object
+		gw   *gwv1.Gateway
+		qry  query.VirtualHostOptionQueries
+	)
 
 	BeforeEach(func() {
-		builder = fake.NewClientBuilder().WithScheme(gwscheme.NewScheme())
+		ctx = context.Background()
+		gw = &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "test",
+			},
+		}
+	})
+
+	JustBeforeEach(func() {
+		builder := fake.NewClientBuilder().WithScheme(gwscheme.NewScheme())
 		query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 			builder.WithIndex(o, f, fun)
 			return nil
 		})
+		fakeClient := builder.WithObjects(deps...).Build()
+		qry = query.NewQuery(fakeClient)
 	})
 
-	Describe("Get VirtualHostOptions", func() {
-		It("should find the only attached option with a full targetRef", func() {
-			ctx := context.Background()
-
-			hr := httpRoute()
-			deps := []client.Object{
-				hr,
+	When("targetRef fully present", func() {
+		BeforeEach(func() {
+			deps = []client.Object{
+				gw,
 				attachedVirtualHostOption(),
 				diffNamespaceVirtualHostOption(),
 			}
-			fakeClient := builder.WithObjects(deps...).Build()
-
-			query := query.NewQuery(fakeClient)
-			var virtualHostOptionList solokubev1.VirtualHostOptionList
-			err := query.GetVirtualHostOptionsForGateway(ctx, hr, &virtualHostOptionList)
+		})
+		It("should find the only attached option", func() {
+			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(virtualHostOptionList).NotTo(BeNil())
 			items := virtualHostOptionList.Items
 
-			Expect(err).NotTo(HaveOccurred())
 			Expect(items).To(HaveLen(1))
-			rtOpt := &items[0]
-			Expect(rtOpt.GetName()).To(Equal("good-policy"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+			vhOpt := &items[0]
+			Expect(vhOpt.GetName()).To(Equal("good-policy"))
+			Expect(vhOpt.GetNamespace()).To(Equal("default"))
 		})
+	})
 
-		It("should not find an attached option when none are in the same namespace as route", func() {
-			ctx := context.Background()
-
-			hr := httpRoute()
-			deps := []client.Object{
-				hr,
+	When("no options in same namespace as gateway", func() {
+		BeforeEach(func() {
+			deps = []client.Object{
+				gw,
 				diffNamespaceVirtualHostOption(),
 			}
-			fakeClient := builder.WithObjects(deps...).Build()
-
-			query := query.NewQuery(fakeClient)
-			var virtualHostOptionList solokubev1.VirtualHostOptionList
-			err := query.GetVirtualHostOptionsForGateway(ctx, hr, &virtualHostOptionList)
+		})
+		It("should not find an attached option", func() {
+			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(virtualHostOptionList).NotTo(BeNil())
 			items := virtualHostOptionList.Items
 
-			Expect(err).NotTo(HaveOccurred())
 			Expect(items).To(BeEmpty())
 		})
 
-		It("should find the only attached option with a targetRef with omitted namespace", func() {
-			ctx := context.Background()
+	})
 
-			hr := httpRoute()
-			deps := []client.Object{
-				hr,
+	When("targetRef has omitted namespace", func() {
+		BeforeEach(func() {
+			deps = []client.Object{
+				gw,
 				attachedVirtualHostOptionOmitNamespace(),
 				diffNamespaceVirtualHostOption(),
 			}
-			fakeClient := builder.WithObjects(deps...).Build()
-
-			query := query.NewQuery(fakeClient)
-			var virtualHostOptionList solokubev1.VirtualHostOptionList
-			err := query.GetVirtualHostOptionsForGateway(ctx, hr, &virtualHostOptionList)
+		})
+		It("should find the attached option", func() {
+			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(virtualHostOptionList).NotTo(BeNil())
 			items := virtualHostOptionList.Items
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(items).To(HaveLen(1))
-			rtOpt := &items[0]
-			Expect(rtOpt.GetName()).To(Equal("good-policy-no-ns"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+			vhOpt := &items[0]
+			Expect(vhOpt.GetName()).To(Equal("good-policy-no-ns"))
+			Expect(vhOpt.GetNamespace()).To(Equal("default"))
 		})
 
-		It("should not find an attached option when none are in the same namespace as route with omitted namespace", func() {
-			ctx := context.Background()
+	})
 
-			hr := httpRoute()
-			deps := []client.Object{
-				hr,
+	When("no options in namespace as gateway with omitted namespace", func() {
+		BeforeEach(func() {
+			deps = []client.Object{
+				gw,
 				diffNamespaceVirtualHostOptionOmitNamespace(),
 			}
-			fakeClient := builder.WithObjects(deps...).Build()
-
-			query := query.NewQuery(fakeClient)
-			var virtualHostOptionList solokubev1.VirtualHostOptionList
-			err := query.GetVirtualHostOptionsForGateway(ctx, hr, &virtualHostOptionList)
+		})
+		It("should not find an attached option", func() {
+			virtualHostOptionList, err := qry.GetVirtualHostOptionsForGateway(ctx, gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(virtualHostOptionList).NotTo(BeNil())
 			items := virtualHostOptionList.Items
 
 			Expect(err).NotTo(HaveOccurred())
@@ -118,15 +129,6 @@ var _ = Describe("Query", func() {
 		})
 	})
 })
-
-func httpRoute() *gwv1.HTTPRoute {
-	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
-	}
-}
 
 func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 	now := metav1.Now()
@@ -139,13 +141,11 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 		Spec: sologatewayv1.VirtualHostOption{
 			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
 				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
+				Kind:      wellknown.GatewayKind,
 				Name:      "test",
 				Namespace: wrapperspb.String("default"),
 			},
-			Options: &v1.VirtualHostOptions{
-				// TODO(jbohanon) put a real option here
-			},
+			Options: &v1.VirtualHostOptions{},
 		},
 	}
 }
@@ -161,12 +161,10 @@ func attachedVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {
 		Spec: sologatewayv1.VirtualHostOption{
 			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
 				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
+				Kind:  wellknown.GatewayKind,
 				Name:  "test",
 			},
-			Options: &v1.VirtualHostOptions{
-				// TODO(jbohanon) put a real option here
-			},
+			Options: &v1.VirtualHostOptions{},
 		},
 	}
 }
@@ -182,13 +180,11 @@ func diffNamespaceVirtualHostOption() *solokubev1.VirtualHostOption {
 		Spec: sologatewayv1.VirtualHostOption{
 			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
 				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
+				Kind:      wellknown.GatewayKind,
 				Name:      "test",
 				Namespace: wrapperspb.String("default"),
 			},
-			Options: &v1.VirtualHostOptions{
-				// TODO(jbohanon) put a real option here
-			},
+			Options: &v1.VirtualHostOptions{},
 		},
 	}
 }
@@ -204,12 +200,10 @@ func diffNamespaceVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption
 		Spec: sologatewayv1.VirtualHostOption{
 			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
 				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
+				Kind:  wellknown.GatewayKind,
 				Name:  "test",
 			},
-			Options: &v1.VirtualHostOptions{
-				// TODO(jbohanon) put a real option here
-			},
+			Options: &v1.VirtualHostOptions{},
 		},
 	}
 }

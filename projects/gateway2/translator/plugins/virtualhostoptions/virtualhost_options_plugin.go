@@ -59,7 +59,7 @@ func (p *plugin) ApplyListenerPlugin(
 	}
 
 	if len(optsWithoutSectionName) > 1 {
-		return eris.Errorf("expected 1 VirtualHostOption resource targeting listener %s's Gateway; got %d", listenerCtx.GwListener.Name, len(optsWithoutSectionName))
+		return eris.Errorf("expected 1 VirtualHostOption resource targeting Gateway (%s.%s); got %d", listenerCtx.Gateway.Namespace, listenerCtx.Gateway.Name, len(optsWithoutSectionName))
 	}
 
 	var optToUse *solokubev1.VirtualHostOption
@@ -108,8 +108,7 @@ func (p *plugin) handleAttachment(
 }
 
 func getAttachedVirtualHostOptions(ctx context.Context, gw *gwv1.Gateway, queries vhoptquery.VirtualHostOptionQueries) []*solokubev1.VirtualHostOption {
-	var vhOptionList solokubev1.VirtualHostOptionList
-	err := queries.GetVirtualHostOptionsForGateway(ctx, gw, &vhOptionList)
+	vhOptionList, err := queries.GetVirtualHostOptionsForGateway(ctx, gw)
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Errorf("error while Listing VirtualHostOptions: %v", err)
 		// TODO: add status to policy on error

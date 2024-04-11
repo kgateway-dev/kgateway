@@ -19,26 +19,26 @@ func IterateIndices(f func(client.Object, string, client.IndexerFunc) error) err
 }
 
 func virtualHostOptionTargetRefIndexer(obj client.Object) []string {
-	rtOpt, ok := obj.(*solokubev1.VirtualHostOption)
+	vhOpt, ok := obj.(*solokubev1.VirtualHostOption)
 	if !ok {
 		panic(fmt.Sprintf("wrong type %T provided to indexer. expected gateway.solo.io.VirtualHostOption", obj))
 	}
 
 	var res []string
-	targetRef := rtOpt.Spec.GetTargetRef()
+	targetRef := vhOpt.Spec.GetTargetRef()
 	if targetRef == nil {
 		return res
 	}
 	if targetRef.GetGroup() != gwv1.GroupName {
 		return res
 	}
-	if targetRef.GetKind() != wellknown.HTTPRouteKind {
+	if targetRef.GetKind() != wellknown.GatewayKind {
 		return res
 	}
 
 	ns := targetRef.GetNamespace().GetValue()
 	if ns == "" {
-		ns = rtOpt.GetNamespace()
+		ns = vhOpt.GetNamespace()
 	}
 	targetNN := types.NamespacedName{
 		Namespace: ns,
