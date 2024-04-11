@@ -2343,6 +2343,21 @@ spec:
                         type: array
                     type: object
                 type: object
+              targetRef:
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    nullable: true
+                    type: string
+                  sectionName:
+                    nullable: true
+                    type: string
+                type: object
             type: object
           status:
             default: {}
