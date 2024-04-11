@@ -73,6 +73,7 @@ func translateGatewayHTTPRouteRule(
 			Action:   nil,
 			Options:  &v1.RouteOptions{},
 		}
+
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(
 				queries,

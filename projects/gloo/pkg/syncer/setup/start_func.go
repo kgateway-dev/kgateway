@@ -5,7 +5,10 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -56,6 +59,13 @@ func K8sGatewayControllerStartFunc() StartFunc {
 			return err
 		}
 
+		routeOptionClient, err := gateway.NewRouteOptionClient(ctx, opts.RouteOptions)
+		if err != nil {
+			return err
+		}
+		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+
 		if opts.ProxyDebugServer.Server != nil {
 			// If we have a debug server running, let's register the proxy client used by
 			// the k8s gateway translation. This will enable operators to query the debug endpoint
@@ -68,7 +78,9 @@ func K8sGatewayControllerStartFunc() StartFunc {
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
 			Opts:                      opts,
 
-			ProxyClient: inMemoryProxyClient,
+			ProxyClient:       inMemoryProxyClient,
+			RouteOptionClient: routeOptionClient,
+			StatusReporter:    statusReporter,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

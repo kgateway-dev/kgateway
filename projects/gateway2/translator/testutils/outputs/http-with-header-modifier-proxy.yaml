@@ -4,13 +4,13 @@ listeners:
     httpFilterChains:
     - matcher: {}
       virtualHostRefs:
-      - http~example.com
+      - http~example_com
     httpResources:
       virtualHosts:
-        http~example.com:
+        http~example_com:
           domains:
           - example.com
-          name: http~example.com
+          name: http~example_com
           routes:
           - matchers:
             - prefix: /header

@@ -27,6 +27,7 @@ type RouteReport struct {
 	observedGeneration int64
 }
 
+// TODO: rename to e.g. RouteParentRefReport
 type ParentRefReport struct {
 	Conditions []metav1.Condition
 }
@@ -157,6 +158,7 @@ func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 	return rr
 }
 
+// TODO: flesh out
 func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	var kind string
 	if parentRef.Kind != nil {
@@ -164,7 +166,7 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	}
 	var ns string
 	if parentRef.Namespace != nil {
-		kind = string(*parentRef.Namespace)
+		ns = string(*parentRef.Namespace)
 	}
 	return ParentRefKey{
 		Group: string(parentRef.Name),
@@ -209,7 +211,6 @@ func NewReporter(reportMap *ReportMap) Reporter {
 }
 
 type Reporter interface {
-	// returns the object reporter for the given type
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
 	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
@@ -229,6 +230,7 @@ type HTTPRouteReporter interface {
 	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
 }
 
+// TODO: rename to e.g. RouteParentReporter
 type ParentRefReporter interface {
 	SetCondition(condition HTTPRouteCondition)
 }
