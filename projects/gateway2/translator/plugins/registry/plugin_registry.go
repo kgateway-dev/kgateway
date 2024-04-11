@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -16,11 +17,16 @@ import (
 // into a Gloo Proxy resource, or during the post-processing of that conversion.
 type PluginRegistry struct {
 	routePlugins           []plugins.RoutePlugin
+	listenerPlugins        []plugins.ListenerPlugin
 	postTranslationPlugins []plugins.PostTranslationPlugin
 }
 
 func (p *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
 	return p.routePlugins
+}
+
+func (p *PluginRegistry) GetListenerPlugins() []plugins.ListenerPlugin {
+	return p.listenerPlugins
 }
 
 func (p *PluginRegistry) GetPostTranslationPlugins() []plugins.PostTranslationPlugin {
@@ -30,12 +36,16 @@ func (p *PluginRegistry) GetPostTranslationPlugins() []plugins.PostTranslationPl
 func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 	var (
 		routePlugins           []plugins.RoutePlugin
+		listenerPlugins        []plugins.ListenerPlugin
 		postTranslationPlugins []plugins.PostTranslationPlugin
 	)
 
 	for _, plugin := range allPlugins {
 		if routePlugin, ok := plugin.(plugins.RoutePlugin); ok {
 			routePlugins = append(routePlugins, routePlugin)
+		}
+		if listenerPlugin, ok := plugin.(plugins.ListenerPlugin); ok {
+			listenerPlugins = append(listenerPlugins, listenerPlugin)
 		}
 		if postTranslationPlugin, ok := plugin.(plugins.PostTranslationPlugin); ok {
 			postTranslationPlugins = append(postTranslationPlugins, postTranslationPlugin)
@@ -57,6 +67,7 @@ func BuildPlugins(queries gwquery.GatewayQueries, client client.Client) []plugin
 		mirror.NewPlugin(queries),
 		redirect.NewPlugin(),
 		routeoptions.NewPlugin(queries, client),
+		virtualhostoptions.NewPlugin(queries, client),
 		urlrewrite.NewPlugin(),
 	}
 }

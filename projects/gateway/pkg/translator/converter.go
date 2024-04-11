@@ -157,6 +157,7 @@ func (r *reporterHelper) addWarning(resource resources.InputResource, err error)
 // Since virtual services and route tables are often owned by different teams, it breaks multitenancy if
 // this function cannot return successfully; thus ALL ERRORS are added to the resource reports
 func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, snapshot *gloov1snap.ApiSnapshot, reports reporter.ResourceReports) []*gloov1.Route {
+	panic("converting virtualservice")
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
 	return rv.visit(
 		wrapper,

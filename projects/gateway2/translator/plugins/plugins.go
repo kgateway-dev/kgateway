@@ -38,6 +38,25 @@ type RoutePlugin interface {
 	) error
 }
 
+type ListenerContext struct {
+	// top-level Gateway
+	Gateway *gwv1.Gateway
+	// gw Listener being processed
+	GwListener *gwv1.Listener
+	// Reporter for the correct ParentRef associated with this Listener
+	Reporter reports.Reporter
+}
+type ListenerPlugin interface {
+	Plugin
+
+	// ApplyListenerPlugin is called for each Listener in a Gateway
+	ApplyListenerPlugin(
+		ctx context.Context,
+		routeCtx *ListenerContext,
+		outputListener *v1.Listener,
+	) error
+}
+
 type PostTranslationContext struct {
 	// TranslatedGateways is the list of Gateways that were generated in a single translation run
 	TranslatedGateways []TranslatedGateway
