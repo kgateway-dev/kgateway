@@ -52,7 +52,7 @@ var _ = Describe("validation utils", func() {
 				},
 			})
 
-			for range numRoutes {
+			for range numVhosts {
 				vh := &v1.TcpHost{}
 				tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
 			}
