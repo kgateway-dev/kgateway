@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -49,9 +50,25 @@ type TranslatedGateway struct {
 }
 
 type PostTranslationPlugin interface {
-	// ApplyPostTranslationPlugin is executed once at the end of a translation run
+	Plugin
+
+	// ApplyPostTranslationPlugin is executed once at the end of a Gateway API translation run
 	ApplyPostTranslationPlugin(
 		ctx context.Context,
 		postTranslationContext *PostTranslationContext,
+	) error
+}
+
+type StatusContext struct {
+	ProxiesWithReports []translatorutils.ProxyWithReports
+}
+
+// Plugin that recieves proxy reports post-xds translation to handle any status reporting necessary
+type StatusPlugin interface {
+	Plugin
+
+	ApplyStatusPlugin(
+		ctx context.Context,
+		statusCtx *StatusContext,
 	) error
 }

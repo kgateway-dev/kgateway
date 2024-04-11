@@ -50,8 +50,7 @@ func assertExpectedRoute(
 		Rule: &gwv1.HTTPRouteRule{
 			Filters: filters,
 		},
-		Match:    match,
-		Reporter: nil,
+		Match: match,
 	}
 	err := plugin.ApplyRoutePlugin(
 		context.Background(),
