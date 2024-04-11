@@ -50,7 +50,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.29.2-patch2
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
-GCFLAGS ?= all=-d=loopvar=2
+GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
 # if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
@@ -71,7 +71,7 @@ endif
 
 GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
-GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH) GOEXPERIMENT=loopvar
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
 GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine3.18
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
