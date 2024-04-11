@@ -113,6 +113,7 @@ var _ = Describe("ScenarioRunner", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError(ContainSubstring("scenario can be nested, but 3 levels is the maximum")))
 	})
+
 })
 
 var _ Scenario = new(testScenario)
@@ -142,7 +143,7 @@ func (t *testScenario) InitializeResources() func(ctx context.Context) error {
 	}
 }
 
-func (t *testScenario) WaitForInitialized() ScenarioAssertion {
+func (t *testScenario) InitializedAssertion() ScenarioAssertion {
 	return func(ctx context.Context) {
 		// do nothing
 	}
@@ -173,7 +174,7 @@ func (t *testScenario) FinalizeResources() func(ctx context.Context) error {
 	}
 }
 
-func (t *testScenario) WaitForFinalized() ScenarioAssertion {
+func (t *testScenario) FinalizedAssertion() ScenarioAssertion {
 	return func(ctx context.Context) {
 		// do nothing
 	}

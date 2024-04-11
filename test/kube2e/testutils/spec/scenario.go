@@ -15,8 +15,8 @@ type Scenario interface {
 	// InitializeResources returns the function that will create any resources that the Scenario used
 	InitializeResources() func(ctx context.Context) error
 
-	// WaitForInitialized returns the ScenarioAssertion that must pass before the Scenario can proceed
-	WaitForInitialized() ScenarioAssertion
+	// InitializedAssertion returns the ScenarioAssertion that must pass before the Scenario can proceed
+	InitializedAssertion() ScenarioAssertion
 
 	// Assertion returns the ScenarioAssertion that will run during the Scenario
 	Assertion() ScenarioAssertion
@@ -28,6 +28,6 @@ type Scenario interface {
 	// FinalizeResources returns the function that will remove any resources that the Scenario used
 	FinalizeResources() func(ctx context.Context) error
 
-	// WaitForFinalized returns the ScenarioAssertion that must pass before the Scenario is completed
-	WaitForFinalized() ScenarioAssertion
+	// FinalizedAssertion returns the ScenarioAssertion that must pass before the Scenario is completed
+	FinalizedAssertion() ScenarioAssertion
 }

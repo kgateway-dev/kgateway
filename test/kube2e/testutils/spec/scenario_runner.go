@@ -23,8 +23,6 @@ const (
 // Expectations of a ScenarioRunner are:
 //   - On failure, a runner should have a configurable way to leave resources behind if you want
 //   - A runner should be able to run a scenario multiple times in a row
-//
-// - // TODO: add a test to demonstrate that does not break
 type ScenarioRunner struct {
 	progressWriter       io.Writer
 	assertionInterceptor func(func()) error
@@ -35,13 +33,13 @@ func NewScenarioRunner() *ScenarioRunner {
 	return &ScenarioRunner{
 		progressWriter: io.Discard,
 		assertionInterceptor: func(f func()) error {
-			// do nothing, assertions will bubble up
+			// do nothing, assertions will bubble up and panic
 			return nil
 		},
 	}
 }
 
-// NewGinkgoScenarioRunner returns a ScenarioRunner used for the Ginkgo framework
+// NewGinkgoScenarioRunner returns a ScenarioRunner used for the Ginkgo test framework
 func NewGinkgoScenarioRunner() *ScenarioRunner {
 	return NewScenarioRunner().
 		WithProgressWriter(ginkgo.GinkgoWriter).
@@ -113,7 +111,7 @@ func (s *ScenarioRunner) setupScenario(ctx context.Context, scenario Scenario) e
 		return err
 	}
 
-	scenario.WaitForInitialized()(ctx)
+	scenario.InitializedAssertion()(ctx)
 	return nil
 }
 
@@ -123,7 +121,7 @@ func (s *ScenarioRunner) cleanupScenario(ctx context.Context, scenario Scenario)
 		return err
 	}
 
-	scenario.WaitForFinalized()(ctx)
+	scenario.FinalizedAssertion()(ctx)
 	return nil
 }
 
