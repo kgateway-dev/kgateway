@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/version"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
@@ -13,19 +15,28 @@ import (
 // which have Enterprise variants.
 type K8sGatewayExtensions interface {
 	// CreatePluginRegistry returns the PluginRegistry
-	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
+	CreatePluginRegistry(ctx context.Context, params PluginBuilderParams) registry.PluginRegistry
 
 	// GetEnvoyImage returns the envoy image and tag used by the proxy deployment.
 	GetEnvoyImage() Image
 }
 
+type PluginBuilderParams struct {
+	RouteOptionClient gatewayv1.RouteOptionClient
+	StatusReporter    reporter.StatusReporter
+}
+
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
-type K8sGatewayExtensionsFactory func(mgr controllerruntime.Manager) (K8sGatewayExtensions, error)
+type K8sGatewayExtensionsFactory func(
+	mgr controllerruntime.Manager,
+) (K8sGatewayExtensions, error)
 
 // NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
-func NewK8sGatewayExtensions(mgr controllerruntime.Manager) (K8sGatewayExtensions, error) {
+func NewK8sGatewayExtensions(
+	mgr controllerruntime.Manager,
+) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
-		mgr: mgr,
+		mgr,
 	}, nil
 }
 
@@ -34,12 +45,17 @@ type k8sGatewayExtensions struct {
 }
 
 // CreatePluginRegistry returns the PluginRegistry
-func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
+func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context, params PluginBuilderParams) registry.PluginRegistry {
 	queries := query.NewData(
 		e.mgr.GetClient(),
 		e.mgr.GetScheme(),
 	)
-	plugins := registry.BuildPlugins(queries, e.mgr.GetClient())
+	plugins := registry.BuildPlugins(
+		queries,
+		e.mgr.GetClient(),
+		params.RouteOptionClient,
+		params.StatusReporter,
+	)
 	return registry.NewPluginRegistry(plugins)
 }
 

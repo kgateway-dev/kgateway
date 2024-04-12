@@ -37,7 +37,6 @@ import (
 
 type TranslatorSyncer struct {
 	writeNamespace     string
-	reporter           reporter.Reporter
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator
 	statusSyncer       statusSyncer
@@ -69,7 +68,6 @@ var (
 func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) *TranslatorSyncer {
 	t := &TranslatorSyncer{
 		writeNamespace:  writeNamespace,
-		reporter:        reporter,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics, identity),

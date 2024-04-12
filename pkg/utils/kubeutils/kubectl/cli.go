@@ -3,6 +3,7 @@ package kubectl
 import (
 	"bytes"
 	"context"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 
@@ -44,6 +45,8 @@ func (c *Cli) WithKubeContext(kubeContext string) *Cli {
 	return c
 }
 
+// Command returns a Cmd that executes kubectl command, including the --context if it is defined
+// The Cmd sets the Stdout and Stderr to the receiver of the Cli
 func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 	if c.kubeContext != "" {
 		args = append([]string{"--context", c.kubeContext}, args...)
@@ -56,44 +59,73 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 		WithStderr(c.receiver)
 }
 
+// RunCommand creates a Cmd and then runs it
 func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 
-func (c *Cli) ApplyCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
-	args := append([]string{"apply"}, extraArgs...)
-
-	cmd := c.Command(ctx, args...)
-	cmd.WithStdin(bytes.NewBuffer(content))
-	return cmd
-}
-
+// Apply applies the resources defined in the bytes, and returns an error if one occurred
 func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) error {
-	applyArgs := append([]string{"-f", "-"}, extraArgs...)
-	return c.ApplyCmd(ctx, content, applyArgs...).Run().Cause()
+	args := append([]string{"apply", "-f", "-"}, extraArgs...)
+	return c.Command(ctx, args...).
+		WithStdin(bytes.NewBuffer(content)).
+		Run().
+		Cause()
 }
 
-func (c *Cli) deleteCmd(ctx context.Context, content []byte, extraArgs ...string) cmdutils.Cmd {
-	args := append([]string{"delete"}, extraArgs...)
+// ApplyFile applies the resources defined in a file, and returns an error if one occurred
+func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
 
-	cmd := c.Command(ctx, args...)
-	cmd.WithStdin(bytes.NewBuffer(content))
-	return cmd
+	fileInput, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = fileInput.Close()
+	}()
+
+	return c.Command(ctx, applyArgs...).
+		WithStdin(fileInput).
+		Run().
+		Cause()
 }
 
+// Delete deletes the resources defined in the bytes, and returns an error if one occurred
 func (c *Cli) Delete(ctx context.Context, content []byte, extraArgs ...string) error {
-	deleteYamlArgs := append([]string{"-f", "-"}, extraArgs...)
-	return c.deleteCmd(ctx, content, deleteYamlArgs...).Run().Cause()
+	args := append([]string{"delete", "-f", "-"}, extraArgs...)
+	return c.Command(ctx, args...).
+		WithStdin(bytes.NewBuffer(content)).
+		Run().
+		Cause()
 }
 
-func (c *Cli) copyCmd(ctx context.Context, from, to string) cmdutils.Cmd {
-	return c.Command(ctx, "cp", from, to)
+// DeleteFile deletes the resources defined in a file, and returns an error if one occurred
+func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	applyArgs := append([]string{"delete", "-f", fileName}, extraArgs...)
+
+	fileInput, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = fileInput.Close()
+	}()
+
+	return c.Command(ctx, applyArgs...).
+		WithStdin(fileInput).
+		Run().
+		Cause()
 }
 
+// Copy copies a file from one location to another
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
-	return c.copyCmd(ctx, from, to).Run().Cause()
+	return c.RunCommand(ctx, "cp", from, to)
 }
 
+// StartPortForward creates a PortForwarder based on the provides options, starts it, and returns the PortForwarder
+// If an error was encountered while starting the PortForwarder, it is returned as well
+// NOTE: It is the callers responsibility to close this port-forward
 func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Option) (portforward.PortForwarder, error) {
 	options = append([]portforward.Option{
 		// We define some default values, which users can then override
