@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gateway2/status"
 	"net"
 	"net/http"
 	"os"
@@ -881,6 +882,25 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
+	var (
+		gwv2StatusSyncer       status.GatewayStatusSyncer
+		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
+	)
+	// startFuncs represents the set of StartFunc that should be executed at startup
+	// At the moment, the functionality is used minimally.
+	// Overtime, we should break up this large function into smaller StartFunc
+	startFuncs := map[string]StartFunc{}
+
+	if opts.GlooGateway.EnableK8sGatewayController {
+
+		gwv2StatusSyncer = status.NewStatusSyncerFactory()
+		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
+
+		// Share proxyClient and status syncer with the gateway controller
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, gwv2StatusSyncer.InitStatusSyncer)
+
+	}
+
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
 		sharedTranslator,
@@ -894,7 +914,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwTranslatorSyncer,
 		proxyClient,
 		opts.WriteNamespace,
-		opts.Identity)
+		opts.Identity,
+		gwv2StatusSyncCallback,
+	)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -919,16 +941,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			}
 		}
 	}()
-
-	// startFuncs represents the set of StartFunc that should be executed at startup
-	// At the moment, the functionality is used minimally.
-	// Overtime, we should break up this large function into smaller StartFunc
-	startFuncs := map[string]StartFunc{}
-
-	if opts.GlooGateway.EnableK8sGatewayController {
-		// Share proxyClient with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient)
-	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
 	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
