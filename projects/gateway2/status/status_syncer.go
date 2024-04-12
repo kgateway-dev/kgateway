@@ -4,107 +4,96 @@ import (
 	"context"
 	"sync"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
+// HandleProxyReports should conform to the OnProxiesTranslatedFn and QueueStatusForProxiesFn signatures
+var _ syncer.OnProxiesTranslatedFn = (&statusSyncerFactory{}).HandleProxyReports
+
+var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatusForProxies
+
 type GatewayStatusSyncer interface {
-	InitStatusSyncer(
-		controllerName string,
-		routeOptionClient gatewayv1.RouteOptionClient,
-		k8sGwExtensions extensions.K8sGatewayExtensions,
-		statusReporter reporter.StatusReporter,
+	QueueStatusForProxies(
+		proxiesToQueue v1.ProxyList,
+		pluginRegistry *registry.PluginRegistry,
 	)
 	HandleProxyReports(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports)
 }
 
-// HandleProxyReports should conform to the OnProxiesTranslatedFn and InitStatusSyncerFn signatures
-var _ syncer.OnProxiesTranslatedFn = (&statusSyncerFactory{}).HandleProxyReports
-var _ controller.InitStatusSyncerFn = (&statusSyncerFactory{}).InitStatusSyncer
-
 // a threadsafe factory for initializing a status syncer
 // allows for the status syncer to be shared across multiple start funcs
 type statusSyncerFactory struct {
-	syncer *statusSyncer
-	lock   *sync.Mutex
+	registryPerProxy   map[*v1.Proxy]*registry.PluginRegistry
+	proxiesPerRegistry map[*registry.PluginRegistry]map[*v1.Proxy]bool
+	lock               *sync.RWMutex
 }
 
 func NewStatusSyncerFactory() GatewayStatusSyncer {
 	return &statusSyncerFactory{
-		lock: &sync.Mutex{},
+		registryPerProxy:   make(map[*v1.Proxy]*registry.PluginRegistry),
+		proxiesPerRegistry: make(map[*registry.PluginRegistry]map[*v1.Proxy]bool),
+		lock:               &sync.RWMutex{},
+	}
+}
+
+func (f *statusSyncerFactory) QueueStatusForProxies(
+	proxiesToQueue v1.ProxyList,
+	pluginRegistry *registry.PluginRegistry,
+) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	proxies, ok := f.proxiesPerRegistry[pluginRegistry]
+	if !ok {
+		proxies = make(map[*v1.Proxy]bool)
+	}
+	for _, proxy := range proxiesToQueue {
+		proxies[proxy] = true
 	}
 }
 
 func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports) {
 	// ignore until the syncer has been initialized
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	if f.syncer == nil {
-		return
-	}
-	f.syncer.handleProxyReports(ctx, proxiesWithReports)
-}
-
-func (f *statusSyncerFactory) InitStatusSyncer(
-	controllerName string,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	k8sGwExtensions extensions.K8sGatewayExtensions,
-	statusReporter reporter.StatusReporter,
-) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	if f.syncer == nil {
-		f.syncer = newStatusSyncer(
-			controllerName,
-			routeOptionClient,
-			k8sGwExtensions,
-			statusReporter,
-		)
-	} else {
-		// dpanic
-		contextutils.LoggerFrom(context.Background()).DPanic("status syncer already initialized")
+	f.lock.RLock()
+	defer f.lock.RUnlock()
+	for registry, proxiesToSync := range f.proxiesPerRegistry {
+		var filteredProxiesWithReports []translatorutils.ProxyWithReports
+		for _, proxyWithReports := range proxiesWithReports {
+			if _, ok := proxiesToSync[proxyWithReports.Proxy]; ok {
+				filteredProxiesWithReports = append(filteredProxiesWithReports, proxyWithReports)
+				delete(proxiesToSync, proxyWithReports.Proxy)
+				break
+			}
+		}
+		newStatusSyncer(registry).applyStatusPlugins(ctx, filteredProxiesWithReports)
+		if len(proxiesToSync) == 0 {
+			delete(f.proxiesPerRegistry, registry)
+		}
 	}
 }
 
 type statusSyncer struct {
-	controllerName    string
-	statusReporter    reporter.StatusReporter
-	k8sGwExtensions   extensions.K8sGatewayExtensions
-	routeOptionClient gatewayv1.RouteOptionClient
+	pluginRegistry *registry.PluginRegistry
 }
 
 func newStatusSyncer(
-	controllerName string,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	k8sGwExtensions extensions.K8sGatewayExtensions,
-	statusReporter reporter.StatusReporter,
+	pluginRegistry *registry.PluginRegistry,
 ) *statusSyncer {
 	return &statusSyncer{
-		controllerName:    controllerName,
-		routeOptionClient: routeOptionClient,
-		k8sGwExtensions:   k8sGwExtensions,
-		statusReporter:    statusReporter,
+		pluginRegistry: pluginRegistry,
 	}
-}
-
-func (s *statusSyncer) handleProxyReports(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports) {
-	pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
-
-	s.applyStatusPlugins(ctx, pluginRegistry, proxiesWithReports)
 }
 
 func (s *statusSyncer) applyStatusPlugins(
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	proxiesWithReports []translatorutils.ProxyWithReports,
 ) {
 	ctx = contextutils.WithLogger(ctx, "k8sGatewayStatusPlugins")
@@ -116,7 +105,7 @@ func (s *statusSyncer) applyStatusPlugins(
 	statusCtx := &gwplugins.StatusContext{
 		ProxiesWithReports: proxiesWithReports,
 	}
-	for _, plugin := range pluginRegistry.GetStatusPlugins() {
+	for _, plugin := range s.pluginRegistry.GetStatusPlugins() {
 		err := plugin.ApplyStatusPlugin(ctx, statusCtx)
 		if err != nil {
 			logger.Errorf("Error applying status plugin: %v", err)

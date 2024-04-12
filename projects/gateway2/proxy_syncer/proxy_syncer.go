@@ -24,6 +24,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
+// QueueStatusForProxiesFn queues a status sync for a given set of Proxy resources along with the plugins that produced them
+type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry)
+
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
 type ProxySyncer struct {
@@ -37,7 +40,8 @@ type ProxySyncer struct {
 
 	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
-	proxyReconciler gloo_solo_io.ProxyReconciler
+	proxyReconciler       gloo_solo_io.ProxyReconciler
+	queueStatusForProxies QueueStatusForProxiesFn
 
 	routeOptionClient gatewayv1.RouteOptionClient
 	statusReporter    reporter.StatusReporter
@@ -74,15 +78,17 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
+	queueStatusForProxies QueueStatusForProxiesFn,
 ) *ProxySyncer {
 	return &ProxySyncer{
-		controllerName:  controllerName,
-		writeNamespace:  writeNamespace,
-		translator:      translator,
-		inputs:          inputs,
-		mgr:             mgr,
-		k8sGwExtensions: k8sGwExtensions,
-		proxyReconciler: gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		controllerName:        controllerName,
+		writeNamespace:        writeNamespace,
+		translator:            translator,
+		inputs:                inputs,
+		mgr:                   mgr,
+		k8sGwExtensions:       k8sGwExtensions,
+		proxyReconciler:       gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		queueStatusForProxies: queueStatusForProxies,
 	}
 }
 
@@ -133,6 +139,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			TranslatedGateways: translatedGateways,
 		})
 
+		s.queueStatusForProxies(proxies, &pluginRegistry)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)

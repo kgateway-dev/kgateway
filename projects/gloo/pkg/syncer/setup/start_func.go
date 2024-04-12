@@ -3,7 +3,6 @@ package setup
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -52,12 +51,7 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
-	initStatusSyncer func(
-		controllerName string,
-		routeOptionClient gateway.RouteOptionClient,
-		k8sGwExtensions extensions.K8sGatewayExtensions,
-		statusReporter reporter.StatusReporter,
-	),
+	queueStatusForProxies controller.QueueStatusForProxiesFn,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
@@ -78,7 +72,7 @@ func K8sGatewayControllerStartFunc(
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
 			Opts:                      opts,
-			InitStatusSyncer:          initStatusSyncer,
+			QueueStatusForProxies:     queueStatusForProxies,
 
 			ProxyClient:       proxyClient,
 			RouteOptionClient: routeOptionClient,
