@@ -6,20 +6,20 @@ import (
 	"github.com/solo-io/gloo/test/testutils/kubeutils"
 )
 
-// Provider is the entity that creates Operation
+// OperationProvider is the entity that creates Operation
 // These assertions occur against a running instance of Gloo Gateway, within a Kubernetes Cluster.
 // So this provider maintains state about the install/cluster it is using, and then provides
 // operations.DiscreteAssertion to match
-type Provider struct {
+type OperationProvider struct {
 	clusterContext *kubeutils.ClusterContext
 
 	manifestProvider *manifest.OperationProvider
 	installProvider  *install.OperationProvider
 }
 
-// NewProvider returns a Provider that will fail because it is not configured with a Kubernetes Cluster
-func NewProvider() *Provider {
-	return &Provider{
+// NewOperationProvider returns an OperationProvider that will fail because it is not configured with a Kubernetes Cluster
+func NewOperationProvider() *OperationProvider {
+	return &OperationProvider{
 		clusterContext:   nil,
 		manifestProvider: manifest.NewProvider(),
 		installProvider:  install.NewProvider(),
@@ -27,7 +27,7 @@ func NewProvider() *Provider {
 }
 
 // WithClusterContext sets the provider, and all of it's sub-providers, to point to the provided cluster
-func (p *Provider) WithClusterContext(clusterContext *kubeutils.ClusterContext) *Provider {
+func (p *OperationProvider) WithClusterContext(clusterContext *kubeutils.ClusterContext) *OperationProvider {
 	p.clusterContext = clusterContext
 
 	p.manifestProvider.WithClusterCli(clusterContext.Cli)
@@ -35,10 +35,10 @@ func (p *Provider) WithClusterContext(clusterContext *kubeutils.ClusterContext) 
 	return p
 }
 
-func (p *Provider) Manifests() *manifest.OperationProvider {
+func (p *OperationProvider) Manifests() *manifest.OperationProvider {
 	return p.manifestProvider
 }
 
-func (p *Provider) Installs() *install.OperationProvider {
+func (p *OperationProvider) Installs() *install.OperationProvider {
 	return p.installProvider
 }

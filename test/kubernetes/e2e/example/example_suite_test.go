@@ -23,20 +23,19 @@ func TestExampleSuite(t *testing.T) {
 }
 
 var (
-	clusterContext     *kubeutils.ClusterContext
 	operator           *operations.Operator
-	operationsProvider *provider.Provider
+	operationsProvider *provider.OperationProvider
 	assertionProvider  *assertions.Provider
 )
 
 var _ = BeforeSuite(func() {
-	clusterContext = kubeutils.MustKindClusterContext(os.Getenv(testutils.ClusterName))
+	clusterContext := kubeutils.MustKindClusterContext(os.Getenv(testutils.ClusterName))
 
-	// Create an operator which is responsible for execution Operation agains the cluster
+	// Create an operator which is responsible for execution Operation against the cluster
 	operator = operations.NewGinkgoOperator()
 
 	// Set the operations provider to point to the running cluster
-	operationsProvider = provider.NewProvider().WithClusterContext(clusterContext)
+	operationsProvider = provider.NewOperationProvider().WithClusterContext(clusterContext)
 
 	// Set the assertion provider to point to the running cluster
 	assertionProvider = assertions.NewProvider().WithClusterContext(clusterContext)
