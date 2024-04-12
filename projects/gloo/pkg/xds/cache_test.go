@@ -38,7 +38,7 @@ var _ = Describe("Cache", func() {
 	})
 
 	It("Gloo Gateway SnapshotCacheKeys uses owner label", func() {
-		owner, namespace1, namespace2, name1, name2 := utils.GlooGatewayProxyValue, "namespace1", "namespace2", "name1", "name2"
+		owner, namespace1, namespace2, name1, name2 := utils.GatewayApiProxyValue, "namespace1", "namespace2", "name1", "name2"
 		// default gloo-system namespace is used for namespace
 		p1 := v1.NewProxy(namespace1, name1)
 		p1.Metadata.Labels = map[string]string{
@@ -59,16 +59,16 @@ var _ = Describe("Cache", func() {
 		p1 := v1.NewProxy(defaults.GlooSystem, name1)
 		// proxy metadata is different
 		p1.Metadata.Labels = map[string]string{
-			utils.ProxyTypeKey:   utils.GlooGatewayProxyValue,
-			utils.NamespaceLabel: namespace1,
+			utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
+			utils.GatewayNamespaceKey: namespace1,
 		}
 		p2 := v1.NewProxy(defaults.GlooSystem, name2)
 		p2.Metadata.Labels = map[string]string{
-			utils.ProxyTypeKey:   utils.GlooGatewayProxyValue,
-			utils.NamespaceLabel: namespace2,
+			utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
+			utils.GatewayNamespaceKey: namespace2,
 		}
 		proxies := []*v1.Proxy{p1, p2}
-		expectedKeys := []string{fmt.Sprintf("%v~%v~%v", utils.GlooGatewayProxyValue, namespace1, name1), fmt.Sprintf("%v~%v~%v", utils.GlooGatewayProxyValue, namespace2, name2)}
+		expectedKeys := []string{fmt.Sprintf("%v~%v~%v", utils.GatewayApiProxyValue, namespace1, name1), fmt.Sprintf("%v~%v~%v", utils.GatewayApiProxyValue, namespace2, name2)}
 		actualKeys := xds.SnapshotCacheKeys(proxies)
 		Expect(actualKeys).To(BeEquivalentTo(expectedKeys))
 	})

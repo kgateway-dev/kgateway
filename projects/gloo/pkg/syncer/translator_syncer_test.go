@@ -345,8 +345,8 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 					Name:      "test-proxy",
 					Namespace: "test-namespace",
 					Labels: map[string]string{
-						utils.ProxyTypeKey:   utils.GlooGatewayProxyValue,
-						utils.NamespaceLabel: "custom-namespace",
+						utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
+						utils.GatewayNamespaceKey: "custom-namespace",
 					},
 				},
 			}
@@ -366,7 +366,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 					Name:      "test-proxy",
 					Namespace: "test-namespace",
 					Labels: map[string]string{
-						utils.ProxyTypeKey: utils.GlooGatewayProxyValue,
+						utils.ProxyTypeKey: utils.GatewayApiProxyValue,
 					},
 				},
 			}
@@ -385,8 +385,8 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 					Name:      "test-proxy",
 					Namespace: "test-namespace",
 					Labels: map[string]string{
-						utils.ProxyTypeKey:   "some-other-value",
-						utils.NamespaceLabel: "custom-namespace",
+						utils.ProxyTypeKey:        "some-other-value",
+						utils.GatewayNamespaceKey: "custom-namespace",
 					},
 				},
 			}

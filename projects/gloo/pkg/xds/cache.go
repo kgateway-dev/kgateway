@@ -14,9 +14,9 @@ import (
 func SnapshotCacheKey(proxy *v1.Proxy) string {
 	namespace, name := proxy.GetMetadata().Ref().Strings()
 	owner := proxy.GetMetadata().GetLabels()[utils.ProxyTypeKey]
-	if owner == utils.GlooGatewayProxyValue {
+	if owner == utils.GatewayApiProxyValue {
 		// If namespace label is not set, default to proxy label for backwards compatability
-		namespaceLabel := proxy.GetMetadata().GetLabels()[utils.NamespaceLabel]
+		namespaceLabel := proxy.GetMetadata().GetLabels()[utils.GatewayNamespaceKey]
 		if namespaceLabel != "" {
 			namespace = namespaceLabel
 		}

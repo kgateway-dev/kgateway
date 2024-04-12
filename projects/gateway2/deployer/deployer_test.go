@@ -642,8 +642,7 @@ var _ = Describe("Deployer", func() {
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						// Proxies are written to writeNamespace, so Gateway name is combined with Gateway namespace to create proxy name
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s-%s", utils.GlooGatewayProxyValue, gw.Namespace, gw.Namespace, gw.Name),
+						xds.RoleKey: fmt.Sprintf("%s~%s-%s", utils.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 					return nil
 				},

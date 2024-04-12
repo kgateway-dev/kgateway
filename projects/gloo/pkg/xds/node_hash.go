@@ -17,6 +17,7 @@ const (
 	// KeyDelimiter is the character used to join segments of a cache key
 	KeyDelimiter = "~"
 
+	// RoleKey is the name of the ket in the node.metadata used to store the role
 	RoleKey = "role"
 )
 
@@ -36,6 +37,10 @@ func NewNodeRoleHasher() *nodeRoleHasher {
 // nodeRoleHasher identifies a node based on the values provided in the `node.metadata.role`
 type nodeRoleHasher struct{}
 
+// ID returns the string value of the xDS cache key
+// This value must match role metadata format: <owner>~<proxy_namespace>~<proxy_name>
+// which is equal to role defined on proxy-deployment ConfigMap:
+// gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
 func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
 	if node.GetMetadata() != nil {
 		roleValue := node.GetMetadata().GetFields()[RoleKey]

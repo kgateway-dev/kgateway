@@ -87,17 +87,18 @@ func (t *translator) TranslateProxy(
 }
 
 func proxyMetadata(gateway *gwv1.Gateway, writeNamespace string) *core.Metadata {
-	// Role on envoy must match role metadata format: <owner>~<proxy_namespace>~<proxy_name>
-	// which is equal to role defined on proxy-deployment ConfigMap:
-	// gloo-kube-api~{{ .Release.Namespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
 	return &core.Metadata{
 		// Add the gateway name to the proxy name to ensure uniqueness of proxies
 		Name: fmt.Sprintf("%s-%s", gateway.GetNamespace(), gateway.GetName()),
+
+		// This needs to match the writeNamespace because the proxyClient will only look at namespaces in the whitelisted namespace list
+		Namespace: writeNamespace,
+
 		// All proxies are created in the writeNamespace (ie. gloo-system).
-		// This needs to match the writeNamespace because the proxyClient will only looksat namespaces in the whitelisted namespace list
+		// We apply a label to maintain a reference to where the originating Gateway was defined
 		Labels: map[string]string{
-			utils.ProxyTypeKey:   utils.GlooGatewayProxyValue,
-			utils.NamespaceLabel: gateway.GetNamespace(),
+			utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
+			utils.GatewayNamespaceKey: gateway.GetNamespace(),
 		},
 	}
 }

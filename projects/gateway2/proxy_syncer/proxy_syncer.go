@@ -24,6 +24,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
+// ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
+// and syncing the proxyClient with the newly translated proxies.
 type ProxySyncer struct {
 	translator     translator.Translator
 	controllerName string
@@ -61,11 +63,10 @@ func NewGatewayInputChannels() *GatewayInputChannels {
 	}
 }
 
-/*
-ProxySyncer is responsible for translating Gateway CRs into Gloo Proxies and syncing the proxyClient with
-the newly translated proxies. The proxy sync is triggered by the `genericEvent` which is kicked when
-we reconcile gateway in the gateway controller. The `secretEvent` is kicked when a secret is created, updated,
-*/
+// NewProxySyncer returns an implementation of the ProxySyncer
+// The provided GatewayInputChannels are used to trigger syncs.
+// The proxy sync is triggered by the `genericEvent` which is kicked when
+// we reconcile gateway in the gateway controller. The `secretEvent` is kicked when a secret is created, updated,
 func NewProxySyncer(
 	controllerName, writeNamespace string,
 	translator translator.Translator,
@@ -200,9 +201,9 @@ func (s *ProxySyncer) reconcileProxies(ctx context.Context, proxyList gloo_solo_
 		proxyList,
 		func(original, desired *gloo_solo_io.Proxy) (bool, error) {
 			// ignore proxies that do not have our owner label
-			if original.GetMetadata().GetLabels() == nil || original.GetMetadata().GetLabels()[utils.ProxyTypeKey] != utils.GlooGatewayProxyValue {
+			if original.GetMetadata().GetLabels() == nil || original.GetMetadata().GetLabels()[utils.ProxyTypeKey] != utils.GatewayApiProxyValue {
 				// TODO(npolshak): Currently we update all Gloo Gateway proxies. We should create a new label and ignore proxies that are not owned by Gloo control plane running in a specific namespace via POD_NAMESPACE
-				logger.Debugf("ignoring proxy %v in namespace %v, does not have owner label %v", original.GetMetadata().GetName(), original.GetMetadata().GetNamespace(), utils.GlooGatewayProxyValue)
+				logger.Debugf("ignoring proxy %v in namespace %v, does not have owner label %v", original.GetMetadata().GetName(), original.GetMetadata().GetNamespace(), utils.GatewayApiProxyValue)
 				return false, nil
 			}
 			// otherwise always update

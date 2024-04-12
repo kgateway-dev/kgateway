@@ -219,8 +219,8 @@ func GetKeyFromProxyMeta(proxy *gloov1.Proxy) string {
 	meta := proxy.GetMetadata()
 	metaKey := meta.Ref().Key()
 	labels := proxy.GetMetadata().GetLabels()
-	if labels != nil && labels[utils.ProxyTypeKey] == utils.GlooGatewayProxyValue {
-		proxyNamespace := labels[utils.NamespaceLabel]
+	if labels != nil && labels[utils.ProxyTypeKey] == utils.GatewayApiProxyValue {
+		proxyNamespace := labels[utils.GatewayNamespaceKey]
 		if proxyNamespace != "" {
 			meta.Namespace = proxyNamespace
 			metaKey = meta.Ref().Key()

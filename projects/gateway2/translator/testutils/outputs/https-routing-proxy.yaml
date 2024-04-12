@@ -31,7 +31,7 @@ listeners:
   name: https
 metadata:
   labels:
-    created_by: gloo-kube-api
+    created_by: gloo-kube-gateway-api
     proxy_namespace: default
   name: default-example-gateway
   namespace: gloo-system
