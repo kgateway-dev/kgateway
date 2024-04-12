@@ -129,6 +129,7 @@ Notice how the order of VirtualHostOption delegations matters, and that the Virt
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
 "metadata": .core.solo.io.Metadata
 "options": .gloo.solo.io.VirtualHostOptions
+"targetRef": .core.skv2.solo.io.PolicyTargetReferenceWithSectionName
 
 ```
 
@@ -137,6 +138,7 @@ Notice how the order of VirtualHostOption delegations matters, and that the Virt
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | VirtualHost options. See VirtualHost for delegation behavior. |
+| `targetRef` | [.core.skv2.solo.io.PolicyTargetReferenceWithSectionName](../../../../../../skv2/api/core/v1/core.proto.sk/#policytargetreferencewithsectionname) | When using Kubernetes Gateway API mode, targetRef can be used to attach this VirtualHostOption to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified. |
 
 
 

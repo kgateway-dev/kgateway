@@ -390,6 +390,21 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			if isWarningErr(err) {
 				continue
 			}
+
+			// Let's check if the incoming v1.Route has metadata to track the 'source' object
+			// that created it. If we do have this metadata, include it with
+			// the route error, so that other components can easily find it
+			if staticMetadata := in.GetMetadataStatic(); staticMetadata != nil {
+				validation.AppendRouteErrorWithMetadata(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					fmt.Sprintf("%T: %v", plugin, err.Error()),
+					out.GetName(),
+					staticMetadata,
+				)
+				continue
+			}
+
+			// Otherwise with no metadata, report the error without any source info
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_ProcessingError,
 				fmt.Sprintf("%T: %v", plugin, err.Error()),
@@ -857,7 +872,7 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 
 func validateClusterHeader(header string) error {
 	// check that header name is only ASCII characters
-	for i := 0; i < len(header); i++ {
+	for i := range len(header) {
 		if header[i] > unicode.MaxASCII || header[i] == ':' {
 			return fmt.Errorf("%s is an invalid HTTP header name", header)
 		}

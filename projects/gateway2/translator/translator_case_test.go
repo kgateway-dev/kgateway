@@ -6,6 +6,9 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
@@ -13,6 +16,10 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -50,6 +57,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 	var (
 		gateways     []*gwv1.Gateway
 		dependencies []client.Object
+		routeOptions []*solokubev1.RouteOption
 	)
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(ctx, file)
@@ -60,6 +68,9 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 			switch obj := obj.(type) {
 			case *gwv1.Gateway:
 				gateways = append(gateways, obj)
+			case *solokubev1.RouteOption:
+				routeOptions = append(routeOptions, obj)
+				dependencies = append(dependencies, obj)
 			default:
 				dependencies = append(dependencies, obj)
 			}
@@ -68,7 +79,19 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 
 	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices)
 	queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient))
+
+	resourceClientFactory := &factory.MemoryResourceClientFactory{
+		Cache: memory.NewInMemoryResourceCache(),
+	}
+
+	routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
+	statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
+	statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+	for _, rtOpt := range routeOptions {
+		routeOptionClient.Write(&rtOpt.Spec, clients.WriteOpts{Ctx: ctx})
+	}
+
+	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, statusReporter))
 
 	results := make(map[types.NamespacedName]bool)
 	for _, gw := range gateways {

@@ -11,6 +11,13 @@ spec:
   - backendRefs:
     - name: example-svc
       port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /timeout
+    backendRefs:
+    - name: example-svc
+      port: 8080
 ---
 apiVersion: gateway.solo.io/v1
 kind: RouteOption

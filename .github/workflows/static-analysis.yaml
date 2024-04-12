@@ -45,11 +45,11 @@ jobs:
       uses: actions/checkout@v3
     - name: Prep Go Runner
       uses: ./.github/workflows/composite-actions/prep-go-runner
-    - uses: golangci/golangci-lint-action@v3
+    - uses: golangci/golangci-lint-action@v4
       # `make analyze` runs the linter with similar arguments to what we use here.
       # If this action fails, try running `make analyze` locally.
       with:
-        version: v1.54.2
+        version: v1.57.2
         args: --verbose --modules-download-mode=readonly --allow-parallel-runners
         skip-pkg-cache: true
         only-new-issues: false

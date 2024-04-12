@@ -1,6 +1,7 @@
 package registry
 
 import (
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
@@ -8,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -17,6 +19,7 @@ import (
 type PluginRegistry struct {
 	routePlugins           []plugins.RoutePlugin
 	postTranslationPlugins []plugins.PostTranslationPlugin
+	statusPlugins          []plugins.StatusPlugin
 }
 
 func (p *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
@@ -27,10 +30,15 @@ func (p *PluginRegistry) GetPostTranslationPlugins() []plugins.PostTranslationPl
 	return p.postTranslationPlugins
 }
 
+func (p *PluginRegistry) GetStatusPlugins() []plugins.StatusPlugin {
+	return p.statusPlugins
+}
+
 func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 	var (
 		routePlugins           []plugins.RoutePlugin
 		postTranslationPlugins []plugins.PostTranslationPlugin
+		statusPlugins          []plugins.StatusPlugin
 	)
 
 	for _, plugin := range allPlugins {
@@ -40,10 +48,14 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 		if postTranslationPlugin, ok := plugin.(plugins.PostTranslationPlugin); ok {
 			postTranslationPlugins = append(postTranslationPlugins, postTranslationPlugin)
 		}
+		if statusPlugin, ok := plugin.(plugins.StatusPlugin); ok {
+			statusPlugins = append(statusPlugins, statusPlugin)
+		}
 	}
 	return PluginRegistry{
-		routePlugins:           routePlugins,
-		postTranslationPlugins: postTranslationPlugins,
+		routePlugins,
+		postTranslationPlugins,
+		statusPlugins,
 	}
 }
 
@@ -51,12 +63,17 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 // New plugins should be added to this list (and only this list).
 // If modification of this list is needed for testing etc,
 // we can add a new registry constructor that accepts this function
-func BuildPlugins(queries gwquery.GatewayQueries, client client.Client) []plugins.Plugin {
+func BuildPlugins(
+	queries gwquery.GatewayQueries,
+	client client.Client,
+	routeOptionClient gatewayv1.RouteOptionClient,
+	statusReporter reporter.StatusReporter,
+) []plugins.Plugin {
 	return []plugins.Plugin{
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),
 		redirect.NewPlugin(),
-		routeoptions.NewPlugin(queries, client),
+		routeoptions.NewPlugin(queries, client, routeOptionClient, statusReporter),
 		urlrewrite.NewPlugin(),
 	}
 }
