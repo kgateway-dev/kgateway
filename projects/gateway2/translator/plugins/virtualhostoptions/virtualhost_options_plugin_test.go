@@ -71,6 +71,19 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 			gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
 			plugin = NewPlugin(gwQueries, fakeClient)
 		})
+		When("outListener is not an AggregateListener", func() {
+			BeforeEach(func() {
+				outputListener = &v1.Listener{
+					ListenerType: &v1.Listener_HybridListener{
+						HybridListener: &v1.HybridListener{},
+					},
+				}
+			})
+			It("produces expected error", func() {
+				err := plugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{}, outputListener)
+				Expect(err).To(MatchError(ErrUnexpectedListenerType))
+			})
+		})
 
 		When("VirtualHostOptions exist in the same namespace and are attached correctly", func() {
 			BeforeEach(func() {
