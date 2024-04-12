@@ -1,6 +1,7 @@
-package operations
+package provider
 
 import (
+	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/install"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/manifest"
 	"github.com/solo-io/gloo/test/testutils/kubeutils"
 )
@@ -12,13 +13,16 @@ import (
 type Provider struct {
 	clusterContext *kubeutils.ClusterContext
 
-	manifest.OperationProvider
+	manifestProvider *manifest.OperationProvider
+	installProvider  *install.OperationProvider
 }
 
 // NewProvider returns a Provider that will fail because it is not configured with a Kubernetes Cluster
 func NewProvider() *Provider {
 	return &Provider{
-		clusterContext: nil,
+		clusterContext:   nil,
+		manifestProvider: manifest.NewProvider(),
+		installProvider:  install.NewProvider(),
 	}
 }
 
@@ -26,6 +30,15 @@ func NewProvider() *Provider {
 func (p *Provider) WithClusterContext(clusterContext *kubeutils.ClusterContext) *Provider {
 	p.clusterContext = clusterContext
 
-	p.OperationProvider.WithClusterCli(clusterContext.Cli)
+	p.manifestProvider.WithClusterCli(clusterContext.Cli)
+	p.installProvider.WithClusterContext(clusterContext)
 	return p
+}
+
+func (p *Provider) Manifests() *manifest.OperationProvider {
+	return p.manifestProvider
+}
+
+func (p *Provider) Installs() *install.OperationProvider {
+	return p.installProvider
 }

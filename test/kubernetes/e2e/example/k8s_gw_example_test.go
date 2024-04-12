@@ -2,6 +2,7 @@ package example_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -17,13 +18,33 @@ var _ = Describe("Example Test", Ordered, func() {
 
 	var (
 		ctx context.Context
+
+		cwd string
 	)
 
 	BeforeAll(func() {
 		ctx = context.Background()
 
+		var err error
+		cwd, err = os.Getwd()
+		Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
+
+		installOp, err := operationsProvider.Installs().NewInstallOperation(filepath.Join(cwd, "manifests", "helm.yaml"))
+		Expect(err).NotTo(HaveOccurred())
+
+		err = operator.ExecuteOperations(ctx, installOp)
+		Expect(err).NotTo(HaveOccurred())
+
 		// TODO: if there is anything in the Gloo Gateway install context that is useful for these
 		// providers, we should update that here
+	})
+
+	AfterAll(func() {
+		uninstallOp, err := operationsProvider.Installs().NewUninstallOperation()
+		Expect(err).NotTo(HaveOccurred())
+
+		err = operator.ExecuteOperations(ctx, uninstallOp)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("Spec Scenarios", func() {
@@ -34,11 +55,11 @@ var _ = Describe("Example Test", Ordered, func() {
 			proxyDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gloo-proxy-gw", Namespace: "default"}}
 			proxyService := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "gloo-proxy-gw", Namespace: "default"}}
 
-			op, err := operationsProvider.NewReversibleOperation(
+			op, err := operationsProvider.Manifests().NewReversibleOperation(
 				manifest.WithName("basic-test"),
 				manifest.WithManifestFile(filepath.Join(cwd, "manifests", "basic-test.yaml")),
 				manifest.WithInitializedObjectsAssertion(assertionProvider.ObjectsExist(proxyService, proxyDeployment)),
-				manifest.WithInitializedObjectsAssertion(assertionProvider.ObjectsNotExist(proxyService, proxyDeployment)),
+				manifest.WithFinalizedObjectsAssertion(assertionProvider.ObjectsNotExist(proxyService, proxyDeployment)),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -52,7 +73,7 @@ var _ = Describe("Example Test", Ordered, func() {
 			proxyDeployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gloo-proxy-gw", Namespace: "default"}}
 			proxyService := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "gloo-proxy-gw", Namespace: "default"}}
 
-			op, err := operationsProvider.NewReversibleOperation(
+			op, err := operationsProvider.Manifests().NewReversibleOperation(
 				manifest.WithName("basic-test"),
 				manifest.WithManifestFile(filepath.Join(cwd, "manifests", "basic-test.yaml")),
 				manifest.WithInitializedObjectsAssertion(
@@ -61,7 +82,7 @@ var _ = Describe("Example Test", Ordered, func() {
 						Namespace: "default",
 					}, 1),
 				),
-				manifest.WithInitializedObjectsAssertion(assertionProvider.ObjectsNotExist(proxyService, proxyDeployment)),
+				manifest.WithFinalizedObjectsAssertion(assertionProvider.ObjectsNotExist(proxyService, proxyDeployment)),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
