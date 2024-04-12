@@ -2,6 +2,9 @@ package example_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/provider"
 	"os"
 	"path/filepath"
 
@@ -15,7 +18,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Example Test", Ordered, func() {
+var _ = e2e.SuiteDescribe("Example Test", func(suiteCtx *e2e.SuiteContext) {
+
+	// This is just a way to extract some of the variables that are defined at the Suite level,
+	// and make them available to the given test
+	var (
+		operator           *operations.Operator
+		operationsProvider *provider.OperationProvider
+		assertionProvider  *assertions.Provider
+	)
+
+	BeforeAll(func() {
+		assertionProvider = suiteCtx.AssertionProvider
+		operationsProvider = suiteCtx.OperationsProvider
+		operator = suiteCtx.Operator
+	})
 
 	var (
 		ctx context.Context

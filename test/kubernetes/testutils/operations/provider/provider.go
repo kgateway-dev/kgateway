@@ -11,7 +11,7 @@ import (
 // So this provider maintains state about the install/cluster it is using, and then provides
 // operations.DiscreteAssertion to match
 type OperationProvider struct {
-	clusterContext *cluster.ClusterContext
+	clusterContext *cluster.Context
 
 	manifestProvider *manifest.OperationProvider
 	installProvider  *install.OperationProvider
@@ -27,7 +27,7 @@ func NewOperationProvider() *OperationProvider {
 }
 
 // WithClusterContext sets the provider, and all of it's sub-providers, to point to the provided cluster
-func (p *OperationProvider) WithClusterContext(clusterContext *cluster.ClusterContext) *OperationProvider {
+func (p *OperationProvider) WithClusterContext(clusterContext *cluster.Context) *OperationProvider {
 	p.clusterContext = clusterContext
 
 	p.manifestProvider.WithClusterCli(clusterContext.Cli)

@@ -9,7 +9,7 @@ import (
 // So this provider maintains state about the install/cluster it is using, and then provides
 // operations.DiscreteAssertion to match
 type Provider struct {
-	clusterContext *cluster.ClusterContext
+	clusterContext *cluster.Context
 }
 
 // NewProvider returns a Provider that will fail because it is not configured with a Kubernetes Cluster
@@ -20,7 +20,7 @@ func NewProvider() *Provider {
 }
 
 // WithClusterContext sets the provider to point to the provided cluster
-func (p *Provider) WithClusterContext(clusterContext *cluster.ClusterContext) *Provider {
+func (p *Provider) WithClusterContext(clusterContext *cluster.Context) *Provider {
 	p.clusterContext = clusterContext
 	return p
 }

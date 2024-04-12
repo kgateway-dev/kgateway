@@ -5,7 +5,7 @@ import (
 )
 
 type OperationProvider struct {
-	clusterContext *cluster.ClusterContext
+	clusterContext *cluster.Context
 }
 
 func NewProvider() *OperationProvider {
@@ -15,7 +15,7 @@ func NewProvider() *OperationProvider {
 }
 
 // WithClusterContext sets the ScenarioProvider to point to the provided cluster
-func (p *OperationProvider) WithClusterContext(clusterContext *cluster.ClusterContext) *OperationProvider {
+func (p *OperationProvider) WithClusterContext(clusterContext *cluster.Context) *OperationProvider {
 	p.clusterContext = clusterContext
 	return p
 }
