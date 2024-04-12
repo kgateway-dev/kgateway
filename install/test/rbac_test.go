@@ -24,8 +24,8 @@ var _ = Describe("RBAC Test", func() {
 
 			prepareMakefile := func(helmFlags ...string) {
 				tm, err := testCase.renderer.RenderManifest(namespace, helmValues{
-					// TODO: disabling gateway2 in helm tests for now until helm merge is finalized
-					valuesArgs: append([]string{"gateway2.controlPlane.enabled=false"}, helmFlags...),
+					// TODO: re-enable once our k8s gw integration supports namespaced rbac
+					valuesArgs: append([]string{"kubeGateway.enabled=false"}, helmFlags...),
 				})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the RBAC unit test")
 				testManifest = tm
