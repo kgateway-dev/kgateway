@@ -223,7 +223,7 @@ func EnsureKVCsv(message string, source string, target *map[string]string, stati
 	if len(parts)%2 != 0 {
 		return fmt.Errorf("Must provide one key per value (received an odd sum)")
 	}
-	for i := 0; i < len(parts)/2; i++ {
+	for i := range len(parts) / 2 {
 		(*target)[parts[i*2]] = parts[i*2+1]
 	}
 	return nil

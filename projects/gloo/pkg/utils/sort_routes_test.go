@@ -90,7 +90,7 @@ var _ = Describe("PathAsString", func() {
 	It("sorts the routes by longest path first", func() {
 		sortedRoutes := makeSortedRoutes()
 		expectedRoutes := makeSortedRoutes()
-		for count := 0; count < 100; count++ {
+		for range 100 {
 			rand.Shuffle(len(expectedRoutes), func(i, j int) {
 				expectedRoutes[i], expectedRoutes[j] = expectedRoutes[j], expectedRoutes[i]
 			})
@@ -137,7 +137,7 @@ var _ = Describe("PathAsString", func() {
 	It("sorts the routes by longest matcher found on the route", func() {
 		sortedRoutes := makeSortedMultiMatcherRoutes()
 		expectedRoutes := makeSortedMultiMatcherRoutes()
-		for count := 0; count < 100; count++ {
+		for range 100 {
 			rand.Shuffle(len(expectedRoutes), func(i, j int) {
 				expectedRoutes[i], expectedRoutes[j] = expectedRoutes[j], expectedRoutes[i]
 			})
