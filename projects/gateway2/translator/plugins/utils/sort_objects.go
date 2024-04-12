@@ -47,7 +47,7 @@ func validate(objs interface{}) error {
 		return nil
 	}
 
-	for i := 0; i < s.Len(); i++ {
+	for i := range s.Len() {
 		el := s.Index(i).Interface()
 		if _, ok := el.(client.Object); !ok {
 			return fmt.Errorf("input slice contains element of unexpected type %T; all elements must implement client.Object", el)
