@@ -2,9 +2,10 @@ package syncer
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 

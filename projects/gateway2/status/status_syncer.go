@@ -2,10 +2,11 @@ package status
 
 import (
 	"context"
+	"sync"
+
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"sync"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -95,11 +96,7 @@ func newStatusSyncer(
 }
 
 func (s *statusSyncer) handleProxyReports(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports) {
-	pluginParams := extensions.PluginBuilderParams{
-		RouteOptionClient: s.routeOptionClient,
-		StatusReporter:    s.statusReporter,
-	}
-	pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx, pluginParams)
+	pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
 
 	s.applyStatusPlugins(ctx, pluginRegistry, proxiesWithReports)
 }
@@ -131,5 +128,5 @@ func filterProxiesByControllerName(
 	reports []translatorutils.ProxyWithReports,
 	name string,
 ) []translatorutils.ProxyWithReports {
-
+	return nil
 }

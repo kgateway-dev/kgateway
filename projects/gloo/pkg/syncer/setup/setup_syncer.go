@@ -3,7 +3,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gateway2/status"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gateway2/status"
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 
