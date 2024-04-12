@@ -85,7 +85,7 @@ func shallowMergeUpstreams(src, dst *v1.Upstream) {
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
 
-	for i := 0; i < dstValue.NumField(); i++ {
+	for i := range dstValue.NumField() {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
 
 		if srcField.IsValid() && dstField.CanSet() && !srcField.IsZero() {

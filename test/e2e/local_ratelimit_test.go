@@ -86,7 +86,7 @@ var _ = Describe("Local Rate Limit", func() {
 		}
 
 		validateRateLimits = func(limit int) {
-			for i := 0; i < limit; i++ {
+			for range limit {
 				expectNotRateLimitedWithXRateLimitHeader()
 			}
 			expectRateLimitedWithXRateLimitHeader(limit)
