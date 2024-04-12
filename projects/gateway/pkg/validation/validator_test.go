@@ -1314,7 +1314,7 @@ var _ = Describe("Validator", func() {
 			// start workers
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfWorkers)
-			for i := 0; i < numberOfWorkers; i++ {
+			for i := range numberOfWorkers {
 				workerName := fmt.Sprintf("worker #%d", i)
 				// validateModifiedGvkWorker handles its own GinkgoRecover and
 				// stores errors in resultMap where we aggregate them later

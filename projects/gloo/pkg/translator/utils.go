@@ -122,7 +122,7 @@ func IsIpv4Address(bindAddress string) (validIpv4, strictIPv4 bool, err error) {
 // Used as the standard net.Parse smashes everything to ipv6.
 // Basically false if ::ffff:0.0.0.0 and true if 0.0.0.0
 func isPureIPv4Address(ipString string) bool {
-	for i := 0; i < len(ipString); i++ {
+	for i := range len(ipString) {
 		switch ipString[i] {
 		case '.':
 			return true

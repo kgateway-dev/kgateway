@@ -6806,7 +6806,7 @@ metadata:
 						continue
 					}
 					// iterate over struct fields
-					for i := 0; i < inspectedStruct.NumField(); i++ {
+					for i := range inspectedStruct.NumField() {
 						structField := inspectedStruct.Field(i)
 						// Check that the field contains a json tag, and if so, that it includes the omitempty tag.
 						// Values without any tags are assumed to be embedded structs, and are ignored.
