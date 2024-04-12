@@ -4,8 +4,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-  test_gloo_gateway2:
-    name: Build and Test Gloo Gateway 2
+  test_gloo_gateway:
+    name: Build and Test Gloo Gateway
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     if: ${{ !github.event.pull_request.draft }}
@@ -43,7 +43,7 @@ jobs:
     - name: Additional cluster setup
       run: ./projects/gateway2/kind.sh
     - name: Install Gloo Gateway
-      run: helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace -f ./projects/gateway2/tests/conformance/test-values.yaml
+      run: helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace
     - name: Pre-test cleanup of resources
       run: kubectl delete rs --all
     - name: Test Conformance

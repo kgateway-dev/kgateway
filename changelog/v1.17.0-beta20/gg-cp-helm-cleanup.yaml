@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5856
+    resolvesIssue: false
+    description: >-
+      Simplify the control plane helm API for the Kubernetes Gateway integration, and remove unused values.
+      There is now just one helm flag (`kubeGateway.enabled`) that is used to enable/disable the Kubernetes
+      Gateway integration.
