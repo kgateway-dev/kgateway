@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 
 	"golang.org/x/sync/errgroup"
 
@@ -51,7 +52,7 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
-	queueStatusForProxies controller.QueueStatusForProxiesFn,
+	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
