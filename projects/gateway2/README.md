@@ -13,7 +13,7 @@ This will create the kind cluster, build the docker images.
 Next use helm to install the gateway control plane where `GG_EXPERIMENTAL_K8S_GW_CONTROLLER` is the env that controls the k8s gateway controller:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace -f ./projects/gateway2/tests/conformance/test-values.yaml
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace
 ```
 
 To create a gateway, use the Gateway resource: 

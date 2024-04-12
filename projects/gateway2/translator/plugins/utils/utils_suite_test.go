@@ -9,5 +9,5 @@ import (
 
 func TestUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "gateway2 Plugin Utils Suite")
+	RunSpecs(t, "Plugin Utils Suite")
 }
