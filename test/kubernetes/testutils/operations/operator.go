@@ -11,7 +11,7 @@ import (
 )
 
 // Operator is responsible for executing Operation against a Kubernetes Cluster
-// This is meant to mirror the behavior of an Operator of the Gloo Gateway Product
+// This is meant to mirror the behavior of an Operator of the Gloo Gateway Product.
 // Although we operate against a Kubernetes Cluster, an Operator is intentionally
 // unaware of Kubernetes behavior, and instead is more of a scheduler of Operation.
 // This allows us to test its functionality, and also more easily inject behaviors
@@ -71,8 +71,8 @@ func (o *Operator) ExecuteReversibleOperations(ctx context.Context, operations .
 }
 
 func (o *Operator) executeSafe(fnMayPanic func() error) error {
-	// Intercept failures, so that we can return an error to the test code,
-	// and it can decide what to do with it
+	// Intercept failed assertions, which manifests as Panic's in test frameworks
+	// This way, we can return an error to the testing code, and let the test author decide how to manage it
 	var executionErr error
 	interceptedErr := o.assertionInterceptor(func() {
 		executionErr = fnMayPanic()

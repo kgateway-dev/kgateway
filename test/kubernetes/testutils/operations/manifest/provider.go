@@ -2,10 +2,12 @@ package manifest
 
 import (
 	"context"
-	"os"
+	"fmt"
+	"path/filepath"
+
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
@@ -25,64 +27,29 @@ func (p *OperationProvider) WithClusterCli(kubeCli *kubectl.Cli) *OperationProvi
 	return p
 }
 
-func (p *OperationProvider) NewReversibleOperation(options ...Option) (operations.ReversibleOperation, error) {
-	props := &properties{
-		name:     "unnamed-manifest-operation",
-		manifest: "",
-		initializedObjectsAssertion: func(ctx context.Context) {
-			// do nothing
+func (p *OperationProvider) NewApplyManifestOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
+	return &operations.BasicOperation{
+		OpName: fmt.Sprintf("apply-manifest-%s", filepath.Base(manifest)),
+		OpExecute: func(ctx context.Context) error {
+			return p.kubeCli.ApplyFile(ctx, manifest)
 		},
-		finalizedObjectsAssertion: func(ctx context.Context) {
-			// do nothing
-		},
+		OpAssertions: assertions,
 	}
+}
 
-	for _, opt := range options {
-		opt(props)
-	}
-
-	_, err := os.Stat(props.manifest)
-	if err != nil {
-		return operations.ReversibleOperation{}, err
-	}
-
-	return operations.ReversibleOperation{
-		Do: &operation{
-			name:         props.name,
-			manifestFile: props.manifest,
-			execute: func(ctx context.Context) error {
-				return p.kubeCli.ApplyFile(ctx, props.manifest)
-			},
-			assertion: props.initializedObjectsAssertion,
+func (p *OperationProvider) NewDeleteManifestOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
+	return &operations.BasicOperation{
+		OpName: fmt.Sprintf("delete-manifest-%s", filepath.Base(manifest)),
+		OpExecute: func(ctx context.Context) error {
+			return p.kubeCli.DeleteFile(ctx, manifest)
 		},
-		Undo: &operation{
-			name:         props.name,
-			manifestFile: props.manifest,
-			execute: func(ctx context.Context) error {
-				return p.kubeCli.DeleteFile(ctx, props.manifest)
-			},
-			assertion: props.finalizedObjectsAssertion,
-		},
-	}, nil
+		OpAssertions: assertions,
+	}
 }
 
-var _ operations.Operation = new(operation)
+func (p *OperationProvider) NewReversibleOperation() operations.ReversibleOperation {
+	// Not implemented yet
+	// It might be nice to make construction of this easier for developers
 
-type operation struct {
-	name         string
-	manifestFile string
-	execute      func(ctx context.Context) error
-	assertion    assertions.DiscreteAssertion
-}
-
-func (s *operation) Name() string {
-	return s.name
-}
-
-func (s *operation) Execute() func(ctx context.Context) error {
-	return s.execute
-}
-
-func (s *operation) ExecutionAssertion() assertions.DiscreteAssertion {
-	return s.assertion
+	return operations.ReversibleOperation{}
 }

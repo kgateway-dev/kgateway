@@ -33,7 +33,7 @@ var _ = Describe("Operator", func() {
 					return nil
 				},
 				assertion: func(ctx context.Context) {
-					// do nothing
+					Expect(1).To(Equal(1), "one does equal one")
 				},
 			}
 
@@ -46,6 +46,9 @@ var _ = Describe("Operator", func() {
 				op: func(ctx context.Context) error {
 					return eris.Errorf("Failed to execute operation")
 				},
+				assertion: func(ctx context.Context) {
+					Expect(1).To(Equal(1), "one does equal one")
+				},
 			}
 
 			err := operator.ExecuteOperations(ctx, operation)
@@ -55,6 +58,9 @@ var _ = Describe("Operator", func() {
 
 		It("returns error if assertion fails", func() {
 			operation := &testOperation{
+				op: func(ctx context.Context) error {
+					return nil
+				},
 				assertion: func(ctx context.Context) {
 					Expect(1).To(Equal(2), "one does not equal two")
 				},
