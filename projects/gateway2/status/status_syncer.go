@@ -58,13 +58,15 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 	for _, proxy := range proxiesToQueue {
 		proxies[proxy] = true
 	}
+	f.proxiesPerRegistry[pluginRegistry] = proxies
 }
 
 func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports) {
 	// ignore until the syncer has been initialized
 	f.lock.RLock()
 	defer f.lock.RUnlock()
-	for registry, proxiesToSync := range f.proxiesPerRegistry {
+	for reg, proxiesToSync := range f.proxiesPerRegistry {
+		reg := reg
 		var filteredProxiesWithReports []translatorutils.ProxyWithReports
 		for _, proxyWithReports := range proxiesWithReports {
 			if _, ok := proxiesToSync[proxyWithReports.Proxy]; ok {
@@ -73,9 +75,9 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 				break
 			}
 		}
-		newStatusSyncer(registry).applyStatusPlugins(ctx, filteredProxiesWithReports)
+		newStatusSyncer(reg).applyStatusPlugins(ctx, filteredProxiesWithReports)
 		if len(proxiesToSync) == 0 {
-			delete(f.proxiesPerRegistry, registry)
+			delete(f.proxiesPerRegistry, reg)
 		}
 	}
 }

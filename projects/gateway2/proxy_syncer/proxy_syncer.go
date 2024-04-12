@@ -79,6 +79,8 @@ func NewProxySyncer(
 	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
 	queueStatusForProxies QueueStatusForProxiesFn,
+	routeOptionClient gatewayv1.RouteOptionClient,
+	statusReporter reporter.StatusReporter,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:        controllerName,
@@ -89,6 +91,8 @@ func NewProxySyncer(
 		k8sGwExtensions:       k8sGwExtensions,
 		proxyReconciler:       gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
 		queueStatusForProxies: queueStatusForProxies,
+		routeOptionClient:     routeOptionClient,
+		statusReporter:        statusReporter,
 	}
 }
 
