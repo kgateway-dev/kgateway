@@ -85,7 +85,7 @@ UTILS_DONOR_IMAGE ?= busybox:uclibc
 # Use a distroless debian variant that is in sync with the ubuntu version used for envoy
 # https://github.com/solo-io/envoy-gloo-ee/blob/main/ci/Dockerfile#L7 - check /etc/debian_version in the ubuntu version used
 # This is the true base image for GLOO_DISTROLESS_BASE_IMAGE and GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE
-# Since we only publish amd64 images, we use the amd64 variant
+# Since we only publish amd64 images, we use the amd64 variant. If we decide to change this, we need to update the distroless dockerfiles as well
 DISTROLESS_BASE_IMAGE ?= gcr.io/distroless/base-debian11:latest-amd64
 # DISTROLESS_BASE_IMAGE + ca-certificates
 GLOO_DISTROLESS_BASE_IMAGE ?= $(IMAGE_REGISTRY)/distroless-base:$(VERSION)
@@ -867,82 +867,102 @@ docker-push-%-distroless:
 docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
+.PHONY: docker-standard
+docker-standard: check-go-version
+docker-standard: gloo-docker
+docker-standard: discovery-docker
+docker-standard: gloo-envoy-wrapper-docker
+docker-standard: sds-docker
+docker-standard: certgen-docker
+docker-standard: ingress-docker
+docker-standard: access-logger-docker
+docker-standard: kubectl-docker
+
+.PHONY: docker-distroless
+docker-distroless: check-go-version
+docker-distroless: gloo-distroless-docker
+docker-distroless: discovery-distroless-docker
+docker-distroless: gloo-envoy-wrapper-distroless-docker
+docker-distroless: sds-distroless-docker
+docker-distroless: certgen-distroless-docker
+docker-distroless: ingress-distroless-docker
+docker-distroless: access-logger-distroless-docker
+docker-distroless: kubectl-distroless-docker
+
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
 docker: check-go-version
 docker: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-docker: gloo-docker
-docker: discovery-docker
-docker: gloo-envoy-wrapper-docker
-docker: sds-docker
-docker: certgen-docker
-docker: ingress-docker
-docker: access-logger-docker
-docker: kubectl-docker
+docker: docker-standard
 endif # standard images
 docker: # Distroless images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-docker: gloo-distroless-docker
-docker: discovery-distroless-docker
-docker: gloo-envoy-wrapper-distroless-docker
-docker: sds-distroless-docker
-docker: certgen-distroless-docker
-docker: ingress-distroless-docker
-docker: access-logger-distroless-docker
-docker: kubectl-distroless-docker
+docker: docker-distroless
 endif # distroless images
+
+.PHONY: docker-standard-push
+docker-standard-push: docker-push-gloo
+docker-standard-push: docker-push-discovery
+docker-standard-push: docker-push-gloo-envoy-wrapper
+docker-standard-push: docker-push-sds
+docker-standard-push: docker-push-certgen
+docker-standard-push: docker-push-ingress
+docker-standard-push: docker-push-access-logger
+docker-standard-push: docker-push-kubectl
+
+.PHONY: docker-distroless-push
+docker-distroless-push: docker-push-gloo-distroless
+docker-distroless-push: docker-push-discovery-distroless
+docker-distroless-push: docker-push-gloo-envoy-wrapper-distroless
+docker-distroless-push: docker-push-sds-distroless
+docker-distroless-push: docker-push-certgen-distroless
+docker-distroless-push: docker-push-ingress-distroless
+docker-distroless-push: docker-push-access-logger-distroless
+docker-distroless-push: docker-push-kubectl-distroless
 
 # Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
 docker-push: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-docker-push: docker-push-gloo
-docker-push: docker-push-discovery
-docker-push: docker-push-gloo-envoy-wrapper
-docker-push: docker-push-sds
-docker-push: docker-push-certgen
-docker-push: docker-push-ingress
-docker-push: docker-push-access-logger
-docker-push: docker-push-kubectl
+docker-push: docker-standard-push
 endif # standard images
 docker-push: # Distroless images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-docker-push: docker-push-gloo-distroless
-docker-push: docker-push-discovery-distroless
-docker-push: docker-push-gloo-envoy-wrapper-distroless
-docker-push: docker-push-sds-distroless
-docker-push: docker-push-certgen-distroless
-docker-push: docker-push-ingress-distroless
-docker-push: docker-push-access-logger-distroless
-docker-push: docker-push-kubectl-distroless
+docker-push: docker-distroless-push
 endif # distroless images
+
+.PHONY: docker-standard-retag
+docker-standard-retag: docker-retag-gloo
+docker-standard-retag: docker-retag-discovery
+docker-standard-retag: docker-retag-gloo-envoy-wrapper
+docker-standard-retag: docker-retag-sds
+docker-standard-retag: docker-retag-certgen
+docker-standard-retag: docker-retag-ingress
+docker-standard-retag: docker-retag-access-logger
+docker-standard-retag: docker-retag-kubectl
+
+.PHONY: docker-distroless-retag
+docker-distroless-retag: docker-retag-gloo-distroless
+docker-distroless-retag: docker-retag-discovery-distroless
+docker-distroless-retag: docker-retag-gloo-envoy-wrapper-distroless
+docker-distroless-retag: docker-retag-sds-distroless
+docker-distroless-retag: docker-retag-certgen-distroless
+docker-distroless-retag: docker-retag-ingress-distroless
+docker-distroless-retag: docker-retag-access-logger-distroless
+docker-distroless-retag: docker-retag-kubectl-distroless
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
 .PHONY: docker-retag
 docker-retag: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-docker-retag: docker-retag-gloo
-docker-retag: docker-retag-discovery
-docker-retag: docker-retag-gloo-envoy-wrapper
-docker-retag: docker-retag-sds
-docker-retag: docker-retag-certgen
-docker-retag: docker-retag-ingress
-docker-retag: docker-retag-access-logger
-docker-retag: docker-retag-kubectl
+docker-retag: docker-standard-retag
 endif # standard images
 docker-retag: # Distroless images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-docker-retag: docker-retag-gloo-distroless
-docker-retag: docker-retag-discovery-distroless
-docker-retag: docker-retag-gloo-envoy-wrapper-distroless
-docker-retag: docker-retag-sds-distroless
-docker-retag: docker-retag-certgen-distroless
-docker-retag: docker-retag-ingress-distroless
-docker-retag: docker-retag-access-logger-distroless
-docker-retag: docker-retag-kubectl-distroless
+docker-retag: docker-distroless-retag
 endif # distroless images
 
 #----------------------------------------------------------------------------------
@@ -995,28 +1015,34 @@ kind-reload-gloo-envoy-wrapper:
 	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
+.PHONY: kind-build-and-load-standard
+kind-build-and-load-standard: kind-build-and-load-gloo
+kind-build-and-load-standard: kind-build-and-load-discovery
+kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
+kind-build-and-load-standard: kind-build-and-load-sds
+kind-build-and-load-standard: kind-build-and-load-certgen
+kind-build-and-load-standard: kind-build-and-load-ingress
+kind-build-and-load-standard: kind-build-and-load-access-logger
+kind-build-and-load-standard: kind-build-and-load-kubectl
+
+.PHONY: kind-build-and-load-distroless
+kind-build-and-load-distroless: kind-build-and-load-gloo-distroless
+kind-build-and-load-distroless: kind-build-and-load-discovery-distroless
+kind-build-and-load-distroless: kind-build-and-load-gloo-envoy-wrapper-distroless
+kind-build-and-load-distroless: kind-build-and-load-sds-distroless
+kind-build-and-load-distroless: kind-build-and-load-certgen-distroless
+kind-build-and-load-distroless: kind-build-and-load-ingress-distroless
+kind-build-and-load-distroless: kind-build-and-load-access-logger-distroless
+kind-build-and-load-distroless: kind-build-and-load-kubectl-distroless
+
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
-kind-build-and-load: kind-build-and-load-gloo
-kind-build-and-load: kind-build-and-load-discovery
-kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper
-kind-build-and-load: kind-build-and-load-sds
-kind-build-and-load: kind-build-and-load-certgen
-kind-build-and-load: kind-build-and-load-ingress
-kind-build-and-load: kind-build-and-load-access-logger
-kind-build-and-load: kind-build-and-load-kubectl
+kind-build-and-load: kind-build-and-load-standard
 endif # standard images
 kind-build-and-load: # Distroless images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
-kind-build-and-load: kind-build-and-load-gloo-distroless
-kind-build-and-load: kind-build-and-load-discovery-distroless
-kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper-distroless
-kind-build-and-load: kind-build-and-load-sds-distroless
-kind-build-and-load: kind-build-and-load-certgen-distroless
-kind-build-and-load: kind-build-and-load-ingress-distroless
-kind-build-and-load: kind-build-and-load-access-logger-distroless
-kind-build-and-load: kind-build-and-load-kubectl-distroless
+kind-build-and-load: kind-build-and-load-distroless
 endif # distroless images
 
 define kind_reload_msg
