@@ -3,10 +3,11 @@ package operations
 import (
 	"context"
 	"fmt"
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	"io"
 	"slices"
+
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 // Operator is responsible for executing Operation against a Kubernetes Cluster
@@ -97,6 +98,8 @@ func (o *Operator) executeReversibleOperations(ctx context.Context, operations .
 
 	defer func() {
 		// We need to perform the undo operations in reverse order
+		// This way, if we execute: do-A -> do-B -> do-C
+		// We should undo it by executing: undo-C -> undo-B -> undo-A
 		slices.Reverse(undoOperations)
 		undoErr := o.executeOperations(ctx, undoOperations...)
 		if undoErr != nil {
@@ -133,5 +136,5 @@ func (o *Operator) executeOperation(ctx context.Context, operation Operation) er
 }
 
 func (o *Operator) writeProgress(operation Operation, progress string) {
-	_, _ = o.progressWriter.Write([]byte(fmt.Sprintf("%o: %o\n", operation.Name(), progress)))
+	_, _ = o.progressWriter.Write([]byte(fmt.Sprintf("%s: %s\n", operation.Name(), progress)))
 }
