@@ -189,7 +189,6 @@ func (ml *mergedListeners) translateListeners(
 			err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
 				Gateway:    &mergedListener.parentGateway,
 				GwListener: &mergedListener.listener,
-				Reporter:   reporter,
 			}, listener)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Errorf("error in ListenerPlugin: %v", err)

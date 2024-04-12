@@ -44,8 +44,6 @@ type ListenerContext struct {
 	Gateway *gwv1.Gateway
 	// gw Listener being processed
 	GwListener *gwv1.Listener
-	// Reporter for the correct ParentRef associated with this Listener
-	Reporter reports.Reporter
 }
 type ListenerPlugin interface {
 	Plugin
