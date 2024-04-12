@@ -872,7 +872,7 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 
 func validateClusterHeader(header string) error {
 	// check that header name is only ASCII characters
-	for i := 0; i < len(header); i++ {
+	for i := range len(header) {
 		if header[i] > unicode.MaxASCII || header[i] == ':' {
 			return fmt.Errorf("%s is an invalid HTTP header name", header)
 		}

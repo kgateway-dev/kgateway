@@ -1,13 +1,15 @@
+# Since we only publish amd64 images, we use the amd64 variant.
+
 ARG PACKAGE_DONOR_IMAGE
 ARG BASE_IMAGE
 
-FROM $PACKAGE_DONOR_IMAGE as donor
+FROM --platform=linux/amd64 $PACKAGE_DONOR_IMAGE as donor
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates
 
-FROM $BASE_IMAGE
+FROM --platform=linux/amd64 $BASE_IMAGE
 
 # ca-certificates depends on openssl
 COPY --from=donor /etc/ssl /etc/ssl

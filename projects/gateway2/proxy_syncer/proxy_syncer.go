@@ -73,8 +73,6 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	statusReporter reporter.StatusReporter,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:  controllerName,
@@ -109,11 +107,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
 
-		pluginParams := extensions.PluginBuilderParams{
-			RouteOptionClient: s.routeOptionClient,
-			StatusReporter:    s.statusReporter,
-		}
-		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx, pluginParams)
+		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
 		gatewayTranslator := gwv2_translator.NewTranslator(gatewayQueries, pluginRegistry)
 
 		rm := reports.NewReportMap()

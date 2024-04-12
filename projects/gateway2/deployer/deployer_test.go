@@ -123,7 +123,9 @@ var _ = Describe("Deployer", func() {
 		}
 		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
 		Expect(err).NotTo(HaveOccurred())
-		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(mgr)
+		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
+			Mgr: mgr,
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 	})
@@ -151,7 +153,9 @@ var _ = Describe("Deployer", func() {
 		It("support segmenting by release", func() {
 			mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
 			Expect(err).NotTo(HaveOccurred())
-			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(mgr)
+			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
+				Mgr: mgr,
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
@@ -252,7 +256,9 @@ var _ = Describe("Deployer", func() {
 			defaultDeployerInputs = func() *deployer.Inputs {
 				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
 				Expect(err).NotTo(HaveOccurred())
-				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(mgr)
+				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
+					Mgr: mgr,
+				})
 				Expect(err).NotTo(HaveOccurred())
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,

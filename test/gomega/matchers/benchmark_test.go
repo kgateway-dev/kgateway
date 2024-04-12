@@ -68,7 +68,7 @@ var _ = Describe("Benchmark", func() {
 // durationSlice returns a slice with durations of 1s, 2s, ..., ns for n = size in a randomized order
 func durationSlice(size int) []time.Duration {
 	durations := make([]time.Duration, size)
-	for i := time.Duration(0); i < time.Duration(size); i++ {
+	for i := range time.Duration(size) {
 		durations[i] = (i * time.Second) + time.Second
 	}
 	rand.Shuffle(size, func(i, j int) { durations[i], durations[j] = durations[j], durations[i] })
