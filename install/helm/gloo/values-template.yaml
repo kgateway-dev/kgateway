@@ -3,7 +3,7 @@ namespace:
 k8s:
   clusterName: cluster.local
 
-# Default values for Gloo Gateway
+# Default values for the Gloo Gateway - Kubernetes Gateway API integration
 kubeGateway:
   enabled: true
 

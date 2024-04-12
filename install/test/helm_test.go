@@ -26,15 +26,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
+	values "github.com/solo-io/gloo/install/helm/gloo/generate"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
-	values "github.com/solo-io/gloo/install/helm/gloo/generate"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/gomega/matchers"
 )
 
 func GetPodNamespaceStats() corev1.EnvVar {
@@ -76,7 +76,7 @@ func GetValidationEnvVar() corev1.EnvVar {
 }
 func GetK8sGwControllerEnvVar() corev1.EnvVar {
 	return corev1.EnvVar{
-		Name:  "GG_EXPERIMENTAL_K8S_GW_CONTROLLER",
+		Name:  constants.GlooGatewayEnableK8sGwControllerEnv,
 		Value: "true",
 	}
 }
@@ -1664,24 +1664,11 @@ spec:
 								"gatewayProxies.anotherGatewayProxy.podTemplate.nodeSelector.custom=custom",
 							},
 						})
-						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
-						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
+						gwp := getDeployment(testManifest, namespace, "another-gateway-proxy")
+						Expect(gwp.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
 					})
 
 					It("has a different checksum for each gateway-proxy-envoy-config", func() {
-						getDeployment := func(name string) *appsv1.Deployment {
-							gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, name)
-							gwp, err := kuberesource.ConvertUnstructured(gwpUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-							gwpStr := *gwp.(*appsv1.Deployment)
-							return &gwpStr
-						}
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.globalDownstreamMaxConnections=54321",
@@ -1694,8 +1681,8 @@ spec:
 						anotherGWPconfigMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
 						Expect(defaultGWPconfigMap.Data["envoy.yaml"]).ToNot(Equal(anotherGWPconfigMap.Data["envoy.yaml"]))
 
-						defaultGWP := getDeployment("gateway-proxy")
-						anotherGWP := getDeployment("another-gateway-proxy")
+						defaultGWP := getDeployment(testManifest, namespace, "gateway-proxy")
+						anotherGWP := getDeployment(testManifest, namespace, "another-gateway-proxy")
 						Expect(defaultGWP.Spec.Template.Annotations["checksum/gateway-proxy-envoy-config"]).ToNot(Equal(anotherGWP.Spec.Template.Annotations["checksum/another-gateway-proxy-envoy-config"]))
 					})
 
@@ -1707,12 +1694,8 @@ spec:
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
 						})
-						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
-						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
+						gwp := getDeployment(testManifest, namespace, "another-gateway-proxy")
+						Expect(gwp.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
 					})
 
 					It("uses appropriate nodeSelectors for custom gateway proxies depending on whether any is specified", func() {
@@ -1727,26 +1710,14 @@ spec:
 							},
 						})
 
-						unspecifiedUns := testManifest.ExpectCustomResource("Deployment", namespace, "unspecified-gateway-proxy")
-						unspecified, err := kuberesource.ConvertUnstructured(unspecifiedUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(unspecified).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						unspecifiedStr := *unspecified.(*appsv1.Deployment)
-						Expect(unspecifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
+						unspecified := getDeployment(testManifest, namespace, "unspecified-gateway-proxy")
+						Expect(unspecified.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
 
-						specifiedUns := testManifest.ExpectCustomResource("Deployment", namespace, "specified-gateway-proxy")
-						specified, err := kuberesource.ConvertUnstructured(specifiedUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(specified).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						specifiedStr := *specified.(*appsv1.Deployment)
-						Expect(specifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
+						specified := getDeployment(testManifest, namespace, "specified-gateway-proxy")
+						Expect(specified.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
 
-						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
-						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
+						gwp := getDeployment(testManifest, namespace, "gateway-proxy")
+						Expect(gwp.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "default"}))
 					})
 
 					It("renders with http/https gateways by default", func() {
@@ -2454,20 +2425,12 @@ spec:
 							})
 						})
 						It("uses default values for the deployment", func() {
-							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
-							deployment, err := kuberesource.ConvertUnstructured(deploymentUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(deployment).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-							deploymentStr := deployment.(*appsv1.Deployment)
-							Expect(*deploymentStr.Spec.Replicas).To(Equal(int32(1)))
+							deployment := getDeployment(testManifest, namespace, "another-gateway-proxy")
+							Expect(*deployment.Spec.Replicas).To(Equal(int32(1)))
 						})
 						It("uses default values for the service", func() {
-							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
-							service, err := kuberesource.ConvertUnstructured(serviceUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(service).To(BeAssignableToTypeOf(&corev1.Service{}))
-							serviceStr := service.(*corev1.Service)
-							Expect(serviceStr.Spec.Type).To(Equal(corev1.ServiceType("LoadBalancer")))
+							service := getService(testManifest, namespace, "another-gateway-proxy")
+							Expect(service.Spec.Type).To(Equal(corev1.ServiceType("LoadBalancer")))
 						})
 						It("uses default values for the config map", func() {
 							configMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
@@ -2513,20 +2476,12 @@ spec:
 							})
 						})
 						It("uses merged values for the deployment", func() {
-							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
-							deployment, err := kuberesource.ConvertUnstructured(deploymentUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(deployment).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-							deploymentStr := deployment.(*appsv1.Deployment)
-							Expect(*deploymentStr.Spec.Replicas).To(Equal(int32(50)))
+							deployment := getDeployment(testManifest, namespace, "another-gateway-proxy")
+							Expect(*deployment.Spec.Replicas).To(Equal(int32(50)))
 						})
 						It("uses merged values for the service", func() {
-							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
-							service, err := kuberesource.ConvertUnstructured(serviceUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(service).To(BeAssignableToTypeOf(&corev1.Service{}))
-							serviceStr := *service.(*corev1.Service)
-							Expect(serviceStr.Spec.Type).To(Equal(corev1.ServiceType("NodePort")))
+							service := getService(testManifest, namespace, "another-gateway-proxy")
+							Expect(service.Spec.Type).To(Equal(corev1.ServiceType("NodePort")))
 						})
 						It("uses merged values for the config map", func() {
 							configMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
@@ -2545,12 +2500,8 @@ spec:
 						})
 
 						It("does not merge extraAnnotations for service", func() {
-							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
-							service, err := kuberesource.ConvertUnstructured(serviceUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(service).To(BeAssignableToTypeOf(&corev1.Service{}))
-							serviceStr := *service.(*corev1.Service)
-							Expect(serviceStr.ObjectMeta.Annotations).To(Equal(map[string]string{"override": "override"}))
+							service := getService(testManifest, namespace, "another-gateway-proxy")
+							Expect(service.ObjectMeta.Annotations).To(Equal(map[string]string{"override": "override"}))
 						})
 
 					})
@@ -3440,11 +3391,7 @@ spec:
 							},
 						})
 
-						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
-						gwpObj, err := kuberesource.ConvertUnstructured(gwpUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(gwpObj).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						gwpDepl := *gwpObj.(*appsv1.Deployment)
+						gwpDepl := getDeployment(testManifest, namespace, "gateway-proxy")
 						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
@@ -3477,11 +3424,7 @@ spec:
 							},
 						})
 
-						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
-						gwpObj, err := kuberesource.ConvertUnstructured(gwpUns)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(gwpObj).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
-						gwpDepl := *gwpObj.(*appsv1.Deployment)
+						gwpDepl := getDeployment(testManifest, namespace, "gateway-proxy")
 						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(2))
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
@@ -4383,7 +4326,7 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
+          - name: ` + constants.GlooGatewayEnableK8sGwControllerEnv + `
             value: "true"
           - name: START_STATS_SERVER
             value: "true"
@@ -5787,7 +5730,7 @@ metadata:
 													},
 												},
 												{
-													Name:  "GG_EXPERIMENTAL_K8S_GW_CONTROLLER",
+													Name:  constants.GlooGatewayEnableK8sGwControllerEnv,
 													Value: "true",
 												},
 												{
@@ -6981,24 +6924,6 @@ func getFieldFromUnstructured(uns *unstructured.Unstructured, fieldPath ...strin
 		obj = obj.(map[string]interface{})[field]
 	}
 	return obj
-}
-
-//nolint:unparam // jobNamespace always receives "gloo-system"
-func getJob(testManifest TestManifest, jobNamespace string, jobName string) *batchv1.Job {
-	jobUns := testManifest.ExpectCustomResource("Job", jobNamespace, jobName)
-	jobObj, err := kuberesource.ConvertUnstructured(jobUns)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(jobObj).To(BeAssignableToTypeOf(&batchv1.Job{}))
-	return jobObj.(*batchv1.Job)
-}
-
-//nolint:unparam // jobNamespace always receives "gloo-system"
-func getConfigMap(testManifest TestManifest, namespace string, name string) *corev1.ConfigMap {
-	configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, name)
-	configMapObj, err := kuberesource.ConvertUnstructured(configMapUns)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(configMapObj).To(BeAssignableToTypeOf(&corev1.ConfigMap{}))
-	return configMapObj.(*corev1.ConfigMap)
 }
 
 // deepCopy deepcopies a to b using json marshaling
