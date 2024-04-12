@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -110,7 +111,7 @@ func (s *statusSyncer) applyStatusPlugins(
 	logger := contextutils.LoggerFrom(ctx)
 
 	// filter only the proxies that were produced by k8s gws
-	proxiesWithReports = filterProxiesByControllerName(proxiesWithReports, s.controllerName)
+	proxiesWithReports = filterProxiesByControllerName(proxiesWithReports)
 
 	statusCtx := &gwplugins.StatusContext{
 		ProxiesWithReports: proxiesWithReports,
@@ -126,7 +127,12 @@ func (s *statusSyncer) applyStatusPlugins(
 
 func filterProxiesByControllerName(
 	reports []translatorutils.ProxyWithReports,
-	name string,
 ) []translatorutils.ProxyWithReports {
-	return nil
+	var filtered []translatorutils.ProxyWithReports
+	for _, proxyWithReports := range reports {
+		if proxyWithReports.Proxy.GetMetadata().GetLabels()[utils.ProxyTypeKey] == utils.GatewayApiProxyValue {
+			filtered = append(filtered, proxyWithReports)
+		}
+	}
+	return filtered
 }
