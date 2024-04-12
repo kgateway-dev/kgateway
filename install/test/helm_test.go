@@ -2920,12 +2920,7 @@ spec:
 								Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 								Expect(structuredDeployment.Spec.Template.Spec.Containers).To(HaveLen(1))
-								for _, envvar := range structuredDeployment.Spec.Template.Spec.Containers[0].Env {
-									if envvar.Name != "DISABLE_CORE_DUMPS" {
-										continue
-									}
-									Expect(envvar.Value).To(Equal("true"))
-								}
+								expectEnvVarExists(structuredDeployment.Spec.Template.Spec.Containers[0], "DISABLE_CORE_DUMPS", "true")
 							})
 						})
 
@@ -3498,7 +3493,7 @@ spec:
 						})
 
 						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-							return resource.GetKind() == "Deployment"
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
 						}).ExpectAll(func(deployment *unstructured.Unstructured) {
 							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
@@ -3515,9 +3510,7 @@ spec:
 									}
 								}
 							}
-							if structuredDeployment.GetName() == "gateway-proxy" {
-								Expect(istioMetaMeshID).To(Equal(value), "ISTIO_META_MESH_ID should equal "+value)
-							}
+							Expect(istioMetaMeshID).To(Equal(value), "ISTIO_META_MESH_ID should equal "+value)
 
 						})
 					})

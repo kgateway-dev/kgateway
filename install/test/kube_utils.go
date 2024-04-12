@@ -1,6 +1,8 @@
 package test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -43,4 +45,24 @@ func getConfigMap(testManifest TestManifest, namespace string, name string) *cor
 	Expect(err).NotTo(HaveOccurred())
 	Expect(configMapObj).To(BeAssignableToTypeOf(&corev1.ConfigMap{}))
 	return configMapObj.(*corev1.ConfigMap)
+}
+
+// verifies that the container contains an env var with the given name and value
+func expectEnvVarExists(container corev1.Container, name string, value string) {
+	foundName := false
+	for _, envVar := range container.Env {
+		if envVar.Name == name {
+			Expect(envVar.Value).To(Equal(value), fmt.Sprintf("expected env var %s to have value %s", name, value))
+			foundName = true
+			break
+		}
+	}
+	Expect(foundName).To(BeTrue(), fmt.Sprintf("env var with name %s should exist", name))
+}
+
+// verifies that the container does not contain an env var with the given name
+func expectEnvVarDoesNotExist(container corev1.Container, name string) {
+	for _, envVar := range container.Env {
+		Expect(envVar.Name).NotTo(Equal(name), fmt.Sprintf("env var with name %s should not exist", name))
+	}
 }
