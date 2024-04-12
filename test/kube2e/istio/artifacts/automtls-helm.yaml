@@ -17,10 +17,6 @@ gloo:
       requests:
         cpu: 100m
         memory: 256Mi
-    customEnv:
-      # The experimental API is disabled by default, so we must explicitly enable it on the deployment
-      - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
-        value: "true"
 gatewayProxies:
   gatewayProxy:
     podTemplate:
