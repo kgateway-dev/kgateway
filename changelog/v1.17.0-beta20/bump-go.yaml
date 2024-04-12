@@ -11,3 +11,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8981
     resolvesIssue: false
     description: Bump Go to 1.22 and refactor loops to iterate over variables
+  - type: NON_USER_FACING
+    description: Bump istio to 1.19.2 to support k8s 1.28.0 in kube2e tests
+  - type: NON_USER_FACING
+    description: Update glooctl kube2e test to use the cluster config exported by the CLUSTER_NAME env variable
