@@ -187,46 +187,14 @@ func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
 }
 
 func attachedVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {
-	return &solokubev1.VirtualHostOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "policy",
-			Namespace: "default",
-		},
-		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.GatewayKind,
-				Name:  "gw",
-			},
-			Options: &v1.VirtualHostOptions{
-				Retries: &retries.RetryPolicy{
-					RetryOn:    "5xx",
-					NumRetries: 5,
-				},
-			},
-		},
-	}
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.Spec.TargetRef.Namespace = nil
+	return vhOpt
 }
 
 func nonAttachedVirtualHostOption() *solokubev1.VirtualHostOption {
-	return &solokubev1.VirtualHostOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "bad-policy",
-			Namespace: "default",
-		},
-		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.GatewayKind,
-				Name:      "bad-gw",
-				Namespace: wrapperspb.String("default"),
-			},
-			Options: &v1.VirtualHostOptions{
-				Retries: &retries.RetryPolicy{
-					RetryOn:    "5xx",
-					NumRetries: 5,
-				},
-			},
-		},
-	}
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.ObjectMeta.Name = "bad-policy"
+	vhOpt.Spec.TargetRef.Name = "bad-gw"
+	return vhOpt
 }
