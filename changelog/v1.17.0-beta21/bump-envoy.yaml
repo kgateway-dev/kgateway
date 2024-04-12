@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.29.3
+  issueLink: https://github.com/solo-io/solo-projects/issues/6008
+  resolvesIssue: false
+  description: >-
+    Bump envoy-gloo to bring us onto 1.29.3
