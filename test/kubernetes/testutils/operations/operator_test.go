@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
@@ -147,7 +149,7 @@ var _ operations.Operation = new(testOperation)
 type testOperation struct {
 	name      string
 	op        func(ctx context.Context) error
-	assertion operations.DiscreteAssertion
+	assertion assertions.DiscreteAssertion
 }
 
 func (t *testOperation) Name() string {
@@ -166,7 +168,7 @@ func (t *testOperation) Execute() func(ctx context.Context) error {
 	}
 }
 
-func (t *testOperation) ExecutionAssertion() operations.DiscreteAssertion {
+func (t *testOperation) ExecutionAssertion() assertions.DiscreteAssertion {
 	if t.assertion != nil {
 		return t.assertion
 	}
