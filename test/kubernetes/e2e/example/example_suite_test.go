@@ -9,9 +9,10 @@ import (
 	"github.com/solo-io/gloo/test/testutils/kubeutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
-	. "github.com/onsi/ginkgo/v2"
 	"os"
 	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 func TestExampleSuite(t *testing.T) {

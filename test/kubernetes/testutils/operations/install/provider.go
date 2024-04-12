@@ -2,6 +2,8 @@ package install
 
 import (
 	"context"
+	"time"
+
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
@@ -10,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/test/testutils/kubeutils"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 // The install OperationProvider is a WORK IN PROGRESS
