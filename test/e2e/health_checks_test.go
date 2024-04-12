@@ -335,11 +335,11 @@ var _ = Describe("Health Checks", func() {
 
 			numRequests := 5
 
-			for i := 0; i < numRequests; i++ {
+			for range numRequests {
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 			}
 
-			for i := 0; i < numRequests; i++ {
+			for range numRequests {
 				select {
 				case v := <-tu.C:
 					Expect(v.Port).To(Equal(liveService.Port))
