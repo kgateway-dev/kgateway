@@ -311,7 +311,7 @@ data:
     node:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
-        role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
+        role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
     static_resources:
       listeners:
       - name: read_config_listener
