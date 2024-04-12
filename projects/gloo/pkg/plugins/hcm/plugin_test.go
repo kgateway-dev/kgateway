@@ -361,7 +361,7 @@ var _ = Describe("Plugin", func() {
 			instanceType := instanceValue.Type()
 
 			fieldNames := []string{}
-			for i := 0; i < instanceValue.NumField(); i++ {
+			for i := range instanceValue.NumField() {
 				fieldNames = append(fieldNames, instanceType.Field(i).Name)
 			}
 

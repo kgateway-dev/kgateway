@@ -267,7 +267,11 @@ var _ = Describe("Check", func() {
 
 		It("succeeds with correct kubecontext", func() {
 			// The name of the cluster we run these tests in is "kind" which is why this test works
-			_, err := GlooctlOut("check", "--kube-context", "kind-kind")
+			clusterName, ok := os.LookupEnv("CLUSTER_NAME")
+			if !ok {
+				clusterName = "kind"
+			}
+			_, err := GlooctlOut("check", "--kube-context", "kind-"+clusterName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
