@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	"github.com/solo-io/go-utils/contextutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
@@ -185,11 +186,14 @@ func (ml *mergedListeners) translateListeners(
 
 		// run listener plugins
 		for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
-			listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
+			err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
 				Gateway:    &mergedListener.parentGateway,
 				GwListener: &mergedListener.listener,
 				Reporter:   reporter,
 			}, listener)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Errorf("error in ListenerPlugin: %v", err)
+			}
 		}
 
 		listeners = append(listeners, listener)

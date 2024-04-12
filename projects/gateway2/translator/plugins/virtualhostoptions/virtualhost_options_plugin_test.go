@@ -45,7 +45,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 					},
 				},
 				GwListener: &gwv1.Listener{
-					Name: "foo",
+					Name: "test-listener",
 				},
 			}
 
@@ -88,6 +88,20 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 		When("VirtualHostOptions exist in the same namespace and are attached correctly", func() {
 			BeforeEach(func() {
 				deps = []client.Object{attachedVirtualHostOption()}
+			})
+			It("correctly adds retry", func() {
+
+				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+
+				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
+					Expect(proto.Equal(vh.GetOptions(), expectedOptions)).To(BeTrue())
+				}
+			})
+		})
+
+		When("VirtualHostOptions exist in the same namespace and are attached correctly with section name", func() {
+			BeforeEach(func() {
+				deps = []client.Object{attachedVirtualHostOptionWithSectionName()}
 			})
 			It("correctly adds retry", func() {
 
@@ -163,6 +177,13 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 			},
 		},
 	}
+}
+func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.Spec.TargetRef.SectionName = &wrapperspb.StringValue{
+		Value: "test-listener",
+	}
+	return vhOpt
 }
 
 func attachedVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {

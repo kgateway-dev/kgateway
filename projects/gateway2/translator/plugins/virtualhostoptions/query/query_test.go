@@ -39,7 +39,7 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			},
 		}
 		listener = &gwv1.Listener{
-			Name: "foo",
+			Name: "test-listener",
 		}
 	})
 
@@ -53,7 +53,7 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 		qry = query.NewQuery(fakeClient)
 	})
 
-	When("targetRef fully present", func() {
+	When("targetRef fully present without sectionName", func() {
 		BeforeEach(func() {
 			deps = []client.Object{
 				gw,
@@ -62,11 +62,12 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should find the only attached option", func() {
-			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+			virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOption).NotTo(BeNil())
-			Expect(virtualHostOption.GetName()).To(Equal("good-policy"))
-			Expect(virtualHostOption.GetNamespace()).To(Equal("default"))
+			Expect(virtualHostOptions).NotTo(BeNil())
+			Expect(virtualHostOptions.OptsWithoutSectionName).To(HaveLen(1))
+			Expect(virtualHostOptions.OptsWithoutSectionName[0].GetName()).To(Equal("good-policy"))
+			Expect(virtualHostOptions.OptsWithoutSectionName[0].GetNamespace()).To(Equal("default"))
 		})
 	})
 
@@ -78,11 +79,10 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should not find an attached option", func() {
-			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+			virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOption).To(BeNil())
+			Expect(virtualHostOptions).To(BeNil())
 		})
-
 	})
 
 	When("targetRef has omitted namespace", func() {
@@ -94,14 +94,14 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should find the attached option", func() {
-			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+			virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOption).NotTo(BeNil())
+			Expect(virtualHostOptions).NotTo(BeNil())
+			Expect(virtualHostOptions.OptsWithoutSectionName).To(HaveLen(1))
 
-			Expect(virtualHostOption.GetName()).To(Equal("good-policy-no-ns"))
-			Expect(virtualHostOption.GetNamespace()).To(Equal("default"))
+			Expect(virtualHostOptions.OptsWithoutSectionName[0].GetName()).To(Equal("good-policy-no-ns"))
+			Expect(virtualHostOptions.OptsWithoutSectionName[0].GetNamespace()).To(Equal("default"))
 		})
-
 	})
 
 	When("no options in namespace as gateway with omitted namespace", func() {
@@ -112,9 +112,82 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			}
 		})
 		It("should not find an attached option", func() {
-			virtualHostOption, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+			virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(virtualHostOption).To(BeNil())
+			Expect(virtualHostOptions).To(BeNil())
+		})
+	})
+	When("targetRef has section name matching listener", func() {
+		When("no other options", func() {
+			BeforeEach(func() {
+				deps = []client.Object{
+					gw,
+					attachedVirtualHostOptionWithSectionName(),
+				}
+			})
+			It("should find the attached option specified by section name", func() {
+				virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(virtualHostOptions).NotTo(BeNil())
+				Expect(virtualHostOptions.OptsWithSectionName).To(HaveLen(1))
+
+				Expect(virtualHostOptions.OptsWithSectionName[0].GetName()).To(Equal("good-policy-with-section-name"))
+				Expect(virtualHostOptions.OptsWithSectionName[0].GetNamespace()).To(Equal("default"))
+			})
+		})
+		When("no other options with section name", func() {
+			BeforeEach(func() {
+				deps = []client.Object{
+					gw,
+					attachedVirtualHostOptionWithSectionName(),
+					attachedVirtualHostOption(),
+				}
+			})
+			It("should find the attached option with and without section name", func() {
+				virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(virtualHostOptions).NotTo(BeNil())
+
+				Expect(virtualHostOptions.OptsWithSectionName).To(HaveLen(1))
+				Expect(virtualHostOptions.OptsWithSectionName[0].GetName()).To(Equal("good-policy-with-section-name"))
+				Expect(virtualHostOptions.OptsWithSectionName[0].GetNamespace()).To(Equal("default"))
+
+				Expect(virtualHostOptions.OptsWithoutSectionName).To(HaveLen(1))
+				Expect(virtualHostOptions.OptsWithoutSectionName[0].GetName()).To(Equal("good-policy"))
+				Expect(virtualHostOptions.OptsWithoutSectionName[0].GetNamespace()).To(Equal("default"))
+			})
+		})
+		When("targetRef has non-matching section name", func() {
+			When("no other options", func() {
+				BeforeEach(func() {
+					deps = []client.Object{
+						gw,
+						attachedVirtualHostOptionWithDiffSectionName(),
+					}
+				})
+				It("should not find any attached options", func() {
+					virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(virtualHostOptions).To(BeNil())
+				})
+			})
+			When("gateway-targeted options exist", func() {
+				BeforeEach(func() {
+					deps = []client.Object{
+						gw,
+						attachedVirtualHostOption(),
+						attachedVirtualHostOptionWithDiffSectionName(),
+					}
+				})
+				It("should not find the gateway-level attached options", func() {
+					virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(virtualHostOptions).NotTo(BeNil())
+					Expect(virtualHostOptions.OptsWithoutSectionName).To(HaveLen(1))
+					Expect(virtualHostOptions.OptsWithoutSectionName[0].GetName()).To(Equal("good-policy"))
+					Expect(virtualHostOptions.OptsWithoutSectionName[0].GetNamespace()).To(Equal("default"))
+				})
+			})
 		})
 	})
 })
@@ -138,61 +211,42 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 		},
 	}
 }
+func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.ObjectMeta.Name = "good-policy-with-section-name"
+	vhOpt.Spec.TargetRef.SectionName = &wrapperspb.StringValue{
+		Value: "test-listener",
+	}
+	return vhOpt
+}
+
+func attachedVirtualHostOptionWithDiffSectionName() *solokubev1.VirtualHostOption {
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.ObjectMeta.Name = "bad-policy-with-section-name"
+	vhOpt.Spec.TargetRef.SectionName = &wrapperspb.StringValue{
+		Value: "not-our-listener",
+	}
+	return vhOpt
+}
 
 func attachedVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {
-	now := metav1.Now()
-	return &solokubev1.VirtualHostOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "good-policy-no-ns",
-			Namespace:         "default",
-			CreationTimestamp: now,
-		},
-		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.GatewayKind,
-				Name:  "test",
-			},
-			Options: &v1.VirtualHostOptions{},
-		},
-	}
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.ObjectMeta.Name = "good-policy-no-ns"
+	vhOpt.Spec.TargetRef.Namespace = nil
+	return vhOpt
 }
 
 func diffNamespaceVirtualHostOption() *solokubev1.VirtualHostOption {
-	now := metav1.Now()
-	return &solokubev1.VirtualHostOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "bad-policy",
-			Namespace:         "non-default",
-			CreationTimestamp: now,
-		},
-		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.GatewayKind,
-				Name:      "test",
-				Namespace: wrapperspb.String("default"),
-			},
-			Options: &v1.VirtualHostOptions{},
-		},
-	}
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.ObjectMeta.Name = "bad-policy"
+	vhOpt.ObjectMeta.Namespace = "non-default"
+	return vhOpt
 }
 
 func diffNamespaceVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {
-	now := metav1.Now()
-	return &solokubev1.VirtualHostOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "bad-policy",
-			Namespace:         "non-default",
-			CreationTimestamp: now,
-		},
-		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.GatewayKind,
-				Name:  "test",
-			},
-			Options: &v1.VirtualHostOptions{},
-		},
-	}
+	vhOpt := attachedVirtualHostOption()
+	vhOpt.ObjectMeta.Name = "bad-policy"
+	vhOpt.ObjectMeta.Namespace = "non-default"
+	vhOpt.Spec.TargetRef.Namespace = nil
+	return vhOpt
 }

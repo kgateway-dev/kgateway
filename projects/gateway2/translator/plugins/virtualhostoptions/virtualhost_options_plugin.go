@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rotisserie/eris"
+	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
@@ -23,6 +24,22 @@ var (
 	ErrUnexpectedListenerType = eris.New("unexpected listener type")
 	errUnexpectedListenerType = func(l *v1.Listener) error {
 		return eris.Wrapf(ErrUnexpectedListenerType, "expected AggregateListener, got %T", l.GetListenerType())
+	}
+	ErrTooManyAttachedOpts                = eris.New("too many attached VirtualHostOption resources found")
+	errTooManyAttachedOptsWithSectionName = func(listenerCtx *plugins.ListenerContext, numOpts int) error {
+		return eris.Wrapf(ErrTooManyAttachedOpts,
+			"expected at most 1 VirtualHostOption targeting gateway (%s.%s) and targeting listener %s with section name, found %d",
+			listenerCtx.Gateway.GetNamespace(),
+			listenerCtx.Gateway.GetName(),
+			listenerCtx.GwListener.Name,
+			numOpts)
+	}
+	errTooManyAttachedOptsWithoutSectionName = func(listenerCtx *plugins.ListenerContext, numOpts int) error {
+		return eris.Wrapf(ErrTooManyAttachedOpts,
+			"expected at most 1 VirtualHostOption targeting gateway (%s.%s), found %d",
+			listenerCtx.Gateway.GetNamespace(),
+			listenerCtx.Gateway.GetName(),
+			numOpts)
 	}
 )
 
@@ -47,17 +64,35 @@ func (p *plugin) ApplyListenerPlugin(
 
 	// attachedOption represents the VirtualHostOptions targeting the Gateway on which this listener resides, and/or
 	// the VirtualHostOptions which specifies this listener in section name
-	attachedOption, err := p.vhOptQueries.GetVirtualHostOptionsForListener(ctx, listenerCtx.GwListener, listenerCtx.Gateway)
+	attachedOptions, err := p.vhOptQueries.GetVirtualHostOptionsForListener(ctx, listenerCtx.GwListener, listenerCtx.Gateway)
 	if err != nil {
 		return err
 	}
 
-	if attachedOption == nil {
+	if attachedOptions == nil {
+		return nil
+	}
+
+	var optToUse *solokubev1.VirtualHostOption
+
+	if numOpts := len(attachedOptions.OptsWithoutSectionName); numOpts > 1 {
+		return errTooManyAttachedOptsWithoutSectionName(listenerCtx, numOpts)
+	} else if numOpts == 1 {
+		optToUse = attachedOptions.OptsWithoutSectionName[0]
+	}
+
+	if numOpts := len(attachedOptions.OptsWithSectionName); numOpts > 1 {
+		return errTooManyAttachedOptsWithSectionName(listenerCtx, numOpts)
+	} else if numOpts == 1 {
+		optToUse = attachedOptions.OptsWithSectionName[0]
+	}
+
+	if optToUse == nil {
 		return nil
 	}
 
 	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
-		v.Options = attachedOption.Spec.GetOptions()
+		v.Options = optToUse.Spec.GetOptions()
 	}
 
 	return nil
