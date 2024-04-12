@@ -55,28 +55,27 @@ func (o *Operator) WithAssertionInterceptor(assertionInterceptor func(func()) er
 // resources on the Cluster, it is your responsibility to perform Operation to undo those changes
 // If you would like to rely on this functionality, please see ExecuteReversibleOperations
 func (o *Operator) ExecuteOperations(ctx context.Context, operations ...Operation) error {
-	// Intercept failures, so that we can return an error to the test code,
-	// and it can decide what to do with it
-	var executionErr error
-	interceptedErr := o.assertionInterceptor(func() {
-		executionErr = o.executeOperations(ctx, operations...)
+	return o.executeSafe(func() error {
+		return o.executeOperations(ctx, operations...)
 	})
-	if interceptedErr != nil {
-		return interceptedErr
-	}
-	return executionErr
 }
 
 // ExecuteReversibleOperations executes a set of ReversibleOperation
 // In order, the ReversibleOperation.Do will be executed, and then on success or failure
 // the ReversibleOperation.Undo will also be executed
 // This way, developers do not need to worry about resources being cleaned up appropriately in tests
-func (o *Operator) ExecuteReversibleOperations(ctx context.Context, operations ...ReversibleOperation) (err error) {
+func (o *Operator) ExecuteReversibleOperations(ctx context.Context, operations ...ReversibleOperation) error {
+	return o.executeSafe(func() error {
+		return o.executeReversibleOperations(ctx, operations...)
+	})
+}
+
+func (o *Operator) executeSafe(fnMayPanic func() error) error {
 	// Intercept failures, so that we can return an error to the test code,
 	// and it can decide what to do with it
 	var executionErr error
 	interceptedErr := o.assertionInterceptor(func() {
-		executionErr = o.executeReversibleOperations(ctx, operations...)
+		executionErr = fnMayPanic()
 	})
 	if interceptedErr != nil {
 		return interceptedErr
