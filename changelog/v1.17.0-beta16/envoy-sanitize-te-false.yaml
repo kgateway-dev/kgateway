@@ -1,9 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/9232
-  resolvesIssue: false
-  description: >-
-    Hardcode Envoy's reloadable feature for TE header sanitization to false. This feature as it
-    exists in 1.29.2 breaks gRPC upstreams whose client library expects `TE: trailers`. This hardcode 
-    will be removed when Gloo Edge depends upon 1.29.3, which has a fix for the gRPC case but is currently
-    unreleased.
