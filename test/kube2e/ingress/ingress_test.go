@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -31,7 +31,7 @@ var _ = Describe("Kube2e: Ingress", func() {
 	AfterEach(func() { cancel() })
 
 	It("works", func() {
-		kube := kubeutils.MustClientset()
+		kube := clients.MustClientset()
 		kubeIngressClient := kube.NetworkingV1().Ingresses(testHelper.InstallNamespace)
 
 		backend := &networkingv1.IngressBackend{

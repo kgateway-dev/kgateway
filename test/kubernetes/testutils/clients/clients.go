@@ -1,4 +1,4 @@
-package kubeutils
+package clients
 
 import (
 	"github.com/onsi/ginkgo/v2"

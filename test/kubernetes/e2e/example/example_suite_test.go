@@ -3,10 +3,10 @@ package example_test
 import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/provider"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	"os"
@@ -29,7 +29,7 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	clusterContext := kubeutils.MustKindClusterContext(os.Getenv(testutils.ClusterName))
+	clusterContext := cluster.MustKindClusterContext(os.Getenv(testutils.ClusterName))
 
 	// Create an operator which is responsible for execution Operation against the cluster
 	operator = operations.NewGinkgoOperator()

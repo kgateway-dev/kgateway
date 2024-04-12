@@ -1,9 +1,9 @@
 package provider
 
 import (
+	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/install"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/manifest"
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
 )
 
 // OperationProvider is the entity that creates Operation
@@ -11,7 +11,7 @@ import (
 // So this provider maintains state about the install/cluster it is using, and then provides
 // operations.DiscreteAssertion to match
 type OperationProvider struct {
-	clusterContext *kubeutils.ClusterContext
+	clusterContext *cluster.ClusterContext
 
 	manifestProvider *manifest.OperationProvider
 	installProvider  *install.OperationProvider
@@ -27,7 +27,7 @@ func NewOperationProvider() *OperationProvider {
 }
 
 // WithClusterContext sets the provider, and all of it's sub-providers, to point to the provided cluster
-func (p *OperationProvider) WithClusterContext(clusterContext *kubeutils.ClusterContext) *OperationProvider {
+func (p *OperationProvider) WithClusterContext(clusterContext *cluster.ClusterContext) *OperationProvider {
 	p.clusterContext = clusterContext
 
 	p.manifestProvider.WithClusterCli(clusterContext.Cli)
