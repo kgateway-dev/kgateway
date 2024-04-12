@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -80,7 +81,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
 
 				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
-					Expect(vh.GetOptions()).To(Equal(expectedOptions))
+					Expect(proto.Equal(vh.GetOptions(), expectedOptions)).To(BeTrue())
 				}
 			})
 		})
@@ -93,7 +94,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
 
 				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
-					Expect(vh.GetOptions()).To(Equal(expectedOptions))
+					Expect(proto.Equal(vh.GetOptions(), expectedOptions)).To(BeTrue())
 				}
 			})
 		})
