@@ -15,37 +15,46 @@ import (
 // which have Enterprise variants.
 type K8sGatewayExtensions interface {
 	// CreatePluginRegistry returns the PluginRegistry
-	CreatePluginRegistry(ctx context.Context, params PluginBuilderParams) registry.PluginRegistry
+	CreatePluginRegistry(ctx context.Context) registry.PluginRegistry
 
 	// GetEnvoyImage returns the envoy image and tag used by the proxy deployment.
 	GetEnvoyImage() Image
 }
 
-type PluginBuilderParams struct {
+// K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
+type K8sGatewayExtensionsFactoryParameters struct {
+	Mgr               controllerruntime.Manager
 	RouteOptionClient gatewayv1.RouteOptionClient
 	StatusReporter    reporter.StatusReporter
+	KickXds           func(ctx context.Context)
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
 type K8sGatewayExtensionsFactory func(
-	mgr controllerruntime.Manager,
+	ctx context.Context,
+	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error)
 
 // NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
 func NewK8sGatewayExtensions(
-	mgr controllerruntime.Manager,
+	_ context.Context,
+	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
-		mgr,
+		params.Mgr,
+		params.RouteOptionClient,
+		params.StatusReporter,
 	}, nil
 }
 
 type k8sGatewayExtensions struct {
-	mgr controllerruntime.Manager
+	mgr               controllerruntime.Manager
+	routeOptionClient gatewayv1.RouteOptionClient
+	statusReporter    reporter.StatusReporter
 }
 
 // CreatePluginRegistry returns the PluginRegistry
-func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context, params PluginBuilderParams) registry.PluginRegistry {
+func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
 	queries := query.NewData(
 		e.mgr.GetClient(),
 		e.mgr.GetScheme(),
@@ -53,8 +62,8 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context, params Pl
 	plugins := registry.BuildPlugins(
 		queries,
 		e.mgr.GetClient(),
-		params.RouteOptionClient,
-		params.StatusReporter,
+		e.routeOptionClient,
+		e.statusReporter,
 	)
 	return registry.NewPluginRegistry(plugins)
 }
