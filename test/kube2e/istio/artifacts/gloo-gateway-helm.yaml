@@ -18,10 +18,6 @@ gloo:
       requests:
         cpu: 100m
         memory: 256Mi
-    customEnv:
-      # The experimental API is disabled by default, so we must explicitly enable it on the deployment
-      - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
-        value: "true"
 
 # Disable gloo gateway and only rely on gateway created by Gateway resource
 gatewayProxies:
@@ -44,9 +40,5 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
-gateway2:
-  gatewayClass:
-    className: gloo-gateway
-    controllerName: solo.io/gloo-gateway
-  controlPlane:
-    enabled: true # Create the gateway resource as part of the test
+kubeGateway:
+  enabled: true # Create the gateway resource as part of the test

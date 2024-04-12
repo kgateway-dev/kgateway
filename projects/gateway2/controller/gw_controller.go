@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	GatewayAutoDeployAnnotationKey = "gateway2.solo.io/auto-deploy"
+	GatewayAutoDeployAnnotationKey = "gateway.gloo.solo.io/auto-deploy"
 )
 
 type gatewayReconciler struct {
