@@ -33,7 +33,7 @@ func NewNodeRoleHasher() *nodeRoleHasher {
 	return &nodeRoleHasher{}
 }
 
-// classicEdgeNodeHash identifies a node based on the values provided in the `node.metadata.role`
+// nodeRoleHasher identifies a node based on the values provided in the `node.metadata.role`
 type nodeRoleHasher struct{}
 
 func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
@@ -45,16 +45,4 @@ func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
 	}
 
 	return FallbackNodeCacheKey
-}
-
-// isProxyWorkloadRole returns true if the provided role fits the format that is used by Proxy workloads
-// This format is: "NAMESPACE~NAME".
-// In classic Edge, nodes could also identify themselves with a node.metadata.role that do not fit this structure
-// This is useful in the case of additional services (like Enterprise ext-auth-service, and rate-limit-service)
-// who follow a format of "NAME".
-func (c nodeRoleHasher) isProxyWorkloadRole(role string) bool {
-	if strings.Contains(role, KeyDelimiter) {
-		return true
-	}
-	return false
 }

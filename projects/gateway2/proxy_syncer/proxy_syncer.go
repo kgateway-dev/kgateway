@@ -61,6 +61,11 @@ func NewGatewayInputChannels() *GatewayInputChannels {
 	}
 }
 
+/*
+ProxySyncer is responsible for translating Gateway CRs into Gloo Proxies and syncing the proxyClient with
+the newly translated proxies. The proxy sync is triggered by the `genericEvent` which is kicked when
+we reconcile gateway in the gateway controller. The `secretEvent` is kicked when a secret is created, updated,
+*/
 func NewProxySyncer(
 	controllerName, writeNamespace string,
 	translator translator.Translator,

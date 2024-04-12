@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
@@ -121,16 +122,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	}
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
-		meta := proxy.GetMetadata()
-		metaKey := meta.Ref().Key()
-		labels := proxy.GetMetadata().GetLabels()
-		if labels != nil && labels[utils.ProxyTypeKey] == utils.GlooGatewayProxyValue {
-			proxyNamespace := labels[utils.NamespaceLabel]
-			if proxyNamespace != "" {
-				meta.Namespace = proxyNamespace
-				metaKey = meta.Ref().Key()
-			}
-		}
+		metaKey := GetKeyFromProxyMeta(proxy)
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
 			proxyCtx = ctxWithTags
 		}
@@ -221,4 +213,18 @@ func prettify(original interface{}) string {
 	}
 
 	return string(b)
+}
+
+func GetKeyFromProxyMeta(proxy *gloov1.Proxy) string {
+	meta := proxy.GetMetadata()
+	metaKey := meta.Ref().Key()
+	labels := proxy.GetMetadata().GetLabels()
+	if labels != nil && labels[utils.ProxyTypeKey] == utils.GlooGatewayProxyValue {
+		proxyNamespace := labels[utils.NamespaceLabel]
+		if proxyNamespace != "" {
+			meta.Namespace = proxyNamespace
+			metaKey = meta.Ref().Key()
+		}
+	}
+	return metaKey
 }

@@ -52,7 +52,7 @@ var (
 	// Previously, proxies would be identified with:
 	//   created_by: gateway
 	// Now, proxies are identified with:
-	//   proxy_type: gloo-gateway
+	//   created_by: gloo-gateway
 	//
 	// We need to ensure that users can successfully upgrade from versions
 	// where the previous labels were used, to versions with the new labels.

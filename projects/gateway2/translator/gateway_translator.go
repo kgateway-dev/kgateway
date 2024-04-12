@@ -91,8 +91,10 @@ func proxyMetadata(gateway *gwv1.Gateway, writeNamespace string) *core.Metadata 
 	// which is equal to role defined on proxy-deployment ConfigMap:
 	// gloo-kube-api~{{ .Release.Namespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
 	return &core.Metadata{
-		Name:      fmt.Sprintf("%s-%s", gateway.GetNamespace(), gateway.GetName()),
-		Namespace: writeNamespace,
+		// Add the gateway name to the proxy name to ensure uniqueness of proxies
+		Name: fmt.Sprintf("%s-%s", gateway.GetNamespace(), gateway.GetName()),
+		// All proxies are created in the writeNamespace (ie. gloo-system).
+		// This needs to match the writeNamespace because the proxyClient will only looksat namespaces in the whitelisted namespace list
 		Labels: map[string]string{
 			utils.ProxyTypeKey:   utils.GlooGatewayProxyValue,
 			utils.NamespaceLabel: gateway.GetNamespace(),
