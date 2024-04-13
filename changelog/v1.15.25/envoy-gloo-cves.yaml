@@ -1,0 +1,14 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.26.8-patch1
+  issueLink: https://github.com/solo-io/solo-projects/issues/6008
+  resolvesIssue: false
+  description: >-
+    Bump envoy-gloo for fixes Envoy CVEs with HTTP2 continuation
+    https://github.com/envoyproxy/envoy/security/advisories/GHSA-j654-3ccm-vfmm
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: cloud-builders
+  dependencyTag: v0.7.6
