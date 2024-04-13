@@ -2,11 +2,12 @@ package e2e
 
 import (
 	"context"
+	"testing"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
-	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
@@ -15,7 +16,7 @@ import (
 
 type TestSuite struct {
 	// TestingFramework defines the framework that tests should rely on
-	// Within the Gloo codebase, we rely extensively on Gingko and Gomega
+	// Within the Gloo codebase, we rely extensively on Ginkgo and Gomega
 	// The idea behind making this configurable, per suite, is that it ensures that
 	// all of our tests can rely on the testing interface, instead of the explicit Ginkgo implementation
 	TestingFramework testing.TB
@@ -67,8 +68,8 @@ func NewTestInstallation(testSuite *TestSuite, glooGatewayContext *gloogateway.C
 // TestFn is a function that executes a test, for a given TestInstallation
 type TestFn func(ctx context.Context, suite *TestInstallation)
 
-// Test represents a single end-to-end behavior that is validated
-// against a running installation of Gloo Gateway
+// Test represents a single end-to-end behavior that is validated against a running installation of Gloo Gateway
+// Tests are grouped by the feature they validate, and are defined in the e2e/features directory
 type Test struct {
 	Name        string
 	Description string

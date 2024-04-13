@@ -7,8 +7,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/kubectl"
 )
 
-// OperationProvider is the entity that creates operations
-// These operations are executed against a running installion of Gloo Gateway, within a Kubernetes Cluster.
+// OperationProvider is the entity that creates operations.
+// These operations are executed against a running installation of Gloo Gateway, within a Kubernetes Cluster.
 // This provider is just a wrapper around sub-providers, so it exposes methods to access those providers
 type OperationProvider struct {
 	kubeCtlProvider *kubectl.OperationProvider
@@ -23,7 +23,7 @@ func NewOperationProvider() *OperationProvider {
 	}
 }
 
-// WithGlooctlProvider sets the glooctl provider
+// WithGlooctlProvider sets the glooctl provider on this OperationProvider
 func (p *OperationProvider) WithGlooctlProvider(provider glooctl.OperationProvider) *OperationProvider {
 	p.glooCtlProvider = provider
 	return p

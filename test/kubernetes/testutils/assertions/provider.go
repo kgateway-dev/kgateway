@@ -1,8 +1,9 @@
 package assertions
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"testing"
+
+	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 )

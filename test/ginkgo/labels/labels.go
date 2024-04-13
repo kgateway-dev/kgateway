@@ -9,16 +9,4 @@ const (
 
 	// E2E is a label applied to any tests which run Gloo Edge end-to-end
 	E2E = "end-to-end"
-
-	// WORK IN PROGRESS
-
-	ApiK8sGateway = "api-k8s-gw"
-
-	ApiEdgeGateway = "api-edge-gw"
-
-	FeatureValidation = "feature-validation"
-
-	FeatureRouting = "feature-routing"
-
-	FeatureExtAuth = "feature-"
 )

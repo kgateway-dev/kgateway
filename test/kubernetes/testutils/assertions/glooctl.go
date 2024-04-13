@@ -2,12 +2,13 @@ package assertions
 
 import (
 	"context"
+	"time"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"time"
 )
 
 func (p *Provider) CheckResources() DiscreteAssertion {
