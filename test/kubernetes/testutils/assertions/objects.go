@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,7 +11,7 @@ import (
 
 func (p *Provider) ObjectsExist(objects ...client.Object) DiscreteAssertion {
 	return func(ctx context.Context) {
-		GinkgoHelper()
+		p.testingFramework.Helper()
 
 		for _, o := range objects {
 			Eventually(ctx, func(g Gomega) {
@@ -29,7 +28,7 @@ func (p *Provider) ObjectsExist(objects ...client.Object) DiscreteAssertion {
 
 func (p *Provider) ObjectsNotExist(objects ...client.Object) DiscreteAssertion {
 	return func(ctx context.Context) {
-		GinkgoHelper()
+		p.testingFramework.Helper()
 
 		for _, o := range objects {
 			Eventually(ctx, func(g Gomega) {

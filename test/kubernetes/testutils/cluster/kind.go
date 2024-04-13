@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -12,8 +13,8 @@ import (
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
-func MustKindContext(clusterName string) *Context {
-	ginkgo.GinkgoHelper()
+func MustKindContext(testing testing.TB, clusterName string) *Context {
+	testing.Helper()
 
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 

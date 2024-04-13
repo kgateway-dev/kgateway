@@ -2,8 +2,8 @@ package provider
 
 import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/install"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/manifest"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/glooctl"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/kubectl"
 )
 
 // OperationProvider is the entity that creates Operation
@@ -13,16 +13,17 @@ import (
 type OperationProvider struct {
 	clusterContext *cluster.Context
 
-	manifestProvider *manifest.OperationProvider
-	installProvider  *install.OperationProvider
+	kubeCtlProvider *kubectl.OperationProvider
+	glooCtlProvider *glooctl.OperationProvider
 }
 
 // NewOperationProvider returns an OperationProvider that will fail because it is not configured with a Kubernetes Cluster
 func NewOperationProvider() *OperationProvider {
 	return &OperationProvider{
-		clusterContext:   nil,
-		manifestProvider: manifest.NewProvider(),
-		installProvider:  install.NewProvider(),
+		clusterContext: nil,
+
+		kubeCtlProvider: kubectl.NewProvider(),
+		glooCtlProvider: glooctl.NewProvider(),
 	}
 }
 
@@ -30,15 +31,15 @@ func NewOperationProvider() *OperationProvider {
 func (p *OperationProvider) WithClusterContext(clusterContext *cluster.Context) *OperationProvider {
 	p.clusterContext = clusterContext
 
-	p.manifestProvider.WithClusterCli(clusterContext.Cli)
-	p.installProvider.WithClusterContext(clusterContext)
+	p.kubeCtlProvider.WithClusterCli(clusterContext.Cli)
+	p.glooCtlProvider.WithClusterContext(clusterContext)
 	return p
 }
 
-func (p *OperationProvider) Manifests() *manifest.OperationProvider {
-	return p.manifestProvider
+func (p *OperationProvider) KubeCtl() *kubectl.OperationProvider {
+	return p.kubeCtlProvider
 }
 
-func (p *OperationProvider) Installs() *install.OperationProvider {
-	return p.installProvider
+func (p *OperationProvider) GlooCtl() *glooctl.OperationProvider {
+	return p.glooCtlProvider
 }

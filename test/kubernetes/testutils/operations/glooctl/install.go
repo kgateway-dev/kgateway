@@ -1,4 +1,4 @@
-package install
+package glooctl
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (p *OperationProvider) NewGlooctlInstallOperation(valuesManifest string) (operations.Operation, error) {
+func (p *OperationProvider) NewInstallOperation(valuesManifest string) (operations.Operation, error) {
 	var testHelper *helper.SoloTestHelper
 
 	return &operations.BasicOperation{
@@ -47,7 +47,7 @@ func (p *OperationProvider) NewGlooctlInstallOperation(valuesManifest string) (o
 	}, nil
 }
 
-func (p *OperationProvider) NewGlooctlUninstallOperation() (operations.Operation, error) {
+func (p *OperationProvider) NewUninstallOperation() (operations.Operation, error) {
 	var testHelper *helper.SoloTestHelper
 
 	return &operations.BasicOperation{

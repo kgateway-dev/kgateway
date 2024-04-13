@@ -4,18 +4,18 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func (p *Provider) RunningReplicas(ref *core.ResourceRef, expectedReplicas int) DiscreteAssertion {
+func (p *Provider) RunningReplicas(objectMeta v1.ObjectMeta, expectedReplicas int) DiscreteAssertion {
 	return func(ctx context.Context) {
-		GinkgoHelper()
+		p.testingFramework.Helper()
 
 		Eventually(func(g Gomega) {
-			pods, err := kubeutils.GetPodsForDeployment(ctx, p.clusterContext.RestConfig, ref.GetName(), ref.GetNamespace())
+			pods, err := kubeutils.GetPodsForDeployment(ctx, p.clusterContext.RestConfig, objectMeta.GetName(), objectMeta.GetNamespace())
 			g.Expect(err).NotTo(HaveOccurred(), "can get pods for deployment")
 			g.Expect(pods).To(HaveLen(expectedReplicas))
 		}).

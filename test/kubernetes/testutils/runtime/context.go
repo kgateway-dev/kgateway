@@ -1,8 +1,9 @@
 package runtime
 
 import (
-	"github.com/solo-io/gloo/test/testutils"
 	"os"
+
+	"github.com/solo-io/gloo/test/testutils"
 )
 
 // Context contains the set of properties that are defined at runtime by whoever is invoking tests.

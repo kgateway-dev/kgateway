@@ -1,6 +1,8 @@
 package example_test
 
 import (
+	"context"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
@@ -22,24 +24,31 @@ func TestExampleSuite(t *testing.T) {
 	RunSpecs(t, "Example Suite")
 }
 
-var _ = BeforeSuite(func(ctx SpecContext) {
+var (
+	testSuite *e2e.TestSuite
+)
+
+var _ = BeforeSuite(func(ctx context.Context) {
 	runtimeContext := runtime.NewContext()
 
+	// We try to isolate the usage of Ginkgo to only where are tests are invoked
+	testingFramework := GinkgoTB()
+
 	// Construct the cluster.Context for this suite
-	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
+	clusterContext := cluster.MustKindContext(testingFramework, runtimeContext.ClusterName)
 
-	// Create an operator which is responsible for executing operations against the cluster
-	operator := operations.NewGinkgoOperator()
+	testSuite = &e2e.TestSuite{
+		TestingFramework: testingFramework,
 
-	// Create an operations provider, and point it to the running cluster
-	operationsProvider := provider.NewOperationProvider().WithClusterContext(clusterContext)
+		// Create an operator which is responsible for executing operations against the cluster
+		Operator: operations.NewGinkgoOperator(),
 
-	// Create an assertions provider, and point it to the running cluster
-	assertionProvider := assertions.NewProvider().WithClusterContext(clusterContext)
+		// Create an operations provider, and point it to the running cluster
+		OperationsProvider: provider.NewOperationProvider().WithClusterContext(clusterContext),
 
-	e2e.Store(ctx, &e2e.SuiteContext{
-		Operator:           operator,
-		OperationsProvider: operationsProvider,
-		AssertionProvider:  assertionProvider,
-	})
+		// Create an assertions provider, and point it to the running cluster
+		AssertionsProvider: assertions.NewProvider().
+			WithClusterContext(clusterContext).
+			WithTestingFramework(testingFramework),
+	}
 })

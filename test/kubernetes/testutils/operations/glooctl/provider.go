@@ -1,4 +1,4 @@
-package install
+package glooctl
 
 import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"

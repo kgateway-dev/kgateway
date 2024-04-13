@@ -1,13 +1,12 @@
-package manifest
+package kubectl
 
 import (
 	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
@@ -45,11 +44,4 @@ func (p *OperationProvider) NewDeleteManifestOperation(manifest string, assertio
 		},
 		OpAssertions: assertions,
 	}
-}
-
-func (p *OperationProvider) NewReversibleOperation() operations.ReversibleOperation {
-	// Not implemented yet
-	// It might be nice to make construction of this easier for developers
-
-	return operations.ReversibleOperation{}
 }
