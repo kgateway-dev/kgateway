@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
+// OperationProvider provides a mechanism to generation operations that are performed via kubectl
 type OperationProvider struct {
 	kubeCli *kubectl.Cli
 }

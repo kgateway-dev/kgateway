@@ -2,11 +2,11 @@ package example_test
 
 import (
 	"context"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
 var _ = Describe("K8s Gateway Example Test", Ordered, func() {
@@ -15,34 +15,42 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 
 	var (
 		ctx context.Context
+
+		// testInstallation contains all the metadata/utilities necessary to execute a series of tests
+		// against an installation of Gloo Gateway
+		testInstallation *e2e.TestInstallation
 	)
 
 	BeforeAll(func() {
 		ctx = context.Background()
 
-		manifestPath := e2e.ManifestPath("example", "manifests", "k8s-gateway-test-helm.yaml")
-		installOp, err := testSuite.OperationsProvider.GlooCtl().NewInstallOperation(manifestPath)
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation = e2e.NewTestInstallation(
+			testSuite,
+			&gloogateway.Context{
+				InstallNamespace:   "example-suite-ns",
+				ValuesManifestFile: e2e.ManifestPath("example", "manifests", "k8s-gateway-test-helm.yaml"),
+			},
+		)
 
-		err = testSuite.Operator.ExecuteOperations(ctx, installOp)
+		err := testInstallation.Operator.ExecuteOperations(
+			ctx,
+			testInstallation.OperationsProvider.GlooCtl().NewTestHelperInstallOperation(testInstallation.AssertionsProvider),
+		)
 		Expect(err).NotTo(HaveOccurred())
-
-		// TODO: if there is anything in the Gloo Gateway install context that is useful for these
-		// providers, we should update that here
 	})
 
 	AfterAll(func() {
-		uninstallOp, err := testSuite.OperationsProvider.GlooCtl().NewUninstallOperation()
-		Expect(err).NotTo(HaveOccurred())
-
-		err = testSuite.Operator.ExecuteOperations(ctx, uninstallOp)
+		err := testInstallation.Operator.ExecuteOperations(
+			ctx,
+			testInstallation.OperationsProvider.GlooCtl().NewTestHelperUninstallOperation(),
+		)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("K8s Gateway Integration - Deployer", func() {
 
 		It("provisions resources appropriately", func() {
-			testSuite.RunTests(
+			testInstallation.RunTests(
 				ctx,
 				deployer.ProvisionDeploymentAndService,
 				deployer.RouteIngressTraffic,

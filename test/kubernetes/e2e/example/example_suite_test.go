@@ -5,10 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/provider"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
@@ -39,16 +36,7 @@ var _ = BeforeSuite(func(ctx context.Context) {
 
 	testSuite = &e2e.TestSuite{
 		TestingFramework: testingFramework,
-
-		// Create an operator which is responsible for executing operations against the cluster
-		Operator: operations.NewGinkgoOperator(),
-
-		// Create an operations provider, and point it to the running cluster
-		OperationsProvider: provider.NewOperationProvider().WithClusterContext(clusterContext),
-
-		// Create an assertions provider, and point it to the running cluster
-		AssertionsProvider: assertions.NewProvider().
-			WithClusterContext(clusterContext).
-			WithTestingFramework(testingFramework),
+		RuntimeContext:   runtimeContext,
+		ClusterContext:   clusterContext,
 	}
 })

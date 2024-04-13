@@ -27,17 +27,17 @@ var ProvisionDeploymentAndService = e2e.Test{
 	Name:        "Deployer.ProvisionDeploymentAndService",
 	Description: "the deployer will provision a deployment and service for a defined gateway",
 
-	Test: func(ctx context.Context, suite *e2e.TestSuite) {
-		createResourcesOp := suite.OperationsProvider.KubeCtl().NewApplyManifestOperation(
+	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
+		createResourcesOp := installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
 			manifestFile,
-			suite.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
+			installation.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
 		)
-		deleteResourcesOp := suite.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
+		deleteResourcesOp := installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
 			manifestFile,
-			suite.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
+			installation.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
 		)
 
-		err := suite.Operator.ExecuteReversibleOperations(ctx, operations.ReversibleOperation{
+		err := installation.Operator.ExecuteReversibleOperations(ctx, operations.ReversibleOperation{
 			Do:   createResourcesOp,
 			Undo: deleteResourcesOp,
 		})
@@ -48,18 +48,18 @@ var ProvisionDeploymentAndService = e2e.Test{
 var RouteIngressTraffic = e2e.Test{
 	Name:        "Deployer.RouteIngressTraffic",
 	Description: "traffic can be routed through services provisioned by the gateway",
-	Test: func(ctx context.Context, suite *e2e.TestSuite) {
-		createResourcesOp := suite.OperationsProvider.KubeCtl().NewApplyManifestOperation(
+	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
+		createResourcesOp := installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
 			manifestFile,
-			suite.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
-			suite.AssertionsProvider.RunningReplicas(glooProxyObjectMeta, 1),
+			installation.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
+			installation.AssertionsProvider.RunningReplicas(glooProxyObjectMeta, 1),
 		)
-		deleteResourcesOp := suite.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
+		deleteResourcesOp := installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
 			manifestFile,
-			suite.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
+			installation.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
 		)
 
-		err := suite.Operator.ExecuteReversibleOperations(ctx, operations.ReversibleOperation{
+		err := installation.Operator.ExecuteReversibleOperations(ctx, operations.ReversibleOperation{
 			Do:   createResourcesOp,
 			Undo: deleteResourcesOp,
 		})
