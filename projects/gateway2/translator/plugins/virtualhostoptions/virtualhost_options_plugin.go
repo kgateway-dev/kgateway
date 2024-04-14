@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rotisserie/eris"
-	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
@@ -69,30 +68,20 @@ func (p *plugin) ApplyListenerPlugin(
 		return err
 	}
 
-	if attachedOptions == nil {
+	if attachedOptions == nil || len(attachedOptions) == 0 {
 		return nil
 	}
 
-	var optToUse *solokubev1.VirtualHostOption
-
-	if numOpts := len(attachedOptions.OptsWithoutSectionName); numOpts > 1 {
-		return errTooManyAttachedOptsWithoutSectionName(listenerCtx, numOpts)
-	} else if numOpts == 1 {
-		optToUse = attachedOptions.OptsWithoutSectionName[0]
+	if numOpts := len(attachedOptions); numOpts > 1 {
+		// Report conflicts on the [1:] options
 	}
 
-	if numOpts := len(attachedOptions.OptsWithSectionName); numOpts > 1 {
-		return errTooManyAttachedOptsWithSectionName(listenerCtx, numOpts)
-	} else if numOpts == 1 {
-		optToUse = attachedOptions.OptsWithSectionName[0]
-	}
-
-	if optToUse == nil {
+	if attachedOptions[0] == nil {
 		return nil
 	}
 
 	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
-		v.Options = optToUse.Spec.GetOptions()
+		v.Options = attachedOptions[0].Spec.GetOptions()
 	}
 
 	return nil
