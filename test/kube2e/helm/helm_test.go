@@ -12,7 +12,7 @@ import (
 	"text/template"
 	"time"
 
-	clients2 "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -291,7 +291,7 @@ var _ = Describe("Kube2e: helm", func() {
 		var kubeClientset kubernetes.Interface
 
 		BeforeEach(func() {
-			kubeClientset = clients2.MustClientset()
+			kubeClientset = kubetestclients.MustClientset()
 
 			strictValidation = true
 		})
@@ -341,7 +341,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 		BeforeEach(func() {
 			var err error
-			cfg := clients2.MustRestConfig()
+			cfg := kubetestclients.MustRestConfig()
 
 			// initialize gateway client
 			gatewayClient, err = gatewayv1kube.NewForConfig(cfg)
@@ -645,7 +645,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = clients2.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
 }

@@ -3,7 +3,7 @@ package ingress_test
 import (
 	"context"
 
-	clients2 "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,7 +35,7 @@ var _ = Describe("ResourceClient", func() {
 			namespace = helpers.RandString(8)
 			ctx, cancel = context.WithCancel(context.Background())
 			var err error
-			kube = clients2.MustClientset()
+			kube = kubetestclients.MustClientset()
 			_, err = kube.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namespace,

@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	clients2 "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/gloo/test/services/envoy"
 	corev1 "k8s.io/api/core/v1"
@@ -62,7 +62,7 @@ var _ = Describe("Happy path", func() {
 			testNamespace = ""
 			writeNamespace = ""
 			svc = nil
-			kubeClient = clients2.MustClientset()
+			kubeClient = kubetestclients.MustClientset()
 		})
 
 		AfterEach(func() {

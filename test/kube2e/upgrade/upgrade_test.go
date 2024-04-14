@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	clients2 "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
@@ -100,7 +100,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		var kubeClientset kubernetes.Interface
 
 		BeforeEach(func() {
-			kubeClientset = clients2.MustClientset()
+			kubeClientset = kubetestclients.MustClientset()
 			strictValidation = true
 		})
 
@@ -212,7 +212,7 @@ func addSecondGatewayProxySeparateNamespaceTest(ctx context.Context, crdDir stri
 	// Ensures namespace is cleaned up before continuing
 	runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
 	Eventually(func() bool {
-		_, err := clients2.MustClientset().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
+		_, err := kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
 		return apierrors.IsNotFound(err)
 	}, "60s", "1s").Should(BeTrue())
 }
@@ -359,7 +359,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = clients2.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
 }
