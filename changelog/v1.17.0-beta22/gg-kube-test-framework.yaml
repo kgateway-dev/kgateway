@@ -7,6 +7,18 @@ changelog:
     dependencyOwner: onsi
     dependencyRepo: gomega
     dependencyTag: v1.30.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org
+    dependencyRepo: x/crypto
+    dependencyTag: v0.18.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org
+    dependencyRepo: x/sync
+    dependencyTag: v0.6.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org
+    dependencyRepo: x/tools
+    dependencyTag: v0.17.0
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6029
     resolvesIssue: false
