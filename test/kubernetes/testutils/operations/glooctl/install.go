@@ -71,7 +71,7 @@ func (p *operationProviderImpl) NewTestHelperUninstallOperation() operations.Ope
 				return err
 			}
 
-			return testHelper.UninstallGloo()
+			return testHelper.UninstallGlooAll()
 		},
 		OpAssertions: []assertions.DiscreteAssertion{
 			func(ctx context.Context) {

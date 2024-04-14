@@ -3,10 +3,11 @@ package example_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -25,10 +26,10 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 	BeforeAll(func() {
 		ctx = context.Background()
 
-		testInstallation = e2e.NewTestInstallation(
-			testSuite,
+		testInstallation = testSuite.RegisterTestInstallation(
+			"k8s-gw-example-test",
 			&gloogateway.Context{
-				InstallNamespace:   "example-suite-ns",
+				InstallNamespace:   "k8s-gw-example-test",
 				ValuesManifestFile: e2e.ManifestPath("example", "manifests", "k8s-gateway-test-helm.yaml"),
 			},
 		)
@@ -46,6 +47,8 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 			testInstallation.OperationsProvider.GlooCtl().NewTestHelperUninstallOperation(),
 		)
 		Expect(err).NotTo(HaveOccurred())
+
+		testSuite.UnregisterTestInstallation(testInstallation)
 	})
 
 	Context("K8s Gateway Integration - Deployer", func() {
@@ -55,6 +58,7 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 				ctx,
 				deployer.ProvisionDeploymentAndService,
 				deployer.RouteIngressTraffic,
+				deployer.ConfigureProxiesFromGatewayParameters,
 			)
 		})
 

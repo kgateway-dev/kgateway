@@ -1,11 +1,12 @@
 package provider
 
 import (
+	"testing"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/kubectl"
-	"testing"
 )
 
 // OperationProvider is the entity that creates operations.

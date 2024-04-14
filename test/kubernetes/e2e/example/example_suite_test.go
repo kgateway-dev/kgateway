@@ -39,4 +39,8 @@ var _ = BeforeSuite(func(ctx context.Context) {
 		RuntimeContext:   runtimeContext,
 		ClusterContext:   clusterContext,
 	}
+
+	// Register the PreFailHandler from the TestSuite
+	// This allows all the complexity of _what_ should be emitted on failure, to be handled by the TestSuite
+	skhelpers.RegisterPreFailHandler(testSuite.PreFailHandler)
 })

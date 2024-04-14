@@ -1,11 +1,12 @@
 package glooctl
 
 import (
+	"testing"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"testing"
 )
 
 // OperationProvider defines the standard operations that can be executed via glooctl
@@ -18,6 +19,7 @@ type OperationProvider interface {
 
 	NewTestHelperInstallOperation(provider *assertions.Provider) operations.Operation
 	NewTestHelperUninstallOperation() operations.Operation
+	ExportReport() operations.Operation
 }
 
 // operationProviderImpl is the implementation of the OperationProvider for Gloo Gateway Open Source

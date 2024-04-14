@@ -1,8 +1,11 @@
 package clients
 
 import (
+	"testing"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -12,39 +15,43 @@ import (
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	glookubegateway "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 )
 
 // MustClientset returns the Kubernetes Clientset, or panics
 func MustClientset() *kubernetes.Clientset {
 	ginkgo.GinkgoHelper()
 
-	return MustClientsetWithContext("")
-}
+	restConfig, err := kubeutils.GetRestConfigWithKubeContext("")
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-// MustClientsetWithContext returns the Kubernetes Clientset, or panics
-func MustClientsetWithContext(kubeContext string) *kubernetes.Clientset {
-	ginkgo.GinkgoHelper()
-
-	restConfig := MustRestConfigWithContext(kubeContext)
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	return clientset
 }
 
-func MustClientScheme() *runtime.Scheme {
-	ginkgo.GinkgoHelper()
+func MustClientScheme(testing testing.TB) *runtime.Scheme {
+	testing.Helper()
 
 	clientScheme := runtime.NewScheme()
 
-	// k8s resources
+	// K8s API resources
 	err := corev1.AddToScheme(clientScheme)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	err = appsv1.AddToScheme(clientScheme)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	// k8s gateway resources
+	// Gloo resources
+	err = glooinstancev1.AddToScheme(clientScheme)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	// Kubernetes Gateway API resources
+	err = glookubegateway.AddToScheme(clientScheme)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
 	err = v1alpha2.AddToScheme(clientScheme)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -52,10 +59,6 @@ func MustClientScheme() *runtime.Scheme {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	err = v1.AddToScheme(clientScheme)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
-	// gloo resources
-	err = glooinstancev1.AddToScheme(clientScheme)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	return clientScheme

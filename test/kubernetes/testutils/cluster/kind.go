@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
@@ -18,13 +20,14 @@ func MustKindContext(testing testing.TB, clusterName string) *Context {
 
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 
-	restCfg := clients.MustRestConfigWithContext(kubeCtx)
+	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	clientset, err := kubernetes.NewForConfig(restCfg)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	clt, err := client.New(restCfg, client.Options{
-		Scheme: clients.MustClientScheme(),
+		Scheme: clients.MustClientScheme(testing),
 	})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 

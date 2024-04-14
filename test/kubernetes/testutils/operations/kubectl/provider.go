@@ -3,10 +3,11 @@ package kubectl
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"path/filepath"
 )
 
 // OperationProvider provides a mechanism to generation operations that are performed via kubectl
@@ -26,6 +27,11 @@ func (p *OperationProvider) WithClusterCli(kubeCli *kubectl.Cli) *OperationProvi
 	return p
 }
 
+// KubeCli returns the kubectl.Cli
+func (p *OperationProvider) KubeCli() *kubectl.Cli {
+	return p.kubeCli
+}
+
 func (p *OperationProvider) NewApplyManifestOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
 	return &operations.BasicOperation{
 		OpName: fmt.Sprintf("apply-manifest-%s", filepath.Base(manifest)),
@@ -41,6 +47,16 @@ func (p *OperationProvider) NewDeleteManifestOperation(manifest string, assertio
 		OpName: fmt.Sprintf("delete-manifest-%s", filepath.Base(manifest)),
 		OpExecute: func(ctx context.Context) error {
 			return p.kubeCli.DeleteFile(ctx, manifest)
+		},
+		OpAssertions: assertions,
+	}
+}
+
+func (p *OperationProvider) NewDeleteManifestIgnoreNotFoundOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
+	return &operations.BasicOperation{
+		OpName: fmt.Sprintf("delete-manifest-%s", filepath.Base(manifest)),
+		OpExecute: func(ctx context.Context) error {
+			return p.kubeCli.DeleteFile(ctx, manifest, "--ignore-not-found=true")
 		},
 		OpAssertions: assertions,
 	}

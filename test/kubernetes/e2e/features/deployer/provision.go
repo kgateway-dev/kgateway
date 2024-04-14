@@ -28,19 +28,18 @@ var ProvisionDeploymentAndService = e2e.Test{
 	Description: "the deployer will provision a deployment and service for a defined gateway",
 
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
-		createResourcesOp := installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
-			manifestFile,
-			installation.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
-		)
-		deleteResourcesOp := installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
-			manifestFile,
-			installation.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
-		)
+		provisionResourcesOp := operations.ReversibleOperation{
+			Do: installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
+				manifestFile,
+				installation.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
+			),
+			Undo: installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
+				manifestFile,
+				installation.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
+			),
+		}
 
-		err := installation.Operator.ExecuteReversibleOperations(ctx, operations.ReversibleOperation{
-			Do:   createResourcesOp,
-			Undo: deleteResourcesOp,
-		})
+		err := installation.Operator.ExecuteReversibleOperations(ctx, provisionResourcesOp)
 		Expect(err).NotTo(HaveOccurred())
 	},
 }
