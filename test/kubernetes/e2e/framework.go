@@ -5,13 +5,15 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/provider"
 )
 
 // TestSuite is the structure around a set of tests that run against a Kubernetes Cluster
@@ -29,7 +31,7 @@ type TestSuite struct {
 	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestSuite
 	ClusterContext *cluster.Context
 
-	// activeInstallations is the set of TestInstallation that have been created for this Suite
+	// activeInstallations is the set of TestInstallation that have been created for this Suite.
 	// Since tests are run serially, this will only have a single entry at a time
 	activeInstallations map[string]*TestInstallation
 }
@@ -41,7 +43,7 @@ type TestSuite struct {
 // the running installation of Gloo Gateway and the Kubernetes Cluster
 func (s *TestSuite) PreFailHandler() {
 	for _, i := range s.activeInstallations {
-		i.PreFailHandler()
+		i.preFailHandler()
 	}
 }
 
@@ -61,7 +63,7 @@ func (s *TestSuite) RegisterTestInstallation(name string, glooGatewayContext *gl
 		Operator: operations.NewGinkgoOperator(),
 
 		// Create an operations provider, and point it to the running installation
-		Operations: provider.NewOperationProvider(s.TestingFramework).
+		Actions: provider.NewActionsProvider(s.TestingFramework).
 			WithClusterContext(s.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
@@ -91,11 +93,29 @@ type TestInstallation struct {
 	// This is meant to simulate the behaviors that a person could execute
 	Operator *operations.Operator
 
-	// Operations is the entity that creates operations that can be executed by the Operator
-	Operations *provider.OperationProvider
+	// Actions is the entity that creates actions that can be executed by the Operator
+	Actions *provider.ActionsProvider
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
 	Assertions *assertions.Provider
+}
+
+func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction actions.ClusterAction) error {
+	installOperation := &operations.BasicOperation{
+		OpName:      "install-gloo-gateway",
+		OpAction:    installAction,
+		OpAssertion: i.Assertions.InstallationWasSuccessful(),
+	}
+	return i.Operator.ExecuteOperations(ctx, installOperation)
+}
+
+func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAction actions.ClusterAction) error {
+	installOperation := &operations.BasicOperation{
+		OpName:      "uninstall-gloo-gateway",
+		OpAction:    uninstallAction,
+		OpAssertion: i.Assertions.UninstallationWasSuccessful(),
+	}
+	return i.Operator.ExecuteOperations(ctx, installOperation)
 }
 
 // RunTests will execute a batch of e2e.Test against the installation
@@ -112,9 +132,20 @@ func (i *TestInstallation) RunTests(ctx context.Context, tests ...Test) {
 	}
 }
 
-// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler() {
-	i.Operations.GlooCtl().ExportReport()
+// preFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) preFailHandler() {
+	exportReportOp := &operations.BasicOperation{
+		OpName:   "glooctl-export-report",
+		OpAction: i.Actions.GlooCtl().ExportReport(),
+		OpAssertion: func(ctx context.Context) {
+			// This action is performed on test failure, and is not modifying the cluster
+			// As a result, there is no assertion that we perform
+		},
+	}
+	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
+	if err != nil {
+		i.TestingFramework.Errorf("Failed to executed preFailHandler operation for TestInstallation (%s): %+v", i.Name, err)
+	}
 }
 
 // randomizeTests shuffles the list of tests in-place
@@ -128,7 +159,7 @@ func randomizeTests(tests ...Test) {
 // TestFn is a function that executes a test, for a given TestInstallation
 type TestFn func(ctx context.Context, suite *TestInstallation)
 
-// Test represents a single end-to-end behavior that is validated against a running installation of Gloo Gateway
+// Test represents a single end-to-end behavior that is validated against a running installation of Gloo Gateway.
 // Tests are grouped by the feature they validate, and are defined in the test/kubernetes/e2e/features directory
 type Test struct {
 	// Name is a required value that uniquely identifies a test

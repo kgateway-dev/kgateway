@@ -8,10 +8,10 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 )
 
-// Provider is the entity that creates operations.DiscreteAssertion
+// Provider is the entity that creates operations.ClusterAssertion
 // These assertions occur against a running instance of Gloo Gateway, within a Kubernetes Cluster.
 // So this provider maintains state about the install/cluster it is using, and then provides
-// operations.DiscreteAssertion to match
+// operations.ClusterAssertion to match
 type Provider struct {
 	testingFramework testing.TB
 

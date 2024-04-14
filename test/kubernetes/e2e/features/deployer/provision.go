@@ -2,6 +2,8 @@ package deployer
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -26,17 +28,18 @@ var (
 var ProvisionDeploymentAndService = e2e.Test{
 	Name:        "Deployer.ProvisionDeploymentAndService",
 	Description: "the deployer will provision a deployment and service for a defined gateway",
-
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
 		provisionResourcesOp := operations.ReversibleOperation{
-			Do: installation.Operations.KubeCtl().NewApplyManifestOperation(
-				manifestFile,
-				installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
-			),
-			Undo: installation.Operations.KubeCtl().NewDeleteManifestOperation(
-				manifestFile,
-				installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
-			),
+			Do: &operations.BasicOperation{
+				OpName:      fmt.Sprintf("apply-manifest-%s", filepath.Base(manifestFile)),
+				OpAction:    installation.Actions.KubeCtl().NewApplyManifestAction(manifestFile),
+				OpAssertion: installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
+			},
+			Undo: &operations.BasicOperation{
+				OpName:      fmt.Sprintf("delete-manifest-%s", filepath.Base(manifestFile)),
+				OpAction:    installation.Actions.KubeCtl().NewDeleteManifestAction(manifestFile),
+				OpAssertion: installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
+			},
 		}
 
 		err := installation.Operator.ExecuteReversibleOperations(ctx, provisionResourcesOp)

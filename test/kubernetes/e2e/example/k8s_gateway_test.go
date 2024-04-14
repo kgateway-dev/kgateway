@@ -34,18 +34,12 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 			},
 		)
 
-		err := testInstallation.Operator.ExecuteOperations(
-			ctx,
-			testInstallation.Operations.GlooCtl().NewTestHelperInstallOperation(testInstallation.Assertions),
-		)
+		err := testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.GlooCtl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterAll(func() {
-		err := testInstallation.Operator.ExecuteOperations(
-			ctx,
-			testInstallation.Operations.GlooCtl().NewTestHelperUninstallOperation(),
-		)
+		err := testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.GlooCtl().NewTestHelperUninstallAction())
 		Expect(err).NotTo(HaveOccurred())
 
 		testSuite.UnregisterTestInstallation(testInstallation)

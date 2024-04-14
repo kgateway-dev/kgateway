@@ -4,6 +4,9 @@
 
 
 ## Test Utilities
+### Actions
+_For more details on the actions, see the [actions](./testutils/actions) package._
+
 ### Assertions
 _For more details on the assertions, see the [assertions](./testutils/assertions) package._
 
@@ -31,6 +34,8 @@ Below are some challenges we have had while writing end-to-end tests:
 - Challenging to convert between local manifests and test structure. So if you reproduced a behavior, it took extra time to convert that in to a test
 - Challenging to configure resources that weren't in the ApiSnapshot
 - An entire suite was associated with a single installation of Gloo Gateway. This meant that everytime we want to test a new set in install values, we would often spin off a new suite, and a new suite meant a new cluster
+- Couldn't easily run tests against open source and enterprise
+
 
 ### Framework
 We attempt to learn from those 

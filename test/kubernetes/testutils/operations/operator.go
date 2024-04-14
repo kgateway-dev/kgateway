@@ -6,12 +6,14 @@ import (
 	"io"
 	"slices"
 
+	errors "github.com/rotisserie/eris"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 )
 
-// Operator is responsible for executing Operation against a Kubernetes Cluster
-// This is meant to mirror the behavior of an Operator of the Gloo Gateway product.
+// Operator is responsible for executing Operation against a Kubernetes Cluster.
+// This is meant to mirror the behavior of a user of the Gloo Gateway product.
 // Although we operate against a Kubernetes Cluster, an Operator is intentionally
 // unaware of Kubernetes behavior, and instead is more of a scheduler of Operation.
 // This allows us to test its functionality, and also more easily inject behaviors
@@ -50,20 +52,20 @@ func (o *Operator) WithAssertionInterceptor(assertionInterceptor func(func()) er
 	return o
 }
 
-// ExecuteOperations executes a set of Operation
+// ExecuteOperations executes a set of Operation.
 // NOTE: The Operator doesn't attempt to undo any of these Operation so if you are modifying
 // resources on the Cluster, it is your responsibility to perform Operation to undo those changes
-// If you would like to rely on this functionality, please see ExecuteReversibleOperations
+// If you would like to rely on this functionality, please see ExecuteReversibleOperations.
 func (o *Operator) ExecuteOperations(ctx context.Context, operations ...Operation) error {
 	return o.executeSafe(func() error {
 		return o.executeOperations(ctx, operations...)
 	})
 }
 
-// ExecuteReversibleOperations executes a set of ReversibleOperation
+// ExecuteReversibleOperations executes a set of ReversibleOperation.
 // In order, the ReversibleOperation.Do will be executed, and then on success or failure
-// the ReversibleOperation.Undo will also be executed
-// This way, developers do not need to worry about resources being cleaned up appropriately in tests
+// the ReversibleOperation.Undo will also be executed.
+// This way, developers do not need to worry about resources being cleaned up appropriately in tests.
 func (o *Operator) ExecuteReversibleOperations(ctx context.Context, operations ...ReversibleOperation) error {
 	return o.executeSafe(func() error {
 		return o.executeReversibleOperations(ctx, operations...)
@@ -128,6 +130,12 @@ func (o *Operator) executeOperation(ctx context.Context, operation Operation) er
 
 	o.writeProgress(operation, "asserting operation")
 	assertion := operation.Assertion()
+	if assertion == nil {
+		// We want to make it impossible for developers to accidentally define operations that do not assert any behavior
+		// If a developer wants to provide a no-op implementation, they will, but this check ensures that is it intentional
+		return errors.Errorf("Operation (%s) contained a nil assertion, which is not allowed", operation.Name())
+	}
+
 	assertion(ctx)
 	o.writeProgress(operation, "completing operation")
 	return nil

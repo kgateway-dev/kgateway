@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 )
 
-func (p *Provider) RunningReplicas(objectMeta v1.ObjectMeta, expectedReplicas int) DiscreteAssertion {
+func (p *Provider) RunningReplicas(objectMeta v1.ObjectMeta, expectedReplicas int) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 

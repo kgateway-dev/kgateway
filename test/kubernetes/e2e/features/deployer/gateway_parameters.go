@@ -2,7 +2,11 @@ package deployer
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
@@ -26,56 +30,62 @@ var (
 var ConfigureProxiesFromGatewayParameters = e2e.Test{
 	Name:        "Deployer.ConfigureProxiesFromGatewayParameters",
 	Description: "the deployer will provision a deployment and service for a defined gateway, and configure it based on the GatewayParameters CR",
-
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
 		provisionResourcesOp := operations.ReversibleOperation{
-			Do: installation.Operations.KubeCtl().NewApplyManifestOperation(
-				manifestFile,
-				installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
-			),
+			Do: &operations.BasicOperation{
+				OpName:      fmt.Sprintf("apply-manifest-%s", filepath.Base(manifestFile)),
+				OpAction:    installation.Actions.KubeCtl().NewApplyManifestAction(manifestFile),
+				OpAssertion: installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
+			},
 			// We rely on the --ignore-not-found flag in the deletion command, because we have 2 manifests
 			// that manage the same resource (manifestFile, gwParametersManifestFile).
 			// So when we perform Undo of configureGatewayParametersOp, it will delete the Gateway CR,
 			// and then this operation  will also attempt to delete the same resource.
 			// Ideally, we do not include the same resource in multiple manifests that are used by a test
-			// But this is an example of ways to solve that problem if it occurs
-			Undo: installation.Operations.KubeCtl().NewDeleteManifestIgnoreNotFoundOperation(
-				manifestFile,
-				installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
-			),
+			// But this is an example of ways to solve that problem if it occurs.
+			Undo: &operations.BasicOperation{
+				OpName:      fmt.Sprintf("delete-manifest-%s", filepath.Base(manifestFile)),
+				OpAction:    installation.Actions.KubeCtl().NewDeleteManifestAction(manifestFile, "--ignore-not-found=true"),
+				OpAssertion: installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
+			},
 		}
 
 		configureGatewayParametersOp := operations.ReversibleOperation{
-			Do: installation.Operations.KubeCtl().NewApplyManifestOperation(
-				gwParametersManifestFile,
+			Do: &operations.BasicOperation{
+				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(gwParametersManifestFile)),
+				OpAction: installation.Actions.KubeCtl().NewApplyManifestAction(gwParametersManifestFile),
+				OpAssertions: []assertions.ClusterAssertion{
+					// We applied a manifest containing the GatewayParameters CR
+					installation.Assertions.ObjectsExist(gwParams),
 
-				// We applied a manifest containing the GatewayParameters CR
-				installation.Assertions.ObjectsExist(gwParams),
+					// We configure the GatewayParameters CR to provision workloads with a specific image that should exist
+					installation.Assertions.RunningReplicas(proxyDeployment.ObjectMeta, 1),
 
-				// We configure the GatewayParameters CR to provision workloads with a specific image that should exist
-				installation.Assertions.RunningReplicas(proxyDeployment.ObjectMeta, 1),
-
-				// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
-				installation.Assertions.EnvoyAdminApiAssertion(
-					proxyDeployment.ObjectMeta,
-					installation.Operations.KubeCtl().Client(),
-					func(ctx context.Context, adminClient *admincli.Client) {
-						Eventually(func(g Gomega) {
-							serverInfo, err := adminClient.GetServerInfo(ctx)
-							g.Expect(err).NotTo(HaveOccurred())
-							g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(Equal("debug"), "defined on the GatewayParameters CR")
-						}).
-							WithContext(ctx).
-							WithTimeout(time.Second * 10).
-							WithPolling(time.Millisecond * 200).
-							Should(Succeed())
-					},
-				),
-			),
-			Undo: installation.Operations.KubeCtl().NewDeleteManifestOperation(
-				gwParametersManifestFile,
-				installation.Assertions.ObjectsNotExist(gwParams),
-			),
+					// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
+					installation.Assertions.EnvoyAdminApiAssertion(
+						proxyDeployment.ObjectMeta,
+						func(ctx context.Context, adminClient *admincli.Client) {
+							Eventually(func(g Gomega) {
+								serverInfo, err := adminClient.GetServerInfo(ctx)
+								g.Expect(err).NotTo(HaveOccurred())
+								g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(
+									Equal("debug"), "defined on the GatewayParameters CR")
+								g.Expect(serverInfo.GetCommandLineOptions().GetComponentLogLevel()).To(
+									Equal("connection:trace,upstream:debug"), "defined on the GatewayParameters CR")
+							}).
+								WithContext(ctx).
+								WithTimeout(time.Second * 10).
+								WithPolling(time.Millisecond * 200).
+								Should(Succeed())
+						},
+					),
+				},
+			},
+			Undo: &operations.BasicOperation{
+				OpName:      fmt.Sprintf("delete-manifest-%s", filepath.Base(gwParametersManifestFile)),
+				OpAction:    installation.Actions.KubeCtl().NewDeleteManifestAction(gwParametersManifestFile),
+				OpAssertion: installation.Assertions.ObjectsNotExist(gwParams),
+			},
 		}
 
 		err := installation.Operator.ExecuteReversibleOperations(ctx, provisionResourcesOp, configureGatewayParametersOp)

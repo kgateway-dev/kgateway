@@ -4,12 +4,14 @@ import (
 	"context"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (p *Provider) ObjectsExist(objects ...client.Object) DiscreteAssertion {
+func (p *Provider) ObjectsExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
@@ -26,7 +28,7 @@ func (p *Provider) ObjectsExist(objects ...client.Object) DiscreteAssertion {
 	}
 }
 
-func (p *Provider) ObjectsNotExist(objects ...client.Object) DiscreteAssertion {
+func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
@@ -40,5 +42,14 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) DiscreteAssertion {
 				WithPolling(time.Millisecond * 200).
 				Should(Succeed())
 		}
+	}
+}
+
+func (p *Provider) NamespaceNotExist(ns string) ClusterAssertion {
+	return func(ctx context.Context) {
+		p.testingFramework.Helper()
+
+		_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+		Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	}
 }

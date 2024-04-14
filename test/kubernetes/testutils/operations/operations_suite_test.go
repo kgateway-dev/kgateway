@@ -9,5 +9,5 @@ import (
 
 func TestOperations(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Operations Suite")
+	RunSpecs(t, "Actions Suite")
 }

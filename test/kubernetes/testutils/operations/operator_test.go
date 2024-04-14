@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -154,8 +156,8 @@ var _ operations.Operation = new(testOperation)
 // testOperation is used only in this file, to validate that the Operator behaves as expected
 type testOperation struct {
 	name      string
-	op        func(ctx context.Context) error
-	assertion assertions.DiscreteAssertion
+	op        actions.ClusterAction
+	assertion assertions.ClusterAssertion
 }
 
 func (t *testOperation) Name() string {
@@ -165,7 +167,7 @@ func (t *testOperation) Name() string {
 	return "test-operation"
 }
 
-func (t *testOperation) Action() func(ctx context.Context) error {
+func (t *testOperation) Action() actions.ClusterAction {
 	if t.op != nil {
 		return t.op
 	}
@@ -174,7 +176,7 @@ func (t *testOperation) Action() func(ctx context.Context) error {
 	}
 }
 
-func (t *testOperation) Assertion() assertions.DiscreteAssertion {
+func (t *testOperation) Assertion() assertions.ClusterAssertion {
 	if t.assertion != nil {
 		return t.assertion
 	}

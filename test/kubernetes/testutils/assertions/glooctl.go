@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -11,7 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func (p *Provider) CheckResources() DiscreteAssertion {
+func (p *Provider) CheckResources() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 
 	return func(ctx context.Context) {
@@ -38,5 +40,30 @@ func (p *Provider) CheckResources() DiscreteAssertion {
 			WithTimeout(time.Second * 90).
 			WithPolling(time.Second).
 			Should(Succeed())
+	}
+}
+
+func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
+	p.requiresGlooGatewayContext()
+
+	return func(ctx context.Context) {
+		p.testingFramework.Helper()
+
+		// Check that everything is OK
+		p.CheckResources()(ctx)
+
+		// Ensure gloo reaches valid state and doesn't continually resync
+		// we can consider doing the same for leaking go-routines after resyncs
+		kube2e.EventuallyReachesConsistentState(p.glooGatewayContext.InstallNamespace)
+	}
+}
+
+func (p *Provider) UninstallationWasSuccessful() ClusterAssertion {
+	p.requiresGlooGatewayContext()
+
+	return func(ctx context.Context) {
+		p.testingFramework.Helper()
+
+		p.NamespaceNotExist(p.glooGatewayContext.InstallNamespace)(ctx)
 	}
 }

@@ -38,6 +38,6 @@ var _ = BeforeSuite(func(ctx context.Context) {
 		ClusterContext:   clusterContext,
 	}
 
-	// Register the PreFailHandler from the TestSuite
+	// Register the preFailHandler from the TestSuite
 	skhelpers.RegisterPreFailHandler(testSuite.PreFailHandler)
 })

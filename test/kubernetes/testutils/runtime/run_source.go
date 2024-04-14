@@ -3,7 +3,6 @@ package runtime
 // RunSource identifies who/what triggered the test
 type RunSource int
 
-// Declare related constants for each RunSource
 const (
 	// LocalDevelopment signifies that the test is invoked locally
 	LocalDevelopment RunSource = iota + 1

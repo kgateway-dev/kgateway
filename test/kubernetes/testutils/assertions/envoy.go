@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,11 +12,12 @@ import (
 
 func (p *Provider) EnvoyAdminApiAssertion(
 	envoyDeployment v1.ObjectMeta,
-	kubeClient *kubectl.Cli,
 	adminAssertion func(ctx context.Context, adminClient *admincli.Client),
-) DiscreteAssertion {
+) ClusterAssertion {
 	return func(ctx context.Context) {
-		portForwarder, err := kubeClient.StartPortForward(ctx,
+		p.testingFramework.Helper()
+
+		portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 			portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
 			portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
 		)
