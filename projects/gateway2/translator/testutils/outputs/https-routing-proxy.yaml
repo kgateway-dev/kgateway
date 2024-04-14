@@ -21,14 +21,17 @@ listeners:
             options: {}
             routeAction:
               single:
-                upstream:
-                  name: default-example-svc-80
-                  namespace: default
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: default
   bindAddress: '::'
   bindPort: 8443
   name: https
 metadata:
   labels:
-    created_by: gloo-kube-gateway-api-translator
-  name: example-gateway
-  namespace: default
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: default
+  name: default-example-gateway
+  namespace: gloo-system

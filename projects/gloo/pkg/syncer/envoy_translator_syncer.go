@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
@@ -72,7 +73,7 @@ func measureResource(ctx context.Context, resource string, length int) {
 	}
 }
 
-// syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
+// syncEnvoy will translate, sanitize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
@@ -104,7 +105,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(utils.GlooEdgeTranslatorValue, snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
@@ -114,14 +115,15 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
-			if !valid && xds.SnapshotBelongsTo(key, utils.GlooEdgeTranslatorValue) {
+			if !valid {
 				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}
 	}
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
-		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
+		metaKey := GetKeyFromProxyMeta(proxy)
+		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
 			proxyCtx = ctxWithTags
 		}
 
@@ -152,7 +154,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
-		key := xds.SnapshotCacheKey(utils.GlooEdgeTranslatorValue, proxy)
+		key := xds.SnapshotCacheKey(proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics
@@ -211,4 +213,18 @@ func prettify(original interface{}) string {
 	}
 
 	return string(b)
+}
+
+func GetKeyFromProxyMeta(proxy *gloov1.Proxy) string {
+	meta := proxy.GetMetadata()
+	metaKey := meta.Ref().Key()
+	labels := proxy.GetMetadata().GetLabels()
+	if labels != nil && labels[utils.ProxyTypeKey] == utils.GatewayApiProxyValue {
+		proxyNamespace := labels[utils.GatewayNamespaceKey]
+		if proxyNamespace != "" {
+			meta.Namespace = proxyNamespace
+			metaKey = meta.Ref().Key()
+		}
+	}
+	return metaKey
 }

@@ -3,7 +3,7 @@ package secrets
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/xds"
+	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewSecretsController(ctx context.Context, mgr manager.Manager, inputChannels *xds.XdsInputChannels) error {
+func NewSecretsController(ctx context.Context, mgr manager.Manager, inputChannels *proxy_syncer.GatewayInputChannels) error {
 	cb := &controllerBuilder{
 		mgr: mgr,
 		reconciler: &controllerReconciler{
@@ -50,7 +50,7 @@ func (c *controllerBuilder) watchSecrets(ctx context.Context) error {
 
 type controllerReconciler struct {
 	cli           client.Client
-	inputChannels *xds.XdsInputChannels
+	inputChannels *proxy_syncer.GatewayInputChannels
 }
 
 func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -78,7 +78,7 @@ func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Re
 		})
 
 	}
-	r.inputChannels.UpdateSecretInputs(ctx, xds.SecretInputs{
+	r.inputChannels.UpdateSecretInputs(ctx, proxy_syncer.SecretInputs{
 		Secrets: skSecretList,
 	})
 	return ctrl.Result{}, nil
