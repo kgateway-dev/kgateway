@@ -29,9 +29,9 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
 		provisionResourcesOp := operations.ReversibleOperation{
-			Do: installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
+			Do: installation.Operations.KubeCtl().NewApplyManifestOperation(
 				manifestFile,
-				installation.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
+				installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 			),
 			// We rely on the --ignore-not-found flag in the deletion command, because we have 2 manifests
 			// that manage the same resource (manifestFile, gwParametersManifestFile).
@@ -39,26 +39,26 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 			// and then this operation  will also attempt to delete the same resource.
 			// Ideally, we do not include the same resource in multiple manifests that are used by a test
 			// But this is an example of ways to solve that problem if it occurs
-			Undo: installation.OperationsProvider.KubeCtl().NewDeleteManifestIgnoreNotFoundOperation(
+			Undo: installation.Operations.KubeCtl().NewDeleteManifestIgnoreNotFoundOperation(
 				manifestFile,
-				installation.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
+				installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
 			),
 		}
 
 		configureGatewayParametersOp := operations.ReversibleOperation{
-			Do: installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
+			Do: installation.Operations.KubeCtl().NewApplyManifestOperation(
 				gwParametersManifestFile,
 
 				// We applied a manifest containing the GatewayParameters CR
-				installation.AssertionsProvider.ObjectsExist(gwParams),
+				installation.Assertions.ObjectsExist(gwParams),
 
 				// We configure the GatewayParameters CR to provision workloads with a specific image that should exist
-				installation.AssertionsProvider.RunningReplicas(proxyDeployment.ObjectMeta, 1),
+				installation.Assertions.RunningReplicas(proxyDeployment.ObjectMeta, 1),
 
 				// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
-				installation.AssertionsProvider.EnvoyAdminApiAssertion(
+				installation.Assertions.EnvoyAdminApiAssertion(
 					proxyDeployment.ObjectMeta,
-					installation.OperationsProvider.KubeCtl().Client(),
+					installation.Operations.KubeCtl().Client(),
 					func(ctx context.Context, adminClient *admincli.Client) {
 						Eventually(func(g Gomega) {
 							serverInfo, err := adminClient.GetServerInfo(ctx)
@@ -72,9 +72,9 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 					},
 				),
 			),
-			Undo: installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
+			Undo: installation.Operations.KubeCtl().NewDeleteManifestOperation(
 				gwParametersManifestFile,
-				installation.AssertionsProvider.ObjectsNotExist(gwParams),
+				installation.Assertions.ObjectsNotExist(gwParams),
 			),
 		}
 

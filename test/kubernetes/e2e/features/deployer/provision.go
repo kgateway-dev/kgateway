@@ -29,13 +29,13 @@ var ProvisionDeploymentAndService = e2e.Test{
 
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
 		provisionResourcesOp := operations.ReversibleOperation{
-			Do: installation.OperationsProvider.KubeCtl().NewApplyManifestOperation(
+			Do: installation.Operations.KubeCtl().NewApplyManifestOperation(
 				manifestFile,
-				installation.AssertionsProvider.ObjectsExist(proxyService, proxyDeployment),
+				installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 			),
-			Undo: installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
+			Undo: installation.Operations.KubeCtl().NewDeleteManifestOperation(
 				manifestFile,
-				installation.AssertionsProvider.ObjectsNotExist(proxyService, proxyDeployment),
+				installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
 			),
 		}
 

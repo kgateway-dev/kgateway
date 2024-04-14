@@ -61,12 +61,12 @@ func (s *TestSuite) RegisterTestInstallation(name string, glooGatewayContext *gl
 		Operator: operations.NewGinkgoOperator(),
 
 		// Create an operations provider, and point it to the running installation
-		OperationsProvider: provider.NewOperationProvider(s.TestingFramework).
+		Operations: provider.NewOperationProvider(s.TestingFramework).
 			WithClusterContext(s.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
 		// Create an assertions provider, and point it to the running installation
-		AssertionsProvider: assertions.NewProvider(s.TestingFramework).
+		Assertions: assertions.NewProvider(s.TestingFramework).
 			WithClusterContext(s.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
@@ -91,11 +91,11 @@ type TestInstallation struct {
 	// This is meant to simulate the behaviors that a person could execute
 	Operator *operations.Operator
 
-	// OperationsProvider is the entity that creates operations that can be executed by the Operator
-	OperationsProvider *provider.OperationProvider
+	// Operations is the entity that creates operations that can be executed by the Operator
+	Operations *provider.OperationProvider
 
-	// AssertionsProvider is the entity that creates assertions that can be executed by the Operator
-	AssertionsProvider *assertions.Provider
+	// Assertions is the entity that creates assertions that can be executed by the Operator
+	Assertions *assertions.Provider
 }
 
 // RunTests will execute a batch of e2e.Test against the installation
@@ -114,7 +114,7 @@ func (i *TestInstallation) RunTests(ctx context.Context, tests ...Test) {
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler() {
-	i.OperationsProvider.GlooCtl().ExportReport()
+	i.Operations.GlooCtl().ExportReport()
 }
 
 // randomizeTests shuffles the list of tests in-place

@@ -36,7 +36,7 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 
 		err := testInstallation.Operator.ExecuteOperations(
 			ctx,
-			testInstallation.OperationsProvider.GlooCtl().NewTestHelperInstallOperation(testInstallation.AssertionsProvider),
+			testInstallation.Operations.GlooCtl().NewTestHelperInstallOperation(testInstallation.Assertions),
 		)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -44,7 +44,7 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 	AfterAll(func() {
 		err := testInstallation.Operator.ExecuteOperations(
 			ctx,
-			testInstallation.OperationsProvider.GlooCtl().NewTestHelperUninstallOperation(),
+			testInstallation.Operations.GlooCtl().NewTestHelperUninstallOperation(),
 		)
 		Expect(err).NotTo(HaveOccurred())
 
