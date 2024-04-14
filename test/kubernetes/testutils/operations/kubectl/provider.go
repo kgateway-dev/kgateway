@@ -35,7 +35,7 @@ func (p *OperationProvider) Client() *kubectl.Cli {
 func (p *OperationProvider) NewApplyManifestOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
 	return &operations.BasicOperation{
 		OpName: fmt.Sprintf("apply-manifest-%s", filepath.Base(manifest)),
-		OpExecute: func(ctx context.Context) error {
+		OpAction: func(ctx context.Context) error {
 			return p.kubeCli.ApplyFile(ctx, manifest)
 		},
 		OpAssertions: assertions,
@@ -45,7 +45,7 @@ func (p *OperationProvider) NewApplyManifestOperation(manifest string, assertion
 func (p *OperationProvider) NewDeleteManifestOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
 	return &operations.BasicOperation{
 		OpName: fmt.Sprintf("delete-manifest-%s", filepath.Base(manifest)),
-		OpExecute: func(ctx context.Context) error {
+		OpAction: func(ctx context.Context) error {
 			return p.kubeCli.DeleteFile(ctx, manifest)
 		},
 		OpAssertions: assertions,
@@ -55,7 +55,7 @@ func (p *OperationProvider) NewDeleteManifestOperation(manifest string, assertio
 func (p *OperationProvider) NewDeleteManifestIgnoreNotFoundOperation(manifest string, assertions ...assertions.DiscreteAssertion) operations.Operation {
 	return &operations.BasicOperation{
 		OpName: fmt.Sprintf("delete-manifest-%s", filepath.Base(manifest)),
-		OpExecute: func(ctx context.Context) error {
+		OpAction: func(ctx context.Context) error {
 			return p.kubeCli.DeleteFile(ctx, manifest, "--ignore-not-found=true")
 		},
 		OpAssertions: assertions,

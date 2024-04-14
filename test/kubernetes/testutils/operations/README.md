@@ -1,8 +1,13 @@
 # Operations
 
-## Operator
+## Operation
+An Operation is an action that can be run against a Kubernetes cluster
 
-## Operations
+It is composed of two parts:
+- Action
+- Assertion
+
+## Operator
 
 ## Provider
 

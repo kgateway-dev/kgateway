@@ -12,11 +12,11 @@ type Operation interface {
 	// Name returns the name of the operation
 	Name() string
 
-	// Execute returns the function that will be executed against the cluster
-	Execute() func(ctx context.Context) error
+	// Action returns the function that will be executed against the cluster
+	Action() func(ctx context.Context) error
 
-	// ExecutionAssertion returns the assertions.DiscreteAssertion that will run after the Operation is executed
-	ExecutionAssertion() assertions.DiscreteAssertion
+	// Assertion returns the assertions.DiscreteAssertion that will run after the Operation is executed
+	Assertion() assertions.DiscreteAssertion
 }
 
 // ReversibleOperation combines two Operation, that are the inverse of one another
@@ -33,7 +33,7 @@ var _ Operation = new(BasicOperation)
 // BasicOperation is an implementation of the Operation interface, with the minimal properties required
 type BasicOperation struct {
 	OpName       string
-	OpExecute    func(ctx context.Context) error
+	OpAction     func(ctx context.Context) error
 	OpAssertions []assertions.DiscreteAssertion
 }
 
@@ -41,11 +41,11 @@ func (o *BasicOperation) Name() string {
 	return o.OpName
 }
 
-func (o *BasicOperation) Execute() func(ctx context.Context) error {
-	return o.OpExecute
+func (o *BasicOperation) Action() func(ctx context.Context) error {
+	return o.OpAction
 }
 
-func (o *BasicOperation) ExecutionAssertion() assertions.DiscreteAssertion {
+func (o *BasicOperation) Assertion() assertions.DiscreteAssertion {
 	return func(ctx context.Context) {
 		for _, ast := range o.OpAssertions {
 			ast(ctx)

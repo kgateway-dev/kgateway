@@ -107,13 +107,12 @@ func (o *Operator) executeReversibleOperations(ctx context.Context, operations .
 	}()
 
 	for _, op := range operations {
-		undoOperations = append(undoOperations, op.Undo)
-
 		doErr := o.executeOperation(ctx, op.Do)
 		if doErr != nil {
 			return doErr
 		}
 
+		undoOperations = append(undoOperations, op.Undo)
 	}
 	return nil
 }
@@ -121,14 +120,14 @@ func (o *Operator) executeReversibleOperations(ctx context.Context, operations .
 func (o *Operator) executeOperation(ctx context.Context, operation Operation) error {
 	o.writeProgress(operation, "starting operation")
 
-	op := operation.Execute()
+	op := operation.Action()
 	o.writeProgress(operation, "executing operation")
 	if err := op(ctx); err != nil {
 		return err
 	}
 
 	o.writeProgress(operation, "asserting operation")
-	assertion := operation.ExecutionAssertion()
+	assertion := operation.Assertion()
 	assertion(ctx)
 	o.writeProgress(operation, "completing operation")
 	return nil

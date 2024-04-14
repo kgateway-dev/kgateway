@@ -22,7 +22,7 @@ import (
 func (p *operationProviderImpl) NewTestHelperInstallOperation(provider *assertions.Provider) operations.Operation {
 	return &operations.BasicOperation{
 		OpName: "glooctl-install-gloo-gateway",
-		OpExecute: func(ctx context.Context) error {
+		OpAction: func(ctx context.Context) error {
 
 			testHelper, err := helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 				defaults.RootDir = "../../../.."
@@ -58,7 +58,7 @@ func (p *operationProviderImpl) NewTestHelperInstallOperation(provider *assertio
 func (p *operationProviderImpl) NewTestHelperUninstallOperation() operations.Operation {
 	return &operations.BasicOperation{
 		OpName: "glooctl-uninstall-gloo-gateway",
-		OpExecute: func(ctx context.Context) error {
+		OpAction: func(ctx context.Context) error {
 			var err error
 			testHelper, err := helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 				defaults.RootDir = "../../../.."

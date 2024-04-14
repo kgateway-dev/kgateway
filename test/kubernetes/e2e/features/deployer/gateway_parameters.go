@@ -2,6 +2,8 @@ package deployer
 
 import (
 	"context"
+	"time"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
@@ -10,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 var (

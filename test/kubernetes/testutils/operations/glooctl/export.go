@@ -11,7 +11,7 @@ func (p *operationProviderImpl) ExportReport() operations.Operation {
 
 	return &operations.BasicOperation{
 		OpName: "glooctl-export-report",
-		OpExecute: func(ctx context.Context) error {
+		OpAction: func(ctx context.Context) error {
 			p.testingFramework.Logf("invoking `glooctl export report` for Gloo Gateway installation in %s", p.glooGatewayContext.InstallNamespace)
 
 			// TODO: implement `glooctl export report`

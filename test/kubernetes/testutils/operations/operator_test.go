@@ -41,7 +41,7 @@ var _ = Describe("Operator", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns error on operation.Execute", func() {
+		It("returns error on operation.Action", func() {
 			operation := &testOperation{
 				op: func(ctx context.Context) error {
 					return eris.Errorf("Failed to execute operation")
@@ -165,7 +165,7 @@ func (t *testOperation) Name() string {
 	return "test-operation"
 }
 
-func (t *testOperation) Execute() func(ctx context.Context) error {
+func (t *testOperation) Action() func(ctx context.Context) error {
 	if t.op != nil {
 		return t.op
 	}
@@ -174,7 +174,7 @@ func (t *testOperation) Execute() func(ctx context.Context) error {
 	}
 }
 
-func (t *testOperation) ExecutionAssertion() assertions.DiscreteAssertion {
+func (t *testOperation) Assertion() assertions.DiscreteAssertion {
 	if t.assertion != nil {
 		return t.assertion
 	}
