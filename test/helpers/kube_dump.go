@@ -15,8 +15,11 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	gateway_defaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/skv2/codegen/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -26,10 +29,17 @@ var (
 
 // StandardGlooDumpOnFail creates adump of the kubernetes state and certain envoy data from the admin interface when a test fails
 // Look at `KubeDumpOnFail` && `EnvoyDumpOnFail` for more details
-func StandardGlooDumpOnFail(out io.Writer, namespaces ...string) func() {
+func StandardGlooDumpOnFail(out io.Writer, proxies ...metav1.ObjectMeta) func() {
 	return func() {
+		var namespaces []string
+		for _, proxy := range proxies {
+			if proxy.GetNamespace() != "" {
+				namespaces = append(namespaces, proxy.Namespace)
+			}
+		}
+
 		KubeDumpOnFail(out, namespaces...)()
-		EnvoyDumpOnFail(out, namespaces...)()
+		EnvoyDumpOnFail(out, proxies...)()
 	}
 }
 
@@ -248,22 +258,31 @@ func kubeList(namespace string, target string) ([]string, error) {
 // - stats
 // - clusters
 // - listeners
-func EnvoyDumpOnFail(_ io.Writer, namespaces ...string) func() {
+func EnvoyDumpOnFail(_ io.Writer, proxies ...metav1.ObjectMeta) func() {
 	return func() {
 		setupOutDir(envoyOutDir)
-		for _, ns := range namespaces {
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "config.log")), "/config_dump", ns)
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "stats.log")), "/stats", ns)
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "clusters.log")), "/clusters", ns)
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "listeners.log")), "/listeners", ns)
+		for _, proxy := range proxies {
+			proxyName := proxy.GetName()
+			if proxyName == "" {
+				proxyName = gateway_defaults.GatewayProxyName
+			}
+			proxyNamespace := proxy.GetNamespace()
+			if proxyNamespace == "" {
+				proxyNamespace = defaults.GlooSystem
+			}
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "config.log")), "/config_dump", proxyName, proxyNamespace)
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "stats.log")), "/stats", proxyName, proxyNamespace)
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "clusters.log")), "/clusters", proxyName, proxyNamespace)
+			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "listeners.log")), "/listeners", proxyName, proxyNamespace)
 		}
 	}
 }
 
-func recordEnvoyAdminData(f *os.File, path string, namespace string) {
+func recordEnvoyAdminData(f *os.File, path, proxyName, namespace string) {
 	defer f.Close()
 
-	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", namespace, "/config_dump", 30*time.Second)
+	fmt.Printf("Getting envoy for %s.%s and storing config dump: %s\n", proxyName, namespace, path)
+	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), proxyName, namespace, "/config_dump", 30*time.Second)
 	if err != nil {
 		f.WriteString("*** Unable to get envoy " + path + " dump ***. Reason: " + err.Error() + " \n")
 		return

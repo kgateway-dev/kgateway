@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +50,7 @@ func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefR
 			port = uint32(*backendRef.Port)
 		}
 		switch cli := obj.(type) {
+		// TODO(npolshak): Add support for upstream ref directly
 		case *corev1.Service:
 			if port == 0 {
 				reporter.SetCondition(reports.HTTPRouteCondition{
@@ -59,7 +59,7 @@ func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefR
 					Reason: gwv1.RouteReasonUnsupportedValue,
 				})
 			} else {
-				name := kubernetes.UpstreamName(cli.Namespace, cli.Name, int32(port))
+				name := cli.GetName()
 				return &name
 			}
 		default:

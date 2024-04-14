@@ -37,7 +37,7 @@ type translatorSyncer struct {
 var (
 	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
 	proxyLabelsToWrite = map[string]string{
-		glooutils.TranslatorKey: "gloo-knative",
+		glooutils.ProxyTypeKey: glooutils.KnativeProxyValue,
 	}
 
 	// Previously, proxies would be identified with:
@@ -52,7 +52,7 @@ var (
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
 	proxyLabelSelectorOptions = clients.ListOpts{
-		ExpressionSelector: glooutils.GetTranslatorSelectorExpression("gloo-knative", "knative"),
+		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.KnativeProxyValue, "knative"),
 	}
 )
 

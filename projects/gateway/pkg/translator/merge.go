@@ -27,7 +27,7 @@ func mergeRouteOptions(dst, src *v1.RouteOptions) *v1.RouteOptions {
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
 
-	for i := 0; i < dstValue.NumField(); i++ {
+	for i := range dstValue.NumField() {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
 		utils.ShallowMerge(dstField, srcField, false)
 	}
@@ -48,7 +48,7 @@ func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) *v1.VirtualHostOpt
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
 
-	for i := 0; i < dstValue.NumField(); i++ {
+	for i := range dstValue.NumField() {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
 		utils.ShallowMerge(dstField, srcField, false)
 	}
