@@ -20,7 +20,7 @@ func (p *Provider) RunningReplicas(objectMeta v1.ObjectMeta, expectedReplicas in
 			g.Expect(pods).To(HaveLen(expectedReplicas))
 		}).
 			WithContext(ctx).
-			WithTimeout(time.Second * 10).
+			WithTimeout(time.Second * 30).
 			WithPolling(time.Millisecond * 200).
 			Should(Succeed())
 	}

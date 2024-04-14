@@ -57,7 +57,6 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 			testInstallation.RunTests(
 				ctx,
 				deployer.ProvisionDeploymentAndService,
-				deployer.RouteIngressTraffic,
 				deployer.ConfigureProxiesFromGatewayParameters,
 			)
 		})

@@ -27,8 +27,8 @@ func (p *OperationProvider) WithClusterCli(kubeCli *kubectl.Cli) *OperationProvi
 	return p
 }
 
-// KubeCli returns the kubectl.Cli
-func (p *OperationProvider) KubeCli() *kubectl.Cli {
+// Client returns the kubectl.Cli
+func (p *OperationProvider) Client() *kubectl.Cli {
 	return p.kubeCli
 }
 
