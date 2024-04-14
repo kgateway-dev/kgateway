@@ -12,6 +12,8 @@ import (
 )
 
 func (p *Provider) CheckResources() DiscreteAssertion {
+	p.requiresGlooGatewayContext()
+
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 

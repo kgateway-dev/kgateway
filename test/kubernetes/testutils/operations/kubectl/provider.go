@@ -3,11 +3,10 @@ package kubectl
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
+	"path/filepath"
 )
 
 // OperationProvider provides a mechanism to generation operations that are performed via kubectl

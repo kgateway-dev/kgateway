@@ -20,18 +20,12 @@ type Provider struct {
 }
 
 // NewProvider returns a Provider that will fail because it is not configured with a Kubernetes Cluster
-func NewProvider() *Provider {
+func NewProvider(testingFramework testing.TB) *Provider {
 	return &Provider{
-		testingFramework:   nil,
+		testingFramework:   testingFramework,
 		clusterContext:     nil,
 		glooGatewayContext: nil,
 	}
-}
-
-// WithTestingFramework sets the testing framework used by the assertion provider
-func (p *Provider) WithTestingFramework(t testing.TB) *Provider {
-	p.testingFramework = t
-	return p
 }
 
 // WithClusterContext sets the provider to point to the provided cluster
@@ -44,4 +38,13 @@ func (p *Provider) WithClusterContext(clusterContext *cluster.Context) *Provider
 func (p *Provider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *Provider {
 	p.glooGatewayContext = ggCtx
 	return p
+}
+
+// requiresGlooGatewayContext is invoked by methods on the Provider that can only be invoked
+// if the provider has been configured to point to a Gloo Gateway installation
+// There are certain Assertions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
+func (p *Provider) requiresGlooGatewayContext() {
+	if p.glooGatewayContext == nil {
+		p.testingFramework.Fatal("Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
+	}
 }

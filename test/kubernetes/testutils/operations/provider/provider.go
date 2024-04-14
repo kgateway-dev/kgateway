@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/kubectl"
+	"testing"
 )
 
 // OperationProvider is the entity that creates operations.
@@ -16,17 +17,11 @@ type OperationProvider struct {
 }
 
 // NewOperationProvider returns an OperationProvider that will fail because it is not configured with a Kubernetes Cluster
-func NewOperationProvider() *OperationProvider {
+func NewOperationProvider(testingFramework testing.TB) *OperationProvider {
 	return &OperationProvider{
 		kubeCtlProvider: kubectl.NewProvider(),
-		glooCtlProvider: glooctl.NewProvider(),
+		glooCtlProvider: glooctl.NewProvider(testingFramework),
 	}
-}
-
-// WithGlooctlProvider sets the glooctl provider on this OperationProvider
-func (p *OperationProvider) WithGlooctlProvider(provider glooctl.OperationProvider) *OperationProvider {
-	p.glooCtlProvider = provider
-	return p
 }
 
 // WithClusterContext sets the provider, and all of it's sub-providers, to point to the provided cluster
@@ -39,6 +34,12 @@ func (p *OperationProvider) WithClusterContext(clusterContext *cluster.Context) 
 // WithGlooGatewayContext sets the provider, and all of it's sub-providers, to point to the provided installation
 func (p *OperationProvider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *OperationProvider {
 	p.glooCtlProvider.WithGlooGatewayContext(ggCtx)
+	return p
+}
+
+// WithGlooctlProvider sets the glooctl provider on this OperationProvider
+func (p *OperationProvider) WithGlooctlProvider(provider glooctl.OperationProvider) *OperationProvider {
+	p.glooCtlProvider = provider
 	return p
 }
 

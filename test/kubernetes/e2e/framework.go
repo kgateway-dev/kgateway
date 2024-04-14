@@ -2,11 +2,11 @@ package e2e
 
 import (
 	"context"
+	"math/rand"
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
@@ -52,15 +52,13 @@ func NewTestInstallation(testSuite *TestSuite, glooGatewayContext *gloogateway.C
 		Operator: operations.NewGinkgoOperator(),
 
 		// Create an operations provider, and point it to the running installation
-		OperationsProvider: provider.NewOperationProvider().
+		OperationsProvider: provider.NewOperationProvider(testSuite.TestingFramework).
 			WithClusterContext(testSuite.ClusterContext).
-			WithGlooGatewayContext(glooGatewayContext).
-			WithGlooctlProvider(glooctl.NewProvider()),
+			WithGlooGatewayContext(glooGatewayContext),
 
 		// Create an assertions provider, and point it to the running installation
-		AssertionsProvider: assertions.NewProvider().
+		AssertionsProvider: assertions.NewProvider(testSuite.TestingFramework).
 			WithClusterContext(testSuite.ClusterContext).
-			WithTestingFramework(testSuite.TestingFramework).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
 }
@@ -79,8 +77,18 @@ type Test struct {
 
 // RunTests will execute a batch of e2e.Test against the installation
 func (i *TestInstallation) RunTests(ctx context.Context, tests ...Test) {
+	randomizeTests(tests...)
+
 	for _, e2eTest := range tests {
 		i.TestingFramework.Logf("TEST: %s", e2eTest.Name)
 		e2eTest.Test(ctx, i)
 	}
+}
+
+// randomizeTests shuffles the list of tests in-place
+// This is done to insert chaos in the tests, and ensure that tests do not depend on being run in a certain order
+func randomizeTests(tests ...Test) {
+	rand.Shuffle(len(tests), func(i, j int) {
+		tests[i], tests[j] = tests[j], tests[i]
+	})
 }
