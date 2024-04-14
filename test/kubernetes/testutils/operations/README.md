@@ -4,13 +4,14 @@
 An Operation is an action that can be run against a Kubernetes cluster
 
 It is composed of two parts:
-- Action
+- Action: 
 - Assertion
 
 ## Operator
 
-## Provider
+## OperationProvider
 
-## Glooctl
+### Glooctl
 
-## Kubectl
+
+### Kubectl

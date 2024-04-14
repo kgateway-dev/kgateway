@@ -3,7 +3,6 @@ package example_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
@@ -15,7 +14,6 @@ import (
 )
 
 func TestExampleSuite(t *testing.T) {
-	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 
 	RunSpecs(t, "Example Suite")
@@ -41,6 +39,5 @@ var _ = BeforeSuite(func(ctx context.Context) {
 	}
 
 	// Register the PreFailHandler from the TestSuite
-	// This allows all the complexity of _what_ should be emitted on failure, to be handled by the TestSuite
 	skhelpers.RegisterPreFailHandler(testSuite.PreFailHandler)
 })

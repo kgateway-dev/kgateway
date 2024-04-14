@@ -5,16 +5,18 @@
 
 ## Test Utilities
 ### Assertions
-For more details on the assertions, see the [assertions](./testutils/assertions) package.
+_For more details on the assertions, see the [assertions](./testutils/assertions) package._
 
 ### Operations
+_For more details on the operations, see the [operations](./testutils/operations) package._
+
 
 
 
 ## End-To-End Testing
 
 ### Historical Challenges
-_We document the historical challenges we have experienced with writing end-to-end tests as a way of avoiding making the same mistakes_
+_We document the historical challenges we have experienced with writing and managing end-to-end tests as a way of avoiding making the same mistakes_
 
 Below are some challenges we have had while writing end-to-end tests:
 

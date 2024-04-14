@@ -34,6 +34,11 @@ type TestSuite struct {
 	activeInstallations map[string]*TestInstallation
 }
 
+// PreFailHandler will execute the PreFailHandler for any of the TestInstallation that are registered
+// with the given TestSuite.
+// The function will be executed when a test in the TestSuite fails, but before any of the cleanup
+// functions (AfterEach, AfterAll) are invoked. This allows us to capture relevant details about
+// the running installation of Gloo Gateway and the Kubernetes Cluster
 func (s *TestSuite) PreFailHandler() {
 	for _, i := range s.activeInstallations {
 		i.PreFailHandler()
@@ -41,6 +46,10 @@ func (s *TestSuite) PreFailHandler() {
 }
 
 func (s *TestSuite) RegisterTestInstallation(name string, glooGatewayContext *gloogateway.Context) *TestInstallation {
+	if s.activeInstallations == nil {
+		s.activeInstallations = make(map[string]*TestInstallation, 2)
+	}
+
 	installation := &TestInstallation{
 		// Create a reference to the TestSuite, and all of it's metadata
 		TestSuite: s,
@@ -61,11 +70,8 @@ func (s *TestSuite) RegisterTestInstallation(name string, glooGatewayContext *gl
 			WithClusterContext(s.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
-
-	if s.activeInstallations == nil {
-		s.activeInstallations = make(map[string]*TestInstallation, 2)
-	}
 	s.activeInstallations[name] = installation
+
 	return installation
 }
 
@@ -106,10 +112,7 @@ func (i *TestInstallation) RunTests(ctx context.Context, tests ...Test) {
 	}
 }
 
-// PreFailHandler is the function that is invoked as a PreFail handler
-// This means that when a test fails, before any cleanup is performed (AfterEach, AfterAll)
-// this function is invoked as a way of allowing tests a chance to emit data about a cluster
-// for debugging purposes
+// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler() {
 	i.OperationsProvider.GlooCtl().ExportReport()
 }

@@ -6,8 +6,6 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
@@ -57,33 +55,22 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 				// We configure the GatewayParameters CR to provision workloads with a specific image that should exist
 				installation.AssertionsProvider.RunningReplicas(proxyDeployment.ObjectMeta, 1),
 
-				// This is an example of a custom assertion
-				// It's the type of assertion that likely warrants being a re-usable utility
-				func(ctx context.Context) {
-					portForwarder, err := installation.OperationsProvider.KubeCtl().Client().StartPortForward(ctx,
-						portforward.WithDeployment(proxyDeployment.GetName(), proxyDeployment.GetNamespace()),
-						portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
-					)
-					Expect(err).NotTo(HaveOccurred())
-
-					portForwarder.Address()
-					defer func() {
-						portForwarder.Close()
-						portForwarder.WaitForStop()
-					}()
-
-					adminClient := admincli.NewClient().WithCurlOptions(curl.WithPort(admincli.DefaultAdminPort))
-
-					Eventually(func(g Gomega) {
-						serverInfo, err := adminClient.GetServerInfo(ctx)
-						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(Equal("debug"), "defined on the GatewayParameters CR")
-					}).
-						WithContext(ctx).
-						WithTimeout(time.Second * 10).
-						WithPolling(time.Millisecond * 200).
-						Should(Succeed())
-				},
+				// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
+				installation.AssertionsProvider.EnvoyAdminApiAssertion(
+					proxyDeployment.ObjectMeta,
+					installation.OperationsProvider.KubeCtl().Client(),
+					func(ctx context.Context, adminClient *admincli.Client) {
+						Eventually(func(g Gomega) {
+							serverInfo, err := adminClient.GetServerInfo(ctx)
+							g.Expect(err).NotTo(HaveOccurred())
+							g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(Equal("debug"), "defined on the GatewayParameters CR")
+						}).
+							WithContext(ctx).
+							WithTimeout(time.Second * 10).
+							WithPolling(time.Millisecond * 200).
+							Should(Succeed())
+					},
+				),
 			),
 			Undo: installation.OperationsProvider.KubeCtl().NewDeleteManifestOperation(
 				gwParametersManifestFile,

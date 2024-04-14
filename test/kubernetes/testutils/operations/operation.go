@@ -15,13 +15,13 @@ type Operation interface {
 	// Action returns the function that will be executed against the cluster
 	Action() func(ctx context.Context) error
 
-	// Assertion returns the assertions.DiscreteAssertion that will run after the Operation is executed
+	// Assertion returns the assertions.DiscreteAssertion that will run after the Action is executed
 	Assertion() assertions.DiscreteAssertion
 }
 
 // ReversibleOperation combines two Operation, that are the inverse of one another
 // We recommend that developers write tests using ReversibleOperation
-// This is because when these are executed, they leave the cluster in the state they found it
+// This is because when these are executed, they leave the cluster in the state they found it.
 // If resources are not cleaned up properly, that can lead to pollution in the cluster and test flakes
 type ReversibleOperation struct {
 	Do   Operation

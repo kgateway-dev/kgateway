@@ -11,7 +11,7 @@ import (
 )
 
 // Operator is responsible for executing Operation against a Kubernetes Cluster
-// This is meant to mirror the behavior of an Operator of the Gloo Gateway Product.
+// This is meant to mirror the behavior of an Operator of the Gloo Gateway product.
 // Although we operate against a Kubernetes Cluster, an Operator is intentionally
 // unaware of Kubernetes behavior, and instead is more of a scheduler of Operation.
 // This allows us to test its functionality, and also more easily inject behaviors
@@ -120,9 +120,9 @@ func (o *Operator) executeReversibleOperations(ctx context.Context, operations .
 func (o *Operator) executeOperation(ctx context.Context, operation Operation) error {
 	o.writeProgress(operation, "starting operation")
 
-	op := operation.Action()
+	action := operation.Action()
 	o.writeProgress(operation, "executing operation")
-	if err := op(ctx); err != nil {
+	if err := action(ctx); err != nil {
 		return err
 	}
 

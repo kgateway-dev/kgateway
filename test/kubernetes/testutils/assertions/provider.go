@@ -19,7 +19,8 @@ type Provider struct {
 	glooGatewayContext *gloogateway.Context
 }
 
-// NewProvider returns a Provider that will fail because it is not configured with a Kubernetes Cluster
+// NewProvider returns a Provider that will provide Assertions that can be executed against an
+// installation of Gloo Gateway
 func NewProvider(testingFramework testing.TB) *Provider {
 	return &Provider{
 		testingFramework:   testingFramework,
