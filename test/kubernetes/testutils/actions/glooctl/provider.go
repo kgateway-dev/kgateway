@@ -53,9 +53,9 @@ func (p *providerImpl) WithGlooGatewayContext(ggCtx *gloogateway.Context) Provid
 
 // requiresGlooGatewayContext is invoked by methods on the Provider that can only be invoked
 // if the provider has been configured to point to a Gloo Gateway installation
-// There are certain Assertions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
+// There are certain actions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
 func (p *providerImpl) requiresGlooGatewayContext() {
 	if p.glooGatewayContext == nil {
-		p.testingFramework.Fatal("Provider attempted to create an Operation that requires a Gloo Gateway installation, but none was configured")
+		p.testingFramework.Fatal("Provider attempted to create an action that requires a Gloo Gateway installation, but none was configured")
 	}
 }

@@ -53,8 +53,10 @@ func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
 		// Check that everything is OK
 		p.CheckResources()(ctx)
 
-		// Ensure gloo reaches valid state and doesn't continually resync
+		// Ensure gloo reaches valid state and doesn't continually re-sync
 		// we can consider doing the same for leaking go-routines after resyncs
+		// This is a time-consuming check, and could be removed from being run on every one of our tests,
+		// and instead we could have a single test which performs this assertion
 		kube2e.EventuallyReachesConsistentState(p.glooGatewayContext.InstallNamespace)
 	}
 }
