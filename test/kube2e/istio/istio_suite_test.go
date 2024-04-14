@@ -10,11 +10,11 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	testutils2 "github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"github.com/solo-io/go-utils/testutils/exec"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
@@ -73,7 +73,16 @@ var _ = BeforeSuite(func() {
 	testHelper, err = kube2e.GetTestHelper(ctx, installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	if useGlooGateway {
+		// gloo gateway is named differently from the classic edge proxy based on the Gateway resource name
+		skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter,
+			metav1.ObjectMeta{
+				Name:      glooGatewayProxy,
+				Namespace: testHelper.InstallNamespace,
+			}))
+	} else {
+		skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, metav1.ObjectMeta{Namespace: testHelper.InstallNamespace}))
+	}
 
 	if !testutils2.ShouldSkipInstall() {
 		// testserver is install in gloo-system
