@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+// CheckResources returns the ClusterAssertion that performs a `glooctl check`
 func (p *Provider) CheckResources() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 

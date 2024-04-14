@@ -19,6 +19,11 @@ func (p *Provider) EnvoyAdminApiAssertion(
 
 		portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 			portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
+			// TODO: Help Wanted
+			// This always selects the DefaultAdminPort as the local port.
+			// If we want to run tests in parallel, this will cause problems.
+			// We should improve this to instead use the `portforward.WithPort` option,
+			// which selects an open port, and then we can open a curl against the portForwarder.Address()
 			portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
 		)
 		Expect(err).NotTo(HaveOccurred())

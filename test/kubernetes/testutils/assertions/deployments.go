@@ -10,16 +10,18 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 )
 
-func (p *Provider) RunningReplicas(objectMeta v1.ObjectMeta, expectedReplicas int) ClusterAssertion {
+func (p *Provider) RunningReplicas(deploymentMeta v1.ObjectMeta, expectedReplicas int) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
 		Eventually(func(g Gomega) {
-			pods, err := kubeutils.GetPodsForDeployment(ctx, p.clusterContext.RestConfig, objectMeta.GetName(), objectMeta.GetNamespace())
+			pods, err := kubeutils.GetPodsForDeployment(ctx, p.clusterContext.RestConfig, deploymentMeta.GetName(), deploymentMeta.GetNamespace())
 			g.Expect(err).NotTo(HaveOccurred(), "can get pods for deployment")
-			g.Expect(pods).To(HaveLen(expectedReplicas))
+			g.Expect(pods).To(HaveLen(expectedReplicas), "running pods matches expected count")
 		}).
 			WithContext(ctx).
+			// It may take some time for pods to initialize and pull images from remote registries.
+			// Therefore, we set a longer timeout, to account for latency that may exist.
 			WithTimeout(time.Second * 30).
 			WithPolling(time.Millisecond * 200).
 			Should(Succeed())

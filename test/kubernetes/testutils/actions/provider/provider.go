@@ -18,7 +18,7 @@ type ActionsProvider struct {
 	glooCtlProvider glooctl.Provider
 }
 
-// NewActionsProvider returns an ActionsProvider that will fail because it is not configured with a Kubernetes Cluster
+// NewActionsProvider returns an ActionsProvider
 func NewActionsProvider(testingFramework testing.TB) *ActionsProvider {
 	return &ActionsProvider{
 		kubeCtlProvider: kubectl.NewProvider(),
