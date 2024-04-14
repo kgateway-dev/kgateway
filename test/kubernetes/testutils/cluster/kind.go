@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -27,7 +27,7 @@ func MustKindContext(testing testing.TB, clusterName string) *Context {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	clt, err := client.New(restCfg, client.Options{
-		Scheme: clients.MustClientScheme(testing),
+		Scheme: kubetestclients.MustClientScheme(testing),
 	})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
