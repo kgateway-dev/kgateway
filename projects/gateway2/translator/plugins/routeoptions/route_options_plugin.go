@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	xdsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -131,7 +130,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 
 			// set the subresource status for this specific proxy on the RO
 			thisSubresourceStatus := statusForRO.subresourceStatus
-			thisSubresourceStatus[xds.SnapshotCacheKey(xdsutils.GlooGatewayTranslatorValue, proxyWithReport.Proxy)] = proxyStatus
+			thisSubresourceStatus[xds.SnapshotCacheKey(proxyWithReport.Proxy)] = proxyStatus
 			statusForRO.subresourceStatus = thisSubresourceStatus
 
 			// add any routeErrors from this Proxy translation

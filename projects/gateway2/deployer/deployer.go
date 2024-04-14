@@ -181,9 +181,10 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	// construct the default values
 	vals := &helmConfig{
 		Gateway: &helmGateway{
-			Name:        &gw.Name,
-			GatewayName: &gw.Name,
-			Ports:       getPortsValues(gw),
+			Name:             &gw.Name,
+			GatewayName:      &gw.Name,
+			GatewayNamespace: &gw.Namespace,
+			Ports:            getPortsValues(gw),
 			Xds: &helmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates

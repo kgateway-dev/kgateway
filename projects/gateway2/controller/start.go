@@ -11,15 +11,13 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/discovery"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	"github.com/solo-io/gloo/projects/gateway2/xds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -90,8 +88,8 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	glooTranslator := translator.NewDefaultTranslator(
 		cfg.Opts.Settings,
 		cfg.GlooPluginRegistryFactory(ctx))
-	var sanz sanitizer.XdsSanitizers
-	inputChannels := xds.NewXdsInputChannels()
+
+	inputChannels := proxy_syncer.NewGatewayInputChannels()
 
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
 		Mgr:               mgr,
@@ -104,19 +102,18 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		return err
 	}
 
-	xdsSyncer := xds.NewXdsSyncer(
+	// Create the proxy syncer for the Gateway API resources
+	proxySyncer := proxy_syncer.NewProxySyncer(
 		wellknown.GatewayControllerName,
+		cfg.Opts.WriteNamespace,
 		glooTranslator,
-		sanz,
-		cfg.Opts.ControlPlane.SnapshotCache,
-		false,
 		inputChannels,
 		mgr,
 		k8sGwExtensions,
 		cfg.ProxyClient,
 	)
-	if err := mgr.Add(xdsSyncer); err != nil {
-		setupLog.Error(err, "unable to add xdsSyncer runnable")
+	if err := mgr.Add(proxySyncer); err != nil {
+		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return err
 	}
 
@@ -131,11 +128,6 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		Extensions:     k8sGwExtensions,
 	}
 	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
-		setupLog.Error(err, "unable to create controller")
-		return err
-	}
-
-	if err = discovery.NewDiscoveryController(ctx, mgr, inputChannels); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}

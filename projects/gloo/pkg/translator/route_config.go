@@ -91,7 +91,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 		VirtualHosts:                   h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
-	if h.translatorName == utils.GlooGatewayTranslatorValue {
+	if h.translatorName == utils.GatewayApiProxyValue {
 		// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 		// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
 		cfg.IgnorePortInHostMatching = true
@@ -286,7 +286,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 		routeAction := &envoy_config_route_v3.RouteAction{}
-		if h.translatorName == utils.GlooGatewayTranslatorValue {
+		if h.translatorName == utils.GatewayApiProxyValue {
 			// Gateway API spec requires that invalid refs result in a 500 status code
 			// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule - backendRefs field
 			routeAction.ClusterNotFoundResponseCode = envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR
@@ -655,7 +655,7 @@ func (h *httpRouteConfigurationTranslator) setEnvoyPathMatcher(ctx context.Conte
 			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
-		if h.translatorName == utils.GlooGatewayTranslatorValue {
+		if h.translatorName == utils.GatewayApiProxyValue {
 			// Gateway API spec treats each path segment as a full word, i.e. a request with path /abcd should not match
 			// the matcher prefix /abc (but request to /abc/def should match) so we must use PathSeparatedPrefix unless
 			// the matcher path ends in / in which case we need to use Prefix (PathSeparatedPrefix cannot end in /)
