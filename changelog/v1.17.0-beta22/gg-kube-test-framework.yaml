@@ -1,4 +1,12 @@
 changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: ginkgo/v2
+    dependencyTag: v2.17.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: gomega
+    dependencyTag: v1.30.0
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6029
     resolvesIssue: false

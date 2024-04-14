@@ -7,11 +7,11 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (p *Provider) EnvoyAdminApiAssertion(
-	envoyDeployment v1.ObjectMeta,
+	envoyDeployment metav1.ObjectMeta,
 	adminAssertion func(ctx context.Context, adminClient *admincli.Client),
 ) ClusterAssertion {
 	return func(ctx context.Context) {

@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 )
 
-func (p *Provider) RunningReplicas(deploymentMeta v1.ObjectMeta, expectedReplicas int) ClusterAssertion {
+func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, expectedReplicas int) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
