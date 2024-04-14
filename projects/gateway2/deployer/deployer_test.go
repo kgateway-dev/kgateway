@@ -18,6 +18,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	appsv1 "k8s.io/api/apps/v1"
@@ -639,11 +641,9 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
+					proxyName := fmt.Sprintf("%s-%s", gw.Namespace, gw.Name)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						"gateway": map[string]any{
-							"name":      gw.Name,
-							"namespace": gw.Namespace,
-						},
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", utils.GatewayApiProxyValue, gw.Namespace, proxyName),
 					}))
 					return nil
 				},

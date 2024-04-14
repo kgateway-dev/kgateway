@@ -1,4 +1,4 @@
-package xds
+package proxy_syncer
 
 import (
 	"context"

@@ -311,10 +311,7 @@ data:
     node:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
-        gateway:
-          # TODO: Should this default live somewhere shared instead of just here?
-          name: {{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
-          namespace: {{ .Release.Namespace }}
+        role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
     static_resources:
       listeners:
       - name: read_config_listener

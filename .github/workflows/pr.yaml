@@ -48,3 +48,19 @@ jobs:
       run: kubectl delete rs --all
     - name: Test Conformance
       run: make -C ./projects/gateway2/ conformance
+    - name: save results
+      if: ${{ failure() }}
+      shell: bash
+      run: |
+        mkdir -p _output/conformance-artifacts
+        [ -f _output/conformance-artifacts/test-out.txt ] || touch _output/conformance-artifacts/test-out.txt
+        echo "kubectl get pods -A" >> _output/conformance-artifacts/test-out.txt
+        kubectl get pods -A >> _output/conformance-artifacts/test-out.txt
+        echo "kubectl logs -n gloo-system deployment/gloo --all-containers=true" >> _output/conformance-artifacts/test-out.txt
+        kubectl logs -n gloo-system deployment/gloo --all-containers=true >> _output/conformance-artifacts/test-out.txt
+    - uses: actions/upload-artifact@v3
+      if: ${{ failure() }}
+      with:
+        name: conformance-kube-dump
+        path: "_output/conformance-artifacts"
+        if-no-files-found: warn
