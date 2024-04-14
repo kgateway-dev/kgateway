@@ -107,12 +107,12 @@ func (o *Operator) executeReversibleOperations(ctx context.Context, operations .
 	}()
 
 	for _, op := range operations {
+		undoOperations = append(undoOperations, op.Undo)
+
 		doErr := o.executeOperation(ctx, op.Do)
 		if doErr != nil {
 			return doErr
 		}
-
-		undoOperations = append(undoOperations, op.Undo)
 	}
 	return nil
 }
