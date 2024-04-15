@@ -51,7 +51,7 @@ type ListenerPlugin interface {
 	// ApplyListenerPlugin is called for each Listener in a Gateway
 	ApplyListenerPlugin(
 		ctx context.Context,
-		routeCtx *ListenerContext,
+		listenerCtx *ListenerContext,
 		outputListener *v1.Listener,
 	) error
 }
