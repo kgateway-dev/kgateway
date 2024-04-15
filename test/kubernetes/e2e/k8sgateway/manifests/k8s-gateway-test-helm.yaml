@@ -22,7 +22,7 @@ kubeGateway:
   enabled: true
 gloo:
   logLevel: info
-  disableLeaderElection: false
+  disableLeaderElection: true
   deployment:
     replicas: 1
     livenessProbeEnabled: true
