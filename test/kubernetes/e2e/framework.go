@@ -72,6 +72,7 @@ func (s *TestSuite) RegisterTestInstallation(name string, glooGatewayContext *gl
 
 		// Create an assertions provider, and point it to the running installation
 		Assertions: assertions.NewProvider(s.TestingFramework).
+			WithProgressWriter(s.TestingProgressWriter).
 			WithClusterContext(s.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
@@ -125,7 +126,7 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAc
 func (i *TestInstallation) RunTests(_ context.Context, _ ...Test) {
 	// We rely on test frameworks to randomize tests.
 	// If we run tests in series, we will not benefit from those
-	panic("Should not run tests in a batch. Use RunTest instead")
+	i.TestingFramework.Fatal("Should not run tests in a batch. Use RunTest instead")
 }
 
 // RunTest will execute a single Test against the installation

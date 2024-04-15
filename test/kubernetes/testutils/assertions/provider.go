@@ -1,6 +1,7 @@
 package assertions
 
 import (
+	"io"
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -13,7 +14,8 @@ import (
 // So this provider maintains state about the install/cluster it is using, and then provides
 // operations.ClusterAssertion to match
 type Provider struct {
-	testingFramework testing.TB
+	testingFramework      testing.TB
+	testingProgressWriter io.Writer
 
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
@@ -27,6 +29,12 @@ func NewProvider(testingFramework testing.TB) *Provider {
 		clusterContext:     nil,
 		glooGatewayContext: nil,
 	}
+}
+
+// WithProgressWriter sets the io.Writer for the provider
+func (p *Provider) WithProgressWriter(progressWriter io.Writer) *Provider {
+	p.testingProgressWriter = progressWriter
+	return p
 }
 
 // WithClusterContext sets the provider to point to the provided cluster

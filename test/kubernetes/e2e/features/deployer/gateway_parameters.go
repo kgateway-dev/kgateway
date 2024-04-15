@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
-
 	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
@@ -69,11 +67,6 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 					installation.Assertions.EnvoyAdminApiAssertion(
 						proxyDeployment.ObjectMeta,
 						func(ctx context.Context, adminClient *admincli.Client) {
-
-							if installation.RuntimeContext.RunSource != runtime.LocalDevelopment {
-								// This functionality does not yet pass in CI
-								return
-							}
 							// Set the adminClient to use the io.Writer of this TestInstallation
 							adminClient.WithReceiver(installation.TestingProgressWriter)
 

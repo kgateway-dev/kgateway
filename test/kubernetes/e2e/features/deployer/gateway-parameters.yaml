@@ -33,7 +33,3 @@ spec:
         componentLogLevels:
           upstream: debug
           connection: trace
-      image:
-        registry: quay.io/solo-io
-        repository: gloo-envoy-wrapper
-        tag: "1.17.0-beta18"
