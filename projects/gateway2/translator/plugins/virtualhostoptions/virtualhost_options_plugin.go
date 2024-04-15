@@ -24,22 +24,6 @@ var (
 	errUnexpectedListenerType = func(l *v1.Listener) error {
 		return eris.Wrapf(ErrUnexpectedListenerType, "expected AggregateListener, got %T", l.GetListenerType())
 	}
-	ErrTooManyAttachedOpts                = eris.New("too many attached VirtualHostOption resources found")
-	errTooManyAttachedOptsWithSectionName = func(listenerCtx *plugins.ListenerContext, numOpts int) error {
-		return eris.Wrapf(ErrTooManyAttachedOpts,
-			"expected at most 1 VirtualHostOption targeting gateway (%s.%s) and targeting listener %s with section name, found %d",
-			listenerCtx.Gateway.GetNamespace(),
-			listenerCtx.Gateway.GetName(),
-			listenerCtx.GwListener.Name,
-			numOpts)
-	}
-	errTooManyAttachedOptsWithoutSectionName = func(listenerCtx *plugins.ListenerContext, numOpts int) error {
-		return eris.Wrapf(ErrTooManyAttachedOpts,
-			"expected at most 1 VirtualHostOption targeting gateway (%s.%s), found %d",
-			listenerCtx.Gateway.GetNamespace(),
-			listenerCtx.Gateway.GetName(),
-			numOpts)
-	}
 )
 
 func NewPlugin(gwQueries gwquery.GatewayQueries, client client.Client) *plugin {
@@ -73,10 +57,11 @@ func (p *plugin) ApplyListenerPlugin(
 	}
 
 	if numOpts := len(attachedOptions); numOpts > 1 {
-		// Report conflicts on the [1:] options
+		// TODO: Report conflicts on the [1:] options
 	}
 
 	if attachedOptions[0] == nil {
+		// unsure if this should be an error case
 		return nil
 	}
 
