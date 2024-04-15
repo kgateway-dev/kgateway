@@ -1089,7 +1089,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		var createServicesForPod = func(displayName string, port int32) {
 			createdServices = nil
 			// create some services
-			for i := 0; i < 20; i++ {
+			for i := range 20 {
 				service := &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   fmt.Sprintf("%s-%d", displayName, i),
@@ -1689,7 +1689,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 
 			// try it 10 times
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				res, err := testHelper.Curl(redOpts)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(res).To(ContainSubstring("red-pod"))

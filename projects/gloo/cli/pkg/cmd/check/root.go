@@ -897,7 +897,7 @@ func checkProxies(ctx context.Context, printer printers.P, opts *options.Options
 			} else {
 				// Proxy has no status. We want to warn users that something is causing the Proxy to not be processed by the ControlPlane
 				translatorValue := utils.GetTranslatorValue(proxy.GetMetadata())
-				if translatorValue == utils.GlooGatewayTranslatorValue {
+				if translatorValue == utils.GatewayApiProxyValue {
 					// This proxy was created by the k8s Gateway translation
 					// That feature does not yet support propagating statuses onto the Proxy CR, so we ignore it
 

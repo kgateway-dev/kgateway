@@ -47,7 +47,7 @@ var _ = Describe("ScaledSnapshotBuilder", func() {
 					WithUpstreamBuilder(helpers.NewUpstreamBuilder().WithUniqueSni()).Build()
 				Expect(snap.Upstreams).To(HaveLen(10))
 				foundSNI := map[string]bool{}
-				for i := 0; i < len(snap.Upstreams); i++ {
+				for i := range len(snap.Upstreams) {
 					Expect(snap.Upstreams[i].SslConfig).NotTo(BeNil())
 					_, ok := foundSNI[snap.Upstreams[i].SslConfig.Sni]
 					Expect(ok).To(BeFalse())

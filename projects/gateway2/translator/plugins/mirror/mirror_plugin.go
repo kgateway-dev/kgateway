@@ -5,10 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -56,12 +58,30 @@ func (p *plugin) ApplyRoutePlugin(
 		return nil //TODO https://github.com/solo-io/gloo/pull/8890/files#r1391523183
 	}
 
-	outputRoute.GetOptions().Shadowing = &shadowing.RouteShadowing{
-		Upstream: &core.ResourceRef{
-			Name:      *clusterName,
-			Namespace: obj.GetNamespace(),
-		},
-		Percentage: 100.0,
+	if backendref.RefIsService(config.BackendRef) {
+		var port uint32
+		if config.BackendRef.Port != nil {
+			port = uint32(*config.BackendRef.Port)
+		}
+		dest := &v1.KubernetesServiceDestination{
+			Ref: &core.ResourceRef{
+				Name:      *clusterName,
+				Namespace: obj.GetNamespace(),
+			},
+			Port: port,
+		}
+		upstream := kubernetes.DestinationToUpstreamRef(dest)
+
+		outputRoute.GetOptions().Shadowing = &shadowing.RouteShadowing{
+			Upstream: &core.ResourceRef{
+				Name:      upstream.GetName(),
+				Namespace: upstream.GetNamespace(),
+			},
+			Percentage: 100.0,
+		}
+	} else {
+		// TODO(npolshak): support other backend types (Upstreams, etc.)
+		return errors.Errorf("unsupported backend type for mirror filter %v", config.BackendRef)
 	}
 
 	return nil

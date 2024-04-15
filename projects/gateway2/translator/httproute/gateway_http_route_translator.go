@@ -7,12 +7,12 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -76,6 +76,7 @@ func translateGatewayHTTPRouteRule(
 
 		if len(rule.BackendRefs) > 0 {
 			setRouteAction(
+				ctx,
 				queries,
 				gwroute,
 				rule.BackendRefs,
@@ -190,6 +191,7 @@ func parsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 }
 
 func setRouteAction(
+	ctx context.Context,
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
 	backendRefs []gwv1.HTTPBackendRef,
@@ -220,20 +222,33 @@ func setRouteAction(
 			}
 		}
 
+		var port uint32
+		if backendRef.Port != nil {
+			port = uint32(*backendRef.Port)
+		}
+
 		// get backend for ref - we must do it to make sure we have permissions to access it.
 		// also we need the service so we can translate its name correctly.
-		weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
-			Destination: &v1.Destination{
-				DestinationType: &v1.Destination_Upstream{
-					Upstream: &core.ResourceRef{
-						Name:      clusterName,
-						Namespace: ns,
+		if backendref.RefIsService(backendRef.BackendObjectReference) {
+			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
+				Destination: &v1.Destination{
+					DestinationType: &v1.Destination_Kube{
+						Kube: &v1.KubernetesServiceDestination{
+							Ref: &core.ResourceRef{
+								Name:      clusterName,
+								Namespace: ns,
+							},
+							Port: port,
+						},
 					},
 				},
-			},
-			Weight:  weight,
-			Options: nil,
-		})
+				Weight:  weight,
+				Options: nil,
+			})
+		} else {
+			// TODO(npolshak): Add support for other types of destinations (upstreams, etc.)
+			contextutils.LoggerFrom(ctx).Errorf("unsupported backend type for kind: %v and type: %v", *backendRef.BackendObjectReference.Kind, *backendRef.BackendObjectReference.Group)
+		}
 	}
 
 	//TODO(revert): need to add ClusterNotFoundResponseCode: routev3.RouteAction_INTERNAL_SERVER_ERROR,

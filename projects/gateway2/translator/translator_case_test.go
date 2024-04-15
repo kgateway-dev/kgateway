@@ -6,6 +6,15 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -16,13 +25,7 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 type TestCase struct {
@@ -106,6 +109,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		proxy := NewTranslator(queries, pluginRegistry).TranslateProxy(
 			ctx,
 			gw,
+			defaults.GlooSystem,
 			reporter,
 		)
 

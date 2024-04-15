@@ -12,7 +12,7 @@ type HelmConfig struct {
 type Config struct {
 	Namespace *Namespace `json:"namespace,omitempty"`
 	// This is an Alpha API and is subject to change in subsequent 1.17 beta releases
-	Gateway2       interface{}             `json:"gateway2,omitempty" desc:"Gloo Gateway settings, subject to change."`
+	KubeGateway    *KubeGateway            `json:"kubeGateway,omitempty" desc:"Settings for the Gloo Gateway Kubernetes Gateway API controller."`
 	Settings       *Settings               `json:"settings,omitempty"`
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
 	Discovery      *Discovery              `json:"discovery,omitempty"`
@@ -292,6 +292,10 @@ type Gloo struct {
 	DisableLeaderElection      *bool                 `json:"disableLeaderElection,omitempty" desc:"Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo"`
 	HeaderSecretRefNsMatchesUs *bool                 `json:"headerSecretRefNsMatchesUs,omitempty" desc:"Set to true to require that secrets sent in headers via headerSecretRefs come from the same namespace as the destination upstream. Default: false"`
 	PodDisruptionBudget        *PodDisruptionBudget  `json:"podDisruptionBudget,omitempty"`
+}
+
+type KubeGateway struct {
+	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller. Defaults to true."`
 }
 
 type SecurityOpts struct {

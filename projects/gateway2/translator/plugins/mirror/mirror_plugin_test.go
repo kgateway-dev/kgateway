@@ -59,7 +59,7 @@ func TestSingleMirror(t *testing.T) {
 	shadowing := outputRoute.GetOptions().GetShadowing()
 	g.Expect(shadowing).ToNot(gomega.BeNil())
 	g.Expect(shadowing.Upstream).ToNot(gomega.BeNil())
-	g.Expect(shadowing.Upstream.Name).To(gomega.Equal("bar-foo-8080"))
+	g.Expect(shadowing.Upstream.Name).To(gomega.Equal("kube-svc:bar-foo-8080"))
 	g.Expect(shadowing.Upstream.Namespace).To(gomega.Equal("bar"))
 	g.Expect(shadowing.Percentage).To(gomega.Equal(float32(100.0)))
 }
