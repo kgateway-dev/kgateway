@@ -546,10 +546,10 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
 	if fromRelease != "" {
-		err := helmClient.AddRepository(context.Background(), testHelper.HelmChartName, helmutils.ChartRepositoryUrl, "--force-update")
+		err := helmClient.AddGlooRepository(context.Background(), "--force-update")
 		Expect(err).NotTo(HaveOccurred())
 
-		args = append(args, helmutils.RemoteChartName, "--version", fmt.Sprintf("%s", fromRelease))
+		args = append(args, helmutils.RemoteChartName, "--version", fromRelease)
 	} else {
 		args = append(args, chartUri)
 	}
