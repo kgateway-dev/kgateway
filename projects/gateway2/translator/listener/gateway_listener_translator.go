@@ -5,8 +5,10 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	"github.com/solo-io/go-utils/contextutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
@@ -34,7 +36,7 @@ func TranslateListeners(
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
-	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter.Gateway(gateway))
+	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter.Gateway(gateway))
 	translatedListeners := mergedListeners.translateListeners(ctx, pluginRegistry, queries, reporter)
 	return translatedListeners
 }
@@ -43,10 +45,12 @@ func mergeGWListeners(
 	queries query.GatewayQueries,
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
+	parentGw gwv1.Gateway,
 	routesForGw query.RoutesForGwResult,
 	reporter reports.GatewayReporter,
 ) *mergedListeners {
 	ml := &mergedListeners{
+		parentGw:         parentGw,
 		gatewayNamespace: gatewayNamespace,
 		queries:          queries,
 	}
@@ -69,6 +73,7 @@ func mergeGWListeners(
 
 type mergedListeners struct {
 	gatewayNamespace string
+	parentGw         gwv1.Gateway
 	listeners        []*mergedListener
 	queries          query.GatewayQueries
 }
@@ -178,6 +183,18 @@ func (ml *mergedListeners) translateListeners(
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
 		listener := mergedListener.translateListener(ctx, pluginRegistry, queries, reporter)
+
+		// run listener plugins
+		for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
+			err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
+				Gateway:    &mergedListener.parentGateway,
+				GwListener: &mergedListener.listener,
+			}, listener)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Errorf("error in ListenerPlugin: %v", err)
+			}
+		}
+
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -191,6 +208,7 @@ type mergedListener struct {
 	httpsFilterChains []httpsFilterChain
 	listenerReporter  reports.ListenerReporter
 	listener          gwv1.Listener
+	parentGateway     gwv1.Gateway
 
 	// TODO(policy via http listener options)
 }
