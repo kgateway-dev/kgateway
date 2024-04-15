@@ -7,8 +7,6 @@ Our goal for Kubernetes tests is to mirror the behavior that users take on the G
 ### Actions
 A [ClusterAction](./testutils/actions/action.go) is a function that will be executed against the cluster, to mutate it's state.
 
-Actions are intended to mirror actions that users of the product can take. As a result, we want to avoid writing custom code that is _just_ used by our tests. Please consider adding the functionality to a utility package ([utils](/pkg/utils), [cli-utils](/pkg/cliutil)), and then creating a thin wrapper for that utility in our tests.
-
 _For more details on the actions, see the [actions](./testutils/actions) package._
 
 ### Assertions

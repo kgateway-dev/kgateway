@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 )
 
-// NewTestHelperInstallAction returns an actions.ClusterAction that can install Gloo Gateway, and assert that it succcssfully completed
+// NewTestHelperInstallAction returns an actions.ClusterAction that can install Gloo Gateway.
 // NOTE: This relies on a helper tool, the SoloTestHelper.
 //
 //	In the future, it would be nice if we just exposed a way to run a glooctl install command directly.
@@ -31,10 +31,10 @@ func (p *providerImpl) NewTestHelperInstallAction() actions.ClusterAction {
 	}
 }
 
-// NewTestHelperUninstallAction returns an Operation that can uninstall Gloo Gateway, and assert that it successfully completed
+// NewTestHelperUninstallAction returns an actions.ClusterAction that can uninstall Gloo Gateway.
 // NOTE: This relies on a helper tool, the SoloTestHelper.
 //
-//	In the future, it would be nice if we just exposed a way to run a glooctl install command directly.
+//	In the future, it would be nice if we just exposed a way to run a glooctl uninstall command directly.
 //	Our goal of operations is to have them mirror as closely as possible, the operations that users take
 func (p *providerImpl) NewTestHelperUninstallAction() actions.ClusterAction {
 	p.requiresGlooGatewayContext()

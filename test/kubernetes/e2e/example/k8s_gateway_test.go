@@ -50,11 +50,11 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 	Context("K8s Gateway Integration - Deployer", func() {
 
 		It("provisions resources appropriately", func() {
-			testInstallation.RunTests(
-				ctx,
-				deployer.ProvisionDeploymentAndService,
-				deployer.ConfigureProxiesFromGatewayParameters,
-			)
+			testInstallation.RunTest(ctx, deployer.ProvisionDeploymentAndService)
+		})
+
+		It("provisions resources appropriately", func() {
+			testInstallation.RunTest(ctx, deployer.ConfigureProxiesFromGatewayParameters)
 		})
 
 	})

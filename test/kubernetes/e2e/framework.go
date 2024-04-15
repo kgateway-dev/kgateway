@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"io"
-	"math/rand"
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
@@ -122,18 +121,21 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAc
 	return i.Operator.ExecuteOperations(ctx, installOperation)
 }
 
-// RunTests will execute a batch of e2e.Test against the installation
-func (i *TestInstallation) RunTests(ctx context.Context, tests ...Test) {
-	randomizeTests(tests...)
+// RunTests will execute a batch of Test against the installation
+func (i *TestInstallation) RunTests(_ context.Context, _ ...Test) {
+	// We rely on test frameworks to randomize tests.
+	// If we run tests in series, we will not benefit from those
+	panic("Should not run tests in a batch. Use RunTest instead")
+}
 
-	for _, e2eTest := range tests {
-		if e2eTest.Name == "" {
-			i.TestingFramework.Fatal("All tests must include a name")
-		}
-
-		i.TestingFramework.Logf("TEST: %s", e2eTest.Name)
-		e2eTest.Test(ctx, i)
+// RunTest will execute a single Test against the installation
+func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
+	if test.Name == "" {
+		i.TestingFramework.Fatal("All tests must include a name")
 	}
+
+	i.TestingFramework.Logf("TEST: %s", test.Name)
+	test.Test(ctx, i)
 }
 
 // preFailHandler is the function that is invoked if a test in the given TestInstallation fails
@@ -150,14 +152,6 @@ func (i *TestInstallation) preFailHandler() {
 	if err != nil {
 		i.TestingFramework.Errorf("Failed to executed preFailHandler operation for TestInstallation (%s): %+v", i.Name, err)
 	}
-}
-
-// randomizeTests shuffles the list of tests in-place
-// This is done to insert chaos in the tests, and ensure that tests do not depend on being run in a certain order
-func randomizeTests(tests ...Test) {
-	rand.Shuffle(len(tests), func(i, j int) {
-		tests[i], tests[j] = tests[j], tests[i]
-	})
 }
 
 // TestFn is a function that executes a test, for a given TestInstallation
