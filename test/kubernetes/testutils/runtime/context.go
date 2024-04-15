@@ -3,6 +3,8 @@ package runtime
 import (
 	"os"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
+
 	"github.com/solo-io/gloo/test/testutils"
 )
 
@@ -21,8 +23,8 @@ type Context struct {
 
 func NewContext() Context {
 	var runSource = LocalDevelopment
-	githubActionId := os.Getenv(testutils.GithubAction)
-	if githubActionId != "" {
+
+	if envutils.IsEnvDefined(testutils.GithubAction) {
 		runSource = PullRequest
 	}
 
