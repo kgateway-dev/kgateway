@@ -597,6 +597,10 @@ func upgradeCrds(_ *helper.SoloTestHelper, fromRelease string, crdDir string) {
 func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, targetRelease string, strictValidation bool, additionalArgs []string, valueOverrideFile string) {
 	upgradeCrds(testHelper, fromRelease, crdDir)
 
+	helmClient := helmutils.NewClient().
+		WithReceiver(GinkgoWriter).
+		WithNamespace(testHelper.InstallNamespace)
+
 	var args = []string{"upgrade", testHelper.HelmChartName,
 		// As most CD tools wait for resources to be ready before marking the release as successful,
 		// we're emulating that here by passing these two flags.
@@ -609,18 +613,16 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 		// as helm waits until the service is ready and eventually times out.
 		// So instead we use the service type as ClusterIP to work around this limitation.
 		"--set", "gatewayProxies.gatewayProxy.service.type=ClusterIP",
-		"-n", testHelper.InstallNamespace,
 	}
 	if valueOverrideFile != "" {
 		args = append(args, "--values", valueOverrideFile)
 	}
 	if targetRelease != "" {
-		args = append(args, helmutils.RemoteChartName,
-			"--version", fmt.Sprintf("%s", targetRelease))
+		args = append(args, helmutils.RemoteChartName, "--version", fmt.Sprintf("%s", targetRelease))
 	} else {
 		args = append(args, chartUri)
 	}
-	args = append(args, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
+
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
@@ -630,7 +632,9 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 
 	args = append(args, additionalArgs...)
 	fmt.Printf("running helm with args: %v target %v\n", args, targetRelease)
-	runAndCleanCommand("helm", args...)
+
+	err := helmClient.RunCommand(context.Background(), args...)
+	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
