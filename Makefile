@@ -1044,6 +1044,8 @@ kind-build-and-load: # Distroless images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
 kind-build-and-load: kind-build-and-load-distroless
 endif # distroless images
+kind-build-and-load: # As of now the glooctl istio inject command is not smart enough to determine the variant used, so we always build the standard variant of the sds image.
+kind-build-and-load: kind-build-and-load-sds
 
 define kind_reload_msg
 The kind-reload-% targets exist in order to assist developers with the work cycle of
