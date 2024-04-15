@@ -20,11 +20,16 @@ type Context struct {
 }
 
 func NewContext() Context {
+	var runSource = LocalDevelopment
+	githubActionId := os.Getenv(testutils.GithubAction)
+	if githubActionId != "" {
+		runSource = PullRequest
+	}
+
 	return Context{
 		// ClusterName is derived from the environment variable
 		ClusterName: os.Getenv(testutils.ClusterName),
 
-		// For now, just always default to LocalDevelopment
-		RunSource: LocalDevelopment,
+		RunSource: runSource,
 	}
 }
