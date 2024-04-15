@@ -40,7 +40,7 @@ Constant labels - labels that are stable across releases
 We want this label to remain constant as it is used in glooctl version.
 */}}
 {{- define "gloo-gateway.gateway.constLabels" -}}
-gloo: gateway-v2
+gloo: kube-gateway
 {{- end }}
 
 

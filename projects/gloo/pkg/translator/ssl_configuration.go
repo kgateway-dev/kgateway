@@ -70,7 +70,7 @@ func MergeSslConfig(dst, src *ssl.SslConfig) *ssl.SslConfig {
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
 
-	for i := 0; i < dstValue.NumField(); i++ {
+	for i := range dstValue.NumField() {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
 		utils.ShallowMerge(dstField, srcField, false)
 	}

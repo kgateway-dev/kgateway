@@ -6,6 +6,7 @@ gateway:
   nameOverride: ""
   fullnameOverride: ""
   gatewayName: ""
+  gatewayNamespace: ""
   xds:
     host: ""
     port: 8080

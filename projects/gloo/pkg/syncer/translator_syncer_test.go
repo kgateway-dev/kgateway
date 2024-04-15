@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
@@ -333,6 +335,68 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		}))
 
 		Expect(xdsCache.Called).To(BeTrue())
+	})
+
+	Describe("correctl returns metaKey for proxies", func() {
+		It("returns the correct key", func() {
+			// Create a proxy with metadata and labels
+			proxy := &gloov1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "test-proxy",
+					Namespace: "test-namespace",
+					Labels: map[string]string{
+						utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
+						utils.GatewayNamespaceKey: "custom-namespace",
+					},
+				},
+			}
+
+			key := GetKeyFromProxyMeta(proxy)
+
+			// Assert that the returned key matches the expected value
+			expectedKey := "custom-namespace.test-proxy"
+			Expect(key).To(Equal(expectedKey))
+		})
+
+		It("returns the correct key when proxy has no custom namespace label", func() {
+
+			// Create a proxy with metadata and labels
+			proxy := &gloov1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "test-proxy",
+					Namespace: "test-namespace",
+					Labels: map[string]string{
+						utils.ProxyTypeKey: utils.GatewayApiProxyValue,
+					},
+				},
+			}
+
+			key := GetKeyFromProxyMeta(proxy)
+
+			// Assert that the returned key matches the expected value
+			expectedKey := "test-namespace.test-proxy"
+			Expect(key).To(Equal(expectedKey))
+		})
+
+		It("returns the correct key when proxy is not a Gloo gateway proxy", func() {
+			// Create a proxy with metadata and labels
+			proxy := &gloov1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "test-proxy",
+					Namespace: "test-namespace",
+					Labels: map[string]string{
+						utils.ProxyTypeKey:        "some-other-value",
+						utils.GatewayNamespaceKey: "custom-namespace",
+					},
+				},
+			}
+
+			key := GetKeyFromProxyMeta(proxy)
+
+			// Assert that the returned key matches the expected value
+			expectedKey := "test-namespace.test-proxy"
+			Expect(key).To(Equal(expectedKey))
+		})
 	})
 })
 

@@ -1,16 +1,15 @@
----
 listeners:
 - aggregateListener:
     httpFilterChains:
     - matcher: {}
       virtualHostRefs:
-      - http~example.com
+      - http~example_com
     httpResources:
       virtualHosts:
-        http~example.com:
+        http~example_com:
           domains:
           - example.com
-          name: http~example.com
+          name: http~example_com
           routes:
           - matchers:
             - prefix: /header
@@ -42,22 +41,27 @@ listeners:
                 - X-Header-Remove-2
             routeAction:
               single:
-                upstream:
-                  name: default-example-svc-8080
-                  namespace: default
+                kube:
+                  port: 8080
+                  ref:
+                    name: example-svc
+                    namespace: default
           - matchers:
             - prefix: /
             options: {}
             routeAction:
               single:
-                upstream:
-                  name: default-example-svc-8080
-                  namespace: default
+                kube:
+                  port: 8080
+                  ref:
+                    name: example-svc
+                    namespace: default
   bindAddress: '::'
   bindPort: 8080
   name: http
 metadata:
   labels:
-    created_by: gloo-kube-gateway-api-translator
-  name: gw
-  namespace: default
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: default
+  name: default-gw
+  namespace: gloo-system
