@@ -178,7 +178,7 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 						attachedVirtualHostOptionWithDiffSectionName(),
 					}
 				})
-				It("should not find the gateway-level attached options", func() {
+				It("should find the gateway-level attached options", func() {
 					virtualHostOptions, err := qry.GetVirtualHostOptionsForListener(ctx, listener, gw)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(virtualHostOptions).NotTo(BeNil())
