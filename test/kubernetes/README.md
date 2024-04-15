@@ -35,8 +35,8 @@ _We document the historical challenges we have experienced with writing and mana
 
 #### Confusing Resource Management
 - There were deeply nested structures for configuring resources (BeforeEach). This meant that it was challenging to identify which resources would be available for a given test.
-- It was easy to forget to clean up resources in a given test. Which could lead to test flakes, because we re-use a Kubernetes Cluster for a series of tests, this pollution led to inconsistent behaviors and test flakes.
-- Our mechanism to apply resources to a cluster, was built around the concept of an [ApiSnapshot](/projects/gloo/pkg/api/v1/gloosnapshot/api_snapshot.sk.go). This meant that when we wanted to apply resources not in that Snapshot, we would not do so consistently.
+- It was easy to forget to clean up resources in a given test. We re-use a Kubernetes Cluster for a series of tests, so leaving behind resources led to inconsistent behaviors and test flakes.
+- Our mechanism to apply resources to a cluster was built around the concept of an [ApiSnapshot](/projects/gloo/pkg/api/v1/gloosnapshot/api_snapshot.sk.go). This meant that when we wanted to apply resources not in that Snapshot, we would not do so consistently.
 
 #### Tightly Coupled Code Structure
 - There was a 1:1:1 relationship between: GitHub actions (infrastructure), test suites, installation values of Gloo Gateway. This meant that as you scaled the number of different Helm values you wanted to run tests against, you had to set up new infrastructure. This was time-consuming and expensive, and caused toil in adding new tests cases, so they would not be added.

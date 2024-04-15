@@ -32,7 +32,10 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			portForwarder.WaitForStop()
 		}()
 
-		adminClient := admincli.NewClient().WithCurlOptions(curl.WithPort(admincli.DefaultAdminPort))
+		adminClient := admincli.NewClient().WithCurlOptions(
+			curl.WithRetries(3, 0, 10),
+			curl.WithPort(admincli.DefaultAdminPort),
+		)
 		adminAssertion(ctx, adminClient)
 	}
 }

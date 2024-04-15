@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"io"
 	"math/rand"
 	"testing"
 
@@ -24,6 +25,9 @@ type TestSuite struct {
 	// The idea behind making this configurable, per suite, is that it ensures that
 	// all of our tests can rely on the testing interface, instead of the explicit Ginkgo implementation
 	TestingFramework testing.TB
+
+	// TestingProgressWriter is the io.Writer used by the TestingFramework to emit feedback to whoever invoked the tests
+	TestingProgressWriter io.Writer
 
 	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
 	RuntimeContext runtime.Context

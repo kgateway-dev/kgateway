@@ -28,14 +28,19 @@ var _ = BeforeSuite(func(ctx context.Context) {
 
 	// We try to isolate the usage of Ginkgo to only where are tests are invoked
 	testingFramework := GinkgoTB()
+	testingProgressWriter := GinkgoWriter
 
 	// Construct the cluster.Context for this suite
-	clusterContext := cluster.MustKindContext(testingFramework, runtimeContext.ClusterName)
+	clusterContext := cluster.MustKindContext(
+		testingFramework,
+		testingProgressWriter,
+		runtimeContext.ClusterName)
 
 	testSuite = &e2e.TestSuite{
-		TestingFramework: testingFramework,
-		RuntimeContext:   runtimeContext,
-		ClusterContext:   clusterContext,
+		TestingFramework:      testingFramework,
+		TestingProgressWriter: testingProgressWriter,
+		RuntimeContext:        runtimeContext,
+		ClusterContext:        clusterContext,
 	}
 
 	// Register the PreFailHandler from the TestSuite

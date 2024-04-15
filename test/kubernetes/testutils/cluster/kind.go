@@ -2,11 +2,11 @@ package cluster
 
 import (
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
-	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
@@ -15,7 +15,7 @@ import (
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
-func MustKindContext(testing testing.TB, clusterName string) *Context {
+func MustKindContext(testing testing.TB, testingWriter io.Writer, clusterName string) *Context {
 	testing.Helper()
 
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
@@ -35,7 +35,7 @@ func MustKindContext(testing testing.TB, clusterName string) *Context {
 		Name:        clusterName,
 		KubeContext: kubeCtx,
 		RestConfig:  restCfg,
-		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx).WithReceiver(ginkgo.GinkgoWriter),
+		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx).WithReceiver(testingWriter),
 		Client:      clt,
 		Clientset:   clientset,
 	}
