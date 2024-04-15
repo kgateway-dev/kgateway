@@ -439,15 +439,18 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
+		fmt.Printf("DELETING %s\n", opts.Resource.GetMetadata().Ref().String())
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
 	} else {
+		fmt.Printf("UPSERTING %s\n", opts.Resource.GetMetadata().Ref().String())
 		if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
 	}
 
+	fmt.Printf("SNAPSHOT CLONE: %+v\n", snapshotClone)
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
 	shouldValidateAgainstPreviousState := v.shouldValidateAgainstPreviousState(opts)
@@ -517,8 +520,8 @@ func (v *validator) shouldValidateAgainstPreviousState(opts *validationOptions) 
 	return false
 }
 
-// validateAgainstCurrentSnapshot is used to compare the output of validation against validation of the orginal snapshot.
-// It takes the output of the first valdidation with the modification and then gets the output of the validation of the original snapshot
+// validateAgainstCurrentSnapshot is used to compare the output of validation against validation of the original snapshot.
+// It takes the output of the first validation with the modification and then gets the output of the validation of the original snapshot
 // and compares the two using compareValidationOutputs, unless there are breaking errors in the first validation output
 func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *validationOptions, voMod validationOutput) bool {
 	contextutils.LoggerFrom(ctx).Debugw(
@@ -546,7 +549,7 @@ func (v *validator) validateAgainstCurrentSnapshot(ctx context.Context, opts *va
 	return v.compareValidationOutputs(ctx, opts, voMod, voNoMod)
 }
 
-// compareValidationOutputs is used to compare the output of validation against validation of the orginal snapshot
+// compareValidationOutputs is used to compare the output of validation against validation of the original snapshot
 // This is used in special cases, specifically the deletion of a secret.  In these cases, the usual validation logic is overriden,
 // and instead of relying on the presence of errors to determine whether to accept the modification, the output of
 // validation of the modified snapshot (proxies, proxyReports, errors) is compared to the output of the validation of the original snapshot.
