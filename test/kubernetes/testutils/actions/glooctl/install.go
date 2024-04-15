@@ -2,6 +2,7 @@ package glooctl
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"time"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
@@ -18,7 +19,7 @@ func (p *providerImpl) NewTestHelperInstallAction() actions.ClusterAction {
 	return func(ctx context.Context) error {
 		testHelper, err := helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = "../../../.."
-			defaults.HelmChartName = "gloo"
+			defaults.HelmChartName = helmutils.ChartName
 			defaults.InstallNamespace = p.glooGatewayContext.InstallNamespace
 			defaults.Verbose = true
 			return defaults
@@ -43,7 +44,7 @@ func (p *providerImpl) NewTestHelperUninstallAction() actions.ClusterAction {
 		var err error
 		testHelper, err := helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = "../../../.."
-			defaults.HelmChartName = "gloo"
+			defaults.HelmChartName = helmutils.ChartName
 			defaults.InstallNamespace = p.glooGatewayContext.InstallNamespace
 			defaults.Verbose = true
 			return defaults

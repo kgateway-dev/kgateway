@@ -539,17 +539,21 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool, additionalInstallArgs []string) {
 	helmValuesFile := getHelmValuesFile("helm.yaml")
 
+	helmClient := helmutils.NewClient().
+		WithReceiver(GinkgoWriter).
+		WithNamespace(testHelper.InstallNamespace)
+
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
 	if fromRelease != "" {
-		runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
-			helmutils.ChartRepositoryUrl, "--force-update")
-		args = append(args, helmutils.RemoteChartName,
-			"--version", fmt.Sprintf("%s", fromRelease))
+		err := helmClient.AddRepository(context.Background(), testHelper.HelmChartName, helmutils.ChartRepositoryUrl, "--force-update")
+		Expect(err).NotTo(HaveOccurred())
+
+		args = append(args, helmutils.RemoteChartName, "--version", fmt.Sprintf("%s", fromRelease))
 	} else {
 		args = append(args, chartUri)
 	}
-	args = append(args, "-n", testHelper.InstallNamespace,
+	args = append(args,
 		// As most CD tools wait for resources to be ready before marking the release as successful,
 		// we're emulating that here by passing these two flags.
 		// This way we ensure that we indirectly add support for CD tools
@@ -572,7 +576,9 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 
 	args = append(args, additionalInstallArgs...)
 	fmt.Printf("running helm with args: %v, target: %v\n", args, fromRelease)
-	runAndCleanCommand("helm", args...)
+
+	err := helmClient.RunCommand(context.Background(), args...)
+	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
@@ -638,7 +644,6 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
-
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, targetRelease string, strictValidation bool, additionalArgs []string) {
