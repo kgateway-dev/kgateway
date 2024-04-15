@@ -28,8 +28,8 @@ var (
 
 func NewPlugin(gwQueries gwquery.GatewayQueries, client client.Client) *plugin {
 	return &plugin{
-		gwQueries,
-		vhoptquery.NewQuery(client),
+		gwQueries:    gwQueries,
+		vhOptQueries: vhoptquery.NewQuery(client),
 	}
 }
 

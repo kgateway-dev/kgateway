@@ -69,11 +69,11 @@ func NewPlugin(
 ) *plugin {
 	legacyStatusCache := make(legacyStatusCache)
 	return &plugin{
-		gwQueries,
-		rtoptquery.NewQuery(client),
-		legacyStatusCache,
-		routeOptionClient,
-		statusReporter,
+		gwQueries:         gwQueries,
+		rtOptQueries:      rtoptquery.NewQuery(client),
+		legacyStatusCache: legacyStatusCache,
+		routeOptionClient: routeOptionClient,
+		statusReporter:    statusReporter,
 	}
 }
 
