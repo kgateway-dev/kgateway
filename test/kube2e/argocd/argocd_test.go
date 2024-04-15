@@ -3,6 +3,7 @@ package argocd_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,7 +32,7 @@ var _ = Describe("Kube2e: ArgoCD", func() {
 
 		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
+			defaults.HelmChartName = helmutils.ChartName
 			defaults.InstallNamespace = namespace
 			defaults.Verbose = true
 			return defaults

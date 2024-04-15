@@ -3,6 +3,7 @@ package kubectl
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
@@ -121,6 +122,16 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 // Copy copies a file from one location to another
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
 	return c.RunCommand(ctx, "cp", from, to)
+}
+
+// DeploymentRolloutStatus waits for the deployment to complete rolling out
+func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, extraArgs ...string) error {
+	rolloutArgs := append([]string{
+		"rollout",
+		"status",
+		fmt.Sprintf("deployment/%s", deployment),
+	}, extraArgs...)
+	return c.RunCommand(ctx, rolloutArgs...)
 }
 
 // StartPortForward creates a PortForwarder based on the provides options, starts it, and returns the PortForwarder

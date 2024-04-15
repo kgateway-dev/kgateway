@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -542,8 +543,8 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 	var args = []string{"install", testHelper.HelmChartName}
 	if fromRelease != "" {
 		runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
-			"https://storage.googleapis.com/solo-public-helm", "--force-update")
-		args = append(args, "gloo/gloo",
+			helmutils.ChartRepositoryUrl, "--force-update")
+		args = append(args, helmutils.RemoteChartName,
 			"--version", fmt.Sprintf("%s", fromRelease))
 	} else {
 		args = append(args, chartUri)
@@ -614,7 +615,7 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 		args = append(args, "--values", valueOverrideFile)
 	}
 	if targetRelease != "" {
-		args = append(args, "gloo/gloo",
+		args = append(args, helmutils.RemoteChartName,
 			"--version", fmt.Sprintf("%s", targetRelease))
 	} else {
 		args = append(args, chartUri)
