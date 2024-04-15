@@ -3,6 +3,7 @@ package install_test
 import (
 	"bytes"
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -32,7 +33,7 @@ var _ = Describe("Install", func() {
 		cancel               context.CancelFunc
 
 		glooOsVersion          = "test"
-		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-test.tgz"
+		glooOsChartUri         = helmutils.GetRemoteChartUri("test")
 		glooEnterpriseChartUri = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-test.tgz"
 		testCrdContent         = "test-crd-content"
 		testHookContent        = `
