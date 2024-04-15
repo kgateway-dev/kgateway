@@ -2,8 +2,10 @@ package example_test
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/skv2/codegen/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,7 +32,7 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 			"k8s-gw-example-test",
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-example-test",
-				ValuesManifestFile: e2e.ManifestPath("example", "manifests", "k8s-gateway-test-helm.yaml"),
+				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			},
 		)
 

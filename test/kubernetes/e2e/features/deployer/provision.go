@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/solo-io/skv2/codegen/util"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
@@ -14,7 +16,7 @@ import (
 )
 
 var (
-	manifestFile = e2e.FeatureManifestFile("deployer-provision.yaml")
+	manifestFile = filepath.Join(util.MustGetThisDir(), "deployer-provision.yaml")
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{

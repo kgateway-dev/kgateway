@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/skv2/codegen/util"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 
 	. "github.com/onsi/gomega"
@@ -17,7 +19,7 @@ import (
 )
 
 var (
-	gwParametersManifestFile = e2e.FeatureManifestFile("gateway-parameters.yaml")
+	gwParametersManifestFile = filepath.Join(util.MustGetThisDir(), "gateway-parameters.yaml")
 
 	gwParams = &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
