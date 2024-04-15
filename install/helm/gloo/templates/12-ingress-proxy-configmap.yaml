@@ -7,7 +7,7 @@ metadata:
   name: ingress-envoy-config
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
     gloo: {{ .Values.ingressProxy.label }}
 data:
 {{ if (empty .Values.ingressProxy.configMap.data) }}

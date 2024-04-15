@@ -6,7 +6,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-resource-rollout{{ include "gloo.rbacNameSuffix" . }}
   labels:
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
     gloo: rbac
 rules:
 - apiGroups: ["gateway.solo.io"]

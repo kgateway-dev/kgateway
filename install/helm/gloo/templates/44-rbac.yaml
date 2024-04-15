@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.controlPlane.labels" . | nindent 4 }}
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
 rules:
 - apiGroups:
   - "gateway.networking.k8s.io"

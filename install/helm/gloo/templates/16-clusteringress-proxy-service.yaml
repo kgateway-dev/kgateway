@@ -5,7 +5,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
     gloo: clusteringress-proxy
   name: clusteringress-proxy
   namespace: {{ .Release.Namespace }}

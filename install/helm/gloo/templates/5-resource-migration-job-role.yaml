@@ -7,7 +7,7 @@ metadata:
   name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
     gloo: rbac
   annotations:
     "helm.sh/hook": pre-upgrade

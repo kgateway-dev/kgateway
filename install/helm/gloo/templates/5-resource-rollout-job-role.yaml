@@ -7,7 +7,7 @@ metadata:
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
     gloo: rbac
 rules:
 - apiGroups: ["apps"]

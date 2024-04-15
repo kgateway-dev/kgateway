@@ -268,9 +268,8 @@ Otherwise it will generate ["Create", "Update", "Delete"]
 Common labels
 */}}
 {{- define "gloo.labels" -}}
-gloo: gloo
 app: gloo
-{{- with .context.Values.additionalLabels }}
+{{- with .Values.additionalLabels }}
 {{ toYaml . }}
 {{- end }}
 {{- end }}

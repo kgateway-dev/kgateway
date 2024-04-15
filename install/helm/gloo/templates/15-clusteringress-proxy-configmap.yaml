@@ -9,7 +9,7 @@ metadata:
   name: clusteringress-envoy-config
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "gloo.labels" (dict "context" .) | nindent 4 }}
+    {{- include "gloo.labels" . }}
     gloo: clusteringress-proxy
 data:
   envoy.yaml: |
