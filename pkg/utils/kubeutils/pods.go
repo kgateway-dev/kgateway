@@ -3,7 +3,7 @@ package kubeutils
 import (
 	"context"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/client-go/rest"
 
@@ -37,7 +37,7 @@ func GetPodsForDeployment(
 			Name:      deploymentName,
 			Namespace: deploymentNamespace,
 		},
-		func(pod v1.Pod) bool {
+		func(pod corev1.Pod) bool {
 			// Maintain the behavior of returning all running pods
 			return true
 		})
@@ -51,9 +51,9 @@ func GetReadyPodsForDeployment(
 	deploy metav1.ObjectMeta,
 ) ([]string, error) {
 	// This predicate will return true if and only if the pod is ready
-	readyPodPredicate := func(pod v1.Pod) bool {
+	readyPodPredicate := func(pod corev1.Pod) bool {
 		for _, condition := range pod.Status.Conditions {
-			if condition.Type == v1.PodReady {
+			if condition.Type == corev1.PodReady {
 				return true
 			}
 		}
@@ -68,7 +68,7 @@ func GetPodsForDeploymentWithPredicate(
 	ctx context.Context,
 	kubeClient *kubernetes.Clientset,
 	deploy metav1.ObjectMeta,
-	predicate func(pod v1.Pod) bool,
+	predicate func(pod corev1.Pod) bool,
 ) ([]string, error) {
 	deployment, err := kubeClient.AppsV1().Deployments(deploy.GetNamespace()).Get(ctx, deploy.GetName(), metav1.GetOptions{})
 	if err != nil {
