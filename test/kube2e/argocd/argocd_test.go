@@ -3,11 +3,12 @@ package argocd_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

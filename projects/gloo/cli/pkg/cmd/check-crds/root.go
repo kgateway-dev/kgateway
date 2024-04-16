@@ -3,9 +3,10 @@ package check_crds
 import (
 	"bytes"
 	"context"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"regexp"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 

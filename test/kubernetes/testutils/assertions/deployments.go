@@ -15,7 +15,8 @@ func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, expectedRep
 		p.testingFramework.Helper()
 
 		Eventually(func(g Gomega) {
-			pods, err := kubeutils.GetPodsForDeployment(ctx, p.clusterContext.RestConfig, deploymentMeta.GetName(), deploymentMeta.GetNamespace())
+			// We intentionally rely only on Pods that have marked themselves as ready as a way of defining more explicit assertions
+			pods, err := kubeutils.GetReadyPodsForDeployment(ctx, p.clusterContext.Clientset, deploymentMeta)
 			g.Expect(err).NotTo(HaveOccurred(), "can get pods for deployment")
 			g.Expect(pods).To(HaveLen(expectedReplicas), "running pods matches expected count")
 		}).

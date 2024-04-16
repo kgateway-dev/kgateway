@@ -97,17 +97,6 @@ func (o *Operator) executeOperations(ctx context.Context, operations ...Operatio
 func (o *Operator) executeReversibleOperations(ctx context.Context, operations ...ReversibleOperation) (err error) {
 	var undoOperations []Operation
 
-	defer func() {
-		// We need to perform the undo operations in reverse order
-		// This way, if we execute: do-A -> do-B -> do-C
-		// We should undo it by executing: undo-C -> undo-B -> undo-A
-		slices.Reverse(undoOperations)
-		undoErr := o.executeOperations(ctx, undoOperations...)
-		if undoErr != nil {
-			err = undoErr
-		}
-	}()
-
 	for _, op := range operations {
 		undoOperations = append(undoOperations, op.Undo)
 
@@ -116,7 +105,20 @@ func (o *Operator) executeReversibleOperations(ctx context.Context, operations .
 			return doErr
 		}
 	}
-	return nil
+
+	// We need to perform the undo operations in reverse order
+	// This way, if we execute: do-A -> do-B -> do-C
+	// We should undo it by executing: undo-C -> undo-B -> undo-A
+	slices.Reverse(undoOperations)
+
+	// NOTE TO DEVELOPERS: In the past, we would perform this in a deferred function so that
+	// it would always execute. This made debugging more challenging if an assertion failed,
+	// because the undo operations would always run, and modify the cluster
+	//
+	// TODO: Help Wanted
+	// We may want to improve this further, and make the cleanup strategy configurable.
+	// If I am writing a test, and it fails locally, I may still want the operation to be undo afterwards
+	return o.executeOperations(ctx, undoOperations...)
 }
 
 func (o *Operator) executeOperation(ctx context.Context, operation Operation) error {

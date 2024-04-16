@@ -3,9 +3,10 @@ package upgrade_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"path/filepath"
 	"testing"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"

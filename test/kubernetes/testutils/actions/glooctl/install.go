@@ -2,8 +2,9 @@ package glooctl
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 

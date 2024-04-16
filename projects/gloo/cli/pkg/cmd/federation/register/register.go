@@ -3,8 +3,9 @@ package register
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"os"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"

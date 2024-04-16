@@ -3,12 +3,13 @@ package upgrade_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 

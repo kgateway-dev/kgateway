@@ -33,6 +33,7 @@ rules:
   - "gateway.solo.io"
   resources:
   - routeoptions
+  - virtualhostoptions
   verbs: ["get", "list", "watch"]
 - apiGroups:
   - "gateway.networking.k8s.io"

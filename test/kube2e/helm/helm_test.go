@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 

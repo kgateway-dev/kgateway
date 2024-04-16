@@ -54,7 +54,7 @@ func (e *RunError) Cause() error {
 	if e == nil {
 		return nil
 	}
-	return e.inner
+	return e.stackTrace
 }
 
 // PrettyCommand takes arguments identical to Cmder.Command,

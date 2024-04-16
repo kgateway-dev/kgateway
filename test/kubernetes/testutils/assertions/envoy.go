@@ -23,7 +23,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
 			portforward.WithRemotePort(admincli.DefaultAdminPort),
 		)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred(), "can open port-forward")
 		defer func() {
 			portForwarder.Close()
 			portForwarder.WaitForStop()
@@ -33,7 +33,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 		// so as a workaround we try to keep dialing the address until it succeeds
 		Eventually(func(g Gomega) {
 			_, err = net.Dial("tcp", portForwarder.Address())
-			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(err).NotTo(HaveOccurred(), "can connect to local address")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 15).

@@ -67,12 +67,9 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 					installation.Assertions.EnvoyAdminApiAssertion(
 						proxyDeployment.ObjectMeta,
 						func(ctx context.Context, adminClient *admincli.Client) {
-							// Set the adminClient to use the io.Writer of this TestInstallation
-							adminClient.WithReceiver(installation.TestingProgressWriter)
-
 							Eventually(func(g Gomega) {
 								serverInfo, err := adminClient.GetServerInfo(ctx)
-								g.Expect(err).NotTo(HaveOccurred())
+								g.Expect(err).NotTo(HaveOccurred(), "can get server info")
 								g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(
 									Equal("debug"), "defined on the GatewayParameters CR")
 								g.Expect(serverInfo.GetCommandLineOptions().GetComponentLogLevel()).To(
