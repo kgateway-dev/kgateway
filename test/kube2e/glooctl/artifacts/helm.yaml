@@ -8,11 +8,6 @@ gateway:
 gloo:
   logLevel: info
   disableLeaderElection: true
-  deployment:
-    customEnv:
-      # The experimental API is disabled by default, so we must explicitly enable it on the deployment
-      - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
-        value: "true"
 gatewayProxies:
   publicGw: # Proxy name for public access (Internet facing)
     disabled: false # overwrite the "default" value in the merge step

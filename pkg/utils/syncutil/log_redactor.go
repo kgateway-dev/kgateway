@@ -27,7 +27,7 @@ func StringifySnapshot(snapshot interface{}) string {
 	snapshotStruct := reflect.ValueOf(snapshot).Elem()
 	stringBuilder := strings.Builder{}
 
-	for i := 0; i < snapshotStruct.NumField(); i++ {
+	for i := range snapshotStruct.NumField() {
 		fieldName := snapshotStruct.Type().Field(i).Name
 		fieldValue := snapshotStruct.Field(i).Interface()
 

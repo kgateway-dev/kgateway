@@ -21,23 +21,29 @@ type K8sGatewayExtensions interface {
 	GetEnvoyImage() Image
 }
 
+// K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
+type K8sGatewayExtensionsFactoryParameters struct {
+	Mgr               controllerruntime.Manager
+	RouteOptionClient gatewayv1.RouteOptionClient
+	StatusReporter    reporter.StatusReporter
+	KickXds           func(ctx context.Context)
+}
+
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
 type K8sGatewayExtensionsFactory func(
-	mgr controllerruntime.Manager,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	statusReporter reporter.StatusReporter,
+	ctx context.Context,
+	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error)
 
 // NewK8sGatewayExtensions returns the Open Source implementation of K8sGatewayExtensions
 func NewK8sGatewayExtensions(
-	mgr controllerruntime.Manager,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	statusReporter reporter.StatusReporter,
+	_ context.Context,
+	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
-		mgr,
-		routeOptionClient,
-		statusReporter,
+		params.Mgr,
+		params.RouteOptionClient,
+		params.StatusReporter,
 	}, nil
 }
 
