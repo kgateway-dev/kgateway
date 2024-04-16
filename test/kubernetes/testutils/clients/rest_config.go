@@ -1,4 +1,4 @@
-package kubeutils
+package clients
 
 import (
 	"github.com/onsi/ginkgo/v2"
@@ -11,15 +11,7 @@ import (
 func MustRestConfig() *rest.Config {
 	ginkgo.GinkgoHelper()
 
-	return MustRestConfigWithContext("")
-}
-
-// MustRestConfigWithContext returns the rest.Config for a Kubernetes Client,
-// provided a Kubernetes context, or panics
-func MustRestConfigWithContext(kubeContext string) *rest.Config {
-	ginkgo.GinkgoHelper()
-
-	restConfig, err := kubeutils.GetRestConfigWithKubeContext(kubeContext)
+	restConfig, err := kubeutils.GetRestConfigWithKubeContext("")
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	return restConfig

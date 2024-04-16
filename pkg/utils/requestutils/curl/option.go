@@ -2,6 +2,7 @@ package curl
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -68,6 +69,23 @@ func WithPort(port int) Option {
 func WithHost(host string) Option {
 	return func(config *requestConfig) {
 		config.host = host
+	}
+}
+
+// WithHostPort returns the Option to set the host and port for the curl request
+// The provided string is assumed to have the format [HOST]:[PORT]
+func WithHostPort(hostPort string) Option {
+	return func(config *requestConfig) {
+		parts := strings.Split(hostPort, ":")
+		host := "unset"
+		port := 0
+		if len(parts) == 2 {
+			host = parts[0]
+			port, _ = strconv.Atoi(parts[1])
+		}
+
+		WithHost(host)(config)
+		WithPort(port)(config)
 	}
 }
 
