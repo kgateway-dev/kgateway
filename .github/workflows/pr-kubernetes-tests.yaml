@@ -38,7 +38,7 @@ jobs:
         fi
 
   end_to_end_tests:
-    name: end-to-end (${{matrix.kubernetes-e2e-suite}})
+    name: End-to-End (${{matrix.kubernetes-e2e-suite}})
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60

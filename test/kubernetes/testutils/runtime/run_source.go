@@ -5,7 +5,7 @@ type RunSource int
 
 const (
 	// LocalDevelopment signifies that the test is invoked locally
-	LocalDevelopment RunSource = iota + 1
+	LocalDevelopment RunSource = iota
 
 	// PullRequest means that the test was invoked while running CI against a Pull Request
 	PullRequest
