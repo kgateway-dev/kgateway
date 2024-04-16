@@ -83,8 +83,7 @@ func GetPodsForDeploymentWithPredicate(
 	}
 
 	podNames := make([]string, 0, len(podList.Items))
-	for i := range podList.Items {
-		pod := podList.Items[i]
+	for _, pod := range podList.Items {
 		if predicate(pod) {
 			podNames = append(podNames, pod.Name)
 		}

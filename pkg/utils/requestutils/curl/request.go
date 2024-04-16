@@ -120,12 +120,6 @@ func (c *requestConfig) generateArgs() []string {
 	if c.retryConnectionRefused {
 		args = append(args, "--retry-connrefused")
 	}
-	if c.ipv4Only {
-		args = append(args, "--ipv4")
-	} else if c.ipv6Only {
-		// ipv6 and ipv4 only are mutually exclusive
-		args = append(args, "--ipv6")
-	}
 
 	if len(c.additionalArgs) > 0 {
 		args = append(args, c.additionalArgs...)
