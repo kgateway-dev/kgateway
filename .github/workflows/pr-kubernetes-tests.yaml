@@ -42,7 +42,7 @@ jobs:
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
-    # if: ${{ !github.event.pull_request.draft }}
+    if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
