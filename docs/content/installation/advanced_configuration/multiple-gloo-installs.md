@@ -18,7 +18,9 @@ When using the default installation, Gloo Edge will watch all namespaces for Kub
 
 Gloo Edge can be configured to only watch specific namespaces, meaning Gloo Edge will not see services and CRDs in any namespaces other than those provided in the {{< protobuf name="gloo.solo.io.Settings" display="watchNamespaces setting">}}.
 
-By leveraging this option, we can install Gloo Edge to as many namespaces we need, ensuring that the `watchNamespaces` do not overlap.
+Additionally, Gloo reads configuration for the Gateway custom resource only in the namespace that the gateway controller is deployed by default. For Gateway configuration in other namespaces, such as to support multiple gateways, enable the {{< protobuf name="gloo.solo.io.Settings" display="GatewayOptions.readGatewaysFromAllNamespaces setting">}}. 
+
+By leveraging these options, we can install Gloo Edge to as many namespaces we need, ensuring that the `watchNamespaces` do not overlap.
 
 {{% notice note %}}
 `watchNamespaces` can be shared between Gloo Edge instances, so long as any Virtual Services are not written to a shared namespace. When this happens, both Gloo Edge instances will attempt to apply the same routing config, which can cause domain conflicts.
@@ -45,6 +47,9 @@ settings:
   watchNamespaces:
   - default
   - gloo1
+gloo:
+  gateway:
+    readGatewaysFromAllNamespaces: true # Read Gateway config in all 'watchNamespaces'
 grafana: # Remove the grafana settings for Gloo Edge OSS
   rbac:
     namespaced: true
@@ -117,6 +122,9 @@ settings:
   watchNamespaces:
   - default
   - gloo2
+gloo:
+  gateway:
+    readGatewaysFromAllNamespaces: true # Read Gateway config in all 'watchNamespaces'
 grafana: # Remove the grafana settings for Gloo Edge OSS
   rbac:
     namespaced: true
