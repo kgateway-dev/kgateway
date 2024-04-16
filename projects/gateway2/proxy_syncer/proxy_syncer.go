@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 
+	"github.com/google/uuid"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -131,6 +132,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		for _, gw := range gwl.Items {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, s.writeNamespace, r)
 			if proxy != nil {
+				// Add proxy id to the proxy metadata to track proxies for status reporting
+				proxy.GetMetadata().GetLabels()[utils.ProxyId] = uuid.New().String()
+
 				proxies = append(proxies, proxy)
 				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
 					Gateway: gw,
