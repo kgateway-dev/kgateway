@@ -5,7 +5,7 @@ Our goal for Kubernetes tests is to mirror the behavior that users take on the G
 
 ## Test Utilities
 ### Actions
-A [ClusterAction](./testutils/actions/action.go) is a function that will be executed against the cluster, to mutate it's state.
+A [ClusterAction](./testutils/actions/action.go) is a function that will be executed against the cluster, to mutate its state.
 
 _For more details on the actions, see the [actions](./testutils/actions) package._
 
@@ -15,12 +15,12 @@ A [ClusterAssertion](./testutils/assertions/assertion.go) is a function which as
 _For more details on the assertions, see the [assertions](./testutils/assertions) package._
 
 ### Operations
-An [Operation](testutils/operations/operation.go) is the combination of an `Action` and an `Assertion`. The idea is that when writing tests, we should be performing an assertion for every action that takes place.
+An [Operation](./testutils/operations/operation.go) is the combination of an `Action` and an `Assertion`. The idea is that when writing tests, we should be performing an assertion for every action that takes place.
 
 _For more details on the operations, see the [operations](./testutils/operations) package._
 
 ### Operator
-An [Operator](testutils/operations/operator.go) is a centralized tool that executes Operations against a cluster. It is intentionally unaware of _what_ those operations do, and is just used to coordinate the actions that are taken, and provide a centralized ledger for the events that occurred.
+An [Operator](./testutils/operations/operator.go) is a centralized tool that executes Operations against a cluster. It is intentionally unaware of _what_ those operations do, and is just used to coordinate the actions that are taken, and provide a centralized ledger for the events that occurred.
 
 ## End-To-End Testing
 ### Historical Challenges
@@ -48,6 +48,6 @@ _We document the historical challenges we have experienced with writing and mana
 - After reproducing a behavior in a cluster, it was challenging to convert these resources (manifests) into Go structs to be used within the test structure. Again, this led to toil that either resulted in wasted time writing tests, or a rationale to not add a test.
 
 ### Framework
-Luckily, we've been able to learn from these challenges, and have introduced a framework that we believe addresses the concerns, and allows us to write expressive end-to-end tests that reflect the experiences of users of the product.
+We've learned from these challenges and have introduced a framework that we believe addresses the concerns. This framework allows us to write expressive end-to-end tests that reflect the experiences of users of the product.
 
 _For more details on the end-to-end framework, see the [e2e](./e2e) package._

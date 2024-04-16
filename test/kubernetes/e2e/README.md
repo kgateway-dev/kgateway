@@ -3,12 +3,12 @@
 ## TestSuite
 A [TestSuite](./framework.go) is the structure that manages tests running against a single Kubernetes Cluster.
 
-It's sole responsibility is to create [TestInstallations](#testinstallation).
+Its sole responsibility is to create [TestInstallations](#testinstallation).
 
 ## TestInstallation
 A [TestInstallation](./framework.go) is the structure that manages a group of tests that run against an installation of Gloo Gateway, within a Kubernetes Cluster.
 
-We try to define a single `TestInstallation` per file in a Suite. This way, it is easy to identify what behaviors are expected for that installation.
+We try to define a single `TestInstallation` per file in a `TestSuite`. This way, it is easy to identify what behaviors are expected for that installation.
 
 ## Test
 A [Test](./framework.go) is the smallest unit in the framework. It assumes there is a Kubernetes Cluster running, with Gloo Gateway installed. It runs a series of actions against the cluster and asserts that the updated cluster behaves as expected.
@@ -20,7 +20,7 @@ Tests are executed from the file where a `TestInstallation` is defined. However,
 ## Features
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
-2. We can invoke that same test against different TestInstallation.
+2. We can invoke that same test against different `TestInstallation`s.
 
 ## Thanks
 ### Inspiration

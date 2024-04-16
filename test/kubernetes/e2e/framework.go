@@ -56,7 +56,7 @@ func (s *TestSuite) RegisterTestInstallation(name string, glooGatewayContext *gl
 	}
 
 	installation := &TestInstallation{
-		// Create a reference to the TestSuite, and all of it's metadata
+		// Create a reference to the TestSuite, and all of its metadata
 		TestSuite: s,
 
 		// Name is a unique identifier for this TestInstallation
@@ -151,12 +151,12 @@ func (i *TestInstallation) preFailHandler() {
 	}
 	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
 	if err != nil {
-		i.TestingFramework.Errorf("Failed to executed preFailHandler operation for TestInstallation (%s): %+v", i.Name, err)
+		i.TestingFramework.Errorf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i.Name, err)
 	}
 }
 
 // TestFn is a function that executes a test, for a given TestInstallation
-type TestFn func(ctx context.Context, suite *TestInstallation)
+type TestExecutor func(ctx context.Context, suite *TestInstallation)
 
 // Test represents a single end-to-end behavior that is validated against a running installation of Gloo Gateway.
 // Tests are grouped by the feature they validate, and are defined in the test/kubernetes/e2e/features directory
