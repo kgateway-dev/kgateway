@@ -68,9 +68,6 @@ func WithPort(port int) Option {
 // WithHost returns the Option to set the host for the curl request
 func WithHost(host string) Option {
 	return func(config *requestConfig) {
-		if host == "localhost" {
-			host = "127.0.0.1"
-		}
 		config.host = host
 	}
 }

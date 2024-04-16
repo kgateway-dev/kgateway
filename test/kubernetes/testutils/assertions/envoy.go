@@ -24,7 +24,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 
 		portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 			portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
-			portforward.WithRemotePort(admincli.DefaultAdminPort),
+			portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
 		)
 		Expect(err).NotTo(HaveOccurred(), "can open port-forward")
 		defer func() {
@@ -47,7 +47,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			WithReceiver(p.testingProgressWriter).
 			WithCurlOptions(
 				curl.WithRetries(3, 0, 10),
-				curl.WithHostPort(portForwarder.Address()),
+				curl.WithPort(admincli.DefaultAdminPort),
 			)
 		adminAssertion(ctx, adminClient)
 	}
