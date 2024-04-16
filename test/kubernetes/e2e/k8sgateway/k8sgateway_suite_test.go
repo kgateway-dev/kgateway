@@ -13,14 +13,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
-func TestExampleSuite(t *testing.T) {
+func TestK8sGatewaySuite(t *testing.T) {
 	skhelpers.RegisterCommonFailHandlers()
 
-	RunSpecs(t, "Example Suite")
+	RunSpecs(t, "K8s Gateway Suite")
 }
 
 var (
-	testSuite *e2e.TestSuite
+	testCluster *e2e.TestCluster
 )
 
 var _ = BeforeSuite(func(ctx context.Context) {
@@ -36,7 +36,7 @@ var _ = BeforeSuite(func(ctx context.Context) {
 		testingProgressWriter,
 		runtimeContext.ClusterName)
 
-	testSuite = &e2e.TestSuite{
+	testCluster = &e2e.TestCluster{
 		TestingFramework:      testingFramework,
 		TestingProgressWriter: testingProgressWriter,
 		RuntimeContext:        runtimeContext,
@@ -44,5 +44,5 @@ var _ = BeforeSuite(func(ctx context.Context) {
 	}
 
 	// Register the PreFailHandler from the TestSuite
-	skhelpers.RegisterPreFailHandler(testSuite.PreFailHandler)
+	skhelpers.RegisterPreFailHandler(testCluster.PreFailHandler)
 })

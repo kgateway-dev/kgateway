@@ -49,6 +49,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 				curl.WithRetries(3, 0, 10),
 				curl.WithPort(admincli.DefaultAdminPort),
 			)
+
 		adminAssertion(ctx, adminClient)
 	}
 }

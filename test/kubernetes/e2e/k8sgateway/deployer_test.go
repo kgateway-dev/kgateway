@@ -28,7 +28,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	BeforeAll(func() {
 		ctx = context.Background()
 
-		testInstallation = testSuite.RegisterTestInstallation(
+		testInstallation = testCluster.RegisterTestInstallation(
 			"k8s-gw-deployer-test",
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-deployer-test",
@@ -44,7 +44,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 		err := testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.GlooCtl().NewTestHelperUninstallAction())
 		Expect(err).NotTo(HaveOccurred())
 
-		testSuite.UnregisterTestInstallation(testInstallation)
+		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	Context("Deployer", func() {
