@@ -187,7 +187,7 @@ func (ml *mergedListeners) translateListeners(
 		// run listener plugins
 		for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
 			err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
-				Gateway:    &mergedListener.parentGateway,
+				Gateway:    &ml.parentGw,
 				GwListener: &mergedListener.listener,
 			}, listener)
 			if err != nil {
@@ -208,7 +208,6 @@ type mergedListener struct {
 	httpsFilterChains []httpsFilterChain
 	listenerReporter  reports.ListenerReporter
 	listener          gwv1.Listener
-	parentGateway     gwv1.Gateway
 
 	// TODO(policy via http listener options)
 }
