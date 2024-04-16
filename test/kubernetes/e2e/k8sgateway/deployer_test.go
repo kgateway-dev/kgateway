@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/skv2/codegen/util"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -55,6 +56,18 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 		It("configures proxies from the GatewayParameters CR", func() {
 			testInstallation.RunTest(ctx, deployer.ConfigureProxiesFromGatewayParameters)
+		})
+
+	})
+
+	FContext("RouteOptions", func() {
+
+		It("Apply fault injection using targetRef RouteOption", func() {
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)
+		})
+
+		It("Apply fault injection using filter extension RouteOption", func() {
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
 		})
 
 	})

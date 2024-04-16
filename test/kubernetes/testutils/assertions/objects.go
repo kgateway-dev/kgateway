@@ -45,6 +45,23 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 	}
 }
 
+func (p *Provider) ObjectHasStatus(objects ...client.Object) ClusterAssertion {
+	return func(ctx context.Context) {
+		p.testingFramework.Helper()
+
+		for _, o := range objects {
+			Eventually(ctx, func(g Gomega) {
+				err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
+				g.Expect(err).NotTo(HaveOccurred(), "object should be available in cluster")
+			}).
+				WithContext(ctx).
+				WithTimeout(time.Second * 10).
+				WithPolling(time.Millisecond * 200).
+				Should(Succeed())
+		}
+	}
+}
+
 func (p *Provider) NamespaceNotExist(ns string) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
