@@ -36,7 +36,7 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 		provisionResourcesOp := operations.ReversibleOperation{
 			Do: &operations.BasicOperation{
 				OpName:      fmt.Sprintf("apply-manifest-%s", filepath.Base(manifestFile)),
-				OpAction:    installation.Actions.KubeCtl().NewApplyManifestAction(manifestFile),
+				OpAction:    installation.Actions.Kubectl().NewApplyManifestAction(manifestFile),
 				OpAssertion: installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 			},
 			// We rely on the --ignore-not-found flag in the deletion command, because we have 2 manifests
@@ -47,7 +47,7 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 			// But this is an example of ways to solve that problem if it occurs.
 			Undo: &operations.BasicOperation{
 				OpName:      fmt.Sprintf("delete-manifest-%s", filepath.Base(manifestFile)),
-				OpAction:    installation.Actions.KubeCtl().NewDeleteManifestAction(manifestFile, "--ignore-not-found=true"),
+				OpAction:    installation.Actions.Kubectl().NewDeleteManifestAction(manifestFile, "--ignore-not-found=true"),
 				OpAssertion: installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
 			},
 		}
@@ -55,7 +55,7 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 		configureGatewayParametersOp := operations.ReversibleOperation{
 			Do: &operations.BasicOperation{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(gwParametersManifestFile)),
-				OpAction: installation.Actions.KubeCtl().NewApplyManifestAction(gwParametersManifestFile),
+				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(gwParametersManifestFile),
 				OpAssertions: []assertions.ClusterAssertion{
 					// We applied a manifest containing the GatewayParameters CR
 					installation.Assertions.ObjectsExist(gwParams),
@@ -82,7 +82,7 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 			},
 			Undo: &operations.BasicOperation{
 				OpName:      fmt.Sprintf("delete-manifest-%s", filepath.Base(gwParametersManifestFile)),
-				OpAction:    installation.Actions.KubeCtl().NewDeleteManifestAction(gwParametersManifestFile),
+				OpAction:    installation.Actions.Kubectl().NewDeleteManifestAction(gwParametersManifestFile),
 				OpAssertion: installation.Assertions.ObjectsNotExist(gwParams),
 			},
 		}

@@ -14,41 +14,41 @@ import (
 // These actions are executed against a running installation of Gloo Gateway, within a Kubernetes Cluster.
 // This provider is just a wrapper around sub-providers, so it exposes methods to access those providers
 type ActionsProvider struct {
-	kubeCtlProvider *kubectl.Provider
-	glooCtlProvider glooctl.Provider
+	kubectlProvider *kubectl.Provider
+	glooctlProvider glooctl.Provider
 }
 
 // NewActionsProvider returns an ActionsProvider
 func NewActionsProvider(testingFramework testing.TB) *ActionsProvider {
 	return &ActionsProvider{
-		kubeCtlProvider: kubectl.NewProvider(),
-		glooCtlProvider: glooctl.NewProvider(testingFramework),
+		kubectlProvider: kubectl.NewProvider(),
+		glooctlProvider: glooctl.NewProvider(testingFramework),
 	}
 }
 
 // WithClusterContext sets the provider, and all of it's sub-providers, to point to the provided cluster
 func (p *ActionsProvider) WithClusterContext(clusterContext *cluster.Context) *ActionsProvider {
-	p.kubeCtlProvider.WithClusterCli(clusterContext.Cli)
-	p.glooCtlProvider.WithClusterContext(clusterContext)
+	p.kubectlProvider.WithClusterCli(clusterContext.Cli)
+	p.glooctlProvider.WithClusterContext(clusterContext)
 	return p
 }
 
 // WithGlooGatewayContext sets the provider, and all of it's sub-providers, to point to the provided installation
 func (p *ActionsProvider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *ActionsProvider {
-	p.glooCtlProvider.WithGlooGatewayContext(ggCtx)
+	p.glooctlProvider.WithGlooGatewayContext(ggCtx)
 	return p
 }
 
 // WithGlooctlProvider sets the glooctl provider on this ActionsProvider
 func (p *ActionsProvider) WithGlooctlProvider(provider glooctl.Provider) *ActionsProvider {
-	p.glooCtlProvider = provider
+	p.glooctlProvider = provider
 	return p
 }
 
-func (p *ActionsProvider) KubeCtl() *kubectl.Provider {
-	return p.kubeCtlProvider
+func (p *ActionsProvider) Kubectl() *kubectl.Provider {
+	return p.kubectlProvider
 }
 
-func (p *ActionsProvider) GlooCtl() glooctl.Provider {
-	return p.glooCtlProvider
+func (p *ActionsProvider) Glooctl() glooctl.Provider {
+	return p.glooctlProvider
 }

@@ -28,7 +28,7 @@ _We document the historical challenges we have experienced with writing and mana
 
 #### Not Representative of User Behaviors
 - Tests were too aware of implementation details, and would have custom behaviors built into them (ie. deleting Proxy CRs after deleting the sourcing VirtualService and Gateway).
-- Actions were taken on cluster that users couldn't do. For example, we would patch the Settings resource, but in a realistic scenario this would be done by modifying a manifest and performing a Helm upgrade.
+- Actions were taken on cluster that users wouldn't typically do. For example, we would patch the Settings resource, via a Go method. While patching this resource is an available operations to users, are more commoon practice would be updating the manifest in a CI/CD system, and rolling it out to your cluster via Helm.
 - Code was written to mirror user actions, but that code wasn't then made available in our CLI. This meant that we built useful tooling, but didn't empower users of the product to benefit.
 
 #### Confusing Resource Management

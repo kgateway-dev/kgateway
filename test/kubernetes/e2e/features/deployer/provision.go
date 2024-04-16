@@ -34,12 +34,12 @@ var ProvisionDeploymentAndService = e2e.Test{
 		provisionResourcesOp := operations.ReversibleOperation{
 			Do: &operations.BasicOperation{
 				OpName:      fmt.Sprintf("apply-manifest-%s", filepath.Base(manifestFile)),
-				OpAction:    installation.Actions.KubeCtl().NewApplyManifestAction(manifestFile),
+				OpAction:    installation.Actions.Kubectl().NewApplyManifestAction(manifestFile),
 				OpAssertion: installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 			},
 			Undo: &operations.BasicOperation{
 				OpName:      fmt.Sprintf("delete-manifest-%s", filepath.Base(manifestFile)),
-				OpAction:    installation.Actions.KubeCtl().NewDeleteManifestAction(manifestFile),
+				OpAction:    installation.Actions.Kubectl().NewDeleteManifestAction(manifestFile),
 				OpAssertion: installation.Assertions.ObjectsNotExist(proxyService, proxyDeployment),
 			},
 		}

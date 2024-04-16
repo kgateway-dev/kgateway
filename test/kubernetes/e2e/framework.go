@@ -138,7 +138,7 @@ func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
 func (i *TestInstallation) preFailHandler() {
 	exportReportOp := &operations.BasicOperation{
 		OpName:   "glooctl-export-report",
-		OpAction: i.Actions.GlooCtl().ExportReport(),
+		OpAction: i.Actions.Glooctl().ExportReport(),
 		OpAssertion: func(ctx context.Context) {
 			// This action is performed on test failure, and is not modifying the cluster
 			// As a result, there is no assertion that we perform

@@ -15,6 +15,7 @@ func (p *providerImpl) ExportReport() actions.ClusterAction {
 		// TODO: implement `glooctl export report`
 		// This would be useful for developers debugging tests and administrators inspecting running installations
 
+		panic("not implemented")
 		return nil
 	}
 }

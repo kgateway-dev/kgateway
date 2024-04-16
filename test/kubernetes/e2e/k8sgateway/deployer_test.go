@@ -36,12 +36,12 @@ var _ = Describe("Deployer Test", Ordered, func() {
 			},
 		)
 
-		err := testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.GlooCtl().NewTestHelperInstallAction())
+		err := testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterAll(func() {
-		err := testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.GlooCtl().NewTestHelperUninstallAction())
+		err := testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 		Expect(err).NotTo(HaveOccurred())
 
 		testCluster.UnregisterTestInstallation(testInstallation)
