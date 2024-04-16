@@ -4,13 +4,15 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/gomega/types"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 )
 
-func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, expectedReplicas int) ClusterAssertion {
+func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) ClusterAssertion {
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
@@ -18,7 +20,7 @@ func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, expectedRep
 			// We intentionally rely only on Pods that have marked themselves as ready as a way of defining more explicit assertions
 			pods, err := kubeutils.GetReadyPodsForDeployment(ctx, p.clusterContext.Clientset, deploymentMeta)
 			g.Expect(err).NotTo(HaveOccurred(), "can get pods for deployment")
-			g.Expect(pods).To(HaveLen(expectedReplicas), "running pods matches expected count")
+			g.Expect(len(pods)).To(replicaMatcher, "running pods matches expected count")
 		}).
 			WithContext(ctx).
 			// It may take some time for pods to initialize and pull images from remote registries.

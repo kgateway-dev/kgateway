@@ -2,6 +2,8 @@ package assertions
 
 import (
 	"context"
+	"net"
+	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
@@ -17,6 +19,9 @@ func (p *Provider) EnvoyAdminApiAssertion(
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
+		// Before opening a port-forward, we assert that there is at least one Pod that is ready
+		p.RunningReplicas(envoyDeployment, BeNumerically(">=", 1))(ctx)
+
 		portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 			portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
 			portforward.WithRemotePort(admincli.DefaultAdminPort),
@@ -26,6 +31,17 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			portForwarder.Close()
 			portForwarder.WaitForStop()
 		}()
+
+		// the port-forward returns before it completely starts up (https://github.com/solo-io/gloo/issues/9353),
+		// so as a workaround we try to keep dialing the address until it succeeds
+		Eventually(func(g Gomega) {
+			_, err = net.Dial("tcp", portForwarder.Address())
+			g.Expect(err).NotTo(HaveOccurred())
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second * 15).
+			WithPolling(time.Second).
+			Should(Succeed())
 
 		adminClient := admincli.NewClient().
 			WithReceiver(p.testingProgressWriter).

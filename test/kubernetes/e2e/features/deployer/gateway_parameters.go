@@ -60,9 +60,6 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 					// We applied a manifest containing the GatewayParameters CR
 					installation.Assertions.ObjectsExist(gwParams),
 
-					// We configure the GatewayParameters CR to provision workloads with a specific image that should exist
-					installation.Assertions.RunningReplicas(proxyDeployment.ObjectMeta, 1),
-
 					// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
 					installation.Assertions.EnvoyAdminApiAssertion(
 						proxyDeployment.ObjectMeta,
