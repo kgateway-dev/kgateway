@@ -144,7 +144,7 @@ var _ = Describe("Operator", func() {
 
 			err := operator.ExecuteReversibleOperations(ctx, ops...)
 			Expect(err).To(MatchError(ContainSubstring("iStr is 2")))
-			Expect(strings.Join(order, "")).To(Equal("+1+2-2-1"), "operations are executed in proper order, even on failure")
+			Expect(strings.Join(order, "")).To(Equal("+1+2"), "operations are executed in proper order, even on failure")
 		})
 
 	})

@@ -1,4 +1,4 @@
-package example_test
+package k8sgateway_test
 
 import (
 	"context"

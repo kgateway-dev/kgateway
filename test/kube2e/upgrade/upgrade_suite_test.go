@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
@@ -58,7 +60,7 @@ var _ = BeforeSuite(func() {
 	crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 	targetReleasedVersion = kube2e.GetTestReleasedVersion(suiteCtx, "gloo")
 
-	chartUri = "gloo/gloo"
+	chartUri = helmutils.RemoteChartName
 	if targetReleasedVersion == "" {
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 	}

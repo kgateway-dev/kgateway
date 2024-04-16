@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -266,8 +268,8 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 	var args = []string{"install", testHelper.HelmChartName}
 
 	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
-		"https://storage.googleapis.com/solo-public-helm", "--force-update")
-	args = append(args, "gloo/gloo",
+		helmutils.ChartRepositoryUrl, "--force-update")
+	args = append(args, helmutils.RemoteChartName,
 		"--version", fromRelease)
 
 	args = append(args, "-n", testHelper.InstallNamespace,

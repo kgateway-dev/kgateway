@@ -1,4 +1,4 @@
-package example_test
+package k8sgateway_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-var _ = Describe("K8s Gateway Example Test", Ordered, func() {
+var _ = Describe("Deployer Test", Ordered, func() {
 
 	// An entire file is meant to capture the behaviors that we want to test for a given installation of Gloo Gateway
 
@@ -29,9 +29,9 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 		ctx = context.Background()
 
 		testInstallation = testSuite.RegisterTestInstallation(
-			"k8s-gw-example-test",
+			"k8s-gw-deployer-test",
 			&gloogateway.Context{
-				InstallNamespace:   "k8s-gw-example-test",
+				InstallNamespace:   "k8s-gw-deployer-test",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			},
 		)
@@ -47,13 +47,13 @@ var _ = Describe("K8s Gateway Example Test", Ordered, func() {
 		testSuite.UnregisterTestInstallation(testInstallation)
 	})
 
-	Context("K8s Gateway Integration - Deployer", func() {
+	Context("Deployer", func() {
 
 		It("provisions resources appropriately", func() {
 			testInstallation.RunTest(ctx, deployer.ProvisionDeploymentAndService)
 		})
 
-		It("provisions resources appropriately", func() {
+		It("configures proxies from the GatewayParameters CR", func() {
 			testInstallation.RunTest(ctx, deployer.ConfigureProxiesFromGatewayParameters)
 		})
 

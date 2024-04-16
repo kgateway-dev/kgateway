@@ -47,7 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         kubernetes-e2e-suite:
-        - 'example'
+        - 'k8sgateway'
         tool-versions:
         - cluster_node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
           kubectl: 'v1.28.4'

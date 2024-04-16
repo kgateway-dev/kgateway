@@ -19,16 +19,14 @@ func (p *Provider) EnvoyAdminApiAssertion(
 	return func(ctx context.Context) {
 		p.testingFramework.Helper()
 
+		// Before opening a port-forward, we assert that there is at least one Pod that is ready
+		p.RunningReplicas(envoyDeployment, BeNumerically(">=", 1))(ctx)
+
 		portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 			portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
-			// TODO: Help Wanted
-			// This always selects the DefaultAdminPort as the local port.
-			// If we want to run tests in parallel, this will cause problems.
-			// We should improve this to instead use the `portforward.WithPort` option,
-			// which selects an open port, and then we can open a curl against the portForwarder.Address()
 			portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
 		)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred(), "can open port-forward")
 		defer func() {
 			portForwarder.Close()
 			portForwarder.WaitForStop()
@@ -45,10 +43,12 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			WithPolling(time.Second).
 			Should(Succeed())
 
-		adminClient := admincli.NewClient().WithCurlOptions(
-			curl.WithRetries(3, 0, 10),
-			curl.WithPort(admincli.DefaultAdminPort),
-		)
+		adminClient := admincli.NewClient().
+			WithReceiver(p.testingProgressWriter).
+			WithCurlOptions(
+				curl.WithRetries(3, 0, 10),
+				curl.WithPort(admincli.DefaultAdminPort),
+			)
 		adminAssertion(ctx, adminClient)
 	}
 }
