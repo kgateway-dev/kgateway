@@ -43,7 +43,7 @@ func (p *Provider) WithClusterContext(clusterContext *cluster.Context) *Provider
 	return p
 }
 
-// WithGlooGatewayContext sets the providers to point to a particualr installation of Gloo Gateway
+// WithGlooGatewayContext sets the providers to point to a particular installation of Gloo Gateway
 func (p *Provider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *Provider {
 	p.glooGatewayContext = ggCtx
 	return p
