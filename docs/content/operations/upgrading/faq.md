@@ -66,7 +66,7 @@ The Envoy dependency in Gloo Edge 1.17 was upgraded from 1.27.x to 1.29.x. This 
 * **ExtProc attribute processing**: For more information, see [ExtProc attribute processing](#extproc).
 * **JWT tokens**: The behavior for extracting JWT tokens changed. Previously, the JWT token was cut into non-base64 characters. Now, the entire JWT token is passed for validation. This change can be reverted temporarily by setting `envoy.reloadable_features.token_passed_entirely` to `false`.
 * **HTTP2 host header**: The HTTP2 host header is discarded if the `:authority` header is received. This change makes Envoy compliant with the HTTP2 request pseudo-header field implementation. For more information, see the [HTTP2 reference](https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1). You can temporarily revert this change by setting the `envoy.reloadable_features.http2_discard_host_header` runtime flag to `false`.
-* **Transfer encoding header**: THe transfer encoding header is removed from downstream request headers. You can temporarily revert thsi change by setting `envoy.reloadable_features.sanitize_te` to `false`.
+* **Transfer encoding header**: The transfer encoding header is removed from downstream request headers. You can temporarily revert this change by setting `envoy.reloadable_features.sanitize_te` to `false`.
 
 ### Changelogs
 
