@@ -19,11 +19,12 @@ type helmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount  *uint32          `json:"replicaCount,omitempty"`
-	Autoscaling   *helmAutoscaling `json:"autoscaling,omitempty"`
-	Ports         []helmPort       `json:"ports,omitempty"`
-	ReadinessPort *uint16          `json:"readinessPort,omitempty"`
-	Service       *helmService     `json:"service,omitempty"`
+	ReplicaCount *uint32          `json:"replicaCount,omitempty"`
+	Autoscaling  *helmAutoscaling `json:"autoscaling,omitempty"`
+	Ports        []helmPort       `json:"ports,omitempty"`
+	// TODO: This is unused
+	ReadinessPort *uint16      `json:"readinessPort,omitempty"`
+	Service       *helmService `json:"service,omitempty"`
 
 	// pod template values
 	ExtraPodAnnotations map[string]string                 `json:"extraPodAnnotations,omitempty"`

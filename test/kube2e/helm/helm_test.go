@@ -12,7 +12,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -291,7 +293,7 @@ var _ = Describe("Kube2e: helm", func() {
 		var kubeClientset kubernetes.Interface
 
 		BeforeEach(func() {
-			kubeClientset = kubeutils.MustClientset()
+			kubeClientset = kubetestclients.MustClientset()
 
 			strictValidation = true
 		})
@@ -341,7 +343,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 		BeforeEach(func() {
 			var err error
-			cfg := kubeutils.MustRestConfig()
+			cfg := kubetestclients.MustRestConfig()
 
 			// initialize gateway client
 			gatewayClient, err = gatewayv1kube.NewForConfig(cfg)
@@ -538,17 +540,21 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool, additionalInstallArgs []string) {
 	helmValuesFile := getHelmValuesFile("helm.yaml")
 
+	helmClient := helmutils.NewClient().
+		WithReceiver(GinkgoWriter).
+		WithNamespace(testHelper.InstallNamespace)
+
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
 	if fromRelease != "" {
-		runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
-			"https://storage.googleapis.com/solo-public-helm", "--force-update")
-		args = append(args, "gloo/gloo",
-			"--version", fmt.Sprintf("%s", fromRelease))
+		err := helmClient.AddGlooRepository(context.Background(), "--force-update")
+		Expect(err).NotTo(HaveOccurred())
+
+		args = append(args, helmutils.RemoteChartName, "--version", fromRelease)
 	} else {
 		args = append(args, chartUri)
 	}
-	args = append(args, "-n", testHelper.InstallNamespace,
+	args = append(args,
 		// As most CD tools wait for resources to be ready before marking the release as successful,
 		// we're emulating that here by passing these two flags.
 		// This way we ensure that we indirectly add support for CD tools
@@ -571,7 +577,9 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 
 	args = append(args, additionalInstallArgs...)
 	fmt.Printf("running helm with args: %v, target: %v\n", args, fromRelease)
-	runAndCleanCommand("helm", args...)
+
+	err := helmClient.RunCommand(context.Background(), args...)
+	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
@@ -596,6 +604,10 @@ func upgradeCrds(_ *helper.SoloTestHelper, fromRelease string, crdDir string) {
 func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, targetRelease string, strictValidation bool, additionalArgs []string, valueOverrideFile string) {
 	upgradeCrds(testHelper, fromRelease, crdDir)
 
+	helmClient := helmutils.NewClient().
+		WithReceiver(GinkgoWriter).
+		WithNamespace(testHelper.InstallNamespace)
+
 	var args = []string{"upgrade", testHelper.HelmChartName,
 		// As most CD tools wait for resources to be ready before marking the release as successful,
 		// we're emulating that here by passing these two flags.
@@ -608,18 +620,16 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 		// as helm waits until the service is ready and eventually times out.
 		// So instead we use the service type as ClusterIP to work around this limitation.
 		"--set", "gatewayProxies.gatewayProxy.service.type=ClusterIP",
-		"-n", testHelper.InstallNamespace,
 	}
 	if valueOverrideFile != "" {
 		args = append(args, "--values", valueOverrideFile)
 	}
 	if targetRelease != "" {
-		args = append(args, "gloo/gloo",
-			"--version", fmt.Sprintf("%s", targetRelease))
+		args = append(args, helmutils.RemoteChartName, "--version", targetRelease)
 	} else {
 		args = append(args, chartUri)
 	}
-	args = append(args, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
+
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
@@ -629,11 +639,12 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 
 	args = append(args, additionalArgs...)
 	fmt.Printf("running helm with args: %v target %v\n", args, targetRelease)
-	runAndCleanCommand("helm", args...)
+
+	err := helmClient.RunCommand(context.Background(), args...)
+	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
-
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, targetRelease string, strictValidation bool, additionalArgs []string) {
@@ -645,7 +656,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
 }

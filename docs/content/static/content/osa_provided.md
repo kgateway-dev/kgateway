@@ -32,8 +32,8 @@ Name|Version|License
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.15.3|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.11.0|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.27.10|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.17.0|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.30.0|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [go-ruleguard/dsl](https://github.com/quasilyte/go-ruleguard)|v0.3.22|BSD 3-clause "New" or "Revised" License
@@ -48,10 +48,10 @@ Name|Version|License
 [go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.1|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.11.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.26.0|MIT License
-[x/crypto](https://golang.org/x/crypto)|v0.17.0|BSD 3-clause "New" or "Revised" License
+[x/crypto](https://golang.org/x/crypto)|v0.18.0|BSD 3-clause "New" or "Revised" License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20231006140011-7918f672742d|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.4.0|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.14.0|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.6.0|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.17.0|BSD 3-clause "New" or "Revised" License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.59.0|Apache License 2.0

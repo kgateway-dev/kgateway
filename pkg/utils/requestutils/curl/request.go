@@ -33,6 +33,8 @@ func BuildArgs(options ...Option) []string {
 		retry:             0, // do not retry
 		retryDelay:        -1,
 		retryMaxTime:      0,
+		ipv4Only:          false,
+		ipv6Only:          false,
 
 		additionalArgs: []string{},
 	}
@@ -67,6 +69,9 @@ type requestConfig struct {
 	retryDelay             int
 	retryMaxTime           int
 	retryConnectionRefused bool
+
+	ipv4Only bool
+	ipv6Only bool
 
 	additionalArgs []string
 }
