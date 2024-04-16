@@ -16,9 +16,7 @@ import (
 
 // Inspired by: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/pkg/utils/kubeutils/pods.go
 
-// GetPodsForDeployment gets all pods backing a deployment that are running
-// NOTE: These pods are not necessarily ready. If you want further granularity for filtering pods
-// see GetPodsForDeploymentWithPredicate
+// GetPodsForDeployment gets all pods backing a deployment that are running and ready
 func GetPodsForDeployment(
 	ctx context.Context,
 	restConfig *rest.Config,
@@ -30,16 +28,15 @@ func GetPodsForDeployment(
 		return nil, err
 	}
 
-	return GetPodsForDeploymentWithPredicate(
+	// We change the implementation of this method, to return only pods that are ready
+	// This is done to reduce the chance that a developer misuses this utility
+	// If you want to get pods that are not ready, you can use GetPodsForDeploymentWithPredicate
+	return GetReadyPodsForDeployment(
 		ctx,
 		kubeClient,
 		metav1.ObjectMeta{
 			Name:      deploymentName,
 			Namespace: deploymentNamespace,
-		},
-		func(pod corev1.Pod) bool {
-			// Maintain the behavior of returning all running pods
-			return true
 		})
 }
 
