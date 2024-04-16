@@ -196,6 +196,22 @@ func WithScheme(scheme string) Option {
 	}
 }
 
+// Ipv4Only returns the Option to configure the curl request to only use ipv4 addresses when resolving hostnames
+// https://curl.se/docs/manpage.html#-4
+func Ipv4Only() Option {
+	return func(config *requestConfig) {
+		config.ipv4Only = true
+	}
+}
+
+// Ipv6Only returns the Option to configure the curl request to only use ipv6 addresses when resolving hostnames
+// https://curl.se/docs/manpage.html#-6
+func Ipv6Only() Option {
+	return func(config *requestConfig) {
+		config.ipv6Only = true
+	}
+}
+
 // WithArgs allows developers to append arbitrary args to the curl request
 // This should mainly be used for debugging purposes. If there is an argument that the current Option
 // set doesn't yet support, it should be added explicitly, to make it easier for developers to utilize
