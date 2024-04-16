@@ -160,7 +160,7 @@ type testOperation struct {
 	assertion assertions.ClusterAssertion
 }
 
-func (t *testOperation) Name() string {
+func (t *testOperation) String() string {
 	if t.name != "" {
 		return t.name
 	}
