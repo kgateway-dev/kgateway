@@ -2,9 +2,6 @@ package assertions
 
 import (
 	"context"
-	"net"
-	"time"
-
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
@@ -28,17 +25,6 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			portForwarder.Close()
 			portForwarder.WaitForStop()
 		}()
-
-		// the port-forward returns before it completely starts up (https://github.com/solo-io/gloo/issues/9353),
-		// so as a workaround we try to keep dialing the address until it succeeds
-		Eventually(func(g Gomega) {
-			_, err = net.Dial("tcp", portForwarder.Address())
-			g.Expect(err).NotTo(HaveOccurred(), "can connect to local address")
-		}).
-			WithContext(ctx).
-			WithTimeout(time.Second * 15).
-			WithPolling(time.Second).
-			Should(Succeed())
 
 		adminClient := admincli.NewClient().
 			WithReceiver(p.testingProgressWriter).
