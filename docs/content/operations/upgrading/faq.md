@@ -41,9 +41,32 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 * **Kubernetes**: Enable [Envoy readiness and liveness probes]({{< versioned_link_path fromRoot="/operations/production_deployment/#enable-health-checks" >}}) during the upgrade. When these probes are set, Kubernetes sends requests only to the healthy Envoy proxy during the upgrade process, which helps to prevent potential downtime. The probes are not enabled in default installations because they can lead to timeouts or other poor getting started experiences. 
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
 
+<!-- 
+
 ## Review version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} changes {#review-changes}
 
 Review the following changes made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. For some changes, you might be required to complete additional steps during the upgrade process.
+
+--> 
+
+### Breaking changes 
+
+#### ExtProc attribute processing {#extproc}
+
+The Gloo Edge extProc filter implementation was changed to comply with the latest extProc implementation in Envoy. Previously, request and response attributes were included only in a [header processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-httpheaders), and were therefore sent to the extProc server only when request header processing messages were configured to be sent. Starting in Gloo Edge version 1.17.0, the Gloo extProc filter sends request and response attributes as part of the top level [processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-processingrequest). That way, attributes can be processed on the first processing request regardless of its type.  
+
+If you implemented your extProc server to expect request and response attributes as part of the HTTP header processing request, you must change this implementation to read attributes from the top-level processing request instead. 
+
+For more information, see the [extProc proto definition](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/ext_proc/v3/external_processor.proto) in Envoy. 
+
+#### Envoy version 1.29 upgrade
+
+The Envoy dependency in Gloo Edge 1.17 was upgraded from 1.27.x to 1.29.x. This upgrade includes the following changes. For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.29/v1.29).
+
+* **ExtProc attribute processing**: For more information, see [ExtProc attribute processing](#extproc).
+* **JWT tokens**: The behavior for extracting JWT tokens changed. Previously, the JWT token was cut into non-base64 characters. Now, the entire JWT token is passed for validation. This change can be reverted temporarily by setting `envoy.reloadable_features.token_passed_entirely` to `false`.
+* **HTTP2 host header**: The HTTP2 host header is discarded if the `:authority` header is received. This change makes Envoy compliant with the HTTP2 request pseudo-header field implementation. For more information, see the [HTTP2 reference](https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1). You can temporarily revert this change by setting the `envoy.reloadable_features.http2_discard_host_header` runtime flag to `false`.
+* **Transfer encoding header**: The transfer encoding header is removed from downstream request headers. You can temporarily revert this change by setting `envoy.reloadable_features.sanitize_te` to `false`.
 
 ### Changelogs
 
@@ -69,11 +92,6 @@ The following lists consist of the changes that were initially introduced with t
 
 **New or improved features**:
 
-* **Renewal of HashiCorp Vault tokens**: You can now use the `settings.secretOptions.sources[].vault.aws.leaseIncrement` Helm value to specify the lease increment to use for the HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp Vault API. For more information about the Vault integration, see [Securing secrets in HashiCorp Vault using AWS IAM Roles for Service Accounts (IRSA)]({{% versioned_link_path fromRoot="/guides/integrations/vault/aws-irsa-auth/" %}}). 
-* **Rotate TLS certificates in stages**: Use the `gateway.certGenJob.rotationDuration` Helm value to configure the duration for Gloo Edge to wait during each stage of the certificate renewal process when mTLS is enabled. For more information, see [Cert Rotation]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/#cert-rotation" %}}). 
-* **Validate Kubernetes secrets on removal**: Fixed an issue in the validation webhook where Kubernetes secrets were not validated on deletions. You can opt out of secret validation by using the `gateway.validation.webhook.skipDeleteValidationResources` Helm value. 
-* **Local rate limiting**: Limit the number of requests to your gateway or upstream services before the requests reach the rate limiting server in your cluster. Local rate limiting can protect your rate limit servers from being overloaded and help optimize their resource utilization. For more information, see [Local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/" %}}). 
-* **Traffic tapping (alpha)**: Copy contents of HTTP or gRPC requests and responses to an external tap server. Note that traffic tapping is introduced as an alpha feature in Gloo Edge Enterprise. Alpha features are likely to change, are not fully tested, and are not supported for production. For more information, see [Traffic tapping]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/tap/" %}}). 
 
 <!--
 **Deprecated features**:
@@ -89,13 +107,6 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 **New and updated Helm fields**:
 
-* `settings.secretOptions.sources[].vault.aws.leaseIncrement`: Specify the lease increment to use for HashiCorp token renewal. This value is passed as the 'Increment' parameter to the HashiCorp Vault API.
-* `gatewayproxy.proxyName.disableExtauthSidecar`: Disable the extauth sidecar on a gateway proxy when `global.extensions.extAuth.envoySidecar` is set in a Gloo Edge Enterprise installation. The defaut value is `false`. 
-* `global.extraCustomResources`: Deploy all custom resources during the Gloo Edge installation. The default value is `false` for Gloo Edge Open Source, and `true` in Gloo Edge Enterprise. 
-* `gateway.certGenJob.rotationDuration`: Configure the duration for Gloo Edge to wait during each stage of the certificate renewal process when mTLS is enabled. For more information, see [Cert Rotation]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/#cert-rotation" %}}).
-* `gloo.gateway.certGenJob.forceRotation`: Force the renewal of TLS certificates, even if they are not expired yet.
-* `gateway.rolloutJob.timeout`: Specify the timeout to wait for the resource rollout job to complete. The default value is 120s. 
-* `gateway.validation.webhook.skipDeleteValidationResources`: Skip validation when deleting Kubernetes secrets. 
 
 <!--
 **Updated Helm fields**:
@@ -116,8 +127,7 @@ Review the following summary of important new, deprecated, or removed CRD update
 
 **New and updated CRDs**:
 
-* `ExtAuthConfig`: In the [`OidcAuthorizationCode`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#oidcauthorizationcode" %}}) section, you can now add a [`clientAuthentication`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#clientauthentication" %}}) block to specify the authentication type that you want to use to exchange the access code for the access and ID tokens.
-* `Settings`: You can now use the `secretOptions` block to use an AWS IAM IRSA to get access to Vault, instead of specifying an `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. 
+
 
 <!--
 **Deprecated CRDs**:
