@@ -32,8 +32,8 @@ func MustClientset() *kubernetes.Clientset {
 	return clientset
 }
 
-func MustClientScheme(testing testing.TB) *runtime.Scheme {
-	testing.Helper()
+func MustClientScheme(testingTb testing.TB) *runtime.Scheme {
+	testingTb.Helper()
 
 	clientScheme := runtime.NewScheme()
 
