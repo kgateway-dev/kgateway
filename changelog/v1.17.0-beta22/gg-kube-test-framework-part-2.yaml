@@ -1,0 +1,18 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6029
+    resolvesIssue: false
+    description: >-
+      Iterate on the test framework, and introduce some basic tests for asserting behavior about provisioned proxies.
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5940
+    resolvesIssue: false
+    description: >-
+      Provide the gloo ServiceAccount with the necessary permissions to watch the VirtualHostOptions object.
+      This would only affect users who had configured `kubeGateway.enabled=true`, an alpha feature in 1.17.
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6003
+    resolvesIssue: false
+    description: >-
+      Fix the readinessProbe defined on the proxy deployments that are provisioned by the K8s Gateway integration.
+      The previous probe was invalid, causing Pods to not become ready.
