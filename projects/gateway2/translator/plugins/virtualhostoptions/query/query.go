@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 
+	"github.com/rotisserie/eris"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	"k8s.io/apimachinery/pkg/fields"
@@ -46,6 +47,12 @@ func (r *virtualHostOptionQueries) GetVirtualHostOptionsForListener(
 	ctx context.Context,
 	listener *gwv1.Listener,
 	parentGw *gwv1.Gateway) ([]*solokubev1.VirtualHostOption, error) {
+	if parentGw == nil {
+		return nil, eris.New("nil parent gateway")
+	}
+	if parentGw.GetName() == "" || parentGw.GetNamespace() == "" {
+		return nil, eris.Errorf("parent gateway must have name and namespace; received name: %s, namespace: %s", parentGw.GetName(), parentGw.GetNamespace())
+	}
 	nn := types.NamespacedName{
 		Namespace: parentGw.Namespace,
 		Name:      parentGw.Name,
