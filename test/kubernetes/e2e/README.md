@@ -8,7 +8,7 @@ Its sole responsibility is to create [TestInstallations](#testinstallation).
 ## TestInstallation
 A [TestInstallation](./framework.go) is the structure that manages a group of tests that run against an installation of Gloo Gateway, within a Kubernetes Cluster.
 
-We try to define a single `TestInstallation` per file in a `TestSuite`. This way, it is easy to identify what behaviors are expected for that installation.
+We try to define a single `TestInstallation` per file in a `TestCluster`. This way, it is easy to identify what behaviors are expected for that installation.
 
 ## Test
 A [Test](./framework.go) is the smallest unit in the framework. It assumes there is a Kubernetes Cluster running, with Gloo Gateway installed. It runs a series of actions against the cluster and asserts that the updated cluster behaves as expected.
