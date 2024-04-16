@@ -1,7 +1,9 @@
 package constants
 
+import "github.com/solo-io/gloo/pkg/utils/helmutils"
+
 const (
-	GlooHelmRepoTemplate    = "https://storage.googleapis.com/solo-public-helm/charts/gloo-%s.tgz"
+	GlooHelmRepoTemplate    = helmutils.RemoteChartUriTemplate
 	GlooReleaseName         = "gloo"
 	GlooFedReleaseName      = "gloo-fed"
 	KnativeServingNamespace = "knative-serving"

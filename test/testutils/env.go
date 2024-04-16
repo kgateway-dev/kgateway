@@ -72,6 +72,9 @@ const (
 
 	// Gloo Gateway setup
 	GlooGatewaySetup = "GLOO_GATEWAY_SETUP"
+
+	// ClusterName is the name of the cluster used for e2e tests
+	ClusterName = "CLUSTER_NAME"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

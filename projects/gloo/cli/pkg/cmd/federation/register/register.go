@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -18,7 +20,8 @@ import (
 func installCrdsToRemote(context string) error {
 	helmClient := install.DefaultHelmClient()
 
-	chartObj, err := helmClient.DownloadChart("https://storage.googleapis.com/solo-public-helm/charts/gloo-" + linkedversion.Version + ".tgz")
+	chartArchiveUri := helmutils.GetRemoteChartUri(linkedversion.Version)
+	chartObj, err := helmClient.DownloadChart(chartArchiveUri)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "\ngloo failed to download gloo-%s\n", linkedversion.Version)
 		return err
