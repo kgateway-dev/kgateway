@@ -15,9 +15,11 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
+	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
