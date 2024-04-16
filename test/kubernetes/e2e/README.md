@@ -1,7 +1,7 @@
 # End-to-End Testing Framework
 
-## TestSuite
-A [TestSuite](./framework.go) is the structure that manages tests running against a single Kubernetes Cluster.
+## TestCluster
+A [TestCluster](./framework.go) is the structure that manages tests running against a single Kubernetes Cluster.
 
 Its sole responsibility is to create [TestInstallations](#testinstallation).
 
