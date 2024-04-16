@@ -17,7 +17,7 @@ import (
 )
 
 // TestCluster is the structure around a set of tests that run against a Kubernetes Cluster
-// Within a TestSuite, we spin off multiple TestInstallation to test the behavior of a particular installation
+// Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
 type TestCluster struct {
 	// TestingFramework defines the framework that tests should rely on
 	// Within the Gloo codebase, we rely extensively on Ginkgo and Gomega
@@ -31,7 +31,7 @@ type TestCluster struct {
 	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
 	RuntimeContext runtime.Context
 
-	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestSuite
+	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
 	ClusterContext *cluster.Context
 
 	// activeInstallations is the set of TestInstallation that have been created for this cluster.

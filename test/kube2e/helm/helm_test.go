@@ -625,7 +625,7 @@ func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri
 		args = append(args, "--values", valueOverrideFile)
 	}
 	if targetRelease != "" {
-		args = append(args, helmutils.RemoteChartName, "--version", fmt.Sprintf("%s", targetRelease))
+		args = append(args, helmutils.RemoteChartName, "--version", targetRelease)
 	} else {
 		args = append(args, chartUri)
 	}
