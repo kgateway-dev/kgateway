@@ -36,6 +36,14 @@ The ExtProc server is a gRPC interface that must be able to respond to events in
 
 To implement your own ExtProc server, make sure that you follow [Envoy's technical specification for an external processor](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#extensions-filters-http-ext-proc-v3-externalprocessor). You can also follow the [Header manipulation example]({{% versioned_link_path fromRoot="/guides/traffic_management/extproc/header-manipulation/" %}}) to try out ExtProc in Gloo Edge with a sample ExtProc server.
 
+{{% notice warning %}}
+In Gloo Edge version 1.17.0, the Gloo Edge extProc filter implementation was changed to comply with the latest extProc implementation in Envoy. Previously, request and response attributes were included only in a [header processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-httpheaders), and were therefore sent to the extProc server only when request header processing messages were configured to be sent. Starting in Gloo Edge version 1.17.0, the Gloo extProc filter sends request and response attributes as part of the top-level [processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-processingrequest). That way, attributes can be processed on the first processing request regardless of its type.  </br></br>
+
+If you implemented your extProc server to expect request and response attributes as part of the HTTP header processing request, you must change this implementation to read attributes from the top-level processing request instead. </br></br>
+
+For more information, see the [extProc proto definition](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/ext_proc/v3/external_processor.proto) in Envoy. 
+{{% /notice %}}
+
 ## Enable ExtProc in Gloo Edge
 
 You can enable ExtProc for all requests and responses that the gateway processes by using the [Settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/" %}}) custom resource. Alternatively, you can enable ExtProc for a specific gateway listener, virtual host, or route. 
