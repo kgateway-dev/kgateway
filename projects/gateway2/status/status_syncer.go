@@ -32,15 +32,15 @@ type GatewayStatusSyncer interface {
 // a threadsafe factory for initializing a status syncer
 // allows for the status syncer to be shared across multiple start funcs
 type statusSyncerFactory struct {
-	registryPerProxy   map[string]*registry.PluginRegistry
-	proxiesPerRegistry map[*registry.PluginRegistry]map[string]bool
+	registryPerProxy   map[*v1.Proxy]*registry.PluginRegistry
+	proxiesPerRegistry map[*registry.PluginRegistry]map[*v1.Proxy]bool
 	lock               *sync.RWMutex
 }
 
 func NewStatusSyncerFactory() GatewayStatusSyncer {
 	return &statusSyncerFactory{
-		registryPerProxy:   make(map[string]*registry.PluginRegistry),
-		proxiesPerRegistry: make(map[*registry.PluginRegistry]map[string]bool),
+		registryPerProxy:   make(map[*v1.Proxy]*registry.PluginRegistry),
+		proxiesPerRegistry: make(map[*registry.PluginRegistry]map[*v1.Proxy]bool),
 		lock:               &sync.RWMutex{},
 	}
 }
@@ -53,15 +53,10 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 	defer f.lock.Unlock()
 	proxies, ok := f.proxiesPerRegistry[pluginRegistry]
 	if !ok {
-		proxies = make(map[string]bool)
+		proxies = make(map[*v1.Proxy]bool)
 	}
 	for _, proxy := range proxiesToQueue {
-		proxyId, err := translatorutils.GetProxyId(proxy)
-		if err != nil {
-			contextutils.LoggerFrom(context.Background()).Warnf("Skipping queueing proxy status sync: %v", err)
-			continue
-		}
-		proxies[proxyId] = true
+		proxies[proxy] = true
 	}
 	f.proxiesPerRegistry[pluginRegistry] = proxies
 }
@@ -74,14 +69,9 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		reg := reg
 		var filteredProxiesWithReports []translatorutils.ProxyWithReports
 		for _, proxyWithReports := range proxiesWithReports {
-			proxyId, err := translatorutils.GetProxyId(proxyWithReports.Proxy)
-			if err != nil {
-				contextutils.LoggerFrom(context.Background()).Warnf("Skipping status sync: %v", err)
-				continue
-			}
-			if _, ok := proxiesToSync[proxyId]; ok {
+			if _, ok := proxiesToSync[proxyWithReports.Proxy]; ok {
 				filteredProxiesWithReports = append(filteredProxiesWithReports, proxyWithReports)
-				delete(proxiesToSync, proxyId)
+				delete(proxiesToSync, proxyWithReports.Proxy)
 				break
 			}
 		}
