@@ -30,6 +30,8 @@ try
 
 _"Am I understanding this correctly? Can you explain why...?"_
 
+Internal developers should not be shy about posting questions on the issue rather than in a private message. Having these conversations on the issue itself is valuable for increasing visibility both for other reviewers and future developers trying to understand past decision-making.
+
 ### Identify Nits
 Use the prefix “nit” when making a comment about something nitpicky, such as code style/formatting, variable names, etc. Nits express your opinion that something could be better, but that it’s not critical or necessary for correctness or system health. The author can choose to ignore such feedback, but it’s still useful to provide it.
 
