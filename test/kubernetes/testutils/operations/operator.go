@@ -135,7 +135,7 @@ func (o *Operator) executeOperation(ctx context.Context, operation Operation) er
 	if assertion == nil {
 		// We want to make it impossible for developers to accidentally define operations that do not assert any behavior
 		// If a developer wants to provide a no-op implementation, they will, but this check ensures that it is intentional
-		return errors.Errorf("Operation (%s) contained a nil assertion, which is not allowed", operation.Name())
+		return errors.Errorf("Operation (%s) contained a nil assertion, which is not allowed", operation)
 	}
 
 	assertion(ctx)
@@ -144,5 +144,5 @@ func (o *Operator) executeOperation(ctx context.Context, operation Operation) er
 }
 
 func (o *Operator) writeProgress(operation Operation, progress string) {
-	_, _ = o.progressWriter.Write([]byte(fmt.Sprintf("OPERATOR: %s (%s)\n", progress, operation.Name())))
+	_, _ = o.progressWriter.Write([]byte(fmt.Sprintf("OPERATOR: %s (%s)\n", progress, operation)))
 }
