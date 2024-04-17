@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -84,7 +84,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		BeforeEach(func() {
 			var err error
 
-			cfg = kubeutils.MustRestConfig()
+			cfg = kubetestclients.MustRestConfig()
 			kubeClient = resourceClientset.KubeClients()
 
 			testNamespace = skhelpers.RandString(8)
@@ -181,7 +181,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		// as-is, this function is not idempotent and should be run only once
 		setupKubeSecret := func() {
 			var err error
-			cfg = kubeutils.MustRestConfig()
+			cfg = kubetestclients.MustRestConfig()
 			kubeClient = resourceClientset.KubeClients()
 
 			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
