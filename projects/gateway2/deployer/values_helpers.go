@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
+	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -51,7 +51,7 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 
 // Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
 func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscaling {
-	hpaConfig := autoscaling.GetHorizontalPodAutoscaler()
+	hpaConfig := autoscaling.HorizontalPodAutoscaler
 	if hpaConfig == nil {
 		return nil
 	}
@@ -60,22 +60,10 @@ func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscalin
 	autoscalingVals := &helmAutoscaling{
 		Enabled: &trueVal,
 	}
-	if hpaConfig.GetMinReplicas() != nil {
-		minReplicas := hpaConfig.GetMinReplicas().GetValue()
-		autoscalingVals.MinReplicas = &minReplicas
-	}
-	if hpaConfig.GetMaxReplicas() != nil {
-		maxReplicas := hpaConfig.GetMaxReplicas().GetValue()
-		autoscalingVals.MaxReplicas = &maxReplicas
-	}
-	if hpaConfig.GetTargetCpuUtilizationPercentage() != nil {
-		cpuPercent := hpaConfig.GetTargetCpuUtilizationPercentage().GetValue()
-		autoscalingVals.TargetCPUUtilizationPercentage = &cpuPercent
-	}
-	if hpaConfig.GetTargetMemoryUtilizationPercentage() != nil {
-		memPercent := hpaConfig.GetTargetMemoryUtilizationPercentage().GetValue()
-		autoscalingVals.TargetMemoryUtilizationPercentage = &memPercent
-	}
+	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
+	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
+	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
+	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
 
 	return autoscalingVals
 }
@@ -84,13 +72,13 @@ func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscalin
 func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
-	svcType := v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())]
-	clusterIp := svcConfig.GetClusterIP()
+	svcType := string(svcConfig.Type)
+	clusterIp := svcConfig.ClusterIP
 	return &helmService{
 		Type:             &svcType,
 		ClusterIP:        &clusterIp,
-		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
-		ExtraLabels:      svcConfig.GetExtraLabels(),
+		ExtraAnnotations: svcConfig.ExtraAnnotations,
+		ExtraLabels:      svcConfig.ExtraLabels,
 	}
 }
 
@@ -116,24 +104,21 @@ func getMergedEnvoyImageValues(defaultImage extensions.Image, overrideImage *v1a
 	}
 
 	// for repo and tag, fall back to defaults if not provided
-	repository := overrideImage.GetRepository()
+	repository := overrideImage.Repository
 	if repository == "" {
 		repository = defaultImage.Repository
 	}
-	tag := overrideImage.GetTag()
+	tag := overrideImage.Tag
 	if tag == "" {
 		tag = defaultImage.Tag
 	}
 
-	registry := overrideImage.GetRegistry()
-	digest := overrideImage.GetDigest()
+	registry := overrideImage.Registry
+	digest := overrideImage.Digest
 
 	// get the string representation of pull policy, unless it's unspecified, in which case we
 	// leave it empty to fall back to the default value
-	pullPolicy := ""
-	if overrideImage.GetPullPolicy() != v1alpha1kube.Image_Unspecified {
-		pullPolicy = v1alpha1kube.Image_PullPolicy_name[int32(overrideImage.GetPullPolicy())]
-	}
+	pullPolicy := string(overrideImage.PullPolicy)
 
 	return &helmImage{
 		Registry:   &registry,

@@ -9,6 +9,40 @@
 </div>
 Resource Types:
 <ul></ul>
+<h3 id="gateway.gloo.solo.io/v1alpha1.Autoscaling">Autoscaling
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+<p>Kubernetes autoscaling configuration.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>horizontal_pod_autoscaler</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.HorizontalPodAutoscaler">
+HorizontalPodAutoscaler
+</a>
+</em>
+</td>
+<td>
+<p>If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
+workload to match demand. See
+<a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/</a>
+for details.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="gateway.gloo.solo.io/v1alpha1.EnvoyBootstrap">EnvoyBootstrap
 </h3>
 <p>
@@ -94,10 +128,10 @@ EnvoyBootstrap
 </tr>
 <tr>
 <td>
-<code>security_context</code><br/>
+<code>image</code><br/>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
-Kubernetes core/v1.SecurityContext
+<a href="#gateway.gloo.solo.io/v1alpha1.Image">
+Image
 </a>
 </em>
 </td>
@@ -110,10 +144,36 @@ for details.</p>
 repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 tag: &lt;gloo version&gt; (OSS) / &lt;gloo-ee version&gt; (EE)
 pullPolicy: IfNotPresent
-Image *kube.Image `json:&quot;image,omitempty&quot;`
 </code></pre>
+</td>
+</tr>
+<tr>
+<td>
+<code>security_context</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
+Kubernetes core/v1.SecurityContext
+</a>
+</em>
+</td>
+<td>
 <p>The security context for this container. See
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>resources</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.ResourceRequirements">
+ResourceRequirements
+</a>
+</em>
+</td>
+<td>
+<p>The compute resources required by this container. See
+<a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</a>
 for details.</p>
 </td>
 </tr>
@@ -223,9 +283,84 @@ KubernetesProxyConfig
 </p>
 <div>
 </div>
+<h3 id="gateway.gloo.solo.io/v1alpha1.HorizontalPodAutoscaler">HorizontalPodAutoscaler
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.Autoscaling">Autoscaling</a>)
+</p>
+<div>
+<p>Horizontal pod autoscaling configuration. See
+<a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/</a>
+for details.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>min_replicas</code><br/>
+<em>
+uint32
+</em>
+</td>
+<td>
+<p>The lower limit for the number of replicas to which the autoscaler can
+scale down. Defaults to 1.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>max_replicas</code><br/>
+<em>
+uint32
+</em>
+</td>
+<td>
+<p>The upper limit for the number of replicas to which the autoscaler can
+scale up. Cannot be less than <code>minReplicas</code>. Defaults to 100.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>target_cpu_utilization_percentage</code><br/>
+<em>
+uint32
+</em>
+</td>
+<td>
+<p>The target value of the average CPU utilization across all relevant pods,
+represented as a percentage of the requested value of the resource for the
+pods. Defaults to 80.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>target_memory_utilization_percentage</code><br/>
+<em>
+uint32
+</em>
+</td>
+<td>
+<p>The target value of the average memory utilization across all relevant
+pods, represented as a percentage of the requested value of the resource
+for the pods. Defaults to 80.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="gateway.gloo.solo.io/v1alpha1.Image">Image
 </h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer</a>)
+</p>
 <div>
+<p>A container image. See <a href="https://kubernetes.io/docs/concepts/containers/images">https://kubernetes.io/docs/concepts/containers/images</a>
+for details.</p>
 </div>
 <table>
 <thead>
@@ -281,7 +416,7 @@ string
 </tr>
 <tr>
 <td>
-<code>pullPolicy</code><br/>
+<code>pull_policy</code><br/>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#pullpolicy-v1-core">
 Kubernetes core/v1.PullPolicy
@@ -338,6 +473,160 @@ EnvoyContainer
 <p>Configuration for the container running Envoy.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>podTempalte</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.Pod">
+Pod
+</a>
+</em>
+</td>
+<td>
+<p>Configuration for the pods that will be created.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>service</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.Service">
+Service
+</a>
+</em>
+</td>
+<td>
+<p>Configuration for the Kubernetes Service that exposes the Envoy proxy over
+the network.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>autoscaling</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.Autoscaling">
+Autoscaling
+</a>
+</em>
+</td>
+<td>
+<p>Autoscaling configuration.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.Pod">Pod
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+<p>Configuration for a Kubernetes Pod template.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>extra_labels</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>Additional labels to add to the Pod object metadata.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>extra_annotations</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>Additional annotations to add to the Pod object metadata.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>security_context</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#podsecuritycontext-v1-core">
+Kubernetes core/v1.PodSecurityContext
+</a>
+</em>
+</td>
+<td>
+<p>The pod security context. See
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>image_pull_secrets</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#localobjectreference-v1-core">
+[]Kubernetes core/v1.LocalObjectReference
+</a>
+</em>
+</td>
+<td>
+<p>An optional list of references to secrets in the same namespace to use for
+pulling any of the images used by this Pod spec. See
+<a href="https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod">https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>node_selector</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>A selector which must be true for the pod to fit on a node. See
+<a href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/">https://kubernetes.io/docs/concepts/configuration/assign-pod-node/</a> for
+details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>affinity</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#affinity-v1-core">
+Kubernetes core/v1.Affinity
+</a>
+</em>
+</td>
+<td>
+<p>If specified, the pod&rsquo;s scheduling constraints. See
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>tolerations</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#toleration-v1-core">
+[]Kubernetes core/v1.Toleration
+</a>
+</em>
+</td>
+<td>
+<p>If specified, the pod&rsquo;s tolerations. See
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core</a>
+for details.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="gateway.gloo.solo.io/v1alpha1.ProxyDeployment">ProxyDeployment
@@ -359,7 +648,7 @@ EnvoyContainer
 <td>
 <code>replicas</code><br/>
 <em>
-int32
+uint32
 </em>
 </td>
 <td>
@@ -368,8 +657,119 @@ int32
 </tr>
 </tbody>
 </table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.ResourceRequirements">ResourceRequirements
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer</a>)
+</p>
+<div>
+<p>Compute resources required by this container. See
+<a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</a>
+for details.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>limits</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>The maximum amount of compute resources allowed.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>requests</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>The minimum amount of compute resources required.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.Service">Service
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+<p>Configuration for a Kubernetes Service.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>type</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#servicetype-v1-core">
+Kubernetes core/v1.ServiceType
+</a>
+</em>
+</td>
+<td>
+<p>The Kubernetes Service type.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>clusterIP</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The manually specified IP address of the service, if a randomly assigned
+IP is not desired. See
+<a href="https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address">https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address</a>
+and
+<a href="https://kubernetes.io/docs/concepts/services-networking/service/#headless-services">https://kubernetes.io/docs/concepts/services-networking/service/#headless-services</a>
+on the implications of setting <code>clusterIP</code>.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>extra_labels</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>Additional labels to add to the Service object metadata.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>extra_annotations</code><br/>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+<p>Additional annotations to add to the Service object metadata.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>924d10c46</code>.
+on git commit <code>ec560b097</code>.
 </em></p>

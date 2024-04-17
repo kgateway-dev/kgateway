@@ -1,8 +1,8 @@
 package deployer
 
 import (
-	extcorev1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
-	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
+	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	extcorev1 "k8s.io/api/core/v1"
 )
 
 // The top-level helm values used by the deployer.
@@ -26,13 +26,13 @@ type helmGateway struct {
 	Service       *helmService     `json:"service,omitempty"`
 
 	// pod template values
-	ExtraPodAnnotations map[string]string                 `json:"extraPodAnnotations,omitempty"`
-	ExtraPodLabels      map[string]string                 `json:"extraPodLabels,omitempty"`
-	ImagePullSecrets    []*extcorev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
-	PodSecurityContext  *extcorev1.PodSecurityContext     `json:"podSecurityContext,omitempty"`
-	NodeSelector        map[string]string                 `json:"nodeSelector,omitempty"`
-	Affinity            *extcorev1.Affinity               `json:"affinity,omitempty"`
-	Tolerations         []*extcorev1.Toleration           `json:"tolerations,omitempty"`
+	ExtraPodAnnotations map[string]string                `json:"extraPodAnnotations,omitempty"`
+	ExtraPodLabels      map[string]string                `json:"extraPodLabels,omitempty"`
+	ImagePullSecrets    []extcorev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	PodSecurityContext  *extcorev1.PodSecurityContext    `json:"podSecurityContext,omitempty"`
+	NodeSelector        map[string]string                `json:"nodeSelector,omitempty"`
+	Affinity            *extcorev1.Affinity              `json:"affinity,omitempty"`
+	Tolerations         []*extcorev1.Toleration          `json:"tolerations,omitempty"`
 
 	// envoy container values
 	LogLevel          *string                            `json:"logLevel,omitempty"`

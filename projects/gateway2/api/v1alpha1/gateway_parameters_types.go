@@ -37,17 +37,17 @@ type KubernetesProxyConfig struct {
 	// Configuration for the container running Envoy.
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
 	// Configuration for the pods that will be created.
-	//PodTemplate *kube.Pod `json:"podTempalte,omitempty"`
+	PodTemplate *Pod `json:"podTempalte,omitempty"`
 	// Configuration for the Kubernetes Service that exposes the Envoy proxy over
 	// the network.
-	//	Service *kube.Service `json:"service,omitempty"`
+	Service *Service `json:"service,omitempty"`
 	// Autoscaling configuration.
-	//	Autoscaling *kube.Autoscaling `json:"autoscaling,omitempty"`
+	Autoscaling *Autoscaling `json:"autoscaling,omitempty"`
 }
 
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
-	Replicas *int32 `json:"replicas,omitempty"`
+	Replicas *uint32 `json:"replicas,omitempty"`
 }
 
 type EnvoyContainer struct {
@@ -64,7 +64,7 @@ type EnvoyContainer struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	//	Image *kube.Image `json:"image,omitempty"`
+	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
@@ -72,22 +72,7 @@ type EnvoyContainer struct {
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	//	Resources *kube.ResourceRequirements `json:"resources,omitempty"`
-}
-
-type Image struct {
-	// The image registry.
-	Registry string `json:"registry,omitempty"`
-	// The image repository (name).
-	Repository string `json:"repository,omitempty"`
-	// The image tag.
-	Tag string `json:"tag,omitempty"`
-	// The hash digest of the image, e.g. `sha256:12345...`
-	Digest string `json:"digest,omitempty"`
-	// The image pull policy for the container. See
-	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
-	// for details.
-	PullPolicy corev1.PullPolicy `json:"pullPolicy,omitempty"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }
 type EnvoyBootstrap struct {
 

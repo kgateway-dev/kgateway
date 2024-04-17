@@ -11,9 +11,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
@@ -211,35 +211,34 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	// extract all the custom values from the GatewayParameters
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
-	kubeProxyConfig := gwp.Spec.GetKube()
-	deployConfig := kubeProxyConfig.GetDeployment()
-	podConfig := kubeProxyConfig.GetPodTemplate()
-	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
-	svcConfig := kubeProxyConfig.GetService()
+	kubeProxyConfig := gwp.Spec.Kube
+	deployConfig := kubeProxyConfig.Deployment
+	podConfig := kubeProxyConfig.PodTemplate
+	envoyContainerConfig := kubeProxyConfig.EnvoyContainer
+	svcConfig := kubeProxyConfig.Service
 
 	// deployment values
-	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
+	autoscalingVals := getAutoscalingValues(kubeProxyConfig.Autoscaling)
 	vals.Gateway.Autoscaling = autoscalingVals
-	if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
-		replicas := deployConfig.GetReplicas().GetValue()
-		vals.Gateway.ReplicaCount = &replicas
+	if autoscalingVals == nil && deployConfig != nil {
+		vals.Gateway.ReplicaCount = deployConfig.Replicas
 	}
 
 	// service values
 	vals.Gateway.Service = getServiceValues(svcConfig)
 
 	// pod template values
-	vals.Gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
-	vals.Gateway.ExtraPodLabels = podConfig.GetExtraLabels()
-	vals.Gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
-	vals.Gateway.PodSecurityContext = podConfig.GetSecurityContext()
-	vals.Gateway.NodeSelector = podConfig.GetNodeSelector()
-	vals.Gateway.Affinity = podConfig.GetAffinity()
-	vals.Gateway.Tolerations = podConfig.GetTolerations()
+	vals.Gateway.ExtraPodAnnotations = podConfig.ExtraAnnotations
+	vals.Gateway.ExtraPodLabels = podConfig.ExtraLabels
+	vals.Gateway.ImagePullSecrets = podConfig.ImagePullSecrets
+	vals.Gateway.PodSecurityContext = podConfig.SecurityContext
+	vals.Gateway.NodeSelector = podConfig.NodeSelector
+	vals.Gateway.Affinity = podConfig.Affinity
+	vals.Gateway.Tolerations = podConfig.Tolerations
 
 	// envoy container values
-	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
-	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+	logLevel := envoyContainerConfig.Bootstrap.LogLevel
+	compLogLevels := envoyContainerConfig.Bootstrap.ComponentLogLevels
 
 	vals.Gateway.LogLevel = &logLevel
 	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
@@ -247,9 +246,9 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 		return nil, err
 	}
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
-	vals.Gateway.Resources = envoyContainerConfig.GetResources()
-	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())
+	vals.Gateway.Resources = envoyContainerConfig.Resources
+	vals.Gateway.SecurityContext = envoyContainerConfig.SecurityContext
+	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.Image)
 
 	return vals, nil
 }
