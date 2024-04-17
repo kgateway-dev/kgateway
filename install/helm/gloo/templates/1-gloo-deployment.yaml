@@ -8,6 +8,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    gloo: gloo
     {{- include "gloo.labels" . }}
   name: gloo
   namespace: {{ .Release.Namespace }}
