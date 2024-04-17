@@ -2,13 +2,12 @@ package k8sgateway_test
 
 import (
 	"context"
+	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
-
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 )

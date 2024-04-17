@@ -62,6 +62,9 @@ func (c *TestCluster) RegisterTestInstallation(name string, glooGatewayContext *
 		// Name is a unique identifier for this TestInstallation
 		Name: name,
 
+		// Namespace is the namespace where the installation of Gloo Gateway is running
+		Namespace: glooGatewayContext.InstallNamespace,
+
 		// Create an operator which is responsible for executing operations against the cluster
 		Operator: operations.NewGinkgoOperator(),
 
@@ -92,6 +95,9 @@ type TestInstallation struct {
 
 	// Name is a unique identifier for this TestInstallation
 	Name string
+
+	// Namespace is the namespace where the installation of Gloo Gateway is running
+	Namespace string
 
 	// Operator is responsible for executing operations against an installation of Gloo Gateway
 	// This is meant to simulate the behaviors that a person could execute

@@ -39,6 +39,10 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 		err := testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
+
+		// Initialize required resource clients for test after CRDs are installed
+		testCluster.ClusterContext.AddRouteOptionClient(ctx)
+
 	})
 
 	AfterAll(func() {
@@ -60,7 +64,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 	})
 
-	FContext("RouteOptions", func() {
+	Context("RouteOptions", func() {
 
 		It("Apply fault injection using targetRef RouteOption", func() {
 			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)

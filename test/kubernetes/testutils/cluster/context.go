@@ -1,7 +1,13 @@
 package cluster
 
 import (
+	"context"
+
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,4 +33,21 @@ type Context struct {
 
 	// A set of clients for interacting with the Kubernetes Cluster
 	Clientset *kubernetes.Clientset
+
+	// A set of clients for interacting with the Edge resources
+	// TODO(npolshak): Add new clients as needed
+	RouteOptionClient gatewayv1.RouteOptionClient
+}
+
+func (c *Context) AddRouteOptionClient(ctx context.Context) {
+	cache := kube.NewKubeCache(ctx)
+	routeOptionClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.RouteOptionCrd,
+		Cfg:         c.RestConfig,
+		SharedCache: cache,
+	}
+	routeOptionClient, err := gatewayv1.NewRouteOptionClient(ctx, routeOptionClientFactory)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	c.RouteOptionClient = routeOptionClient
 }

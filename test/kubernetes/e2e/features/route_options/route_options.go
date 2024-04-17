@@ -15,11 +15,11 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
-	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -57,14 +57,14 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					FaultInjection()(ctx)
 
 					// Check status on solo-apis client object
-					var routeOption = &v1.RouteOption{}
 					Eventually(func(g Gomega) {
-						g.Expect(routeOption.Status.GetSubresourceStatuses()).ToNot(BeEmpty())
-						g.Expect(routeOption.Status.GetSubresourceStatuses()["gloo-system"].GetReportedBy()).To(Equal("gloo-kube-gateway"))
-						g.Expect(routeOption.Status.GetSubresourceStatuses()["gloo-system"].GetState()).To(Equal(v1.RouteOptionStatus_Accepted))
+						routeOption, err := installation.ClusterContext.RouteOptionClient.Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+						g.Expect(err).NotTo(HaveOccurred())
+						g.Expect(routeOption.GetNamespacedStatuses()).ToNot(BeNil())
+						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())
+						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Namespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
+						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Namespace].GetState()).To(Equal(core.Status_Accepted))
 					}, "5s", ".1s").Should(Succeed())
-					installation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: routeOptionMeta.GetName(), Namespace: routeOptionMeta.GetNamespace()}, routeOption)
-
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -143,6 +143,6 @@ func FaultInjection() assertions.ClusterAssertion {
 			g.Expect(resp).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusTeapot,
 			}))
-		}, "5s", ".1s", "curl should eventually return faultinjection response")
+		}, "5s", ".1s", "curl should eventually return fault injection response")
 	}
 }

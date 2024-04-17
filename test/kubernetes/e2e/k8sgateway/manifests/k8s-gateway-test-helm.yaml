@@ -1,11 +1,8 @@
 global:
   image:
     pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
 settings:
-  singleNamespace: true
+  singleNamespace: false
   create: true
   invalidConfigPolicy:
     replaceInvalidRoutes: true
