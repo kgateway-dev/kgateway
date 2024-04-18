@@ -41,8 +41,6 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 		// Initialize required resource clients for test after CRDs are installed
 		testInstallation.ResourceClients = gloogateway.NewResourceClients(ctx, testCluster.ClusterContext)
-		Expect(err).NotTo(HaveOccurred(), "failed to initialize RouteOptionClient")
-
 	})
 
 	AfterAll(func() {
