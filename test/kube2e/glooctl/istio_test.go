@@ -42,7 +42,7 @@ var _ = Describe("Istio", Ordered, func() {
 		// https://github.com/solo-io/solo-projects/issues/6048 tracks the work to re-enable these tests
 		Skip("These tests are inconsistent. Temporarily disabling")
 	})
-	
+
 	// Tests for: `glooctl istio [..]`
 	// These tests assume that Gloo and Istio are pre-installed in the cluster
 
