@@ -2,9 +2,10 @@ package assertions
 
 import (
 	"context"
-	"github.com/onsi/ginkgo/v2"
 	"net"
 	"time"
+
+	"github.com/onsi/ginkgo/v2"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"

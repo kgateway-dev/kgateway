@@ -1,9 +1,10 @@
 package assertions
 
 import (
+	"io"
+
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"io"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 )

@@ -2,8 +2,9 @@ package assertions
 
 import (
 	"context"
-	"github.com/onsi/ginkgo/v2"
 	"time"
+
+	"github.com/onsi/ginkgo/v2"
 
 	"github.com/solo-io/gloo/test/kube2e"
 

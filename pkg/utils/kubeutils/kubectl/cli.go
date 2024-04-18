@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/k8s-utils/testutils/kube"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 
