@@ -143,6 +143,6 @@ func FaultInjection() assertions.ClusterAssertion {
 			g.Expect(resp).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusTeapot,
 			}))
-		}, "5s", ".1s", "curl should eventually return fault injection response")
+		}, "5s", ".1s", "curl should eventually return fault injection response").Should(Succeed())
 	}
 }
