@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/threadsafe"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
