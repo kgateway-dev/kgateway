@@ -67,3 +67,28 @@ spec:
         - containerPort: 80
           name: http-web-svc
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+  labels:
+    app: curl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+        version: v1
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:7.83.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - "tail"
+            - "-f"
+            - "/dev/null"

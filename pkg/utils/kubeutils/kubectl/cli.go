@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-
-	"io"
-	"time"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"

@@ -1,19 +1,16 @@
 package route_options
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
-	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -33,6 +30,13 @@ var (
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+
+	curlDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "curl",
+			Namespace: "default",
+		},
+	}
 
 	// RouteOption resource to be created
 	routeOptionMeta = metav1.ObjectMeta{
@@ -54,7 +58,7 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment)
 
 					// Check fault injection is applied
-					FaultInjection()(ctx)
+					CheckFaultInjectionFromCluster()(ctx)
 
 					// Check status on solo-apis client object
 					Eventually(func(g Gomega) {
@@ -95,7 +99,7 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment)
 
 					// Check fault injection is applied
-					FaultInjection()(ctx)
+					CheckFaultInjectionFromCluster()(ctx)
 
 					// TODO(npolshak): Statuses are not supported for filter extensions yet
 				},
@@ -115,35 +119,33 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 	},
 }
 
-func FaultInjection() assertions.ClusterAssertion {
+func CheckFaultInjectionFromCluster() assertions.ClusterAssertion {
 	return func(ctx context.Context) {
-		// Check that the curl request is successful
-		kubeCli := kubectl.NewCli()
-		portForwarder, err := kubeCli.StartPortForward(ctx,
-			portforward.WithDeployment(proxyDeployment.GetName(), proxyDeployment.GetNamespace()),
-			portforward.WithRemotePort(8080),
-		)
-		Expect(err).NotTo(HaveOccurred())
-		defer func() {
-			portForwarder.Close()
-			portForwarder.WaitForStop()
-		}()
-
-		curlGateway := testutils.DefaultRequestBuilder().
-			WithHost("example.com").
-			WithPort(uint32(portForwarder.LocalPort())).
-			WithHostname("localhost").
-			Build()
+		fdqnAddr := fmt.Sprintf("http://%s.%s.svc.cluster.local:8080", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
 
 		Eventually(func(g Gomega) {
-			resp, err := http.DefaultClient.Do(curlGateway)
+			// curl gloo-proxy-gw.default.svc.cluster.local:8080 -H "Host: example.com" -v
+			resp, err := curl(ctx, curlDeployment.GetNamespace(), curlDeployment.GetName(), "curl", fdqnAddr, "example.com")
 			g.Expect(err).NotTo(HaveOccurred())
-			defer resp.Body.Close()
-			g.Expect(resp).Should(
-				matchers.HaveHttpResponse(&matchers.HttpResponse{
-					Body:       "fault filter abort",
-					StatusCode: http.StatusTeapot,
-				}))
+			g.Expect(resp).To(ContainSubstring("fault filter abort"))
+			g.Expect(resp).To(ContainSubstring("HTTP/1.1 418"))
 		}, "10s", "1s", "curl should eventually return fault injection response").Should(Succeed())
 	}
+}
+
+func curl(ctx context.Context, ns, fromDeployment, fromContainer, fdqnAddr, host string) (string, error) {
+	buf := &bytes.Buffer{}
+	kubeCli := kubectl.NewCli().WithReceiver(buf)
+
+	args := []string{
+		"exec",
+		"-n", ns,
+		fmt.Sprintf("deployment/%s", fromDeployment),
+		"-c", fromContainer,
+		"--", "curl", fdqnAddr,
+		"-H", fmt.Sprintf("Host: %s", host),
+		"-v",
+	}
+	err := kubeCli.RunCommand(ctx, args...)
+	return buf.String(), err
 }
