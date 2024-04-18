@@ -77,10 +77,6 @@ func (c *cliPortForwarder) Address() string {
 	return net.JoinHostPort(c.properties.localAddress, strconv.Itoa(c.properties.localPort))
 }
 
-func (f *cliPortForwarder) LocalPort() int {
-	return f.properties.localPort
-}
-
 func (c *cliPortForwarder) Close() {
 	if c.cmdCancel != nil {
 		c.cmdCancel()

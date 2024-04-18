@@ -5,23 +5,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
-
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	"github.com/hashicorp/go-multierror"
-	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
 type OnProxiesTranslatedFn func(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports)

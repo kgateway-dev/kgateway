@@ -5,13 +5,13 @@ import (
 	"io"
 	"testing"
 
-	"github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name

@@ -4,16 +4,15 @@ import (
 	"context"
 	"sync"
 
+	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
-	"github.com/solo-io/go-utils/contextutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 // HandleProxyReports should conform to the OnProxiesTranslatedFn and QueueStatusForProxiesFn signatures
@@ -21,6 +20,7 @@ var _ syncer.OnProxiesTranslatedFn = (&statusSyncerFactory{}).HandleProxyReports
 
 var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatusForProxies
 
+// GatewayStatusSyncer is responsible for applying status plugins to Gloo Gateway proxies
 type GatewayStatusSyncer interface {
 	QueueStatusForProxies(
 		proxiesToQueue v1.ProxyList,
@@ -45,6 +45,7 @@ func NewStatusSyncerFactory() GatewayStatusSyncer {
 	}
 }
 
+// QueueStatusForProxies queues the proxies to be synced by the status syncer
 func (f *statusSyncerFactory) QueueStatusForProxies(
 	proxiesToQueue v1.ProxyList,
 	pluginRegistry *registry.PluginRegistry,
@@ -61,6 +62,7 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 	f.proxiesPerRegistry[pluginRegistry] = proxies
 }
 
+// HandleProxyReports is a callback that applies status plugins to the proxies that have been queued
 func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports) {
 	// ignore until the syncer has been initialized
 	f.lock.RLock()

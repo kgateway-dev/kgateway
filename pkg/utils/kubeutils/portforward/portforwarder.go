@@ -18,9 +18,6 @@ type PortForwarder interface {
 	// Address returns the local forwarded address. Only valid while the apiPortForwarder is running.
 	Address() string
 
-	// LocalPort returns the local forwarded port. Only valid while the apiPortForwarder is running.
-	LocalPort() int
-
 	// Close this apiPortForwarder and release any resources.
 	Close()
 
