@@ -41,7 +41,7 @@ func (c *TestCluster) PreFailHandler() {
 	}
 }
 
-func (c *TestCluster) RegisterTestInstallation(ctx context.Context, glooGatewayContext *gloogateway.Context) *TestInstallation {
+func (c *TestCluster) RegisterTestInstallation(glooGatewayContext *gloogateway.Context) *TestInstallation {
 	if c.activeInstallations == nil {
 		c.activeInstallations = make(map[string]*TestInstallation, 2)
 	}
@@ -86,7 +86,8 @@ func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation)
 type TestInstallation struct {
 	fmt.Stringer
 
-	*TestCluster
+	// TestCluster contains the properties of the TestCluster this TestInstallation is a part of
+	TestCluster *TestCluster
 
 	// Metadata contains the properties used to install Gloo Gateway
 	Metadata *gloogateway.Context
@@ -120,7 +121,8 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction
 		return err
 	}
 
-	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.ClusterContext)
+	// We can only create the ResourceClients after the CRDs exist in the Cluster
+	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
 	return nil
 }
 
@@ -139,7 +141,7 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAc
 func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
 	gomega.Expect(test.Name).NotTo(gomega.BeEmpty(), "All tests must include a name")
 
-	ginkgo.GinkgoWriter.Print("TEST: %s", test.Name)
+	i.Operator.Logf("TEST: %s", test.Name)
 	test.Test(ctx, i)
 }
 
@@ -155,7 +157,7 @@ func (i *TestInstallation) preFailHandler() {
 	}
 	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
 	if err != nil {
-		ginkgo.GinkgoTB().Errorf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i, err)
+		i.Operator.Logf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i, err)
 	}
 }
 
