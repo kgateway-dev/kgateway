@@ -62,7 +62,7 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 
 					// Check status on solo-apis client object
 					Eventually(func(g Gomega) {
-						routeOption, err := installation.ClusterContext.RouteOptionClient.Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+						routeOption, err := installation.RouteOptionClient.Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(routeOption.GetNamespacedStatuses()).ToNot(BeNil())
 						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())

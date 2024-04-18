@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
 
@@ -108,6 +109,10 @@ type TestInstallation struct {
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
 	Assertions *assertions.Provider
+
+	// A set of clients for interacting with the Edge resources
+	// TODO(npolshak): Add new clients here as needed
+	RouteOptionClient gatewayv1.RouteOptionClient
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction actions.ClusterAction) error {
