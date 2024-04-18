@@ -450,7 +450,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 	}
 
-	fmt.Printf("SNAPSHOT CLONE: %+v\n", snapshotClone)
+	fmt.Printf("SNAPSHOT CLONE UPSTREAMS: %+v\n", snapshotClone.Upstreams)
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
 	shouldValidateAgainstPreviousState := v.shouldValidateAgainstPreviousState(opts)

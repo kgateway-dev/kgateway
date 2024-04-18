@@ -7,6 +7,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"log"
+	"strings"
 
 	gateway_solo_io "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
@@ -317,6 +318,14 @@ func (s *ApiSnapshot) GetResourcesList(resource resources.Resource) (resources.R
 	}
 }
 
+func usListString(list gloo_solo_io.UpstreamList) string {
+	refs := []string{}
+	for _, li := range list {
+		refs = append(refs, li.GetMetadata().Ref().Key())
+	}
+	return fmt.Sprintf("[%s]", strings.Join(refs, ","))
+}
+
 func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch resource.(type) {
@@ -369,7 +378,9 @@ func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 
 		for i, res := range s.Upstreams {
 			if refKey == res.GetMetadata().Ref().Key() {
+				fmt.Printf("REMOVING UPSTREAM %v FROM LIST %v\n", refKey, usListString(s.Upstreams))
 				s.Upstreams = append(s.Upstreams[:i], s.Upstreams[i+1:]...)
+				fmt.Printf("NEW UPSTREAMS: %v\n", usListString(s.Upstreams))
 				break
 			}
 		}
