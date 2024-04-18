@@ -34,7 +34,7 @@ var (
 	curlDeployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "curl",
-			Namespace: "default",
+			Namespace: "curl",
 		},
 	}
 

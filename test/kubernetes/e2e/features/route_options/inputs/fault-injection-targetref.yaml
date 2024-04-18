@@ -67,10 +67,16 @@ spec:
         - containerPort: 80
           name: http-web-svc
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: curl
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: curl
+  namespace: curl
   labels:
     app: curl
 spec:
