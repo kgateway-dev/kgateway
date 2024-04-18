@@ -8,13 +8,14 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 	"github.com/solo-io/go-utils/threadsafe"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,13 +63,17 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					CheckFaultInjectionFromCluster()(ctx)
 
 					// Check status on solo-apis client object
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+					}, 5, 1)
+
+					// Check correct gateway reports status of route option
 					Eventually(func(g Gomega) {
-						routeOption, err := installation.RouteOptionClient.Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+						routeOption, err := installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(routeOption.GetNamespacedStatuses()).ToNot(BeNil())
 						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())
-						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Namespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
-						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Namespace].GetState()).To(Equal(core.Status_Accepted))
+						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Metadata.InstallNamespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
 					}, "5s", ".1s").Should(Succeed())
 				},
 			},
