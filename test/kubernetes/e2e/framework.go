@@ -54,8 +54,6 @@ func (c *TestCluster) RegisterTestInstallation(ctx context.Context, glooGatewayC
 		Metadata: glooGatewayContext,
 
 		// Construct a set of clients for this installation
-		// These will be used by tests to execute actions
-		// TODO: Perhaps these should just live in the actions package
 		Clientset: gloogateway.NewClientset(ctx, c.ClusterContext),
 
 		// Create an operator which is responsible for executing operations against the cluster
@@ -90,8 +88,10 @@ type TestInstallation struct {
 
 	*TestCluster
 
+	// Metadata contains the properties used to install Gloo Gateway
 	Metadata *gloogateway.Context
 
+	// Clientset is a set of clients that can manipulate resources owned by Gloo Gateway
 	Clientset gloogateway.Clientset
 
 	// Operator is responsible for executing operations against an installation of Gloo Gateway
