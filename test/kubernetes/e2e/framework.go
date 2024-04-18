@@ -6,14 +6,15 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
+
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
 // TestCluster is the structure around a set of tests that run against a Kubernetes Cluster
