@@ -2,7 +2,6 @@ package setup
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 
 	"golang.org/x/sync/errgroup"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
