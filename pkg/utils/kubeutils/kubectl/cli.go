@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/go-utils/threadsafe"
+	"github.com/solo-io/k8s-utils/testutils/kube"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 
@@ -158,26 +158,15 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 	return portForwarder, err
 }
 
-// CurlFromDeployment executes a curl from a deployment
-// The assumption is that the deployment has a container named `curl` that will be used to invoke the request
-func (c *Cli) CurlFromDeployment(ctx context.Context, deploymentMeta v1.ObjectMeta, options ...curl.Option) (string, error) {
-	var outLocation threadsafe.Buffer
+// CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
+func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta v1.ObjectMeta, options ...curl.Option) string {
+	curlArgs := curl.BuildArgs(options...)
 
-	args := []string{
-		"exec",
-		"-n", deploymentMeta.GetNamespace(),
-		fmt.Sprintf("deployment/%s", deploymentMeta.GetName()),
-		"-c",
-		"curl",
-		"--",
-		"curl",
-	}
-	args = append(args, curl.BuildArgs(options...)...)
-
-	err := c.Command(ctx, args...).WithStdout(&outLocation).Run().Cause()
-	if err != nil {
-		return "", err
-	}
-
-	return outLocation.String(), nil
+	return kube.CurlWithEphemeralPodStable(
+		ctx,
+		c.receiver,
+		c.kubeContext,
+		podMeta.GetNamespace(),
+		podMeta.GetName(),
+		curlArgs...)
 }
