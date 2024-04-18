@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
+
 	"github.com/onsi/gomega/types"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +16,7 @@ import (
 
 func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) ClusterAssertion {
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		Eventually(func(g Gomega) {
 			// We intentionally rely only on Pods that have marked themselves as ready as a way of defining more explicit assertions
