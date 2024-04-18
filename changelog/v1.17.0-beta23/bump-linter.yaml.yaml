@@ -2,6 +2,6 @@ changelog:
   - type: NON_USER_FACING
     description: >-
       Bump golangci-lint for parity with CI
-	
+
       skipCI-kube-tests:true
       skipCI-docs-build:true
