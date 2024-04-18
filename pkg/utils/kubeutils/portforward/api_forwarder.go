@@ -3,17 +3,18 @@ package portforward
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/avast/retry-go/v4"
+
+	"net"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/rotisserie/eris"
 	"k8s.io/client-go/tools/portforward"
@@ -126,10 +127,6 @@ func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 
 func (f *apiPortForwarder) Address() string {
 	return net.JoinHostPort(f.properties.localAddress, strconv.Itoa(f.properties.localPort))
-}
-
-func (f *apiPortForwarder) LocalPort() int {
-	return f.properties.localPort
 }
 
 func (f *apiPortForwarder) Close() {

@@ -1,7 +1,7 @@
 global:
   image:
     pullPolicy: IfNotPresent
-  # Note: glooRbac.namespaced settings are not supported with Gloo Gateway.
+  # Note: glooRbac.namespaced settings are not supported with Gloo Gateway https://github.com/solo-io/solo-projects/issues/6064
   # Gateway API fundamentally expects HTTPRoutes and Gateways in any namespace and cross-namespace references to be supported
   # Currently we are explicitly disabled namespaced roles for Gloo Gateway tests, but this can be left unset.
   glooRbac:

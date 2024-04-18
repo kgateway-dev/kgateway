@@ -1,7 +1,6 @@
 package route_options
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
+	"github.com/solo-io/go-utils/threadsafe"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -134,8 +134,8 @@ func CheckFaultInjectionFromCluster() assertions.ClusterAssertion {
 }
 
 func curl(ctx context.Context, ns, fromDeployment, fromContainer, fdqnAddr, host string) (string, error) {
-	buf := &bytes.Buffer{}
-	kubeCli := kubectl.NewCli().WithReceiver(buf)
+	var buf threadsafe.Buffer
+	kubeCli := kubectl.NewCli().WithReceiver(&buf)
 
 	args := []string{
 		"exec",
