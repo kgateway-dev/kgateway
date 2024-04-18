@@ -17,12 +17,6 @@ kind: HTTPRoute
 metadata:
   name: example-route
 spec:
-  filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: gateway.solo.io
-        kind: RouteOption
-        name: teapot-fault-injection
   parentRefs:
     - name: gw
   hostnames:
@@ -31,6 +25,12 @@ spec:
     - backendRefs:
         - name: example-svc
           port: 8080
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.solo.io
+            kind: RouteOption
+            name: teapot-fault-injection
 ---
 apiVersion: gateway.solo.io/v1
 kind: RouteOption

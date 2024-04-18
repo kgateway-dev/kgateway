@@ -86,7 +86,7 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 	Name:        "RouteOptions.ConfigureRouteOptionsWithFilterExtenstion",
 	Description: "the RouteOptions will configure fault inject with a filter extension",
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
-		trafficRefRoutingOp := operations.ReversibleOperation{
+		extensionFilterRoutingOp := operations.ReversibleOperation{
 			Do: &operations.BasicOperation{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(filterExtensioManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(filterExtensioManifest),
@@ -110,7 +110,7 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 			},
 		}
 
-		err := installation.Operator.ExecuteReversibleOperations(ctx, trafficRefRoutingOp)
+		err := installation.Operator.ExecuteReversibleOperations(ctx, extensionFilterRoutingOp)
 		Expect(err).NotTo(HaveOccurred())
 	},
 }
@@ -130,19 +130,20 @@ func FaultInjection() assertions.ClusterAssertion {
 		}()
 
 		curlGateway := testutils.DefaultRequestBuilder().
-			WithPort(8080).
-			WithPath("/").
 			WithHost("example.com").
-			WithHostname(portForwarder.Address()).
+			WithPort(uint32(portForwarder.LocalPort())).
+			WithHostname("localhost").
 			Build()
 
 		Eventually(func(g Gomega) {
 			resp, err := http.DefaultClient.Do(curlGateway)
 			g.Expect(err).NotTo(HaveOccurred())
 			defer resp.Body.Close()
-			g.Expect(resp).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusTeapot,
-			}))
-		}, "5s", ".1s", "curl should eventually return fault injection response").Should(Succeed())
+			g.Expect(resp).Should(
+				matchers.HaveHttpResponse(&matchers.HttpResponse{
+					Body:       "fault filter abort",
+					StatusCode: http.StatusTeapot,
+				}))
+		}, "10s", "1s", "curl should eventually return fault injection response").Should(Succeed())
 	}
 }
