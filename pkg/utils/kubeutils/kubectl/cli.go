@@ -8,7 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/k8s-utils/testutils/kube"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 
@@ -160,7 +160,7 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 }
 
 // CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
-func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta v1.ObjectMeta, options ...curl.Option) string {
+func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta metav1.ObjectMeta, options ...curl.Option) string {
 	curlArgs := curl.BuildArgs(options...)
 
 	return kube.CurlWithEphemeralPodStable(
