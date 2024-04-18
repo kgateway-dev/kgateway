@@ -174,7 +174,7 @@ func (c *Cli) CurlFromDeployment(ctx context.Context, deploymentMeta v1.ObjectMe
 	}
 	args = append(args, curl.BuildArgs(options...)...)
 
-	err := c.Command(ctx, args...).WithStdin(&outLocation).Run().Cause()
+	err := c.Command(ctx, args...).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return "", err
 	}
