@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
@@ -29,7 +30,7 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
-	curlDeployment = &appsv1.Deployment{
+	curlPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "curl",
 			Namespace: "curl",
@@ -111,31 +112,18 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 
 func CheckFaultInjectionFromCluster() assertions.ClusterAssertion {
 	return func(ctx context.Context) {
-		fdqnAddr := fmt.Sprintf("http://%s.%s.svc.cluster.local:8080", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
+		fdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
 
 		Eventually(func(g Gomega) {
 			// curl gloo-proxy-gw.default.svc.cluster.local:8080 -H "Host: example.com" -v
-			resp, err := curl(ctx, curlDeployment.GetNamespace(), curlDeployment.GetName(), "curl", fdqnAddr, "example.com")
-			g.Expect(err).NotTo(HaveOccurred())
+			var buf threadsafe.Buffer
+			kubeCli := kubectl.NewCli().WithReceiver(&buf)
+			resp := kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta,
+				curl.WithHost(fdqnAddr),
+				curl.WithHeader("Host", "example.com"),
+				curl.VerboseOutput())
 			g.Expect(resp).To(ContainSubstring("fault filter abort"))
 			g.Expect(resp).To(ContainSubstring("HTTP/1.1 418"))
 		}, "10s", "1s", "curl should eventually return fault injection response").Should(Succeed())
 	}
-}
-
-func curl(ctx context.Context, ns, fromDeployment, fromContainer, fdqnAddr, host string) (string, error) {
-	var buf threadsafe.Buffer
-	kubeCli := kubectl.NewCli().WithReceiver(&buf)
-
-	args := []string{
-		"exec",
-		"-n", ns,
-		fmt.Sprintf("deployment/%s", fromDeployment),
-		"-c", fromContainer,
-		"--", "curl", fdqnAddr,
-		"-H", fmt.Sprintf("Host: %s", host),
-		"-v",
-	}
-	err := kubeCli.RunCommand(ctx, args...)
-	return buf.String(), err
 }

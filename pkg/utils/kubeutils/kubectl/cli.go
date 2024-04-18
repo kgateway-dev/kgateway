@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/k8s-utils/testutils/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-
-	"io"
-	"time"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
