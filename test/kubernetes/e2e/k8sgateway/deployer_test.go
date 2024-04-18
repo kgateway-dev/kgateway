@@ -4,18 +4,13 @@ import (
 	"context"
 	"path/filepath"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
-	"github.com/solo-io/skv2/codegen/util"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"k8s.io/client-go/rest"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
 var _ = Describe("Deployer Test", Ordered, func() {
@@ -35,7 +30,6 @@ var _ = Describe("Deployer Test", Ordered, func() {
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
-			"k8s-gw-deployer-test",
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-deployer-test",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
@@ -46,7 +40,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Initialize required resource clients for test after CRDs are installed
-		testInstallation.RouteOptionClient, err = AddRouteOptionClient(ctx, testCluster.ClusterContext.RestConfig)
+		testInstallation.ResourceClients = gloogateway.NewResourceClients(ctx, testCluster.ClusterContext)
 		Expect(err).NotTo(HaveOccurred(), "failed to initialize RouteOptionClient")
 
 	})
@@ -83,13 +77,3 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	})
 
 })
-
-func AddRouteOptionClient(ctx context.Context, restConfig *rest.Config) (gatewayv1.RouteOptionClient, error) {
-	cache := kube.NewKubeCache(ctx)
-	routeOptionClientFactory := &factory.KubeResourceClientFactory{
-		Crd:         gatewayv1.RouteOptionCrd,
-		Cfg:         restConfig,
-		SharedCache: cache,
-	}
-	return gatewayv1.NewRouteOptionClient(ctx, routeOptionClientFactory)
-}
