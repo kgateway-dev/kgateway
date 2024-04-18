@@ -2,6 +2,7 @@ package assertions
 
 import (
 	"context"
+	"github.com/onsi/ginkgo/v2"
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e"
@@ -18,7 +19,7 @@ func (p *Provider) CheckResources() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		Eventually(func(g Gomega) {
 			contextWithCancel, cancel := context.WithCancel(ctx)
@@ -48,7 +49,7 @@ func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		// Check that everything is OK
 		p.CheckResources()(ctx)
@@ -65,7 +66,7 @@ func (p *Provider) UninstallationWasSuccessful() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		p.NamespaceNotExist(p.glooGatewayContext.InstallNamespace)(ctx)
 	}

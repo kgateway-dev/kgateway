@@ -1,8 +1,6 @@
 package provider
 
 import (
-	"testing"
-
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/kubectl"
 
@@ -19,10 +17,10 @@ type ActionsProvider struct {
 }
 
 // NewActionsProvider returns an ActionsProvider
-func NewActionsProvider(testingFramework testing.TB) *ActionsProvider {
+func NewActionsProvider() *ActionsProvider {
 	return &ActionsProvider{
 		kubectlProvider: kubectl.NewProvider(),
-		glooctlProvider: glooctl.NewProvider(testingFramework),
+		glooctlProvider: glooctl.NewProvider(),
 	}
 }
 
