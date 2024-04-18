@@ -53,8 +53,8 @@ func (c *TestCluster) RegisterTestInstallation(ctx context.Context, glooGatewayC
 		// Maintain a reference to the Metadata used for this installation
 		Metadata: glooGatewayContext,
 
-		// Construct a set of clients for this installation
-		Clientset: gloogateway.NewClientset(ctx, c.ClusterContext),
+		// ResourceClients are only available _after_ installing Gloo Gateway
+		ResourceClients: nil,
 
 		// Create an operator which is responsible for executing operations against the cluster
 		Operator: operations.NewOperator().
@@ -91,8 +91,8 @@ type TestInstallation struct {
 	// Metadata contains the properties used to install Gloo Gateway
 	Metadata *gloogateway.Context
 
-	// Clientset is a set of clients that can manipulate resources owned by Gloo Gateway
-	Clientset gloogateway.Clientset
+	// ResourceClients is a set of clients that can manipulate resources owned by Gloo Gateway
+	ResourceClients gloogateway.ResourceClients
 
 	// Operator is responsible for executing operations against an installation of Gloo Gateway
 	// This is meant to simulate the behaviors that a person could execute
@@ -115,7 +115,13 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction
 		OpAction:    installAction,
 		OpAssertion: i.Assertions.InstallationWasSuccessful(),
 	}
-	return i.Operator.ExecuteOperations(ctx, installOperation)
+	err := i.Operator.ExecuteOperations(ctx, installOperation)
+	if err != nil {
+		return err
+	}
+
+	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.ClusterContext)
+	return nil
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAction actions.ClusterAction) error {

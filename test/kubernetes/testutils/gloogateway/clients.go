@@ -9,16 +9,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 )
 
-// Clientset is a set of clients for interacting with the Edge resources
-type Clientset interface {
+// ResourceClients is a set of clients for interacting with the Edge resources
+type ResourceClients interface {
 	RouteOptionClient() gatewayv1.RouteOptionClient
 }
 
-type clientsetImpl struct {
+type clients struct {
 	routeOptionClient gatewayv1.RouteOptionClient
 }
 
-func NewClientset(ctx context.Context, clusterCtx *cluster.Context) Clientset {
+func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) ResourceClients {
 	sharedClientCache := kube.NewKubeCache(ctx)
 
 	routeOptionClientFactory := &factory.KubeResourceClientFactory{
@@ -29,11 +29,11 @@ func NewClientset(ctx context.Context, clusterCtx *cluster.Context) Clientset {
 	routeOptionClient, err := gatewayv1.NewRouteOptionClient(ctx, routeOptionClientFactory)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	return &clientsetImpl{
+	return &clients{
 		routeOptionClient: routeOptionClient,
 	}
 }
 
-func (c *clientsetImpl) RouteOptionClient() gatewayv1.RouteOptionClient {
+func (c *clients) RouteOptionClient() gatewayv1.RouteOptionClient {
 	return c.routeOptionClient
 }

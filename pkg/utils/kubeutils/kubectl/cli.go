@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/go-utils/threadsafe"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
@@ -153,4 +156,28 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 		retry.Attempts(5),
 	)
 	return portForwarder, err
+}
+
+// CurlFromDeployment executes a curl from a deployment
+// The assumption is that the deployment has a container named `curl` that will be used to invoke the request
+func (c *Cli) CurlFromDeployment(ctx context.Context, deploymentMeta v1.ObjectMeta, options ...curl.Option) (string, error) {
+	var outLocation threadsafe.Buffer
+
+	args := []string{
+		"exec",
+		"-n", deploymentMeta.GetNamespace(),
+		fmt.Sprintf("deployment/%s", deploymentMeta.GetName()),
+		"-c",
+		"curl",
+		"--",
+		"curl",
+	}
+	args = append(args, curl.BuildArgs(options...)...)
+
+	err := c.Command(ctx, args...).WithStdin(&outLocation).Run().Cause()
+	if err != nil {
+		return "", err
+	}
+
+	return outLocation.String(), nil
 }
