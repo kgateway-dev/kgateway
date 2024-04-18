@@ -144,13 +144,21 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 }
 
 func ExpectStatLastValueMatches(measure *stats2.Int64Measure, lastValueMatcher types.GomegaMatcher) {
-	rows, err := view.RetrieveData(measure.Name())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
+	ExpectStatLastValueMatchesWithOffset(1, measure, lastValueMatcher)
 }
 
 func ExpectStatSumMatches(measure *stats2.Int64Measure, sumValueMatcher types.GomegaMatcher) {
+	ExpectStatSumMatchesWithOffset(1, measure, sumValueMatcher)
+}
+
+func ExpectStatLastValueMatchesWithOffset(offset int, measure *stats2.Int64Measure, lastValueMatcher types.GomegaMatcher) {
 	rows, err := view.RetrieveData(measure.Name())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
+	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(offset+1, rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
+}
+
+func ExpectStatSumMatchesWithOffset(offset int, measure *stats2.Int64Measure, sumValueMatcher types.GomegaMatcher) {
+	rows, err := view.RetrieveData(measure.Name())
+	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(offset+1, rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
 }

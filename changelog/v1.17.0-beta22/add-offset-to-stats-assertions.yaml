@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING  
+  description: >- 
+    Add ExpectStatLastValueMatchesWithOffset and ExpectStatSumMatchesWithOffset to the stats assertions
+    Adjust a timeout in the secret deletion gateway test
+  resolvesIssue: false
