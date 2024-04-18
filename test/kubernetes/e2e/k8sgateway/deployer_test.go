@@ -4,8 +4,13 @@ import (
 	"context"
 	"path/filepath"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/skv2/codegen/util"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"k8s.io/client-go/rest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,6 +31,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	)
 
 	BeforeAll(func() {
+		var err error
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
@@ -36,8 +42,13 @@ var _ = Describe("Deployer Test", Ordered, func() {
 			},
 		)
 
-		err := testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		err = testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
+
+		// Initialize required resource clients for test after CRDs are installed
+		testInstallation.RouteOptionClient, err = AddRouteOptionClient(ctx, testCluster.ClusterContext.RestConfig)
+		Expect(err).NotTo(HaveOccurred(), "failed to initialize RouteOptionClient")
+
 	})
 
 	AfterAll(func() {
@@ -59,4 +70,26 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 	})
 
+	Context("RouteOptions", func() {
+
+		It("Apply fault injection using targetRef RouteOption", func() {
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)
+		})
+
+		It("Apply fault injection using filter extension RouteOption", func() {
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
+		})
+
+	})
+
 })
+
+func AddRouteOptionClient(ctx context.Context, restConfig *rest.Config) (gatewayv1.RouteOptionClient, error) {
+	cache := kube.NewKubeCache(ctx)
+	routeOptionClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.RouteOptionCrd,
+		Cfg:         restConfig,
+		SharedCache: cache,
+	}
+	return gatewayv1.NewRouteOptionClient(ctx, routeOptionClientFactory)
+}

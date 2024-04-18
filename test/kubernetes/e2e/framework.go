@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
 
@@ -62,6 +63,9 @@ func (c *TestCluster) RegisterTestInstallation(name string, glooGatewayContext *
 		// Name is a unique identifier for this TestInstallation
 		Name: name,
 
+		// Namespace is the namespace where the installation of Gloo Gateway is running
+		Namespace: glooGatewayContext.InstallNamespace,
+
 		// Create an operator which is responsible for executing operations against the cluster
 		Operator: operations.NewGinkgoOperator(),
 
@@ -93,6 +97,9 @@ type TestInstallation struct {
 	// Name is a unique identifier for this TestInstallation
 	Name string
 
+	// Namespace is the namespace where the installation of Gloo Gateway is running
+	Namespace string
+
 	// Operator is responsible for executing operations against an installation of Gloo Gateway
 	// This is meant to simulate the behaviors that a person could execute
 	Operator *operations.Operator
@@ -102,6 +109,10 @@ type TestInstallation struct {
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
 	Assertions *assertions.Provider
+
+	// A set of clients for interacting with the Edge resources
+	// TODO(npolshak): Add new clients here as needed
+	RouteOptionClient gatewayv1.RouteOptionClient
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction actions.ClusterAction) error {
