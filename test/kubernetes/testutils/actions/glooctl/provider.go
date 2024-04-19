@@ -1,8 +1,7 @@
 package glooctl
 
 import (
-	"testing"
-
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
@@ -24,16 +23,12 @@ type Provider interface {
 
 // providerImpl is the implementation of the Provider for Gloo Gateway Open Source
 type providerImpl struct {
-	testingFramework testing.TB
-
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
 }
 
-func NewProvider(testingFramework testing.TB) Provider {
+func NewProvider() Provider {
 	return &providerImpl{
-		testingFramework: testingFramework,
-
 		clusterContext:     nil,
 		glooGatewayContext: nil,
 	}
@@ -55,7 +50,5 @@ func (p *providerImpl) WithGlooGatewayContext(ggCtx *gloogateway.Context) Provid
 // if the provider has been configured to point to a Gloo Gateway installation
 // There are certain actions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
 func (p *providerImpl) requiresGlooGatewayContext() {
-	if p.glooGatewayContext == nil {
-		p.testingFramework.Fatal("Provider attempted to create an action that requires a Gloo Gateway installation, but none was configured")
-	}
+	gomega.Expect(p.glooGatewayContext).NotTo(gomega.BeNil(), "Provider attempted to create an action that requires a Gloo Gateway installation, but none was configured")
 }
