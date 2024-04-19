@@ -66,6 +66,10 @@ func K8sGatewayControllerStartFunc(
 		if err != nil {
 			return err
 		}
+		vhOptionClient, err := gateway.NewVirtualHostOptionClient(ctx, opts.VirtualHostOptions)
+		if err != nil {
+			return err
+		}
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
 
@@ -75,9 +79,10 @@ func K8sGatewayControllerStartFunc(
 			Opts:                      opts,
 			QueueStatusForProxies:     queueStatusForProxies,
 
-			ProxyClient:       proxyClient,
-			RouteOptionClient: routeOptionClient,
-			StatusReporter:    statusReporter,
+			ProxyClient:             proxyClient,
+			RouteOptionClient:       routeOptionClient,
+			VirtualHostOptionClient: vhOptionClient,
+			StatusReporter:          statusReporter,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API
