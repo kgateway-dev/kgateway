@@ -40,5 +40,5 @@ Below are a set of known areas of improvement. The goal is to provide a starting
 - **Istio action**: We need a way to perform Istio actions against a cluster.
 - **Argo action**: We need an easy utility to perform ArgoCD commands against a cluster.
 - **Re-usable Operations**: Constructing an Operation is manual, and that can lead to verbose tests. If there is a consistent set of Operations that we construct in tests, create a utility to do this.
-
+- **Decouple Testing Framework**: We rely explicitly on Ginkgo/Gomega. It would be nice to decouple this from our framework. We [had attempted this previously](https://github.com/solo-io/gloo/blob/00b9dc79757edc639bb5ea59b21294dd7eb03f89/test/kubernetes/e2e/framework.go#L26), but did not find a clean solution, so we backed out the changes.
 

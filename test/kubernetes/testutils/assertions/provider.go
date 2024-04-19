@@ -2,8 +2,8 @@ package assertions
 
 import (
 	"io"
-	"testing"
 
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
@@ -14,8 +14,7 @@ import (
 // So this provider maintains state about the install/cluster it is using, and then provides
 // operations.ClusterAssertion to match
 type Provider struct {
-	testingFramework      testing.TB
-	testingProgressWriter io.Writer
+	progressWriter io.Writer
 
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
@@ -23,9 +22,8 @@ type Provider struct {
 
 // NewProvider returns a Provider that will provide Assertions that can be executed against an
 // installation of Gloo Gateway
-func NewProvider(testingFramework testing.TB) *Provider {
+func NewProvider() *Provider {
 	return &Provider{
-		testingFramework:   testingFramework,
 		clusterContext:     nil,
 		glooGatewayContext: nil,
 	}
@@ -33,7 +31,7 @@ func NewProvider(testingFramework testing.TB) *Provider {
 
 // WithProgressWriter sets the io.Writer for the provider
 func (p *Provider) WithProgressWriter(progressWriter io.Writer) *Provider {
-	p.testingProgressWriter = progressWriter
+	p.progressWriter = progressWriter
 	return p
 }
 
@@ -53,7 +51,5 @@ func (p *Provider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *Provider 
 // if the provider has been configured to point to a Gloo Gateway installation
 // There are certain Assertions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
 func (p *Provider) requiresGlooGatewayContext() {
-	if p.glooGatewayContext == nil {
-		p.testingFramework.Fatal("Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
-	}
+	gomega.Expect(p.glooGatewayContext).NotTo(gomega.BeNil(), "Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
 }
