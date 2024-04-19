@@ -7,23 +7,21 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/go-utils/threadsafe"
-	"github.com/solo-io/skv2/codegen/util"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
+	"github.com/solo-io/go-utils/threadsafe"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
 var (
@@ -87,7 +85,12 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
 
 					// Check status is accepted on RouteOption
-					checkRouteOptionStatus(installation.Metadata.InstallNamespace, installation.ResourceClients.RouteOptionClient()),
+					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
+						func() (resources.InputResource, error) {
+							return installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+						},
+						core.Status_Accepted,
+						"gloo-kube-gateway"),
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -136,22 +139,4 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 		err := installation.Operator.ExecuteReversibleOperations(ctx, extensionFilterRoutingOp)
 		Expect(err).NotTo(HaveOccurred())
 	},
-}
-
-func checkRouteOptionStatus(installNamespace string, routeOptionsClient gatewayv1.RouteOptionClient) assertions.ClusterAssertion {
-	return func(ctx context.Context) {
-		// Check status on solo-apis client object
-		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return routeOptionsClient.Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
-		}, 5, 1)
-
-		// Check correct gateway reports status of route option
-		Eventually(func(g Gomega) {
-			routeOption, err := routeOptionsClient.Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(routeOption.GetNamespacedStatuses()).ToNot(BeNil())
-			g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())
-			g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installNamespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
-		}, "5s", ".1s").Should(Succeed())
-	}
 }

@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"strconv"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -131,6 +132,15 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		for _, gw := range gwl.Items {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, s.writeNamespace, r)
 			if proxy != nil {
+				// Add proxy id to the proxy metadata to track proxies for status reporting
+				proxySyncCounter := incrementProxySyncCounter(proxy)
+				proxyAnnotations := proxy.GetMetadata().GetAnnotations()
+				if proxyAnnotations == nil {
+					proxyAnnotations = make(map[string]string)
+				}
+				proxyAnnotations[utils.ProxySyncId] = proxySyncCounter
+				proxy.Metadata.Annotations = proxyAnnotations
+
 				proxies = append(proxies, proxy)
 				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
 					Gateway: gw,
@@ -241,4 +251,24 @@ func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.Pl
 			continue
 		}
 	}
+}
+
+func incrementProxySyncCounter(proxy *gloo_solo_io.Proxy) string {
+	proxySyncCounter := "0"
+	proxyAnnotations := proxy.GetMetadata().GetAnnotations()
+	// initialize counter in no annotations are set
+	if proxyAnnotations == nil {
+		return proxySyncCounter
+	}
+	// initialize counter if proxy sync annotation isn't set
+	previousCount := proxyAnnotations[utils.ProxySyncId]
+	if previousCount == "" {
+		return proxySyncCounter
+	}
+	// increment counter if it's a valid counter
+	previousCountInt, err := strconv.Atoi(previousCount)
+	if err != nil {
+		return proxySyncCounter
+	}
+	return strconv.Itoa(previousCountInt + 1)
 }

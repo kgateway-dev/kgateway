@@ -149,7 +149,7 @@ var _ = Describe("Status Syncer", func() {
 
 	It("should only queue and process the most recent proxy", func() {
 		syncer := NewStatusSyncerFactory()
-		oldProxy := &v1.Proxy{
+		oldestProxy := &v1.Proxy{
 			Metadata: &core.Metadata{
 				Name:      "test-proxy",
 				Namespace: "test-namespace",
@@ -158,21 +158,30 @@ var _ = Describe("Status Syncer", func() {
 				},
 			},
 		}
-		newProxy := &v1.Proxy{
+		oldProxy := &v1.Proxy{
 			Metadata: &core.Metadata{
-				Name:      oldProxy.GetMetadata().GetName(),
-				Namespace: oldProxy.GetMetadata().GetNamespace(),
+				Name:      oldestProxy.GetMetadata().GetName(),
+				Namespace: oldestProxy.GetMetadata().GetNamespace(),
 				Annotations: map[string]string{
 					utils.ProxySyncId: "124",
 				},
 			},
 		}
+		newProxy := &v1.Proxy{
+			Metadata: &core.Metadata{
+				Name:      oldestProxy.GetMetadata().GetName(),
+				Namespace: oldestProxy.GetMetadata().GetNamespace(),
+				Annotations: map[string]string{
+					utils.ProxySyncId: "125",
+				},
+			},
+		}
 		proxyNameNs := types.NamespacedName{
-			Name:      oldProxy.Metadata.Name,
-			Namespace: oldProxy.Metadata.Namespace,
+			Name:      oldestProxy.Metadata.Name,
+			Namespace: oldestProxy.Metadata.Namespace,
 		}
 
-		proxiesToQueue := v1.ProxyList{oldProxy, newProxy}
+		proxiesToQueue := v1.ProxyList{oldestProxy, newProxy, oldProxy}
 		pluginRegistry := &registry.PluginRegistry{}
 
 		// Test QueueStatusForProxies method
@@ -181,13 +190,13 @@ var _ = Describe("Status Syncer", func() {
 		// Queue the proxy (this is invoked in the proxy syncer)
 		// Access private field proxiesPerRegistry
 		proxiesMap := syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
-		Expect(proxiesMap[proxyNameNs]).To(Equal(124))
+		Expect(proxiesMap[proxyNameNs]).To(Equal(125))
 
 		// Handle the proxy reports (this is invoked as a callback in the envoy translator syncer)
 		ctx := context.Background()
 		proxiesWithReports := []translatorutils.ProxyWithReports{
 			{
-				Proxy: oldProxy,
+				Proxy: oldestProxy,
 				Reports: translatorutils.TranslationReports{
 					ProxyReport:     &validation.ProxyReport{},
 					ResourceReports: reporter.ResourceReports{},
@@ -195,6 +204,13 @@ var _ = Describe("Status Syncer", func() {
 			},
 			{
 				Proxy: newProxy,
+				Reports: translatorutils.TranslationReports{
+					ProxyReport:     &validation.ProxyReport{},
+					ResourceReports: reporter.ResourceReports{},
+				},
+			},
+			{
+				Proxy: oldProxy,
 				Reports: translatorutils.TranslationReports{
 					ProxyReport:     &validation.ProxyReport{},
 					ResourceReports: reporter.ResourceReports{},

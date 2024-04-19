@@ -21,6 +21,7 @@ import (
 // HandleProxyReports should conform to the OnProxiesTranslatedFn and QueueStatusForProxiesFn signatures
 var _ syncer.OnProxiesTranslatedFn = (&statusSyncerFactory{}).HandleProxyReports
 
+// QueueStatusForProxiesFn queues a status sync for a given set of Proxy resources along with the plugins that produced them
 var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatusForProxies
 
 // GatewayStatusSyncer is responsible for applying status plugins to Gloo Gateway proxies
@@ -35,51 +36,23 @@ type GatewayStatusSyncer interface {
 // a threadsafe factory for initializing a status syncer
 // allows for the status syncer to be shared across multiple start funcs
 type statusSyncerFactory struct {
-	/*
-		Plugin registry: used to build translator each time with set of plugins, generate proxy, then synchronously call gloo translation to generate xds
-		- Status plugins maintain state, report on status from report
-		- Now: async from gwv2 translation
-		- Why to plugins need to hold on to state- ex. portal "applied to namespaces", route options shared across proxies
-	*/
-	registryPerProxy   map[types.NamespacedName]map[int]*registry.PluginRegistry
+	// maps a proxy from a proxy sync action to the plugin registry that produced it
+	// proxy -> sync iteration -> plugin registry
+	registryPerProxy map[types.NamespacedName]map[int]*registry.PluginRegistry
+	// maps a plugin registry to the proxies that need to be synced
+	// plugin registry -> proxy -> current syncer iteration
 	proxiesPerRegistry map[*registry.PluginRegistry]map[types.NamespacedName]int
 	lock               *sync.RWMutex
 }
 
-/*
-Proxy name.namespace / higher number -> replace
-- mismatch on proxy report ?
-- key on object name, counter is below -> throw away, above -> cache and wait for plugins
-- freq gw updates -> proxy + plugins, no reports.
-- clean on reports? Signal to flush
-
-Cache interface
-- set plugins per id
-- set reports per id
-- update on increment
-
-- id per sync iteration
-- map key is an int -> represent resync proxy id (increment every time)
-- map of count -> plugin, count -> proxy reports
-*/
 func NewStatusSyncerFactory() GatewayStatusSyncer {
 	return &statusSyncerFactory{
-		/*
-			Change map of pointers?
-			- build custom cache interface to read/write proxy
-			- key off of resource version?*** resource ref to proxy (last update is assumed to be correct)
-		*/
-		// proxy -> sync iteration -> plugin registry
-		registryPerProxy: make(map[types.NamespacedName]map[int]*registry.PluginRegistry),
-		// plugin registry -> proxy -> current syncer iteration
+		registryPerProxy:   make(map[types.NamespacedName]map[int]*registry.PluginRegistry),
 		proxiesPerRegistry: make(map[*registry.PluginRegistry]map[types.NamespacedName]int),
 		lock:               &sync.RWMutex{},
 	}
 }
 
-/*
-Move this to go routine
-*/
 // QueueStatusForProxies queues the proxies to be synced by the status syncer
 func (f *statusSyncerFactory) QueueStatusForProxies(
 	proxiesToQueue v1.ProxyList,
@@ -98,7 +71,10 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 			// ignore proxies that do not have a sync id
 			continue
 		}
-		proxies[proxyName] = proxyCounter
+		// update proxyCounter only if it is higher than the current one
+		if currentCounter, ok := proxies[proxyName]; !ok || proxyCounter > currentCounter {
+			proxies[proxyName] = proxyCounter
+		}
 	}
 	f.proxiesPerRegistry[pluginRegistry] = proxies
 }
