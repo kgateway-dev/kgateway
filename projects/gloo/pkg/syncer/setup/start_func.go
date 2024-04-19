@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	"golang.org/x/sync/errgroup"
