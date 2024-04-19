@@ -76,7 +76,7 @@ func DetectUnusefulCmds(filterLocationType aclType, proposedLogFormats []*envoya
 			}
 		}
 		if len(issues) > 0 {
-			err = eris.Errorf("unuseful command operators found in access log %s: %v", plf.Name, issues)
+			err = eris.Errorf("unuseful command operators found in access log %s: %v", plf.GetName(), issues)
 		}
 
 	}
