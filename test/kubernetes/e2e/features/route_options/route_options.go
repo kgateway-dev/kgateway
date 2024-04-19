@@ -55,12 +55,12 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 			Do: &operations.BasicOperation{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(targetRefManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(targetRefManifest),
-				OpAssertion: func(ctx context.Context) {
+				OpAssertions: []assertions.ClusterAssertion{
 					// First check resources are created for Gateay
-					installation.Assertions.ObjectsExist(proxyService, proxyDeployment)
+					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
-					CheckFaultInjectionFromCluster()(ctx)
+					checkFaultInjectionFromCluster(),
 
 					// Check status on solo-apis client object
 					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -93,19 +93,19 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 }
 
 var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
-	Name:        "RouteOptions.ConfigureRouteOptionsWithFilterExtenstion",
+	Name:        "RouteOptions.ConfigureRouteOptionsWithFilterExtension",
 	Description: "the RouteOptions will configure fault inject with a filter extension",
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {
 		extensionFilterRoutingOp := operations.ReversibleOperation{
 			Do: &operations.BasicOperation{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(filterExtensioManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(filterExtensioManifest),
-				OpAssertion: func(ctx context.Context) {
+				OpAssertions: []assertions.ClusterAssertion{
 					// First check resources are created for Gateay
-					installation.Assertions.ObjectsExist(proxyService, proxyDeployment)
+					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
-					CheckFaultInjectionFromCluster()(ctx)
+					checkFaultInjectionFromCluster(),
 
 					// TODO(npolshak): Statuses are not supported for filter extensions yet
 				},
@@ -125,7 +125,7 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 	},
 }
 
-func CheckFaultInjectionFromCluster() assertions.ClusterAssertion {
+func checkFaultInjectionFromCluster() assertions.ClusterAssertion {
 	return func(ctx context.Context) {
 		fdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
 
@@ -135,7 +135,7 @@ func CheckFaultInjectionFromCluster() assertions.ClusterAssertion {
 			kubeCli := kubectl.NewCli().WithReceiver(&buf)
 			resp := kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta,
 				curl.WithHost(fdqnAddr),
-				curl.WithHeader("Host", "example.com"),
+				curl.WithHostHeader("example.com"),
 				curl.VerboseOutput())
 			g.Expect(resp).To(ContainSubstring("fault filter abort"))
 			g.Expect(resp).To(ContainSubstring("HTTP/1.1 418"))
