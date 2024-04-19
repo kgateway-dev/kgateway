@@ -2,9 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"io"
-	"testing"
 
+	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	"github.com/onsi/gomega"
@@ -15,8 +14,8 @@ import (
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
-func MustKindContext(testing testing.TB, testingWriter io.Writer, clusterName string) *Context {
-	testing.Helper()
+func MustKindContext(clusterName string) *Context {
+	ginkgo.GinkgoHelper()
 
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 
@@ -27,7 +26,7 @@ func MustKindContext(testing testing.TB, testingWriter io.Writer, clusterName st
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	clt, err := client.New(restCfg, client.Options{
-		Scheme: kubetestclients.MustClientScheme(testing),
+		Scheme: kubetestclients.MustClientScheme(),
 	})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -35,7 +34,7 @@ func MustKindContext(testing testing.TB, testingWriter io.Writer, clusterName st
 		Name:        clusterName,
 		KubeContext: kubeCtx,
 		RestConfig:  restCfg,
-		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx).WithReceiver(testingWriter),
+		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx).WithReceiver(ginkgo.GinkgoWriter),
 		Client:      clt,
 		Clientset:   clientset,
 	}
