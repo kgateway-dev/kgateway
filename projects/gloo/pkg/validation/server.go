@@ -3,6 +3,8 @@ package validation
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -187,6 +189,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	s.lock.Unlock()
 
 	// update the snapshot copy with the resources from the request
+	fmt.Printf("IN validator.Validate(); req: %+v\n", req)
 	applyRequestToSnapshot(&snapCopy, req)
 	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
@@ -215,10 +218,26 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 	}
 	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
 	s.lock.Unlock()
+
+	fmt.Printf("IN validator.ValidateGloo(); resource: %s, shouldDelete: %v\n", resource.GetMetadata().Ref().Key(), shouldDelete)
+
 	if resource != nil {
 		if shouldDelete {
 			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
 				return nil, err
+			}
+			switch resource.(type) {
+			case *v1.Upstream:
+				fmt.Printf("REMOVING KUBE-SVC US FROM RESOURCE LIST: %s\n", resource.GetMetadata().Ref().Key())
+				kubeSvcUs := &v1.Upstream{
+					Metadata: &core.Metadata{
+						Namespace: resource.GetMetadata().GetNamespace(),
+						Name:      fmt.Sprintf("kube-svc:%s", resource.GetMetadata().GetName()),
+					},
+				}
+				if err := snapCopy.RemoveFromResourceList(kubeSvcUs); err != nil {
+					return nil, err
+				}
 			}
 		} else {
 			if err := snapCopy.UpsertToResourceList(resource); err != nil {
@@ -243,6 +262,13 @@ func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValida
 		// Upstreams
 		existingUpstreams := snap.Upstreams.AsResources()
 		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
+		for _, ref := range req.GetDeletedResources().GetUpstreamRefs() {
+			fmt.Printf("ALSO DELETING KUBE-SVC: kube-svc:%s\n", ref.GetName())
+			deletedUpstreamRefs = append(deletedUpstreamRefs, &core.ResourceRef{
+				Namespace: ref.GetNamespace(),
+				Name:      fmt.Sprintf("kube-svc:%s", ref.GetName()),
+			})
+		}
 		finalUpstreams := utils.DeleteResources(existingUpstreams, deletedUpstreamRefs)
 		snap.Upstreams = utils.ResourceListToUpstreamList(finalUpstreams)
 		// Secrets

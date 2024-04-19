@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"reflect"
 	"sync"
 
@@ -437,21 +438,28 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		return nil, nil
 	}
 
+	fmt.Printf("SNAPSHOT CLONE BEFORE UPSTREAMS: %+v\n", snapshotClone.Upstreams)
+
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
 		fmt.Printf("DELETING %s\n", opts.Resource.GetMetadata().Ref().String())
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
 			return nil, err
 		}
-		switch opts.Resource.(type) {
-		case *gloov1.Upstream:
-			k8sUpstream := opts.Resource.(*gloov1.Upstream)
-			k8sUpstream.Metadata.Name = fmt.Sprintf("kube-svc:%s", k8sUpstream.Metadata.Ref().GetName())
+		if opts.Gvk.Kind == "Upstream" {
+			k8sUpstream := &gloov1.Upstream{
+				Metadata: &core.Metadata{
+					Namespace: opts.Resource.GetMetadata().Namespace,
+					Name:      fmt.Sprintf("kube-svc:%s", opts.Resource.GetMetadata().GetName()),
+				},
+			}
 
 			fmt.Printf("DELETING KUBE-SVC US %s\n", k8sUpstream.GetMetadata().Ref().String())
 			if err := snapshotClone.RemoveFromResourceList(k8sUpstream); err != nil {
 				return nil, err
 			}
+		} else {
+			fmt.Printf("NOT DELETING KUBE-SVC FOR KIND: %s\n", opts.Gvk.Kind)
 		}
 	} else {
 		fmt.Printf("UPSERTING %s\n", opts.Resource.GetMetadata().Ref().String())
@@ -460,7 +468,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		}
 	}
 
-	fmt.Printf("SNAPSHOT CLONE UPSTREAMS: %+v\n", snapshotClone.Upstreams)
+	fmt.Printf("SNAPSHOT CLONE AFTER UPSTREAMS: %+v\n", snapshotClone.Upstreams)
+
 	// In some cases errors do not result in an automatic rejection of the modifcation. In those cases, all errors are collected and returned
 	// so they can be compared against the result of a second validation run of the current, unmodified snapshot
 	shouldValidateAgainstPreviousState := v.shouldValidateAgainstPreviousState(opts)
