@@ -64,7 +64,7 @@ import "google/protobuf/wrappers.proto";
 // Note to developers: new Listener plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message ListenerOptions {
-    // Configuration for access logging. This may be at the listener level or in a filter like the HttpConnectionManager.
+    // Configuration for access logging in a filter like the HttpConnectionManager.
     als.options.gloo.solo.io.AccessLoggingService access_logging_service = 1;
 
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the

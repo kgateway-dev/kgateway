@@ -998,7 +998,7 @@ var _ = Describe("Plugin", func() {
 				err = plugin.ProcessListener(pluginParams, parentListener, envoyListener)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(envoyListener.GetAccessLog()).NotTo(BeNil())
-				Expect(len(envoyListener.GetAccessLog())).NotTo(BeEquivalentTo(0))
+				Expect(envoyListener.GetAccessLog()).NotTo(HaveLen(0))
 				eRuntime := envoyListener.GetAccessLog()[0].GetFilter().GetRuntimeFilter().GetRuntimeKey()
 				hcmRuntime := envoyHcmConfig.GetAccessLog()[0].GetFilter().GetRuntimeFilter().GetRuntimeKey()
 				Expect(eRuntime).To(Not(Equal(hcmRuntime)))
