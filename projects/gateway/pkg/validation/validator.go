@@ -446,7 +446,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		switch opts.Resource.(type) {
 		case *gloov1.Upstream:
 			k8sUpstream := opts.Resource.(*gloov1.Upstream)
-			k8sUpstream.Metadata.Ref().Name = fmt.Sprintf("kube-svc:%s", k8sUpstream.Metadata.Ref().GetName())
+			k8sUpstream.Metadata.Name = fmt.Sprintf("kube-svc:%s", k8sUpstream.Metadata.Ref().GetName())
 
 			fmt.Printf("DELETING KUBE-SVC US %s\n", k8sUpstream.GetMetadata().Ref().String())
 			if err := snapshotClone.RemoveFromResourceList(k8sUpstream); err != nil {
