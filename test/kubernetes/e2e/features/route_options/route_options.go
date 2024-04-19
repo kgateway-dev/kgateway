@@ -72,7 +72,7 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
-					assertions.CurlEventuallyRespondsAssertion(ctx, curlFromPod(ctx), true, expectedFaultInjectionResp, 0),
+					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
 
 					// TODO(npolshak) Check status on solo-apis client object once route option status support is added
 				},
@@ -105,7 +105,7 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
-					assertions.CurlEventuallyRespondsAssertion(ctx, curlFromPod(ctx), true, expectedFaultInjectionResp, 0),
+					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
 
 					// TODO(npolshak): Statuses are not supported for filter extensions yet
 				},
