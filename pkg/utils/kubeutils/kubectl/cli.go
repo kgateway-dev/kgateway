@@ -164,7 +164,7 @@ func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta metav1.ObjectMet
 		options = append(options, option)
 	}
 
-	// The testContainer relies on the transforms.WithCurlHttpResponse to validate the response is what
+	// The e2e test assertions rely on the transforms.WithCurlHttpResponse to validate the response is what
 	// we would expect
 	// For this transform to behave appropriately, we must execute the request with verbose=true
 	appendOption(curl.VerboseOutput())
