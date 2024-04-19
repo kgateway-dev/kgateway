@@ -2,9 +2,10 @@ package e2e
 
 import (
 	"context"
-	"io"
-	"testing"
+	"fmt"
 
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
 
@@ -19,15 +20,6 @@ import (
 // TestCluster is the structure around a set of tests that run against a Kubernetes Cluster
 // Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
 type TestCluster struct {
-	// TestingFramework defines the framework that tests should rely on
-	// Within the Gloo codebase, we rely extensively on Ginkgo and Gomega
-	// The idea behind making this configurable, per suite, is that it ensures that
-	// all of our tests can rely on the testing interface, instead of the explicit Ginkgo implementation
-	TestingFramework testing.TB
-
-	// TestingProgressWriter is the io.Writer used by the TestingFramework to emit feedback to whoever invoked the tests
-	TestingProgressWriter io.Writer
-
 	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
 	RuntimeContext runtime.Context
 
@@ -50,7 +42,7 @@ func (c *TestCluster) PreFailHandler() {
 	}
 }
 
-func (c *TestCluster) RegisterTestInstallation(name string, glooGatewayContext *gloogateway.Context) *TestInstallation {
+func (c *TestCluster) RegisterTestInstallation(glooGatewayContext *gloogateway.Context) *TestInstallation {
 	if c.activeInstallations == nil {
 		c.activeInstallations = make(map[string]*TestInstallation, 2)
 	}
@@ -59,39 +51,50 @@ func (c *TestCluster) RegisterTestInstallation(name string, glooGatewayContext *
 		// Create a reference to the TestCluster, and all of it's metadata
 		TestCluster: c,
 
-		// Name is a unique identifier for this TestInstallation
-		Name: name,
+		// Maintain a reference to the Metadata used for this installation
+		Metadata: glooGatewayContext,
+
+		// ResourceClients are only available _after_ installing Gloo Gateway
+		ResourceClients: nil,
 
 		// Create an operator which is responsible for executing operations against the cluster
-		Operator: operations.NewGinkgoOperator(),
+		Operator: operations.NewOperator().
+			WithProgressWriter(ginkgo.GinkgoWriter).
+			WithAssertionInterceptor(gomega.InterceptGomegaFailure),
 
 		// Create an operations provider, and point it to the running installation
-		Actions: provider.NewActionsProvider(c.TestingFramework).
+		Actions: provider.NewActionsProvider().
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
 		// Create an assertions provider, and point it to the running installation
-		Assertions: assertions.NewProvider(c.TestingFramework).
-			WithProgressWriter(c.TestingProgressWriter).
+		Assertions: assertions.NewProvider().
+			WithProgressWriter(ginkgo.GinkgoWriter).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
-	c.activeInstallations[name] = installation
+	c.activeInstallations[installation.String()] = installation
 
 	return installation
 }
 
 func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation) {
-	delete(c.activeInstallations, installation.Name)
+	delete(c.activeInstallations, installation.String())
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
 // of Gloo Gateway.
 type TestInstallation struct {
-	*TestCluster
+	fmt.Stringer
 
-	// Name is a unique identifier for this TestInstallation
-	Name string
+	// TestCluster contains the properties of the TestCluster this TestInstallation is a part of
+	TestCluster *TestCluster
+
+	// Metadata contains the properties used to install Gloo Gateway
+	Metadata *gloogateway.Context
+
+	// ResourceClients is a set of clients that can manipulate resources owned by Gloo Gateway
+	ResourceClients gloogateway.ResourceClients
 
 	// Operator is responsible for executing operations against an installation of Gloo Gateway
 	// This is meant to simulate the behaviors that a person could execute
@@ -104,13 +107,24 @@ type TestInstallation struct {
 	Assertions *assertions.Provider
 }
 
+func (i *TestInstallation) String() string {
+	return i.Metadata.InstallNamespace
+}
+
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction actions.ClusterAction) error {
 	installOperation := &operations.BasicOperation{
 		OpName:      "install-gloo-gateway",
 		OpAction:    installAction,
 		OpAssertion: i.Assertions.InstallationWasSuccessful(),
 	}
-	return i.Operator.ExecuteOperations(ctx, installOperation)
+	err := i.Operator.ExecuteOperations(ctx, installOperation)
+	if err != nil {
+		return err
+	}
+
+	// We can only create the ResourceClients after the CRDs exist in the Cluster
+	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	return nil
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAction actions.ClusterAction) error {
@@ -126,11 +140,9 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAc
 // We intentionally do not expose a RunTests method, because then we would
 // lose the ability to randomize tests through the testing framework
 func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
-	if test.Name == "" {
-		i.TestingFramework.Fatal("All tests must include a name")
-	}
+	gomega.Expect(test.Name).NotTo(gomega.BeEmpty(), "All tests must include a name")
 
-	i.TestingFramework.Logf("TEST: %s", test.Name)
+	i.Operator.Logf("TEST: %s", test.Name)
 	test.Test(ctx, i)
 }
 
@@ -146,7 +158,7 @@ func (i *TestInstallation) preFailHandler() {
 	}
 	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
 	if err != nil {
-		i.TestingFramework.Errorf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i.Name, err)
+		i.Operator.Logf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i, err)
 	}
 }
 
