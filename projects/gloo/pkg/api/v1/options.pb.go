@@ -75,7 +75,7 @@ type ListenerOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Configuration for access logging. This may be at the listener level or in a filter like the HttpConnectionManager.
+	// Configuration for access logging in a filter like the HttpConnectionManager.
 	AccessLoggingService *als.AccessLoggingService `protobuf:"bytes,1,opt,name=access_logging_service,json=accessLoggingService,proto3" json:"access_logging_service,omitempty"`
 	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
 	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.

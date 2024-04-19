@@ -56,9 +56,8 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *
 	var err error
 	out.AccessLog, err = ProcessAccessLogPlugins(alsSettings, out.GetAccessLog())
 
-	// TODO: Add extra warning calls. Access logging directives are "valid" for all possible configuration locations
 	if err := DetectUnusefulCmds(Hcm, out.GetAccessLog()); err != nil {
-		contextutils.LoggerFrom(p.ctx).Warnf("warning non-useful access log operator: %v", err)
+		contextutils.LoggerFrom(p.ctx).Warnf("warning non-useful access log operator on %s's hcm: %s", parentListener.GetName(), err.Error())
 	}
 	return err
 }
@@ -73,9 +72,8 @@ func (p *plugin) ProcessListener(params plugins.Params, parentListener *v1.Liste
 	var err error
 	out.AccessLog, err = ProcessAccessLogPlugins(alsSettings, out.GetAccessLog())
 
-	// TODO: Add extra warning calls. Access logging directives are "valid" for all possible configuration locations
 	if err := DetectUnusefulCmds(HttpListener, out.GetAccessLog()); err != nil {
-		contextutils.LoggerFrom(p.ctx).Warnf("warning non-useful access log operator: %v", err)
+		contextutils.LoggerFrom(p.ctx).Warnf("non-useful access log operator configured on %s: %s", parentListener.GetName(), err.Error())
 	}
 
 	return err

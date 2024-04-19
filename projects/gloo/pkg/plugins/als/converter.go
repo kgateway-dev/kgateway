@@ -43,12 +43,14 @@ var (
 )
 
 // DetectUnusefulCmds will detect commands that are not useful in the current configuration
+// It returns errors that may some day be bubbled up arbitrarly high.
 // See https://github.com/envoyproxy/envoy/blob/313b6fb7cf0f806e74a2d42c93e7c1fcccce2391/docs/root/configuration/observability/access_log/usage.rst?plain=1#L114-L123
 func DetectUnusefulCmds(filterLocationType aclType, proposedLogFormats []*envoyal.AccessLog) error {
-	// TODO: respect the calls per current upstream operators
-	// TODO: programatically make sure we cover all command operators
 
-	var err error
+	// TODO: programatically make sure we cover all command operators as found
+	// in https://github.com/envoyproxy/envoy/blob/0f3e4aa373db6bbb7643b1bb60b0cb60d5b39df8/source/common/formatter/stream_info_formatter.cc#L1443
+	// This could take place in ci especially if envoy version has been changed.
+
 	var unusefulCmds []string
 	switch filterLocationType {
 	case "hcm":
@@ -65,6 +67,7 @@ func DetectUnusefulCmds(filterLocationType aclType, proposedLogFormats []*envoya
 	// TODO: Warn against deprecated commands for future proofing
 	// deprecatedCmds := []struct{ cur, new string }{{cur: "DYNAMIC_METADATA", new: "METADATA"}}
 
+	var errs []error
 	for _, plf := range proposedLogFormats {
 		// Dont put command operators in Names
 		// Therefore we can extract their usage via strings
@@ -75,20 +78,22 @@ func DetectUnusefulCmds(filterLocationType aclType, proposedLogFormats []*envoya
 				issues = append(issues, cmd)
 			}
 		}
+		// For a given proposed format this will include all the detected bad operators.
 		if len(issues) > 0 {
-			err = eris.Errorf("unuseful command operators found in access log %s: %v", plf.GetName(), issues)
+			errs = append(errs, fmt.Errorf("unuseful command operators found in access log %s: %v", plf.GetName(), issues))
 		}
 
 	}
 
-	return err
+	return errors.Join(errs...)
 }
 
 // ProcessAccessLogPlugins will configure access logging for envoy, regardless of whether it will be applied to
-// an HttpConnectionManager or TcpProxy NetworkFilter. We have exposed HttpConnectionManagerPlugins to enable
-// fine grained configuration of the HCM across multiple plugins. However, the TCP proxy is still configured
-// by the TCP plugin only. To keep our access logging translation in a single place, we expose this function
-// and the Tcp plugin calls out to it.
+// an HttpConnectionManager, http listener, TcpProxy NetworkFilter or perhaps someday a UdpProxy NetworkFilter.
+// We have exposed plugins to allow configuration of http listeners and filters across multiple plugins.
+// However, the TCP proxy is still configured by the TCP plugin only.
+// To keep our access logging translation in a single place, we expose this function
+// and the TCP plugin calls out to it.
 func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
