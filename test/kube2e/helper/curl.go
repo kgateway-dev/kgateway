@@ -61,7 +61,7 @@ var (
 	}
 )
 
-func getTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
+func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
 	defaultTimeout := time.Second * 20
 	defaultPollingTimeout := time.Second * 5
 	switch len(timeout) {
@@ -87,7 +87,7 @@ func getTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time
 }
 
 func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput interface{}, ginkgoOffset int, timeout ...time.Duration) {
-	currentTimeout, pollingInterval := getTimeouts(timeout...)
+	currentTimeout, pollingInterval := GetTimeouts(timeout...)
 
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
@@ -123,7 +123,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput
 			res = string(byt)
 		}
 
-		expectedResponseMatcher := getExpectedResponseMatcher(expectedOutput)
+		expectedResponseMatcher := GetExpectedResponseMatcher(expectedOutput)
 		g.Expect(res).To(expectedResponseMatcher)
 		if opts.LogResponses {
 			log.GreyPrintf("success: %v", res)
@@ -133,7 +133,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput
 }
 
 func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedResponse interface{}, ginkgoOffset int, timeout ...time.Duration) {
-	currentTimeout, pollingInterval := getTimeouts(timeout...)
+	currentTimeout, pollingInterval := GetTimeouts(timeout...)
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
 
@@ -158,7 +158,7 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 			}
 		}
 
-		expectedResponseMatcher := getExpectedResponseMatcher(expectedResponse)
+		expectedResponseMatcher := GetExpectedResponseMatcher(expectedResponse)
 		g.Expect(res).To(expectedResponseMatcher)
 		if opts.LogResponses {
 			log.GreyPrintf("success: %v", res)
@@ -167,9 +167,9 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 	}, currentTimeout, pollingInterval).Should(Succeed())
 }
 
-// getExpectedResponseMatcher takes an interface and converts it into the types.GomegaMatcher
+// GetExpectedResponseMatcher takes an interface and converts it into the types.GomegaMatcher
 // that will be used to assert that a given Curl response, matches an expected shape
-func getExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher {
+func GetExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher {
 	switch a := expectedOutput.(type) {
 	case string:
 		// In the past, this Curl utility accepted a string, and only asserted that the http response body

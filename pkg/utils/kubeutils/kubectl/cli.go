@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/k8s-utils/testutils/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-
-	"io"
-	"time"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
@@ -161,6 +160,15 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 
 // CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
 func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta metav1.ObjectMeta, options ...curl.Option) string {
+	appendOption := func(option curl.Option) {
+		options = append(options, option)
+	}
+
+	// The e2e test assertions rely on the transforms.WithCurlHttpResponse to validate the response is what
+	// we would expect
+	// For this transform to behave appropriately, we must execute the request with verbose=true
+	appendOption(curl.VerboseOutput())
+
 	curlArgs := curl.BuildArgs(options...)
 
 	return kube.CurlWithEphemeralPodStable(
