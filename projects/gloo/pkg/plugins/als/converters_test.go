@@ -1,61 +1,65 @@
 package als_test
 
 import (
-	"strings"
-	"testing"
-
 	accesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	"github.com/golang/protobuf/proto"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-func TestDetectUnusefulCmds(t *testing.T) {
+var _ = Describe("Converters", func() {
 
-	tests := []struct {
-		name                  string
-		accesslog             accesslogv3.AccessLog
-		hcmReportStr          string
-		httpListenerReportStr string
-	}{
-		{
-			name:      "clean accesslog",
-			accesslog: mustConvertAccessLogs("basic", &envoyalfile.FileAccessLog{}),
+	DescribeTable("DetectUnusefulCmds",
+		func(
+			accesslog accesslogv3.AccessLog,
+			hcmReportStr string,
+			httpListenerReportStr string,
+			tcpListenerReportStr string) {
+
+			hcmErr := als.DetectUnusefulCmds(als.Hcm, []*accesslogv3.AccessLog{&accesslog})
+			if hcmReportStr == "" {
+				Expect(hcmErr).To(BeNil())
+			} else {
+				Expect(hcmErr.Error()).To(ContainSubstring(hcmReportStr))
+			}
+
+			httpListenerErr := als.DetectUnusefulCmds(als.HttpListener, []*accesslogv3.AccessLog{&accesslog})
+			if httpListenerReportStr == "" {
+				Expect(httpListenerErr).To(BeNil())
+			} else {
+				Expect(httpListenerErr.Error()).To(ContainSubstring(httpListenerReportStr))
+			}
+
+			tcpListenerErr := als.DetectUnusefulCmds(als.Tcp, []*accesslogv3.AccessLog{&accesslog})
+			if tcpListenerReportStr == "" {
+				Expect(tcpListenerErr).To(BeNil())
+			} else {
+				Expect(tcpListenerErr.Error()).To(ContainSubstring(tcpListenerReportStr))
+			}
+
 		},
+		Entry("empty format", mustConvertAccessLogs("basic", &envoyalfile.FileAccessLog{}), "", "", ""),
 
-		{
-			name: "not at hcm",
-			accesslog: mustConvertAccessLogs("basic",
-				&envoyalfile.FileAccessLog{
-					AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
-						LogFormat: &envoycore.SubstitutionFormatString{
-							Format: &envoycore.SubstitutionFormatString_TextFormat{
-								TextFormat: "%DOWNSTREAM_TRANSPORT_FAILURE_REASON% and some other stuff",
-							},
+		Entry("not at hcm", mustConvertAccessLogs("basic",
+			&envoyalfile.FileAccessLog{
+				AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
+					LogFormat: &envoycore.SubstitutionFormatString{
+						Format: &envoycore.SubstitutionFormatString_TextFormat{
+							TextFormat: "%RESP% %DOWNSTREAM_TRANSPORT_FAILURE_REASON% and some other stuff",
 						},
 					},
-				}),
-			hcmReportStr: "DOWNSTREAM_TRANSPORT_FAILURE_REASON",
-		},
-	}
+				},
+			}),
+			"DOWNSTREAM_TRANSPORT_FAILURE_REASON", "", "DOWNSTREAM_TRANSPORT_FAILURE_REASON"), // make sure that tcp can report both bad ones
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hcmErr := als.DetectUnusefulCmds(als.Hcm, []*accesslogv3.AccessLog{&tt.accesslog})
-			if hcmErr != nil && !strings.Contains(hcmErr.Error(), tt.hcmReportStr) {
-				t.Errorf("expected %v, got %v", tt.hcmReportStr, hcmErr)
-			}
-			httpListenerErr := als.DetectUnusefulCmds(als.HttpListener, []*accesslogv3.AccessLog{&tt.accesslog})
-			if httpListenerErr != nil && !strings.Contains(httpListenerErr.Error(), tt.httpListenerReportStr) {
-				t.Errorf("expected %v, got %v", tt.hcmReportStr, hcmErr)
-			}
-		})
-	}
+	)
 
-}
+})
 
 func mustConvertAccessLogs(name string, cfg proto.Message) envoyal.AccessLog {
 	out, err := translatorutil.NewAccessLogWithConfig(name, cfg)
