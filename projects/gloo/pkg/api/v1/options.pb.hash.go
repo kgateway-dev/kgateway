@@ -162,18 +162,18 @@ func (m *ListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetEarlyAccessLoggingService()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EarlyAccessLoggingService")); err != nil {
+	if h, ok := interface{}(m.GetListenerAccessLoggingService()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ListenerAccessLoggingService")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEarlyAccessLoggingService(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetListenerAccessLoggingService(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("EarlyAccessLoggingService")); err != nil {
+			if _, err = hasher.Write([]byte("ListenerAccessLoggingService")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

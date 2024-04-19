@@ -66,7 +66,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *
 // ProcessListener will configure access logging at the listener level.
 func (p *plugin) ProcessListener(params plugins.Params, parentListener *v1.Listener, out *envoy_config_listener_v3.Listener) error {
 
-	alsSettings := parentListener.GetOptions().GetEarlyAccessLoggingService()
+	alsSettings := parentListener.GetOptions().GetListenerAccessLoggingService()
 	if alsSettings == nil {
 		return nil
 	}

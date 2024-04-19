@@ -871,7 +871,7 @@ var _ = Describe("Plugin", func() {
 				}
 				filter_runtime_key := "default"
 				parentListener.Options = &v1.ListenerOptions{
-					EarlyAccessLoggingService: &accessLogService.AccessLoggingService{
+					ListenerAccessLoggingService: &accessLogService.AccessLoggingService{
 						AccessLog: []*accessLogService.AccessLog{
 							{
 								OutputDestination: &accessLogService.AccessLog_GrpcService{
@@ -955,7 +955,7 @@ var _ = Describe("Plugin", func() {
 							},
 						},
 					},
-					EarlyAccessLoggingService: &accessLogService.AccessLoggingService{
+					ListenerAccessLoggingService: &accessLogService.AccessLoggingService{
 						AccessLog: []*accessLogService.AccessLog{
 							{
 								OutputDestination: &accessLogService.AccessLog_GrpcService{

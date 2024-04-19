@@ -113,12 +113,12 @@ func (m *ListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetEarlyAccessLoggingService()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEarlyAccessLoggingService()) {
+	if h, ok := interface{}(m.GetListenerAccessLoggingService()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetListenerAccessLoggingService()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetEarlyAccessLoggingService(), target.GetEarlyAccessLoggingService()) {
+		if !proto.Equal(m.GetListenerAccessLoggingService(), target.GetListenerAccessLoggingService()) {
 			return false
 		}
 	}

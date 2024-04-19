@@ -93,7 +93,7 @@ message ListenerOptions {
     // If enabled this sets up an early access logging service for the listener.
     // Added initially to support listener level logging for HTTP listeners. 
     // For more info see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-access-log
-    als.options.gloo.solo.io.AccessLoggingService early_access_logging_service = 7;
+    als.options.gloo.solo.io.AccessLoggingService listener_access_logging_service = 7;
     
 }
 

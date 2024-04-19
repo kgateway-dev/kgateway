@@ -234,7 +234,15 @@ spec:
                             exactBalance:
                               type: object
                           type: object
-                        earlyAccessLoggingService:
+                        extensions:
+                          properties:
+                            configs:
+                              additionalProperties:
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                          type: object
+                        listenerAccessLoggingService:
                           properties:
                             accessLog:
                               items:
@@ -392,14 +400,6 @@ spec:
                                     type: object
                                 type: object
                               type: array
-                          type: object
-                        extensions:
-                          properties:
-                            configs:
-                              additionalProperties:
-                                type: object
-                                x-kubernetes-preserve-unknown-fields: true
-                              type: object
                           type: object
                         perConnectionBufferLimitBytes:
                           maximum: 4294967295
