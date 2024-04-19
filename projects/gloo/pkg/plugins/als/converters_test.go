@@ -23,21 +23,21 @@ var _ = Describe("Converters", func() {
 
 			hcmErr := als.DetectUnusefulCmds(als.Hcm, []*accesslogv3.AccessLog{&accesslog})
 			if hcmReportStr == "" {
-				Expect(hcmErr).To(BeNil())
+				Expect(hcmErr).ToNot(HaveOccurred())
 			} else {
 				Expect(hcmErr.Error()).To(ContainSubstring(hcmReportStr))
 			}
 
 			httpListenerErr := als.DetectUnusefulCmds(als.HttpListener, []*accesslogv3.AccessLog{&accesslog})
 			if httpListenerReportStr == "" {
-				Expect(httpListenerErr).To(BeNil())
+				Expect(httpListenerErr).ToNot(HaveOccurred())
 			} else {
 				Expect(httpListenerErr.Error()).To(ContainSubstring(httpListenerReportStr))
 			}
 
 			tcpListenerErr := als.DetectUnusefulCmds(als.Tcp, []*accesslogv3.AccessLog{&accesslog})
 			if tcpListenerReportStr == "" {
-				Expect(tcpListenerErr).To(BeNil())
+				Expect(tcpListenerErr).ToNot(HaveOccurred())
 			} else {
 				Expect(tcpListenerErr.Error()).To(ContainSubstring(tcpListenerReportStr))
 			}
