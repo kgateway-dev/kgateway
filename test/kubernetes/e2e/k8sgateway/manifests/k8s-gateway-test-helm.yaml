@@ -1,11 +1,15 @@
 global:
   image:
     pullPolicy: IfNotPresent
+  # Note: glooRbac.namespaced settings are not supported with Gloo Gateway https://github.com/solo-io/solo-projects/issues/6064
+  # Gateway API fundamentally expects HTTPRoutes and Gateways in any namespace and cross-namespace references to be supported
+  # Currently we are explicitly disabled namespaced roles for Gloo Gateway tests, but this can be left unset.
   glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
+    namespaced: false
 settings:
-  singleNamespace: true
+  # Gloo Gateway requires access to namespaces outside of the install namespace to watch and create Gateway resources
+  # singleNamespace=false must be set for namespace watch to work correctly. See: https://github.com/solo-io/solo-projects/issues/6058
+  singleNamespace: false
   create: true
   invalidConfigPolicy:
     replaceInvalidRoutes: true
