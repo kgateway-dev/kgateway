@@ -376,7 +376,9 @@ func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 		return nil
 	case *gloo_solo_io.Upstream:
 		foundOne := false
-		kubeSvcRefKey := fmt.Sprintf("kube-svc:%s", refKey)
+		kubeSvcRefKey := strings.Replace(resource.GetMetadata().Ref().Key(), ".", ".kube-svc:", 1)
+
+		fmt.Printf("CHECKING UPSTREAM %s, K8s: %s\n", resource.GetMetadata().Ref().Key(), kubeSvcRefKey)
 
 		for i, res := range s.Upstreams {
 			if refKey == res.GetMetadata().Ref().Key() {
