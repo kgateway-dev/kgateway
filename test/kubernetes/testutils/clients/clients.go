@@ -1,8 +1,6 @@
 package clients
 
 import (
-	"testing"
-
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
@@ -32,8 +30,8 @@ func MustClientset() *kubernetes.Clientset {
 	return clientset
 }
 
-func MustClientScheme(testingTb testing.TB) *runtime.Scheme {
-	testingTb.Helper()
+func MustClientScheme() *runtime.Scheme {
+	ginkgo.GinkgoHelper()
 
 	clientScheme := runtime.NewScheme()
 

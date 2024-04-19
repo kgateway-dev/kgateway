@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
@@ -17,7 +19,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 	adminAssertion func(ctx context.Context, adminClient *admincli.Client),
 ) ClusterAssertion {
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		// Before opening a port-forward, we assert that there is at least one Pod that is ready
 		p.RunningReplicas(envoyDeployment, BeNumerically(">=", 1))(ctx)
@@ -44,7 +46,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			Should(Succeed())
 
 		adminClient := admincli.NewClient().
-			WithReceiver(p.testingProgressWriter).
+			WithReceiver(p.progressWriter).
 			WithCurlOptions(
 				curl.WithRetries(3, 0, 10),
 				curl.WithPort(admincli.DefaultAdminPort),
