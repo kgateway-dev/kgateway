@@ -38,9 +38,6 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 		err = testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
-
-		// Initialize required resource clients for test after CRDs are installed
-		testInstallation.ResourceClients = gloogateway.NewResourceClients(ctx, testCluster.ClusterContext)
 	})
 
 	AfterAll(func() {
