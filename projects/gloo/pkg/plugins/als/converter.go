@@ -53,12 +53,12 @@ func DetectUnusefulCmds(filterLocationType aclType, proposedLogFormats []*envoya
 
 	var unusefulCmds []string
 	switch filterLocationType {
-	case "hcm":
+	case Hcm:
 		unusefulCmds = []string{"DOWNSTREAM_TRANSPORT_FAILURE_REASON"}
-	case "http-listener":
-	case "tcp":
+	case HttpListener:
+	case Tcp:
 		unusefulCmds = []string{"DOWNSTREAM_TRANSPORT_FAILURE_REASON", "REQ", "RESP", "TRAILER", "METADATA"}
-	case "udp":
+	case Udp:
 		unusefulCmds = []string{"UPSTREAM_TRANSPORT_FAILURE_REASON", "DOWNSTREAM_TRANSPORT_FAILURE_REASON", "REQ", "RESP", "TRAILER"}
 	default:
 		return errors.New("unknown accesslog level, cannot detect unuseful commands")
