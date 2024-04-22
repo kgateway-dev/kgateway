@@ -34,6 +34,7 @@ type Extensions struct {
 	// K8sGatewayExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that the K8s Gateway integration requires
 	K8sGatewayExtensionsFactory extensions.K8sGatewayExtensionsFactory
+	foo                         int
 }
 
 // Validate returns an error if the Extensions are invalid, nil otherwise

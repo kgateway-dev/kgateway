@@ -62,19 +62,21 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					// Check fault injection is applied
 					checkFaultInjectionFromCluster(),
 
-					// Check status on solo-apis client object
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
-					}, 5, 1)
+					func(ctx context.Context) {
+						// Check status on solo-apis client object
+						helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+							return installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+						}, 5, 1)
 
-					// Check correct gateway reports status of route option
-					Eventually(func(g Gomega) {
-						routeOption, err := installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
-						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(routeOption.GetNamespacedStatuses()).ToNot(BeNil())
-						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())
-						g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Metadata.InstallNamespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
-					}, "5s", ".1s").Should(Succeed())
+						// Check correct gateway reports status of route option
+						Eventually(func(g Gomega) {
+							routeOption, err := installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+							g.Expect(err).NotTo(HaveOccurred())
+							g.Expect(routeOption.GetNamespacedStatuses()).ToNot(BeNil())
+							g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())
+							g.Expect(routeOption.GetNamespacedStatuses().GetStatuses()[installation.Metadata.InstallNamespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
+						}, "5s", ".1s").Should(Succeed())
+					},
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -92,7 +94,7 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 	},
 }
 
-var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
+var ConfigureRouteOptionsWithFilterExtension = e2e.Test{
 	Name:        "RouteOptions.ConfigureRouteOptionsWithFilterExtension",
 	Description: "the RouteOptions will configure fault inject with a filter extension",
 	Test: func(ctx context.Context, installation *e2e.TestInstallation) {

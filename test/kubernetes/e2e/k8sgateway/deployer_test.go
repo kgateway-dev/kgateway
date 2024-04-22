@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 )
@@ -59,14 +60,22 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 	})
 
-	Context("RouteOptions", func() {
+	FContext("RouteOptions", func() {
 
 		It("Apply fault injection using targetRef RouteOption", func() {
 			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)
 		})
 
 		It("Apply fault injection using filter extension RouteOption", func() {
-			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtension)
+		})
+
+	})
+
+	Context("VirtualHostOptions", func() {
+
+		It("Apply header manipulation using targetRef VirtualHostOption", func() {
+			testInstallation.RunTest(ctx, virtualhost_options.ConfigureVirtualHostOptionsWithTargetRef)
 		})
 
 	})

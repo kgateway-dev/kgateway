@@ -6,12 +6,15 @@ import (
 	"github.com/rotisserie/eris"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/translator/listenerutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/translator/vhostutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"k8s.io/apimachinery/pkg/types"
@@ -60,10 +63,11 @@ func NewPlugin(
 	statusReporter reporter.StatusReporter,
 ) *plugin {
 	return &plugin{
-		gwQueries:      gwQueries,
-		vhOptQueries:   vhoptquery.NewQuery(client),
-		vhOptionClient: vhOptionClient,
-		statusReporter: statusReporter,
+		gwQueries:         gwQueries,
+		vhOptQueries:      vhoptquery.NewQuery(client),
+		vhOptionClient:    vhOptionClient,
+		statusReporter:    statusReporter,
+		legacyStatusCache: make(map[types.NamespacedName]legacyStatus),
 	}
 }
 
@@ -101,12 +105,23 @@ func (p *plugin) ApplyListenerPlugin(
 
 	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
 		v.Options = attachedOptions[0].Spec.GetOptions()
+		vhostutils.AppendSourceToVirtualHost(v, attachedOptions[0])
 	}
+	listenerutils.AppendSourceToListener(outListener, attachedOptions[0])
+
+	// track that we used this VirtualHostOption in our status cache
+	// we do this so we can persist status later for all attached VirtualHostOptions
+	p.legacyStatusCache[client.ObjectKeyFromObject(attachedOptions[0])] = legacyStatus{
+		subresourceStatus: map[string]*core.Status{},
+	}
+
+	// TODO track all matching but unused attached vhopts to show conflicted attachment
 
 	return nil
 }
 
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	contextutils.LoggerFrom(ctx).Infof("status plugin running over %d proxies with reports", len(statusCtx.ProxiesWithReports))
 	// gather all VirtualHostOptions we need to report status for
 	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
 		// get proxy status to use for VirtualHostOption status
@@ -135,7 +150,27 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 			p.legacyStatusCache[vhoKey] = statusForVhO
 		}
 	}
-	// vhOptList, err := p.vhOptionClient.List(metav1.NamespaceAll, clients.ListOpts{})
+	contextutils.LoggerFrom(ctx).Infof("status plugin writing reports for %d resources", len(p.legacyStatusCache))
+	virtualHostOptionReport := make(reporter.ResourceReports)
+	for vhKey, status := range p.legacyStatusCache {
+		// get the obj by namespacedName
+		vhObj, _ := p.vhOptionClient.Read(vhKey.Namespace, vhKey.Name, clients.ReadOpts{Ctx: ctx})
+
+		// mark this object to be processed
+		virtualHostOptionReport.Accept(vhObj)
+
+		// add any virtualHost errors for this obj
+		for _, rerr := range status.virtualHostErrors {
+			virtualHostOptionReport.AddError(vhObj, eris.New(rerr.GetReason()))
+		}
+
+		// actually write out the reports!
+		contextutils.LoggerFrom(ctx).Infof("writing report for %s: %v", vhKey, status.subresourceStatus)
+		err := p.statusReporter.WriteReports(ctx, virtualHostOptionReport, status.subresourceStatus)
+		if err != nil {
+			return eris.Errorf("error writing status report from VirtualHostOptionPlugin: %w", err)
+		}
+	}
 	return nil
 
 }

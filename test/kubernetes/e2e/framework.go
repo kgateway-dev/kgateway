@@ -156,7 +156,18 @@ func (i *TestInstallation) preFailHandler() {
 			// As a result, there is no assertion that we perform
 		},
 	}
-	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
+	printGlooLogsOp := &operations.BasicOperation{
+		OpName: "print-gloo-logs",
+		OpAction: func(ctx context.Context) error {
+			logsCmd := i.Actions.Kubectl().Client().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
+			return logsCmd.Run().Cause()
+		},
+		OpAssertion: func(ctx context.Context) {
+			// This action is performed on test failure, and is not modifying the cluster
+			// As a result, there is no assertion that we perform
+		},
+	}
+	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp, printGlooLogsOp)
 	if err != nil {
 		i.Operator.Logf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i, err)
 	}
