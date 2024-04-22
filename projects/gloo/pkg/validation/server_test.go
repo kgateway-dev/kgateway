@@ -3,13 +3,14 @@ package validation_test
 import (
 	"context"
 	"fmt"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	upstreams_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes/fake"
-	"net"
-	"sync"
-	"time"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 

@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"sync"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
