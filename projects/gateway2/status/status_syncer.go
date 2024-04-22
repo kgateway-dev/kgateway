@@ -2,9 +2,12 @@ package status
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -18,6 +21,7 @@ import (
 // HandleProxyReports should conform to the OnProxiesTranslatedFn and QueueStatusForProxiesFn signatures
 var _ syncer.OnProxiesTranslatedFn = (&statusSyncerFactory{}).HandleProxyReports
 
+// QueueStatusForProxiesFn queues a status sync for a given set of Proxy resources along with the plugins that produced them
 var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatusForProxies
 
 // GatewayStatusSyncer is responsible for applying status plugins to Gloo Gateway proxies
@@ -32,15 +36,19 @@ type GatewayStatusSyncer interface {
 // a threadsafe factory for initializing a status syncer
 // allows for the status syncer to be shared across multiple start funcs
 type statusSyncerFactory struct {
-	registryPerProxy   map[*v1.Proxy]*registry.PluginRegistry
-	proxiesPerRegistry map[*registry.PluginRegistry]map[*v1.Proxy]bool
+	// maps a proxy from a proxy sync action to the plugin registry that produced it
+	// proxy -> sync iteration -> plugin registry
+	registryPerProxy map[types.NamespacedName]map[int]*registry.PluginRegistry
+	// maps a plugin registry to the proxies that need to be synced
+	// plugin registry -> proxy -> current syncer iteration
+	proxiesPerRegistry map[*registry.PluginRegistry]map[types.NamespacedName]int
 	lock               *sync.RWMutex
 }
 
 func NewStatusSyncerFactory() GatewayStatusSyncer {
 	return &statusSyncerFactory{
-		registryPerProxy:   make(map[*v1.Proxy]*registry.PluginRegistry),
-		proxiesPerRegistry: make(map[*registry.PluginRegistry]map[*v1.Proxy]bool),
+		registryPerProxy:   make(map[types.NamespacedName]map[int]*registry.PluginRegistry),
+		proxiesPerRegistry: make(map[*registry.PluginRegistry]map[types.NamespacedName]int),
 		lock:               &sync.RWMutex{},
 	}
 }
@@ -54,10 +62,19 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 	defer f.lock.Unlock()
 	proxies, ok := f.proxiesPerRegistry[pluginRegistry]
 	if !ok {
-		proxies = make(map[*v1.Proxy]bool)
+		proxies = make(map[types.NamespacedName]int)
 	}
 	for _, proxy := range proxiesToQueue {
-		proxies[proxy] = true
+		proxyName := getProxyNameNamespace(proxy)
+		proxyCounter, err := getProxySyncCounter(proxy)
+		if err != nil {
+			// ignore proxies that do not have a sync id
+			continue
+		}
+		// update proxyCounter only if it is higher than the current one
+		if currentCounter, ok := proxies[proxyName]; !ok || proxyCounter > currentCounter {
+			proxies[proxyName] = proxyCounter
+		}
 	}
 	f.proxiesPerRegistry[pluginRegistry] = proxies
 }
@@ -71,9 +88,10 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		reg := reg
 		var filteredProxiesWithReports []translatorutils.ProxyWithReports
 		for _, proxyWithReports := range proxiesWithReports {
-			if _, ok := proxiesToSync[proxyWithReports.Proxy]; ok {
+			proxyName := getProxyNameNamespace(proxyWithReports.Proxy)
+			if _, ok := proxiesToSync[proxyName]; ok {
 				filteredProxiesWithReports = append(filteredProxiesWithReports, proxyWithReports)
-				delete(proxiesToSync, proxyWithReports.Proxy)
+				delete(proxiesToSync, proxyName)
 				break
 			}
 		}
@@ -82,6 +100,10 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 			delete(f.proxiesPerRegistry, reg)
 		}
 	}
+}
+
+func (s *statusSyncerFactory) getProxiesPerRegistry() map[*registry.PluginRegistry]map[types.NamespacedName]int {
+	return s.proxiesPerRegistry
 }
 
 type statusSyncer struct {
@@ -128,4 +150,27 @@ func filterProxiesByControllerName(
 		}
 	}
 	return filtered
+}
+
+func getProxyNameNamespace(proxy *v1.Proxy) types.NamespacedName {
+	return types.NamespacedName{
+		Name:      proxy.GetMetadata().GetName(),
+		Namespace: proxy.GetMetadata().GetNamespace(),
+	}
+}
+
+func getProxySyncCounter(proxy *v1.Proxy) (int, error) {
+	proxyAnnotations := proxy.GetMetadata().GetAnnotations()
+	if proxyAnnotations == nil {
+		return 0, eris.New("proxy annotations are nil")
+	}
+	if id, ok := proxyAnnotations[utils.ProxySyncId]; !ok {
+		return 0, eris.New("proxy sync id not found")
+	} else {
+		counter, err := strconv.Atoi(id)
+		if err != nil {
+			return 0, err
+		}
+		return counter, nil
+	}
 }
