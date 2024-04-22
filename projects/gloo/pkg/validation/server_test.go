@@ -83,7 +83,7 @@ var _ = Describe("Validation Server", func() {
 
 		translator = NewTranslatorWithHasher(utils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
 		vc = ValidatorConfig{
-			Ctx: context.TODO(),
+			Ctx: context.Background(),
 			GlooValidatorConfig: GlooValidatorConfig{
 				XdsSanitizer: xdsSanitizer,
 				Translator:   translator,
@@ -98,8 +98,8 @@ var _ = Describe("Validation Server", func() {
 			It("works with Validate", func() {
 				proxy := params.Snapshot.Proxies[0]
 				s := NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
-				rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
+				_ = s.Sync(context.Background(), params.Snapshot)
+				rpt, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rpt).To(matchers.MatchProto(&validationgrpc.GlooValidationServiceResponse{
 					ValidationReports: []*validationgrpc.ValidationReport{
@@ -114,8 +114,8 @@ var _ = Describe("Validation Server", func() {
 			It("works with Validate Gloo", func() {
 				proxy := params.Snapshot.Proxies[0]
 				s := NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
-				rpt, err := s.ValidateGloo(context.TODO(), proxy, nil, false)
+				_ = s.Sync(context.Background(), params.Snapshot)
+				rpt, err := s.ValidateGloo(context.Background(), proxy, nil, false)
 				Expect(err).NotTo(HaveOccurred())
 				r := rpt[0]
 				Expect(r.Proxy).To(Equal(proxy))
@@ -142,7 +142,7 @@ var _ = Describe("Validation Server", func() {
 				proxy.GetListeners()[2].GetHybridListener().GetMatchedListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()[0].Action = errorRouteAction
 
 				s = NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
+				_ = s.Sync(context.Background(), params.Snapshot)
 			})
 
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport, proxy *v1.Proxy) {
@@ -160,13 +160,13 @@ var _ = Describe("Validation Server", func() {
 			}
 
 			It("works with Validate", func() {
-				rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
+				rpt, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 				Expect(err).NotTo(HaveOccurred())
 				validateProxyReport(rpt.GetValidationReports()[0].GetProxyReport(), proxy)
 			})
 
 			It("works with Validate Gloo", func() {
-				rpt, err := s.ValidateGloo(context.TODO(), proxy, nil, false)
+				rpt, err := s.ValidateGloo(context.Background(), proxy, nil, false)
 				Expect(err).NotTo(HaveOccurred())
 				validateProxyReport(rpt[0].ProxyReport, proxy)
 			})
@@ -186,7 +186,7 @@ var _ = Describe("Validation Server", func() {
 				params.Snapshot.Proxies = v1.ProxyList{proxy1, proxy2}
 
 				s = NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
+				_ = s.Sync(context.Background(), params.Snapshot)
 			})
 
 			validateProxyAndReport := func(proxy *v1.Proxy, proxyToMatch *v1.Proxy, proxyReport *validationgrpc.ProxyReport) {
@@ -196,7 +196,7 @@ var _ = Describe("Validation Server", func() {
 			}
 
 			It("works with Validate", func() {
-				resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
 					Resources: &validationgrpc.GlooValidationServiceRequest_ModifiedResources{
 						ModifiedResources: &validationgrpc.ModifiedResources{
 							Upstreams: []*v1.Upstream{samples.SimpleUpstream()},
@@ -213,7 +213,7 @@ var _ = Describe("Validation Server", func() {
 			})
 
 			It("works with Validate Gloo", func() {
-				rprts, err := s.ValidateGloo(context.TODO(), nil, samples.SimpleUpstream(), false)
+				rprts, err := s.ValidateGloo(context.Background(), nil, samples.SimpleUpstream(), false)
 				Expect(err).NotTo(HaveOccurred())
 				// should create a report for each proxy
 				Expect(rprts).To(HaveLen(2))
@@ -239,14 +239,14 @@ var _ = Describe("Validation Server", func() {
 			JustBeforeEach(func() {
 				params.Snapshot.Upstreams = v1.UpstreamList{}
 				s = NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
+				_ = s.Sync(context.Background(), params.Snapshot)
 				upstream = v1.Upstream{
 					Metadata: &core.Metadata{Name: "other-upstream", Namespace: "other-namespace"},
 				}
 			})
 
 			It("works with Validate", func() {
-				resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
 					Resources: &validationgrpc.GlooValidationServiceRequest_ModifiedResources{
 						ModifiedResources: &validationgrpc.ModifiedResources{
 							Upstreams: []*v1.Upstream{
@@ -263,7 +263,7 @@ var _ = Describe("Validation Server", func() {
 			})
 
 			It("works with validate Gloo", func() {
-				reports, err := s.ValidateGloo(context.TODO(), nil, &upstream, false)
+				reports, err := s.ValidateGloo(context.Background(), nil, &upstream, false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 				validateProxyReport(reports[0].ProxyReport)
@@ -289,8 +289,8 @@ var _ = Describe("Validation Server", func() {
 			}
 
 			It("works with Validate", func() {
-				_ = s.Sync(context.TODO(), params.Snapshot)
-				resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				_ = s.Sync(context.Background(), params.Snapshot)
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
 					Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
 						DeletedResources: &validationgrpc.DeletedResources{
 							UpstreamRefs: []*core.ResourceRef{
@@ -305,8 +305,8 @@ var _ = Describe("Validation Server", func() {
 			})
 
 			It("works with Gloo Validate", func() {
-				_ = s.Sync(context.TODO(), params.Snapshot)
-				reports, err := s.ValidateGloo(context.TODO(), nil, &upstream, true)
+				_ = s.Sync(context.Background(), params.Snapshot)
+				reports, err := s.ValidateGloo(context.Background(), nil, &upstream, true)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 				validateProxyReport(reports[0].ProxyReport)
@@ -322,7 +322,7 @@ var _ = Describe("Validation Server", func() {
 					Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
 				}
 				s = NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
+				_ = s.Sync(context.Background(), params.Snapshot)
 			})
 
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
@@ -333,7 +333,7 @@ var _ = Describe("Validation Server", func() {
 			}
 
 			It("works with Validate", func() {
-				resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
 					Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
 						DeletedResources: &validationgrpc.DeletedResources{
 							UpstreamRefs: []*core.ResourceRef{
@@ -348,7 +348,7 @@ var _ = Describe("Validation Server", func() {
 			})
 
 			It("works with Validate Gloo", func() {
-				reports, err := s.ValidateGloo(context.TODO(), nil, &upstream, true)
+				reports, err := s.ValidateGloo(context.Background(), nil, &upstream, true)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 				validateProxyReport(reports[0].ProxyReport)
@@ -361,7 +361,7 @@ var _ = Describe("Validation Server", func() {
 
 			JustBeforeEach(func() {
 				s = NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
+				_ = s.Sync(context.Background(), params.Snapshot)
 				secret = v1.Secret{
 					Metadata: &core.Metadata{Name: "unused-secret", Namespace: "gloo-system"},
 				}
@@ -375,7 +375,7 @@ var _ = Describe("Validation Server", func() {
 			}
 
 			It("works with Validate", func() {
-				resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
 					Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
 						DeletedResources: &validationgrpc.DeletedResources{
 							SecretRefs: []*core.ResourceRef{
@@ -390,7 +390,7 @@ var _ = Describe("Validation Server", func() {
 			})
 
 			It("works with Validate Gloo", func() {
-				reports, err := s.ValidateGloo(context.TODO(), nil, &secret, true)
+				reports, err := s.ValidateGloo(context.Background(), nil, &secret, true)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 				validateProxyReport(reports[0].ProxyReport)
@@ -403,7 +403,7 @@ var _ = Describe("Validation Server", func() {
 
 			JustBeforeEach(func() {
 				s = NewValidator(vc)
-				_ = s.Sync(context.TODO(), params.Snapshot)
+				_ = s.Sync(context.Background(), params.Snapshot)
 				secret = v1.Secret{
 					Metadata: &core.Metadata{Name: "secret", Namespace: "gloo-system"},
 				}
@@ -420,7 +420,7 @@ var _ = Describe("Validation Server", func() {
 			}
 
 			It("works with Validate", func() {
-				resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
 					Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
 						DeletedResources: &validationgrpc.DeletedResources{
 							SecretRefs: []*core.ResourceRef{
@@ -439,7 +439,7 @@ var _ = Describe("Validation Server", func() {
 			})
 
 			It("works with Validate Gloo", func() {
-				reports, err := s.ValidateGloo(context.TODO(), nil, &secret, true)
+				reports, err := s.ValidateGloo(context.Background(), nil, &secret, true)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 
@@ -473,7 +473,7 @@ var _ = Describe("Validation Server", func() {
 		// this block after that has been initialized. That way the inner resources (namely, the context)
 		// are all valid by the time this Setup Node is executed
 		JustBeforeEach(func() {
-			ctx, cancel = context.WithCancel(context.TODO())
+			ctx, cancel = context.WithCancel(context.Background())
 			lis, err := net.Listen("tcp", ":0")
 			Expect(err).NotTo(HaveOccurred())
 
