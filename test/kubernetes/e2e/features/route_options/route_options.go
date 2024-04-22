@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/go-utils/threadsafe"
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,27 +31,6 @@ var (
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
-
-	curlPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "curl",
-			Namespace: "curl",
-		},
-	}
-
-	curlFromPod = func(ctx context.Context) func() string {
-		proxyFdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
-		curlOpts := []curl.Option{
-			curl.WithHost(proxyFdqnAddr),
-			curl.WithHostHeader("example.com"),
-		}
-
-		return func() string {
-			var buf threadsafe.Buffer
-			kubeCli := kubectl.NewCli().WithReceiver(&buf)
-			return kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta, curlOpts...)
-		}
-	}
 
 	expectedFaultInjectionResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusTeapot,
@@ -71,8 +50,10 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					// First check resources are created for Gateay
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
-					// Check fault injection is applied
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
+					installation.Assertions.CurlEventuallyResponds([]curl.Option{
+						curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+						curl.WithHostHeader("example.com"),
+					}, expectedFaultInjectionResp),
 
 					// TODO(npolshak) Check status on solo-apis client object once route option status support is added
 				},
@@ -105,7 +86,10 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
+					installation.Assertions.CurlEventuallyResponds([]curl.Option{
+						curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+						curl.WithHostHeader("example.com"),
+					}, expectedFaultInjectionResp),
 
 					// TODO(npolshak): Statuses are not supported for filter extensions yet
 				},
