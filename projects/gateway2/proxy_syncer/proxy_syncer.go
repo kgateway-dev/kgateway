@@ -25,7 +25,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-// QueueStatusForProxiesFn queues a status sync for a given set of Proxy resources along with the plugins that produced them
+// QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
 type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry, totalSyncCount int)
 
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies

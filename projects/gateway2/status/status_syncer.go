@@ -20,7 +20,7 @@ import (
 // HandleProxyReports should conform to the OnProxiesTranslatedFn and QueueStatusForProxiesFn signatures
 var _ syncer.OnProxiesTranslatedFn = (&statusSyncerFactory{}).HandleProxyReports
 
-// QueueStatusForProxiesFn queues a status sync for a given set of Proxy resources along with the plugins that produced them
+// QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
 var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatusForProxies
 
 // GatewayStatusSyncer is responsible for applying status plugins to Gloo Gateway proxies
@@ -40,6 +40,7 @@ type statusSyncerFactory struct {
 	// sync iteration -> plugin registry
 	registryPerSync map[int]*registry.PluginRegistry
 	// maps a proxy to the sync iteration that produced it
+	// only the latest sync iteration is stored and used to apply status plugins
 	resyncsPerProxy map[types.NamespacedName]int
 
 	lock *sync.Mutex
