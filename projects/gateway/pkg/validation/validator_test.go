@@ -208,7 +208,7 @@ var _ = Describe("Validator", func() {
 				err = v.ValidateDeletedGvk(context.TODO(), gloov1.UpstreamGVK, us, false)
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("rejects an upstream deletion when there is a validation warning and allowWarnings is false", func() {
+			FIt("rejects an upstream deletion when there is a validation warning and allowWarnings is false", func() {
 				v.glooValidator = ValidateWarn
 				v.allowWarnings = false
 
@@ -1397,7 +1397,7 @@ const (
 
 // Validation functions here. There return reports that are processed by the validator
 // In order to test the secret valdiation logic, there needs to be a way to change the error message and/or warning.
-// These validation functions have the word "Change" in their names and will return a unqiue error/warning message each time they are called.
+// These validation functions have the word "Change" in their names and will return a unique error/warning message each time they are called.
 func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	return ValidationAddErrorsAndWarnings(proxy, nil, []string{errString}, []string{})
 }

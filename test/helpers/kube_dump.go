@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/threadsafe"
 	"io"
 	"os"
 	"os/exec"

@@ -63,8 +63,6 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	fmt.Printf("IN kubernetes.ProcessUpstream() for %s\n", in.GetMetadata().Ref().Key())
-
 	// not ours
 	kube, ok := in.GetUpstreamType().(*v1.Upstream_Kube)
 	if !ok {

@@ -312,6 +312,7 @@ var _ = Describe("Validation Server", func() {
 				validateProxyReport(reports[0].ProxyReport)
 			})
 		})
+
 		Context("upstream deletion validation fails", func() {
 			// trying to delete an upstream that is being referenced by a proxy should cause an error
 			var upstream v1.Upstream
@@ -353,6 +354,7 @@ var _ = Describe("Validation Server", func() {
 				validateProxyReport(reports[0].ProxyReport)
 			})
 		})
+
 		Context("secret deletion validation succeeds", func() {
 			// deleting a secret that is not being used should succeed
 			var secret v1.Secret

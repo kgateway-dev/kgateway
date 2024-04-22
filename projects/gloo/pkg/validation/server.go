@@ -189,7 +189,6 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	s.lock.Unlock()
 
 	// update the snapshot copy with the resources from the request
-	fmt.Printf("IN validator.Validate(); req: %+v\n", req)
 	applyRequestToSnapshot(&snapCopy, req)
 	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
@@ -219,8 +218,6 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
 	s.lock.Unlock()
 
-	fmt.Printf("IN validator.ValidateGloo(); resource: %s, shouldDelete: %v\n", resource.GetMetadata().Ref().Key(), shouldDelete)
-
 	if resource != nil {
 		if shouldDelete {
 			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
@@ -228,7 +225,6 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 			}
 			switch resource.(type) {
 			case *v1.Upstream:
-				fmt.Printf("REMOVING KUBE-SVC US FROM RESOURCE LIST: %s\n", resource.GetMetadata().Ref().Key())
 				kubeSvcUs := &v1.Upstream{
 					Metadata: &core.Metadata{
 						Namespace: resource.GetMetadata().GetNamespace(),
