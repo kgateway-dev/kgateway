@@ -259,7 +259,6 @@ func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValida
 		existingUpstreams := snap.Upstreams.AsResources()
 		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
 		for _, ref := range req.GetDeletedResources().GetUpstreamRefs() {
-			fmt.Printf("ALSO DELETING KUBE-SVC: kube-svc:%s\n", ref.GetName())
 			deletedUpstreamRefs = append(deletedUpstreamRefs, &core.ResourceRef{
 				Namespace: ref.GetNamespace(),
 				Name:      fmt.Sprintf("kube-svc:%s", ref.GetName()),
