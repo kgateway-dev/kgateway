@@ -4,13 +4,13 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
-	"github.com/solo-io/skv2/codegen/util"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
 var _ = Describe("Deployer Test", Ordered, func() {
@@ -26,17 +26,17 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	)
 
 	BeforeAll(func() {
+		var err error
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
-			"k8s-gw-deployer-test",
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-deployer-test",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			},
 		)
 
-		err := testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		err = testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -55,6 +55,18 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 		It("configures proxies from the GatewayParameters CR", func() {
 			testInstallation.RunTest(ctx, deployer.ConfigureProxiesFromGatewayParameters)
+		})
+
+	})
+
+	Context("RouteOptions", func() {
+
+		It("Apply fault injection using targetRef RouteOption", func() {
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)
+		})
+
+		It("Apply fault injection using filter extension RouteOption", func() {
+			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
 		})
 
 	})
