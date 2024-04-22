@@ -443,7 +443,6 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 			return nil, err
 		}
 	} else {
-		fmt.Printf("UPSERTING %s\n", opts.Resource.GetMetadata().Ref().String())
 		if err := snapshotClone.UpsertToResourceList(opts.Resource); err != nil {
 			return nil, err
 		}

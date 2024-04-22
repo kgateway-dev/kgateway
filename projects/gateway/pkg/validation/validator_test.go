@@ -208,7 +208,7 @@ var _ = Describe("Validator", func() {
 				err = v.ValidateDeletedGvk(context.TODO(), gloov1.UpstreamGVK, us, false)
 				Expect(err).NotTo(HaveOccurred())
 			})
-			FIt("rejects an upstream deletion when there is a validation warning and allowWarnings is false", func() {
+			It("rejects an upstream deletion when there is a validation warning and allowWarnings is false", func() {
 				v.glooValidator = ValidateWarn
 				v.allowWarnings = false
 
@@ -226,7 +226,7 @@ var _ = Describe("Validator", func() {
 			// Inputs:
 			// - disableValidationAgainstPreviousState bool - are we enabling the validation against the previous state or just checking errors/warnings as usual
 			// - allowWarnings bool - are warnings allowed
-			// - validator - Errors/Warnings/Success - what is returned from valiation.
+			// - validator - Errors/Warnings/Success - what is returned from validation.
 			// - errExpected bool - is an error expected
 			// the glooValidator returns two types of reports: ProxyReports and ResourceReports.
 			// Test that both are handled correctly. This test is focuses on the ProxyReports.
