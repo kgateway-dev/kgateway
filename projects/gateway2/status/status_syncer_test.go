@@ -52,13 +52,15 @@ var _ = Describe("Status Syncer", func() {
 		pluginRegistry := &registry.PluginRegistry{}
 
 		// Test QueueStatusForProxies method
-		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry)
+		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry, 123)
 
 		// Queue the proxy (this is invoked in the proxy syncer)
 		// Access private field proxiesPerRegistry
-		proxiesMap := syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
+		proxiesMap := syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap[proxyOneNameNs]).To(Equal(123))
 		Expect(proxiesMap[proxyTwoNameNs]).To(Equal(123))
+		registryMap := syncer.(*statusSyncerFactory).registryPerSync
+		Expect(registryMap[123]).To(Equal(pluginRegistry))
 
 		// Handle the proxy reports only for proxy one (this is invoked as a callback in the envoy translator syncer)
 		ctx := context.Background()
@@ -74,9 +76,10 @@ var _ = Describe("Status Syncer", func() {
 		syncer.HandleProxyReports(ctx, proxiesWithReports)
 
 		// Ensure proxy one has been removed from the queue after handling reports, but proxy two is still present
-		proxiesMap = syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
+		proxiesMap = syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap).ToNot(ContainElement(proxyOneNameNs)) // proxy one should be removed
 		Expect(proxiesMap[proxyTwoNameNs]).To(Equal(123))        // proxy two should still be in the map
+		Expect(registryMap[123]).To(Equal(pluginRegistry))       // registry should still be in map
 	})
 
 	It("Can handle multiple proxies in one call", func() {
@@ -113,13 +116,15 @@ var _ = Describe("Status Syncer", func() {
 		pluginRegistry := &registry.PluginRegistry{}
 
 		// Test QueueStatusForProxies method
-		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry)
+		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry, 123)
 
 		// Queue the proxy (this is invoked in the proxy syncer)
 		// Access private field proxiesPerRegistry
-		proxiesMap := syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
+		proxiesMap := syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap[proxyOneNameNs]).To(Equal(123))
 		Expect(proxiesMap[proxyTwoNameNs]).To(Equal(123))
+		registryMap := syncer.(*statusSyncerFactory).registryPerSync
+		Expect(registryMap[123]).To(Equal(pluginRegistry))
 
 		// Handle the proxy reports only for proxy one (this is invoked as a callback in the envoy translator syncer)
 		ctx := context.Background()
@@ -142,9 +147,11 @@ var _ = Describe("Status Syncer", func() {
 		syncer.HandleProxyReports(ctx, proxiesWithReports)
 
 		// Ensure proxy one has been removed from the queue after handling reports, but proxy two is still present
-		proxiesMap = syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
+		proxiesMap = syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap).ToNot(ContainElement(proxyOneNameNs))
 		Expect(proxiesMap).ToNot(ContainElement(proxyTwoNameNs))
+		registryMap = syncer.(*statusSyncerFactory).registryPerSync
+		Expect(registryMap).ToNot(ContainElement(123))
 	})
 
 	It("should only queue and process the most recent proxy", func() {
@@ -185,12 +192,14 @@ var _ = Describe("Status Syncer", func() {
 		pluginRegistry := &registry.PluginRegistry{}
 
 		// Test QueueStatusForProxies method
-		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry)
+		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry, 125)
 
 		// Queue the proxy (this is invoked in the proxy syncer)
 		// Access private field proxiesPerRegistry
-		proxiesMap := syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
+		proxiesMap := syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap[proxyNameNs]).To(Equal(125))
+		registryMap := syncer.(*statusSyncerFactory).registryPerSync
+		Expect(registryMap[125]).To(Equal(pluginRegistry))
 
 		// Handle the proxy reports (this is invoked as a callback in the envoy translator syncer)
 		ctx := context.Background()
@@ -220,7 +229,9 @@ var _ = Describe("Status Syncer", func() {
 		syncer.HandleProxyReports(ctx, proxiesWithReports)
 
 		// Ensure the proxy has been removed from the queue after handling reports
-		proxiesMap = syncer.(*statusSyncerFactory).proxiesPerRegistry[pluginRegistry]
+		proxiesMap = syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap).ToNot(ContainElement(proxyNameNs))
+		registryMap = syncer.(*statusSyncerFactory).registryPerSync
+		Expect(registryMap).ToNot(ContainElement(125))
 	})
 })
