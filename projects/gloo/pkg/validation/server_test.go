@@ -2,6 +2,9 @@ package validation_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"k8s.io/client-go/kubernetes/fake"
 	"net"
 	"sync"
 	"time"
@@ -56,6 +59,11 @@ var _ = Describe("Validation Server", func() {
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
+
+		kube := fake.NewSimpleClientset()
+		kubeCoreCache, err := corecache.NewKubeCoreCache(context.Background(), kube)
+		Expect(err).NotTo(HaveOccurred())
+
 		opts := bootstrap.Opts{
 			Settings:  settings,
 			Secrets:   memoryClientFactory,
@@ -63,6 +71,8 @@ var _ = Describe("Validation Server", func() {
 			Consul: bootstrap.Consul{
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
+			KubeClient:    kube,
+			KubeCoreCache: kubeCoreCache,
 		}
 		registeredPlugins = registry.Plugins(opts)
 
@@ -310,6 +320,66 @@ var _ = Describe("Validation Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 				validateProxyReport(reports[0].ProxyReport)
+			})
+		})
+
+		Context("upstream deletion validation succeeds for kube-svc upstreams", func() {
+			// deleting an upstream that is not being used should succeed
+			var upstream, kubeSvcUpstream v1.Upstream
+
+			JustBeforeEach(func() {
+				usType := &v1.Upstream_Kube{
+					Kube: &kubernetes.UpstreamSpec{
+						ServiceName:      "fake-svc",
+						ServiceNamespace: "fake-ns",
+						ServicePort:      1234,
+					},
+				}
+
+				upstream = v1.Upstream{
+					Metadata:     &core.Metadata{Name: "my-us", Namespace: "gloo-system"},
+					UpstreamType: usType,
+				}
+				kubeSvcUpstream = v1.Upstream{
+					Metadata:     &core.Metadata{Name: "kube-svc:my-us", Namespace: "gloo-system"},
+					UpstreamType: usType,
+				}
+
+				params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, &upstream, &kubeSvcUpstream)
+				s = NewValidator(vc)
+			})
+
+			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
+				warnings := validation.GetProxyWarning(proxyReport)
+				errors := validation.GetProxyError(proxyReport)
+				Expect(warnings).To(BeEmpty())
+				Expect(errors).NotTo(HaveOccurred())
+			}
+
+			It("works with Validate", func() {
+				_ = s.Sync(context.Background(), params.Snapshot)
+				resp, err := s.Validate(context.Background(), &validationgrpc.GlooValidationServiceRequest{
+					Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+						DeletedResources: &validationgrpc.DeletedResources{
+							UpstreamRefs: []*core.ResourceRef{
+								upstream.GetMetadata().Ref(),
+							},
+						},
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.ValidationReports).To(HaveLen(1))
+				validateProxyReport(resp.ValidationReports[0].GetProxyReport())
+				Expect(resp.ValidationReports[0].UpstreamReports).To(HaveLen(0))
+			})
+
+			It("works with Gloo Validate", func() {
+				_ = s.Sync(context.Background(), params.Snapshot)
+				reports, err := s.ValidateGloo(context.Background(), nil, &upstream, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(reports).To(HaveLen(1))
+				validateProxyReport(reports[0].ProxyReport)
+				Expect(reports[0].ResourceReports).To(HaveLen(0))
 			})
 		})
 
