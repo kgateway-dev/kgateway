@@ -5,6 +5,7 @@ import (
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -733,10 +734,10 @@ var _ = Describe("Plugin", func() {
 
 	})
 
-	Context("ProcessHcmNetworkFilter", func() {
+	Context("ProcessHcmandListenerFilters", func() {
 
 		var (
-			plugin       plugins.HttpConnectionManagerPlugin
+			plugin       hcmandlistenerplugin
 			pluginParams plugins.Params
 
 			parentListener *v1.Listener
@@ -859,6 +860,158 @@ var _ = Describe("Plugin", func() {
 
 		})
 
+		When("parent listener has early access log settings with filters defined", func() {
+
+			BeforeEach(func() {
+				logName := "test"
+				extraHeaders := []string{"test"}
+				usRef := &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				filter_runtime_key := "default"
+				parentListener.Options = &v1.ListenerOptions{
+					ListenerAccessLoggingService: &accessLogService.AccessLoggingService{
+						AccessLog: []*accessLogService.AccessLog{
+							{
+								OutputDestination: &accessLogService.AccessLog_GrpcService{
+									GrpcService: &accessLogService.GrpcService{
+										LogName: logName,
+										ServiceRef: &accessLogService.GrpcService_StaticClusterName{
+											StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+										},
+										AdditionalRequestHeadersToLog:   extraHeaders,
+										AdditionalResponseHeadersToLog:  extraHeaders,
+										AdditionalResponseTrailersToLog: extraHeaders,
+									},
+								},
+
+								Filter: &accessLogService.AccessLogFilter{
+									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+										RuntimeFilter: &accessLogService.RuntimeFilter{
+											RuntimeKey: filter_runtime_key,
+											PercentSampled: &gloo_envoy_types.FractionalPercent{
+												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+												Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+											},
+											UseIndependentRandomness: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("does configure listener level access log config", func() {
+				envoyListener := &envoy_config_listener_v3.Listener{}
+				err := plugin.ProcessListener(pluginParams, parentListener, envoyListener)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(envoyListener.GetAccessLog()).NotTo(BeNil())
+			})
+
+		})
+
+		When("parent listener has early and normal access log settings with filters defined they can stay different", func() {
+
+			BeforeEach(func() {
+				logName := "test"
+				extraHeaders := []string{"test"}
+				usRef := &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				filter_runtime_key := "default"
+				early_filter_runtime_key := "early-default"
+				parentListener.Options = &v1.ListenerOptions{
+					AccessLoggingService: &accessLogService.AccessLoggingService{
+						AccessLog: []*accessLogService.AccessLog{
+							{
+								OutputDestination: &accessLogService.AccessLog_GrpcService{
+									GrpcService: &accessLogService.GrpcService{
+										LogName: logName,
+										ServiceRef: &accessLogService.GrpcService_StaticClusterName{
+											StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+										},
+										AdditionalRequestHeadersToLog:   extraHeaders,
+										AdditionalResponseHeadersToLog:  extraHeaders,
+										AdditionalResponseTrailersToLog: extraHeaders,
+									},
+								},
+
+								Filter: &accessLogService.AccessLogFilter{
+									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+										RuntimeFilter: &accessLogService.RuntimeFilter{
+											RuntimeKey: early_filter_runtime_key,
+											PercentSampled: &gloo_envoy_types.FractionalPercent{
+												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+												Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+											},
+											UseIndependentRandomness: true,
+										},
+									},
+								},
+							},
+						},
+					},
+					ListenerAccessLoggingService: &accessLogService.AccessLoggingService{
+						AccessLog: []*accessLogService.AccessLog{
+							{
+								OutputDestination: &accessLogService.AccessLog_GrpcService{
+									GrpcService: &accessLogService.GrpcService{
+										LogName: logName,
+										ServiceRef: &accessLogService.GrpcService_StaticClusterName{
+											StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+										},
+										AdditionalRequestHeadersToLog:   extraHeaders,
+										AdditionalResponseHeadersToLog:  extraHeaders,
+										AdditionalResponseTrailersToLog: extraHeaders,
+									},
+								},
+
+								Filter: &accessLogService.AccessLogFilter{
+									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+										RuntimeFilter: &accessLogService.RuntimeFilter{
+											RuntimeKey: filter_runtime_key,
+											PercentSampled: &gloo_envoy_types.FractionalPercent{
+												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+												Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+											},
+											UseIndependentRandomness: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("does configure listener level access log config", func() {
+
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, parentListener, listener, envoyHcmConfig)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(envoyHcmConfig.GetAccessLog()).NotTo(BeNil())
+
+				envoyListener := &envoy_config_listener_v3.Listener{}
+				err = plugin.ProcessListener(pluginParams, parentListener, envoyListener)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(envoyListener.GetAccessLog()).NotTo(BeNil())
+				Expect(envoyListener.GetAccessLog()).NotTo(BeEmpty())
+				eRuntime := envoyListener.GetAccessLog()[0].GetFilter().GetRuntimeFilter().GetRuntimeKey()
+				hcmRuntime := envoyHcmConfig.GetAccessLog()[0].GetFilter().GetRuntimeFilter().GetRuntimeKey()
+				Expect(eRuntime).To(Not(Equal(hcmRuntime)))
+			})
+
+		})
+
 	})
 
 })
+
+type hcmandlistenerplugin interface {
+	plugins.Plugin
+	plugins.HttpConnectionManagerPlugin
+	plugins.ListenerPlugin
+}
