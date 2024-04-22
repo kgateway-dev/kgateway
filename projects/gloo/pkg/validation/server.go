@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"sync"
 
@@ -228,7 +229,7 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 				kubeSvcUs := &v1.Upstream{
 					Metadata: &core.Metadata{
 						Namespace: resource.GetMetadata().GetNamespace(),
-						Name:      fmt.Sprintf("kube-svc:%s", resource.GetMetadata().GetName()),
+						Name:      fmt.Sprintf("%s%s", kubernetes.UpstreamNamePrefix, resource.GetMetadata().GetName()),
 					},
 				}
 				if err := snapCopy.RemoveFromResourceList(kubeSvcUs); err != nil {
@@ -261,7 +262,7 @@ func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValida
 		for _, ref := range req.GetDeletedResources().GetUpstreamRefs() {
 			deletedUpstreamRefs = append(deletedUpstreamRefs, &core.ResourceRef{
 				Namespace: ref.GetNamespace(),
-				Name:      fmt.Sprintf("kube-svc:%s", ref.GetName()),
+				Name:      fmt.Sprintf("%s%s", kubernetes.UpstreamNamePrefix, ref.GetName()),
 			})
 		}
 		finalUpstreams := utils.DeleteResources(existingUpstreams, deletedUpstreamRefs)

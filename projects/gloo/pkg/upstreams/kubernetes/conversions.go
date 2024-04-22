@@ -13,7 +13,7 @@ import (
 )
 
 func IsKubeUpstream(upstreamName string) bool {
-	return strings.HasPrefix(upstreamName, upstreamNamePrefix)
+	return strings.HasPrefix(upstreamName, UpstreamNamePrefix)
 }
 
 func DestinationToUpstreamRef(svcDest *v1.KubernetesServiceDestination) *core.ResourceRef {
@@ -25,7 +25,7 @@ func DestinationToUpstreamRef(svcDest *v1.KubernetesServiceDestination) *core.Re
 
 func fakeUpstreamName(serviceName, serviceNamespace string, port int32) string {
 	regularServiceName := kubeplugin.UpstreamName(serviceNamespace, serviceName, port)
-	return upstreamNamePrefix + regularServiceName
+	return UpstreamNamePrefix + regularServiceName
 }
 
 // Public because it's needed in the translator test

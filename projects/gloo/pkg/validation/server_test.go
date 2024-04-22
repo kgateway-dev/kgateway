@@ -2,7 +2,9 @@ package validation_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	upstreams_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes/fake"
 	"net"
@@ -324,7 +326,7 @@ var _ = Describe("Validation Server", func() {
 		})
 
 		Context("upstream deletion validation succeeds for kube-svc upstreams", func() {
-			// deleting an upstream that is not being used should succeed
+			// deleting a kube svc upstream that has a corresponding "fake" upstream should succeed
 			var upstream, kubeSvcUpstream v1.Upstream
 
 			JustBeforeEach(func() {
@@ -341,7 +343,10 @@ var _ = Describe("Validation Server", func() {
 					UpstreamType: usType,
 				}
 				kubeSvcUpstream = v1.Upstream{
-					Metadata:     &core.Metadata{Name: "kube-svc:my-us", Namespace: "gloo-system"},
+					Metadata: &core.Metadata{
+						Name:      fmt.Sprintf("%s%s", upstreams_kubernetes.UpstreamNamePrefix, upstream.GetMetadata().GetName()),
+						Namespace: upstream.GetMetadata().GetNamespace(),
+					},
 					UpstreamType: usType,
 				}
 

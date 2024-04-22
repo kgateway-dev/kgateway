@@ -13,7 +13,7 @@ import (
 )
 
 // Contains invalid character so any accidental attempt to write to storage fails
-const upstreamNamePrefix = "kube-svc:"
+const UpstreamNamePrefix = "kube-svc:"
 
 const notImplementedErrMsg = "this operation is not supported by this client"
 
