@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -37,9 +36,10 @@ type GatewayStatusSyncer interface {
 // a threadsafe factory for initializing a status syncer
 // allows for the status syncer to be shared across multiple start funcs
 type statusSyncerFactory struct {
-	// maps a proxy from a proxy sync action to the plugin registry that produced it
-	// proxy -> sync iteration -> plugin registry
+	// maps a proxy sync action to the plugin registry that produced it
+	// sync iteration -> plugin registry
 	registryPerSync map[int]*registry.PluginRegistry
+	// maps a proxy to the sync iteration that produced it
 	resyncsPerProxy map[types.NamespacedName]int
 
 	lock *sync.Mutex
@@ -53,7 +53,7 @@ func NewStatusSyncerFactory() GatewayStatusSyncer {
 	}
 }
 
-// QueueStatusForProxies queues the proxies to be synced by the status syncer
+// QueueStatusForProxies queues the proxies to be synced and plugin registry for the given sync iteration
 func (f *statusSyncerFactory) QueueStatusForProxies(
 	proxiesToQueue v1.ProxyList,
 	pluginRegistry *registry.PluginRegistry,
@@ -62,9 +62,11 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+	// queue each proxy for a given sync iteration
 	for _, proxy := range proxiesToQueue {
 		f.resyncsPerProxy[getProxyNameNamespace(proxy)] = totalSyncCount
 	}
+	// the plugin registry that produced the proxies is the same for all proxies in a given sync
 	f.registryPerSync[totalSyncCount] = pluginRegistry
 }
 
@@ -77,6 +79,7 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	proxiesToReport := make(map[int][]translatorutils.ProxyWithReports)
 	for _, proxyWithReport := range filterProxiesByControllerName(proxiesWithReports) {
 		var proxySyncCount int
+		// Get the sync iteration that produced the proxy from the proxy metadata
 		if proxyWithReport.Proxy.GetMetadata().GetAnnotations() != nil {
 			if syncId, ok := proxyWithReport.Proxy.GetMetadata().GetAnnotations()[utils.ProxySyncId]; ok {
 				proxySyncCount, _ = strconv.Atoi(syncId)
@@ -85,10 +88,12 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		proxyKey := getProxyNameNamespace(proxyWithReport.Proxy)
 
 		if f.resyncsPerProxy[proxyKey] > proxySyncCount {
-			continue // old one was garbage collectd expect a future resync
+			// old proxy was garbage collected, expect a future resync
+			continue
 		}
 
 		proxiesToReport[proxySyncCount] = append(proxiesToReport[proxySyncCount], proxyWithReport)
+		// remove the proxy from the queue
 		delete(f.resyncsPerProxy, proxyKey)
 	}
 
@@ -96,11 +101,12 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
 
+			// reinitialize the registry if there are no more proxies for the sync iteration
 			if len(f.resyncsPerProxy) == 0 {
 				f.registryPerSync = make(map[int]*registry.PluginRegistry)
 			}
 		} else {
-			// dpanic?
+			// this should never happen
 			contextutils.LoggerFrom(ctx).DPanicf("no registry found for proxy sync count %d", syncCount)
 		}
 	}
@@ -156,21 +162,5 @@ func getProxyNameNamespace(proxy *v1.Proxy) types.NamespacedName {
 	return types.NamespacedName{
 		Name:      proxy.GetMetadata().GetName(),
 		Namespace: proxy.GetMetadata().GetNamespace(),
-	}
-}
-
-func getProxySyncCounter(proxy *v1.Proxy) (int, error) {
-	proxyAnnotations := proxy.GetMetadata().GetAnnotations()
-	if proxyAnnotations == nil {
-		return 0, eris.New("proxy annotations are nil")
-	}
-	if id, ok := proxyAnnotations[utils.ProxySyncId]; !ok {
-		return 0, eris.New("proxy sync id not found")
-	} else {
-		counter, err := strconv.Atoi(id)
-		if err != nil {
-			return 0, err
-		}
-		return counter, nil
 	}
 }
