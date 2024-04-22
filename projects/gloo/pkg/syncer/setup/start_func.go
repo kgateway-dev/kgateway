@@ -71,7 +71,7 @@ func K8sGatewayControllerStartFunc(
 			return err
 		}
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
 
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,

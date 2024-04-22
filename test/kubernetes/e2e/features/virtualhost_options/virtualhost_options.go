@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
@@ -20,6 +19,7 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,30 +65,12 @@ var ConfigureVirtualHostOptionsWithTargetRef = e2e.Test{
 					// Check header manipulation is applied
 					checkHeaderManipulationFromCluster(installation),
 
-					func(ctx context.Context) {
-						// Check status on solo-apis client object
-						helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-							vh, err := installation.ResourceClients.VirtualHostOptionClient().Read(virtualHostOptionMeta.GetNamespace(), virtualHostOptionMeta.GetName(), clients.ReadOpts{})
-							installation.Operator.Logf("%s", vh.String())
-
-							return vh, err
-						}, 5, 1)
-
-						logged := false
-						installation.Operator.Logf("checking for expected status on virtualhost option")
-						// Check correct gateway reports status of virtualhost option
-						Eventually(func(g Gomega) {
-							virtualHostOption, err := installation.ResourceClients.VirtualHostOptionClient().Read(virtualHostOptionMeta.GetNamespace(), virtualHostOptionMeta.GetName(), clients.ReadOpts{})
-							g.Expect(err).NotTo(HaveOccurred())
-							if !logged {
-								installation.Operator.Logf("virtualhost option %s: %s\n", virtualHostOption.Metadata.GetName(), virtualHostOption.String())
-								logged = true
-							}
-							g.Expect(virtualHostOption.GetNamespacedStatuses()).ToNot(BeNil())
-							g.Expect(virtualHostOption.GetNamespacedStatuses().GetStatuses()).ToNot(BeEmpty())
-							g.Expect(virtualHostOption.GetNamespacedStatuses().GetStatuses()[installation.Metadata.InstallNamespace].GetReportedBy()).To(Equal("gloo-kube-gateway"))
-						}, "30s", "15s").Should(Succeed())
-					},
+					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
+						func() (resources.InputResource, error) {
+							return installation.ResourceClients.VirtualHostOptionClient().Read(virtualHostOptionMeta.GetNamespace(), virtualHostOptionMeta.GetName(), clients.ReadOpts{})
+						},
+						core.Status_Accepted,
+						"gloo-kube-gateway"),
 				},
 			},
 			Undo: &operations.BasicOperation{

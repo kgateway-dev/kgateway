@@ -60,7 +60,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 	})
 
-	FContext("RouteOptions", func() {
+	Context("RouteOptions", func() {
 
 		It("Apply fault injection using targetRef RouteOption", func() {
 			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)

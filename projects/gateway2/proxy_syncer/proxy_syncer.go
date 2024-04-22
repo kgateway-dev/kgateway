@@ -45,6 +45,7 @@ type ProxySyncer struct {
 	queueStatusForProxies QueueStatusForProxiesFn
 
 	routeOptionClient gatewayv1.RouteOptionClient
+	vhOptionClient    gatewayv1.VirtualHostOptionClient
 	statusReporter    reporter.StatusReporter
 }
 
@@ -81,6 +82,7 @@ func NewProxySyncer(
 	proxyClient gloo_solo_io.ProxyClient,
 	queueStatusForProxies QueueStatusForProxiesFn,
 	routeOptionClient gatewayv1.RouteOptionClient,
+	vhOptionClient gatewayv1.VirtualHostOptionClient,
 	statusReporter reporter.StatusReporter,
 ) *ProxySyncer {
 	return &ProxySyncer{
@@ -93,6 +95,7 @@ func NewProxySyncer(
 		proxyReconciler:       gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
 		queueStatusForProxies: queueStatusForProxies,
 		routeOptionClient:     routeOptionClient,
+		vhOptionClient:        vhOptionClient,
 		statusReporter:        statusReporter,
 	}
 }

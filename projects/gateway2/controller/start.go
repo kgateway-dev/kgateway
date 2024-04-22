@@ -122,6 +122,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.ProxyClient,
 		cfg.QueueStatusForProxies,
 		cfg.RouteOptionClient,
+		cfg.VirtualHostOptionClient,
 		cfg.StatusReporter,
 	)
 	if err := mgr.Add(proxySyncer); err != nil {
