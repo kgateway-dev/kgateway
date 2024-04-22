@@ -26,7 +26,7 @@ import (
 )
 
 // QueueStatusForProxiesFn queues a status sync for a given set of Proxy resources along with the plugins that produced them
-type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry)
+type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry, totalSyncCount int)
 
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
@@ -106,12 +106,14 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	var (
 		secretsWarmed bool
+		totalResyncs  int
 	)
 	resyncProxies := func() {
 		if !secretsWarmed {
 			return
 		}
-		contextutils.LoggerFrom(ctx).Debug("resyncing k8s gateway proxies")
+		totalResyncs++
+		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
 
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
@@ -136,12 +138,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, s.writeNamespace, r)
 			if proxy != nil {
 				// Add proxy id to the proxy metadata to track proxies for status reporting
-				proxySyncCounter := incrementProxySyncCounter(proxy)
 				proxyAnnotations := proxy.GetMetadata().GetAnnotations()
 				if proxyAnnotations == nil {
 					proxyAnnotations = make(map[string]string)
 				}
-				proxyAnnotations[utils.ProxySyncId] = proxySyncCounter
+				proxyAnnotations[utils.ProxySyncId] = strconv.Itoa(totalResyncs)
 				proxy.GetMetadata().Annotations = proxyAnnotations
 
 				proxies = append(proxies, proxy)
@@ -156,7 +157,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			TranslatedGateways: translatedGateways,
 		})
 
-		s.queueStatusForProxies(proxies, &pluginRegistry)
+		s.queueStatusForProxies(proxies, &pluginRegistry, totalResyncs)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
