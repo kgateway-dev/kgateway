@@ -139,7 +139,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 					proxyAnnotations = make(map[string]string)
 				}
 				proxyAnnotations[utils.ProxySyncId] = proxySyncCounter
-				proxy.Metadata.Annotations = proxyAnnotations
+				proxy.GetMetadata().Annotations = proxyAnnotations
 
 				proxies = append(proxies, proxy)
 				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{

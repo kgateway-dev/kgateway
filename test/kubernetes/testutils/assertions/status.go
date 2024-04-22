@@ -19,17 +19,17 @@ func EventuallyResourceStatusMatchesState(installNamespace string, getter helper
 		ginkgo.GinkgoHelper()
 
 		statusStateMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"key": gomega.Equal("k8s-gw-deployer-test"),
-			"value": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-				"state":       gomega.Equal(desiredStatusState),
-				"reported_by": gomega.Equal(desiredReporter),
-			}),
+			"State":      gomega.Equal(desiredStatusState),
+			"ReportedBy": gomega.Equal(desiredReporter),
 		})
 
 		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-		gomega.Eventually(func() (*core.NamespacedStatuses, error) {
-			return getResourceNamespacedStatus(getter)
-		}, currentTimeout, pollingInterval).Should(statusStateMatcher)
+		gomega.Eventually(func(g gomega.Gomega) {
+			status, err := getResourceNamespacedStatus(getter)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+			g.Expect(status.GetStatuses()[installNamespace]).ToNot(gomega.BeNil())
+			g.Expect(*status.GetStatuses()[installNamespace]).To(statusStateMatcher)
+		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 	}
 }
 
