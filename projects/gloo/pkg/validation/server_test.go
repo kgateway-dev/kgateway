@@ -376,7 +376,7 @@ var _ = Describe("Validation Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp.ValidationReports).To(HaveLen(1))
 				validateProxyReport(resp.ValidationReports[0].GetProxyReport())
-				Expect(resp.ValidationReports[0].UpstreamReports).To(HaveLen(0))
+				Expect(resp.ValidationReports[0].UpstreamReports).To(BeEmpty())
 			})
 
 			It("works with Gloo Validate", func() {
@@ -385,7 +385,7 @@ var _ = Describe("Validation Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(1))
 				validateProxyReport(reports[0].ProxyReport)
-				Expect(reports[0].ResourceReports).To(HaveLen(0))
+				Expect(reports[0].ResourceReports).To(BeEmpty())
 			})
 		})
 
