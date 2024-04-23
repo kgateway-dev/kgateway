@@ -927,7 +927,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	if opts.GlooGateway.EnableK8sGatewayController {
 		// Share proxyClient with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient)
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, authConfigClient)
 	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
