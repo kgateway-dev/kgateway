@@ -88,7 +88,7 @@ var _ = Describe("Status Syncer", func() {
 		Expect(registryMap[123]).To(Equal(pluginRegistry))       // registry should still be in map
 	})
 
-	It("Can handle multiple proxies in one call", func() {
+	It("Can handle multiple proxies in one HandleProxyReports call", func() {
 		syncer := NewStatusSyncerFactory()
 		proxyOne := &v1.Proxy{
 			Metadata: &core.Metadata{
@@ -138,7 +138,7 @@ var _ = Describe("Status Syncer", func() {
 		registryMap := syncer.(*statusSyncerFactory).registryPerSync
 		Expect(registryMap[123]).To(Equal(pluginRegistry))
 
-		// Handle the proxy reports only for proxy one (this is invoked as a callback in the envoy translator syncer)
+		// Handle multiple proxy reports
 		proxiesWithReports := []translatorutils.ProxyWithReports{
 			{
 				Proxy: proxyOne,
@@ -158,7 +158,7 @@ var _ = Describe("Status Syncer", func() {
 		ctx := context.Background()
 		syncer.HandleProxyReports(ctx, proxiesWithReports)
 
-		// Ensure proxy one has been removed from the queue after handling reports, but proxy two is still present
+		// Ensure both proxies are removed from the queue after handling reports
 		proxiesMap = syncer.(*statusSyncerFactory).resyncsPerProxy
 		Expect(proxiesMap).ToNot(ContainElement(proxyOneNameNs))
 		Expect(proxiesMap).ToNot(ContainElement(proxyTwoNameNs))
