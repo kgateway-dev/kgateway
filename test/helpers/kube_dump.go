@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/go-utils/threadsafe"
 
