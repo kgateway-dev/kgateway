@@ -6,16 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	"github.com/gorilla/mux"
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -23,12 +21,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
 const (

@@ -78,7 +78,7 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(targetRefManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(targetRefManifest),
 				OpAssertions: []assertions.ClusterAssertion{
-					// First check resources are created for Gateay
+					// First check resources are created for Gateway
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
@@ -117,7 +117,7 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(filterExtensioManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(filterExtensioManifest),
 				OpAssertions: []assertions.ClusterAssertion{
-					// First check resources are created for Gateay
+					// First check resources are created for Gateway
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied

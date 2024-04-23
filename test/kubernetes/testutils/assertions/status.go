@@ -8,12 +8,14 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// Checks GetNamespacedStatuses status for gloo installation namespace
+// EventuallyResourceStatusMatchesState checks GetNamespacedStatuses status for gloo installation namespace
 func EventuallyResourceStatusMatchesState(installNamespace string, getter helpers.InputResourceGetter, desiredStatusState core.Status_State, desiredReporter string, timeout ...time.Duration) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
