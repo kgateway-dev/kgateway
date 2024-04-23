@@ -225,16 +225,18 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
 				return nil, err
 			}
-			switch resource.(type) {
+			switch typedResource := resource.(type) {
 			case *v1.Upstream:
-				kubeSvcUs := &v1.Upstream{
-					Metadata: &core.Metadata{
-						Namespace: resource.GetMetadata().GetNamespace(),
-						Name:      fmt.Sprintf("%s%s", kubernetes.UpstreamNamePrefix, resource.GetMetadata().GetName()),
-					},
-				}
-				if err := snapCopy.RemoveFromResourceList(kubeSvcUs); err != nil {
-					return nil, err
+				if typedResource.GetKube() != nil {
+					kubeSvcUs := &v1.Upstream{
+						Metadata: &core.Metadata{
+							Namespace: resource.GetMetadata().GetNamespace(),
+							Name:      fmt.Sprintf("%s%s", kubernetes.UpstreamNamePrefix, resource.GetMetadata().GetName()),
+						},
+					}
+					if err := snapCopy.RemoveFromResourceList(kubeSvcUs); err != nil {
+						return nil, err
+					}
 				}
 			}
 		} else {
