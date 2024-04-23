@@ -236,6 +236,23 @@ data:
             keepalive_time: {{ $spec.tcpKeepaliveTimeSeconds }}
         type: STRICT_DNS
         respect_dns_ttl: true
+      # This cluster is used to fetch the metadata server token for GCP authn
+      # Based on: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/gcp_authn_filter
+      - name: gcp_authn
+        alt_stat_name: gcp_authn
+        connect_timeout: 5.000s
+        dns_lookup_family: V4_ONLY
+        load_assignment:
+          cluster_name: gcp_authn
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: "metadata.google.internal"
+                    port_value: 80
+        type: STRICT_DNS
+        respect_dns_ttl: true
 {{- if $global.glooMtls.enabled }}
         transport_socket:
           name: envoy.transport_sockets.tls

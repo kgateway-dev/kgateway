@@ -546,6 +546,13 @@ spec:
                       type: object
                     type: array
                 type: object
+              gcp:
+                properties:
+                  audience:
+                    type: string
+                  url:
+                    type: string
+                type: object
               healthChecks:
                 items:
                   properties:

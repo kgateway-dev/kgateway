@@ -411,6 +411,21 @@ func (m *Upstream) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Upstream_Gcp:
+		if _, ok := target.UpstreamType.(*Upstream_Gcp); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGcp()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGcp()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGcp(), target.GetGcp()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.UpstreamType != target.UpstreamType {
