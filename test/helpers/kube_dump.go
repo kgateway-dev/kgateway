@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"io"
 	"os"
 	"os/exec"
@@ -155,13 +156,14 @@ func recordPods(podDir, namespace string) error {
 		return err
 	}
 
+	outErr := &multierror.Error{}
+
 	for _, pod := range pods {
 		if err := os.MkdirAll(podDir, os.ModePerm); err != nil {
 			return err
 		}
 
 		f := fileAtPath(filepath.Join(podDir, pod+".log"))
-		errF := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
 		logs, errOutput, err := kubeLogs(namespace, pod)
 
 		if logs != "" {
@@ -169,13 +171,17 @@ func recordPods(podDir, namespace string) error {
 			f.Close()
 		}
 		if errOutput != "" {
+			errF := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
 			errF.WriteString(errOutput)
 			errF.Close()
 		}
 
-		return err
+		if err != nil {
+			outErr = multierror.Append(outErr, err)
+		}
 	}
-	return nil
+
+	return outErr.ErrorOrNil()
 }
 
 // recordCRs records all unique CRs floating about to _output/kube2e-artifacts/$namespace/$crd/$cr.yaml
