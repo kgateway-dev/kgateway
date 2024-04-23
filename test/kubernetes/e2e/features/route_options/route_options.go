@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"path/filepath"
 
+	v1 "k8s.io/apiserver/pkg/apis/example/v1"
+
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	. "github.com/onsi/gomega"
@@ -24,13 +26,21 @@ var (
 	targetRefManifest      = filepath.Join(util.MustGetThisDir(), "inputs/fault-injection-targetref.yaml")
 	filterExtensioManifest = filepath.Join(util.MustGetThisDir(), "inputs/fault-injection-filter-extension.yaml")
 
-	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
+	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+
+	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
+	curlPod = &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "curl",
+			Namespace: "curl",
+		},
+	}
 
 	expectedFaultInjectionResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusTeapot,
@@ -50,10 +60,13 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 					// First check resources are created for Gateay
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
-					installation.Assertions.CurlEventuallyResponds([]curl.Option{
-						curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-						curl.WithHostHeader("example.com"),
-					}, expectedFaultInjectionResp),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod.ObjectMeta,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedFaultInjectionResp),
 
 					// TODO(npolshak) Check status on solo-apis client object once route option status support is added
 				},
@@ -82,14 +95,17 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(filterExtensioManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(filterExtensioManifest),
 				OpAssertions: []assertions.ClusterAssertion{
-					// First check resources are created for Gateay
-					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
+					// First check resources are created for Gateway
+					installation.Assertions.ObjectsExist(proxyService, proxyDeployment, curlPod),
 
 					// Check fault injection is applied
-					installation.Assertions.CurlEventuallyResponds([]curl.Option{
-						curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-						curl.WithHostHeader("example.com"),
-					}, expectedFaultInjectionResp),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod.ObjectMeta,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedFaultInjectionResp),
 
 					// TODO(npolshak): Statuses are not supported for filter extensions yet
 				},
