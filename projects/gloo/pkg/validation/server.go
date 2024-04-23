@@ -225,6 +225,8 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
 				return nil, err
 			}
+
+			// If we are deleting an Upstream with a Kube destination, we also want to remove the associated "fake" Upstream from the snapshot
 			switch typedResource := resource.(type) {
 			case *v1.Upstream:
 				if typedResource.GetKube() != nil {
@@ -262,6 +264,9 @@ func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValida
 		// Upstreams
 		existingUpstreams := snap.Upstreams.AsResources()
 		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
+		// If we are deleting an Upstream with a Kube destination, we also want to remove the associated "fake" Upstream from the snapshot
+		// Since we only have refs here, attempt to delete the "fake" Upstream corresponding with all refs
+		// If none exists this will be a no-op
 		for _, ref := range req.GetDeletedResources().GetUpstreamRefs() {
 			deletedUpstreamRefs = append(deletedUpstreamRefs, &core.ResourceRef{
 				Namespace: ref.GetNamespace(),
