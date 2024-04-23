@@ -304,7 +304,7 @@ func recordEnvoyAdminData(f *os.File, path, proxyName, namespace string) {
 	defer f.Close()
 
 	fmt.Printf("Getting envoy for %s.%s and storing config dump: %s\n", proxyName, namespace, path)
-	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), proxyName, namespace, "/config_dump", 30*time.Second)
+	cfg, err := gateway.GetEnvoyAdminData(context.Background(), proxyName, namespace, path, 30*time.Second)
 	if err != nil {
 		f.WriteString("*** Unable to get envoy " + path + " dump ***. Reason: " + err.Error() + " \n")
 		return
