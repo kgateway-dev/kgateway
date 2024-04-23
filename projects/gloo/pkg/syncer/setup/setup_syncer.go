@@ -902,7 +902,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
 
 		// Share proxyClient and status syncer with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, gwv2StatusSyncer.QueueStatusForProxies)
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, gwv2StatusSyncer.QueueStatusForProxies, authConfigClient)
 
 	}
 

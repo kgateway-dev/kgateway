@@ -103,7 +103,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	var (
 		secretsWarmed bool
-		totalResyncs  int
+		// totalResyncs is used to track the number of times the proxy syncer has been triggered
+		totalResyncs int
 	)
 	resyncProxies := func() {
 		if !secretsWarmed {
@@ -146,7 +147,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
 					Gateway: gw,
 				})
-				//TODO: handle reports and process statuses
 			}
 		}
 
@@ -252,24 +252,4 @@ func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.Pl
 			continue
 		}
 	}
-}
-
-func incrementProxySyncCounter(proxy *gloo_solo_io.Proxy) string {
-	proxySyncCounter := "0"
-	proxyAnnotations := proxy.GetMetadata().GetAnnotations()
-	// initialize counter in no annotations are set
-	if proxyAnnotations == nil {
-		return proxySyncCounter
-	}
-	// initialize counter if proxy sync annotation isn't set
-	previousCount := proxyAnnotations[utils.ProxySyncId]
-	if previousCount == "" {
-		return proxySyncCounter
-	}
-	// increment counter if it's a valid counter
-	previousCountInt, err := strconv.Atoi(previousCount)
-	if err != nil {
-		return proxySyncCounter
-	}
-	return strconv.Itoa(previousCountInt + 1)
 }

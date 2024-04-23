@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 )
@@ -53,6 +54,7 @@ func ExecuteAsynchronousStartFuncs(
 func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
 	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
+	authConfigClient api.AuthConfigClient,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
@@ -76,6 +78,7 @@ func K8sGatewayControllerStartFunc(
 			QueueStatusForProxies:     queueStatusForProxies,
 
 			ProxyClient:       proxyClient,
+			AuthConfigClient:  authConfigClient,
 			RouteOptionClient: routeOptionClient,
 			StatusReporter:    statusReporter,
 
