@@ -3,6 +3,8 @@ package extensions
 import (
 	"context"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+
 	"github.com/solo-io/gloo/pkg/version"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
@@ -24,6 +26,7 @@ type K8sGatewayExtensions interface {
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
 type K8sGatewayExtensionsFactoryParameters struct {
 	Mgr               controllerruntime.Manager
+	AuthConfigClient  v1.AuthConfigClient
 	RouteOptionClient gatewayv1.RouteOptionClient
 	StatusReporter    reporter.StatusReporter
 	KickXds           func(ctx context.Context)

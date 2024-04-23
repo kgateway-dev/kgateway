@@ -3,6 +3,8 @@ package setup
 import (
 	"context"
 
+	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -49,7 +51,7 @@ func ExecuteAsynchronousStartFuncs(
 }
 
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
-func K8sGatewayControllerStartFunc(proxyClient v1.ProxyClient) StartFunc {
+func K8sGatewayControllerStartFunc(proxyClient v1.ProxyClient, authConfigClient api.AuthConfigClient) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
 			// If we have a debug server running, let's register the proxy client used by
@@ -71,6 +73,7 @@ func K8sGatewayControllerStartFunc(proxyClient v1.ProxyClient) StartFunc {
 			Opts:                      opts,
 
 			ProxyClient:       proxyClient,
+			AuthConfigClient:  authConfigClient,
 			RouteOptionClient: routeOptionClient,
 			StatusReporter:    statusReporter,
 
