@@ -57,8 +57,8 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(targetRefManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(targetRefManifest),
 				OpAssertions: []assertions.ClusterAssertion{
-					// First check resources are created for Gateay
-					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
+					// First check resources are created for Gateway
+					installation.Assertions.ObjectsExist(proxyService, proxyDeployment, curlPod),
 
 					installation.Assertions.EphemeralCurlEventuallyResponds(
 						curlPod.ObjectMeta,
