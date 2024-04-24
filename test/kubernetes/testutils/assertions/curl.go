@@ -23,7 +23,7 @@ func (p *Provider) EphemeralCurlEventuallyResponds(curlPodMeta metav1.ObjectMeta
 		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
 		// for some useful-ish output
-		tick := time.Tick(currentTimeout / 8)
+		tick := time.Tick(pollingInterval)
 
 		Eventually(func(g Gomega) {
 			res := p.clusterContext.Cli.CurlFromEphemeralPod(ctx, curlPodMeta, curlOptions...)
@@ -47,14 +47,14 @@ func (p *Provider) EphemeralCurlEventuallyResponds(curlPodMeta metav1.ObjectMeta
 
 // CurlFnEventuallyResponds returns a ClusterAssertion that behaves similarly to EphemeralCurlEventuallyResponds
 // The difference is that it accepts a generic function to execute the curl, instead of requiring the caller to pass explicit curl.Option
-// We recommend that developers rely on the typed EphemeralCurlEventuallyResponds but we want to provide the flexibility of other solutions as well
+// Not all curl requests should be done from an ephemeral container, and this function allows for that to occur
 func (p *Provider) CurlFnEventuallyResponds(curlFn func() string, expectedResponse *matchers.HttpResponse, timeout ...time.Duration) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
 		// for some useful-ish output
-		tick := time.Tick(currentTimeout / 8)
+		tick := time.Tick(pollingInterval)
 
 		Eventually(func(g Gomega) {
 			res := curlFn()
