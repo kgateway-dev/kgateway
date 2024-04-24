@@ -24,8 +24,7 @@ func (s *ClusterSuite) TestBasicInstallation() {
 			},
 		)
 
-		err := testInstallation.InstallGlooGateway(NewWithT(t), s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation.InstallGlooGateway(NewWithT(t), s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	s.T().Run("example feature", func(t *testing.T) {
@@ -33,8 +32,7 @@ func (s *ClusterSuite) TestBasicInstallation() {
 	})
 
 	s.T().Run("after", func(t *testing.T) {
-		err := testInstallation.UninstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation.UninstallGlooGateway(NewWithT(t), s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 
 		s.testCluster.UnregisterTestInstallation(testInstallation)
 	})

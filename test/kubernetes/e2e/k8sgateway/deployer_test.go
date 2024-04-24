@@ -36,7 +36,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 			},
 		)
 
-		testInstallation.InstallGlooGateway(nil, ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		testInstallation.InstallGlooGateway(NewGomega(ginkgo.Fail), ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	AfterAll(func() {
