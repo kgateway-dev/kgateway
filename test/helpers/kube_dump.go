@@ -166,6 +166,8 @@ func recordPods(podDir, namespace string) error {
 
 		logs, errOutput, err := kubeLogs(namespace, pod)
 		// store any error running the log command to return later
+		// the error represents the cause of the failure, and should be bubbled up
+		// we will still try to get logs for other pods even if this one returns an error
 		if err != nil {
 			outErr = multierror.Append(outErr, err)
 		}
@@ -176,6 +178,7 @@ func recordPods(podDir, namespace string) error {
 			f.Close()
 		}
 		// write any error output to the error file
+		// this will consist of the combined stdout and stderr of the command
 		if errOutput != "" {
 			f := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
 			f.WriteString(errOutput)
