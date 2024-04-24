@@ -46,6 +46,39 @@ func (p *Provider) CheckResources() ClusterAssertion {
 	}
 }
 
+func (p *Provider) AssertCheckResources(g Gomega, ctx context.Context) {
+	p.requiresGlooGatewayContext()
+
+	ginkgo.GinkgoHelper()
+
+	g.Eventually(func(innerG Gomega) {
+		contextWithCancel, cancel := context.WithCancel(ctx)
+		defer cancel()
+		opts := &options.Options{
+			Metadata: core.Metadata{
+				Namespace: p.glooGatewayContext.InstallNamespace,
+			},
+			Top: options.Top{
+				Ctx: contextWithCancel,
+			},
+		}
+		err := check.CheckResources(contextWithCancel, printers.P{}, opts)
+		innerG.Expect(err).NotTo(HaveOccurred())
+	}).
+		WithContext(ctx).
+		// These are some basic defaults that we expect to work in most cases
+		// We can make these configurable if need be, though most installations
+		// Should be able to become healthy within this window
+		WithTimeout(time.Second * 90).
+		WithPolling(time.Second).
+		Should(Succeed())
+}
+
+func (p *Provider) AssertInstallationWasSuccessful(g Gomega, ctx context.Context) {
+	// Check that everything is OK
+	p.AssertCheckResources(g, ctx)
+}
+
 func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 
