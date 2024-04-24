@@ -28,7 +28,7 @@ func (s *ClusterSuite) TestComplexInstallation() {
 	})
 
 	s.T().Run("example feature", func(t *testing.T) {
-		suite.Run(t, example.NewSuite(s.Ctx(), testInstallation))
+		suite.Run(t, example.NewFeatureSuite(s.Ctx(), testInstallation))
 	})
 
 	s.T().Run("after", func(t *testing.T) {

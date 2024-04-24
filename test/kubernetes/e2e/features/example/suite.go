@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// Suite is the entire Suite of tests for the "example" feature
-type Suite struct {
+// FeatureSuite is the entire Suite of tests for the "example" feature
+type FeatureSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -17,21 +17,21 @@ type Suite struct {
 	testInstallation *e2e.TestInstallation
 }
 
-func NewSuite(ctx context.Context, testInst *e2e.TestInstallation) *Suite {
-	return &Suite{
+func NewFeatureSuite(ctx context.Context, testInst *e2e.TestInstallation) *FeatureSuite {
+	return &FeatureSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *Suite) SetupSuite() {
+func (s *FeatureSuite) SetupSuite() {
 }
 
-func (s *Suite) TearDownSuite() {
+func (s *FeatureSuite) TearDownSuite() {
 }
 
-func (s *Suite) BeforeTest(suiteName, testName string) {
+func (s *FeatureSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *Suite) AfterTest(suiteName, testName string) {
+func (s *FeatureSuite) AfterTest(suiteName, testName string) {
 }
