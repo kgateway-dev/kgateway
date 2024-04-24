@@ -16,7 +16,6 @@ linters:
     # If you see a linter that can be added, please do so.
     # See: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/.golangci.yaml for a reference
     - bodyclose
-    - exportloopref
     - ginkgolinter
     - goimports
     - nakedret
@@ -75,10 +74,10 @@ run:
   tests: true
 
   # Timeout for analysis, e.g. 30s, 5m.
-  # We select 5 minutes somewhat arbitrarily.
+  # We select 10 minutes somewhat arbitrarily.
   # The idea is that we want a timeout that is long enough to allow the job to run.
   # If we find that the job is timing out, we can explore ways to make this job run faster, or increase the timeout.
-  timeout: 5m
+  timeout: 10m
 
   skip-dirs:
     # don't lint ruleguard files
