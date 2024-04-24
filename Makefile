@@ -134,6 +134,8 @@ fmt-changed:
 mod-download: check-go-version
 	go mod download all
 
+LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
+
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
 install-go-tools: mod-download ## Download and install Go dependencies
@@ -148,7 +150,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golang/mock/mockgen
 	go install github.com/saiskee/gettercheck
 	# This version must stay in sync with the version used in CI: .github/workflows/static-analysis.yaml
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
 
 
