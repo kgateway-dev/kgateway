@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
@@ -69,6 +70,13 @@ var _ = Describe("Deployer Test", Ordered, func() {
 			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
 		})
 
+	})
+
+	Context("Headless Service Routing", func() {
+
+		It("routes to headless services", func() {
+			testInstallation.RunTest(ctx, headless_svc.ConfigureRoutingHeadlessSvc)
+		})
 	})
 
 })
