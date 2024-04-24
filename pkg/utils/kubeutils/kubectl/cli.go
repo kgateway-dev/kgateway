@@ -8,11 +8,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/k8s-utils/testutils/kube"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/k8s-utils/testutils/kube"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
@@ -159,7 +159,7 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 }
 
 // CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
-func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta metav1.ObjectMeta, options ...curl.Option) string {
+func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.NamespacedName, options ...curl.Option) string {
 	appendOption := func(option curl.Option) {
 		options = append(options, option)
 	}
@@ -175,7 +175,7 @@ func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta metav1.ObjectMet
 		ctx,
 		c.receiver,
 		c.kubeContext,
-		podMeta.GetNamespace(),
-		podMeta.GetName(),
+		podMeta.Namespace,
+		podMeta.Name,
 		curlArgs...)
 }

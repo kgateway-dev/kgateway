@@ -24,15 +24,16 @@ runs:
     shell: bash
     env:
       CLUSTER_NAME: 'kind'
-      CLUSTER_NODE_VERSION: ${{ matrix.tool-versions.cluster_node }}
+      CLUSTER_NODE_VERSION: ${{ matrix.tool-versions.cluster-node }}
     run: ./ci/kind/setup-kind.sh
   - name: Install test tools
     shell: bash
     run: make install-test-tools
   - name: Execute tests
     env:
+      GINKGO_USER_FLAGS: ${{ matrix.test-suites.ginkgo-args }}
       CLUSTER_NAME: 'kind'
-      TEST_PKG: test/kubernetes/e2e/${{ matrix.kubernetes-e2e-suite }}
+      TEST_PKG: test/kubernetes/e2e/${{ matrix.test-suites.package }}
     shell: bash
     run: make test
   # TODO: Emit artifacts to shared location on failure
