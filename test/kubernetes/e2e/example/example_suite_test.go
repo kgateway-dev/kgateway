@@ -2,13 +2,14 @@ package example
 
 import (
 	"context"
+	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 func TestExampleClusterSuite(t *testing.T) {

@@ -1,14 +1,15 @@
 package example
 
 import (
+	"path/filepath"
+	"testing"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/example"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
-	"path/filepath"
-	"testing"
 )
 
 func (s *ClusterSuite) TestBasicInstallation() {
