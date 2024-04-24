@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
@@ -46,20 +45,6 @@ var (
 			Name:      "curl",
 			Namespace: "curl",
 		},
-	}
-
-	curlFromPod = func(ctx context.Context, proxy *appsv1.Deployment) func() string {
-		proxyFdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxy.GetName(), proxy.GetNamespace())
-		curlOpts := []curl.Option{
-			curl.WithHost(proxyFdqnAddr),
-			curl.WithHostHeader("headless.example.com"),
-			curl.WithPort(80),
-		}
-
-		return func() string {
-			kubeCli := kubectl.NewCli()
-			return kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta, curlOpts...)
-		}
 	}
 
 	expectedHealthyResponse = &testmatchers.HttpResponse{
@@ -103,7 +88,11 @@ var ConfigureRoutingHeadlessSvc = func(useK8sApi bool) e2e.Test {
 							installation.Assertions.ObjectsExist(k8sApiproxyService, k8sApiProxyDeployment),
 
 							// Check headless svc can be reached
-							assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx, k8sApiProxyDeployment), expectedHealthyResponse),
+							installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
+								curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", k8sApiProxyDeployment.GetName(), k8sApiProxyDeployment.GetNamespace())),
+								curl.WithHostHeader("headless.example.com"),
+								curl.WithPort(80),
+							}, expectedHealthyResponse),
 						},
 					},
 					Undo: &operations.BasicOperation{
@@ -122,12 +111,11 @@ var ConfigureRoutingHeadlessSvc = func(useK8sApi bool) e2e.Test {
 						OpAction: installation.Actions.Kubectl().NewApplyManifestAction(classicApiRoutingManifest),
 						OpAssertions: []assertions.ClusterAssertion{
 							// Check headless svc can be reached
-							assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx, &appsv1.Deployment{
-								ObjectMeta: metav1.ObjectMeta{
-									Name:      defaults.GatewayProxyName,
-									Namespace: installation.Metadata.InstallNamespace,
-								},
-							}), expectedHealthyResponse),
+							installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
+								curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", defaults.GatewayProxyName, installation.Metadata.InstallNamespace)),
+								curl.WithHostHeader("headless.example.com"),
+								curl.WithPort(80),
+							}, expectedHealthyResponse),
 						},
 					},
 					Undo: &operations.BasicOperation{
