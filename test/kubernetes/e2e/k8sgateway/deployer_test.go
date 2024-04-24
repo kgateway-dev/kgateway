@@ -75,7 +75,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	Context("Headless Service Routing", func() {
 
 		It("routes to headless services", func() {
-			testInstallation.RunTest(ctx, headless_svc.ConfigureRoutingHeadlessSvc)
+			testInstallation.RunTest(ctx, headless_svc.ConfigureRoutingHeadlessSvc(true))
 		})
 	})
 

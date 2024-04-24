@@ -1,0 +1,31 @@
+# Note: The test uses the default classic edge gateway created by https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/_8-default-gateways.tpl
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: headless-vs
+  namespace: classic-edge-test # TODO: how to make this configurable?
+spec:
+  virtualHost:
+    domains:
+      - 'headless.example.com'
+    routes:
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: default-headless-example-svc-8080
+              namespace: classic-edge-test # TODO: how to make this configurable?
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: default-headless-example-svc-8080
+  namespace: classic-edge-test # TODO: how to make this configurable?
+spec:
+  kube:
+    selector:
+      app.kubernetes.io/name: nginx
+    serviceName: headless-example-svc
+    serviceNamespace: default
+    servicePort: 8080
