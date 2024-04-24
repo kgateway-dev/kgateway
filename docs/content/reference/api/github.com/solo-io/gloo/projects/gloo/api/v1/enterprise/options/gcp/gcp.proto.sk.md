@@ -29,14 +29,14 @@ weight: 5
 Enterprise-only: Configuration to enable GCP authentication for upstreams.
 
 ```yaml
-"url": string
+"host": string
 "audience": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `url` | `string` | Required. Url of the GCP service. |
+| `host` | `string` | Required. Url of the GCP service. |
 | `audience` | `string` | Optional override for the audience used to fetch the token from the GCP metadata server. By default it will use the URL of the service. |
 
 

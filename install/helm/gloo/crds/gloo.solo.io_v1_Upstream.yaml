@@ -550,7 +550,7 @@ spec:
                 properties:
                   audience:
                     type: string
-                  url:
+                  host:
                     type: string
                 type: object
               healthChecks:

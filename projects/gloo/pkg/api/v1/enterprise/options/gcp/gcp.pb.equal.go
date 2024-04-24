@@ -46,7 +46,7 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetUrl(), target.GetUrl()) != 0 {
+	if strings.Compare(m.GetHost(), target.GetHost()) != 0 {
 		return false
 	}
 

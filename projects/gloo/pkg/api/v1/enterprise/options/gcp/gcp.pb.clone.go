@@ -33,7 +33,7 @@ func (m *UpstreamSpec) Clone() proto.Message {
 	}
 	target = &UpstreamSpec{}
 
-	target.Url = m.GetUrl()
+	target.Host = m.GetHost()
 
 	target.Audience = m.GetAudience()
 

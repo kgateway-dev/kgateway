@@ -10,8 +10,8 @@ option (extproto.equal_all) = true;
 
 // Enterprise-only: Configuration to enable GCP authentication for upstreams.
 message UpstreamSpec {
-  // Required. Url of the GCP service
-  string url = 1;
+  // Required. host of the GCP service to be connected to
+  string host = 1;
 
   // Optional override for the audience used to fetch the token from the GCP metadata server.
   // By default it will use the URL of the service

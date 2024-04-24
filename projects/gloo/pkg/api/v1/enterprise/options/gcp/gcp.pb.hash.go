@@ -38,7 +38,7 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetUrl())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetHost())); err != nil {
 		return 0, err
 	}
 
