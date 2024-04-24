@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
@@ -155,27 +157,36 @@ func recordPods(podDir, namespace string) error {
 		return err
 	}
 
+	outErr := &multierror.Error{}
+
 	for _, pod := range pods {
 		if err := os.MkdirAll(podDir, os.ModePerm); err != nil {
 			return err
 		}
 
-		f := fileAtPath(filepath.Join(podDir, pod+".log"))
-		errF := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
 		logs, errOutput, err := kubeLogs(namespace, pod)
-
+		// store any error running the log command to return later
+		// the error represents the cause of the failure, and should be bubbled up
+		// we will still try to get logs for other pods even if this one returns an error
+		if err != nil {
+			outErr = multierror.Append(outErr, err)
+		}
+		// write any log output to the standard file
 		if logs != "" {
+			f := fileAtPath(filepath.Join(podDir, pod+".log"))
 			f.WriteString(logs)
 			f.Close()
 		}
+		// write any error output to the error file
+		// this will consist of the combined stdout and stderr of the command
 		if errOutput != "" {
-			errF.WriteString(errOutput)
-			errF.Close()
+			f := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
+			f.WriteString(errOutput)
+			f.Close()
 		}
-
-		return err
 	}
-	return nil
+
+	return outErr.ErrorOrNil()
 }
 
 // recordCRs records all unique CRs floating about to _output/kube2e-artifacts/$namespace/$crd/$cr.yaml
@@ -303,8 +314,8 @@ func EnvoyDumpOnFail(_ io.Writer, proxies ...metav1.ObjectMeta) func() {
 func recordEnvoyAdminData(f *os.File, path, proxyName, namespace string) {
 	defer f.Close()
 
-	fmt.Printf("Getting envoy for %s.%s and storing config dump: %s\n", proxyName, namespace, path)
-	cfg, err := gateway.GetEnvoyAdminData(context.TODO(), proxyName, namespace, "/config_dump", 30*time.Second)
+	fmt.Printf("Getting and storing envoy output for %s path on %s.%s proxy\n", path, proxyName, namespace)
+	cfg, err := gateway.GetEnvoyAdminData(context.Background(), proxyName, namespace, path, 30*time.Second)
 	if err != nil {
 		f.WriteString("*** Unable to get envoy " + path + " dump ***. Reason: " + err.Error() + " \n")
 		return
