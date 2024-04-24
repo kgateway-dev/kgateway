@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/example"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -18,13 +17,14 @@ func (s *ClusterSuite) TestComplexInstallation() {
 
 	s.T().Run("before", func(t *testing.T) {
 		testInstallation = s.testCluster.RegisterTestInstallation(
+			s.T(),
 			&gloogateway.Context{
 				InstallNamespace:   "complex-example",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "complex-example.yaml"),
 			},
 		)
 
-		testInstallation.InstallGlooGateway(NewWithT(s.T()), s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		testInstallation.InstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	s.T().Run("example feature", func(t *testing.T) {
@@ -32,7 +32,7 @@ func (s *ClusterSuite) TestComplexInstallation() {
 	})
 
 	s.T().Run("after", func(t *testing.T) {
-		testInstallation.UninstallGlooGateway(NewWithT(s.T()), s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
+		testInstallation.UninstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 
 		s.testCluster.UnregisterTestInstallation(testInstallation)
 	})

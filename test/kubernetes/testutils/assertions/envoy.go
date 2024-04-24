@@ -2,6 +2,7 @@ package assertions
 
 import (
 	"context"
+	"io"
 	"net"
 	"time"
 
@@ -46,7 +47,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 			Should(Succeed())
 
 		adminClient := admincli.NewClient().
-			WithReceiver(p.progressWriter).
+			WithReceiver(io.Discard). // adminAssertion can overwrite this
 			WithCurlOptions(
 				curl.WithRetries(3, 0, 10),
 				curl.WithPort(admincli.DefaultAdminPort),

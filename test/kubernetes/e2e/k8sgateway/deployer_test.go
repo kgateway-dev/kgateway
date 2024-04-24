@@ -3,8 +3,7 @@ package k8sgateway_test
 import (
 	"context"
 	"path/filepath"
-
-	"github.com/onsi/ginkgo"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,7 +14,7 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-var _ = Describe("Deployer Test", Ordered, func() {
+var _ = Describe("Deployer Test", Ordered, func(t *testing.T) {
 
 	// An entire file is meant to capture the behaviors that we want to test for a given installation of Gloo Gateway
 
@@ -31,17 +30,18 @@ var _ = Describe("Deployer Test", Ordered, func() {
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
+			t,
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-deployer-test",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			},
 		)
 
-		testInstallation.InstallGlooGateway(NewGomega(ginkgo.Fail), ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	AfterAll(func() {
-		testInstallation.UninstallGlooGateway(NewGomega(ginkgo.Fail), ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
+		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})

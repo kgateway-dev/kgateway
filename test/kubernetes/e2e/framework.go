@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"testing"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -41,7 +42,7 @@ func (c *TestCluster) PreFailHandler() {
 	}
 }
 
-func (c *TestCluster) RegisterTestInstallation(glooGatewayContext *gloogateway.Context) *TestInstallation {
+func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext *gloogateway.Context) *TestInstallation {
 	if c.activeInstallations == nil {
 		c.activeInstallations = make(map[string]*TestInstallation, 2)
 	}
@@ -67,8 +68,7 @@ func (c *TestCluster) RegisterTestInstallation(glooGatewayContext *gloogateway.C
 			WithGlooGatewayContext(glooGatewayContext),
 
 		// Create an assertions provider, and point it to the running installation
-		Assertions: assertions.NewProvider().
-			WithProgressWriter(ginkgo.GinkgoWriter).
+		Assertions: assertions.NewProvider(t).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
@@ -110,21 +110,21 @@ func (i *TestInstallation) String() string {
 	return i.Metadata.InstallNamespace
 }
 
-func (i *TestInstallation) InstallGlooGateway(g gomega.Gomega, ctx context.Context, installFn func(ctx context.Context) error) {
+func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
 	err := installFn(ctx)
-	g.Expect(err).NotTo(gomega.HaveOccurred())
+	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
 
-	i.Assertions.AssertInstallationWasSuccessful(g, ctx)
+	i.Assertions.EventuallyInstallationSucceeded(ctx)
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
 	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
 }
 
-func (i *TestInstallation) UninstallGlooGateway(g gomega.Gomega, ctx context.Context, uninstallFn func(ctx context.Context) error) {
+func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
 	err := uninstallFn(ctx)
-	g.Expect(err).NotTo(gomega.HaveOccurred())
+	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
 
-	i.Assertions.AssertUninstallationWasSuccessful(g, ctx)
+	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }
 
 // RunTest will execute a single Test against the installation

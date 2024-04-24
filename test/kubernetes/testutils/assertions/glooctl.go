@@ -20,15 +20,15 @@ func (p *Provider) CheckResources() ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertCheckResources(NewGomega(ginkgo.Fail), ctx)
+		p.EventuallyCheckResourcesOk(ctx)
 	}
 }
 
-// AssertCheckResources asserts that `glooctl check` eventually responds Ok
-func (p *Provider) AssertCheckResources(g Gomega, ctx context.Context) {
-	p.assertGlooGatewayContextDefined(g)
+// EventuallyCheckResourcesOk asserts that `glooctl check` eventually responds Ok
+func (p *Provider) EventuallyCheckResourcesOk(ctx context.Context) {
+	p.expectGlooGatewayContextDefined()
 
-	g.Eventually(func(innerG Gomega) {
+	p.Eventually(func(innerG Gomega) {
 		contextWithCancel, cancel := context.WithCancel(ctx)
 		defer cancel()
 		opts := &options.Options{
@@ -51,11 +51,11 @@ func (p *Provider) AssertCheckResources(g Gomega, ctx context.Context) {
 		Should(Succeed())
 }
 
-func (p *Provider) AssertInstallationWasSuccessful(g Gomega, ctx context.Context) {
-	p.assertGlooGatewayContextDefined(g)
+func (p *Provider) EventuallyInstallationSucceeded(ctx context.Context) {
+	p.expectGlooGatewayContextDefined()
 
 	// Check that everything is OK
-	p.AssertCheckResources(g, ctx)
+	p.EventuallyCheckResourcesOk(ctx)
 
 	// Ensure gloo reaches valid state and doesn't continually re-sync
 	// we can consider doing the same for leaking go-routines after resyncs
@@ -68,20 +68,20 @@ func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertInstallationWasSuccessful(NewGomega(ginkgo.Fail), ctx)
+		p.EventuallyInstallationSucceeded(ctx)
 	}
 }
 
-func (p *Provider) AssertUninstallationWasSuccessful(g Gomega, ctx context.Context) {
-	p.assertGlooGatewayContextDefined(g)
+func (p *Provider) EventuallyUninstallationSucceeded(ctx context.Context) {
+	p.expectGlooGatewayContextDefined()
 
-	p.AssertNamespaceNotExist(g, ctx, p.glooGatewayContext.InstallNamespace)
+	p.AssertNamespaceNotExist(ctx, p.glooGatewayContext.InstallNamespace)
 }
 
 func (p *Provider) UninstallationWasSuccessful() ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertUninstallationWasSuccessful(NewGomega(ginkgo.Fail), ctx)
+		p.EventuallyUninstallationSucceeded(ctx)
 	}
 }

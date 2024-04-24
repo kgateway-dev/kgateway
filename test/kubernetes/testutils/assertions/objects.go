@@ -34,9 +34,9 @@ func (p *Provider) ObjectsExist(objects ...client.Object) ClusterAssertion {
 	}
 }
 
-func (p *Provider) AssertObjectsNotExist(g Gomega, ctx context.Context, objects ...client.Object) {
+func (p *Provider) AssertObjectsNotExist(ctx context.Context, objects ...client.Object) {
 	for _, o := range objects {
-		g.Eventually(ctx, func(innerG Gomega) {
+		p.g.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
 			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object should not be found in cluster")
 		}).
@@ -51,19 +51,19 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertObjectsNotExist(NewGomega(ginkgo.Fail), ctx, objects...)
+		p.AssertObjectsNotExist(ctx, objects...)
 	}
 }
 
-func (p *Provider) AssertNamespaceNotExist(g Gomega, ctx context.Context, ns string) {
+func (p *Provider) AssertNamespaceNotExist(ctx context.Context, ns string) {
 	_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
-	g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "namespace should not be found in cluster")
+	p.g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "namespace should not be found in cluster")
 }
 
 func (p *Provider) NamespaceNotExist(ns string) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertNamespaceNotExist(NewGomega(ginkgo.Fail), ctx, ns)
+		p.AssertNamespaceNotExist(ctx, ns)
 	}
 }

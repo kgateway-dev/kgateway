@@ -39,9 +39,7 @@ func (s *FeatureSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *FeatureSuite) TestInstallationSuccessful() {
-	g := NewWithT(s.T())
-
-	s.testInstallation.Assertions.AssertInstallationWasSuccessful(g, s.ctx)
+	s.testInstallation.Assertions.EventuallyInstallationSucceeded(s.ctx)
 }
 
 func (s *FeatureSuite) TestFailureAllowed() {
