@@ -23,16 +23,16 @@ func (s *ClusterSuite) TestComplexInstallation() {
 			},
 		)
 
-		err := testInstallation.InstallGlooGateway(s.Ctx(), testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		err := testInstallation.InstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	s.T().Run("example feature", func(t *testing.T) {
-		suite.Run(t, example.NewFeatureSuite(s.Ctx(), testInstallation))
+		suite.Run(t, example.NewFeatureSuite(s.ctx, testInstallation))
 	})
 
 	s.T().Run("after", func(t *testing.T) {
-		err := testInstallation.UninstallGlooGateway(s.Ctx(), testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
+		err := testInstallation.UninstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 		Expect(err).NotTo(HaveOccurred())
 
 		s.testCluster.UnregisterTestInstallation(testInstallation)
