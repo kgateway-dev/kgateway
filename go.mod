@@ -93,6 +93,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.1
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d
@@ -277,7 +278,6 @@ require (
 	github.com/solo-io/cue v0.4.7 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
