@@ -2,6 +2,7 @@ package example
 
 import (
 	"context"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 )
@@ -34,4 +35,16 @@ func (s *FeatureSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *FeatureSuite) AfterTest(suiteName, testName string) {
+}
+
+func (s *FeatureSuite) TestInstallationSuccessful() {
+	g := NewWithT(s.T())
+
+	s.testInstallation.Assertions.AssertInstallationWasSuccessful(g, s.ctx)
+}
+
+func (s *FeatureSuite) TestFailureAllowed() {
+	g := NewWithT(s.T())
+
+	g.Expect(1).NotTo(Equal(2), "1 does not equal 2")
 }

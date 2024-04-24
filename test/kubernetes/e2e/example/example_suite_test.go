@@ -12,30 +12,30 @@ import (
 	"testing"
 )
 
-func TestExampleSuite(t *testing.T) {
+func TestExampleClusterSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	require.New(t)
 
-	exampleSuite := NewClusterSuite(context.Background())
-
-	t.Run("example suite", func(t *testing.T) {
-		suite.Run(t, exampleSuite)
-	})
-}
-
-func NewClusterSuite(ctx context.Context) *ClusterSuite {
 	runtimeContext := runtime.NewContext()
 
 	// Construct the cluster.Context for this suite
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
+	clusterSuite := NewClusterSuite(context.Background(), &e2e.TestCluster{
+		RuntimeContext: runtimeContext,
+		ClusterContext: clusterContext,
+	})
+
+	t.Run("example suite", func(t *testing.T) {
+		suite.Run(t, clusterSuite)
+	})
+}
+
+func NewClusterSuite(ctx context.Context, testCluster *e2e.TestCluster) *ClusterSuite {
 	return &ClusterSuite{
-		ctx: ctx,
-		testCluster: &e2e.TestCluster{
-			RuntimeContext: runtimeContext,
-			ClusterContext: clusterContext,
-		},
+		ctx:         ctx,
+		testCluster: testCluster,
 	}
 }
 
