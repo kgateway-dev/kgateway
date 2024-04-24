@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
@@ -67,6 +68,30 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 		It("Apply fault injection using filter extension RouteOption", func() {
 			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
+		})
+
+	})
+
+	FContext("HTTPRoute Routing with Ports", func() {
+
+		It("Matching Port and Targetport", func() {
+			testInstallation.RunTest(ctx, port_routing.MatchPortAndTargetport)
+		})
+
+		It("Matching Port, without Targetport set", func() {
+			testInstallation.RunTest(ctx, port_routing.MatchPodPortWithoutTargetport)
+		})
+
+		It("Invalid Port and valid Targetport", func() {
+			testInstallation.RunTest(ctx, port_routing.InvalidPortAndValidTargetportManifest)
+		})
+
+		It("Invalid Port and invalid Targetport", func() {
+			testInstallation.RunTest(ctx, port_routing.InvalidPortAndInvalidTargetportManifest)
+		})
+
+		It("Invalid Port without Targetport set", func() {
+			testInstallation.RunTest(ctx, port_routing.InvalidPortWithoutTargetport)
 		})
 
 	})
