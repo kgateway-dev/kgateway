@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -48,19 +47,6 @@ var (
 			Name:      "curl",
 			Namespace: "curl",
 		},
-	}
-
-	curlFromPod = func(ctx context.Context) func() string {
-		proxyFdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
-		curlOpts := []curl.Option{
-			curl.WithHost(proxyFdqnAddr),
-			curl.WithHostHeader("example.com"),
-		}
-
-		return func() string {
-			kubeCli := kubectl.NewCli()
-			return kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta, curlOpts...)
-		}
 	}
 
 	expectedHealthyResponse = &testmatchers.HttpResponse{
@@ -108,7 +94,13 @@ var InvalidPortAndValidTargetportManifest = e2e.Test{
 					installation.Assertions.ObjectsExist(testService),
 
 					// Check that the valid target port works
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedHealthyResponse),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedHealthyResponse),
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -139,7 +131,13 @@ var MatchPortAndTargetport = e2e.Test{
 					installation.Assertions.ObjectsExist(testService),
 
 					// Check that the valid target port works
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedHealthyResponse),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedHealthyResponse),
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -170,7 +168,13 @@ var MatchPodPortWithoutTargetport = e2e.Test{
 					installation.Assertions.ObjectsExist(testService),
 
 					// Check that the valid target port works
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedHealthyResponse),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedHealthyResponse),
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -201,7 +205,13 @@ var InvalidPortWithoutTargetport = e2e.Test{
 					installation.Assertions.ObjectsExist(testService),
 
 					// Check that the valid target port works
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedServiceUnavailableResponse),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedServiceUnavailableResponse),
 				},
 			},
 			Undo: &operations.BasicOperation{
@@ -232,7 +242,13 @@ var InvalidPortAndInvalidTargetportManifest = e2e.Test{
 					installation.Assertions.ObjectsExist(testService),
 
 					// Check that the valid target port works
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedServiceUnavailableResponse),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedServiceUnavailableResponse),
 				},
 			},
 			Undo: &operations.BasicOperation{
