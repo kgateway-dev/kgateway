@@ -72,7 +72,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 
 	})
 
-	FContext("HTTPRoute Routing with Ports", func() {
+	Context("HTTPRoute Routing with Ports", func() {
 
 		It("Matching Port and Targetport", func() {
 			testInstallation.RunTest(ctx, port_routing.MatchPortAndTargetport)
