@@ -60,6 +60,11 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 	}
 }
 
+func (p *Provider) AssertNamespaceNotExist(g Gomega, ctx context.Context, ns string) {
+	_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+	g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "namespace should not be found in cluster")
+}
+
 func (p *Provider) NamespaceNotExist(ns string) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()

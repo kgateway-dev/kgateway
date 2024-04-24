@@ -2,6 +2,7 @@ package k8sgateway_test
 
 import (
 	"context"
+	"github.com/onsi/ginkgo"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,7 +27,6 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		var err error
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
@@ -36,13 +36,11 @@ var _ = Describe("Deployer Test", Ordered, func() {
 			},
 		)
 
-		err = testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation.InstallGlooGateway(nil, ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	AfterAll(func() {
-		err := testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation.UninstallGlooGateway(NewGomega(ginkgo.Fail), ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})

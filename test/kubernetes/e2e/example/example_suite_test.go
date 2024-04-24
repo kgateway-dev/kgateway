@@ -25,7 +25,7 @@ func TestExampleClusterSuite(t *testing.T) {
 		ClusterContext: clusterContext,
 	})
 
-	t.Run("example suite", func(t *testing.T) {
+	t.Run("cluster suite", func(t *testing.T) {
 		suite.Run(t, clusterSuite)
 	})
 }
@@ -41,14 +41,10 @@ func NewClusterSuite(ctx context.Context, testCluster *e2e.TestCluster) *Cluster
 type ClusterSuite struct {
 	suite.Suite
 
-	ctx context.Context
-
+	ctx         context.Context
 	testCluster *e2e.TestCluster
 }
 
-func (s *ClusterSuite) SetupSuite() {
+func (s *ClusterSuite) SetupSuite() {}
 
-}
-
-func (s *ClusterSuite) TearDownSuite() {
-}
+func (s *ClusterSuite) TearDownSuite() {}

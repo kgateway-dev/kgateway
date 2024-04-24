@@ -24,7 +24,7 @@ func (s *ClusterSuite) TestBasicInstallation() {
 			},
 		)
 
-		err := testInstallation.InstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		err := testInstallation.InstallGlooGateway(NewWithT(t), s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 		Expect(err).NotTo(HaveOccurred())
 	})
 

@@ -96,6 +96,10 @@ func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
 	}
 }
 
+func (p *Provider) AssertUninstallationWasSuccessful(g Gomega, ctx context.Context) {
+	p.AssertNamespaceNotExist(g, ctx, p.glooGatewayContext.InstallNamespace)
+}
+
 func (p *Provider) UninstallationWasSuccessful() ClusterAssertion {
 	p.requiresGlooGatewayContext()
 

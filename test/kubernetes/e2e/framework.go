@@ -3,10 +3,8 @@ package e2e
 import (
 	"context"
 	"fmt"
-
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
@@ -111,29 +109,21 @@ func (i *TestInstallation) String() string {
 	return i.Metadata.InstallNamespace
 }
 
-func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction actions.ClusterAction) error {
-	installOperation := &operations.BasicOperation{
-		OpName:      "install-gloo-gateway",
-		OpAction:    installAction,
-		OpAssertion: i.Assertions.InstallationWasSuccessful(),
-	}
-	err := i.Operator.ExecuteOperations(ctx, installOperation)
-	if err != nil {
-		return err
-	}
+func (i *TestInstallation) InstallGlooGateway(g gomega.Gomega, ctx context.Context, installFn func(ctx context.Context) error) {
+	err := installFn(ctx)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+
+	i.Assertions.AssertInstallationWasSuccessful(g, ctx)
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
 	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
-	return nil
 }
 
-func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAction actions.ClusterAction) error {
-	installOperation := &operations.BasicOperation{
-		OpName:      "uninstall-gloo-gateway",
-		OpAction:    uninstallAction,
-		OpAssertion: i.Assertions.UninstallationWasSuccessful(),
-	}
-	return i.Operator.ExecuteOperations(ctx, installOperation)
+func (i *TestInstallation) UninstallGlooGateway(g gomega.Gomega, ctx context.Context, uninstallFn func(ctx context.Context) error) {
+	err := uninstallFn(ctx)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+
+	i.Assertions.AssertUninstallationWasSuccessful(g, ctx)
 }
 
 // RunTest will execute a single Test against the installation
