@@ -164,21 +164,22 @@ func recordPods(podDir, namespace string) error {
 			return err
 		}
 
-		f := fileAtPath(filepath.Join(podDir, pod+".log"))
 		logs, errOutput, err := kubeLogs(namespace, pod)
-
+		// store any error running the log command to return later
+		if err != nil {
+			outErr = multierror.Append(outErr, err)
+		}
+		// write any log output to the standard file
 		if logs != "" {
+			f := fileAtPath(filepath.Join(podDir, pod+".log"))
 			f.WriteString(logs)
 			f.Close()
 		}
+		// write any error output to the error file
 		if errOutput != "" {
-			errF := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
-			errF.WriteString(errOutput)
-			errF.Close()
-		}
-
-		if err != nil {
-			outErr = multierror.Append(outErr, err)
+			f := fileAtPath(filepath.Join(podDir, pod+"-error.log"))
+			f.WriteString(errOutput)
+			f.Close()
 		}
 	}
 
@@ -310,7 +311,7 @@ func EnvoyDumpOnFail(_ io.Writer, proxies ...metav1.ObjectMeta) func() {
 func recordEnvoyAdminData(f *os.File, path, proxyName, namespace string) {
 	defer f.Close()
 
-	fmt.Printf("Getting envoy for %s.%s and storing config dump: %s\n", proxyName, namespace, path)
+	fmt.Printf("Getting and storing envoy output for %s path on %s.%s proxy\n", path, proxyName, namespace)
 	cfg, err := gateway.GetEnvoyAdminData(context.Background(), proxyName, namespace, path, 30*time.Second)
 	if err != nil {
 		f.WriteString("*** Unable to get envoy " + path + " dump ***. Reason: " + err.Error() + " \n")
