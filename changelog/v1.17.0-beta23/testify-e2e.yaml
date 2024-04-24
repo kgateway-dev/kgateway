@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6093
+    resolvesIssue: false
+    description: >-
+      Use testify to run e2e tests, allowing re-use of features across test clusters
