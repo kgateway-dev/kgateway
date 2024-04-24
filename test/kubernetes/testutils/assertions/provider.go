@@ -47,9 +47,9 @@ func (p *Provider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *Provider 
 	return p
 }
 
-// requiresGlooGatewayContext is invoked by methods on the Provider that can only be invoked
+// assertGlooGatewayContextDefined is invoked by methods on the Provider that can only be invoked
 // if the provider has been configured to point to a Gloo Gateway installation
 // There are certain Assertions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
-func (p *Provider) requiresGlooGatewayContext() {
-	gomega.Expect(p.glooGatewayContext).NotTo(gomega.BeNil(), "Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
+func (p *Provider) assertGlooGatewayContextDefined(g gomega.Gomega) {
+	g.Expect(p.glooGatewayContext).NotTo(gomega.BeNil(), "Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
 }
