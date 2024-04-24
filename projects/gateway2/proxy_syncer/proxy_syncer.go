@@ -4,8 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -41,11 +39,11 @@ type ProxySyncer struct {
 
 	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
-	proxyReconciler       gloo_solo_io.ProxyReconciler
-	queueStatusForProxies QueueStatusForProxiesFn
+	proxyReconciler gloo_solo_io.ProxyReconciler
 
-	routeOptionClient gatewayv1.RouteOptionClient
-	statusReporter    reporter.StatusReporter
+	// queueStatusForProxies stores a list of proxies that need the proxy status synced and the plugin registry
+	// that produced them for a given sync iteration
+	queueStatusForProxies QueueStatusForProxiesFn
 }
 
 type GatewayInputChannels struct {
@@ -80,8 +78,6 @@ func NewProxySyncer(
 	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
 	queueStatusForProxies QueueStatusForProxiesFn,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	statusReporter reporter.StatusReporter,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:        controllerName,
@@ -92,8 +88,6 @@ func NewProxySyncer(
 		k8sGwExtensions:       k8sGwExtensions,
 		proxyReconciler:       gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
 		queueStatusForProxies: queueStatusForProxies,
-		routeOptionClient:     routeOptionClient,
-		statusReporter:        statusReporter,
 	}
 }
 

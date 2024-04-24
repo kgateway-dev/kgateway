@@ -894,9 +894,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	if opts.GlooGateway.EnableK8sGatewayController {
 
-		/*
-
-		 */
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
 
