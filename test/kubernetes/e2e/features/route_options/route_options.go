@@ -56,10 +56,10 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(targetRefManifest),
 				OpAssertions: []assertions.ClusterAssertion{
 					// First check resources are created for Gateway
-					installation.Assertions.ObjectsExist(proxyService, proxyDeployment, curlPod),
+					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					installation.Assertions.EphemeralCurlEventuallyResponds(
-						curlPod.ObjectMeta,
+						curlPod,
 						[]curl.Option{
 							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),
@@ -94,11 +94,11 @@ var ConfigureRouteOptionsWithFilterExtenstion = e2e.Test{
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(filterExtensioManifest),
 				OpAssertions: []assertions.ClusterAssertion{
 					// First check resources are created for Gateway
-					installation.Assertions.ObjectsExist(proxyService, proxyDeployment, curlPod),
+					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
 					installation.Assertions.EphemeralCurlEventuallyResponds(
-						curlPod.ObjectMeta,
+						curlPod,
 						[]curl.Option{
 							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),

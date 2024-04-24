@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,16 +18,20 @@ import (
 // EphemeralCurlEventuallyResponds returns a ClusterAssertion to assert that a set of curl.Option will return the expected matchers.HttpResponse
 // This implementation relies on executing from an ephemeral container.
 // It is the caller's responsibility to ensure the curlPodMeta points to a pod that is alive and ready to accept traffic
-func (p *Provider) EphemeralCurlEventuallyResponds(curlPodMeta metav1.ObjectMeta, curlOptions []curl.Option, expectedResponse *matchers.HttpResponse, timeout ...time.Duration) ClusterAssertion {
+func (p *Provider) EphemeralCurlEventuallyResponds(curlPod client.Object, curlOptions []curl.Option, expectedResponse *matchers.HttpResponse, timeout ...time.Duration) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
+
+		// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
+		p.ObjectsExist(curlPod)(ctx)
+
 		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
 		// for some useful-ish output
 		tick := time.Tick(pollingInterval)
 
 		Eventually(func(g Gomega) {
-			res := p.clusterContext.Cli.CurlFromEphemeralPod(ctx, curlPodMeta, curlOptions...)
+			res := p.clusterContext.Cli.CurlFromEphemeralPod(ctx, client.ObjectKeyFromObject(curlPod), curlOptions...)
 			select {
 			default:
 				break
