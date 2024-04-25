@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// FeatureSuite is the entire Suite of tests for the "deployer" feature
-type FeatureSuite struct {
+// featureSuite is the entire Suite of tests for the "deployer" feature
+type featureSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -22,26 +22,26 @@ type FeatureSuite struct {
 	testInstallation *e2e.TestInstallation
 }
 
-func NewFeatureSuite(ctx context.Context, testInst *e2e.TestInstallation) *FeatureSuite {
-	return &FeatureSuite{
+func NewFeatureSuite(ctx context.Context, testInst *e2e.TestInstallation) *featureSuite {
+	return &featureSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *FeatureSuite) SetupSuite() {
+func (s *featureSuite) SetupSuite() {
 }
 
-func (s *FeatureSuite) TearDownSuite() {
+func (s *featureSuite) TearDownSuite() {
 }
 
-func (s *FeatureSuite) BeforeTest(suiteName, testName string) {
+func (s *featureSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) AfterTest(suiteName, testName string) {
+func (s *featureSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) TestProvisionDeploymentAndService() {
+func (s *featureSuite) TestProvisionDeploymentAndService() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().Client().DeleteFile(s.ctx, deployerProvisionManifestFile)
 		s.NoError(err, "can delete manifest")
@@ -49,11 +49,11 @@ func (s *FeatureSuite) TestProvisionDeploymentAndService() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().Client().ApplyFile(s.ctx, deployerProvisionManifestFile)
-	s.NoError(err, "can apply manifest")
+	s.Require().NoError(err, "can apply manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 }
 
-func (s *FeatureSuite) TestConfigureProxiesFromGatewayParameters() {
+func (s *featureSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().Client().DeleteFile(s.ctx, gwParametersManifestFile)
 		s.NoError(err, "can delete manifest")
@@ -65,11 +65,11 @@ func (s *FeatureSuite) TestConfigureProxiesFromGatewayParameters() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().Client().ApplyFile(s.ctx, deployerProvisionManifestFile)
-	s.NoError(err, "can apply manifest")
+	s.Require().NoError(err, "can apply manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 
 	err = s.testInstallation.Actions.Kubectl().Client().ApplyFile(s.ctx, gwParametersManifestFile)
-	s.NoError(err, "can apply manifest")
+	s.Require().NoError(err, "can apply manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, Equal(1))
 	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
