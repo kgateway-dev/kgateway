@@ -56,6 +56,7 @@ func TranslateGatewayHTTPRouteRules(
 	return finalRoutes
 }
 
+// MARK: translate rules
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,

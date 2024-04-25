@@ -7,8 +7,10 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/hashutils"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
@@ -120,6 +122,8 @@ type validator struct {
 	extensionValidator                    syncerValidation.Validator
 	allowWarnings                         bool
 	disableValidationAgainstPreviousState bool
+	mgr                                   manager.Manager
+	k8sGwExtensions                       extensions.K8sGatewayExtensions
 }
 
 type validationOptions struct {
@@ -142,6 +146,8 @@ type ValidatorConfig struct {
 	ExtensionValidator                    syncerValidation.Validator
 	AllowWarnings                         bool
 	DisableValidationAgainstPreviousState bool
+	Mgr                                   manager.Manager
+	K8sGwExtensions                       extensions.K8sGatewayExtensions
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
@@ -151,6 +157,8 @@ func NewValidator(cfg ValidatorConfig) *validator {
 		translator:                            cfg.Translator,
 		allowWarnings:                         cfg.AllowWarnings,
 		disableValidationAgainstPreviousState: cfg.DisableValidationAgainstPreviousState,
+		mgr:                                   cfg.Mgr,
+		k8sGwExtensions:                       cfg.K8sGwExtensions,
 	}
 }
 

@@ -475,6 +475,7 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 	return reports, nil
 }
 
+// shouldValidateResource determines if a resource should be validated AND populates `resource` (and `oldResource` if applicable) from the objects[s] in the `admissionRequest`
 func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource, oldResource resources.HashableResource) (bool, error) {
 	logger := contextutils.LoggerFrom(ctx)
 
