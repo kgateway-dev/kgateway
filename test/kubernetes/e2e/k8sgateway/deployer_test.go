@@ -28,7 +28,7 @@ var _ = Describe("Deployer Test", Ordered, func() {
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
-			t,
+			test,
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-deployer-test",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),

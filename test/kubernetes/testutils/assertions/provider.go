@@ -1,6 +1,7 @@
 package assertions
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/onsi/gomega"
@@ -15,6 +16,7 @@ import (
 // operations.ClusterAssertion to match
 type Provider struct {
 	gomega.Gomega
+	*require.Assertions
 
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
@@ -24,7 +26,8 @@ type Provider struct {
 // installation of Gloo Gateway
 func NewProvider(t *testing.T) *Provider {
 	return &Provider{
-		Gomega: gomega.NewWithT(t),
+		Gomega:     gomega.NewWithT(t),
+		Assertions: require.New(t),
 
 		clusterContext:     nil,
 		glooGatewayContext: nil,
