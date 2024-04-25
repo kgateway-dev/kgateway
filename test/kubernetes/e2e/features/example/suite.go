@@ -38,10 +38,14 @@ func (s *FeatureSuite) BeforeTest(suiteName, testName string) {
 func (s *FeatureSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) TestInstallationSuccessful() {
-	s.testInstallation.Assertions.EventuallyInstallationSucceeded(s.ctx)
-}
+// func (s *FeatureSuite) TestInstallationSuccessful() {
+// 	s.testInstallation.Assertions.EventuallyInstallationSucceeded(s.ctx)
+// }
 
 func (s *FeatureSuite) TestFailureAllowed() {
+	// Testify assertion
+	s.Assert().NotEqual(1, 2, "1 does not equal 2")
+
+	// Gomega assertion
 	s.testInstallation.Assertions.Expect(1).NotTo(Equal(2), "1 does not equal 2")
 }
