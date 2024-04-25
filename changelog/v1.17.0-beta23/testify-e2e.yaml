@@ -1,4 +1,8 @@
 changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: stretchr
+    dependencyRepo: testify
+    dependencyTag: v1.8.4
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6093
     resolvesIssue: false
