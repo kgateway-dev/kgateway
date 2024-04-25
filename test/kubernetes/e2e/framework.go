@@ -41,17 +41,6 @@ type TestCluster struct {
 	activeInstallations map[string]*TestInstallation
 }
 
-// PreFailHandler will execute the PreFailHandler for any of the TestInstallation that are registered
-// with the given TestCluster.
-// The function will be executed when a test in the TestCluster fails, but before any of the cleanup
-// functions (AfterEach, AfterAll) are invoked. This allows us to capture relevant details about
-// the running installation of Gloo Gateway and the Kubernetes Cluster
-func (c *TestCluster) PreFailHandler() {
-	for _, i := range c.activeInstallations {
-		i.PreFailHandler()
-	}
-}
-
 func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext *gloogateway.Context) *TestInstallation {
 	if c.activeInstallations == nil {
 		c.activeInstallations = make(map[string]*TestInstallation, 2)
@@ -135,16 +124,6 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
 
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
-}
-
-// RunTest will execute a single Test against the installation
-// We intentionally do not expose a RunTests method, because then we would
-// lose the ability to randomize tests through the testing framework
-func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
-	gomega.Expect(test.Name).NotTo(gomega.BeEmpty(), "All tests must include a name")
-
-	i.Operator.Logf("TEST: %s", test.Name)
-	test.Test(ctx, i)
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails

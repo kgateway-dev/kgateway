@@ -2,70 +2,50 @@ package k8sgateway_test
 
 import (
 	"context"
+	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/suite"
 	"path/filepath"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-var _ = Describe("Deployer Test", Ordered, func() {
+// TestK8sGateway is the function which executes a series of tests against a given installation
+func TestK8sGateway(t *testing.T) {
+	RegisterFailHandler(Fail)
 
-	// An entire file is meant to capture the behaviors that we want to test for a given installation of Gloo Gateway
-
-	var (
-		ctx context.Context
-
-		// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-		// against an installation of Gloo Gateway
-		testInstallation *e2e.TestInstallation
+	ctx := context.Background()
+	testCluster := e2e.NewTestCluster()
+	testInstallation := testCluster.RegisterTestInstallation(
+		t,
+		&gloogateway.Context{
+			InstallNamespace:   "k8s-gw-helm-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-helm-test.yaml"),
+		},
 	)
 
-	BeforeAll(func() {
-		ctx = context.Background()
+	// We register the cleanup function _before_ we actually perform the installation.
+	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
+	t.Cleanup(func() {
+		if t.Failed() {
+			testInstallation.PreFailHandler()
+		}
 
-		testInstallation = testCluster.RegisterTestInstallation(
-			test,
-			&gloogateway.Context{
-				InstallNamespace:   "k8s-gw-deployer-test",
-				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
-			},
-		)
-
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
-	})
-
-	AfterAll(func() {
 		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
-
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	Context("Deployer", func() {
-
-		It("provisions resources appropriately", func() {
-			testInstallation.RunTest(ctx, deployer.ProvisionDeploymentAndService)
-		})
-
-		It("configures proxies from the GatewayParameters CR", func() {
-			testInstallation.RunTest(ctx, deployer.ConfigureProxiesFromGatewayParameters)
-		})
-
+	t.Run("install gateway", func(t *testing.T) {
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
-	Context("RouteOptions", func() {
-
-		It("Apply fault injection using targetRef RouteOption", func() {
-			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithTargetRef)
-		})
-
-		It("Apply fault injection using filter extension RouteOption", func() {
-			testInstallation.RunTest(ctx, route_options.ConfigureRouteOptionsWithFilterExtenstion)
-		})
-
+	t.Run("deployer", func(t *testing.T) {
+		suite.Run(t, deployer.NewFeatureSuite(ctx, testInstallation))
 	})
 
-})
+	// todo: run RouteOptions
+}

@@ -76,11 +76,11 @@ func (s *FeatureSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.AssertEnvoyAdminApi(
 		s.ctx,
 		proxyDeployment.ObjectMeta,
-		serverInfoLogLevelAssertion(s.testInstallation),
+		serverInfoLogLevelAssertion(s.testInstallation, "debug", "connection:trace,upstream:debug"),
 	)
 }
 
-func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
 		if testInstallation.TestCluster.RuntimeContext.RunSource != runtime.LocalDevelopment {
 			// There are failures when running this command in CI
@@ -91,9 +91,9 @@ func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation) func(ct
 			serverInfo, err := adminClient.GetServerInfo(ctx)
 			g.Expect(err).NotTo(HaveOccurred(), "can get server info")
 			g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(
-				Equal("debug"), "defined on the GatewayParameters CR")
+				Equal(expectedLogLevel), "defined on the GatewayParameters CR")
 			g.Expect(serverInfo.GetCommandLineOptions().GetComponentLogLevel()).To(
-				Equal("connection:trace,upstream:debug"), "defined on the GatewayParameters CR")
+				Equal(expectedComponentLogLevel), "defined on the GatewayParameters CR")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).
