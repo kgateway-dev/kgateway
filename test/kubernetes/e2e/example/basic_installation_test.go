@@ -4,6 +4,10 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/kube2e/helper"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,6 +33,9 @@ func TestBasicInstallation(t *testing.T) {
 		},
 	)
 
+	testHelper, err := kube2e.GetTestHelper(ctx, testInstallation.Metadata.InstallNamespace)
+	testInstallation.Assertions.Require.NoError(err, "Could not construct TestHelper for test")
+
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
@@ -36,12 +43,16 @@ func TestBasicInstallation(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.TestHelperUninstall)
+		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
+			return testHelper.UninstallGlooAll()
+		})
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.TestHelperInstall)
+		testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
+			return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+		})
 	})
 
 	// The name here is important for debuggability
