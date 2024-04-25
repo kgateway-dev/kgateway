@@ -25,8 +25,8 @@ func TestK8sGateway(t *testing.T) {
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "k8s-gw-helm-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-helm-test.yaml"),
+			InstallNamespace:   "k8s-gw-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 		},
 	)
 
