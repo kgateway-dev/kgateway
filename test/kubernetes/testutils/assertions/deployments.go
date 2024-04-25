@@ -18,12 +18,12 @@ func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, replicaMatc
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertRunningReplicas(NewGomega(ginkgo.Fail), ctx, deploymentMeta, replicaMatcher)
+		p.EventuallyRunningReplicas(ctx, deploymentMeta, replicaMatcher)
 	}
 }
 
-func (p *Provider) AssertRunningReplicas(g Gomega, ctx context.Context, deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) {
-	g.Eventually(func(innerG Gomega) {
+func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) {
+	p.Eventually(func(innerG Gomega) {
 		// We intentionally rely only on Pods that have marked themselves as ready as a way of defining more explicit assertions
 		pods, err := kubeutils.GetReadyPodsForDeployment(ctx, p.clusterContext.Clientset, deploymentMeta)
 		innerG.Expect(err).NotTo(HaveOccurred(), "can get pods for deployment")

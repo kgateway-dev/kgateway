@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (p *Provider) AssertObjectsExist(g Gomega, ctx context.Context, objects ...client.Object) {
+func (p *Provider) EventuallyObjectsExist(g Gomega, ctx context.Context, objects ...client.Object) {
 	for _, o := range objects {
 		g.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
@@ -30,13 +30,13 @@ func (p *Provider) ObjectsExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertObjectsExist(NewGomega(ginkgo.Fail), ctx, objects...)
+		p.EventuallyObjectsExist(NewGomega(ginkgo.Fail), ctx, objects...)
 	}
 }
 
-func (p *Provider) AssertObjectsNotExist(ctx context.Context, objects ...client.Object) {
+func (p *Provider) EventuallyObjectsNotExist(ctx context.Context, objects ...client.Object) {
 	for _, o := range objects {
-		p.g.Eventually(ctx, func(innerG Gomega) {
+		p.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
 			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object should not be found in cluster")
 		}).
@@ -51,19 +51,19 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertObjectsNotExist(ctx, objects...)
+		p.EventuallyObjectsNotExist(ctx, objects...)
 	}
 }
 
-func (p *Provider) AssertNamespaceNotExist(ctx context.Context, ns string) {
+func (p *Provider) ExpectNamespaceNotExist(ctx context.Context, ns string) {
 	_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
-	p.g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "namespace should not be found in cluster")
+	p.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "namespace should not be found in cluster")
 }
 
 func (p *Provider) NamespaceNotExist(ns string) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		p.AssertNamespaceNotExist(ctx, ns)
+		p.ExpectNamespaceNotExist(ctx, ns)
 	}
 }

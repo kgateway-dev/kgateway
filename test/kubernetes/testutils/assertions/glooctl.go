@@ -75,7 +75,7 @@ func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
 func (p *Provider) EventuallyUninstallationSucceeded(ctx context.Context) {
 	p.expectGlooGatewayContextDefined()
 
-	p.AssertNamespaceNotExist(ctx, p.glooGatewayContext.InstallNamespace)
+	p.ExpectNamespaceNotExist(ctx, p.glooGatewayContext.InstallNamespace)
 }
 
 func (p *Provider) UninstallationWasSuccessful() ClusterAssertion {
