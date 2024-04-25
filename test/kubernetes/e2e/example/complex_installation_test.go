@@ -21,7 +21,7 @@ func TestComplexInstallation(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	ctx := context.Background()
-	testCluster := e2e.NewTestCluster()
+	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{

@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/stretchr/testify/require"
-
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
@@ -14,8 +12,6 @@ import (
 // These actions are executed against a running installation of Gloo Gateway, within a Kubernetes Cluster.
 // This provider is just a wrapper around sub-providers, so it exposes methods to access those providers
 type Provider struct {
-	require *require.Assertions
-
 	kubeCli *kubectl.Cli
 
 	glooctl Glooctl
@@ -24,7 +20,6 @@ type Provider struct {
 // NewActionsProvider returns an Provider
 func NewActionsProvider(t *testing.T) *Provider {
 	return &Provider{
-		require: require.New(t),
 		kubeCli: nil,
 		glooctl: NewGlooctl(t),
 	}
