@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -97,7 +98,7 @@ var InvalidPortAndValidTargetportManifest = e2e.Test{
 					installation.Assertions.EphemeralCurlEventuallyResponds(
 						curlPod,
 						[]curl.Option{
-							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),
 						},
 						expectedHealthyResponse),
@@ -134,7 +135,7 @@ var MatchPortAndTargetport = e2e.Test{
 					installation.Assertions.EphemeralCurlEventuallyResponds(
 						curlPod,
 						[]curl.Option{
-							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),
 						},
 						expectedHealthyResponse),
@@ -171,7 +172,7 @@ var MatchPodPortWithoutTargetport = e2e.Test{
 					installation.Assertions.EphemeralCurlEventuallyResponds(
 						curlPod,
 						[]curl.Option{
-							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),
 						},
 						expectedHealthyResponse),
@@ -208,7 +209,7 @@ var InvalidPortWithoutTargetport = e2e.Test{
 					installation.Assertions.EphemeralCurlEventuallyResponds(
 						curlPod,
 						[]curl.Option{
-							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),
 						},
 						expectedServiceUnavailableResponse),
@@ -245,7 +246,7 @@ var InvalidPortAndInvalidTargetportManifest = e2e.Test{
 					installation.Assertions.EphemeralCurlEventuallyResponds(
 						curlPod,
 						[]curl.Option{
-							curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 							curl.WithHostHeader("example.com"),
 						},
 						expectedServiceUnavailableResponse),
