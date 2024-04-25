@@ -83,8 +83,8 @@ var _ = Describe("Kube2e: mTLS", func() {
 			Host:              helper.TestServerName,
 			Service:           defaults.GatewayProxyName,
 			Port:              gatewayPort,
-			ConnectionTimeout: 1, // this is important, as the first curl call sometimes hangs indefinitely
-		}, kube2e.TestServerHttpResponse(), 1, time.Second*60, time.Second*1)
+			ConnectionTimeout: 1,
+		}, kube2e.TestServerHttpResponse(), 0, time.Second*60, time.Second*1)
 	})
 
 })

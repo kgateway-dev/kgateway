@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/go-utils/testutils/exec"
 
@@ -53,7 +53,7 @@ func StartTestHelper() {
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 	// Register additional fail handlers
-	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, "istio-system", testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, metav1.ObjectMeta{Namespace: "istio-system"}, metav1.ObjectMeta{Namespace: testHelper.InstallNamespace}))
 
 	if !testutils.ShouldSkipInstall() {
 		installGloo()
@@ -87,7 +87,7 @@ func uninstallGloo() {
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
 

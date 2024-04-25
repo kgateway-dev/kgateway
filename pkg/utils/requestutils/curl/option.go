@@ -2,6 +2,7 @@ package curl
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -71,6 +72,23 @@ func WithHost(host string) Option {
 	}
 }
 
+// WithHostPort returns the Option to set the host and port for the curl request
+// The provided string is assumed to have the format [HOST]:[PORT]
+func WithHostPort(hostPort string) Option {
+	return func(config *requestConfig) {
+		parts := strings.Split(hostPort, ":")
+		host := "unset"
+		port := 0
+		if len(parts) == 2 {
+			host = parts[0]
+			port, _ = strconv.Atoi(parts[1])
+		}
+
+		WithHost(host)(config)
+		WithPort(port)(config)
+	}
+}
+
 // WithSni returns the Option to configure a custom address to connect to
 // https://curl.se/docs/manpage.html#--resolve
 func WithSni(sni string) Option {
@@ -104,6 +122,9 @@ func WithQueryParameters(parameters map[string]string) Option {
 }
 
 // WithRetries returns the Option to configure the retries for the curl request
+// https://curl.se/docs/manpage.html#--retry
+// https://curl.se/docs/manpage.html#--retry-delay
+// https://curl.se/docs/manpage.html#--retry-max-time
 func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	return func(config *requestConfig) {
 		config.retry = retry
@@ -112,10 +133,20 @@ func WithRetries(retry, retryDelay, retryMaxTime int) Option {
 	}
 }
 
+// WithRetryConnectionRefused returns the Option to configure the retry behavior
+// for the curl request, when the connection is refused
+// https://curl.se/docs/manpage.html#--retry-connrefused
+func WithRetryConnectionRefused(retryConnectionRefused bool) Option {
+	return func(config *requestConfig) {
+		config.retryConnectionRefused = retryConnectionRefused
+	}
+}
+
 // WithoutRetries returns the Option to disable retries for the curl request
 func WithoutRetries() Option {
 	return func(config *requestConfig) {
 		WithRetries(0, -1, 0)(config)
+		WithRetryConnectionRefused(false)
 	}
 }
 

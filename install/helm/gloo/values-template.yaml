@@ -3,15 +3,9 @@ namespace:
 k8s:
   clusterName: cluster.local
 
-# Default values for gloo-gateway.
-gateway2:
-  gatewayClass:
-    className: gloo-gateway
-    controllerName: solo.io/gloo-gateway
-  controlPlane:
-    enabled: true
-    nameOverride: ""
-    fullnameOverride: ""
+# Default values for the Gloo Gateway - Kubernetes Gateway API integration
+kubeGateway:
+  enabled: true
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot

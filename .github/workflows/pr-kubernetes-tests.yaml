@@ -1,0 +1,68 @@
+name: Kubernetes Tests
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+env:
+  VERSION: '1.0.0-ci1'
+  GITHUB_TOKEN: ${{ github.token }}
+
+jobs:
+  prepare_env:
+    name: Prepare Environment
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      should-auto-succeed-kube-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
+    steps:
+    - name: Cancel Previous Actions
+      uses: styfle/cancel-workflow-action@0.11.0
+      with:
+        access_token: ${{ github.token }}
+    - id: checkout-code
+      uses: actions/checkout@v3
+      with:
+        # We require gathering the branch and tag history since we rely on a `git diff`
+        # which compares the state of two branches
+        fetch-depth: 0
+    - id: process-skip-directives
+      uses: ./.github/workflows/composite-actions/process-skip-directives
+      with:
+        base-ref: ${{ github.base_ref }}
+    - id: run-strategy
+      name: Determine Test Run Strategy
+      run: |
+        skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
+        if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
+          echo "auto_succeed=true" >> $GITHUB_OUTPUT
+        fi
+
+  end_to_end_tests:
+    name: End-to-End (${{ matrix.test-suites.package }})
+    needs: prepare_env
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    if: ${{ !github.event.pull_request.draft }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suites:
+        - package: 'k8sgateway'
+          # https://onsi.github.io/ginkgo/#repeating-spec-runs-and-managing-flaky-specs
+          # --flake-attempts: We want to error on flakes loudly, so we do not repeat any of them
+          # --repeat: We are introducing new tests, and want to increase the confidence that new tests aren't flaky
+          ginkgo-args: '--flake-attempts=0 --repeat=1'
+        tool-versions:
+        - cluster-node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          kubectl: 'v1.28.4'
+          kind: 'v0.20.0'
+          helm: 'v3.13.2'
+    steps:
+    - uses: actions/checkout@v3
+    - id: run-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
+    - id: auto-succeed-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
+      run: |
+        echo "Regression tests auto-succeeded"

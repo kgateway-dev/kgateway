@@ -2,7 +2,6 @@ package curl
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 )
 
@@ -23,7 +22,7 @@ func BuildArgs(options ...Option) []string {
 		silent:            false,
 		connectionTimeout: 3,
 		headersOnly:       false,
-		method:            http.MethodGet,
+		method:            "",
 		host:              "127.0.0.1",
 		port:              8080,
 		headers:           make(map[string]string),
@@ -34,6 +33,8 @@ func BuildArgs(options ...Option) []string {
 		retry:             0, // do not retry
 		retryDelay:        -1,
 		retryMaxTime:      0,
+		ipv4Only:          false,
+		ipv6Only:          false,
 
 		additionalArgs: []string{},
 	}
@@ -64,9 +65,13 @@ type requestConfig struct {
 
 	scheme string
 
-	retry        int
-	retryDelay   int
-	retryMaxTime int
+	retry                  int
+	retryDelay             int
+	retryMaxTime           int
+	retryConnectionRefused bool
+
+	ipv4Only bool
+	ipv6Only bool
 
 	additionalArgs []string
 }
@@ -90,9 +95,9 @@ func (c *requestConfig) generateArgs() []string {
 	if c.headersOnly {
 		args = append(args, "-I")
 	}
-
-	// We prefer to be explicit, and always set the method
-	args = append(args, "--request", c.method)
+	if c.method != "" {
+		args = append(args, "--request", c.method)
+	}
 
 	for h, v := range c.headers {
 		args = append(args, "-H", fmt.Sprintf("%v: %v", h, v))
@@ -111,6 +116,9 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.retryMaxTime != 0 {
 		args = append(args, "--retry-max-time", fmt.Sprintf("%d", c.retryMaxTime))
+	}
+	if c.retryConnectionRefused {
+		args = append(args, "--retry-connrefused")
 	}
 
 	if len(c.additionalArgs) > 0 {

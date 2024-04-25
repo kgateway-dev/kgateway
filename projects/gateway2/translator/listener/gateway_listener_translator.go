@@ -5,8 +5,10 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
+	"github.com/solo-io/go-utils/contextutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
@@ -17,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -33,7 +36,7 @@ func TranslateListeners(
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
 
-	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, routesForGw, reporter.Gateway(gateway))
+	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter.Gateway(gateway))
 	translatedListeners := mergedListeners.translateListeners(ctx, pluginRegistry, queries, reporter)
 	return translatedListeners
 }
@@ -42,10 +45,12 @@ func mergeGWListeners(
 	queries query.GatewayQueries,
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
+	parentGw gwv1.Gateway,
 	routesForGw query.RoutesForGwResult,
 	reporter reports.GatewayReporter,
 ) *mergedListeners {
 	ml := &mergedListeners{
+		parentGw:         parentGw,
 		gatewayNamespace: gatewayNamespace,
 		queries:          queries,
 	}
@@ -68,6 +73,7 @@ func mergeGWListeners(
 
 type mergedListeners struct {
 	gatewayNamespace string
+	parentGw         gwv1.Gateway
 	listeners        []*mergedListener
 	queries          query.GatewayQueries
 }
@@ -172,10 +178,23 @@ func (ml *mergedListeners) translateListeners(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
-	reporter reports.Reporter) []*v1.Listener {
+	reporter reports.Reporter,
+) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
 		listener := mergedListener.translateListener(ctx, pluginRegistry, queries, reporter)
+
+		// run listener plugins
+		for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
+			err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
+				Gateway:    &ml.parentGw,
+				GwListener: &mergedListener.listener,
+			}, listener)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Errorf("error in ListenerPlugin: %v", err)
+			}
+		}
+
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -311,7 +330,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	)
 	for host, vhostRoutes := range routesByHost {
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(parentName, host)
+		vhostName := makeVhostName(ctx, parentName, host)
 		virtualHosts[vhostName] = &v1.VirtualHost{
 			Name:    vhostName,
 			Domains: []string{host},
@@ -365,7 +384,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	)
 	for host, vhostRoutes := range routesByHost {
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(parentName, host)
+		vhostName := makeVhostName(ctx, parentName, host)
 		virtualHosts[vhostName] = &v1.VirtualHost{
 			Name:    vhostName,
 			Domains: []string{host},
@@ -514,9 +533,9 @@ func translateSslConfig(
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
 func makeVhostName(
+	ctx context.Context,
 	parentName string,
 	domain string,
 ) string {
-	// TODO is this a valid vh name?
-	return parentName + "~" + domain
+	return utils.SanitizeForEnvoy(ctx, parentName+"~"+domain, "vHost")
 }

@@ -22,6 +22,7 @@ const (
 	ShutdownServerPath = "quitquitquit"
 	HealthCheckPath    = "healthcheck"
 	LoggingPath        = "logging"
+	ServerInfoPath     = "server_info"
 
 	DefaultAdminPort = 19000
 )
@@ -181,4 +182,26 @@ func (c *Client) SetLogLevel(ctx context.Context, logLevel string) error {
 			"level": logLevel,
 		}),
 		curl.WithMethod(http.MethodPost))
+}
+
+// GetServerInfo calls the endpoint to return the info for the server
+func (c *Client) GetServerInfo(ctx context.Context) (*adminv3.ServerInfo, error) {
+	var (
+		serverInfo  adminv3.ServerInfo
+		outLocation threadsafe.Buffer
+	)
+
+	err := c.RequestPathCmd(ctx, ServerInfoPath).
+		WithStdout(&outLocation).
+		Run().
+		Cause()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = protoutils.UnmarshalAllowUnknown(&outLocation, &serverInfo); err != nil {
+		return nil, err
+	}
+
+	return &serverInfo, nil
 }

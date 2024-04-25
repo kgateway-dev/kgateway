@@ -76,7 +76,7 @@ var _ = Describe("Compress", func() {
 		})
 		It("should compress to a smaller size", func() {
 			var l []*v1.Listener
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				l = append(l, &v1.Listener{BindAddress: "1234"})
 			}
 			p := &v1.Proxy{

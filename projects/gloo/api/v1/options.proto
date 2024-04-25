@@ -64,6 +64,7 @@ import "google/protobuf/wrappers.proto";
 // Note to developers: new Listener plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message ListenerOptions {
+    // Configuration for access logging in a filter like the HttpConnectionManager.
     als.options.gloo.solo.io.AccessLoggingService access_logging_service = 1;
 
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
@@ -88,6 +89,12 @@ message ListenerOptions {
 
     // Configuration for listener connection balancing.
     ConnectionBalanceConfig connection_balance_config = 6;
+
+    // If enabled this sets up an early access logging service for the listener.
+    // Added initially to support listener level logging for HTTP listeners. 
+    // For more info see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-access-log
+    als.options.gloo.solo.io.AccessLoggingService listener_access_logging_service = 7;
+    
 }
 
 // Configuration for listener connection balancing.

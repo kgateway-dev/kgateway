@@ -2,18 +2,26 @@ package setup
 
 import (
 	"context"
-	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var (
-	NoXdsPortFoundError = func(portName string, svcNamespace string, svcName string) error {
-		return eris.Errorf("no port with the name %s found in service %s.%s", portName, svcNamespace, svcName)
+	NoXdsPortFoundError = eris.New("failed to find xds port")
+	noXdsPortFoundError = func(portName string, svcNamespace string, svcName string) error {
+		return eris.Wrapf(NoXdsPortFoundError, "no port with the name %s found in service %s.%s", portName, svcNamespace, svcName)
+	}
+	NoGlooSvcFoundError = eris.New("failed to find Gloo service")
+	noGlooSvcFoundError = func(err error, svcNamespace string, svcName string) error {
+		wrapped := eris.Wrap(err, NoGlooSvcFoundError.Error())
+		return eris.Wrapf(wrapped, "service %s.%s", svcNamespace, svcName)
 	}
 )
 
@@ -23,6 +31,9 @@ func GetControlPlaneXdsPort(ctx context.Context, svcClient skkube.ServiceClient)
 	svcNamespace := utils.GetPodNamespace()
 	glooSvc, err := svcClient.Read(svcNamespace, kubeutils.GlooServiceName, clients.ReadOpts{Ctx: ctx})
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return 0, noGlooSvcFoundError(err, svcNamespace, kubeutils.GlooServiceName)
+		}
 		return 0, err
 	}
 
@@ -32,10 +43,13 @@ func GetControlPlaneXdsPort(ctx context.Context, svcClient skkube.ServiceClient)
 			return port.Port, nil
 		}
 	}
-	return 0, NoXdsPortFoundError(kubeutils.GlooXdsPortName, svcNamespace, kubeutils.GlooServiceName)
+	return 0, noXdsPortFoundError(kubeutils.GlooXdsPortName, svcNamespace, kubeutils.GlooServiceName)
 }
 
 // GetControlPlaneXdsHost gets the xDS address from the gloo Service.
 func GetControlPlaneXdsHost() string {
-	return fmt.Sprintf("%s.%s.svc.%s", kubeutils.GlooServiceName, utils.GetPodNamespace(), "cluster.local")
+	return kubeutils.ServiceFQDN(metav1.ObjectMeta{
+		Name:      kubeutils.GlooServiceName,
+		Namespace: utils.GetPodNamespace(),
+	})
 }

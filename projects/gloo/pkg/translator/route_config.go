@@ -91,7 +91,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 		VirtualHosts:                   h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
-	if h.translatorName == utils.GlooGatewayTranslatorValue {
+	if h.translatorName == utils.GatewayApiProxyValue {
 		// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 		// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
 		cfg.IgnorePortInHostMatching = true
@@ -286,7 +286,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 		routeAction := &envoy_config_route_v3.RouteAction{}
-		if h.translatorName == utils.GlooGatewayTranslatorValue {
+		if h.translatorName == utils.GatewayApiProxyValue {
 			// Gateway API spec requires that invalid refs result in a 500 status code
 			// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule - backendRefs field
 			routeAction.ClusterNotFoundResponseCode = envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR
@@ -390,6 +390,21 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			if isWarningErr(err) {
 				continue
 			}
+
+			// Let's check if the incoming v1.Route has metadata to track the 'source' object
+			// that created it. If we do have this metadata, include it with
+			// the route error, so that other components can easily find it
+			if staticMetadata := in.GetMetadataStatic(); staticMetadata != nil {
+				validation.AppendRouteErrorWithMetadata(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					fmt.Sprintf("%T: %v", plugin, err.Error()),
+					out.GetName(),
+					staticMetadata,
+				)
+				continue
+			}
+
+			// Otherwise with no metadata, report the error without any source info
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_ProcessingError,
 				fmt.Sprintf("%T: %v", plugin, err.Error()),
@@ -640,7 +655,7 @@ func (h *httpRouteConfigurationTranslator) setEnvoyPathMatcher(ctx context.Conte
 			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
-		if h.translatorName == utils.GlooGatewayTranslatorValue {
+		if h.translatorName == utils.GatewayApiProxyValue {
 			// Gateway API spec treats each path segment as a full word, i.e. a request with path /abcd should not match
 			// the matcher prefix /abc (but request to /abc/def should match) so we must use PathSeparatedPrefix unless
 			// the matcher path ends in / in which case we need to use Prefix (PathSeparatedPrefix cannot end in /)
@@ -857,7 +872,7 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 
 func validateClusterHeader(header string) error {
 	// check that header name is only ASCII characters
-	for i := 0; i < len(header); i++ {
+	for i := range len(header) {
 		if header[i] > unicode.MaxASCII || header[i] == ':' {
 			return fmt.Errorf("%s is an invalid HTTP header name", header)
 		}

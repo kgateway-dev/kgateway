@@ -15,12 +15,15 @@ spec:
       {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with $gateway.podAnnotations }}
+      {{- with $gateway.extraPodAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
+        {{- with $gateway.extraPodLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with $gateway.imagePullSecrets }}
       imagePullSecrets:
@@ -37,11 +40,15 @@ spec:
         - "--disable-hot-restart"
         - "--service-node"
         - $(POD_NAME).$(POD_NAMESPACE)
-        {{- if .Values.develop }}
+        {{- with $gateway.logLevel }}
         - "--log-level"
-        - "debug"
-        {{- end }}
-        image: "{{ $gateway.image.repository }}:{{ $gateway.image.tag | default .Chart.AppVersion }}"
+        - "{{ . }}"
+        {{- end }}{{/* with $gateway.logLevel */}}
+        {{- with $gateway.componentLogLevel }}
+        - "--component-log-level"
+        - "{{ . }}"
+        {{- end }}{{/* with $gateway.componentLogLevel */}}
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.image }}"
         imagePullPolicy: {{ $gateway.image.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -63,13 +70,15 @@ spec:
           protocol: {{ $p.protocol }}
           containerPort: {{ $p.targetPort }}
         {{- end }}
-        - name: readiness
-          protocol: TCP
-          containerPort: {{ $gateway.readinessPort }}
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: readiness
+        exec:
+          command:
+            - wget
+            - -O
+            - /dev/null
+            - 127.0.0.1:19000/ready
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
 {{- if $gateway.istioSDS.enabled }}
@@ -264,11 +273,21 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "gloo-gateway.gateway.fullname" . }}
+  {{- with $gateway.service.extraAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- with $gateway.service.extraLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  {{- with $gateway.service.clusterIP }}
+  clusterIP: {{ . }}
+  {{- end }}
   ports:
   {{- range $p := $gateway.ports }}
   - name: {{ $p.name }}
@@ -294,10 +313,7 @@ data:
     node:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
-        gateway:
-          # TODO: Should this default live somewhere shared instead of just here?
-          name: {{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
-          namespace: {{ .Release.Namespace }}
+        role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
     static_resources:
       listeners:
       - name: read_config_listener

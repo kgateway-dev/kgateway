@@ -134,6 +134,14 @@ global:
 settings:
   # configure gloo to write generated custom resources to a custom namespace
   writeNamespace: my-custom-namespace
+  watchNamespaces:
+  - default
+  - my-custom-namespace
+gloo:
+  gateway:
+    # For multiple gateways: read Gateway config in all 'watchNamespaces',
+    # not just the namespace that the gateway controller is deployed to
+    readGatewaysFromAllNamespaces: true 
 ```
 
 Then, refer to the file during installation to override default values in the Gloo Edge Helm chart.
