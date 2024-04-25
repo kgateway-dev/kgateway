@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
