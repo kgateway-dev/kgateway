@@ -15,7 +15,7 @@ func (s *ClusterSuite) TestBasicInstallation() {
 
 	var testInstallation *e2e.TestInstallation
 
-	s.T().Run("before", func(t *testing.T) {
+	s.T().Run("setup", func(t *testing.T) {
 		testInstallation = s.testCluster.RegisterTestInstallation(
 			s.T(),
 			&gloogateway.Context{
@@ -23,18 +23,16 @@ func (s *ClusterSuite) TestBasicInstallation() {
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "basic-example.yaml"),
 			},
 		)
-
 		testInstallation.InstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+	})
+
+	s.T().Cleanup(func() {
+		testInstallation.UninstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
+		s.testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	s.T().Run("example feature", func(t *testing.T) {
 		suite.Run(t, example.NewFeatureSuite(s.ctx, testInstallation))
-	})
-
-	s.T().Run("after", func(t *testing.T) {
-		testInstallation.UninstallGlooGateway(s.ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
-
-		s.testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 }
