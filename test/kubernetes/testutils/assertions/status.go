@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -29,6 +30,26 @@ func EventuallyResourceStatusMatchesState(installNamespace string, getter helper
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
 			g.Expect(status.GetStatuses()[installNamespace]).ToNot(gomega.BeNil())
 			g.Expect(*status.GetStatuses()[installNamespace]).To(statusStateMatcher)
+		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+	}
+}
+
+// Checks GetNamespacedStatuses status for gloo installation namespace
+func EventuallyResourceStatusMatchesReasons(installNamespace string, getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) ClusterAssertion {
+	return func(ctx context.Context) {
+		ginkgo.GinkgoHelper()
+
+		statusWarningsMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"Reason":     matchers.ContainSubstrings(desiredStatusReasons),
+			"ReportedBy": gomega.Equal(desiredReporter),
+		})
+
+		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+		gomega.Eventually(func(g gomega.Gomega) {
+			status, err := getResourceNamespacedStatus(getter)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+			g.Expect(status.GetStatuses()[installNamespace]).ToNot(gomega.BeNil())
+			g.Expect(*status.GetStatuses()[installNamespace]).To(statusWarningsMatcher)
 		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 	}
 }

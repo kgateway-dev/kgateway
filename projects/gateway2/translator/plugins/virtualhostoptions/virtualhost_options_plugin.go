@@ -2,6 +2,7 @@ package virtualhostoptions
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rotisserie/eris"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -35,19 +36,34 @@ type plugin struct {
 
 // holds the data structures needed to derive and report a classic GE status
 type legacyStatus struct {
-	// maps proxyName -> proxyStatus
+	// proxyStatus
 	subresourceStatus map[string]*core.Status
-	// *All* of the virtual host errors encountered during processing for gloov1.Routes which receive their
+	// *All* of the virtual host errors encountered during processing for gloov1.VirtualHost which receive their
 	// options for this VirtualHostOption
 	virtualHostErrors []*validation.VirtualHostReport_Error
+	// Warnings to add to the status which can indicate that a VHO was not attached due to conflict with a more-specific VHO
+	warnings []string
 }
 
-// holds status structure for each VirtualHostOption we have processed and attached
-// this is used because a VirtualHostOption is attached to a Route, but a Route may be
-// attached to multiple Gateways/Listeners, so we need a single status object
-// to contain the subresourceStatus for each Proxy it was translated too, but also
-// all the errors specifically encountered
-type legacyStatusCache = map[types.NamespacedName]legacyStatus
+// holds status structure for each VirtualHostOption we have processed and attached.
+// this is used because a VirtualHostOption is attached to a Gateway, but many VirtualHosts may be
+// translated out of a Gateway, so we need a single status object to contain the subresourceStatus
+// for each Proxy it was translated to, but also all the errors specifically encountered
+type legacyStatusCache map[types.NamespacedName]*legacyStatus
+
+func (c *legacyStatusCache) getOrCreateEntry(key types.NamespacedName) *legacyStatus {
+	if cacheEntry, ok := (*c)[key]; ok {
+		return cacheEntry
+	}
+
+	cacheEntry := &legacyStatus{
+		subresourceStatus: map[string]*core.Status{},
+		virtualHostErrors: []*validation.VirtualHostReport_Error{},
+		warnings:          []string{},
+	}
+	(*c)[key] = cacheEntry
+	return cacheEntry
+}
 
 var (
 	ErrUnexpectedListenerType = eris.New("unexpected listener type")
@@ -67,7 +83,7 @@ func NewPlugin(
 		vhOptQueries:      vhoptquery.NewQuery(client),
 		vhOptionClient:    vhOptionClient,
 		statusReporter:    statusReporter,
-		legacyStatusCache: make(map[types.NamespacedName]legacyStatus),
+		legacyStatusCache: make(map[types.NamespacedName]*legacyStatus),
 	}
 }
 
@@ -94,7 +110,22 @@ func (p *plugin) ApplyListenerPlugin(
 		return nil
 	}
 
+	contextutils.LoggerFrom(ctx).Infof("found %d attached options: %s\n", len(attachedOptions), func() string {
+		str := ""
+		for _, attachedOpt := range attachedOptions {
+			str += fmt.Sprintf("%s.%s\n", attachedOpt.GetName(), attachedOpt.GetNamespace())
+		}
+		return str
+	}())
 	if numOpts := len(attachedOptions); numOpts > 1 {
+
+		for _, unusedVhO := range attachedOptions[1:] {
+			nn := client.ObjectKeyFromObject(unusedVhO)
+			cacheEntry := p.legacyStatusCache.getOrCreateEntry(nn)
+			cacheEntry.warnings = append(cacheEntry.warnings, fmt.Sprintf("VirtualHostOption %s not attached to Gateway %s due to conflict with more-specific or older VirtualHostOption %s", nn, listenerCtx.Gateway.Name, client.ObjectKeyFromObject(attachedOptions[0])))
+			p.legacyStatusCache[nn] = cacheEntry
+			contextutils.LoggerFrom(ctx).Infof("added warning to %s", nn)
+		}
 		// TODO: Report conflicts on the [1:] options
 	}
 
@@ -111,15 +142,15 @@ func (p *plugin) ApplyListenerPlugin(
 
 	// track that we used this VirtualHostOption in our status cache
 	// we do this so we can persist status later for all attached VirtualHostOptions
-	p.legacyStatusCache[client.ObjectKeyFromObject(attachedOptions[0])] = legacyStatus{
-		subresourceStatus: map[string]*core.Status{},
-	}
-
-	// TODO track all matching but unused attached vhopts to show conflicted attachment
+	// since we don't have any additional details to append, we just need to make sure the
+	// cache entry exists
+	p.legacyStatusCache.getOrCreateEntry(client.ObjectKeyFromObject(attachedOptions[0]))
 
 	return nil
 }
 
+// Add all statuses for processed VirtualHostOptions. These could come from the VHO itself or
+// or any VH to which it is attached.
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
 	contextutils.LoggerFrom(ctx).Infof("status plugin running over %d proxies with reports", len(statusCtx.ProxiesWithReports))
 	// gather all VirtualHostOptions we need to report status for
@@ -129,16 +160,16 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 
 		// for this specific proxy, get all the virtualHost errors and their associated VirtualHostOption sources
 		virtualHostErrors := extractVirtualHostErrors(proxyWithReport.Reports.ProxyReport)
-		for vhoKey, errs := range virtualHostErrors {
+		for vhKey, errs := range virtualHostErrors {
 			// grab the existing status object for this VirtualHostOption
-			statusForVhO, ok := p.legacyStatusCache[vhoKey]
+			statusForVhO, ok := p.legacyStatusCache[vhKey]
 			if !ok {
 				// we are processing an error that has a VirtualHostOption source that we hadn't encountered until now
 				// this shouldn't happen
-				contextutils.LoggerFrom(ctx).DPanic("while trying to apply status for VirtualHostOptions, we found a VirtualHost error sourced by an unknown VirtualHostOption", "VirtualHostOption", vhoKey)
+				contextutils.LoggerFrom(ctx).DPanic("while trying to apply status for VirtualHostOptions, we found a VirtualHost error sourced by an unknown VirtualHostOption", "VirtualHostOption", vhKey)
 			}
 
-			// set the subresource status for this specific proxy on the RO
+			// set the subresource status for this specific proxy on the VHO
 			thisSubresourceStatus := statusForVhO.subresourceStatus
 			thisSubresourceStatus[xds.SnapshotCacheKey(proxyWithReport.Proxy)] = proxyStatus
 			statusForVhO.subresourceStatus = thisSubresourceStatus
@@ -147,29 +178,34 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 			statusForVhO.virtualHostErrors = append(statusForVhO.virtualHostErrors, errs...)
 
 			// update the cache
-			p.legacyStatusCache[vhoKey] = statusForVhO
+			p.legacyStatusCache[vhKey] = statusForVhO
 		}
 	}
 	contextutils.LoggerFrom(ctx).Infof("status plugin writing reports for %d resources", len(p.legacyStatusCache))
 	virtualHostOptionReport := make(reporter.ResourceReports)
-	for vhKey, status := range p.legacyStatusCache {
+	// Loop through vhostopts we processed and have a status for
+	for vhOptKey, status := range p.legacyStatusCache {
 		// get the obj by namespacedName
-		vhObj, _ := p.vhOptionClient.Read(vhKey.Namespace, vhKey.Name, clients.ReadOpts{Ctx: ctx})
+		vhOptObj, _ := p.vhOptionClient.Read(vhOptKey.Namespace, vhOptKey.Name, clients.ReadOpts{Ctx: ctx})
 
 		// mark this object to be processed
-		virtualHostOptionReport.Accept(vhObj)
+		virtualHostOptionReport.Accept(vhOptObj)
 
 		// add any virtualHost errors for this obj
 		for _, rerr := range status.virtualHostErrors {
-			virtualHostOptionReport.AddError(vhObj, eris.New(rerr.GetReason()))
+			virtualHostOptionReport.AddError(vhOptObj, eris.New(rerr.GetReason()))
 		}
 
+		virtualHostOptionReport.AddWarnings(vhOptObj, status.warnings...)
+
 		// actually write out the reports!
-		contextutils.LoggerFrom(ctx).Infof("writing report for %s: %v", vhKey, status.subresourceStatus)
+		contextutils.LoggerFrom(ctx).Infof("writing report for %s: %v", vhOptKey, status)
+		contextutils.LoggerFrom(ctx).Infof("report contents: %v", virtualHostOptionReport)
 		err := p.statusReporter.WriteReports(ctx, virtualHostOptionReport, status.subresourceStatus)
 		if err != nil {
-			return eris.Errorf("error writing status report from VirtualHostOptionPlugin: %w", err)
+			return eris.Wrap(err, "writing status report from VirtualHostOptionPlugin")
 		}
+
 	}
 	return nil
 
@@ -180,14 +216,12 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 func extractVirtualHostErrors(proxyReport *validation.ProxyReport) map[types.NamespacedName][]*validation.VirtualHostReport_Error {
 	virtualHostErrors := make(map[types.NamespacedName][]*validation.VirtualHostReport_Error)
 	virtualHostReports := getAllVirtualHostReports(proxyReport.GetListenerReports())
-	for _, rr := range virtualHostReports {
-		for _, rerr := range rr.GetErrors() {
+	for _, vhr := range virtualHostReports {
+		for _, vherr := range vhr.GetErrors() {
 			// if we've found a VirtualHostReport with an Error, let's check if it has a sourced VirtualHostOption
 			// if so, we will add that error to the list of errors associated to that VirtualHostOption
-			if roKey, ok := extractVirtualHostOptionSourceKeys(rerr); ok {
-				errors := virtualHostErrors[roKey]
-				errors = append(errors, rerr)
-				virtualHostErrors[roKey] = errors
+			if vhKey, ok := extractVirtualHostOptionSourceKeys(vherr); ok {
+				virtualHostErrors[vhKey] = append(virtualHostErrors[vhKey], vherr)
 			}
 		}
 	}

@@ -78,6 +78,14 @@ var _ = Describe("Deployer Test", Ordered, func() {
 			testInstallation.RunTest(ctx, virtualhost_options.ConfigureVirtualHostOptionsWithTargetRef)
 		})
 
+		It("Uses most-specific or oldest targetRef VirtualHostOption", func() {
+			testInstallation.RunTest(ctx, virtualhost_options.ConfigureMultipleVirtualHostOptionsWithTargetRef)
+		})
+
+		It("Uses most-specific targetRef VirtualHostOption with Section Name", func() {
+			testInstallation.RunTest(ctx, virtualhost_options.ConfigureVirtualHostOptionsWithTargetRefWithSectionName)
+		})
+
 	})
 
 })
