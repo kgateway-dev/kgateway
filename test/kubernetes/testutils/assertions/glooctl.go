@@ -26,7 +26,7 @@ func (p *Provider) CheckResources() ClusterAssertion {
 func (p *Provider) EventuallyCheckResourcesOk(ctx context.Context) {
 	p.expectGlooGatewayContextDefined()
 
-	p.Eventually(func(innerG Gomega) {
+	p.Gomega.Eventually(func(innerG Gomega) {
 		contextWithCancel, cancel := context.WithCancel(ctx)
 		defer cancel()
 		opts := &options.Options{

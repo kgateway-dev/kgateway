@@ -37,7 +37,7 @@ func (p *Provider) EnvoyAdminApiAssertion(
 
 		// the port-forward returns before it completely starts up (https://github.com/solo-io/gloo/issues/9353),
 		// so as a workaround we try to keep dialing the address until it succeeds
-		Eventually(func(g Gomega) {
+		p.Gomega.Eventually(func(g Gomega) {
 			_, err = net.Dial("tcp", portForwarder.Address())
 			g.Expect(err).NotTo(HaveOccurred())
 		}).

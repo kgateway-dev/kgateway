@@ -30,7 +30,7 @@ func (p *Provider) EphemeralCurlEventuallyResponds(curlPod client.Object, curlOp
 		// for some useful-ish output
 		tick := time.Tick(pollingInterval)
 
-		Eventually(func(g Gomega) {
+		p.Gomega.Eventually(func(g Gomega) {
 			res := p.clusterContext.Cli.CurlFromEphemeralPod(ctx, client.ObjectKeyFromObject(curlPod), curlOptions...)
 			select {
 			default:
