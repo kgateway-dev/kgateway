@@ -33,8 +33,20 @@ gateway:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-  istioSDS:
-    enabled: false
+  sds:
+    image:
+      registry: quay.io/solo-io
+      repository: sds
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: ""
+    istio:
+      enabled: false
+      image:
+        registry: docker.io/istio
+        repository: proxyv2
+        pullPolicy: IfNotPresent
+        tag: "1.18.2"
   securityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true

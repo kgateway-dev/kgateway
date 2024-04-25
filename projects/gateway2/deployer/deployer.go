@@ -192,9 +192,6 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
 			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
-			IstioSDS: &helmIstioSds{
-				Enabled: &d.inputs.IstioValues.SDSEnabled,
-			},
 		},
 	}
 
@@ -216,6 +213,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
+	sds := kubeProxyConfig.GetSds()
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
@@ -240,13 +238,16 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-
 	vals.Gateway.LogLevel = &logLevel
 	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
 	if err != nil {
 		return nil, err
 	}
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
+
+	// sds values
+	vals.Gateway.Sds = getSdsValues(sds)
+
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())

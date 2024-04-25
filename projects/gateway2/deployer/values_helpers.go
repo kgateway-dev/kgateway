@@ -7,6 +7,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
@@ -94,6 +95,47 @@ func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 	}
 }
 
+// Convert sds values from GatewayParameters into helm values to be used by the deployer.
+func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
+	// if sdsConfig is nil, sds is disabled
+	if sdsConfig == nil {
+		return nil
+	}
+
+	// convert the service type enum to its string representation;
+	// if type is not set, it will default to 0 ("ClusterIP")
+	return &helmSds{
+		Image:           getImage(sdsConfig.GetSdsContainer().GetImage()),
+		LogLevel:        ptrTo(sdsConfig.GetSdsContainer().GetLogLevel()),
+		Resources:       sdsConfig.GetSdsContainer().GetResources(),
+		SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
+
+		Istio: getIstioValues(sdsConfig.GetIstioIntegration()),
+	}
+}
+
+// Convert istio values from GatewayParameters into helm values to be used by the deployer.
+func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
+	return &helmIstioSds{
+		Enabled:         ptrTo(istioConfig.GetEnabled()),
+		Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
+		LogLevel:        ptrTo(istioConfig.GetIstioContainer().GetLogLevel()),
+		Resources:       istioConfig.GetIstioContainer().GetResources(),
+		SecurityContext: istioConfig.GetIstioContainer().GetSecurityContext(),
+	}
+}
+
+// Convert an image from GatewayParameters into a helm image to be used by the deployer.
+func getImage(image *v1alpha1kube.Image) *helmImage {
+	return &helmImage{
+		Registry:   &image.Registry,
+		Repository: &image.Repository,
+		Tag:        &image.Tag,
+		Digest:     &image.Digest,
+		PullPolicy: ptrTo(image.PullPolicy.String()),
+	}
+}
+
 // Get the default image values for the envoy container in the proxy deployment.
 // Typically this is a gloo envoy wrapper image.
 func getDefaultEnvoyImageValues(image extensions.Image) *helmImage {
@@ -163,4 +205,8 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ","), nil
+}
+
+func ptrTo[T any](a T) *T {
+	return &a
 }
