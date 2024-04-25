@@ -2,8 +2,9 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"os"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
