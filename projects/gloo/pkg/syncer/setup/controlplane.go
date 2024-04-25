@@ -2,7 +2,8 @@ package setup
 
 import (
 	"context"
-	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -47,5 +48,8 @@ func GetControlPlaneXdsPort(ctx context.Context, svcClient skkube.ServiceClient)
 
 // GetControlPlaneXdsHost gets the xDS address from the gloo Service.
 func GetControlPlaneXdsHost() string {
-	return fmt.Sprintf("%s.%s.svc.%s", kubeutils.GlooServiceName, utils.GetPodNamespace(), "cluster.local")
+	return kubeutils.ServiceFQDN(metav1.ObjectMeta{
+		Name:      kubeutils.GlooServiceName,
+		Namespace: utils.GetPodNamespace(),
+	})
 }

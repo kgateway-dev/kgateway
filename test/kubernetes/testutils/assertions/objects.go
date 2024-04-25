@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
@@ -13,7 +15,7 @@ import (
 
 func (p *Provider) ObjectsExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		for _, o := range objects {
 			Eventually(ctx, func(g Gomega) {
@@ -30,7 +32,7 @@ func (p *Provider) ObjectsExist(objects ...client.Object) ClusterAssertion {
 
 func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		for _, o := range objects {
 			Eventually(ctx, func(g Gomega) {
@@ -47,7 +49,7 @@ func (p *Provider) ObjectsNotExist(objects ...client.Object) ClusterAssertion {
 
 func (p *Provider) NamespaceNotExist(ns string) ClusterAssertion {
 	return func(ctx context.Context) {
-		p.testingFramework.Helper()
+		ginkgo.GinkgoHelper()
 
 		_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue(), "namespace should not be found in cluster")

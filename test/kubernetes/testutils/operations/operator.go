@@ -144,5 +144,10 @@ func (o *Operator) executeOperation(ctx context.Context, operation Operation) er
 }
 
 func (o *Operator) writeProgress(operation Operation, progress string) {
-	_, _ = o.progressWriter.Write([]byte(fmt.Sprintf("OPERATOR: %s (%s)\n", progress, operation)))
+	o.Logf("%s (%s)", progress, operation)
+}
+
+func (o *Operator) Logf(messageFmt string, args ...any) {
+	message := fmt.Sprintf(messageFmt, args...)
+	_, _ = o.progressWriter.Write([]byte(fmt.Sprintf("OPERATOR: %s \n", message)))
 }

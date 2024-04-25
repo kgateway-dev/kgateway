@@ -69,7 +69,7 @@ var ConfigureProxiesFromGatewayParameters = e2e.Test{
 					installation.Assertions.EnvoyAdminApiAssertion(
 						proxyDeployment.ObjectMeta,
 						func(ctx context.Context, adminClient *admincli.Client) {
-							if installation.RuntimeContext.RunSource != runtime.LocalDevelopment {
+							if installation.TestCluster.RuntimeContext.RunSource != runtime.LocalDevelopment {
 								// There are failures when running this command in CI
 								// Those are currently being investigated
 								return

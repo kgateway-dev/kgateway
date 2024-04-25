@@ -9,9 +9,13 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+<<<<<<< HEAD
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+=======
+>>>>>>> main
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 )
@@ -54,6 +58,7 @@ func K8sGatewayControllerStartFunc(
 	k8sGatewayExtensions extensions.K8sGatewayExtensions,
 	inputChannels *proxy_syncer.GatewayInputChannels,
 	mgr manager.Manager,
+	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
@@ -71,6 +76,7 @@ func K8sGatewayControllerStartFunc(
 			InputChannels:             inputChannels,
 
 			ProxyClient: proxyClient,
+			QueueStatusForProxies:     queueStatusForProxies,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

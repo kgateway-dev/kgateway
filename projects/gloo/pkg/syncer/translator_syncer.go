@@ -5,22 +5,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	"github.com/hashicorp/go-multierror"
-	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
+
+type OnProxiesTranslatedFn func(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports)
 
 type translatorSyncer struct {
 	translator translator.Translator
@@ -39,6 +42,9 @@ type translatorSyncer struct {
 	latestSnap *v1snap.ApiSnapshot
 
 	statusSyncer *statusSyncer
+
+	// callback after proxy translation
+	onProxyTranslated OnProxiesTranslatedFn
 }
 
 type statusSyncer struct {
@@ -67,6 +73,7 @@ func NewTranslatorSyncer(
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
 	identity leaderelector.Identity,
+	onProxyTranslated OnProxiesTranslatedFn,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
@@ -86,6 +93,7 @@ func NewTranslatorSyncer(
 			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
 			reportsLock:         sync.RWMutex{},
 		},
+		onProxyTranslated: onProxyTranslated,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
