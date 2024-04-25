@@ -34,18 +34,18 @@ func TestComplexInstallation(t *testing.T) {
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
 		if t.Failed() {
-			testInstallation.PreFailHandler()
+			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
+		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	t.Run("install gateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperUninstall)
 	})
 
 	t.Run("example feature", func(t *testing.T) {
-		suite.Run(t, example.NewFeatureSuite(ctx, testInstallation))
+		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})
 }

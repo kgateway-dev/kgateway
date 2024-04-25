@@ -176,7 +176,7 @@ analyze:
 
 
 #----------------------------------------------------------------------------------
-# Tests
+# Ginkgo Tests
 #----------------------------------------------------------------------------------
 
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
@@ -254,6 +254,24 @@ run-hashicorp-e2e-tests: test
 .PHONY: run-kube-e2e-tests
 run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 run-kube-e2e-tests: test
+
+
+#----------------------------------------------------------------------------------
+# Go Tests
+#----------------------------------------------------------------------------------
+GO_TEST_ENV ?=
+GO_TEST_FLAGS ?= -v
+
+# This is a way for a user executing `make go-test` to be able to provide flags which we do not include by default
+# For example, you may want to run tests multiple times, or with various timeouts
+GO_TEST_USER_FLAGS ?=
+
+
+.PHONY: go-test
+test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
+	$(GO_TEST_FLAGS) $(GO_TEST_USER_FLAGS) \
+	$(TEST_PKG)
 
 #----------------------------------------------------------------------------------
 # Clean

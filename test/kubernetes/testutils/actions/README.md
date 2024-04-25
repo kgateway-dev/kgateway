@@ -1,7 +1,5 @@
 # Actions
 
-A [ClusterAction](./action.go) is a function that will be executed against the cluster to mutate its state.
-
 Actions are intended to mirror actions that users of the product can take. We group these actions in a package associated with the tools that users would rely on (`glooctl`, `kubectl`..etc).
 
 If you intend to introduce a new action, please follow this approach:

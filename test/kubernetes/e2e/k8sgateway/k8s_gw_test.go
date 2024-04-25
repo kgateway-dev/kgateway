@@ -2,10 +2,12 @@ package k8sgateway_test
 
 import (
 	"context"
-	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/suite"
 	"path/filepath"
 	"testing"
+
+	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/stretchr/testify/suite"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -32,20 +34,22 @@ func TestK8sGateway(t *testing.T) {
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
 		if t.Failed() {
-			testInstallation.PreFailHandler()
+			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
+		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	t.Run("install gateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperUninstall)
 	})
 
 	t.Run("deployer", func(t *testing.T) {
-		suite.Run(t, deployer.NewFeatureSuite(ctx, testInstallation))
+		suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
 	})
 
-	// todo: run RouteOptions
+	t.Run("route options", func(t *testing.T) {
+		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
+	})
 }

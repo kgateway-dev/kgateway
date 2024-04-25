@@ -5,16 +5,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
 func NewTestCluster() *TestCluster {
@@ -56,13 +54,8 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		// ResourceClients are only available _after_ installing Gloo Gateway
 		ResourceClients: nil,
 
-		// Create an operator which is responsible for executing operations against the cluster
-		Operator: operations.NewOperator().
-			WithProgressWriter(ginkgo.GinkgoWriter).
-			WithAssertionInterceptor(gomega.InterceptGomegaFailure),
-
 		// Create an operations provider, and point it to the running installation
-		Actions: provider.NewActionsProvider().
+		Actions: actions.NewActionsProvider(t).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
@@ -94,12 +87,8 @@ type TestInstallation struct {
 	// ResourceClients is a set of clients that can manipulate resources owned by Gloo Gateway
 	ResourceClients gloogateway.ResourceClients
 
-	// Operator is responsible for executing operations against an installation of Gloo Gateway
-	// This is meant to simulate the behaviors that a person could execute
-	Operator *operations.Operator
-
 	// Actions is the entity that creates actions that can be executed by the Operator
-	Actions *provider.ActionsProvider
+	Actions *actions.Provider
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
 	Assertions *assertions.Provider
@@ -127,31 +116,7 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler() {
-	exportReportOp := &operations.BasicOperation{
-		OpName:   "glooctl-export-report",
-		OpAction: i.Actions.Glooctl().ExportReport(),
-		OpAssertion: func(ctx context.Context) {
-			// This action is performed on test failure, and is not modifying the cluster
-			// As a result, there is no assertion that we perform
-		},
-	}
-	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
-	if err != nil {
-		i.Operator.Logf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i, err)
-	}
-}
-
-// TestExecutor is a function that executes a test, for a given TestInstallation
-type TestExecutor func(ctx context.Context, suite *TestInstallation)
-
-// Test represents a single end-to-end behavior that is validated against a running installation of Gloo Gateway.
-// Tests are grouped by the feature they validate, and are defined in the test/kubernetes/e2e/features directory
-type Test struct {
-	// Name is a required value that uniquely identifies a test
-	Name string
-	// Description is an optional value that is used to provide context to developers about a test's purpose
-	Description string
-	// Test is the actual function that executes the test
-	Test TestExecutor
+func (i *TestInstallation) PreFailHandler(ctx context.Context) {
+	err := i.Actions.Glooctl().ExportReport(ctx)
+	i.Assertions.NoError(err, "can export report")
 }

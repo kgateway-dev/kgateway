@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// FeatureSuite is the entire Suite of tests for the "example" feature
-type FeatureSuite struct {
+// testingSuite is the entire Suite of tests for the "example" feature
+type testingSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -19,26 +19,26 @@ type FeatureSuite struct {
 	testInstallation *e2e.TestInstallation
 }
 
-func NewFeatureSuite(ctx context.Context, testInst *e2e.TestInstallation) *FeatureSuite {
-	return &FeatureSuite{
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *FeatureSuite) SetupSuite() {
+func (s *testingSuite) SetupSuite() {
 }
 
-func (s *FeatureSuite) TearDownSuite() {
+func (s *testingSuite) TearDownSuite() {
 }
 
-func (s *FeatureSuite) BeforeTest(suiteName, testName string) {
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) AfterTest(suiteName, testName string) {
+func (s *testingSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) TestExampleAssertion() {
+func (s *testingSuite) TestExampleAssertion() {
 	// Testify assertion
 	s.Assert().NotEqual(1, 2, "1 does not equal 2")
 
