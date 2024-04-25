@@ -89,7 +89,7 @@ func (t *translatorInstance) Translate(
 	// re-initialize plugins on each loop, this is done for 2 reasons:
 	//  1. Each translation run relies on its own context. If a plugin spawns a go-routine
 	//		we need to be able to cancel that go-routine on the next translation
-	//	2. Plugins are long lived and will live for the lifetime of the process. This means
+	//	2. Plugins are long-lived and will live for the lifetime of the process. This means
 	//     that they must be re-initialized on each translation loop to ensure that they are
 	//     reset.
 	for _, p := range t.pluginRegistry.GetPlugins() {
