@@ -115,7 +115,6 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler(ctx context.Context) {
-	err := i.Actions.Glooctl().ExportReport(ctx)
-	i.Assertions.Require.NoError(err)
+func (i *TestInstallation) PreFailHandler(_ context.Context) {
+	// Do nothing for now, we need to impelement `glooctl export report`
 }

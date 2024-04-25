@@ -271,6 +271,7 @@ go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is s
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
 	./$(TEST_PKG)
+
 #----------------------------------------------------------------------------------
 # Clean
 #----------------------------------------------------------------------------------

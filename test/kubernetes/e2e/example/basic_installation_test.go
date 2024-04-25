@@ -36,12 +36,12 @@ func TestBasicInstallation(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperUninstall)
+		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.TestHelperUninstall)
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.TestHelperInstall)
 	})
 
 	// The name here is important for debuggability
