@@ -16,14 +16,12 @@ import (
 // Provider is the entity that provides methods which assert behaviors of a Kubernetes Cluster
 // These assertions occur against a running instance of Gloo Gateway, within a Kubernetes Cluster.
 type Provider struct {
-	// We extend any assertions that are provided by testify/assert
-	*assert.Assertions
-
+	Assert  *assert.Assertions
 	Require *require.Assertions
 
 	// Gomega is well-used around the codebase, so we also add support here
 	// NOTE TO DEVELOPERS: We recommend relying on testify assertions where possible
-	gomega.Gomega
+	Gomega gomega.Gomega
 
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
@@ -33,9 +31,9 @@ type Provider struct {
 // installation of Gloo Gateway
 func NewProvider(t *testing.T) *Provider {
 	return &Provider{
-		Assertions: assert.New(t),
-		Require:    require.New(t),
-		Gomega:     gomega.NewWithT(t),
+		Assert:  assert.New(t),
+		Require: require.New(t),
+		Gomega:  gomega.NewWithT(t),
 
 		clusterContext:     nil,
 		glooGatewayContext: nil,

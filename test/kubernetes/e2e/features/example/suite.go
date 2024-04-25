@@ -44,8 +44,8 @@ func (s *testingSuite) TestExampleAssertion() {
 	s.Assert().NotEqual(1, 2, "1 does not equal 2")
 
 	// Testify assertion, using the TestInstallation to provide it
-	s.testInstallation.Assertions.NotEqual(1, 2, "1 does not equal 2")
+	s.testInstallation.Assertions.Require.NotEqual(1, 2, "1 does not equal 2")
 
 	// Gomega assertion, using the TestInstallation to provide it
-	s.testInstallation.Assertions.Expect(1).NotTo(Equal(2), "1 does not equal 2")
+	s.testInstallation.Assertions.Gomega.Expect(1).NotTo(Equal(2), "1 does not equal 2")
 }
