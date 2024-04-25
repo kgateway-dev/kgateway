@@ -266,9 +266,8 @@ GO_TEST_FLAGS ?= -v
 # For example, you may want to run tests multiple times, or with various timeouts
 GO_TEST_USER_FLAGS ?=
 
-
 .PHONY: go-test
-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_FLAGS) $(GO_TEST_USER_FLAGS) \
 	$(TEST_PKG)

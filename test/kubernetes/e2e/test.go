@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 
-	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
@@ -100,7 +99,7 @@ func (i *TestInstallation) String() string {
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
 	err := installFn(ctx)
-	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
+	i.Assertions.Require.NoError(err)
 
 	i.Assertions.EventuallyInstallationSucceeded(ctx)
 
@@ -110,7 +109,7 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
 	err := uninstallFn(ctx)
-	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
+	i.Assertions.Require.NoError(err)
 
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }
@@ -118,5 +117,5 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	err := i.Actions.Glooctl().ExportReport(ctx)
-	i.Assertions.NoError(err, "can export report")
+	i.Assertions.Require.NoError(err)
 }
