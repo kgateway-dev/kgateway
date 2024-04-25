@@ -260,16 +260,16 @@ run-kube-e2e-tests: test
 # Go Tests
 #----------------------------------------------------------------------------------
 GO_TEST_ENV ?=
-GO_TEST_FLAGS ?=
+GO_TEST_ARGS ?=
 
-# This is a way for a user executing `make go-test` to be able to provide flags which we do not include by default
+# This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
-GO_TEST_USER_FLAGS ?=
+GO_TEST_USER_ARGS ?=
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
-	$(GO_TEST_FLAGS) $(GO_TEST_USER_FLAGS) \
+	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
 	./$(TEST_PKG)
 #----------------------------------------------------------------------------------
 # Clean
