@@ -73,26 +73,31 @@ func (s *FeatureSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, Equal(1))
 	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
-	s.testInstallation.Assertions.EnvoyAdminApiAssertion(
+	s.testInstallation.Assertions.AssertEnvoyAdminApi(
+		s.ctx,
 		proxyDeployment.ObjectMeta,
-		func(ctx context.Context, adminClient *admincli.Client) {
-			if s.testInstallation.TestCluster.RuntimeContext.RunSource != runtime.LocalDevelopment {
-				// There are failures when running this command in CI
-				// Those are currently being investigated
-				return
-			}
-			s.testInstallation.Assertions.Gomega.Eventually(func(g Gomega) {
-				serverInfo, err := adminClient.GetServerInfo(ctx)
-				g.Expect(err).NotTo(HaveOccurred(), "can get server info")
-				g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(
-					Equal("debug"), "defined on the GatewayParameters CR")
-				g.Expect(serverInfo.GetCommandLineOptions().GetComponentLogLevel()).To(
-					Equal("connection:trace,upstream:debug"), "defined on the GatewayParameters CR")
-			}).
-				WithContext(ctx).
-				WithTimeout(time.Second * 10).
-				WithPolling(time.Millisecond * 200).
-				Should(Succeed())
-		},
-	)(s.ctx)
+		serverInfoLogLevelAssertion(s.testInstallation),
+	)
+}
+
+func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+	return func(ctx context.Context, adminClient *admincli.Client) {
+		if testInstallation.TestCluster.RuntimeContext.RunSource != runtime.LocalDevelopment {
+			// There are failures when running this command in CI
+			// Those are currently being investigated
+			return
+		}
+		testInstallation.Assertions.Gomega.Eventually(func(g Gomega) {
+			serverInfo, err := adminClient.GetServerInfo(ctx)
+			g.Expect(err).NotTo(HaveOccurred(), "can get server info")
+			g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(
+				Equal("debug"), "defined on the GatewayParameters CR")
+			g.Expect(serverInfo.GetCommandLineOptions().GetComponentLogLevel()).To(
+				Equal("connection:trace,upstream:debug"), "defined on the GatewayParameters CR")
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second * 10).
+			WithPolling(time.Millisecond * 200).
+			Should(Succeed())
+	}
 }
