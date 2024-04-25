@@ -270,8 +270,7 @@ GO_TEST_USER_FLAGS ?=
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_FLAGS) $(GO_TEST_USER_FLAGS) \
-	$(TEST_PKG)
-
+	./$(TEST_PKG)
 #----------------------------------------------------------------------------------
 # Clean
 #----------------------------------------------------------------------------------

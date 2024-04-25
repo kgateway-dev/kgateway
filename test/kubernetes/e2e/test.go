@@ -54,7 +54,7 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		ResourceClients: nil,
 
 		// Create an operations provider, and point it to the running installation
-		Actions: actions.NewActionsProvider(t).
+		Actions: actions.NewActionsProvider().
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 

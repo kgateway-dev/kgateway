@@ -2,13 +2,13 @@ package assertions
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 
-	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
@@ -29,21 +29,13 @@ func (p *Provider) EventuallyEphemeralCurlEventuallyResponds(
 
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
-	// for some useful-ish output
-	tick := time.Tick(pollingInterval)
-
 	p.Gomega.Eventually(func(g Gomega) {
 		res := p.clusterContext.Cli.CurlFromEphemeralPod(ctx, client.ObjectKeyFromObject(curlPod), curlOptions...)
-		select {
-		default:
-			break
-		case <-tick:
-			ginkgo.GinkgoWriter.Printf("want %v\nhave: %s", expectedResponse, res)
-		}
+		fmt.Printf("want %v\nhave: %s", expectedResponse, res)
 
 		expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(res).To(expectedResponseMatcher)
-		ginkgo.GinkgoWriter.Printf("success: %v", res)
+		fmt.Printf("success: %v", res)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).

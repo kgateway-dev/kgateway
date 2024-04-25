@@ -20,7 +20,7 @@ func TestBasicInstallation(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster(t)
+	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{

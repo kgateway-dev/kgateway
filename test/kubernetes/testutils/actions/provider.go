@@ -1,8 +1,6 @@
 package actions
 
 import (
-	"testing"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -18,10 +16,10 @@ type Provider struct {
 }
 
 // NewActionsProvider returns an Provider
-func NewActionsProvider(t *testing.T) *Provider {
+func NewActionsProvider() *Provider {
 	return &Provider{
 		kubeCli: nil,
-		glooctl: NewGlooctl(t),
+		glooctl: NewGlooctl(),
 	}
 }
 

@@ -2,7 +2,6 @@ package actions
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/helmutils"
@@ -10,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/stretchr/testify/require"
 )
 
 // Glooctl defines the standard operations that can be executed via glooctl
@@ -28,15 +26,12 @@ type Glooctl interface {
 
 // providerImpl is the implementation of the Provider for Gloo Gateway Open Source
 type providerImpl struct {
-	require *require.Assertions
-
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
 }
 
-func NewGlooctl(t *testing.T) Glooctl {
+func NewGlooctl() Glooctl {
 	return &providerImpl{
-		require:            require.New(t),
 		clusterContext:     nil,
 		glooGatewayContext: nil,
 	}
@@ -58,7 +53,9 @@ func (p *providerImpl) WithGlooGatewayContext(ggCtx *gloogateway.Context) Glooct
 // if the provider has been configured to point to a Gloo Gateway installation
 // There are certain actions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
 func (p *providerImpl) requiresGlooGatewayContext() {
-	p.require.NotNil(p.glooGatewayContext, "Provider attempted to create an action that requires a Gloo Gateway installation, but none was configured")
+	if p.glooGatewayContext == nil {
+		panic("Provider attempted to create an action that requires a Gloo Gateway installation, but none was configured")
+	}
 }
 
 func (p *providerImpl) TestHelperInstall(ctx context.Context) error {
