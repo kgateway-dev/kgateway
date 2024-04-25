@@ -1,0 +1,9 @@
+gloo:
+  logLevel: info
+  disableLeaderElection: true
+  deployment:
+    replicas: 1
+    livenessProbeEnabled: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
