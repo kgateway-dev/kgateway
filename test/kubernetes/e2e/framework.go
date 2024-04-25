@@ -17,6 +17,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
+func NewTestCluster() *TestCluster {
+	runtimeContext := runtime.NewContext()
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
+
+	return &TestCluster{
+		RuntimeContext: runtimeContext,
+		ClusterContext: clusterContext,
+	}
+}
+
 // TestCluster is the structure around a set of tests that run against a Kubernetes Cluster
 // Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
 type TestCluster struct {
@@ -38,7 +48,7 @@ type TestCluster struct {
 // the running installation of Gloo Gateway and the Kubernetes Cluster
 func (c *TestCluster) PreFailHandler() {
 	for _, i := range c.activeInstallations {
-		i.preFailHandler()
+		i.PreFailHandler()
 	}
 }
 
@@ -137,8 +147,8 @@ func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
 	test.Test(ctx, i)
 }
 
-// preFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) preFailHandler() {
+// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) PreFailHandler() {
 	exportReportOp := &operations.BasicOperation{
 		OpName:   "glooctl-export-report",
 		OpAction: i.Actions.Glooctl().ExportReport(),

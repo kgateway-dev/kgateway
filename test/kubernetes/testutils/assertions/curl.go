@@ -61,7 +61,7 @@ func (p *Provider) CurlFnEventuallyResponds(curlFn func() string, expectedRespon
 		// for some useful-ish output
 		tick := time.Tick(pollingInterval)
 
-		Eventually(func(g Gomega) {
+		p.Gomega.Eventually(func(g Gomega) {
 			res := curlFn()
 			select {
 			default:

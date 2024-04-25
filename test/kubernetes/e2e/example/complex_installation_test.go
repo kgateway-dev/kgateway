@@ -16,14 +16,13 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
+// TestComplexInstallation is the function which executes a series of tests against a given installation
 func TestComplexInstallation(t *testing.T) {
 	RegisterFailHandler(Fail)
-	var testInstallation *e2e.TestInstallation
 
+	ctx := context.Background()
 	testCluster := e2e.NewTestCluster()
-	ctx := context.TODO()
-
-	testInstallation = testCluster.RegisterTestInstallation(
+	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "complex-example",
@@ -31,13 +30,19 @@ func TestComplexInstallation(t *testing.T) {
 		},
 	)
 
-	t.Run("install gateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
-	})
-
+	// We register the cleanup function _before_ we actually perform the installation.
+	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
+		if t.Failed() {
+			testInstallation.PreFailHandler()
+		}
+
 		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 		testCluster.UnregisterTestInstallation(testInstallation)
+	})
+
+	t.Run("install gateway", func(t *testing.T) {
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	t.Run("example feature", func(t *testing.T) {
