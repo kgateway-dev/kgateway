@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
@@ -26,23 +25,21 @@ var _ = Describe("Deployer Test", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		var err error
 		ctx = context.Background()
 
 		testInstallation = testCluster.RegisterTestInstallation(
+			test,
 			&gloogateway.Context{
 				InstallNamespace:   "k8s-gw-deployer-test",
 				ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			},
 		)
 
-		err = testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperInstallAction())
 	})
 
 	AfterAll(func() {
-		err := testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
-		Expect(err).NotTo(HaveOccurred())
+		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().NewTestHelperUninstallAction())
 
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
