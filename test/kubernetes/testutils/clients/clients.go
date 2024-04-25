@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
@@ -19,8 +18,6 @@ import (
 
 // MustClientset returns the Kubernetes Clientset, or panics
 func MustClientset() *kubernetes.Clientset {
-	ginkgo.GinkgoHelper()
-
 	restConfig, err := kubeutils.GetRestConfigWithKubeContext("")
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -31,8 +28,6 @@ func MustClientset() *kubernetes.Clientset {
 }
 
 func MustClientScheme() *runtime.Scheme {
-	ginkgo.GinkgoHelper()
-
 	clientScheme := runtime.NewScheme()
 
 	// K8s API resources

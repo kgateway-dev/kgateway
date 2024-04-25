@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
@@ -25,6 +27,8 @@ func MustKindContext(clusterName string) *Context {
 		panic(err)
 	}
 
+	// This line prevents controller-runtime from complaining about log.SetLogger never being called
+	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	clt, err := client.New(restCfg, client.Options{
 		Scheme: kubetestclients.MustClientScheme(),
 	})
