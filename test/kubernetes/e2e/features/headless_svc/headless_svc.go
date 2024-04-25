@@ -78,67 +78,70 @@ var ConfigureRoutingHeadlessSvc = func(useK8sApi bool) e2e.Test {
 				},
 			}
 
-			var routingResourceOp operations.ReversibleOperation
-			if useK8sApi {
-				routingResourceOp = operations.ReversibleOperation{
-					Do: &operations.BasicOperation{
-						OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(k8sApiRoutingManifest)),
-						OpAction: installation.Actions.Kubectl().NewApplyManifestAction(k8sApiRoutingManifest),
-						OpAssertions: []assertions.ClusterAssertion{
-							// First check resources are created for Gateway
-							installation.Assertions.ObjectsExist(k8sApiproxyService, k8sApiProxyDeployment),
+			k8sRoutingResourceOp := operations.ReversibleOperation{
+				Do: &operations.BasicOperation{
+					OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(k8sApiRoutingManifest)),
+					OpAction: installation.Actions.Kubectl().NewApplyManifestAction(k8sApiRoutingManifest),
+					OpAssertions: []assertions.ClusterAssertion{
+						// First check resources are created for Gateway
+						installation.Assertions.ObjectsExist(k8sApiproxyService, k8sApiProxyDeployment),
 
-							// Check headless svc can be reached
-							installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
-								curl.WithHost(kubeutils.ServiceFQDN(k8sApiProxyDeployment.ObjectMeta)),
-								// The host headermust match the domain in the HTTPRoute
-								curl.WithHostHeader("headless.example.com"),
-								curl.WithPort(80),
-							}, expectedHealthyResponse),
-						},
+						// Check headless svc can be reached
+						installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(k8sApiProxyDeployment.ObjectMeta)),
+							// The host headermust match the domain in the HTTPRoute
+							curl.WithHostHeader("headless.example.com"),
+							curl.WithPort(80),
+						}, expectedHealthyResponse),
 					},
-					Undo: &operations.BasicOperation{
-						OpName:   fmt.Sprintf("delete-manifest-%s", filepath.Base(k8sApiRoutingManifest)),
-						OpAction: installation.Actions.Kubectl().NewDeleteManifestAction(k8sApiRoutingManifest),
-						OpAssertion: func(ctx context.Context) {
-							// Check resources are deleted for Gateway
-							installation.Assertions.ObjectsNotExist(k8sApiproxyService, k8sApiProxyDeployment)
-						},
+				},
+				Undo: &operations.BasicOperation{
+					OpName:   fmt.Sprintf("delete-manifest-%s", filepath.Base(k8sApiRoutingManifest)),
+					OpAction: installation.Actions.Kubectl().NewDeleteManifestAction(k8sApiRoutingManifest),
+					OpAssertion: func(ctx context.Context) {
+						// Check resources are deleted for Gateway
+						installation.Assertions.ObjectsNotExist(k8sApiproxyService, k8sApiProxyDeployment)
 					},
-				}
-			} else {
-				routingResourceOp = operations.ReversibleOperation{
-					Do: &operations.BasicOperation{
-						OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(classicApiRoutingManifest)),
-						OpAction: installation.Actions.Kubectl().NewApplyManifestAction(classicApiRoutingManifest),
-						OpAssertions: []assertions.ClusterAssertion{
-							// Check headless svc can be reached
-							installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
-								curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: installation.Metadata.InstallNamespace})),
-								// The host headermust match the domain in the VS
-								curl.WithHostHeader("headless.example.com"),
-								curl.WithPort(80),
-							}, expectedHealthyResponse),
-						},
-					},
-					Undo: &operations.BasicOperation{
-						OpName:   fmt.Sprintf("delete-manifest-%s", filepath.Base(classicApiRoutingManifest)),
-						OpAction: installation.Actions.Kubectl().NewDeleteManifestAction(classicApiRoutingManifest),
-						OpAssertion: func(ctx context.Context) {
-							// Check classic edge resources are deleted
-							installation.Assertions.ObjectsNotExist(
-								&v1.Upstream{
-									ObjectMeta: metav1.ObjectMeta{
-										Namespace: "headless-nginx-upstream",
-										Name:      "classic-edge-test",
-									},
-								},
-							)
-						},
-					},
-				}
+				},
 			}
 
+			classicRoutingResourceOp := operations.ReversibleOperation{
+				Do: &operations.BasicOperation{
+					OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(classicApiRoutingManifest)),
+					OpAction: installation.Actions.Kubectl().NewApplyManifestAction(classicApiRoutingManifest),
+					OpAssertions: []assertions.ClusterAssertion{
+						// Check headless svc can be reached
+						installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: installation.Metadata.InstallNamespace})),
+							// The host headermust match the domain in the VS
+							curl.WithHostHeader("headless.example.com"),
+							curl.WithPort(80),
+						}, expectedHealthyResponse),
+					},
+				},
+				Undo: &operations.BasicOperation{
+					OpName:   fmt.Sprintf("delete-manifest-%s", filepath.Base(classicApiRoutingManifest)),
+					OpAction: installation.Actions.Kubectl().NewDeleteManifestAction(classicApiRoutingManifest),
+					OpAssertion: func(ctx context.Context) {
+						// Check classic edge resources are deleted
+						installation.Assertions.ObjectsNotExist(
+							&v1.Upstream{
+								ObjectMeta: metav1.ObjectMeta{
+									Namespace: "headless-nginx-upstream",
+									Name:      "classic-edge-test",
+								},
+							},
+						)
+					},
+				},
+			}
+
+			var routingResourceOp operations.ReversibleOperation
+			if useK8sApi {
+				routingResourceOp = k8sRoutingResourceOp
+			} else {
+				routingResourceOp = classicRoutingResourceOp
+			}
 			err := installation.Operator.ExecuteReversibleOperations(ctx, commonSetup, routingResourceOp)
 			Expect(err).NotTo(HaveOccurred())
 		},
