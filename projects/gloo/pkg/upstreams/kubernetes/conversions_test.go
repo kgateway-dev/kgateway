@@ -14,12 +14,12 @@ var _ = Describe("Conversions", func() {
 
 	It("correctly builds service-derived upstream name", func() {
 		name := fakeUpstreamName("my-service", "ns", 8080)
-		Expect(name).To(Equal(upstreamNamePrefix + "ns-my-service-8080"))
+		Expect(name).To(Equal(UpstreamNamePrefix + "ns-my-service-8080"))
 	})
 
 	It("correctly detects upstreams derived from Kubernetes services", func() {
-		Expect(IsKubeUpstream(upstreamNamePrefix + "my-service-8080")).To(BeTrue())
-		Expect(IsKubeUpstream("my-" + upstreamNamePrefix + "service-8080")).To(BeFalse())
+		Expect(IsKubeUpstream(UpstreamNamePrefix + "my-service-8080")).To(BeTrue())
+		Expect(IsKubeUpstream("my-" + UpstreamNamePrefix + "service-8080")).To(BeFalse())
 		Expect(IsKubeUpstream("svc:my-service-8080")).To(BeFalse())
 	})
 
@@ -42,14 +42,14 @@ var _ = Describe("Conversions", func() {
 		usList := KubeServicesToUpstreams(context.TODO(), skkube.ServiceList{svc})
 		usList.Sort()
 		Expect(usList).To(HaveLen(2))
-		Expect(usList[0].Metadata.Name).To(Equal(upstreamNamePrefix + "ns-1-svc-1-8080"))
+		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "ns-1-svc-1-8080"))
 		Expect(usList[0].Metadata.Namespace).To(Equal("ns-1"))
 		Expect(usList[0].GetKube()).NotTo(BeNil())
 		Expect(usList[0].GetKube().ServiceName).To(Equal("svc-1"))
 		Expect(usList[0].GetKube().ServiceNamespace).To(Equal("ns-1"))
 		Expect(usList[0].GetKube().ServicePort).To(BeEquivalentTo(8080))
 
-		Expect(usList[1].Metadata.Name).To(Equal(upstreamNamePrefix + "ns-1-svc-1-8081"))
+		Expect(usList[1].Metadata.Name).To(Equal(UpstreamNamePrefix + "ns-1-svc-1-8081"))
 		Expect(usList[1].Metadata.Namespace).To(Equal("ns-1"))
 		Expect(usList[1].GetKube()).NotTo(BeNil())
 		Expect(usList[1].GetKube().ServiceName).To(Equal("svc-1"))

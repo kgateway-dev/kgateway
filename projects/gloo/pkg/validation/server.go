@@ -3,7 +3,11 @@ package validation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
@@ -215,10 +219,27 @@ func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource 
 	}
 	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
 	s.lock.Unlock()
+
 	if resource != nil {
 		if shouldDelete {
 			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
 				return nil, err
+			}
+
+			// If we are deleting an Upstream with a Kube destination, we also want to remove the associated "fake" Upstream from the snapshot
+			switch typedResource := resource.(type) {
+			case *v1.Upstream:
+				if typedResource.GetKube() != nil {
+					kubeSvcUs := &v1.Upstream{
+						Metadata: &core.Metadata{
+							Namespace: resource.GetMetadata().GetNamespace(),
+							Name:      fmt.Sprintf("%s%s", kubernetes.UpstreamNamePrefix, resource.GetMetadata().GetName()),
+						},
+					}
+					if err := snapCopy.RemoveFromResourceList(kubeSvcUs); err != nil {
+						return nil, err
+					}
+				}
 			}
 		} else {
 			if err := snapCopy.UpsertToResourceList(resource); err != nil {
@@ -243,6 +264,15 @@ func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValida
 		// Upstreams
 		existingUpstreams := snap.Upstreams.AsResources()
 		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
+		// If we are deleting an Upstream with a Kube destination, we also want to remove the associated "fake" Upstream from the snapshot
+		// Since we only have refs here, attempt to delete the "fake" Upstream corresponding with all refs
+		// If none exists this will be a no-op
+		for _, ref := range req.GetDeletedResources().GetUpstreamRefs() {
+			deletedUpstreamRefs = append(deletedUpstreamRefs, &core.ResourceRef{
+				Namespace: ref.GetNamespace(),
+				Name:      fmt.Sprintf("%s%s", kubernetes.UpstreamNamePrefix, ref.GetName()),
+			})
+		}
 		finalUpstreams := utils.DeleteResources(existingUpstreams, deletedUpstreamRefs)
 		snap.Upstreams = utils.ResourceListToUpstreamList(finalUpstreams)
 		// Secrets
