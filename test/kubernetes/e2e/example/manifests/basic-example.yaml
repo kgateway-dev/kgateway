@@ -1,3 +1,11 @@
+global:
+  image:
+    pullPolicy: IfNotPresent
+  glooRbac:
+    namespaced: false
+settings:
+  singleNamespace: false
+  create: true
 kubeGateway:
   enabled: false
 gloo:
