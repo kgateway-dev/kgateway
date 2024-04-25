@@ -1,0 +1,3 @@
+changelog:
+- type: HELM
+  description: Adds a new helm value `global.additionalLabels` that specifies additional labels to add to gloo resources.

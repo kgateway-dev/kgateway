@@ -4,7 +4,7 @@ kind: Namespace
 metadata:
   name: {{ .Release.Namespace }}
   labels:
-    {{- include "gloo.labels" . }}
+{{ include "gloo.labels" . | indent 4}}
     {{- if .Values.global.istioIntegration.labelInstallNamespace }}
       {{- if .Values.global.istioIntegration.istioSidecarRevTag }}
     istio.io/rev: {{ .Values.global.istioIntegration.istioSidecarRevTag }}

@@ -9,7 +9,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    {{- include "gloo.labels" . }}
+    app: gloo
     gloo: knative-external-proxy
   name: knative-external-proxy
   namespace: {{ .Release.Namespace }}

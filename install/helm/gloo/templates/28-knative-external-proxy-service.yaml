@@ -5,7 +5,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    {{- include "gloo.labels" . }}
+{{ include "gloo.labels" . | indent 4}}
     gloo: knative-external-proxy
   name: knative-external-proxy
   namespace: {{ .Release.Namespace }}

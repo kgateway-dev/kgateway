@@ -264,12 +264,10 @@ Otherwise it will generate ["Create", "Update", "Delete"]
 {{ toJson $result }}
 {{- end -}}
 
-{{/*
-Common labels
-*/}}
+{{/* Additional labels added to every resource */}}
 {{- define "gloo.labels" -}}
 app: gloo
-{{- with .Values.additionalLabels }}
+{{- with .Values.global.additionalLabels }}
 {{ toYaml . }}
 {{- end }}
 {{- end }}

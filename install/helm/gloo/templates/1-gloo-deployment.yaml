@@ -8,8 +8,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+{{ include "gloo.labels" . | indent 4}}
     gloo: gloo
-    {{- include "gloo.labels" . }}
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:
