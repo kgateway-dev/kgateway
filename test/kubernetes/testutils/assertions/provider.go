@@ -1,8 +1,9 @@
 package assertions
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
