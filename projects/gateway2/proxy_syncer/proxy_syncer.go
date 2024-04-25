@@ -2,9 +2,8 @@ package proxy_syncer
 
 import (
 	"context"
+	"strconv"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -24,6 +23,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
+// QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
+type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry, totalSyncCount int)
+
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
 type ProxySyncer struct {
@@ -39,8 +41,9 @@ type ProxySyncer struct {
 	// This cache is utilized by the debug.ProxyEndpointServer
 	proxyReconciler gloo_solo_io.ProxyReconciler
 
-	routeOptionClient gatewayv1.RouteOptionClient
-	statusReporter    reporter.StatusReporter
+	// queueStatusForProxies stores a list of proxies that need the proxy status synced and the plugin registry
+	// that produced them for a given sync iteration
+	queueStatusForProxies QueueStatusForProxiesFn
 }
 
 type GatewayInputChannels struct {
@@ -74,15 +77,17 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	k8sGwExtensions extensions.K8sGatewayExtensions,
 	proxyClient gloo_solo_io.ProxyClient,
+	queueStatusForProxies QueueStatusForProxiesFn,
 ) *ProxySyncer {
 	return &ProxySyncer{
-		controllerName:  controllerName,
-		writeNamespace:  writeNamespace,
-		translator:      translator,
-		inputs:          inputs,
-		mgr:             mgr,
-		k8sGwExtensions: k8sGwExtensions,
-		proxyReconciler: gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		controllerName:        controllerName,
+		writeNamespace:        writeNamespace,
+		translator:            translator,
+		inputs:                inputs,
+		mgr:                   mgr,
+		k8sGwExtensions:       k8sGwExtensions,
+		proxyReconciler:       gloo_solo_io.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		queueStatusForProxies: queueStatusForProxies,
 	}
 }
 
@@ -92,12 +97,15 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	var (
 		secretsWarmed bool
+		// totalResyncs is used to track the number of times the proxy syncer has been triggered
+		totalResyncs int
 	)
 	resyncProxies := func() {
 		if !secretsWarmed {
 			return
 		}
-		contextutils.LoggerFrom(ctx).Debug("resyncing k8s gateway proxies")
+		totalResyncs++
+		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
 
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
@@ -121,11 +129,18 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		for _, gw := range gwl.Items {
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, s.writeNamespace, r)
 			if proxy != nil {
+				// Add proxy id to the proxy metadata to track proxies for status reporting
+				proxyAnnotations := proxy.GetMetadata().GetAnnotations()
+				if proxyAnnotations == nil {
+					proxyAnnotations = make(map[string]string)
+				}
+				proxyAnnotations[utils.ProxySyncId] = strconv.Itoa(totalResyncs)
+				proxy.GetMetadata().Annotations = proxyAnnotations
+
 				proxies = append(proxies, proxy)
 				translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
 					Gateway: gw,
 				})
-				//TODO: handle reports and process statuses
 			}
 		}
 
@@ -133,6 +148,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			TranslatedGateways: translatedGateways,
 		})
 
+		s.queueStatusForProxies(proxies, &pluginRegistry, totalResyncs)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
