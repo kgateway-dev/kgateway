@@ -25,7 +25,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 		portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
 		portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
 	)
-	p.NoError(err, "can open port-forward")
+	p.Require.NoError(err, "can open port-forward")
 	defer func() {
 		portForwarder.Close()
 		portForwarder.WaitForStop()
