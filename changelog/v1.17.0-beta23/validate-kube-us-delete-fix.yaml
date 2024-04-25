@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: |
+      Fix a bug that caused the validation server to incorrectly reject deletion operations for Kube type Upstreams
+    issueLink: https://github.com/solo-io/gloo/issues/6543
+    resolvesIssue: false
