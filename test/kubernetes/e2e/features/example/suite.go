@@ -43,7 +43,5 @@ func (s *FeatureSuite) TestInstallationSuccessful() {
 }
 
 func (s *FeatureSuite) TestFailureAllowed() {
-	g := NewWithT(s.T())
-
-	g.Expect(1).NotTo(Equal(2), "1 does not equal 2")
+	s.testInstallation.Assertions.Expect(1).NotTo(Equal(2), "1 does not equal 2")
 }
