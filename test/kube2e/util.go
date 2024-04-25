@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
@@ -82,6 +83,7 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	identicalResultInARow := 4
 	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", identicalResultInARow)
 
+	ginkgo.By("Gloo eventually reaches a consistent state")
 	offset := 1 // This method is called directly from a TestSuite
 	assertions.EventuallyWithOffsetStatisticsMatchAssertions(offset, glooStatsForwardConfig,
 		logLevelAssertion.WithOffset(offset),
