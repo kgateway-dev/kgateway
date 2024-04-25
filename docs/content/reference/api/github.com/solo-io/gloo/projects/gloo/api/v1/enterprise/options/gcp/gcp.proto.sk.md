@@ -36,7 +36,7 @@ Enterprise-only: Configuration to enable GCP authentication for upstreams.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `host` | `string` | Required. Url of the GCP service. |
+| `host` | `string` | Required. host of the GCP service to be connected to. |
 | `audience` | `string` | Optional override for the audience used to fetch the token from the GCP metadata server. By default it will use the URL of the service. |
 
 

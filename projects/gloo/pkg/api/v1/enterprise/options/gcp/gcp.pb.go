@@ -28,7 +28,7 @@ type UpstreamSpec struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Required. Url of the GCP service
+	// Required. host of the GCP service to be connected to
 	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
 	// Optional override for the audience used to fetch the token from the GCP metadata server.
 	// By default it will use the URL of the service
