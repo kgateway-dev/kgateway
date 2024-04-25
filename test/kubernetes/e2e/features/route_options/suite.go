@@ -15,7 +15,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// testingSuite is the entire Suite of tests for the "example" feature
+// testingSuite is the entire Suite of tests for the "Route Options" feature
+// RouteOptions
 type testingSuite struct {
 	suite.Suite
 

@@ -13,6 +13,7 @@ import (
 )
 
 // testingSuite is the entire Suite of tests for the "deployer" feature
+// The "deployer" code can be found here: /projects/gateway2/deployer
 type testingSuite struct {
 	suite.Suite
 

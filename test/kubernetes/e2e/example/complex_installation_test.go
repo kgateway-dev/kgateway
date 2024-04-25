@@ -37,12 +37,12 @@ func TestComplexInstallation(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
+		testInstallation.UninstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperUninstall)
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	t.Run("install gateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperUninstall)
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 	})
 
 	t.Run("example feature", func(t *testing.T) {

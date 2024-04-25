@@ -41,7 +41,7 @@ func TestBasicInstallation(t *testing.T) {
 	})
 
 	t.Run("install gateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperUninstall)
+		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 	})
 
 	t.Run("example feature", func(t *testing.T) {
