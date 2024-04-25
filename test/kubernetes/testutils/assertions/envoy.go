@@ -19,7 +19,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 	adminAssertion func(ctx context.Context, adminClient *admincli.Client),
 ) {
 	// Before opening a port-forward, we assert that there is at least one Pod that is ready
-	p.RunningReplicas(envoyDeployment, BeNumerically(">=", 1))(ctx)
+	p.EventuallyRunningReplicas(ctx, envoyDeployment, BeNumerically(">=", 1))
 
 	portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 		portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
