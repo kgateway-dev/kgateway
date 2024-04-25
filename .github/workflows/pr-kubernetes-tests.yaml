@@ -38,7 +38,7 @@ jobs:
         fi
 
   end_to_end_tests:
-    name: End-to-End (${{matrix.kubernetes-e2e-suite}})
+    name: End-to-End (${{ matrix.test-suites.package }})
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -46,10 +46,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes-e2e-suite:
-        - 'k8sgateway'
+        test-suites:
+        - package: 'k8sgateway'
+          # https://onsi.github.io/ginkgo/#repeating-spec-runs-and-managing-flaky-specs
+          # --flake-attempts: We want to error on flakes loudly, so we do not repeat any of them
+          # --repeat: We are introducing new tests, and want to increase the confidence that new tests aren't flaky
+          ginkgo-args: '--flake-attempts=0 --repeat=1'
         tool-versions:
-        - cluster_node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+        - cluster-node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
           kubectl: 'v1.28.4'
           kind: 'v0.20.0'
           helm: 'v3.13.2'
