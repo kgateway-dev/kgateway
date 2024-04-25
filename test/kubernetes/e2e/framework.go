@@ -3,10 +3,10 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"testing"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
@@ -16,6 +16,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
+
+func NewTestCluster() *TestCluster {
+	runtimeContext := runtime.NewContext()
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
+
+	return &TestCluster{
+		RuntimeContext: runtimeContext,
+		ClusterContext: clusterContext,
+	}
+}
 
 // TestCluster is the structure around a set of tests that run against a Kubernetes Cluster
 // Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
@@ -38,11 +48,11 @@ type TestCluster struct {
 // the running installation of Gloo Gateway and the Kubernetes Cluster
 func (c *TestCluster) PreFailHandler() {
 	for _, i := range c.activeInstallations {
-		i.preFailHandler()
+		i.PreFailHandler()
 	}
 }
 
-func (c *TestCluster) RegisterTestInstallation(glooGatewayContext *gloogateway.Context) *TestInstallation {
+func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext *gloogateway.Context) *TestInstallation {
 	if c.activeInstallations == nil {
 		c.activeInstallations = make(map[string]*TestInstallation, 2)
 	}
@@ -68,8 +78,7 @@ func (c *TestCluster) RegisterTestInstallation(glooGatewayContext *gloogateway.C
 			WithGlooGatewayContext(glooGatewayContext),
 
 		// Create an assertions provider, and point it to the running installation
-		Assertions: assertions.NewProvider().
-			WithProgressWriter(ginkgo.GinkgoWriter).
+		Assertions: assertions.NewProvider(t).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 	}
@@ -111,29 +120,21 @@ func (i *TestInstallation) String() string {
 	return i.Metadata.InstallNamespace
 }
 
-func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installAction actions.ClusterAction) error {
-	installOperation := &operations.BasicOperation{
-		OpName:      "install-gloo-gateway",
-		OpAction:    installAction,
-		OpAssertion: i.Assertions.InstallationWasSuccessful(),
-	}
-	err := i.Operator.ExecuteOperations(ctx, installOperation)
-	if err != nil {
-		return err
-	}
+func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
+	err := installFn(ctx)
+	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
+
+	i.Assertions.EventuallyInstallationSucceeded(ctx)
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
 	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
-	return nil
 }
 
-func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallAction actions.ClusterAction) error {
-	installOperation := &operations.BasicOperation{
-		OpName:      "uninstall-gloo-gateway",
-		OpAction:    uninstallAction,
-		OpAssertion: i.Assertions.UninstallationWasSuccessful(),
-	}
-	return i.Operator.ExecuteOperations(ctx, installOperation)
+func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
+	err := uninstallFn(ctx)
+	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
+
+	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }
 
 // RunTest will execute a single Test against the installation
@@ -146,8 +147,8 @@ func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
 	test.Test(ctx, i)
 }
 
-// preFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) preFailHandler() {
+// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) PreFailHandler() {
 	exportReportOp := &operations.BasicOperation{
 		OpName:   "glooctl-export-report",
 		OpAction: i.Actions.Glooctl().ExportReport(),

@@ -16,10 +16,13 @@ import (
 func TestK8sGatewaySuite(t *testing.T) {
 	skhelpers.RegisterCommonFailHandlers()
 
+	test = t
+
 	RunSpecs(t, "K8s Gateway Suite")
 }
 
 var (
+	test        *testing.T
 	testCluster *e2e.TestCluster
 )
 
