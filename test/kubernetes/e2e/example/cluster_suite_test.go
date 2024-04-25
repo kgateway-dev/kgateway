@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestExampleClusterSuite(t *testing.T) {
+func TestClusterSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	runtimeContext := runtime.NewContext()
