@@ -6,18 +6,22 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/solo-io/skv2/codegen/util"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/skv2/codegen/util"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -44,6 +48,12 @@ var (
 		StatusCode: http.StatusTeapot,
 		Body:       ContainSubstring("fault filter abort"),
 	}
+
+	// RouteOption resource to be created
+	routeOptionMeta = metav1.ObjectMeta{
+		Name:      "teapot-fault-injection",
+		Namespace: "default",
+	}
 )
 
 var ConfigureRouteOptionsWithTargetRef = e2e.Test{
@@ -66,7 +76,13 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 						},
 						expectedFaultInjectionResp),
 
-					// TODO(npolshak) Check status on solo-apis client object once route option status support is added
+					// Check status is accepted on RouteOption
+					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
+						func() (resources.InputResource, error) {
+							return installation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
+						},
+						core.Status_Accepted,
+						"gloo-kube-gateway"),
 				},
 			},
 			Undo: &operations.BasicOperation{
