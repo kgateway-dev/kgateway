@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// DeployerSuite is the entire Suite of tests for the "deployer" feature
+// testingSuite is the entire Suite of tests for the "deployer" feature
 // The "deployer" code can be found here: /projects/gateway2/deployer
-type DeployerSuite struct {
+type testingSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -25,25 +25,25 @@ type DeployerSuite struct {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &DeployerSuite{
+	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *DeployerSuite) SetupSuite() {
+func (s *testingSuite) SetupSuite() {
 }
 
-func (s *DeployerSuite) TearDownSuite() {
+func (s *testingSuite) TearDownSuite() {
 }
 
-func (s *DeployerSuite) BeforeTest(suiteName, testName string) {
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *DeployerSuite) AfterTest(suiteName, testName string) {
+func (s *testingSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *DeployerSuite) TestProvisionDeploymentAndService() {
+func (s *testingSuite) TestProvisionDeploymentAndService() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, deployerProvisionManifestFile)
 		s.NoError(err, "can delete manifest")
@@ -55,7 +55,7 @@ func (s *DeployerSuite) TestProvisionDeploymentAndService() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 }
 
-func (s *DeployerSuite) TestConfigureProxiesFromGatewayParameters() {
+func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gwParametersManifestFile)
 		s.NoError(err, "can delete manifest")

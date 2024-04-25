@@ -41,15 +41,15 @@ func TestK8sGateway(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("install gateway", func(t *testing.T) {
+	t.Run("InstallGateway", func(t *testing.T) {
 		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 	})
 
-	t.Run("deployer", func(t *testing.T) {
+	t.Run("Deployer", func(t *testing.T) {
 		suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
 	})
 
-	t.Run("route options", func(t *testing.T) {
+	t.Run("RouteOptions", func(t *testing.T) {
 		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 }
