@@ -61,7 +61,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		s.NoError(err, "can delete manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, gwParams)
 
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, deployerProvisionManifestFile)
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, deployerProvisionManifestFile)
 		s.NoError(err, "can delete manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})

@@ -122,6 +122,13 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 		Cause()
 }
 
+// DeleteFileSafe deletes the resources defined in a file, and returns an error if one occurred
+// This differs from DeleteFile in that we always append --ignore-not-found
+func (c *Cli) DeleteFileSafe(ctx context.Context, fileName string, extraArgs ...string) error {
+	safeArgs := append(extraArgs, "--ignore-not-found")
+	return c.DeleteFile(ctx, fileName, safeArgs...)
+}
+
 // Copy copies a file from one location to another
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
 	return c.RunCommand(ctx, "cp", from, to)
