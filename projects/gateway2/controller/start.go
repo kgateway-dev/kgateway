@@ -59,6 +59,11 @@ type StartConfig struct {
 	RouteOptionClient gatewayv1.RouteOptionClient
 	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
 	StatusReporter reporter.StatusReporter
+
+	// A callback to initialize the gateway status syncer with the same dependencies
+	// as the gateway controller (in another start func)
+	// TODO(ilackarms) refactor to enable the status syncer to be started in the same start func
+	QueueStatusForProxies proxy_syncer.QueueStatusForProxiesFn
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -117,6 +122,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		mgr,
 		k8sGwExtensions,
 		cfg.ProxyClient,
+		cfg.QueueStatusForProxies,
 	)
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
