@@ -40,11 +40,16 @@ func TestBasicInstallation(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("install gateway", func(t *testing.T) {
+	t.Run("InstallGateway", func(t *testing.T) {
 		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 	})
 
-	t.Run("example feature", func(t *testing.T) {
+	// The name here is important for debuggability
+	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName
+	// In this case, the output would be:
+	// TestBasicInstallation/Example/{test name}
+	// We prefer to follow CamelCase convention for names of these sub-tests
+	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})
 }

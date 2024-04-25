@@ -41,11 +41,11 @@ func TestComplexInstallation(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("install gateway", func(t *testing.T) {
+	t.Run("InstallGateway", func(t *testing.T) {
 		testInstallation.InstallGlooGateway(ctx, testInstallation.Actions.Glooctl().TestHelperInstall)
 	})
 
-	t.Run("example feature", func(t *testing.T) {
+	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})
 }
