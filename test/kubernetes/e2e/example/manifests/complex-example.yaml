@@ -21,6 +21,8 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
+kubeGateway:
+  enabled: false
 gloo:
   logLevel: info
   disableLeaderElection: true

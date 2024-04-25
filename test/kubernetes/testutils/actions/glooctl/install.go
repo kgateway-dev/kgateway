@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/gloo/pkg/utils/helmutils"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
@@ -18,11 +20,17 @@ import (
 //	Our goal of operations is to have them mirror as closely as possible, the operations that users take
 func (p *providerImpl) NewTestHelperInstallAction() actions.ClusterAction {
 	return func(ctx context.Context) error {
+		var releasedVersion string
+		if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
+			releasedVersion = useVersion
+		}
+
 		testHelper, err := helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = "../../../.."
 			defaults.HelmChartName = helmutils.ChartName
 			defaults.InstallNamespace = p.glooGatewayContext.InstallNamespace
 			defaults.Verbose = true
+			defaults.ReleasedVersion = releasedVersion
 			return defaults
 		})
 		if err != nil {
@@ -43,11 +51,17 @@ func (p *providerImpl) NewTestHelperUninstallAction() actions.ClusterAction {
 
 	return func(ctx context.Context) error {
 		var err error
+		var releasedVersion string
+		if useVersion := kube2e.GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
+			releasedVersion = useVersion
+		}
+
 		testHelper, err := helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = "../../../.."
 			defaults.HelmChartName = helmutils.ChartName
 			defaults.InstallNamespace = p.glooGatewayContext.InstallNamespace
 			defaults.Verbose = true
+			defaults.ReleasedVersion = releasedVersion
 			return defaults
 		})
 		if err != nil {

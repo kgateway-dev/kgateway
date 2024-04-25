@@ -1,3 +1,5 @@
+kubeGateway:
+  enabled: false
 gloo:
   logLevel: info
   disableLeaderElection: true

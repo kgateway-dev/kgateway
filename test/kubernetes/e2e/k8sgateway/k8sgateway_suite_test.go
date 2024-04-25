@@ -20,6 +20,7 @@ func TestK8sGatewaySuite(t *testing.T) {
 }
 
 var (
+	t           *testing.T
 	testCluster *e2e.TestCluster
 )
 

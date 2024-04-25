@@ -47,4 +47,7 @@ type ClusterSuite struct {
 
 func (s *ClusterSuite) SetupSuite() {}
 
-func (s *ClusterSuite) TearDownSuite() {}
+func (s *ClusterSuite) TearDownSuite() {
+	s.testCluster.PreFailHandler()
+
+}

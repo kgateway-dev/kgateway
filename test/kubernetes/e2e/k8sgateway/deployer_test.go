@@ -3,7 +3,6 @@ package k8sgateway_test
 import (
 	"context"
 	"path/filepath"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -13,7 +12,7 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-var _ = Describe("Deployer Test", Ordered, func(t *testing.T) {
+var _ = Describe("Deployer Test", Ordered, func() {
 
 	// An entire file is meant to capture the behaviors that we want to test for a given installation of Gloo Gateway
 
