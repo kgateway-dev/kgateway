@@ -18,7 +18,7 @@ var _ = Describe("Classic Edge Test", Ordered, func() {
 		ctx context.Context
 
 		// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-		// against an installation of Gloo Edge
+		// against an installation of Gloo Gateway with kubeGateway disabled (only classic apis are supported)
 		testInstallation *e2e.TestInstallation
 	)
 

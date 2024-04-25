@@ -14,13 +14,13 @@ spec:
         routeAction:
           single:
             upstream:
-              name: default-headless-example-svc-8080
+              name: headless-nginx-upstream
               namespace: classic-edge-test # TODO: how to make this configurable?
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
-  name: default-headless-example-svc-8080
+  name: headless-nginx-upstream
   namespace: classic-edge-test # TODO: how to make this configurable?
 spec:
   kube:

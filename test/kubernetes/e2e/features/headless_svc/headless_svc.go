@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
@@ -89,7 +90,8 @@ var ConfigureRoutingHeadlessSvc = func(useK8sApi bool) e2e.Test {
 
 							// Check headless svc can be reached
 							installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
-								curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", k8sApiProxyDeployment.GetName(), k8sApiProxyDeployment.GetNamespace())),
+								curl.WithHost(kubeutils.ServiceFQDN(k8sApiProxyDeployment.ObjectMeta)),
+								// The host headermust match the domain in the HTTPRoute
 								curl.WithHostHeader("headless.example.com"),
 								curl.WithPort(80),
 							}, expectedHealthyResponse),
@@ -112,7 +114,8 @@ var ConfigureRoutingHeadlessSvc = func(useK8sApi bool) e2e.Test {
 						OpAssertions: []assertions.ClusterAssertion{
 							// Check headless svc can be reached
 							installation.Assertions.EphemeralCurlEventuallyResponds(curlPod, []curl.Option{
-								curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", defaults.GatewayProxyName, installation.Metadata.InstallNamespace)),
+								curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: installation.Metadata.InstallNamespace})),
+								// The host headermust match the domain in the VS
 								curl.WithHostHeader("headless.example.com"),
 								curl.WithPort(80),
 							}, expectedHealthyResponse),
@@ -126,8 +129,8 @@ var ConfigureRoutingHeadlessSvc = func(useK8sApi bool) e2e.Test {
 							installation.Assertions.ObjectsNotExist(
 								&v1.Upstream{
 									ObjectMeta: metav1.ObjectMeta{
-										Namespace: "headless-example-svc",
-										Name:      "gloo-system",
+										Namespace: "headless-nginx-upstream",
+										Name:      "classic-edge-test",
 									},
 								},
 							)

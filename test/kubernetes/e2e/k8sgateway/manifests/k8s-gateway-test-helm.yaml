@@ -33,6 +33,6 @@ gloo:
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
-# Disable discovery, Gloo gateway doesn't need this
+# Disable discovery, not recommended for production
 discovery:
   enabled: false
