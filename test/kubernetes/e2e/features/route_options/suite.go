@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// testingSuite is the entire Suite of tests for the "Route Options" feature
+// RouteOptionsSuite is the entire Suite of tests for the "Route Options" feature
 // RouteOptions
-type testingSuite struct {
+type RouteOptionsSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -28,25 +28,25 @@ type testingSuite struct {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
+	return &RouteOptionsSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
+func (s *RouteOptionsSuite) SetupSuite() {
 }
 
-func (s *testingSuite) TearDownSuite() {
+func (s *RouteOptionsSuite) TearDownSuite() {
 }
 
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
+func (s *RouteOptionsSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *testingSuite) AfterTest(suiteName, testName string) {
+func (s *RouteOptionsSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
+func (s *RouteOptionsSuite) TestConfigureRouteOptionsWithTargetRef() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
 		s.NoError(err, "can delete manifest")
@@ -78,7 +78,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 		}))
 }
 
-func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
+func (s *RouteOptionsSuite) TestConfigureRouteOptionsWithFilterExtension() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, filterExtensioManifest)
 		s.NoError(err, "can delete manifest")

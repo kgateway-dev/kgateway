@@ -2,12 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"os"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
@@ -16,21 +12,25 @@ import (
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
-func MustKindContext(t *testing.T, clusterName string) *Context {
-	r := require.New(t)
-
+func MustKindContext(clusterName string) *Context {
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
-	r.NoError(err)
+	if err != nil {
+		panic(err)
+	}
 
 	clientset, err := kubernetes.NewForConfig(restCfg)
-	r.NoError(err)
+	if err != nil {
+		panic(err)
+	}
 
 	clt, err := client.New(restCfg, client.Options{
 		Scheme: kubetestclients.MustClientScheme(),
 	})
-	r.NoError(err)
+	if err != nil {
+		panic(err)
+	}
 
 	return &Context{
 		Name:        clusterName,

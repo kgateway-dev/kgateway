@@ -8,9 +8,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// testingSuite is the entire Suite of tests for the "example" feature
+// ExampleSuite is the entire Suite of tests for the "example" feature
 // Typically, we would include a link to the feature code here
-type testingSuite struct {
+// We intentionally name this ExampleSuite even though the package is example, and thus the name stutters a bit
+// This is because we can run individual tests by specifying test suites:
+// go test -run TestBasicInstallation/ExampleSuite/TestExampleAssertion
+// So this naming strategy makes the format consistent
+type ExampleSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -21,25 +25,25 @@ type testingSuite struct {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
+	return &ExampleSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
+func (s *ExampleSuite) SetupSuite() {
 }
 
-func (s *testingSuite) TearDownSuite() {
+func (s *ExampleSuite) TearDownSuite() {
 }
 
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
+func (s *ExampleSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *testingSuite) AfterTest(suiteName, testName string) {
+func (s *ExampleSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *testingSuite) TestExampleAssertion() {
+func (s *ExampleSuite) TestExampleAssertion() {
 	// Testify assertion
 	s.Assert().NotEqual(1, 2, "1 does not equal 2")
 

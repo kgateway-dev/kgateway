@@ -14,9 +14,9 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 )
 
-func MustTestCluster(t *testing.T) *TestCluster {
+func MustTestCluster() *TestCluster {
 	runtimeContext := runtime.NewContext()
-	clusterContext := cluster.MustKindContext(t, runtimeContext.ClusterName)
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
 	return &TestCluster{
 		RuntimeContext: runtimeContext,

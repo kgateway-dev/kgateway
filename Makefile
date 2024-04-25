@@ -260,7 +260,7 @@ run-kube-e2e-tests: test
 # Go Tests
 #----------------------------------------------------------------------------------
 GO_TEST_ENV ?=
-GO_TEST_FLAGS ?= -v
+GO_TEST_FLAGS ?=
 
 # This is a way for a user executing `make go-test` to be able to provide flags which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
