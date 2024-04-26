@@ -11,17 +11,37 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/envutils"
-
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -33,6 +53,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/status"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -59,25 +80,6 @@ import (
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
@@ -881,6 +883,25 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
+	var (
+		gwv2StatusSyncer       status.GatewayStatusSyncer
+		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
+	)
+	// startFuncs represents the set of StartFunc that should be executed at startup
+	// At the moment, the functionality is used minimally.
+	// Overtime, we should break up this large function into smaller StartFunc
+	startFuncs := map[string]StartFunc{}
+
+	if opts.GlooGateway.EnableK8sGatewayController {
+
+		gwv2StatusSyncer = status.NewStatusSyncerFactory()
+		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
+
+		// Share proxyClient and status syncer with the gateway controller
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, gwv2StatusSyncer.QueueStatusForProxies, authConfigClient)
+
+	}
+
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
 		sharedTranslator,
@@ -894,7 +915,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwTranslatorSyncer,
 		proxyClient,
 		opts.WriteNamespace,
-		opts.Identity)
+		opts.Identity,
+		gwv2StatusSyncCallback,
+	)
 
 	syncers := v1snap.ApiSyncers{
 		validator,
@@ -919,16 +942,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			}
 		}
 	}()
-
-	// startFuncs represents the set of StartFunc that should be executed at startup
-	// At the moment, the functionality is used minimally.
-	// Overtime, we should break up this large function into smaller StartFunc
-	startFuncs := map[string]StartFunc{}
-
-	if opts.GlooGateway.EnableK8sGatewayController {
-		// Share proxyClient with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, authConfigClient)
-	}
 
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
 	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)

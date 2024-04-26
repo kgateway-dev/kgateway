@@ -94,7 +94,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			return nil
 		}
 	} else {
-		// we don't expect the old impelmentation to be used, but that we are keeping it as a fallback just in case
+		// we don't expect the old implementation to be used, but that we are keeping it as a fallback just in case
 		svcs, err := lister.List(labels.NewSelector())
 		if err != nil {
 			return err

@@ -1,21 +1,14 @@
 # End-to-End Testing Framework
 
 ## TestCluster
-A [TestCluster](./framework.go) is the structure that manages tests running against a single Kubernetes Cluster.
+A [TestCluster](./test.go) is the structure that manages tests running against a single Kubernetes Cluster.
 
 Its sole responsibility is to create [TestInstallations](#testinstallation).
 
 ## TestInstallation
-A [TestInstallation](./framework.go) is the structure that manages a group of tests that run against an installation of Gloo Gateway, within a Kubernetes Cluster.
+A [TestInstallation](./test.go) is the structure that manages a group of tests that run against an installation of Gloo Gateway, within a Kubernetes Cluster.
 
 We try to define a single `TestInstallation` per file in a `TestCluster`. This way, it is easy to identify what behaviors are expected for that installation.
-
-## Test
-A [Test](./framework.go) is the smallest unit in the framework. It assumes there is a Kubernetes Cluster running, with Gloo Gateway installed. It runs a series of actions against the cluster and asserts that the updated cluster behaves as expected.
-
-A `Test` is provided the `TestInstallation` to run against. This way, you can run the same `Test`, against different installations of Gloo Gateway.
-
-Tests are executed from the file where a `TestInstallation` is defined. However, we define these tests in the [features package](./features).
 
 ## Features
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
