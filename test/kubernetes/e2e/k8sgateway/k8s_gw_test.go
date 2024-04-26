@@ -1,4 +1,4 @@
-package example
+package k8sgateway_test
 
 import (
 	"context"
@@ -8,29 +8,24 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/example"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestComplexInstallation is the function which executes a series of tests against a given installation
-func TestComplexInstallation(t *testing.T) {
-	RegisterFailHandler(Fail)
-
+// TestK8sGateway is the function which executes a series of tests against a given installation
+func TestK8sGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			SkipGlooInstall:    e2e.SkipGlooInstall,
-			InstallNamespace:   "complex-example",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "complex-example.yaml"),
+			InstallNamespace:   "k8s-gw-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -49,13 +44,17 @@ func TestComplexInstallation(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-		})
+	// Install Gloo Gateway
+	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
+	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	t.Run("Example", func(t *testing.T) {
-		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
+	t.Run("Deployer", func(t *testing.T) {
+		suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("RouteOptions", func(t *testing.T) {
+		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 }
