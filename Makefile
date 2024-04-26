@@ -121,9 +121,15 @@ init:
 	git config core.hooksPath .githooks
 
 # Runs [`goimports`](https://pkg.go.dev/golang.org/x/tools/cmd/goimports) which updates imports and formats code
+# TODO: deprecate in favor of using fmt-v2
 .PHONY: fmt
 fmt:
 	$(DEPSGOBIN)/goimports -w $(shell ls -d */ | grep -v vendor)
+
+# Formats code and imports
+.PHONY: fmt-v2
+fmt-v2:
+	$(DEPSGOBIN)/goimports -local "github.com/solo-io/gloo/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
 fmt-changed:

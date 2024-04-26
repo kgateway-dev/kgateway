@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/gloo/test/kube2e/helper"

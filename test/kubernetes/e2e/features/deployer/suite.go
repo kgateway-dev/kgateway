@@ -5,11 +5,11 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
-
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 )
 
 // testingSuite is the entire Suite of tests for the "deployer" feature

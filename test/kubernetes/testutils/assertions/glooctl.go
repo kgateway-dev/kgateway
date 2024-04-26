@@ -5,10 +5,11 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // EventuallyCheckResourcesOk asserts that `glooctl check` eventually responds Ok

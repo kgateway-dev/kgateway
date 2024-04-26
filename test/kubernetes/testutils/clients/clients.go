@@ -1,17 +1,16 @@
 package clients
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	glookubegateway "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 )
 

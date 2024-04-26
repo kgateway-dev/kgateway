@@ -3,10 +3,11 @@ package gloogateway
 import (
 	"context"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 )
 
 // ResourceClients is a set of clients for interacting with the Edge resources

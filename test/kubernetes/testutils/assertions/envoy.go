@@ -7,10 +7,11 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (p *Provider) AssertEnvoyAdminApi(

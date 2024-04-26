@@ -4,8 +4,9 @@ import (
 	"context"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
 // testingSuite is the entire Suite of tests for the "example" feature

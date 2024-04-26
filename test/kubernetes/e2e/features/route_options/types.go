@@ -5,11 +5,12 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 )
 
 var (

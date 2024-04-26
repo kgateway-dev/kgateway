@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name

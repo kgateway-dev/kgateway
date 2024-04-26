@@ -3,14 +3,12 @@ package assertions
 import (
 	"testing"
 
+	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
 // Provider is the entity that provides methods which assert behaviors of a Kubernetes Cluster

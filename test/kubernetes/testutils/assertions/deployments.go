@@ -4,11 +4,10 @@ import (
 	"context"
 	"time"
 
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 )
 
@@ -25,5 +24,4 @@ func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta
 		WithTimeout(time.Second * 30).
 		WithPolling(time.Millisecond * 200).
 		Should(Succeed())
-
 }
