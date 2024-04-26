@@ -93,13 +93,13 @@ func MatchStatusInNamespace(ns string, matcher types.GomegaMatcher) types.Gomega
 }
 
 func HaveStatusInNamespace(ns string, status *core.Status) types.GomegaMatcher {
-	st := status.State
+	st := status.GetState()
 	return HaveNamespacedStatuses(&CoreNamespacedStatuses{
 		Statuses: map[string]*CoreStatus{
 			ns: {
 				State:      &st,
-				Reason:     status.Reason,
-				ReportedBy: status.ReportedBy,
+				Reason:     status.GetReason(),
+				ReportedBy: status.GetReportedBy(),
 			},
 		},
 	})
@@ -229,7 +229,7 @@ func (m *HaveNamespacedStatusesMatcher) Match(actual interface{}) (success bool,
 	}
 
 	for ns, matcher := range m.namespacedStatusesMatchers {
-		actualStatus, ok := val.Statuses[ns]
+		actualStatus, ok := val.GetStatuses()[ns]
 		if !ok {
 			return false, eris.New("have matcher for namespace which is not found")
 		}
