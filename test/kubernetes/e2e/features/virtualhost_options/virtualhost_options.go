@@ -127,7 +127,7 @@ var ConfigureMultipleVirtualHostOptionsWithTargetRef = e2e.Test{
 						core.Status_Accepted,
 						"gloo-kube-gateway"),
 
-					assertions.EventuallyResourceStatusMatchesReasons(installation.Metadata.InstallNamespace,
+					assertions.EventuallyResourceStatusMatchesWarningReasons(installation.Metadata.InstallNamespace,
 						func() (resources.InputResource, error) {
 							return installation.ResourceClients.VirtualHostOptionClient().Read(extraVirtualHostOptionMeta.GetNamespace(), extraVirtualHostOptionMeta.GetName(), clients.ReadOpts{})
 						},
@@ -187,7 +187,7 @@ var ConfigureVirtualHostOptionsWithTargetRefWithSectionName = e2e.Test{
 						},
 						core.Status_Warning,
 						"gloo-kube-gateway"),
-					assertions.EventuallyResourceStatusMatchesReasons(installation.Metadata.InstallNamespace,
+					assertions.EventuallyResourceStatusMatchesWarningReasons(installation.Metadata.InstallNamespace,
 						func() (resources.InputResource, error) {
 							return installation.ResourceClients.VirtualHostOptionClient().Read(virtualHostOptionMeta.GetNamespace(), virtualHostOptionMeta.GetName(), clients.ReadOpts{})
 						},
@@ -199,7 +199,7 @@ var ConfigureVirtualHostOptionsWithTargetRefWithSectionName = e2e.Test{
 						},
 						core.Status_Warning,
 						"gloo-kube-gateway"),
-					assertions.EventuallyResourceStatusMatchesReasons(installation.Metadata.InstallNamespace,
+					assertions.EventuallyResourceStatusMatchesWarningReasons(installation.Metadata.InstallNamespace,
 						func() (resources.InputResource, error) {
 							return installation.ResourceClients.VirtualHostOptionClient().Read(extraVirtualHostOptionMeta.GetNamespace(), extraVirtualHostOptionMeta.GetName(), clients.ReadOpts{})
 						},

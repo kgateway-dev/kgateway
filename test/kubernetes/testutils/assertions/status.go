@@ -6,7 +6,6 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
@@ -19,37 +18,37 @@ func EventuallyResourceStatusMatchesState(installNamespace string, getter helper
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		statusStateMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"State":      gomega.Equal(desiredStatusState),
-			"ReportedBy": gomega.Equal(desiredReporter),
-		})
-
 		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 		gomega.Eventually(func(g gomega.Gomega) {
+			statusStateMatcher := matchers.MatchStatusInNamespace(
+				installNamespace,
+				gomega.And(matchers.HaveState(desiredStatusState), matchers.HaveReportedBy(desiredReporter)),
+			)
+
 			status, err := getResourceNamespacedStatus(getter)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-			g.Expect(status.GetStatuses()[installNamespace]).ToNot(gomega.BeNil())
-			g.Expect(*status.GetStatuses()[installNamespace]).To(statusStateMatcher)
+			g.Expect(status).ToNot(gomega.BeNil())
+			g.Expect(*status).To(statusStateMatcher)
 		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 	}
 }
 
 // Checks GetNamespacedStatuses status for gloo installation namespace
-func EventuallyResourceStatusMatchesReasons(installNamespace string, getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) ClusterAssertion {
+func EventuallyResourceStatusMatchesWarningReasons(installNamespace string, getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
 
-		statusWarningsMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"Reason":     matchers.ContainSubstrings(desiredStatusReasons),
-			"ReportedBy": gomega.Equal(desiredReporter),
-		})
-
 		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 		gomega.Eventually(func(g gomega.Gomega) {
+			statusWarningsMatcher := matchers.MatchStatusInNamespace(
+				installNamespace,
+				gomega.And(matchers.HaveWarningStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
+			)
+
 			status, err := getResourceNamespacedStatus(getter)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-			g.Expect(status.GetStatuses()[installNamespace]).ToNot(gomega.BeNil())
-			g.Expect(*status.GetStatuses()[installNamespace]).To(statusWarningsMatcher)
+			g.Expect(status).ToNot(gomega.BeNil())
+			g.Expect(*status).To(statusWarningsMatcher)
 		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 	}
 }
