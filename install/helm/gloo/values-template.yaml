@@ -5,6 +5,7 @@ k8s:
 
 # Default values for the Gloo Gateway - Kubernetes Gateway API integration
 kubeGateway:
+  # disable the integration by default, since it requires extra steps to set up (i.e. applying Gateway API CRDs)
   enabled: false
 
 settings:
