@@ -397,9 +397,7 @@ cat <<EOF > check-jwt.rego
 package test
 
 default allow = false
-token_payload := payload {
-    [header, payload, signature] := io.jwt.decode(input.state.jwt)
-}
+[header, payload, signature] := io.jwt.decode(input.state.jwt)
 
 allow {
     payload["email"] == "admin@example.com"
