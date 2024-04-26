@@ -40,6 +40,7 @@ type ProxySyncer struct {
 	// proxyReconciler wraps the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
 	proxyReconciler gloo_solo_io.ProxyReconciler
+
 	// queueStatusForProxies stores a list of proxies that need the proxy status synced and the plugin registry
 	// that produced them for a given sync iteration
 	queueStatusForProxies QueueStatusForProxiesFn
@@ -245,24 +246,4 @@ func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.Pl
 			continue
 		}
 	}
-}
-
-func incrementProxySyncCounter(proxy *gloo_solo_io.Proxy) string {
-	proxySyncCounter := "0"
-	proxyAnnotations := proxy.GetMetadata().GetAnnotations()
-	// initialize counter in no annotations are set
-	if proxyAnnotations == nil {
-		return proxySyncCounter
-	}
-	// initialize counter if proxy sync annotation isn't set
-	previousCount := proxyAnnotations[utils.ProxySyncId]
-	if previousCount == "" {
-		return proxySyncCounter
-	}
-	// increment counter if it's a valid counter
-	previousCountInt, err := strconv.Atoi(previousCount)
-	if err != nil {
-		return proxySyncCounter
-	}
-	return strconv.Itoa(previousCountInt + 1)
 }
