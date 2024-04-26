@@ -32,7 +32,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 		panic(err)
 	}
 
-	rootDir := filepath.Join(cwd, "../../../")
+	rootDir := filepath.Join(cwd, "../../../../")
 	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, rootDir, installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
