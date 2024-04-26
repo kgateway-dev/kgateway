@@ -200,9 +200,15 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 	if err != nil {
 		return nil, err
 	}
+
+	rootDir := filepath.Join(cwd, "../../..")
+	return GetTestHelperForRootDir(ctx, rootDir, namespace)
+}
+
+func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*helper.SoloTestHelper, error) {
 	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
 		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.RootDir = rootDir
 			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.ReleasedVersion = useVersion
@@ -211,7 +217,7 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 		})
 	} else {
 		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.RootDir = rootDir
 			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.Verbose = true
