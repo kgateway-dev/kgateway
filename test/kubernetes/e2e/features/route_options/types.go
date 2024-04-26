@@ -10,6 +10,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 )
 
@@ -26,11 +28,10 @@ var (
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
 	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
-	curlPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "curl",
-			Namespace: "curl",
-		},
+	curlPodExecOpt = kubectl.PodExecOptions{
+		Name:      "curl",
+		Namespace: "curl",
+		Container: "curl",
 	}
 
 	expectedFaultInjectionResp = &testmatchers.HttpResponse{

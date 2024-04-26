@@ -6,8 +6,10 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
@@ -16,18 +18,22 @@ import (
 
 func (p *Provider) AssertEventualCurlResponse(
 	ctx context.Context,
-	curlPod client.Object,
+	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
 	expectedResponse *matchers.HttpResponse,
 	timeout ...time.Duration,
 ) {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
-	p.EventuallyObjectsExist(ctx, curlPod)
+	p.EventuallyObjectsExist(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podOpts.Name, Namespace: podOpts.Namespace,
+		},
+	})
 
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
 	p.Gomega.Eventually(func(g Gomega) {
-		res, err := p.clusterContext.Cli.CurlFromPod(ctx, client.ObjectKeyFromObject(curlPod), curlOptions...)
+		res, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 		g.Expect(err).NotTo(HaveOccurred())
 		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, res)
 

@@ -49,6 +49,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 			curl.WithRetries(3, 0, 10),
 			curl.WithPort(admincli.DefaultAdminPort),
 		)
+
 	for _, adminAssertion := range adminAssertions {
 		adminAssertion(ctx, adminClient)
 	}

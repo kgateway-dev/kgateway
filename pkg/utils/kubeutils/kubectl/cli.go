@@ -29,6 +29,13 @@ type Cli struct {
 	kubeContext string
 }
 
+// PodExecOptions describes the options used to execute a command in a pod
+type PodExecOptions struct {
+	Name      string
+	Namespace string
+	Container string
+}
+
 // NewCli returns an implementation of the kubectl.Cli
 func NewCli() *Cli {
 	return &Cli{
@@ -166,7 +173,7 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 	return portForwarder, err
 }
 
-// CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
+// CurlFromEphemeralPod executes a Curl from a pod, using an ephemeral container to execute the Curl command
 func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.NamespacedName, options ...curl.Option) string {
 	appendOption := func(option curl.Option) {
 		options = append(options, option)
@@ -188,8 +195,9 @@ func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.Namespaced
 		curlArgs...)
 }
 
-// CurlFromPod executes a Curl request from the given pod for the given options
-func (c *Cli) CurlFromPod(ctx context.Context, podMeta types.NamespacedName, options ...curl.Option) (string, error) {
+// CurlFromPod executes a Curl request from the given pod for the given options.
+// It differs from CurlFromEphemeralPod in that it does not uses an ephemeral container to execute the Curl command
+func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options ...curl.Option) (string, error) {
 	appendOption := func(option curl.Option) {
 		options = append(options, option)
 	}
@@ -201,12 +209,17 @@ func (c *Cli) CurlFromPod(ctx context.Context, podMeta types.NamespacedName, opt
 
 	curlArgs := curl.BuildArgs(options...)
 
+	container := podOpts.Container
+	if container == "" {
+		container = "curl"
+	}
+
 	args := append([]string{
 		"exec",
-		"--container=curl",
-		podMeta.Name,
+		"--container=" + container,
+		podOpts.Name,
 		"-n",
-		podMeta.Namespace,
+		podOpts.Namespace,
 		"--",
 		"curl",
 		"--connect-timeout",
