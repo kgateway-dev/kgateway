@@ -3,25 +3,23 @@ package assertions
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// Provider is the entity that creates a ClusterAssertion
+// Provider is the entity that provides methods which assert behaviors of a Kubernetes Cluster
 // These assertions occur against a running instance of Gloo Gateway, within a Kubernetes Cluster.
-// So this provider maintains state about the install/cluster it is using, and then provides
-// operations.ClusterAssertion to match
 type Provider struct {
-	// We extend any assertions that are provided by testify/assert
-	*assert.Assertions
+	Assert  *assert.Assertions
+	Require *require.Assertions
 
 	// Gomega is well-used around the codebase, so we also add support here
 	// NOTE TO DEVELOPERS: We recommend relying on testify assertions where possible
-	gomega.Gomega
+	Gomega gomega.Gomega
 
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
@@ -31,8 +29,9 @@ type Provider struct {
 // installation of Gloo Gateway
 func NewProvider(t *testing.T) *Provider {
 	return &Provider{
-		Assertions: assert.New(t),
-		Gomega:     gomega.NewWithT(t),
+		Assert:  assert.New(t),
+		Require: require.New(t),
+		Gomega:  gomega.NewWithT(t),
 
 		clusterContext:     nil,
 		glooGatewayContext: nil,
@@ -55,5 +54,5 @@ func (p *Provider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *Provider 
 // if the provider has been configured to point to a Gloo Gateway installation
 // There are certain Assertions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
 func (p *Provider) expectGlooGatewayContextDefined() {
-	p.Assertions.NotNil(p.glooGatewayContext, "Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
+	p.Require.NotNil(p.glooGatewayContext, "Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
 }

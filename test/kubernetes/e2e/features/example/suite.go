@@ -4,12 +4,14 @@ import (
 	"context"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-// FeatureSuite is the entire Suite of tests for the "example" feature
-type FeatureSuite struct {
+// testingSuite is the entire Suite of tests for the "example" feature
+// Typically, we would include a link to the feature code here
+type testingSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -19,32 +21,32 @@ type FeatureSuite struct {
 	testInstallation *e2e.TestInstallation
 }
 
-func NewFeatureSuite(ctx context.Context, testInst *e2e.TestInstallation) *FeatureSuite {
-	return &FeatureSuite{
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *FeatureSuite) SetupSuite() {
+func (s *testingSuite) SetupSuite() {
 }
 
-func (s *FeatureSuite) TearDownSuite() {
+func (s *testingSuite) TearDownSuite() {
 }
 
-func (s *FeatureSuite) BeforeTest(suiteName, testName string) {
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) AfterTest(suiteName, testName string) {
+func (s *testingSuite) AfterTest(suiteName, testName string) {
 }
 
-func (s *FeatureSuite) TestExampleAssertion() {
+func (s *testingSuite) TestExampleAssertion() {
 	// Testify assertion
 	s.Assert().NotEqual(1, 2, "1 does not equal 2")
 
 	// Testify assertion, using the TestInstallation to provide it
-	s.testInstallation.Assertions.NotEqual(1, 2, "1 does not equal 2")
+	s.testInstallation.Assertions.Require.NotEqual(1, 2, "1 does not equal 2")
 
 	// Gomega assertion, using the TestInstallation to provide it
-	s.testInstallation.Assertions.Expect(1).NotTo(Equal(2), "1 does not equal 2")
+	s.testInstallation.Assertions.Gomega.Expect(1).NotTo(Equal(2), "1 does not equal 2")
 }

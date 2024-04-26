@@ -14,8 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Inspired by: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/pkg/utils/kubeutils/pods.go
-
 // GetPodsForDeployment gets all pods backing a deployment that are running and ready
 func GetPodsForDeployment(
 	ctx context.Context,
