@@ -3,14 +3,14 @@ package admincli
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
+	"io"
+	"net/http"
 )
 
 const (
@@ -119,18 +119,21 @@ func (c *Client) ListenersCmd(ctx context.Context) cmdutils.Cmd {
 }
 
 // ConfigDumpCmd returns the cmdutils.Cmd that can be run to request data from the config_dump endpoint
-func (c *Client) ConfigDumpCmd(ctx context.Context) cmdutils.Cmd {
-	return c.RequestPathCmd(ctx, ConfigDumpPath)
+func (c *Client) ConfigDumpCmd(ctx context.Context, queryParams map[string]string) cmdutils.Cmd {
+	return c.Command(ctx,
+		curl.WithPath(ConfigDumpPath),
+		curl.WithQueryParameters(queryParams),
+	)
 }
 
 // GetConfigDump returns the structured data that is available at the config_dump endpoint
-func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error) {
+func (c *Client) GetConfigDump(ctx context.Context, queryParams map[string]string) (*adminv3.ConfigDump, error) {
 	var (
 		cfgDump     adminv3.ConfigDump
 		outLocation threadsafe.Buffer
 	)
 
-	err := c.ConfigDumpCmd(ctx).WithStdout(&outLocation).Run().Cause()
+	err := c.ConfigDumpCmd(ctx, queryParams).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +146,18 @@ func (c *Client) GetConfigDump(ctx context.Context) (*adminv3.ConfigDump, error)
 	}
 
 	return &cfgDump, nil
+}
+
+// GetStaticClusters returns the map of static clusters available on a ConfigDump, indexed by their name
+func (c *Client) GetStaticClusters(ctx context.Context) (map[string]*clusterv3.Cluster, error) {
+	configDump, err := c.GetConfigDump(ctx, map[string]string{
+		"resource": "static_clusters",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return GetStaticClustersByName(configDump)
 }
 
 // ModifyRuntimeConfiguration passes the queryParameters to the runtime_modify endpoint
