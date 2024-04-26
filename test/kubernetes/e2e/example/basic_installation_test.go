@@ -8,8 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -20,8 +18,6 @@ import (
 
 // TestBasicInstallation is the function which executes a series of tests against a given installation
 func TestBasicInstallation(t *testing.T) {
-	RegisterFailHandler(Fail)
-
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(

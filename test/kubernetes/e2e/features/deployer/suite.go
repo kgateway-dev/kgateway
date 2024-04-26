@@ -118,7 +118,7 @@ func xdsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx contex
 
 			xdsPort, err := setup.GetNamespacedControlPlaneXdsPort(ctx, testInstallation.Metadata.InstallNamespace, testInstallation.ResourceClients.ServiceClient())
 			g.Expect(err).NotTo(HaveOccurred())
-			Expect(xdsSocketAddress.GetPortValue()).To(Equal(xdsPort), "xds socket port points to gloo service, in installation namespace")
+			g.Expect(xdsSocketAddress.GetPortValue()).To(Equal(uint32(xdsPort)), "xds socket port points to gloo service, in installation namespace")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).
