@@ -59,7 +59,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		curlPod,
+		curlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
@@ -91,7 +91,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		curlPod,
+		curlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
