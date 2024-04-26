@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -35,8 +34,7 @@ func TestComplexInstallation(t *testing.T) {
 		},
 	)
 
-	testHelper, err := kube2e.GetTestHelper(ctx, testInstallation.Metadata.InstallNamespace)
-	testInstallation.Assertions.Require.NoError(err, "Could not construct TestHelper for test")
+	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially

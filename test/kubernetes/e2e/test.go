@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/kube2e/helper"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 
@@ -15,7 +19,22 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 )
 
-var SkipGlooInstall = os.Getenv("SKIP_GLOO_INSTALL") == "true"
+var (
+	SkipGlooInstall = os.Getenv("SKIP_GLOO_INSTALL") == "true"
+)
+
+// MustTestHelper returns the SoloTestHelper used for e2e tests
+// The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
+// in favor of using the exact tool that users rely on
+func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
+	testHelper, err := kube2e.GetTestHelper(ctx, installation.Metadata.InstallNamespace)
+	if err != nil {
+		panic(err)
+	}
+	testHelper.RootDir = filepath.Join("../../../../")
+
+	return testHelper
+}
 
 func MustTestCluster() *TestCluster {
 	runtimeContext := runtime.NewContext()
