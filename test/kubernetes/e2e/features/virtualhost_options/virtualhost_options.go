@@ -8,14 +8,12 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/go-utils/threadsafe"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -60,6 +58,22 @@ var (
 		Name:      "add-foo-header",
 		Namespace: "default",
 	}
+
+	expectedResponseWithoutContentType = &matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Custom:     Not(matchers.ContainHeaderKeys([]string{"content-length"})),
+		Body:       gstruct.Ignore(),
+	}
+
+	expectedResponseWithFooHeader = &matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Headers: map[string]interface{}{
+			"foo": Equal("bar"),
+		},
+		// Make sure the content-length isn't being removed as a function of the unwanted VHO
+		Custom: matchers.ContainHeaderKeys([]string{"content-length"}),
+		Body:   gstruct.Ignore(),
+	}
 )
 
 var ConfigureVirtualHostOptionsWithTargetRef = e2e.Test{
@@ -75,7 +89,13 @@ var ConfigureVirtualHostOptionsWithTargetRef = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check header manipulation is applied
-					checkHeaderManipulationFromCluster(installation, expectedResponseWithoutContentType),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedResponseWithoutContentType),
 
 					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
 						func() (resources.InputResource, error) {
@@ -118,7 +138,13 @@ var ConfigureMultipleVirtualHostOptionsWithTargetRef = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check header manipulation is applied
-					checkHeaderManipulationFromCluster(installation, expectedResponseWithoutContentType),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedResponseWithoutContentType),
 
 					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
 						func() (resources.InputResource, error) {
@@ -179,7 +205,13 @@ var ConfigureVirtualHostOptionsWithTargetRefWithSectionName = e2e.Test{
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check header manipulation is applied
-					checkHeaderManipulationFromCluster(installation, expectedResponseWithFooHeader),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedResponseWithFooHeader),
 
 					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
 						func() (resources.InputResource, error) {
@@ -234,39 +266,4 @@ var ConfigureVirtualHostOptionsWithTargetRefWithSectionName = e2e.Test{
 		err := installation.Operator.ExecuteReversibleOperations(ctx, targetRefRoutingOp)
 		Expect(err).NotTo(HaveOccurred())
 	},
-}
-
-var expectedResponseWithoutContentType = &matchers.HttpResponse{
-	StatusCode: http.StatusOK,
-	Custom:     Not(matchers.ContainHeaderKeys([]string{"content-length"})),
-	Body:       gstruct.Ignore(),
-}
-
-var expectedResponseWithFooHeader = &matchers.HttpResponse{
-	StatusCode: http.StatusOK,
-	Headers: map[string]interface{}{
-		"foo": Equal("bar"),
-	},
-	// Make sure the content-length isn't being removed as a function of the unwanted VHO
-	Custom: matchers.ContainHeaderKeys([]string{"content-length"}),
-	Body:   gstruct.Ignore(),
-}
-
-func checkHeaderManipulationFromCluster(installation *e2e.TestInstallation, expected *matchers.HttpResponse) assertions.ClusterAssertion {
-	return func(ctx context.Context) {
-		installation.Operator.Logf("checking routing for header manipulation")
-		fdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
-
-		Eventually(func(g Gomega) {
-			// curl gloo-proxy-gw.default.svc.cluster.local:8080 -H "Host: example.com" -v
-			var buf threadsafe.Buffer
-			kubeCli := kubectl.NewCli().WithReceiver(&buf)
-			resp := kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta,
-				curl.WithHost(fdqnAddr),
-				curl.WithHostHeader("example.com"),
-				curl.WithHeadersOnly(),
-				curl.VerboseOutput())
-			g.Expect(resp).To(WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expected)), resp)
-		}, "10s", "1s", "curl should eventually return response with expected form").Should(Succeed())
-	}
 }
