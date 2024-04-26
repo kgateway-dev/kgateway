@@ -48,10 +48,10 @@ func TestK8sGateway(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-		})
+	// Install Gloo Gateway
+	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
+	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	t.Run("Deployer", func(t *testing.T) {
