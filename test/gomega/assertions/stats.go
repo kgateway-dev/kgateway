@@ -143,14 +143,18 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 	}, "2m", SafeTimeToSyncStats), currentStatValue
 }
 
+// ExpectStatLastValueMatches is a helper function that retrieves the last value of a statistic and asserts that it matches the passed matcher
 func ExpectStatLastValueMatches(measure *stats2.Int64Measure, lastValueMatcher types.GomegaMatcher) {
+	GinkgoHelper()
 	rows, err := view.RetrieveData(measure.Name())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
 }
 
+// ExpectStatSumMatches is a helper function that retrieves the sum of a statistic and asserts that it matches the passed matcher
 func ExpectStatSumMatches(measure *stats2.Int64Measure, sumValueMatcher types.GomegaMatcher) {
+	GinkgoHelper()
 	rows, err := view.RetrieveData(measure.Name())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
 }

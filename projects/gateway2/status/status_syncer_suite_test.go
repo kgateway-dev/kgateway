@@ -1,4 +1,4 @@
-package operations_test
+package status
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestOperations(t *testing.T) {
+func TestStatusSyncer(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Operations Suite")
+	RunSpecs(t, "Status Syncer Suite")
 }

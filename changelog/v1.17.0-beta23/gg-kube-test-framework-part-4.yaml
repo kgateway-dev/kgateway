@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9019
+    resolvesIssue: false
+    description: >-
+      Create a method in the kubectl.Cli to execute curls from ephemeral containers. This should be
+      used in upcoming end-to-end tests.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5723
+    resolvesIssue: false
+    description: >-
+      Iterate on the e2e framework, to easily support the construction of resource clients
