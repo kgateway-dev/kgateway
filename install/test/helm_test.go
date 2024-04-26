@@ -243,6 +243,8 @@ var _ = Describe("Helm Test", func() {
 				pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
+labels:
+  app: gloo
 metadata:
   name: gloo-pdb
   namespace: gloo-system
@@ -267,6 +269,8 @@ spec:
 				pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
+labels:
+  app: gloo
 metadata:
   name: gloo-pdb
   namespace: gloo-system
@@ -2177,6 +2181,8 @@ spec:
 						pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
+labels:
+  app: gloo
 metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
@@ -2201,6 +2207,8 @@ spec:
 						pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
+labels:
+  app: gloo
 metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
@@ -2226,6 +2234,8 @@ spec:
 						pdbFormat := `
 apiVersion: policy/v1
 kind: PodDisruptionBudget
+labels:
+  app: gloo
 metadata:
   name: %s-pdb
   namespace: gloo-system
