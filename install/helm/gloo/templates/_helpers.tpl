@@ -267,7 +267,7 @@ Otherwise it will generate ["Create", "Update", "Delete"]
 {{/* Additional labels added to every resource */}}
 {{- define "gloo.labels" -}}
 app: gloo
-{{- with .Values.global.additionalLabels }}
+{{- with .Values.global.additionalLabels | default dict }}
 {{ toYaml . }}
 {{- end }}
 {{- end }}
