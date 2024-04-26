@@ -31,7 +31,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	if err != nil {
 		panic(err)
 	}
-	testHelper.RootDir = filepath.Join("../../../../")
+	testHelper.RootDir = filepath.Join("../../../../../")
 
 	return testHelper
 }
