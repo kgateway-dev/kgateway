@@ -11,12 +11,12 @@ import (
 // An error is returned if any conversion fails
 func GetStaticClustersByName(configDump *adminv3.ConfigDump) (map[string]*clusterv3.Cluster, error) {
 	clustersByName := make(map[string]*clusterv3.Cluster, 10)
-	for _, c := range configDump.Configs {
+	for _, c := range configDump.GetConfigs() {
 		staticCluster, err := convertToStaticCluster(c)
 		if err != nil {
 			return nil, err
 		}
-		cluster, err := convertToCluster(staticCluster.Cluster)
+		cluster, err := convertToCluster(staticCluster.GetCluster())
 		if err != nil {
 			return nil, err
 		}
