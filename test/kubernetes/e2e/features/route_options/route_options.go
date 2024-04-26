@@ -7,28 +7,28 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/solo-io/skv2/codegen/util"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
-	"github.com/solo-io/go-utils/threadsafe"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 var (
 	targetRefManifest      = filepath.Join(util.MustGetThisDir(), "inputs/fault-injection-targetref.yaml")
 	filterExtensioManifest = filepath.Join(util.MustGetThisDir(), "inputs/fault-injection-filter-extension.yaml")
 
-	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
+	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
@@ -36,25 +36,12 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
+	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
 	curlPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "curl",
 			Namespace: "curl",
 		},
-	}
-
-	curlFromPod = func(ctx context.Context) func() string {
-		proxyFdqnAddr := fmt.Sprintf("%s.%s.svc.cluster.local", proxyDeployment.GetName(), proxyDeployment.GetNamespace())
-		curlOpts := []curl.Option{
-			curl.WithHost(proxyFdqnAddr),
-			curl.WithHostHeader("example.com"),
-		}
-
-		return func() string {
-			var buf threadsafe.Buffer
-			kubeCli := kubectl.NewCli().WithReceiver(&buf)
-			return kubeCli.CurlFromEphemeralPod(ctx, curlPod.ObjectMeta, curlOpts...)
-		}
 	}
 
 	expectedFaultInjectionResp = &testmatchers.HttpResponse{
@@ -78,11 +65,16 @@ var ConfigureRouteOptionsWithTargetRef = e2e.Test{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(targetRefManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(targetRefManifest),
 				OpAssertions: []assertions.ClusterAssertion{
-					// First check resources are created for Gateay
+					// First check resources are created for Gateway
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
-					// Check fault injection is applied
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedFaultInjectionResp),
 
 					// Check status is accepted on RouteOption
 					assertions.EventuallyResourceStatusMatchesState(installation.Metadata.InstallNamespace,
@@ -117,11 +109,17 @@ var ConfigureRouteOptionsWithFilterExtension = e2e.Test{
 				OpName:   fmt.Sprintf("apply-manifest-%s", filepath.Base(filterExtensioManifest)),
 				OpAction: installation.Actions.Kubectl().NewApplyManifestAction(filterExtensioManifest),
 				OpAssertions: []assertions.ClusterAssertion{
-					// First check resources are created for Gateay
+					// First check resources are created for Gateway
 					installation.Assertions.ObjectsExist(proxyService, proxyDeployment),
 
 					// Check fault injection is applied
-					assertions.CurlEventuallyRespondsAssertion(curlFromPod(ctx), expectedFaultInjectionResp),
+					installation.Assertions.EphemeralCurlEventuallyResponds(
+						curlPod,
+						[]curl.Option{
+							curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+							curl.WithHostHeader("example.com"),
+						},
+						expectedFaultInjectionResp),
 
 					// TODO(npolshak): Statuses are not supported for filter extensions yet
 				},

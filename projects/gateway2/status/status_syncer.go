@@ -88,6 +88,8 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		}
 		proxyKey := getProxyNameNamespace(proxyWithReport.Proxy)
 
+		// if the proxySyncCount saved in the statusSyncer for a given proxy is higher (i.e. newer) than the syncCount
+		// on the proxy metadata, then continue because this report iteration is for an older sync which we no longer care about
 		if f.resyncsPerProxy[proxyKey] > proxySyncCount {
 			// old proxy was garbage collected, expect a future resync
 			continue
@@ -101,15 +103,15 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	for syncCount, proxies := range proxiesToReport {
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
-
-			// reinitialize the registry if there are no more proxies for the sync iteration
-			if len(f.resyncsPerProxy) == 0 {
-				f.registryPerSync = make(map[int]*registry.PluginRegistry)
-			}
 		} else {
 			// this should never happen
 			contextutils.LoggerFrom(ctx).DPanicf("no registry found for proxy sync count %d", syncCount)
 		}
+	}
+
+	// reinitialize the registry if there are no more proxies for the sync iteration
+	if len(f.resyncsPerProxy) == 0 {
+		f.registryPerSync = make(map[int]*registry.PluginRegistry)
 	}
 }
 

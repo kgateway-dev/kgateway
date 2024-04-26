@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/envutils"
-
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -43,6 +41,7 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -895,14 +894,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	if opts.GlooGateway.EnableK8sGatewayController {
 
-		/*
-
-		 */
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
 
 		// Share proxyClient and status syncer with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, gwv2StatusSyncer.QueueStatusForProxies)
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, gwv2StatusSyncer.QueueStatusForProxies, authConfigClient)
 
 	}
 

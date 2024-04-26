@@ -32,7 +32,7 @@ const (
 	// a reference to where the originating Gateway was defined
 	GatewayNamespaceKey = "gateway_namespace"
 
-	// ProxySyncId is an annotation used to associate a proxy translation with the status proxyReport
+	// ProxySyncId is an annotation used to associate a proxy translation with the status proxyReport based on the sync count
 	ProxySyncId = "proxy_sync_id"
 )
 
