@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 )
+
+var SkipGlooInstall = os.Getenv("SKIP_GLOO_INSTALL") == "true"
 
 func MustTestCluster() *TestCluster {
 	runtimeContext := runtime.NewContext()
@@ -98,19 +101,24 @@ func (i *TestInstallation) String() string {
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
-	err := installFn(ctx)
-	i.Assertions.Require.NoError(err)
-
-	i.Assertions.EventuallyInstallationSucceeded(ctx)
+	if !i.Metadata.SkipGlooInstall {
+		err := installFn(ctx)
+		i.Assertions.Require.NoError(err)
+		i.Assertions.EventuallyInstallationSucceeded(ctx)
+	}
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
-	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	i.Assertions.Require.NoError(err)
+	i.ResourceClients = clients
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
+	if i.Metadata.SkipGlooInstall {
+		return
+	}
 	err := uninstallFn(ctx)
 	i.Assertions.Require.NoError(err)
-
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }
 

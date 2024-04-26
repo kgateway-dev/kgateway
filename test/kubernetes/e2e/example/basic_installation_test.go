@@ -28,6 +28,7 @@ func TestBasicInstallation(t *testing.T) {
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
+			SkipGlooInstall:    e2e.SkipGlooInstall,
 			InstallNamespace:   "basic-example",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "basic-example.yaml"),
 		},

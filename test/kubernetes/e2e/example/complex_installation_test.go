@@ -29,6 +29,7 @@ func TestComplexInstallation(t *testing.T) {
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
+			SkipGlooInstall:    e2e.SkipGlooInstall,
 			InstallNamespace:   "complex-example",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "complex-example.yaml"),
 		},

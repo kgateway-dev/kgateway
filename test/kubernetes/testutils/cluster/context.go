@@ -1,10 +1,11 @@
 package cluster
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 )
 
 // Context contains the metadata about a Kubernetes cluster

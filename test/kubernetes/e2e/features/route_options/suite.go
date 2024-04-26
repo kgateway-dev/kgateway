@@ -57,7 +57,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 	s.Assert().NoError(err, "can apply targetRefManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyEphemeralCurlEventuallyResponds(
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPod,
 		[]curl.Option{
@@ -89,7 +89,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
 	s.Assert().NoError(err, "can apply targetRefManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyEphemeralCurlEventuallyResponds(
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPod,
 		[]curl.Option{

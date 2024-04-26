@@ -20,7 +20,8 @@ func (p *Provider) EventuallyResourceStatusMatchesState(
 	_ context.Context,
 	getter helpers.InputResourceGetter,
 	statusMatcher types.GomegaMatcher,
-	timeout ...time.Duration) {
+	timeout ...time.Duration,
+) {
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		status, err := getResourceNamespacedStatus(getter)
