@@ -107,14 +107,10 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
 		Mgr:                     mgr,
 		RouteOptionClient:       cfg.RouteOptionClient,
-		StatusReporter:          cfg.StatusReporter,
-		KickXds:                 inputChannels.Kick,
-		Mgr:                     mgr,
-		AuthConfigClient:        cfg.AuthConfigClient,
-		RouteOptionClient:       cfg.RouteOptionClient,
 		VirtualHostOptionClient: cfg.VirtualHostOptionClient,
 		StatusReporter:          cfg.StatusReporter,
 		KickXds:                 inputChannels.Kick,
+		AuthConfigClient:        cfg.AuthConfigClient,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
