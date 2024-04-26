@@ -16,7 +16,6 @@ import (
 )
 
 // testingSuite is the entire Suite of tests for the "Route Options" feature
-// RouteOptions
 type testingSuite struct {
 	suite.Suite
 
@@ -34,18 +33,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
-}
-
-func (s *testingSuite) TearDownSuite() {
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-}
-
 func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
@@ -59,7 +46,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		curlPod,
+		curlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
