@@ -4,6 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
@@ -79,6 +83,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		s.ctx,
 		proxyDeployment.ObjectMeta,
 		serverInfoLogLevelAssertion(s.testInstallation, "debug", "connection:trace,upstream:debug"),
+		xdsClusterAssertion(s.testInstallation),
 	)
 }
 
@@ -96,6 +101,36 @@ func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expecte
 				Equal(expectedLogLevel), "defined on the GatewayParameters CR")
 			g.Expect(serverInfo.GetCommandLineOptions().GetComponentLogLevel()).To(
 				Equal(expectedComponentLogLevel), "defined on the GatewayParameters CR")
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second * 10).
+			WithPolling(time.Millisecond * 200).
+			Should(Succeed())
+	}
+}
+
+func xdsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+	return func(ctx context.Context, adminClient *admincli.Client) {
+		testInstallation.Assertions.Gomega.Eventually(func(g Gomega) {
+			clusters, err := adminClient.GetStaticClusters(ctx)
+			g.Expect(err).NotTo(HaveOccurred(), "can get static clusters from config dump")
+
+			xdsCluster, ok := clusters["xds_cluster"]
+			g.Expect(ok).To(BeTrue(), "xds_cluster in list")
+
+			g.Expect(xdsCluster.GetLoadAssignment().GetEndpoints()).To(HaveLen(1))
+			g.Expect(xdsCluster.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()).To(HaveLen(1))
+			xdsSocketAddress := xdsCluster.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress()
+			g.Expect(xdsSocketAddress).NotTo(BeNil())
+
+			g.Expect(xdsSocketAddress.GetAddress()).To(Equal(kubeutils.ServiceFQDN(metav1.ObjectMeta{
+				Name:      kubeutils.GlooServiceName,
+				Namespace: testInstallation.Metadata.InstallNamespace,
+			})), "xds socket address points to gloo service, in installation namespace")
+
+			xdsPort, err := setup.GetNamespacedControlPlaneXdsPort(ctx, testInstallation.Metadata.InstallNamespace, testInstallation.ResourceClients.ServiceClient())
+			g.Expect(err).NotTo(HaveOccurred())
+			Expect(xdsSocketAddress.GetPortValue()).To(Equal(xdsPort), "xds socket port points to gloo service, in installation namespace")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).

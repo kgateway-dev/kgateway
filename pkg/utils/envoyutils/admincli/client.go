@@ -3,14 +3,15 @@ package admincli
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
-	"io"
-	"net/http"
 )
 
 const (
