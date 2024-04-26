@@ -70,13 +70,15 @@ spec:
           protocol: {{ $p.protocol }}
           containerPort: {{ $p.targetPort }}
         {{- end }}
-        - name: readiness
-          protocol: TCP
-          containerPort: {{ $gateway.readinessPort }}
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: readiness
+        exec:
+          command:
+            - wget
+            - -O
+            - /dev/null
+            - 127.0.0.1:19000/ready
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
 {{- if $gateway.istioSDS.enabled }}

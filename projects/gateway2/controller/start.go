@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -49,11 +50,20 @@ type StartConfig struct {
 	// ProxyClient is the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
 	ProxyClient v1.ProxyClient
+
+	// AuthConfigClient is the client used for retrieving AuthConfig objects within the Portal Plugin
+	AuthConfigClient api.AuthConfigClient
+
 	// RouteOptionClient is the client used for retrieving RouteOption objects within the RouteOptionsPlugin
 	// NOTE: We may be able to move this entirely to the RouteOptionsPlugin
 	RouteOptionClient gatewayv1.RouteOptionClient
 	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
 	StatusReporter reporter.StatusReporter
+
+	// A callback to initialize the gateway status syncer with the same dependencies
+	// as the gateway controller (in another start func)
+	// TODO(ilackarms) refactor to enable the status syncer to be started in the same start func
+	QueueStatusForProxies proxy_syncer.QueueStatusForProxiesFn
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -93,6 +103,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
 		Mgr:               mgr,
+		AuthConfigClient:  cfg.AuthConfigClient,
 		RouteOptionClient: cfg.RouteOptionClient,
 		StatusReporter:    cfg.StatusReporter,
 		KickXds:           inputChannels.Kick,
@@ -111,6 +122,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		mgr,
 		k8sGwExtensions,
 		cfg.ProxyClient,
+		cfg.QueueStatusForProxies,
 	)
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")

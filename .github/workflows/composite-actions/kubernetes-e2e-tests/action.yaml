@@ -1,0 +1,39 @@
+name: Kubernetes End-to-End tests
+
+# These tests are located in the /test/kubernetes/e2e directory
+description: Kubernetes End-to-End tests
+
+runs:
+  using: "composite"
+  steps:
+  - name: Prep Go Runner
+    uses: ./.github/workflows/composite-actions/prep-go-runner
+  - name: Install kind
+    uses: helm/kind-action@v1.5.0
+    with:
+      install_only: true
+      version: ${{ matrix.tool-versions.kind }}
+  - uses: azure/setup-kubectl@v3
+    id: kubectl
+    with:
+      version: ${{ matrix.tool-versions.kubectl }}
+  - uses: azure/setup-helm@v3
+    with:
+      version: ${{ matrix.tool-versions.helm }}
+  - name: Setup test env
+    shell: bash
+    env:
+      CLUSTER_NAME: 'kind'
+      CLUSTER_NODE_VERSION: ${{ matrix.tool-versions.cluster-node }}
+    run: ./ci/kind/setup-kind.sh
+  - name: Install test tools
+    shell: bash
+    run: make install-test-tools
+  - name: Execute tests
+    env:
+      GINKGO_USER_FLAGS: ${{ matrix.test-suites.ginkgo-args }}
+      CLUSTER_NAME: 'kind'
+      TEST_PKG: test/kubernetes/e2e/${{ matrix.test-suites.package }}
+    shell: bash
+    run: make test
+  # TODO: Emit artifacts to shared location on failure

@@ -424,13 +424,6 @@ var _ = Describe("Deployer", func() {
 					Expect(*dep.Spec.Replicas).To(Equal(int32(1)))
 					gatewayContainer := dep.Spec.Template.Spec.Containers[0]
 					Expect(gatewayContainer.Name).To(Equal("gloo-gateway"))
-					Expect(gatewayContainer.Ports).To(ContainElement(HaveField("Name", "readiness")))
-					for _, port := range gatewayContainer.Ports {
-						if port.Name == "readiness" {
-							// default from values.yaml
-							Expect(port.ContainerPort).To(Equal(int32(8082)))
-						}
-					}
 					Expect(gatewayContainer.Image).To(ContainSubstring("quay.io/solo-io/gloo-envoy-wrapper"))
 
 					svc := objs.findService(defaultNamespace, defaultServiceName)

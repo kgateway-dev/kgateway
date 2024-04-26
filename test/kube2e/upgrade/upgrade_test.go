@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
@@ -100,7 +102,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		var kubeClientset kubernetes.Interface
 
 		BeforeEach(func() {
-			kubeClientset = kubeutils.MustClientset()
+			kubeClientset = kubetestclients.MustClientset()
 			strictValidation = true
 		})
 
@@ -212,7 +214,7 @@ func addSecondGatewayProxySeparateNamespaceTest(ctx context.Context, crdDir stri
 	// Ensures namespace is cleaned up before continuing
 	runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
 	Eventually(func() bool {
-		_, err := kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
+		_, err := kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
 		return apierrors.IsNotFound(err)
 	}, "60s", "1s").Should(BeTrue())
 }
@@ -266,8 +268,8 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 	var args = []string{"install", testHelper.HelmChartName}
 
 	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
-		"https://storage.googleapis.com/solo-public-helm", "--force-update")
-	args = append(args, "gloo/gloo",
+		helmutils.ChartRepositoryUrl, "--force-update")
+	args = append(args, helmutils.RemoteChartName,
 		"--version", fromRelease)
 
 	args = append(args, "-n", testHelper.InstallNamespace,
@@ -359,7 +361,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	cancel()
 }

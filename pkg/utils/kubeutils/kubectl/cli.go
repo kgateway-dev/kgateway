@@ -3,12 +3,16 @@ package kubectl
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"os"
+	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-
-	"io"
-	"time"
+	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/k8s-utils/testutils/kube"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
@@ -123,6 +127,16 @@ func (c *Cli) Copy(ctx context.Context, from, to string) error {
 	return c.RunCommand(ctx, "cp", from, to)
 }
 
+// DeploymentRolloutStatus waits for the deployment to complete rolling out
+func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, extraArgs ...string) error {
+	rolloutArgs := append([]string{
+		"rollout",
+		"status",
+		fmt.Sprintf("deployment/%s", deployment),
+	}, extraArgs...)
+	return c.RunCommand(ctx, rolloutArgs...)
+}
+
 // StartPortForward creates a PortForwarder based on the provides options, starts it, and returns the PortForwarder
 // If an error was encountered while starting the PortForwarder, it is returned as well
 // NOTE: It is the callers responsibility to close this port-forward
@@ -142,4 +156,26 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 		retry.Attempts(5),
 	)
 	return portForwarder, err
+}
+
+// CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
+func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.NamespacedName, options ...curl.Option) string {
+	appendOption := func(option curl.Option) {
+		options = append(options, option)
+	}
+
+	// The e2e test assertions rely on the transforms.WithCurlHttpResponse to validate the response is what
+	// we would expect
+	// For this transform to behave appropriately, we must execute the request with verbose=true
+	appendOption(curl.VerboseOutput())
+
+	curlArgs := curl.BuildArgs(options...)
+
+	return kube.CurlWithEphemeralPodStable(
+		ctx,
+		c.receiver,
+		c.kubeContext,
+		podMeta.Namespace,
+		podMeta.Name,
+		curlArgs...)
 }
