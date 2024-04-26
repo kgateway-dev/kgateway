@@ -3,21 +3,45 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/actions/provider"
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/kube2e/helper"
+
+	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/operations"
 )
 
-func NewTestCluster() *TestCluster {
+var (
+	SkipGlooInstall = os.Getenv("SKIP_GLOO_INSTALL") == "true"
+)
+
+// MustTestHelper returns the SoloTestHelper used for e2e tests
+// The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
+// in favor of using the exact tool that users rely on
+func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	rootDir := filepath.Join(cwd, "../../../../")
+	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, rootDir, installation.Metadata.InstallNamespace)
+	if err != nil {
+		panic(err)
+	}
+
+	return testHelper
+}
+
+func MustTestCluster() *TestCluster {
 	runtimeContext := runtime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
@@ -41,17 +65,6 @@ type TestCluster struct {
 	activeInstallations map[string]*TestInstallation
 }
 
-// PreFailHandler will execute the PreFailHandler for any of the TestInstallation that are registered
-// with the given TestCluster.
-// The function will be executed when a test in the TestCluster fails, but before any of the cleanup
-// functions (AfterEach, AfterAll) are invoked. This allows us to capture relevant details about
-// the running installation of Gloo Gateway and the Kubernetes Cluster
-func (c *TestCluster) PreFailHandler() {
-	for _, i := range c.activeInstallations {
-		i.PreFailHandler()
-	}
-}
-
 func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext *gloogateway.Context) *TestInstallation {
 	if c.activeInstallations == nil {
 		c.activeInstallations = make(map[string]*TestInstallation, 2)
@@ -67,13 +80,8 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		// ResourceClients are only available _after_ installing Gloo Gateway
 		ResourceClients: nil,
 
-		// Create an operator which is responsible for executing operations against the cluster
-		Operator: operations.NewOperator().
-			WithProgressWriter(ginkgo.GinkgoWriter).
-			WithAssertionInterceptor(gomega.InterceptGomegaFailure),
-
 		// Create an operations provider, and point it to the running installation
-		Actions: provider.NewActionsProvider().
+		Actions: actions.NewActionsProvider().
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
@@ -105,12 +113,8 @@ type TestInstallation struct {
 	// ResourceClients is a set of clients that can manipulate resources owned by Gloo Gateway
 	ResourceClients gloogateway.ResourceClients
 
-	// Operator is responsible for executing operations against an installation of Gloo Gateway
-	// This is meant to simulate the behaviors that a person could execute
-	Operator *operations.Operator
-
 	// Actions is the entity that creates actions that can be executed by the Operator
-	Actions *provider.ActionsProvider
+	Actions *actions.Provider
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
 	Assertions *assertions.Provider
@@ -121,58 +125,28 @@ func (i *TestInstallation) String() string {
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
-	err := installFn(ctx)
-	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
-
-	i.Assertions.EventuallyInstallationSucceeded(ctx)
+	if !i.Metadata.SkipGlooInstall {
+		err := installFn(ctx)
+		i.Assertions.Require.NoError(err)
+		i.Assertions.EventuallyInstallationSucceeded(ctx)
+	}
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
-	i.ResourceClients = gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	i.Assertions.Require.NoError(err)
+	i.ResourceClients = clients
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
+	if i.Metadata.SkipGlooInstall {
+		return
+	}
 	err := uninstallFn(ctx)
-	i.Assertions.Expect(err).NotTo(gomega.HaveOccurred())
-
+	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }
 
-// RunTest will execute a single Test against the installation
-// We intentionally do not expose a RunTests method, because then we would
-// lose the ability to randomize tests through the testing framework
-func (i *TestInstallation) RunTest(ctx context.Context, test Test) {
-	gomega.Expect(test.Name).NotTo(gomega.BeEmpty(), "All tests must include a name")
-
-	i.Operator.Logf("TEST: %s", test.Name)
-	test.Test(ctx, i)
-}
-
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler() {
-	exportReportOp := &operations.BasicOperation{
-		OpName:   "glooctl-export-report",
-		OpAction: i.Actions.Glooctl().ExportReport(),
-		OpAssertion: func(ctx context.Context) {
-			// This action is performed on test failure, and is not modifying the cluster
-			// As a result, there is no assertion that we perform
-		},
-	}
-	err := i.Operator.ExecuteOperations(context.Background(), exportReportOp)
-	if err != nil {
-		i.Operator.Logf("Failed to execute preFailHandler operation for TestInstallation (%s): %+v", i, err)
-	}
-}
-
-// TestExecutor is a function that executes a test, for a given TestInstallation
-type TestExecutor func(ctx context.Context, suite *TestInstallation)
-
-// Test represents a single end-to-end behavior that is validated against a running installation of Gloo Gateway.
-// Tests are grouped by the feature they validate, and are defined in the test/kubernetes/e2e/features directory
-type Test struct {
-	// Name is a required value that uniquely identifies a test
-	Name string
-	// Description is an optional value that is used to provide context to developers about a test's purpose
-	Description string
-	// Test is the actual function that executes the test
-	Test TestExecutor
+func (i *TestInstallation) PreFailHandler(_ context.Context) {
+	// Do nothing for now, we need to impelement `glooctl export report`
 }

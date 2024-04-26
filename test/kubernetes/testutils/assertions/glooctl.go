@@ -4,23 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
-
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
-
-// CheckResources returns the ClusterAssertion that performs a `glooctl check`
-func (p *Provider) CheckResources() ClusterAssertion {
-	return func(ctx context.Context) {
-		ginkgo.GinkgoHelper()
-
-		p.EventuallyCheckResourcesOk(ctx)
-	}
-}
 
 // EventuallyCheckResourcesOk asserts that `glooctl check` eventually responds Ok
 func (p *Provider) EventuallyCheckResourcesOk(ctx context.Context) {
@@ -56,24 +46,8 @@ func (p *Provider) EventuallyInstallationSucceeded(ctx context.Context) {
 	p.EventuallyCheckResourcesOk(ctx)
 }
 
-func (p *Provider) InstallationWasSuccessful() ClusterAssertion {
-	return func(ctx context.Context) {
-		ginkgo.GinkgoHelper()
-
-		p.EventuallyInstallationSucceeded(ctx)
-	}
-}
-
 func (p *Provider) EventuallyUninstallationSucceeded(ctx context.Context) {
 	p.expectGlooGatewayContextDefined()
 
 	p.ExpectNamespaceNotExist(ctx, p.glooGatewayContext.InstallNamespace)
-}
-
-func (p *Provider) UninstallationWasSuccessful() ClusterAssertion {
-	return func(ctx context.Context) {
-		ginkgo.GinkgoHelper()
-
-		p.EventuallyUninstallationSucceeded(ctx)
-	}
 }
