@@ -5,7 +5,7 @@ k8s:
 
 # Default values for the Gloo Gateway - Kubernetes Gateway API integration
 kubeGateway:
-  enabled: true
+  enabled: false
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
