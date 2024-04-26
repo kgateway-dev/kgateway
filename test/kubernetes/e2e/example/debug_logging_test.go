@@ -16,16 +16,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestBasicInstallation is the function which executes a series of tests against a given installation
-func TestBasicInstallation(t *testing.T) {
+// TestInstallationWithDebugLogLevel is the function which executes a series of tests against a given installation
+func TestInstallationWithDebugLogLevel(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
 			SkipGlooInstall:    e2e.SkipGlooInstall,
-			InstallNamespace:   "basic-example",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "basic-example.yaml"),
+			InstallNamespace:   "debug-example",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
 		},
 	)
 
@@ -44,17 +44,10 @@ func TestBasicInstallation(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-		})
+	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	// The name here is important for debuggability
-	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName
-	// In this case, the output would be:
-	// TestBasicInstallation/Example/{test name}
-	// We prefer to follow CamelCase convention for names of these sub-tests
 	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})
