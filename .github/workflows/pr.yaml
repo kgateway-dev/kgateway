@@ -43,7 +43,7 @@ jobs:
     - name: Additional cluster setup
       run: ./projects/gateway2/kind.sh
     - name: Install Gloo Gateway
-      run: helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace
+      run: helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true
     - name: Pre-test cleanup of resources
       run: kubectl delete rs --all
     - name: Test Conformance
