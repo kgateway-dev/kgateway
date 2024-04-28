@@ -243,11 +243,11 @@ var _ = Describe("Helm Test", func() {
 				pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-labels:
-  app: gloo
 metadata:
   name: gloo-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   minAvailable: '2'
   selector:
@@ -269,11 +269,11 @@ spec:
 				pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-labels:
-  app: gloo
 metadata:
   name: gloo-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   maxUnavailable: '2'
   selector:
@@ -2181,11 +2181,11 @@ spec:
 						pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-labels:
-  app: gloo
 metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   minAvailable: '2'
   selector:
@@ -2207,11 +2207,11 @@ spec:
 						pdb := makeUnstructured(`
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-labels:
-  app: gloo
 metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   maxUnavailable: '2'
   selector:
@@ -2234,11 +2234,11 @@ spec:
 						pdbFormat := `
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-labels:
-  app: gloo
 metadata:
   name: %s-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   maxUnavailable: '2'
   selector:
