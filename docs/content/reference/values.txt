@@ -1,7 +1,7 @@
 |Option|Type|Default Value|Description|
 |------|----|-----------|-------------|
 |namespace.create|bool|false|create the installation namespace|
-|kubeGateway.enabled|bool|true|Enable the Gloo Gateway Kubernetes Gateway API controller. Defaults to true.|
+|kubeGateway.enabled|bool|false|Enable the Gloo Gateway Kubernetes Gateway API controller.|
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
