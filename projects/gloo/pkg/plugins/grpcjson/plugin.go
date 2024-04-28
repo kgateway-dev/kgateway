@@ -3,6 +3,7 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
+	"reflect"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 var (
@@ -60,6 +62,7 @@ type plugin struct {
 	upstreamFilters map[string]plugins.StagedHttpFilter
 	// List of listeners that need an empty gRPC json filter that will be overridden by a route
 	affectedListeners map[*v1.HttpListener]int
+	ctx               context.Context
 }
 
 func NewPlugin() *plugin {
@@ -73,6 +76,7 @@ func (p *plugin) Name() string {
 func (p *plugin) Init(params plugins.InitParams) {
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
 	p.affectedListeners = make(map[*v1.HttpListener]int)
+	p.ctx = params.Ctx
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
@@ -148,7 +152,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 	routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in.GetRouteAction())
 	if err != nil {
-		return err
+		contextutils.LoggerFrom(p.ctx).Warnf("grpcjson plugin is unsupported on route %s of type %s", in.GetName(), reflect.TypeOf(in.GetAction()))
+		return nil
 	}
 	for _, us := range routeUpstreams {
 		if filter, ok := p.upstreamFilters[us.Key()]; ok {
