@@ -59,7 +59,7 @@ func TestK8sGateway(t *testing.T) {
 		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 
-	t.Run("Port Routing", func(t *testing.T) {
+	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
 	})
 }

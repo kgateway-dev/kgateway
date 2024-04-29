@@ -24,7 +24,7 @@ var (
 	matchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "inputs/match-port-and-targetport.yaml")
 	invalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "inputs/invalid-port-without-targetport.yaml")
 
-	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
+	// When we apply the setup.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
@@ -32,14 +32,7 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
-	testService = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-svc",
-			Namespace: "default",
-		},
-	}
-
-	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
+	// curlPod is the Pod that will be used to execute curl requests, and is defined in the port routing setup.yaml manifest files
 	curlPodExecOpt = kubectl.PodExecOptions{
 		Name:      "curl",
 		Namespace: "curl",

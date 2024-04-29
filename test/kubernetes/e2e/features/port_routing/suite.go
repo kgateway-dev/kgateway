@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-// portRoutingTestingSuite is the entire Suite of tests for the "Port Routing" cases
+// portRoutingTestingSuite is the entire Suite of tests for the "PortRouting" cases
 type portRoutingTestingSuite struct {
 	suite.Suite
 
@@ -21,6 +21,21 @@ type portRoutingTestingSuite struct {
 	testInstallation *e2e.TestInstallation
 }
 
+/*
+The port routing suite sets up in the following order
+
+SetupSuite:
+ 1. Create k8s Gateway
+ 2. Proxy provisioned
+
+Each port routing test:
+ 1. Attach HttpRoute with different port/targetport definition per test
+ 2. Remove HttpRoute, proxy still exists without any routes
+
+TearDownSuite:
+ 1. Deletes the k8s Gateway
+ 2. Proxy de-provisioned
+*/
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &portRoutingTestingSuite{
 		ctx:              ctx,
@@ -30,7 +45,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *portRoutingTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.Assert().NoError(err, "can apply setup manifest")
+	s.NoError(err, "can apply setup manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 }
 
 func (s *portRoutingTestingSuite) TearDownSuite() {
@@ -46,7 +62,7 @@ func (s *portRoutingTestingSuite) TestInvalidPortAndValidTargetport() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortAndValidTargetportManifest)
-	s.Assert().NoError(err, "can apply invalidPortAndValidTargetportManifest")
+	s.NoError(err, "can apply invalidPortAndValidTargetportManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -66,7 +82,7 @@ func (s *portRoutingTestingSuite) TestMatchPortAndTargetport() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, matchPortandTargetportManifest)
-	s.Assert().NoError(err, "can apply matchPortandTargetportManifest")
+	s.NoError(err, "can apply matchPortandTargetportManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -86,7 +102,7 @@ func (s *portRoutingTestingSuite) TestMatchPodPortWithoutTargetport() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, matchPodPortWithoutTargetportManifest)
-	s.Assert().NoError(err, "can apply matchPodPortWithoutTargetportManifest")
+	s.NoError(err, "can apply matchPodPortWithoutTargetportManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -106,7 +122,7 @@ func (s *portRoutingTestingSuite) TestInvalidPortWithoutTargetport() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortWithoutTargetportManifest)
-	s.Assert().NoError(err, "can apply invalidPortWithoutTargetportManifest")
+	s.NoError(err, "can apply invalidPortWithoutTargetportManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -126,7 +142,7 @@ func (s *portRoutingTestingSuite) TestInvalidPortAndInvalidTargetportManifest() 
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortAndInvalidTargetportManifest)
-	s.Assert().NoError(err, "can apply invalidPortAndInvalidTargetportManifest")
+	s.NoError(err, "can apply invalidPortAndInvalidTargetportManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(

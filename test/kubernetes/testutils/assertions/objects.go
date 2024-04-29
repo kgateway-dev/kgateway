@@ -16,7 +16,7 @@ func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client
 	for _, o := range objects {
 		p.Gomega.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
-			innerG.Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("object %v %s.%s. should be available in cluster", o.GetObjectKind().GroupVersionKind().String(), o.GetName(), o.GetNamespace()))
+			innerG.Expect(err).NotTo(HaveOccurred(), "object %v %s should be available in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String())
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 20).
@@ -29,7 +29,7 @@ func (p *Provider) EventuallyObjectsNotExist(ctx context.Context, objects ...cli
 	for _, o := range objects {
 		p.Gomega.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
-			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), fmt.Sprintf("object %v %s.%s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), o.GetName(), o.GetNamespace()))
+			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object %v %s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String())
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 20).
