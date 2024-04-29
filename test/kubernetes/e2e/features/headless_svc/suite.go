@@ -63,7 +63,9 @@ func (s *headlessSvcSuite) TestConfigureRoutingHeadlessSvc() {
 			curlPodExecOpt,
 			[]curl.Option{
 				curl.WithHost(kubeutils.ServiceFQDN(k8sApiproxyService.ObjectMeta)),
-				curl.WithHostHeader("example.com"),
+				// The host header must match the hostnames in the HTTPRoute
+				curl.WithHostHeader("headless.example.com"),
+				curl.WithPort(80),
 			},
 			expectedHealthyResponse)
 	} else {
@@ -75,7 +77,9 @@ func (s *headlessSvcSuite) TestConfigureRoutingHeadlessSvc() {
 			curlPodExecOpt,
 			[]curl.Option{
 				curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
-				curl.WithHostHeader("example.com"),
+				// The host header must match the domain in the VirtualService
+				curl.WithHostHeader("headless.example.com"),
+				curl.WithPort(80),
 			},
 			expectedHealthyResponse)
 	}
