@@ -32,6 +32,9 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "syncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
+	// DO_NOT_MERGE: this is just being used for testing an action
+	logger.Infof("~~HI THERE!~~")
+	logger.Infof("~~USING THE CUSTOM GLOO OSS HASH!~~")
 	logger.Infof("begin sync %v (%v upstreams)", snapHash, len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snapHash)
 
