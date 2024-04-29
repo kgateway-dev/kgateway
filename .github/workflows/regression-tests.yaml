@@ -66,3 +66,27 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
+
+  kube_gateway_api_conformance_tests:
+    name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
+    needs: prepare_env
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    if: ${{ !github.event.pull_request.draft }}
+    strategy:
+      fail-fast: false
+      matrix:
+        kube-version: [ { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' } ]
+        # use standard since other variants don't currently work with these tests
+        # (see https://github.com/solo-io/solo-projects/issues/6094)
+        image-variant:
+          - standard
+    steps:
+    - uses: actions/checkout@v3
+    - id: auto-succeed-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
+      run: |
+        echo "Kubernetes Gateway API conformance tests auto-succeeded"
+    - id: run-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
+      uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
