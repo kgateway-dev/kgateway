@@ -3,25 +3,6 @@
 ## Testing Philosophy
 Our goal for Kubernetes tests is to mirror the behavior that users take on the Gloo Gateway product as much as possible.
 
-## Test Utilities
-### Actions
-A [ClusterAction](./testutils/actions/action.go) is a function that will be executed against the cluster, to mutate its state.
-
-_For more details on the actions, see the [actions](./testutils/actions) package._
-
-### Assertions
-A [ClusterAssertion](./testutils/assertions/assertion.go) is a function which asserts a given behavior of a cluster, at a point in time.
-
-_For more details on the assertions, see the [assertions](./testutils/assertions) package._
-
-### Operations
-An [Operation](./testutils/operations/operation.go) is the combination of an `Action` and an `Assertion`. The idea is that when writing tests, we should be performing an assertion for every action that takes place.
-
-_For more details on the operations, see the [operations](./testutils/operations) package._
-
-### Operator
-An [Operator](./testutils/operations/operator.go) is a centralized tool that executes Operations against a cluster. It is intentionally unaware of _what_ those operations do, and is just used to coordinate the actions that are taken, and provide a centralized ledger for the events that occurred.
-
 ## End-To-End Testing
 ### Historical Challenges
 _We document the historical challenges we have experienced with writing and managing end-to-end tests as a way of avoiding making the same mistakes:_

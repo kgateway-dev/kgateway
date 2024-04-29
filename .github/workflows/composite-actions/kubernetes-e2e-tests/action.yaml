@@ -31,9 +31,9 @@ runs:
     run: make install-test-tools
   - name: Execute tests
     env:
-      GINKGO_USER_FLAGS: ${{ matrix.test-suites.ginkgo-args }}
+      GO_TEST_USER_ARGS: ${{ matrix.test-suites.go-test-args }}
       CLUSTER_NAME: 'kind'
       TEST_PKG: test/kubernetes/e2e/${{ matrix.test-suites.package }}
     shell: bash
-    run: make test
+    run: make go-test
   # TODO: Emit artifacts to shared location on failure
