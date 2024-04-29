@@ -17,7 +17,7 @@ import (
 func (p *Provider) AssertEnvoyAdminApi(
 	ctx context.Context,
 	envoyDeployment metav1.ObjectMeta,
-	adminAssertion func(ctx context.Context, adminClient *admincli.Client),
+	adminAssertions ...func(ctx context.Context, adminClient *admincli.Client),
 ) {
 	// Before opening a port-forward, we assert that there is at least one Pod that is ready
 	p.EventuallyRunningReplicas(ctx, envoyDeployment, BeNumerically(">=", 1))
@@ -49,5 +49,8 @@ func (p *Provider) AssertEnvoyAdminApi(
 			curl.WithRetries(3, 0, 10),
 			curl.WithPort(admincli.DefaultAdminPort),
 		)
-	adminAssertion(ctx, adminClient)
+
+	for _, adminAssertion := range adminAssertions {
+		adminAssertion(ctx, adminClient)
+	}
 }
