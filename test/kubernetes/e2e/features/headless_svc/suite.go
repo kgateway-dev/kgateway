@@ -6,10 +6,10 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type headlessSvcSuite struct {
@@ -30,6 +30,22 @@ func NewHeadlessSvcTestingSuite(ctx context.Context, testInst *e2e.TestInstallat
 		testInstallation: testInst,
 		useK8sGatewayApi: useK8sGatewayApi,
 	}
+}
+
+// SetupSuite generates manifest files for the test suite
+func (s *headlessSvcSuite) SetupSuite() {
+
+	if s.useK8sGatewayApi {
+		// use the k8s gateway api resources
+		resources := []client.Object{gw, headlessSvcHTTPRoute}
+		err := writeResourcesToFile(resources, k8sApiRoutingManifest)
+		s.Require().NoError(err, "can write resources to file")
+	} else {
+		resources := getClassicEdgeResources(s.testInstallation.Metadata.InstallNamespace)
+		err := writeResourcesToFile(resources, classicApiRoutingManifest)
+		s.Require().NoError(err, "can write resources to file")
+	}
+
 }
 
 func (s *headlessSvcSuite) TestConfigureRoutingHeadlessSvc() {
