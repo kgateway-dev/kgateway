@@ -152,8 +152,11 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 	routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in.GetRouteAction())
 	if err != nil {
-		contextutils.LoggerFrom(p.ctx).Warnf("grpcjson plugin is unsupported on route %s of type %s", in.GetName(), reflect.TypeOf(in.GetAction()))
-		return nil
+		if err.Error() == pluginutils.InvalidRouteErrMsg {
+			contextutils.LoggerFrom(p.ctx).Warnf("grpcjson plugin is unsupported on route %s of type %s", in.GetName(), reflect.TypeOf(in.GetAction()))
+			return nil
+		}
+		return err
 	}
 	for _, us := range routeUpstreams {
 		if filter, ok := p.upstreamFilters[us.Key()]; ok {

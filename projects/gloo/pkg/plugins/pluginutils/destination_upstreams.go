@@ -12,6 +12,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+const InvalidRouteErrMsg = "invalid route"
+
 func DestinationUpstreams(snap *v1snap.ApiSnapshot, in *v1.RouteAction) ([]core.ResourceRef, error) {
 	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
@@ -32,7 +34,7 @@ func DestinationUpstreams(snap *v1snap.ApiSnapshot, in *v1.RouteAction) ([]core.
 		}
 		return destinationsToRefs(upstreamGroup.GetDestinations())
 	}
-	return nil, errors.New("invalid route")
+	return nil, errors.New(InvalidRouteErrMsg)
 }
 
 func destinationsToRefs(destinations []*v1.WeightedDestination) ([]core.ResourceRef, error) {
