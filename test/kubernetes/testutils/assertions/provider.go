@@ -28,6 +28,8 @@ type Provider struct {
 // NewProvider returns a Provider that will provide Assertions that can be executed against an
 // installation of Gloo Gateway
 func NewProvider(t *testing.T) *Provider {
+	gomega.RegisterTestingT(t)
+
 	return &Provider{
 		Assert:  assert.New(t),
 		Require: require.New(t),

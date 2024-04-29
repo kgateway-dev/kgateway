@@ -8,9 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -19,18 +16,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestComplexInstallation is the function which executes a series of tests against a given installation
-func TestComplexInstallation(t *testing.T) {
-	RegisterFailHandler(Fail)
-
+// TestInstallationWithDebugLogLevel is the function which executes a series of tests against a given installation
+func TestInstallationWithDebugLogLevel(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
 			SkipGlooInstall:    e2e.SkipGlooInstall,
-			InstallNamespace:   "complex-example",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "complex-example.yaml"),
+			InstallNamespace:   "debug-example",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
 		},
 	)
 
@@ -49,10 +44,8 @@ func TestComplexInstallation(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-		})
+	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	t.Run("Example", func(t *testing.T) {
