@@ -23,6 +23,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
+	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -80,7 +81,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		}
 	}
 
-	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices)
+	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices, vhoptquery.IterateIndices)
 	queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
 	resourceClientFactory := &factory.MemoryResourceClientFactory{

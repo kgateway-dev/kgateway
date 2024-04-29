@@ -29,15 +29,19 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) SetupSuite() {
+	// This is code that will be executed before an entire suite is run
 }
 
 func (s *testingSuite) TearDownSuite() {
+	// This is code that will be executed after an entire suite is run
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	// This is code that will be executed before each test is run
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
+	// This is code that will be executed after each test is run
 }
 
 func (s *testingSuite) TestExampleAssertion() {

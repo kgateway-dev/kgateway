@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Add Indexes for VirtualHostOptions queries to the fake indexed client in the translator test.
+    This was missed in the original implementation. This does not cause the tests to fail, but logs an error
+    which is now gone.
