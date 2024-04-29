@@ -1104,6 +1104,30 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
+# Targets for running Kubernetes Gateway API conformance tests
+#----------------------------------------------------------------------------------
+
+# Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
+$(TEST_ASSET_DIR)/conformance/conformance_test.go:
+	mkdir -p $(TEST_ASSET_DIR)/conformance
+	echo "//go:build conformance" > $@
+	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
+	go fmt $@
+
+CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
+
+# Run the conformance test suite
+.PHONY: conformance
+conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	go test -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+
+# Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
+# conformance tests.
+conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	go test -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+	-run-test=$*
+
+#----------------------------------------------------------------------------------
 # Security Scan
 #----------------------------------------------------------------------------------
 # Locally run the Trivy security scan to generate result report as markdown
