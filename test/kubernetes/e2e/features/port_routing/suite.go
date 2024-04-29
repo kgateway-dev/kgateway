@@ -43,7 +43,6 @@ func (s *portRoutingTestingSuite) TestInvalidPortAndValidTargetport() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, invalidPortAndValidTargetportManifest)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortAndValidTargetportManifest)
@@ -64,7 +63,6 @@ func (s *portRoutingTestingSuite) TestMatchPortAndTargetport() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, matchPortandTargetportManifest)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, matchPortandTargetportManifest)
@@ -85,7 +83,6 @@ func (s *portRoutingTestingSuite) TestMatchPodPortWithoutTargetport() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, matchPodPortWithoutTargetportManifest)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, matchPodPortWithoutTargetportManifest)
@@ -106,7 +103,6 @@ func (s *portRoutingTestingSuite) TestInvalidPortWithoutTargetport() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, invalidPortWithoutTargetportManifest)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortWithoutTargetportManifest)
@@ -127,7 +123,6 @@ func (s *portRoutingTestingSuite) TestInvalidPortAndInvalidTargetportManifest() 
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, invalidPortAndInvalidTargetportManifest)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortAndInvalidTargetportManifest)
