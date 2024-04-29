@@ -1,16 +1,10 @@
 package headless_svc
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/json"
-	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/ghodss/yaml"
-	errors "github.com/rotisserie/eris"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -24,8 +18,8 @@ import (
 
 var (
 	headlessSvcSetupManifest  = filepath.Join(util.MustGetThisDir(), "inputs/setup.yaml")
-	k8sApiRoutingManifest     = filepath.Join(util.MustGetThisDir(), "inputs/generated_k8s_api.yaml")
-	classicApiRoutingManifest = filepath.Join(util.MustGetThisDir(), "inputs/generated_classic_api.yaml")
+	k8sApiRoutingManifest     = filepath.Join(util.MustGetThisDir(), "inputs/k8s_api.gen.yaml")
+	classicApiRoutingManifest = filepath.Join(util.MustGetThisDir(), "inputs/classic_api.gen.yaml")
 
 	headlessSvcDomain = "headless.example.com"
 
@@ -116,7 +110,7 @@ var (
 					Protocol: "HTTP",
 					AllowedRoutes: &gwv1.AllowedRoutes{
 						Namespaces: &gwv1.RouteNamespaces{
-							From: ptrTo(gwv1.NamespacesFromSame),
+							From: ptr.To(gwv1.NamespacesFromSame),
 						},
 					},
 				},
@@ -150,7 +144,7 @@ var (
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
 									Name: "headless-example-svc",
-									Port: ptrTo(gwv1.PortNumber(8080)),
+									Port: ptr.To(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -160,73 +154,3 @@ var (
 		},
 	}
 )
-
-func writeResourcesToFile(resources []client.Object, fileName string) error {
-	// Marshal resources to YAML
-	outputResourceManifest := &bytes.Buffer{}
-	for _, resource := range resources {
-		yamlData, err := objectToYaml(resource)
-		if err != nil {
-			return errors.Wrap(err, "can marshal resources to YAML")
-		}
-
-		outputResourceManifest.Write(yamlData)
-
-		// Separate resources with '---'
-		outputResourceManifest.WriteString("\n---\n")
-	}
-
-	// Write YAML data to file
-	manifestFile, err := os.Create(fileName)
-	if err != nil {
-		return errors.Wrap(err, "can create generated file")
-	}
-	defer manifestFile.Close()
-
-	_, err = manifestFile.Write(outputResourceManifest.Bytes())
-	if err != nil {
-		return errors.Wrap(err, "can write resources to file")
-	}
-	return nil
-}
-
-func ptrTo[T any](a T) *T {
-	return &a
-}
-
-func objectToYaml(obj client.Object) ([]byte, error) {
-	jsonBytes, err := json.Marshal(obj)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal resource to JSON")
-	}
-
-	yamlBytes, err := yaml.JSONToYAML(jsonBytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert resource JSON to YAML")
-	}
-
-	return cleanUp(yamlBytes), nil
-}
-
-func cleanUp(objYaml []byte) []byte {
-	var lines []string
-	scan := bufio.NewScanner(bytes.NewBuffer(objYaml))
-	for scan.Scan() {
-		line := scan.Text()
-		if isNullCreationTime(line) {
-			continue
-		}
-
-		lines = append(lines, line)
-	}
-
-	if len(lines) == 0 {
-		return nil
-	}
-
-	return []byte(strings.Join(lines, "\n"))
-}
-
-func isNullCreationTime(line string) bool {
-	return strings.TrimSpace(line) == "creationTimestamp: null"
-}
