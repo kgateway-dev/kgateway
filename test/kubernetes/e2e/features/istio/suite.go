@@ -55,7 +55,7 @@ func (s *istioTestingSuite) TearDownSuite() {
 func (s *istioTestingSuite) BeforeEach() {
 	// ensure that auto mtls is enabled
 	upgradeOpts := s.helmOptions
-	upgradeOpts.ExtraArgs = []string{"--set", "settings.gloo.istioOptions.enableAutoMtls=true"}
+	upgradeOpts.ExtraArgs = []string{"--set", "global.istioIntegration.enableAutoMtls=true"}
 	err := helm.HelmUpgradeInstallGloo(s.helmOptions)
 	s.NoError(err, "can upgrade gloo with automtls disabled")
 }
@@ -81,7 +81,7 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 
 	// Disable automtls
 	upgradeOpts := s.helmOptions
-	upgradeOpts.ExtraArgs = []string{"--set", "settings.gloo.istioOptions.enableAutoMtls=false"}
+	upgradeOpts.ExtraArgs = []string{"--set", "global.istioIntegration.enableAutoMtls=false"}
 	err = helm.HelmUpgradeInstallGloo(s.helmOptions)
 	s.NoError(err, "can upgrade gloo with automtls disabled")
 
@@ -119,7 +119,7 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 
 	// Disable automtls
 	upgradeOpts := s.helmOptions
-	upgradeOpts.ExtraArgs = []string{"--set", "settings.gloo.istioOptions.enableAutoMtls=false"}
+	upgradeOpts.ExtraArgs = []string{"--set", "global.istioIntegration.enableAutoMtls=false"}
 	err = helm.HelmUpgradeInstallGloo(s.helmOptions)
 	s.NoError(err, "can upgrade gloo with automtls disabled")
 
