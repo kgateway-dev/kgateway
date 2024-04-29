@@ -1,5 +1,8 @@
 # End-to-End Testing Framework
 
+## Testify
+We rely on [testify](https://github.com/stretchr/testify/tree/master) to provide the structure for our end-to-end testing. This allows us to decouple where tests are defined, from where they are run.
+
 ## TestCluster
 A [TestCluster](./test.go) is the structure that manages tests running against a single Kubernetes Cluster.
 
@@ -13,7 +16,7 @@ We try to define a single `TestInstallation` per file in a `TestCluster`. This w
 ## Features
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
-2. We can invoke that same test against different `TestInstallation`s.
+2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
 ## Thanks
 ### Inspiration
@@ -32,6 +35,3 @@ Below are a set of known areas of improvement. The goal is to provide a starting
 - **Cluster provisioning**: We rely on the [setup-kind](/ci/kind/setup-kind.sh) script to provision a cluster. We should make this more flexible by providing a configurable, declarative way to do this.
 - **Istio action**: We need a way to perform Istio actions against a cluster.
 - **Argo action**: We need an easy utility to perform ArgoCD commands against a cluster.
-- **Re-usable Operations**: Constructing an Operation is manual, and that can lead to verbose tests. If there is a consistent set of Operations that we construct in tests, create a utility to do this.
-- **Decouple Testing Framework**: We rely explicitly on Ginkgo/Gomega. It would be nice to decouple this from our framework. We [had attempted this previously](https://github.com/solo-io/gloo/blob/00b9dc79757edc639bb5ea59b21294dd7eb03f89/test/kubernetes/e2e/framework.go#L26), but did not find a clean solution, so we backed out the changes.
-
