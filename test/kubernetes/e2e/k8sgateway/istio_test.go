@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -67,6 +68,6 @@ func TestK8sGatewayIstio(t *testing.T) {
 	})
 
 	t.Run("Istio Integration", func(t *testing.T) {
-		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation))
+		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation, helm.GetHelmOptions(testHelper)))
 	})
 }

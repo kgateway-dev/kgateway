@@ -61,7 +61,7 @@ func HelmUpgradeInstallGloo(options InstallOptions) error {
 	} else {
 		helmCommand = append(helmCommand,
 			"-n", options.InstallNamespace,
-			"-f", filepath.Join(options.TestAssetDir, options.HelmChartName+"-"+options.Version+".tgz"))
+			filepath.Join(options.TestAssetDir, options.HelmChartName+"-"+options.Version+".tgz"))
 	}
 
 	variant := os.Getenv("IMAGE_VARIANT")

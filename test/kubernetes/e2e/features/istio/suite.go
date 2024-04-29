@@ -25,23 +25,31 @@ type istioTestingSuite struct {
 	helmOptions helm.InstallOptions
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, helpOptions helm.InstallOptions) suite.TestingSuite {
 	return &istioTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
+		helmOptions:      helpOptions,
 	}
 }
 
 func (s *istioTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
+
+	// Ensure that the proxy service and deployment are created
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingManifest)
+	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 }
 
 func (s *istioTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
-	s.NoError(err, "can delete setup manifest")
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingManifest)
+	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
+	s.NoError(err, "can delete setup manifest")
 }
 
 func (s *istioTestingSuite) BeforeEach() {
@@ -67,6 +75,7 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
+			curl.WithPath("/headers"),
 		},
 		expectedMtlsResponse)
 
@@ -83,6 +92,7 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
+			curl.WithPath("/headers"),
 		},
 		expectedServiceUnavailableResponse)
 }
@@ -103,6 +113,7 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
+			curl.WithPath("/headers"),
 		},
 		expectedMtlsResponse)
 
@@ -119,6 +130,7 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
+			curl.WithPath("/headers"),
 		},
 		expectedPlaintextResponse)
 }

@@ -20,6 +20,9 @@ settings:
     replaceInvalidRoutes: true
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+  gloo:
+    istioOptions:
+        enableAutoMtls: true
 gateway:
   persistProxySpec: true
   logLevel: info
