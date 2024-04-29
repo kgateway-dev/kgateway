@@ -243,7 +243,10 @@ run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 
 .PHONY: run-performance-tests
-run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2 ## gateway2 conformance tests need to be compiled a certain way, so explicitly skip so it doesn't try compiling
+# Performance tests are filtered using a Ginkgo label
+# This means that any tests which do not rely on Ginkgo, will by default be compiled and run
+# Since this is not the desired behavior, we explicitly skip these packages
+run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2,kubernetes/e2e
 run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
 run-performance-tests: test
 
@@ -1099,6 +1102,30 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) $(STDERR_SILENCE_REDIRECT)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
+
+#----------------------------------------------------------------------------------
+# Targets for running Kubernetes Gateway API conformance tests
+#----------------------------------------------------------------------------------
+
+# Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
+$(TEST_ASSET_DIR)/conformance/conformance_test.go:
+	mkdir -p $(TEST_ASSET_DIR)/conformance
+	echo "//go:build conformance" > $@
+	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
+	go fmt $@
+
+CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
+
+# Run the conformance test suite
+.PHONY: conformance
+conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	go test -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+
+# Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
+# conformance tests.
+conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	go test -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+	-run-test=$*
 
 #----------------------------------------------------------------------------------
 # Security Scan

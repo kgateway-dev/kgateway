@@ -295,7 +295,7 @@ type Gloo struct {
 }
 
 type KubeGateway struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller. Defaults to true."`
+	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
 }
 
 type SecurityOpts struct {
