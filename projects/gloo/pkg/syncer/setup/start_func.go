@@ -55,6 +55,8 @@ func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
 	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
 	authConfigClient api.AuthConfigClient,
+	routeOptionClient gateway.RouteOptionClient,
+	vhOptionClient gateway.VirtualHostOptionClient,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
@@ -64,14 +66,6 @@ func K8sGatewayControllerStartFunc(
 			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, proxyClient)
 		}
 
-		routeOptionClient, err := gateway.NewRouteOptionClient(ctx, opts.RouteOptions)
-		if err != nil {
-			return err
-		}
-		vhOptionClient, err := gateway.NewVirtualHostOptionClient(ctx, opts.VirtualHostOptions)
-		if err != nil {
-			return err
-		}
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
 
