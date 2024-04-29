@@ -21,7 +21,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest = tm
 		}
 
-		It("when k8sgateway is enabled, env var and resources should be rendered", func() {
+		It("when kube gateway integration is enabled, relevant resources are rendered", func() {
 			prepareMakefile(namespace, helmValues{
 				valuesArgs: []string{
 					"kubeGateway.enabled=true",
@@ -45,11 +45,9 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest.Expect("ClusterRoleBinding", "", deployerRbacName+"-binding").NotTo(BeNil())
 		})
 
-		It("when k8sgateway is disabled, env var and resources should not be rendered", func() {
+		It("by default, kube gateway integration is disabled, and relevant resources are not rendered", func() {
 			prepareMakefile(namespace, helmValues{
-				valuesArgs: []string{
-					"kubeGateway.enabled=false",
-				},
+				valuesArgs: []string{},
 			})
 
 			// the env variable that enables the controller should not be set

@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega/types"
+
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 
@@ -15,6 +16,7 @@ import (
 )
 
 // EventuallyResourceStatusMatchesState checks GetNamespacedStatuses status for gloo installation namespace
+<<<<<<< HEAD
 func EventuallyResourceStatusMatchesState(installNamespace string, getter helpers.InputResourceGetter, desiredStatusState core.Status_State, desiredReporter string, timeout ...time.Duration) ClusterAssertion {
 	return func(ctx context.Context) {
 		ginkgo.GinkgoHelper()
@@ -52,6 +54,22 @@ func EventuallyResourceStatusMatchesWarningReasons(installNamespace string, gett
 			g.Expect(*status).To(statusWarningsMatcher)
 		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 	}
+=======
+func (p *Provider) EventuallyResourceStatusMatchesState(
+	_ context.Context,
+	getter helpers.InputResourceGetter,
+	statusMatcher types.GomegaMatcher,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		status, err := getResourceNamespacedStatus(getter)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+		nsStatus := status.GetStatuses()[p.glooGatewayContext.InstallNamespace]
+		g.Expect(nsStatus).ToNot(gomega.BeNil())
+		g.Expect(nsStatus).To(gomega.HaveValue(statusMatcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+>>>>>>> main
 }
 
 func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.NamespacedStatuses, error) {
