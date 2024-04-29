@@ -16,7 +16,6 @@ import (
 )
 
 // testingSuite is the entire Suite of tests for the "Route Options" feature
-// RouteOptions
 type testingSuite struct {
 	suite.Suite
 
@@ -32,18 +31,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
-}
-
-func (s *testingSuite) SetupSuite() {
-}
-
-func (s *testingSuite) TearDownSuite() {
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
