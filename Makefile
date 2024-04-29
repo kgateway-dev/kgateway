@@ -121,9 +121,15 @@ init:
 	git config core.hooksPath .githooks
 
 # Runs [`goimports`](https://pkg.go.dev/golang.org/x/tools/cmd/goimports) which updates imports and formats code
+# TODO: deprecate in favor of using fmt-v2
 .PHONY: fmt
 fmt:
 	$(DEPSGOBIN)/goimports -w $(shell ls -d */ | grep -v vendor)
+
+# Formats code and imports
+.PHONY: fmt-v2
+fmt-v2:
+	$(DEPSGOBIN)/goimports -local "github.com/solo-io/gloo/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
 fmt-changed:
@@ -176,7 +182,7 @@ analyze:
 
 
 #----------------------------------------------------------------------------------
-# Tests
+# Ginkgo Tests
 #----------------------------------------------------------------------------------
 
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
@@ -254,6 +260,23 @@ run-hashicorp-e2e-tests: test
 .PHONY: run-kube-e2e-tests
 run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 run-kube-e2e-tests: test
+
+
+#----------------------------------------------------------------------------------
+# Go Tests
+#----------------------------------------------------------------------------------
+GO_TEST_ENV ?=
+GO_TEST_ARGS ?=
+
+# This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
+# For example, you may want to run tests multiple times, or with various timeouts
+GO_TEST_USER_ARGS ?=
+
+.PHONY: go-test
+go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
+	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
+	./$(TEST_PKG)
 
 #----------------------------------------------------------------------------------
 # Clean

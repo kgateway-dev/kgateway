@@ -1,4 +1,4 @@
-package example
+package classicedge_test
 
 import (
 	"context"
@@ -7,30 +7,25 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/example"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestComplexInstallation is the function which executes a series of tests against a given installation
-func TestComplexInstallation(t *testing.T) {
-	RegisterFailHandler(Fail)
-
+// TestClassicEdgeGateway is the function which executes a series of tests against a given installation where
+// the k8s Gateway controller is disabled
+func TestClassicEdgeGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			SkipGlooInstall:    e2e.SkipGlooInstall,
-			InstallNamespace:   "complex-example",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "complex-example.yaml"),
+			InstallNamespace:   "classic-edge-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "classic-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -49,13 +44,13 @@ func TestComplexInstallation(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	t.Run("InstallGateway", func(t *testing.T) {
-		testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-		})
+	// Install Gloo Gateway with only classic APIs enabled
+	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
+	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	t.Run("Example", func(t *testing.T) {
-		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
+	t.Run("HeadlessSvc", func(t *testing.T) {
+		suite.Run(t, headless_svc.NewHeadlessSvcTestingSuite(ctx, testInstallation, false))
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -26,6 +27,13 @@ type Cli struct {
 	// kubeContext is the optional value of the context for a given kubernetes cluster
 	// If it is not supplied, no context will be included in the command
 	kubeContext string
+}
+
+// PodExecOptions describes the options used to execute a command in a pod
+type PodExecOptions struct {
+	Name      string
+	Namespace string
+	Container string
 }
 
 // NewCli returns an implementation of the kubectl.Cli
@@ -122,6 +130,13 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 		Cause()
 }
 
+// DeleteFileSafe deletes the resources defined in a file, and returns an error if one occurred
+// This differs from DeleteFile in that we always append --ignore-not-found
+func (c *Cli) DeleteFileSafe(ctx context.Context, fileName string, extraArgs ...string) error {
+	safeArgs := append(extraArgs, "--ignore-not-found")
+	return c.DeleteFile(ctx, fileName, safeArgs...)
+}
+
 // Copy copies a file from one location to another
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
 	return c.RunCommand(ctx, "cp", from, to)
@@ -158,7 +173,7 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 	return portForwarder, err
 }
 
-// CurlFromEphemeralPod executes a curl from a pod, using an ephemeral container
+// CurlFromEphemeralPod executes a Curl from a pod, using an ephemeral container to execute the Curl command
 func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.NamespacedName, options ...curl.Option) string {
 	appendOption := func(option curl.Option) {
 		options = append(options, option)
@@ -178,4 +193,60 @@ func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.Namespaced
 		podMeta.Namespace,
 		podMeta.Name,
 		curlArgs...)
+}
+
+// CurlFromPod executes a Curl request from the given pod for the given options.
+// It differs from CurlFromEphemeralPod in that it does not uses an ephemeral container to execute the Curl command
+func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options ...curl.Option) (string, error) {
+	appendOption := func(option curl.Option) {
+		options = append(options, option)
+	}
+
+	// The e2e test assertions rely on the transforms.WithCurlHttpResponse to validate the response is what
+	// we would expect
+	// For this transform to behave appropriately, we must execute the request with verbose=true
+	appendOption(curl.VerboseOutput())
+
+	curlArgs := curl.BuildArgs(options...)
+
+	container := podOpts.Container
+	if container == "" {
+		container = "curl"
+	}
+
+	args := append([]string{
+		"exec",
+		"--container=" + container,
+		podOpts.Name,
+		"-n",
+		podOpts.Namespace,
+		"--",
+		"curl",
+		"--connect-timeout",
+		"1",
+		"--max-time",
+		"5",
+	}, curlArgs...)
+
+	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, nil, args...)
+
+	return stdout + stderr, err
+}
+
+func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (string, string, error) {
+	args = append([]string{"--context", kubeContext}, args...)
+	return c.Execute(ctx, stdin, args...)
+}
+
+func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) (string, string, error) {
+	stdout := new(strings.Builder)
+	stderr := new(strings.Builder)
+
+	err := cmdutils.Command(ctx, "kubectl", args...).
+		// For convenience, we set the stdout and stderr to the receiver
+		// This can still be overwritten by consumers who use the commands
+		WithStdout(stdout).
+		WithStderr(stderr).Run().Cause()
+
+	return stdout.String(), stderr.String(), err
 }

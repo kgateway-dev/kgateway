@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega/types"
+
 	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -16,23 +16,20 @@ import (
 )
 
 // EventuallyResourceStatusMatchesState checks GetNamespacedStatuses status for gloo installation namespace
-func EventuallyResourceStatusMatchesState(installNamespace string, getter helpers.InputResourceGetter, desiredStatusState core.Status_State, desiredReporter string, timeout ...time.Duration) ClusterAssertion {
-	return func(ctx context.Context) {
-		ginkgo.GinkgoHelper()
-
-		statusStateMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"State":      gomega.Equal(desiredStatusState),
-			"ReportedBy": gomega.Equal(desiredReporter),
-		})
-
-		currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-		gomega.Eventually(func(g gomega.Gomega) {
-			status, err := getResourceNamespacedStatus(getter)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-			g.Expect(status.GetStatuses()[installNamespace]).ToNot(gomega.BeNil())
-			g.Expect(*status.GetStatuses()[installNamespace]).To(statusStateMatcher)
-		}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-	}
+func (p *Provider) EventuallyResourceStatusMatchesState(
+	_ context.Context,
+	getter helpers.InputResourceGetter,
+	statusMatcher types.GomegaMatcher,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		status, err := getResourceNamespacedStatus(getter)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+		nsStatus := status.GetStatuses()[p.glooGatewayContext.InstallNamespace]
+		g.Expect(nsStatus).ToNot(gomega.BeNil())
+		g.Expect(nsStatus).To(gomega.HaveValue(statusMatcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.NamespacedStatuses, error) {
