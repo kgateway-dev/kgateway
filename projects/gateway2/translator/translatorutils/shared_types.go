@@ -15,10 +15,3 @@ type ProxyWithReports struct {
 	Proxy   *gloov1.Proxy
 	Reports TranslationReports
 }
-
-func (p *ProxyWithReports) GetProxy() *gloov1.Proxy {
-	if p == nil {
-		return nil
-	}
-	return p.Proxy
-}
