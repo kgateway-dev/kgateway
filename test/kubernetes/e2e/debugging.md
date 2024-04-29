@@ -4,7 +4,7 @@ This document describes workflows that may be useful when debugging e2e tests wi
 
 ## Overview
 
-The entry point for an e2e test is a Go test function of the form `func TestXyz(t *testing.T)` which represents a top level suite against an installation mode of Gloo. For example, the `TestK8sGateway` function in `test/kubernetes/e2e/k8sgateway/k8s_gw_test.go` represents a suite of feautre tests against an installation of Gloo.
+The entry point for an e2e test is a Go test function of the form `func TestXyz(t *testing.T)` which represents a top level suite against an installation mode of Gloo. For example, the `TestK8sGateway` function in `test/kubernetes/e2e/k8sgateway/k8s_gw_test.go` represents a suite of feature tests against an installation of Gloo.
 
 Each feature suite is invoked as a subtest of the top level suite. The subtests use [testify](https://github.com/stretchr/testify) to structure the tests in the feature's test suite and make use of the libarary's assertions.
 
