@@ -144,8 +144,10 @@ func translateGatewayHTTPRouteRule(
 			}
 		}
 
-		// A parent route that delegates to a child route should not have a route
-		// as the routes are derived from the child route
+		// A parent route that delegates to a child route should not have an output route
+		// action (outputRoute.Action) as the routes are derived from the child route.
+		// So this conditional ensures that we do not create a top level route matcher
+		// for the parent route when it delegates to a child route.
 		if outputRoute.GetAction() != nil {
 			outputRoute.Matchers = []*matchers.Matcher{translateGlooMatcher(match)}
 			routes[idx] = outputRoute
