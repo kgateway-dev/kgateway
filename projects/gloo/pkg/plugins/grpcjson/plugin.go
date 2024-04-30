@@ -3,7 +3,6 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
-	"reflect"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -18,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 var (
@@ -147,15 +145,16 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return nil, nil
 }
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	// This plugin is only available for routeActions. Return early if a different action is specified.
+	if _, ok := in.GetAction().(*v1.Route_RouteAction); !ok {
+		return nil
+	}
+
 	if len(p.upstreamFilters) == 0 {
 		return nil
 	}
 	routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in.GetRouteAction())
 	if err != nil {
-		if err.Error() == pluginutils.InvalidRouteErrMsg {
-			contextutils.LoggerFrom(p.ctx).Warnf("grpcjson plugin is unsupported on route %s of type %s", in.GetName(), reflect.TypeOf(in.GetAction()))
-			return nil
-		}
 		return err
 	}
 	for _, us := range routeUpstreams {
