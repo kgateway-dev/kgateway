@@ -23,7 +23,6 @@ func TestInstallationWithErrorLogLevel(t *testing.T) {
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			SkipGlooInstall:    e2e.SkipGlooInstall,
 			InstallNamespace:   "error-example",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "error-example.yaml"),
 		},
