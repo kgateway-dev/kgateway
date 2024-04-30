@@ -60,7 +60,6 @@ type plugin struct {
 	upstreamFilters map[string]plugins.StagedHttpFilter
 	// List of listeners that need an empty gRPC json filter that will be overridden by a route
 	affectedListeners map[*v1.HttpListener]int
-	ctx               context.Context
 }
 
 func NewPlugin() *plugin {
@@ -74,7 +73,6 @@ func (p *plugin) Name() string {
 func (p *plugin) Init(params plugins.InitParams) {
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
 	p.affectedListeners = make(map[*v1.HttpListener]int)
-	p.ctx = params.Ctx
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
