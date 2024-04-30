@@ -34,7 +34,8 @@ spec:
                     bindAddress:
                       type: string
                     bindPort:
-                      format: int32
+                      maximum: 4294967295
+                      minimum: 0
                       type: integer
                     httpListener:
                       type: object
@@ -100,7 +101,8 @@ spec:
                                               value:
                                                 properties:
                                                   defaultValue:
-                                                    format: int32
+                                                    maximum: 4294967295
+                                                    minimum: 0
                                                     type: integer
                                                   runtimeKey:
                                                     type: string
@@ -179,7 +181,8 @@ spec:
                                                 type: string
                                                 x-kubernetes-int-or-string: true
                                               numerator:
-                                                format: int32
+                                                maximum: 4294967295
+                                                minimum: 0
                                                 type: integer
                                             type: object
                                           runtimeKey:
@@ -197,7 +200,8 @@ spec:
                                               value:
                                                 properties:
                                                   defaultValue:
-                                                    format: int32
+                                                    maximum: 4294967295
+                                                    minimum: 0
                                                     type: integer
                                                   runtimeKey:
                                                     type: string
@@ -272,7 +276,8 @@ spec:
                                               value:
                                                 properties:
                                                   defaultValue:
-                                                    format: int32
+                                                    maximum: 4294967295
+                                                    minimum: 0
                                                     type: integer
                                                   runtimeKey:
                                                     type: string
@@ -351,7 +356,8 @@ spec:
                                                 type: string
                                                 x-kubernetes-int-or-string: true
                                               numerator:
-                                                format: int32
+                                                maximum: 4294967295
+                                                minimum: 0
                                                 type: integer
                                             type: object
                                           runtimeKey:
@@ -369,7 +375,8 @@ spec:
                                               value:
                                                 properties:
                                                   defaultValue:
-                                                    format: int32
+                                                    maximum: 4294967295
+                                                    minimum: 0
                                                     type: integer
                                                   runtimeKey:
                                                     type: string
@@ -421,7 +428,8 @@ spec:
                                         type: string
                                     type: object
                                   tlvType:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                 type: object
                               type: array
