@@ -268,7 +268,7 @@ run-kube-e2e-tests: test
 #----------------------------------------------------------------------------------
 # Go Tests
 #----------------------------------------------------------------------------------
-GO_TEST_ENV ?=
+GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 GO_TEST_ARGS ?=
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
