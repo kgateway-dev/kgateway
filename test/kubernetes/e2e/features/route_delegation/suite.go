@@ -3,7 +3,6 @@ package route_delegation
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -15,6 +14,7 @@ import (
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -118,7 +118,7 @@ func (s *tsuite) TestCyclic() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		cyclicRoute)
 	s.Require().NoError(err)
-	s.Require().Truef(routeStatusContainsMsg(cyclicRoute, "cyclic loop detected"), "missing status on cyclic route")
+	s.Require().Truef(utils.HTTPRouteStatusContainsMsg(cyclicRoute, "cyclic loop detected"), "missing status on cyclic route")
 }
 
 func (s *tsuite) TestInvalidChild() {
@@ -135,7 +135,7 @@ func (s *tsuite) TestInvalidChild() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.Require().Truef(routeStatusContainsMsg(invalidRoute, "spec.hostnames must be unset"), "missing status on invalid route")
+	s.Require().Truef(utils.HTTPRouteStatusContainsMsg(invalidRoute, "spec.hostnames must be unset"), "missing status on invalid route")
 }
 
 func (s *tsuite) TestHeaderQueryMatch() {
@@ -157,15 +157,4 @@ func (s *tsuite) TestHeaderQueryMatch() {
 			curl.WithQueryParameters(map[string]string{"queryX": "valX"}),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
-}
-
-func routeStatusContainsMsg(route *gwv1.HTTPRoute, msg string) bool {
-	for _, parent := range route.Status.RouteStatus.Parents {
-		for _, condition := range parent.Conditions {
-			if strings.Contains(condition.Message, msg) {
-				return true
-			}
-		}
-	}
-	return false
 }
