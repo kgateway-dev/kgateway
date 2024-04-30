@@ -9,6 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 
@@ -17,10 +18,6 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
-)
-
-var (
-	SkipGlooInstall = os.Getenv("SKIP_GLOO_INSTALL") == "true"
 )
 
 // MustTestHelper returns the SoloTestHelper used for e2e tests
@@ -125,7 +122,7 @@ func (i *TestInstallation) String() string {
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
-	if !i.Metadata.SkipGlooInstall {
+	if !testutils.ShouldSkipInstall() {
 		err := installFn(ctx)
 		i.Assertions.Require.NoError(err)
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
@@ -138,7 +135,7 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
-	if i.Metadata.SkipGlooInstall {
+	if testutils.ShouldSkipInstall() {
 		return
 	}
 	err := uninstallFn(ctx)
