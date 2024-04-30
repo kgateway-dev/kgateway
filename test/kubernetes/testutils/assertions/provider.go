@@ -29,7 +29,6 @@ type Provider struct {
 // installation of Gloo Gateway
 func NewProvider(t *testing.T) *Provider {
 	gomega.RegisterTestingT(t)
-
 	return &Provider{
 		Assert:  assert.New(t),
 		Require: require.New(t),
