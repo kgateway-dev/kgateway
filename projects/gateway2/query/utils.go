@@ -3,6 +3,8 @@ package query
 import (
 	"errors"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,7 +53,10 @@ func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefR
 			port = uint32(*backendRef.Port)
 		}
 		switch cli := obj.(type) {
-		// TODO(npolshak): Add support for upstream ref directly
+		// TODO(ilackarms): consider converging all backend ref handling to a single package and remove the various switches. Or at least document all locations where we have multiple switches.
+		case *gloov1.Upstream:
+			name := cli.GetName()
+			return &name
 		case *corev1.Service:
 			if port == 0 {
 				reporter.SetCondition(reports.HTTPRouteCondition{

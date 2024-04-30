@@ -283,7 +283,15 @@ func setRouteAction(
 		clusterName := "blackhole_cluster"
 		ns := "blackhole_ns"
 
-		obj, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
+		obj, err := queries.GetBackendForRef(ctx, queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
+		if err != nil {
+			reporter.SetCondition(reports.HTTPRouteCondition{
+				Type:   gwv1.RouteConditionResolvedRefs,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.RouteReasonBackendNotFound,
+			})
+			continue
+		}
 		ptrClusterName := query.ProcessBackendRef(obj, err, reporter, backendRef.BackendObjectReference)
 		if ptrClusterName != nil {
 			clusterName = *ptrClusterName
