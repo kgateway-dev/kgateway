@@ -63,7 +63,7 @@ var (
 
 func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
 	defaultTimeout := time.Second * 20
-	defaultPollingTimeout := time.Second * 5
+	defaultPollingTimeout := time.Second * 2
 	switch len(timeout) {
 	case 0:
 		currentTimeout = defaultTimeout
@@ -128,7 +128,6 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput
 		if opts.LogResponses {
 			log.GreyPrintf("success: %v", res)
 		}
-
 	}, currentTimeout, pollingInterval).Should(Succeed())
 }
 
@@ -163,7 +162,6 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 		if opts.LogResponses {
 			log.GreyPrintf("success: %v", res)
 		}
-
 	}, currentTimeout, pollingInterval).Should(Succeed())
 }
 
@@ -217,7 +215,6 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 
 	if opts.WithoutStats {
 		appendOption(curl.Silent())
-
 	}
 	if opts.ReturnHeaders {
 		appendOption(curl.WithHeadersOnly())
