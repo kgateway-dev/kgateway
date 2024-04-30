@@ -26,7 +26,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 		return nil
 	}
 
-	//TODO(Law): deterministic sorting
+	// TODO(Law): deterministic sorting
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.listener(&lis)
@@ -81,9 +81,21 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 		contextutils.LoggerFrom(ctx).Infof(missingRouteReportErr, route.Name, route.Namespace)
 		return nil
 	}
+	contextutils.LoggerFrom(ctx).Infof("building status for route %s/%s", route.Namespace, route.Name)
 
 	routeStatus := gwv1.RouteStatus{}
-	for _, parentRef := range route.Spec.ParentRefs {
+
+	// Default to using spec.ParentRefs when building the parent statuses for a route.
+	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
+	// may not specify it. In this case, we infer the parentRefs form the RouteReport
+	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
+	var parentRefs []gwv1.ParentReference
+	parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+	if len(parentRefs) == 0 {
+		parentRefs = append(parentRefs, routeReport.parentRefs()...)
+	}
+
+	for _, parentRef := range parentRefs {
 		parentStatusReport := routeReport.parentRef(&parentRef)
 		addMissingParentRefConditions(parentStatusReport)
 
@@ -114,6 +126,7 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 		}
 		routeStatus.Parents = append(routeStatus.Parents, routeParentStatus)
 	}
+
 	return &gwv1.HTTPRouteStatus{
 		RouteStatus: routeStatus,
 	}

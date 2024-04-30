@@ -5,6 +5,13 @@ import (
 	"net/http"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
@@ -12,9 +19,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func TranslateGatewayHTTPRouteRules(
@@ -24,8 +28,29 @@ func TranslateGatewayHTTPRouteRules(
 	gwListener gwv1.Listener,
 	route gwv1.HTTPRoute,
 	reporter reports.ParentRefReporter,
+	baseReporter reports.Reporter,
 ) []*v1.Route {
 	var finalRoutes []*v1.Route
+	routesVisited := sets.New[types.NamespacedName]()
+
+	translateGatewayHTTPRouteRulesUtil(
+		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited)
+	return finalRoutes
+}
+
+// translateGatewayHTTPRouteRulesUtil is a helper to translate an HTTPRoute.
+// In case of route delegation, this function is recursively invoked to flatten the delegated route tree.
+func translateGatewayHTTPRouteRulesUtil(
+	ctx context.Context,
+	pluginRegistry registry.PluginRegistry,
+	queries query.GatewayQueries,
+	gwListener gwv1.Listener,
+	route gwv1.HTTPRoute,
+	reporter reports.ParentRefReporter,
+	baseReporter reports.Reporter,
+	outputs *[]*v1.Route,
+	routesVisited sets.Set[types.NamespacedName],
+) {
 	for _, rule := range route.Spec.Rules {
 		rule := rule
 		if rule.Matches == nil {
@@ -42,6 +67,9 @@ func TranslateGatewayHTTPRouteRules(
 			&route,
 			rule,
 			reporter,
+			baseReporter,
+			outputs,
+			routesVisited,
 		)
 		for _, outputRoute := range outputRoutes {
 			// The above function will return a nil route if a matcher fails to apply plugins
@@ -50,10 +78,9 @@ func TranslateGatewayHTTPRouteRules(
 				continue
 			}
 
-			finalRoutes = append(finalRoutes, outputRoute)
+			*outputs = append(*outputs, outputRoute)
 		}
 	}
-	return finalRoutes
 }
 
 func translateGatewayHTTPRouteRule(
@@ -64,6 +91,9 @@ func translateGatewayHTTPRouteRule(
 	gwroute *gwv1.HTTPRoute,
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
+	baseReporter reports.Reporter,
+	outputs *[]*v1.Route,
+	routesVisited sets.Set[types.NamespacedName],
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
@@ -74,14 +104,21 @@ func translateGatewayHTTPRouteRule(
 			Options:  &v1.RouteOptions{},
 		}
 
+		hasDelegatedRoute := false
 		if len(rule.BackendRefs) > 0 {
-			setRouteAction(
+			hasDelegatedRoute = setRouteAction(
 				ctx,
 				queries,
 				gwroute,
 				rule.BackendRefs,
 				outputRoute,
 				reporter,
+				baseReporter,
+				pluginRegistry,
+				gwListener,
+				match,
+				outputs,
+				routesVisited,
 			)
 		}
 
@@ -99,15 +136,22 @@ func translateGatewayHTTPRouteRule(
 			}
 		}
 
-		if outputRoute.GetAction() == nil {
+		if outputRoute.GetAction() == nil && !hasDelegatedRoute {
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,
 				},
 			}
 		}
-		outputRoute.Matchers = []*matchers.Matcher{translateGlooMatcher(match)}
-		routes[idx] = outputRoute
+
+		// A parent route that delegates to a child route should not have an output route
+		// action (outputRoute.Action) as the routes are derived from the child route.
+		// So this conditional ensures that we do not create a top level route matcher
+		// for the parent route when it delegates to a child route.
+		if outputRoute.GetAction() != nil {
+			outputRoute.Matchers = []*matchers.Matcher{translateGlooMatcher(match)}
+			routes[idx] = outputRoute
+		}
 	}
 	return routes
 }
@@ -140,7 +184,7 @@ func translateGlooMatcher(match gwv1.HTTPRouteMatch) *matchers.Matcher {
 		methods = []string{string(*match.Method)}
 	}
 	m := &matchers.Matcher{
-		//CaseSensitive:   nil,
+		// CaseSensitive:   nil,
 		Headers:         headers,
 		QueryParameters: queryParamMatchers,
 		Methods:         methods,
@@ -174,7 +218,7 @@ func translateGlooHeaderMatcher(header gwv1.HTTPHeaderMatch) *matchers.HeaderMat
 		Name:  string(header.Name),
 		Value: header.Value,
 		Regex: regex,
-		//InvertMatch: header.InvertMatch,
+		// InvertMatch: header.InvertMatch,
 	}
 }
 
@@ -197,12 +241,38 @@ func setRouteAction(
 	backendRefs []gwv1.HTTPBackendRef,
 	outputRoute *v1.Route,
 	reporter reports.ParentRefReporter,
-) {
+	baseReporter reports.Reporter,
+	pluginRegistry registry.PluginRegistry,
+	gwListener gwv1.Listener,
+	match gwv1.HTTPRouteMatch,
+	outputs *[]*v1.Route,
+	routesVisited sets.Set[types.NamespacedName],
+) bool {
 	var weightedDestinations []*v1.WeightedDestination
+	hasDelegatedRoute := false
 
 	for _, backendRef := range backendRefs {
+		// If the backend is an HTTPRoute, it implies route delegation
+		// for which delegated routes are recursively flattened and translated
+		if backendref.RefIsHTTPRoute(backendRef.BackendObjectReference) {
+			hasDelegatedRoute = true
+			// Flatten delegated HTTPRoute references
+			err := flattenDelegatedRoutes(
+				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited)
+			if err != nil {
+				reporter.SetCondition(reports.HTTPRouteCondition{
+					Type:    gwv1.RouteConditionResolvedRefs,
+					Status:  metav1.ConditionFalse,
+					Reason:  gwv1.RouteReasonRefNotPermitted,
+					Message: err.Error(),
+				})
+			}
+			continue
+		}
+
 		clusterName := "blackhole_cluster"
 		ns := "blackhole_ns"
+
 		obj, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
 		ptrClusterName := query.ProcessBackendRef(obj, err, reporter, backendRef.BackendObjectReference)
 		if ptrClusterName != nil {
@@ -227,9 +297,10 @@ func setRouteAction(
 			port = uint32(*backendRef.Port)
 		}
 
+		switch {
 		// get backend for ref - we must do it to make sure we have permissions to access it.
 		// also we need the service so we can translate its name correctly.
-		if backendref.RefIsService(backendRef.BackendObjectReference) {
+		case backendref.RefIsService(backendRef.BackendObjectReference):
 			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Kube{
@@ -245,17 +316,19 @@ func setRouteAction(
 				Weight:  weight,
 				Options: nil,
 			})
-		} else {
+
+		default:
 			// TODO(npolshak): Add support for other types of destinations (upstreams, etc.)
 			contextutils.LoggerFrom(ctx).Errorf("unsupported backend type for kind: %v and type: %v", *backendRef.BackendObjectReference.Kind, *backendRef.BackendObjectReference.Group)
 		}
 	}
 
-	//TODO(revert): need to add ClusterNotFoundResponseCode: routev3.RouteAction_INTERNAL_SERVER_ERROR,
+	// TODO(revert): need to add ClusterNotFoundResponseCode: routev3.RouteAction_INTERNAL_SERVER_ERROR,
 
 	switch len(weightedDestinations) {
-	// case 0:
-	//TODO: report error
+	case 0:
+		// True for delegated BackendRefs. Nothing to be done here since the recursive
+		// implementation of creating routes should correctly configure the route action
 	case 1:
 		outputRoute.Action = &v1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{
@@ -271,4 +344,6 @@ func setRouteAction(
 			},
 		}
 	}
+
+	return hasDelegatedRoute
 }
