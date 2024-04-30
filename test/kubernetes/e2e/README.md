@@ -1,7 +1,7 @@
 # End-to-End Testing Framework
 
 ## Testify
-We rely on [testify](https://github.com/stretchr/testify/tree/master) to provide the structure for our end-to-end testing. This allows us to decouple where tests are defined, from where they are run.
+We rely on [testify](https://github.com/stretchr/testify) to provide the structure for our end-to-end testing. This allows us to decouple where tests are defined, from where they are run.
 
 ## TestCluster
 A [TestCluster](./test.go) is the structure that manages tests running against a single Kubernetes Cluster.
@@ -18,7 +18,12 @@ We define all tests in the [features](./features) package. This is done for a va
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
 2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
+## Debugging
+
+Refer to the [Debugging guide](./debugging.md) for more information on how to debug tests.
+
 ## Thanks
+
 ### Inspiration
 This framework was inspired by the following projects:
 - [Kubernetes Gateway API](https://github.com/kubernetes-sigs/gateway-api/tree/main/conformance)
