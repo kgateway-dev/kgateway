@@ -45,6 +45,10 @@ func flattenDelegatedRoutes(
 		return err
 	}
 
+	// Child routes inherit the hostnames from the parent route
+	hostnames := make([]gwv1.Hostname, len(parent.Spec.Hostnames))
+	copy(hostnames, parent.Spec.Hostnames)
+
 	// For these child routes, recursively flatten them
 	for _, child := range children {
 		childRef := types.NamespacedName{Namespace: child.Namespace, Name: child.Name}
@@ -80,7 +84,8 @@ func flattenDelegatedRoutes(
 			continue
 		}
 
-		translateGatewayHTTPRouteRulesUtil(ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited)
+		translateGatewayHTTPRouteRulesUtil(
+			ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames)
 	}
 
 	routesVisited.Delete(parentRef)
