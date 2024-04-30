@@ -471,7 +471,8 @@ spec:
                       allowPartialMessage:
                         type: boolean
                       maxRequestBytes:
-                        format: int32
+                        maximum: 4294967295
+                        minimum: 0
                         type: integer
                       packAsBytes:
                         type: boolean
@@ -481,7 +482,8 @@ spec:
                   statPrefix:
                     type: string
                   statusOnError:
-                    format: int32
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   transportApiVersion:
                     type: string
@@ -626,7 +628,8 @@ spec:
                       invalidRouteResponseBody:
                         type: string
                       invalidRouteResponseCode:
-                        format: int32
+                        maximum: 4294967295
+                        minimum: 0
                         type: integer
                       replaceInvalidRoutes:
                         type: boolean
@@ -693,7 +696,8 @@ spec:
                       QPS:
                         type: number
                       burst:
-                        format: int32
+                        maximum: 4294967295
+                        minimum: 0
                         type: integer
                     type: object
                 type: object
@@ -764,7 +768,8 @@ spec:
                         allowPartialMessage:
                           type: boolean
                         maxRequestBytes:
-                          format: int32
+                          maximum: 4294967295
+                          minimum: 0
                           type: integer
                         packAsBytes:
                           type: boolean
@@ -774,7 +779,8 @@ spec:
                     statPrefix:
                       type: string
                     statusOnError:
-                      format: int32
+                      maximum: 4294967295
+                      minimum: 0
                       type: integer
                     transportApiVersion:
                       type: string
@@ -830,7 +836,8 @@ spec:
                         rateLimit:
                           properties:
                             requestsPerUnit:
-                              format: int32
+                              maximum: 4294967295
+                              minimum: 0
                               type: integer
                             unit:
                               type: string
