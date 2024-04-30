@@ -2,8 +2,6 @@
 This section describes how to use [kind](https://kind.sigs.k8s.io) and [Tilt](https://tilt.dev) for a simplified
 workflow that offers easy deployments and rapid iterative builds.
 
-This allows
-
 ### Prerequisites
 
 1. [Docker](https://docs.docker.com/install/): v19.03 or newer
