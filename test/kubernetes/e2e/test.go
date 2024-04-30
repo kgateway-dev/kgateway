@@ -15,12 +15,12 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	k8sruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
+	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
