@@ -16,13 +16,13 @@ import (
 )
 
 var (
-	setupManifest = filepath.Join(util.MustGetThisDir(), "inputs/setup.yaml")
+	setupManifest = filepath.Join(util.MustGetThisDir(), "testdata/setup.yaml")
 
-	invalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "inputs/invalid-port-and-valid-targetport.yaml")
-	invalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "inputs/invalid-port-and-invalid-targetport.yaml")
-	matchPodPortWithoutTargetportManifest   = filepath.Join(util.MustGetThisDir(), "inputs/match-pod-port-without-targetport.yaml")
-	matchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "inputs/match-port-and-targetport.yaml")
-	invalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "inputs/invalid-port-without-targetport.yaml")
+	invalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata/invalid-port-and-valid-targetport.yaml")
+	invalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "testdata/invalid-port-and-invalid-targetport.yaml")
+	matchPodPortWithoutTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata/match-pod-port-without-targetport.yaml")
+	matchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "testdata/match-port-and-targetport.yaml")
+	invalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "testdata/invalid-port-without-targetport.yaml")
 
 	// When we apply the setup.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
