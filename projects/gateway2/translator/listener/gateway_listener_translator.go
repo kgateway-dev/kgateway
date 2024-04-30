@@ -136,7 +136,6 @@ func (ml *mergedListeners) appendHttpListener(
 		listenerReporter: reporter,
 		listener:         listener,
 	})
-
 }
 
 func (ml *mergedListeners) appendHttpsListener(
@@ -144,9 +143,8 @@ func (ml *mergedListeners) appendHttpsListener(
 	routesWithHosts []*query.ListenerRouteResult,
 	reporter reports.ListenerReporter,
 ) {
-
 	// create a new filter chain for the listener
-	//protocol:            listener.Protocol,
+	// protocol:            listener.Protocol,
 	mfc := httpsFilterChain{
 		gatewayListenerName: string(listener.Name),
 		sniDomain:           listener.Hostname,
@@ -236,7 +234,6 @@ func (ml *mergedListener) translateListener(
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
 				// TODO handle internal error, should never overlap
-
 			}
 			mergedVhosts[vhostRef] = vhost
 		}
@@ -287,7 +284,6 @@ func (ml *mergedListener) translateListener(
 		Options:      nil,
 		RouteOptions: nil,
 	}
-
 }
 
 // httpFilterChain each one represents a GW Listener that has been merged into a single Gloo Listener (with distinct filter chains).
@@ -310,8 +306,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
-
-	var routesByHost = map[string]routeutils.SortableRoutes{}
+	routesByHost := map[string]routeutils.SortableRoutes{}
 	for _, parent := range httpFilterChain.parents {
 		buildRoutesPerHost(
 			ctx,
@@ -367,7 +362,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	listenerReporter reports.ListenerReporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 	// process routes first, so any route related errors are reported on the httproute.
-	var routesByHost = map[string]routeutils.SortableRoutes{}
+	routesByHost := map[string]routeutils.SortableRoutes{}
 	buildRoutesPerHost(
 		ctx,
 		routesByHost,
@@ -447,6 +442,7 @@ func buildRoutesPerHost(
 			gwListener,
 			routeWithHosts.Route,
 			parentRefReporter,
+			reporter,
 		)
 
 		if len(routes) == 0 {

@@ -46,3 +46,35 @@ func (p *Provider) AssertEventualCurlResponse(
 		WithContext(ctx).
 		Should(Succeed())
 }
+
+// AssertEventuallyConsistentCurlResponse asserts that the response from a curl command
+// eventually and then consistently matches the expected response
+func (p *Provider) AssertEventuallyConsistentCurlResponse(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	curlOptions []curl.Option,
+	expectedResponse *matchers.HttpResponse,
+	timeout ...time.Duration,
+) {
+	p.AssertEventualCurlResponse(ctx, podOpts, curlOptions, expectedResponse)
+
+	pollTimeout := 5 * time.Second
+	pollInterval := 1 * time.Second
+	if len(timeout) > 0 {
+		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+	}
+
+	p.Gomega.Consistently(func(g Gomega) {
+		res, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+		g.Expect(err).NotTo(HaveOccurred())
+		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, res)
+
+		expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
+		g.Expect(res).To(expectedResponseMatcher)
+		fmt.Printf("success: %v", res)
+	}).
+		WithTimeout(pollTimeout).
+		WithPolling(pollInterval).
+		WithContext(ctx).
+		Should(Succeed())
+}
