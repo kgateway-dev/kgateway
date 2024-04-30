@@ -12,6 +12,11 @@ func RefIsService(ref gwv1.BackendObjectReference) bool {
 	return (ref.Kind == nil || *ref.Kind == wellknown.ServiceKind) && (ref.Group == nil || *ref.Group == corev1.GroupName)
 }
 
+// RefIsUpstream checks if the BackendObjectReference is an Upstream.
+func RefIsUpstream(ref gwv1.BackendObjectReference) bool {
+	return (ref.Kind != nil && *ref.Kind == "Upstream") && (ref.Group != nil && *ref.Group == "v1")
+}
+
 // RefIsHTTPRoute checks if the BackendObjectReference is an HTTPRoute
 // Parent routes may delegate to child routes using an HTTPRoute backend reference.
 func RefIsHTTPRoute(ref gwv1.BackendObjectReference) bool {

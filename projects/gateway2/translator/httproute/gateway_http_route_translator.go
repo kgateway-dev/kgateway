@@ -327,6 +327,23 @@ func setRouteAction(
 				Options: nil,
 			})
 
+		case backendref.RefIsUpstream(backendRef.BackendObjectReference):
+			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
+				Destination: &v1.Destination{
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Name:      clusterName,
+							Namespace: ns,
+						},
+					},
+				},
+				Weight:  weight,
+				Options: nil,
+			})
+
+		case backendref.RefIsHTTPRoute(backendRef.BackendObjectReference):
+			// This is handled at the beginning of the loop
+
 		default:
 			// TODO(npolshak): Add support for other types of destinations (upstreams, etc.)
 			contextutils.LoggerFrom(ctx).Errorf("unsupported backend type for kind: %v and type: %v", *backendRef.BackendObjectReference.Kind, *backendRef.BackendObjectReference.Group)
