@@ -33,8 +33,14 @@ func TranslateGatewayHTTPRouteRules(
 	var finalRoutes []*v1.Route
 	routesVisited := sets.New[types.NamespacedName]()
 
+	// Hostnames need to be explicitly passed to the plugins since they
+	// are required by delegatee (child) routes of delegated routes that
+	// won't have spec.Hostnames set.
+	hostnames := make([]gwv1.Hostname, len(route.Spec.Hostnames))
+	copy(hostnames, route.Spec.Hostnames)
+
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited)
+		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames)
 	return finalRoutes
 }
 
@@ -50,6 +56,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	baseReporter reports.Reporter,
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
+	hostnames []gwv1.Hostname,
 ) {
 	for _, rule := range route.Spec.Rules {
 		rule := rule
@@ -70,6 +77,7 @@ func translateGatewayHTTPRouteRulesUtil(
 			baseReporter,
 			outputs,
 			routesVisited,
+			hostnames,
 		)
 		for _, outputRoute := range outputRoutes {
 			// The above function will return a nil route if a matcher fails to apply plugins
@@ -94,6 +102,7 @@ func translateGatewayHTTPRouteRule(
 	baseReporter reports.Reporter,
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
+	hostnames []gwv1.Hostname,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
@@ -123,11 +132,12 @@ func translateGatewayHTTPRouteRule(
 		}
 
 		rtCtx := &plugins.RouteContext{
-			Listener: &gwListener,
-			Route:    gwroute,
-			Rule:     &rule,
-			Match:    &match,
-			Reporter: reporter,
+			Listener:  &gwListener,
+			Route:     gwroute,
+			Hostnames: hostnames,
+			Rule:      &rule,
+			Match:     &match,
+			Reporter:  reporter,
 		}
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
