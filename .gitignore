@@ -49,6 +49,9 @@ test-report.json
 # Ginkgo test coverage output
 *.cov
 
+# Vscode Ginkgo test explorer report
+**/ginkgo.report
+
 # At time we run Gloo Edge locally and store configuration in a local directory named `data`
 # These should be ignored, as often times `source_data` is the configuration we check into the repo
 data

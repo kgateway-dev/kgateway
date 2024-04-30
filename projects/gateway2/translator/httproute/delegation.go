@@ -1,0 +1,97 @@
+package httproute
+
+import (
+	"context"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
+)
+
+// flattenDelegatedRoutes recursively translates a delegated route tree.
+//
+// It returns an error if it cannot determine the delegatee (child) routes or
+// if it detects a cycle in the delegation tree.
+// If the child route is invalid, it will be ignored and its Status will be updated accordingly.
+func flattenDelegatedRoutes(
+	ctx context.Context,
+	queries query.GatewayQueries,
+	parent *gwv1.HTTPRoute,
+	backendRef gwv1.HTTPBackendRef,
+	parentReporter reports.ParentRefReporter,
+	baseReporter reports.Reporter,
+	pluginRegistry registry.PluginRegistry,
+	gwListener gwv1.Listener,
+	parentMatch gwv1.HTTPRouteMatch,
+	outputs *[]*v1.Route,
+	routesVisited sets.Set[types.NamespacedName],
+) error {
+	parentRef := types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name}
+	routesVisited.Insert(parentRef)
+
+	children, err := queries.GetDelegatedRoutes(ctx, backendRef.BackendObjectReference, parentMatch, parentRef)
+	if err != nil {
+		return err
+	}
+
+	// For these child routes, recursively flatten them
+	for _, child := range children {
+		childRef := types.NamespacedName{Namespace: child.Namespace, Name: child.Name}
+		if routesVisited.Has(childRef) {
+			// Loop detected, ignore child route
+			msg := fmt.Sprintf("cyclic loop detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
+				parentRef, childRef)
+			contextutils.LoggerFrom(ctx).Warn(msg)
+			parentReporter.SetCondition(reports.HTTPRouteCondition{
+				Type:    gwv1.RouteConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonRefNotPermitted,
+				Message: msg,
+			})
+			continue
+		}
+
+		// Create a new reporter for the child route
+		reporter := baseReporter.Route(&child).ParentRef(&gwv1.ParentReference{
+			Group:     ptr.To(gwv1.Group(wellknown.GatewayGroup)),
+			Kind:      ptr.To(gwv1.Kind(wellknown.HTTPRouteKind)),
+			Name:      gwv1.ObjectName(parentRef.Name),
+			Namespace: ptr.To(gwv1.Namespace(parentRef.Namespace)),
+		})
+
+		if err := validateChildRoute(child); err != nil {
+			reporter.SetCondition(reports.HTTPRouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		translateGatewayHTTPRouteRulesUtil(ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited)
+	}
+
+	routesVisited.Delete(parentRef)
+	return nil
+}
+
+func validateChildRoute(
+	route gwv1.HTTPRoute,
+) error {
+	if len(route.Spec.Hostnames) > 0 {
+		return eris.New("spec.hostnames must be unset on a delegatee route are inherited from the parent route")
+	}
+	return nil
+}

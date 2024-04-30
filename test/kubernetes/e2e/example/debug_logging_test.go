@@ -23,7 +23,6 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			SkipGlooInstall:    e2e.SkipGlooInstall,
 			InstallNamespace:   "debug-example",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
 		},
