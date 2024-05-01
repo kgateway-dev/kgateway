@@ -19,7 +19,7 @@ var (
 		Namespace: "default",
 	}
 	k8sApiProxyDeployment = &appsv1.Deployment{ObjectMeta: k8sApiProxyObjectMeta}
-	k8sApiproxyService    = &corev1.Service{ObjectMeta: k8sApiProxyObjectMeta}
+	k8sApiProxyService    = &corev1.Service{ObjectMeta: k8sApiProxyObjectMeta}
 
 	headlessService = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

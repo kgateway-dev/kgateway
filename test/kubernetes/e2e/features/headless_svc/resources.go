@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	headlessSvcSetupManifest  = filepath.Join(util.MustGetThisDir(), "inputs/setup.yaml")
-	k8sApiRoutingManifest     = filepath.Join(util.MustGetThisDir(), "inputs/k8s_api.gen.yaml")
-	classicApiRoutingManifest = filepath.Join(util.MustGetThisDir(), "inputs/classic_api.gen.yaml")
+	headlessSvcSetupManifest  = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	k8sApiRoutingManifest     = filepath.Join(util.MustGetThisDir(), "testdata", "k8s_api.gen.yaml")
+	classicApiRoutingManifest = filepath.Join(util.MustGetThisDir(), "testdata", "classic_api.gen.yaml")
 
 	headlessSvcDomain = "headless.example.com"
 

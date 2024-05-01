@@ -57,7 +57,7 @@ func (s *headlessSvcSuite) TestConfigureRoutingHeadlessSvc() {
 		if s.useK8sGatewayApi {
 			err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sApiRoutingManifest)
 			s.NoError(err, "can delete setup k8s routing manifest")
-			s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, k8sApiProxyDeployment, k8sApiproxyService)
+			s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, k8sApiProxyDeployment, k8sApiProxyService)
 		} else {
 			err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, classicApiRoutingManifest)
 			s.NoError(err, "can delete setup classic routing manifest")
@@ -72,15 +72,15 @@ func (s *headlessSvcSuite) TestConfigureRoutingHeadlessSvc() {
 		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sApiRoutingManifest)
 		s.NoError(err, "can setup k8s routing manifest")
 
-		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, k8sApiProxyDeployment, k8sApiproxyService)
+		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, k8sApiProxyDeployment, k8sApiProxyService)
 
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			curlPodExecOpt,
 			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(k8sApiproxyService.ObjectMeta)),
+				curl.WithHost(kubeutils.ServiceFQDN(k8sApiProxyService.ObjectMeta)),
 				// The host header must match the hostnames in the HTTPRoute
-				curl.WithHostHeader("headless.example.com"),
+				curl.WithHostHeader(headlessSvcDomain),
 				curl.WithPort(80),
 			},
 			expectedHealthyResponse)
@@ -94,7 +94,7 @@ func (s *headlessSvcSuite) TestConfigureRoutingHeadlessSvc() {
 			[]curl.Option{
 				curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 				// The host header must match the domain in the VirtualService
-				curl.WithHostHeader("headless.example.com"),
+				curl.WithHostHeader(headlessSvcDomain),
 				curl.WithPort(80),
 			},
 			expectedHealthyResponse)
