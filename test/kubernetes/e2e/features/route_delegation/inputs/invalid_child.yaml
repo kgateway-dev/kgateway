@@ -13,11 +13,6 @@
 #   - Parent infra/root
 #   - Invalid as route specifies hostname!
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: infra
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
