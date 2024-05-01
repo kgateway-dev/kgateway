@@ -81,6 +81,8 @@ func upstreamType(up *v1.Upstream) string {
 		return "Kubernetes"
 	case *v1.Upstream_Static:
 		return "Static"
+	case *v1.Upstream_Gcp:
+		return "GCP"
 	default:
 		return "Unknown"
 	}
@@ -169,6 +171,12 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		if usType.Static.GetServiceSpec() != nil {
 			add(linesForServiceSpec(usType.Static.GetServiceSpec())...)
 		}
+	case *v1.Upstream_Gcp:
+		add(fmt.Sprintf("host: %v", usType.Gcp.GetHost()))
+		if usType.Gcp.GetAudience() != "" {
+			add(fmt.Sprintf("host: %v", usType.Gcp.GetAudience()))
+		}
+
 	}
 	add("")
 	return details
