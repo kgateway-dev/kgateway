@@ -1,7 +1,9 @@
 package parallel
 
 import (
+	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
 	"net"
 	"sync/atomic"
 	"time"
@@ -30,15 +32,21 @@ func GetPortOffset() int {
 func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) uint32 {
 	var newPort uint32
 
-	_ = retry.Do(func() error {
+	retryErr := retry.Do(func() error {
 		newPort = AdvancePort(p)
 		return errIfPortInUse(newPort)
 	},
 		retry.RetryIf(func(err error) bool {
 			return err != nil
 		}),
-		retry.Attempts(3),
-		retry.Delay(time.Millisecond*0))
+		// While this is a large number of retries,
+		// this is only run in tests, and we would rather be safe
+		retry.Attempts(5),
+		retry.Delay(time.Millisecond*100))
+
+	if retryErr != nil {
+		contextutils.LoggerFrom(context.Background()).Errorf("Failed to identify a safe port: %v", retryErr)
+	}
 
 	return newPort
 }

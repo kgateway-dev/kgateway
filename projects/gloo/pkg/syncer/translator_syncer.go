@@ -96,10 +96,7 @@ func NewTranslatorSyncer(
 		onProxyTranslated: onProxyTranslated,
 	}
 	if devMode {
-		// TODO(ilackarms): move this somewhere else?
-		go func() {
-			_ = s.ServeXdsSnapshots()
-		}()
+		s.ServeXdsSnapshots(ctx)
 	}
 	go s.statusSyncer.syncStatusOnEmit(ctx)
 	s.statusSyncer.leaderStartupAction.WatchElectionResults(ctx)

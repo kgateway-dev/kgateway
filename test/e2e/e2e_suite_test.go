@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"testing"
 
 	"github.com/solo-io/gloo/test/services/envoy"
@@ -21,6 +22,9 @@ import (
 )
 
 func TestE2e(t *testing.T) {
+	leakDetector := testhelpers.DeferredGoroutineLeakDetector(t)
+	defer leakDetector()
+
 	// set default port to an unprivileged port for local testing.
 	defaults.HttpPort = 8081
 
