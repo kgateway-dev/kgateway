@@ -7,16 +7,16 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/hashutils"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
 	utils2 "github.com/solo-io/gloo/pkg/utils"
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
+	k8svalidation "github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
@@ -122,8 +122,7 @@ type validator struct {
 	extensionValidator                    syncerValidation.Validator
 	allowWarnings                         bool
 	disableValidationAgainstPreviousState bool
-	mgr                                   manager.Manager
-	k8sGwExtensions                       extensions.K8sGatewayExtensions
+	k8sGatewayValidator                   k8svalidation.ValidationHelper
 }
 
 type validationOptions struct {
@@ -146,8 +145,7 @@ type ValidatorConfig struct {
 	ExtensionValidator                    syncerValidation.Validator
 	AllowWarnings                         bool
 	DisableValidationAgainstPreviousState bool
-	Mgr                                   manager.Manager
-	K8sGwExtensions                       extensions.K8sGatewayExtensions
+	K8sGatewayValidator                   k8svalidation.ValidationHelper
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
@@ -157,8 +155,7 @@ func NewValidator(cfg ValidatorConfig) *validator {
 		translator:                            cfg.Translator,
 		allowWarnings:                         cfg.AllowWarnings,
 		disableValidationAgainstPreviousState: cfg.DisableValidationAgainstPreviousState,
-		mgr:                                   cfg.Mgr,
-		k8sGwExtensions:                       cfg.K8sGwExtensions,
+		k8sGatewayValidator:                   cfg.K8sGatewayValidator,
 	}
 }
 
@@ -253,6 +250,63 @@ type validationOutput struct {
 	err          error
 }
 
+// the returned error is a multierror that may contain errors from several Edge Proxies, although this depends on collectAllErrors
+func (v *validator) translateGlooEdgeProxies(
+	ctx context.Context,
+	snapshot *gloov1snap.ApiSnapshot,
+	collectAllErrors bool,
+) ([]*gloov1.Proxy, error) {
+	var (
+		proxies []*gloov1.Proxy
+		errs    error
+	)
+
+	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
+
+	// translate all the proxies
+	for _, gatewayAndProxyName := range gatewaysByProxy {
+		proxyName := gatewayAndProxyName.Name
+		gatewayList := gatewayAndProxyName.Gateways
+
+		// Translate the proxy and process the errors
+		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
+
+		err := v.getErrorsFromResourceReports(reports)
+
+		if err != nil {
+			err = errors.Wrapf(err, couldNotRenderProxy)
+			errs = multierror.Append(errs, err)
+
+			if !collectAllErrors {
+				continue
+			}
+		}
+
+		// A nil proxy may have been returned if 0 listeners were created
+		// continue here even if collecting all errors, because the proxy is nil and there is nothing to validate
+		if proxy == nil {
+			continue
+		}
+		proxies = append(proxies, proxy)
+	}
+
+	return proxies, errs
+}
+
+func isK8sGatewayProxy(res resources.Resource) bool {
+	if _, ok := res.(*sologatewayv1.RouteOption); ok {
+		return true
+	}
+	return false
+}
+
+func (v *validator) translateK8sGatewayProxies(
+	ctx context.Context,
+	res resources.Resource,
+) ([]*gloov1.Proxy, error) {
+	return v.k8sGatewayValidator.TranslateK8sGatewayProxies(ctx, res)
+}
+
 // validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. This was removed from the
 // main validation loop to allow it to be re-run against the original snapshot. The reason for this second validaiton run is to allow
 // the deletion of secrets, but only if they are not in use by the snapshot. This function does not know about
@@ -291,34 +345,14 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		err          error
 	)
 
-	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
+	if isK8sGatewayProxy(opts.Resource) {
+		proxies, errs = v.translateK8sGatewayProxies(ctx, opts.Resource)
+	} else {
+		proxies, errs = v.translateGlooEdgeProxies(ctx, snapshot, opts.collectAllErrors)
+	}
 
-	// translate all the proxies
-	for _, gatewayAndProxyName := range gatewaysByProxy {
-		proxyName := gatewayAndProxyName.Name
-		gatewayList := gatewayAndProxyName.Gateways
-
-		// Translate the proxy and process the errors
-		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
-
-		err := v.getErrorsFromResourceReports(reports)
-
-		if err != nil {
-			err = errors.Wrapf(err, couldNotRenderProxy)
-			errs = multierror.Append(errs, err)
-
-			if !opts.collectAllErrors {
-				continue
-			}
-		}
-
-		// A nil proxy may have been returned if 0 listeners were created
-		// continue here even if collecting all errors, because the proxy is nil and there is nothing to validate
-		if proxy == nil {
-			continue
-		}
-		proxies = append(proxies, proxy)
-
+	// Now perform gloo validation for all the Proxies
+	for _, proxy := range proxies {
 		// Validate the proxy with the Gloo validator
 		// This validation also attempts to modify the snapshot, so when validating the unmodified snapshot a nil resource is passed in so no modifications are made
 		resourceToModify := opts.Resource
@@ -688,7 +722,15 @@ func findBreakingErrors(errs error) bool {
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
 func (v *validator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
-	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: true, DryRun: dryRun, AcquireLock: true})
+	opts := &validationOptions{
+		Ctx:         ctx,
+		Resource:    resource,
+		Gvk:         gvk,
+		Delete:      true,
+		DryRun:      dryRun,
+		AcquireLock: true,
+	}
+	_, err := v.validateResource(opts)
 	return err
 }
 
@@ -700,7 +742,15 @@ func (v *validator) ValidateModifiedGvk(ctx context.Context, gvk schema.GroupVer
 
 func (v *validator) validateModifiedResource(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun, acquireLock bool) (*Reports, error) {
 	var reports *Reports
-	reports, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: false, DryRun: dryRun, AcquireLock: acquireLock})
+	opts := &validationOptions{
+		Ctx:         ctx,
+		Resource:    resource,
+		Gvk:         gvk,
+		Delete:      false,
+		DryRun:      dryRun,
+		AcquireLock: acquireLock,
+	}
+	reports, err := v.validateResource(opts)
 	if err != nil {
 		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", resource)}}
 	}

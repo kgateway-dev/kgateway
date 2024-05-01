@@ -4,13 +4,14 @@ import (
 	"context"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/solo-io/gloo/pkg/version"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // K8sGatewayExtensions is responsible for providing implementations for translation utilities
@@ -25,7 +26,8 @@ type K8sGatewayExtensions interface {
 
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
 type K8sGatewayExtensionsFactoryParameters struct {
-	Mgr               controllerruntime.Manager
+	Cl                client.Client
+	Scheme            *runtime.Scheme
 	AuthConfigClient  v1.AuthConfigClient
 	RouteOptionClient gatewayv1.RouteOptionClient
 	StatusReporter    reporter.StatusReporter
@@ -44,14 +46,16 @@ func NewK8sGatewayExtensions(
 	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
-		params.Mgr,
+		params.Cl,
+		params.Scheme,
 		params.RouteOptionClient,
 		params.StatusReporter,
 	}, nil
 }
 
 type k8sGatewayExtensions struct {
-	mgr               controllerruntime.Manager
+	cl                client.Client
+	scheme            *runtime.Scheme
 	routeOptionClient gatewayv1.RouteOptionClient
 	statusReporter    reporter.StatusReporter
 }
@@ -59,12 +63,12 @@ type k8sGatewayExtensions struct {
 // CreatePluginRegistry returns the PluginRegistry
 func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
 	queries := query.NewData(
-		e.mgr.GetClient(),
-		e.mgr.GetScheme(),
+		e.cl,
+		e.scheme,
 	)
 	plugins := registry.BuildPlugins(
 		queries,
-		e.mgr.GetClient(),
+		e.cl,
 		e.routeOptionClient,
 		e.statusReporter,
 	)

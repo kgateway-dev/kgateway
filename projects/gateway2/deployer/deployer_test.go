@@ -26,8 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -121,11 +119,8 @@ var _ = Describe("Deployer", func() {
 				ControllerName: wellknown.GatewayControllerName,
 			},
 		}
-		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-		Expect(err).NotTo(HaveOccurred())
-		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-			Mgr: mgr,
-		})
+		var err error
+		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{})
 		Expect(err).NotTo(HaveOccurred())
 
 	})
@@ -151,11 +146,7 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("support segmenting by release", func() {
-			mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-			Expect(err).NotTo(HaveOccurred())
-			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-				Mgr: mgr,
-			})
+			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{})
 			Expect(err).NotTo(HaveOccurred())
 
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
@@ -254,11 +245,7 @@ var _ = Describe("Deployer", func() {
 		var (
 			defaultGwpName        = "default-gateway-params"
 			defaultDeployerInputs = func() *deployer.Inputs {
-				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-				Expect(err).NotTo(HaveOccurred())
-				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-					Mgr: mgr,
-				})
+				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{})
 				Expect(err).NotTo(HaveOccurred())
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,

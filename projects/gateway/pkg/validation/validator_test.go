@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	validationtestutils "github.com/solo-io/gloo/projects/gateway2/validation/testutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -459,6 +460,26 @@ var _ = Describe("Validator", func() {
 			)
 		})
 
+	})
+
+	Context("validating route option in ggv2", func() {
+		Context("proxy validation accepted", func() {
+			FIt("accepts the rtopt", func() {
+				ctx := context.Background()
+
+				v.k8sGatewayValidator = validationtestutils.BuildValidationHelper()
+
+				v.glooValidator = ValidateAccept
+				// simple snapshot is fine, for kube gateway validation we don't need the RouteOption to be part of the snap
+				snap := samples.SimpleGlooSnapshot(ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				reports, err := v.ValidateModifiedGvk(ctx, v1.RouteOptionGVK, validationtestutils.AttachedInternal(), false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*(reports.ProxyReports)).To(HaveLen(1))
+			})
+		})
 	})
 
 	Context("validating a route table", func() {

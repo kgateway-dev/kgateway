@@ -55,7 +55,9 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	k8sgwextensions "github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/status"
+	k8svalidation "github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -887,7 +889,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 	k8sGwExtensions, err := extensions.K8sGatewayExtensionsFactory(watchOpts.Ctx, k8sgwextensions.K8sGatewayExtensionsFactoryParameters{
-		Mgr:               mgr,
+		Cl:                mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
 		AuthConfigClient:  authConfigClient,
 		RouteOptionClient: routeOptionClient,
 		StatusReporter:    statusReporter,
@@ -896,6 +899,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
 		return err
+	}
+	k8sValidator := k8svalidation.ValidationHelper{
+		K8sGwExtensions: k8sGwExtensions,
+		GatewayQueries:  query.NewData(mgr.GetClient(), mgr.GetScheme()),
+		Cl:              mgr.GetClient(),
 	}
 
 	// filter the list of extensions to only include the rate limit extension for validation
@@ -916,8 +924,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		GlooValidator:                         validator.ValidateGloo,
 		ExtensionValidator:                    extensionValidator,
 		DisableValidationAgainstPreviousState: disableValidationAgainstPreviousState,
-		Mgr:                                   mgr,
-		K8sGwExtensions:                       k8sGwExtensions,
+		K8sGatewayValidator:                   k8sValidator,
 	}
 	if gwOpts.Validation != nil {
 		valOpts := gwOpts.Validation
