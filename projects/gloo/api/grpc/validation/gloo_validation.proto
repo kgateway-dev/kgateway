@@ -147,6 +147,8 @@ message HttpListenerReport {
         Type type = 1;
         // any extra info as a string
         string reason = 2;
+        // Source metadata for the HttpListenerReport, can be used by external components to associate sources with the HttpListenerError
+        SourceMetadata metadata = 3;
     }
 
     repeated Error errors = 1;
@@ -169,6 +171,8 @@ message VirtualHostReport {
         Type type = 1;
         // any extra info as a string
         string reason = 2;
+        // Source metadata for the VirtualHostReport, can be used by external components to associate sources with the VirtualHostError
+        SourceMetadata metadata = 3;
     }
 
     // errors on top-level config of the virtual host

@@ -313,6 +313,7 @@ error types for top-level http listener config
 ```yaml
 "type": .gloo.solo.io.HttpListenerReport.Error.Type
 "reason": string
+"metadata": .gloo.solo.io.SourceMetadata
 
 ```
 
@@ -320,6 +321,7 @@ error types for top-level http listener config
 | ----- | ---- | ----------- | 
 | `type` | [.gloo.solo.io.HttpListenerReport.Error.Type](../gloo_validation.proto.sk/#type) | the type of the error. |
 | `reason` | `string` | any extra info as a string. |
+| `metadata` | [.gloo.solo.io.SourceMetadata](../../../v1/proxy.proto.sk/#sourcemetadata) | Source metadata for the HttpListenerReport, can be used by external components to associate sources with the HttpListenerError. |
 
 
 
@@ -364,6 +366,7 @@ error types for top-level virtual host config
 ```yaml
 "type": .gloo.solo.io.VirtualHostReport.Error.Type
 "reason": string
+"metadata": .gloo.solo.io.SourceMetadata
 
 ```
 
@@ -371,6 +374,7 @@ error types for top-level virtual host config
 | ----- | ---- | ----------- | 
 | `type` | [.gloo.solo.io.VirtualHostReport.Error.Type](../gloo_validation.proto.sk/#type) | the type of the error. |
 | `reason` | `string` | any extra info as a string. |
+| `metadata` | [.gloo.solo.io.SourceMetadata](../../../v1/proxy.proto.sk/#sourcemetadata) | Source metadata for the VirtualHostReport, can be used by external components to associate sources with the VirtualHostError. |
 
 
 
