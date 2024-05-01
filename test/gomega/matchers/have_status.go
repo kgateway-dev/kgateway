@@ -10,8 +10,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// CoreStatus defines the set of properties that we can validate from a core.Status
-type CoreStatus struct {
+// SoloKitStatus defines the set of properties that we can validate from a core.Status
+type SoloKitStatus struct {
 	State      *core.Status_State
 	Reason     string
 	ReportedBy string
@@ -24,24 +24,24 @@ type CoreStatus struct {
 	Custom types.GomegaMatcher
 }
 
-// CoreNamespacedStatuses defines the set of properties that we can validate from a core.NamespacedStatuses
-type CoreNamespacedStatuses struct {
-	Statuses map[string]*CoreStatus
+// SoloKitNamespacedStatuses defines the set of properties that we can validate from a core.NamespacedStatuses
+type SoloKitNamespacedStatuses struct {
+	Statuses map[string]*SoloKitStatus
 }
 
 func HaveState(state core.Status_State) types.GomegaMatcher {
-	return HaveStatus(&CoreStatus{
+	return HaveStatus(&SoloKitStatus{
 		State: &state,
 	})
 }
 func HaveReportedBy(reporter string) types.GomegaMatcher {
-	return HaveStatus(&CoreStatus{
+	return HaveStatus(&SoloKitStatus{
 		ReportedBy: reporter,
 	})
 }
 func HaveAcceptedState() types.GomegaMatcher {
 	st := core.Status_Accepted
-	return HaveStatus(&CoreStatus{
+	return HaveStatus(&SoloKitStatus{
 		State: &st,
 	})
 }
@@ -61,7 +61,7 @@ func HaveRejectedStateWithReasonSubstrings(reasons ...string) types.GomegaMatche
 }
 
 func HaveReasonSubstrings(reasons ...string) types.GomegaMatcher {
-	return HaveStatus(&CoreStatus{
+	return HaveStatus(&SoloKitStatus{
 		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 			"Reason": ContainSubstrings(reasons),
 		}),
@@ -73,15 +73,15 @@ func HaveReasonSubstrings(reasons ...string) types.GomegaMatcher {
 func MatchStatusInNamespace(ns string, matcher types.GomegaMatcher) types.GomegaMatcher {
 	// TODO the dev ux of this isn't great since we will not have data for matchers of different types,
 	// though we should expect not to receive such matchers.
-	expected := &CoreStatus{}
+	expected := &SoloKitStatus{}
 	m, ok := matcher.(*HaveStatusMatcher)
 	if ok {
 		expected = m.Expected
 	}
 
 	return &HaveNamespacedStatusesMatcher{
-		Expected: &CoreNamespacedStatuses{
-			Statuses: map[string]*CoreStatus{
+		Expected: &SoloKitNamespacedStatuses{
+			Statuses: map[string]*SoloKitStatus{
 				ns: expected,
 			},
 		},
@@ -94,8 +94,8 @@ func MatchStatusInNamespace(ns string, matcher types.GomegaMatcher) types.Gomega
 
 func HaveStatusInNamespace(ns string, status *core.Status) types.GomegaMatcher {
 	st := status.GetState()
-	return HaveNamespacedStatuses(&CoreNamespacedStatuses{
-		Statuses: map[string]*CoreStatus{
+	return HaveNamespacedStatuses(&SoloKitNamespacedStatuses{
+		Statuses: map[string]*SoloKitStatus{
 			ns: {
 				State:      &st,
 				Reason:     status.GetReason(),
@@ -105,7 +105,7 @@ func HaveStatusInNamespace(ns string, status *core.Status) types.GomegaMatcher {
 	})
 }
 
-func HaveNamespacedStatuses(expected *CoreNamespacedStatuses) types.GomegaMatcher {
+func HaveNamespacedStatuses(expected *SoloKitNamespacedStatuses) types.GomegaMatcher {
 	if expected == nil {
 		// If no status is defined, we create a matcher that always succeeds
 		return gstruct.Ignore()
@@ -124,7 +124,7 @@ func HaveNamespacedStatuses(expected *CoreNamespacedStatuses) types.GomegaMatche
 
 // HaveStatus produces a matcher that will match if the provided status matches the
 // actual status
-func HaveStatus(expected *CoreStatus) types.GomegaMatcher {
+func HaveStatus(expected *SoloKitStatus) types.GomegaMatcher {
 	if expected == nil {
 		// If no status is defined, we create a matcher that always succeeds
 		return gstruct.Ignore()
@@ -167,7 +167,7 @@ func HaveStatus(expected *CoreStatus) types.GomegaMatcher {
 }
 
 type HaveStatusMatcher struct {
-	Expected      *CoreStatus
+	Expected      *SoloKitStatus
 	statusMatcher types.GomegaMatcher
 	// An internal utility for tracking whether we have evaluated this matcher
 	// There is a comment within the Match method, outlining why we introduced this
@@ -205,7 +205,7 @@ func (m *HaveStatusMatcher) NegatedFailureMessage(actual interface{}) (message s
 }
 
 type HaveNamespacedStatusesMatcher struct {
-	Expected                   *CoreNamespacedStatuses
+	Expected                   *SoloKitNamespacedStatuses
 	namespacedStatusesMatchers map[string]types.GomegaMatcher
 	// An internal utility for tracking whether we have evaluated this matcher
 	// There is a comment within the Match method, outlining why we introduced this
