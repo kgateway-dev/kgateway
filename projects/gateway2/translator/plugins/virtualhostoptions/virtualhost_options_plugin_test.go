@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
@@ -18,6 +19,9 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -69,7 +73,14 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 		JustBeforeEach(func() {
 			fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, vhoptquery.IterateIndices)
 			gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
-			plugin = NewPlugin(gwQueries, fakeClient)
+			resourceClientFactory := &factory.MemoryResourceClientFactory{
+				Cache: memory.NewInMemoryResourceCache(),
+			}
+
+			vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
+			statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
+			statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, vhOptionClient.BaseClient())
+			plugin = NewPlugin(gwQueries, fakeClient, vhOptionClient, statusReporter)
 		})
 		When("outListener is not an AggregateListener", func() {
 			BeforeEach(func() {
