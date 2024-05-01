@@ -9,4 +9,5 @@ changelog:
     resolvesIssue: false
     description: >-
       Expand leak detection capabilities to allow developers to inject additional arguments.
-      Invoke leak detection during our envoy in-memory e2e tests.
+      Attempt to invoke leak detection during our envoy in-memory e2e tests, but that identified
+      other issues and I wanted to keep this change tightly scoped.
