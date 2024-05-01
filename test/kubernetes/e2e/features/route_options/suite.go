@@ -41,7 +41,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, targetRefManifest)
-	s.Assert().NoError(err, "can apply targetRefManifest")
+	s.NoError(err, "can apply targetRefManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -73,7 +73,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, filterExtensioManifest)
-	s.Assert().NoError(err, "can apply targetRefManifest")
+	s.NoError(err, "can apply targetRefManifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
