@@ -118,7 +118,7 @@ func (s *tsuite) TestCyclic() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		cyclicRoute)
 	s.Require().NoError(err)
-	s.Require().Truef(utils.HTTPRouteStatusContainsMsg(cyclicRoute, "cyclic loop detected"), "missing status on cyclic route")
+	s.Require().Truef(utils.HTTPRouteStatusContainsMsg(cyclicRoute, "cyclic reference detected"), "missing status on cyclic route")
 }
 
 func (s *tsuite) TestInvalidChild() {

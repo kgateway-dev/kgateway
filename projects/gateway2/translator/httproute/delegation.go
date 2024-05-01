@@ -54,7 +54,7 @@ func flattenDelegatedRoutes(
 		childRef := types.NamespacedName{Namespace: child.Namespace, Name: child.Name}
 		if routesVisited.Has(childRef) {
 			// Loop detected, ignore child route
-			msg := fmt.Sprintf("cyclic loop detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
+			msg := fmt.Sprintf("cyclic reference detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
 				parentRef, childRef)
 			contextutils.LoggerFrom(ctx).Warn(msg)
 			parentReporter.SetCondition(reports.HTTPRouteCondition{
