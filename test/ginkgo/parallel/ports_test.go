@@ -36,7 +36,7 @@ var _ = Describe("Ports", func() {
 			Expect(selectedPort).To(Equal(uint32(10013)), "should have selected the next port")
 		})
 
-		It("exhausts all retries, and returns last attempt and error, even if retry was unsuccessful", func() {
+		It("exhausts all retries, and returns last attempt and error, if retry was unsuccessful", func() {
 			startingPort := uint32(10010)
 			selectedPort, err := parallel.AdvancePortSafe(&startingPort, func(proposedPort uint32) error {
 				// We always error here, to ensure that we continue to retry advancing the port
