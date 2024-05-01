@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6134
+    resolvesIssue: false
+    description: >-
+      Add logging and retry delays for identifying safe port.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7147
+    resolvesIssue: false
+    description: >-
+      Expand leak detection capabilities to allow developers to inject additional arguments.
+      Invoke leak detection during our envoy in-memory e2e tests.
