@@ -38,8 +38,9 @@ func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, 
 			return err != nil
 		}),
 
-		// While this is a large number of retries,
-		// this is only run in tests, and we would rather be safe
+		// We retry here if we are searching for a free port in a test, and the port we attempted was in use
+		// We retry a couple of times, and with a delay, to increase the likelihood that we
+		// can successfully find a free port
 		retry.Attempts(5),
 		retry.Delay(time.Millisecond * 100),
 	}
