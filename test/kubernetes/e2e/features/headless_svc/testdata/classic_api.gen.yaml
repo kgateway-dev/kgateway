@@ -1,0 +1,33 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: headless-vs
+  namespace: classic-edge-test
+spec:
+  virtualHost:
+    domains:
+    - headless.example.com
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: headless-nginx-upstream
+            namespace: classic-edge-test
+status: {}
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: headless-nginx-upstream
+  namespace: classic-edge-test
+spec:
+  kube:
+    selector:
+      app.kubernetes.io/name: nginx
+    serviceName: headless-example-svc
+    serviceNamespace: default
+    servicePort: 8080
+status: {}
+---
