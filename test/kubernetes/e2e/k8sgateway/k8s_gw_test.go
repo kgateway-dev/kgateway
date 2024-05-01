@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -60,8 +61,13 @@ func TestK8sGateway(t *testing.T) {
 		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 
+
 	t.Run("Upstreams", func(t *testing.T) {
 		suite.Run(t, upstreams.NewTestingSuite(ctx, testInstallation))
+
+	t.Run("PortRouting", func(t *testing.T) {
+		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
+
 	})
 
 	t.Run("RouteDelegation", func(t *testing.T) {
