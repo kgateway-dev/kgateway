@@ -30,20 +30,24 @@ func GetPortOffset() int {
 
 // AdvancePortSafe advances the provided port by 1 until it returns a port that is safe to use
 // The availability of the port is determined by the errIfPortInUse function
-func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) uint32 {
+func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) uint32 {
 	var newPort uint32
+
+	defaultRetryOptions := []retry.Option{
+		retry.RetryIf(func(err error) bool {
+			return err != nil
+		}),
+
+		// While this is a large number of retries,
+		// this is only run in tests, and we would rather be safe
+		retry.Attempts(5),
+		retry.Delay(time.Millisecond * 100),
+	}
 
 	retryErr := retry.Do(func() error {
 		newPort = AdvancePort(p)
 		return errIfPortInUse(newPort)
-	},
-		retry.RetryIf(func(err error) bool {
-			return err != nil
-		}),
-		// While this is a large number of retries,
-		// this is only run in tests, and we would rather be safe
-		retry.Attempts(5),
-		retry.Delay(time.Millisecond*100))
+	}, append(defaultRetryOptions, retryOptions...)...)
 
 	if retryErr != nil {
 		contextutils.LoggerFrom(context.Background()).Errorf("Failed to identify a safe port: %v", retryErr)
