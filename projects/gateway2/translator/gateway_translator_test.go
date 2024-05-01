@@ -333,5 +333,32 @@ var _ = Describe("GatewayTranslator", func() {
 				Name:      "example-gateway",
 			}]).To(BeTrue())
 		})
+
+		It("should translate delegatee routes with multiple parents", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/multiple_parents.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/multiple_parents.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
 	})
 })
