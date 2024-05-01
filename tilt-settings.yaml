@@ -15,7 +15,7 @@ providers :
       - projects/gloo
     label: gloo
     build_binary: make -B gloo
-    binary_name: gloo-linux-arm64
+    binary_name: gloo-linux-$ARCH
     # debug_port: 50100
     # port_forwards":
     #   - 50100

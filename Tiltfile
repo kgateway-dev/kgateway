@@ -57,6 +57,8 @@ debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug
 
 get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set license_key='abcd' --values={3}".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), settings.get("helm_values_file"))
 
+arch = str(local("make print-GOARCH", quiet = True)).strip()
+
 def get_deployment(resources, name) :
     for resource in resources:
         if resource["kind"] == "Deployment":
@@ -145,6 +147,7 @@ def enable_provider(provider):
     label = provider.get("label").lower()
     provider["port_forwards"] = get_port_forwards(provider)
     provider["links"] = get_links(provider)
+    provider["binary_name"] = provider.get("binary_name").replace("$ARCH", arch)
 
     build_go_binary(provider)
     build_docker_image(
@@ -158,9 +161,9 @@ def enable_provider(provider):
 
     # We need to run as root to avoid pesky permission issues when copying the new binary over to the running container and restarting it
     if deployment["spec"]["template"]["spec"]["containers"][0].pop("securityContext", None) :
-        deployment["spec"]["template"]["spec"]["containers"][0]["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0}
+        deployment["spec"]["template"]["spec"]["containers"][0]["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0, "readOnlyRootFilesystem": False}
     if deployment["spec"]["template"]["spec"].pop("securityContext", None) :
-        deployment["spec"]["template"]["spec"]["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0}
+        deployment["spec"]["template"]["spec"]["securityContext"] = {"runAsNonRoot": False, "runAsUser": 0, "readOnlyRootFilesystem": False}
 
     # Apply the deployment and let tilt manage it
     # Ref: https://docs.tilt.dev/api.html#api.k8s_yaml
@@ -191,7 +194,7 @@ def install_gloo():
     if not gloo_installed :
         install_helm_cmd = """
             kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml ;
-            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set license_key='$GLOO_LICENSE_KEY'  --values={3}""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), settings.get("helm_values_file"))
+            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set license_key='$GLOO_LICENSE_KEY' --set gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem=false --values={3}""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), settings.get("helm_values_file"))
 
         local_resource(
             name = settings.get("helm_installation_name"),
