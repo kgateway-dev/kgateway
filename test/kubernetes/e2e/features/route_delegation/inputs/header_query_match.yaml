@@ -13,11 +13,6 @@
 #   - Parent infra/root
 #   - Routes does not match headers and queries required by parent!
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: infra
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
