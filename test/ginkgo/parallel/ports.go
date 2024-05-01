@@ -3,10 +3,11 @@ package parallel
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/contextutils"
 	"net"
 	"sync/atomic"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/rotisserie/eris"
 

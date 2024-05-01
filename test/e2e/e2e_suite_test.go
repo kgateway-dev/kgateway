@@ -1,8 +1,9 @@
 package e2e_test
 
 import (
-	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"testing"
+
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/gloo/test/services/envoy"
 
