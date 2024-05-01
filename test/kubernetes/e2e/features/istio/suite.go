@@ -46,7 +46,7 @@ func (s *istioTestingSuite) SetupSuite() {
 }
 
 func (s *istioTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingManifest)
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingManifest)
 	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 

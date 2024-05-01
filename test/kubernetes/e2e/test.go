@@ -183,7 +183,7 @@ func (i *TestInstallation) InstallMinimalIstio(
 func (i *TestInstallation) InstallIstioOperator(
 	ctx context.Context,
 	operatorFile string) error {
-	if !testutils.ShouldSkipIstioInstall() {
+	if testutils.ShouldSkipIstioInstall() {
 		return nil
 	}
 
@@ -193,7 +193,7 @@ func (i *TestInstallation) InstallIstioOperator(
 		// yes | istioctl install --context <kube-context> --set profile=minimal
 		cmd = exec.Command("sh", "-c", "yes | "+i.IstioctlBinary+" install --context "+i.TestCluster.ClusterContext.KubeContext+" --set profile=minimal")
 	} else {
-		cmd = exec.Command(i.IstioctlBinary, "install", "-y", "--context", i.TestCluster.ClusterContext.KubeContext, "-f", operatorFile)
+		cmd = exec.Command("sh", "-c", "yes | "+i.IstioctlBinary, "install", "-y", "--context", i.TestCluster.ClusterContext.KubeContext, "-f", operatorFile)
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -291,8 +291,10 @@ func DownloadIstio(ctx context.Context, version string) (string, error) {
 }
 
 func (i *TestInstallation) UninstallIstio() error {
-	// istioctl uninstall --purge
-	cmd := exec.Command("sh", "-c", "yes | ", i.IstioctlBinary, "uninstall", "--purge", "--context", i.TestCluster.ClusterContext.KubeContext)
+	// sh -c yes | istioctl uninstall —purge —context <kube-context>
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context %s", i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("istioctl uninstall failed: %w", err)
 	}

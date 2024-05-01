@@ -44,13 +44,14 @@ func TestK8sGatewayIstio(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
 		if err != nil {
 			t.Fatalf("failed to uninstall istio: %v", err)
 		}
+
+		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
