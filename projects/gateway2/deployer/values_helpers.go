@@ -117,7 +117,7 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 // Convert istio values from GatewayParameters into helm values to be used by the deployer.
 func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 	return &helmIstioSds{
-		Enabled:         ptrTo(istioConfig.GetEnabled()),
+		Enabled:         ptrTo(istioConfig.GetEnabled().GetValue()),
 		Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
 		LogLevel:        ptrTo(istioConfig.GetIstioContainer().GetLogLevel()),
 		Resources:       istioConfig.GetIstioContainer().GetResources(),
@@ -132,7 +132,7 @@ func getImage(image *v1alpha1kube.Image) *helmImage {
 		Repository: &image.Repository,
 		Tag:        &image.Tag,
 		Digest:     &image.Digest,
-		PullPolicy: ptrTo(image.PullPolicy.String()),
+		PullPolicy: ptrTo(image.GetPullPolicy().String()),
 	}
 }
 

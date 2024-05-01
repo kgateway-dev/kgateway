@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 8068feb0cd7229f6
+    crd.solo.io/specHash: bcf885d8ac5f7cdd
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -588,18 +588,10 @@ spec:
                       istioIntegration:
                         properties:
                           enabled:
+                            nullable: true
                             type: boolean
                           istioContainer:
                             properties:
-                              bootstrap:
-                                properties:
-                                  componentLogLevels:
-                                    additionalProperties:
-                                      type: string
-                                    type: object
-                                  logLevel:
-                                    type: string
-                                type: object
                               image:
                                 properties:
                                   digest:
@@ -691,6 +683,12 @@ spec:
                                     type: object
                                 type: object
                             type: object
+                          istioDiscoveryAddress:
+                            type: string
+                          istioMetaClusterId:
+                            type: string
+                          istioMetaMeshId:
+                            type: string
                         type: object
                       sdsContainer:
                         properties:

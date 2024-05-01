@@ -41,12 +41,10 @@ spec:
                             certPath:
                               type: string
                             commitAll:
-                              maximum: 4294967295
-                              minimum: 0
+                              format: int32
                               type: integer
                             commitMaster:
-                              maximum: 4294967295
-                              minimum: 0
+                              format: int32
                               type: integer
                             hostname:
                               type: string
@@ -66,31 +64,25 @@ spec:
                             readModeAp:
                               properties:
                                 readModeApAll:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                                 readModeApOne:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                               type: object
                             readModeSc:
                               properties:
                                 readModeScAllowUnavailable:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                                 readModeScLinearize:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                                 readModeScReplica:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                                 readModeScSession:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                               type: object
                             rootCaPath:
@@ -101,20 +93,16 @@ spec:
                               items:
                                 properties:
                                   curveP256:
-                                    maximum: 4294967295
-                                    minimum: 0
+                                    format: int32
                                     type: integer
                                   curveP384:
-                                    maximum: 4294967295
-                                    minimum: 0
+                                    format: int32
                                     type: integer
                                   curveP521:
-                                    maximum: 4294967295
-                                    minimum: 0
+                                    format: int32
                                     type: integer
                                   x25519:
-                                    maximum: 4294967295
-                                    minimum: 0
+                                    format: int32
                                     type: integer
                                 type: object
                               type: array
@@ -659,8 +647,7 @@ spec:
                                   maxProperties: 0
                                   type: object
                                 maxIdpReqPerPollingInterval:
-                                  maximum: 4294967295
-                                  minimum: 0
+                                  format: int32
                                   type: integer
                                 never:
                                   maxProperties: 0

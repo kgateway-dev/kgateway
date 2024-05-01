@@ -453,9 +453,24 @@ func (m *IstioIntegration) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetEnabled())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetEnabled()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Enabled")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEnabled(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Enabled")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if h, ok := interface{}(m.GetIstioContainer()).(safe_hasher.SafeHasher); ok {
@@ -476,6 +491,18 @@ func (m *IstioIntegration) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIstioDiscoveryAddress())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIstioMetaMeshId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIstioMetaClusterId())); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -572,26 +599,6 @@ func (m *IstioContainer) Hash(hasher hash.Hash64) (uint64, error) {
 	var err error
 	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.IstioContainer")); err != nil {
 		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetBootstrap()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Bootstrap")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetBootstrap(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Bootstrap")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	if h, ok := interface{}(m.GetImage()).(safe_hasher.SafeHasher); ok {

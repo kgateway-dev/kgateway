@@ -128,7 +128,7 @@ message SdsIntegration {
 // Configuration for the Istio integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
 message IstioIntegration {
   // Enables SDS cert-rotator sidecar for istio mTLS cert rotation
-  bool enabled = 1;
+  google.protobuf.BoolValue enabled = 1;
 
   // Configuration for the container running istio-proxy.
   IstioContainer istio_container = 2;
@@ -149,9 +149,9 @@ message SdsContainer {
   // https://kubernetes.io/docs/concepts/containers/images
   // for details.
   //
-  // Default values, which may be overridden individually:
+  // Default values for Edge OSS, which may be overridden individually:
   //   registry: quay.io/solo-io
-  //   repository: sds
+  //   repository: sds / sds-ee
   //   tag: <gloo version> (OSS) / <gloo-ee version> (EE)
   //   pullPolicy: IfNotPresent
   kube.gateway.gloo.solo.io.Image image = 1;
@@ -178,8 +178,8 @@ message IstioContainer {
   // for details.
   //
   // Default values, which may be overridden individually:
-  //   registry: quay.io/solo-io
-  //   repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
+  //   registry: docker.io/istio
+  //   repository: proxyv2
   //   tag: <gloo version> (OSS) / <gloo-ee version> (EE)
   //   pullPolicy: IfNotPresent
   kube.gateway.gloo.solo.io.Image image = 1;

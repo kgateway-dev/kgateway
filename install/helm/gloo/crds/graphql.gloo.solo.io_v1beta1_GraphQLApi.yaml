@@ -189,8 +189,7 @@ spec:
               persistedQueryCacheConfig:
                 properties:
                   cacheSize:
-                    maximum: 4294967295
-                    minimum: 0
+                    format: int32
                     type: integer
                 type: object
               statPrefix:

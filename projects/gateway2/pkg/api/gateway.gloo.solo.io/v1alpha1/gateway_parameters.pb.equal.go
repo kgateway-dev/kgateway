@@ -373,8 +373,14 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetEnabled() != target.GetEnabled() {
-		return false
+	if h, ok := interface{}(m.GetEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
@@ -385,6 +391,18 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
 			return false
 		}
+	}
+
+	if strings.Compare(m.GetIstioDiscoveryAddress(), target.GetIstioDiscoveryAddress()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetIstioMetaMeshId(), target.GetIstioMetaMeshId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetIstioMetaClusterId(), target.GetIstioMetaClusterId()) != 0 {
+		return false
 	}
 
 	return true
@@ -467,16 +485,6 @@ func (m *IstioContainer) Equal(that interface{}) bool {
 		return m == nil
 	} else if m == nil {
 		return false
-	}
-
-	if h, ok := interface{}(m.GetBootstrap()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetBootstrap()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetBootstrap(), target.GetBootstrap()) {
-			return false
-		}
 	}
 
 	if h, ok := interface{}(m.GetImage()).(equality.Equalizer); ok {
