@@ -199,7 +199,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode
 // https://github.com/solo-io/gloo/issues/6494
-func (s *translatorSyncer) ServeXdsSnapshots(ctx context.Context) {
+func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -219,21 +219,7 @@ func (s *translatorSyncer) ServeXdsSnapshots(ctx context.Context) {
 		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
 	})
 
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", devModePort),
-		Handler: r,
-	}
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			contextutils.LoggerFrom(ctx).Warn("error while running DevMode server", zap.Error(err))
-		}
-	}()
-	go func() {
-		<-ctx.Done()
-		if err := srv.Close(); err != nil {
-			contextutils.LoggerFrom(ctx).Warn("error while shutting down DevMode server", zap.Error(err))
-		}
-	}()
+	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
 }
 
 func prettify(original interface{}) string {
