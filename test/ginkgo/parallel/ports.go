@@ -27,19 +27,35 @@ func GetPortOffset() int {
 
 // AdvancePortSafe advances the provided port by 1 until it returns a port that is safe to use
 // The availability of the port is determined by the errIfPortInUse function
-func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) uint32 {
+func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) (uint32, error) {
 	var newPort uint32
 
-	_ = retry.Do(func() error {
-		newPort = AdvancePort(p)
-		return errIfPortInUse(newPort)
-	},
+	defaultRetryOptions := []retry.Option{
 		retry.RetryIf(func(err error) bool {
 			return err != nil
 		}),
-		retry.Attempts(3),
-		retry.Delay(time.Millisecond*0))
 
+		// We retry here if we are searching for a free port in a test, and the port we attempted was in use
+		// We retry a couple of times, and with a delay, to increase the likelihood that we
+		// can successfully find a free port
+		retry.Attempts(5),
+		retry.Delay(time.Millisecond * 100),
+	}
+
+	retryErr := retry.Do(func() error {
+		newPort = AdvancePort(p)
+		return errIfPortInUse(newPort)
+	}, append(defaultRetryOptions, retryOptions...)...)
+
+	return newPort, retryErr
+}
+
+// MustAdvancePortSafe executes AdvancePortSafe and panics if an error is returned
+func MustAdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) uint32 {
+	newPort, err := AdvancePortSafe(p, errIfPortInUse, retryOptions...)
+	if err != nil {
+		panic(err)
+	}
 	return newPort
 }
 
@@ -51,7 +67,7 @@ func AdvancePort(p *uint32) uint32 {
 // AdvancePortSafeListen returns a port that is safe to use in parallel tests
 // It relies on pinging the port to see if it is in use
 func AdvancePortSafeListen(p *uint32) uint32 {
-	return AdvancePortSafe(p, portInUseListen)
+	return MustAdvancePortSafe(p, portInUseListen)
 }
 
 func portInUseListen(proposedPort uint32) error {
