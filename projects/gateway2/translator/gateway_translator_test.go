@@ -89,4 +89,249 @@ var _ = Describe("GatewayTranslator", func() {
 			Name:      "gw",
 		}]).To(BeTrue())
 	})
+
+	Context("route delegation", func() {
+		It("should translate a basic configuration", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/basic.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/basic.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should translate a basic configuration with child specifying matching parentRefs", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/basic_parentref_match.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/basic.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should translate a basic configuration with child specifying mismatched parentRefs", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/basic_parentref_mismatch.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/basic_parentref_mismatch.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should translate a configuration with multiple child routes", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/multiple_children.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/multiple_children.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should detect invalid hostname on a delegatee route", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/basic_invalid_hostname.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/basic_invalid_hostname.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should translate a recursive configuration", func() {
+			results, err := TestCase{
+				Name:       "delegation-recursive",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/recursive.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/recursive.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should not translate a cyclic child route", func() {
+			results, err := TestCase{
+				Name:       "delegation-recursive",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/cyclic1.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/cyclic1.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should not translate a recursive cyclic child route", func() {
+			results, err := TestCase{
+				Name:       "delegation-recursive",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/cyclic2.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/cyclic2.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+
+		It("should translate only matching child routes", func() {
+			results, err := TestCase{
+				Name:       "delegation-basic",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/child_rule_matcher.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/child_rule_matcher.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
+	})
 })
