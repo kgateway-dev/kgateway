@@ -16,11 +16,6 @@
 #     - Delegate /anything/team2/foo to routes in team2 namespace
 #     - Cyclic delegation as it selects itself!
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: infra
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

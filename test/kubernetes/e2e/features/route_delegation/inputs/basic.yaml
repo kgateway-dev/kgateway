@@ -12,11 +12,6 @@
 #   - Route /anything/team2/foo to team2/svc2
 #   - Parent infra/root
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: infra
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
