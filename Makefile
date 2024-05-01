@@ -269,7 +269,9 @@ run-kube-e2e-tests: test
 # Go Tests
 #----------------------------------------------------------------------------------
 GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
-GO_TEST_ARGS ?=
+# Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
+# The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag
+GO_TEST_ARGS ?= -timeout 20m
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
