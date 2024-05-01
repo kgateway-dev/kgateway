@@ -30,18 +30,19 @@ var _ = Describe("Ports", func() {
 			advanceAmount := uint32(1 + parallel.GetPortOffset())
 			portInDenylistMinusOffset := portInDenylist - advanceAmount
 
-			selectedPort := parallel.AdvancePortSafe(&portInDenylistMinusOffset, portInUseDenylist, retry.Delay(0))
+			selectedPort, err := parallel.AdvancePortSafe(&portInDenylistMinusOffset, portInUseDenylist, retry.Delay(0))
+			Expect(err).NotTo(HaveOccurred())
 			Expect([]uint32{10010, 10011, 10012}).NotTo(ContainElement(selectedPort), "should have skipped the ports in the denylist")
 			Expect(selectedPort).To(Equal(uint32(10013)), "should have selected the next port")
 		})
 
-		It("exhausts all retries, and returns last attempt, even if retry was unsuccessful", func() {
+		It("exhausts all retries, and returns last attempt and error, even if retry was unsuccessful", func() {
 			startingPort := uint32(10010)
-			selectedPort := parallel.AdvancePortSafe(&startingPort, func(proposedPort uint32) error {
+			selectedPort, err := parallel.AdvancePortSafe(&startingPort, func(proposedPort uint32) error {
 				// We always error here, to ensure that we continue to retry advancing the port
 				return eris.Errorf("Port invalid: %d", proposedPort)
 			}, retry.Delay(0))
-
+			Expect(err).To(HaveOccurred())
 			Expect(selectedPort).To(Equal(uint32(11015)), "should have exhausted 5 retries")
 		})
 

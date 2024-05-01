@@ -30,7 +30,7 @@ func GetPortOffset() int {
 
 // AdvancePortSafe advances the provided port by 1 until it returns a port that is safe to use
 // The availability of the port is determined by the errIfPortInUse function
-func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) uint32 {
+func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) (uint32, error) {
 	var newPort uint32
 
 	defaultRetryOptions := []retry.Option{
@@ -54,6 +54,15 @@ func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, 
 		contextutils.LoggerFrom(context.Background()).Errorf("Failed to identify a safe port: %v", retryErr)
 	}
 
+	return newPort, retryErr
+}
+
+// MustAdvancePortSafe executes AdvancePortSafe and panics if an error is returned
+func MustAdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) uint32 {
+	newPort, err := AdvancePortSafe(p, errIfPortInUse, retryOptions...)
+	if err != nil {
+		panic(err)
+	}
 	return newPort
 }
 
@@ -65,7 +74,7 @@ func AdvancePort(p *uint32) uint32 {
 // AdvancePortSafeListen returns a port that is safe to use in parallel tests
 // It relies on pinging the port to see if it is in use
 func AdvancePortSafeListen(p *uint32) uint32 {
-	return AdvancePortSafe(p, portInUseListen)
+	return MustAdvancePortSafe(p, portInUseListen)
 }
 
 func portInUseListen(proposedPort uint32) error {
