@@ -110,7 +110,7 @@ func (p *plugin) ApplyListenerPlugin(
 		return nil
 	}
 
-	if numOpts := len(attachedOptions); numOpts > 1 {
+	if len(attachedOptions) > 1 {
 
 		for _, unusedVhO := range attachedOptions[1:] {
 			nn := client.ObjectKeyFromObject(unusedVhO)
