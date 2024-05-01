@@ -1,13 +1,10 @@
 package parallel
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"sync/atomic"
 	"time"
-
-	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/rotisserie/eris"
 
@@ -49,10 +46,6 @@ func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, 
 		newPort = AdvancePort(p)
 		return errIfPortInUse(newPort)
 	}, append(defaultRetryOptions, retryOptions...)...)
-
-	if retryErr != nil {
-		contextutils.LoggerFrom(context.Background()).Errorf("Failed to identify a safe port: %v", retryErr)
-	}
 
 	return newPort, retryErr
 }
