@@ -41,6 +41,8 @@ Run :
 tilt up
 ```
 
+If there are any issues, manually triggering an update on the problematic resource should fix it
+
 ### Providers config
 
 The list of enabled providers is specified in the `enabled_providers` array in `tilt-settings.yaml`
