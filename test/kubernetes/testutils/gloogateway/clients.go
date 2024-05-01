@@ -11,8 +11,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-
-	"github.com/onsi/gomega"
 )
 
 // ResourceClients is a set of clients for interacting with the Edge resources
@@ -53,7 +51,9 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		SharedCache: sharedClientCache,
 	}
 	virtualHostOptionClient, err := gatewayv1.NewVirtualHostOptionClient(ctx, virtualHostOptionClientFactory)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	if err != nil {
+		return nil, err
+	}
 
 	return &clients{
 		routeOptionClient:       routeOptionClient,
