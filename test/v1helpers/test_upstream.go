@@ -133,12 +133,19 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 	returned := make(chan *ReturnedResponse, 100)
 	for _, srv := range grpcServices {
 		srv := srv
-		go func() {
+		go func(serveCtx context.Context) {
 			defer GinkgoRecover()
-			for r := range srv.C {
-				received <- &ReceivedRequest{GRPCRequest: r, Port: srv.Port}
+
+			for {
+				select {
+				case <-serveCtx.Done():
+					// context was cancelled, stop handling requests
+					return
+				case r := <-srv.C:
+					received <- &ReceivedRequest{GRPCRequest: r, Port: srv.Port}
+				}
 			}
-		}()
+		}(ctx)
 	}
 	ports := make([]uint32, 0, len(grpcServices))
 	for _, v := range grpcServices {

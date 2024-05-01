@@ -269,7 +269,7 @@ run-kube-e2e-tests: test
 # Go Tests
 #----------------------------------------------------------------------------------
 GO_TEST_ENV ?=
-GO_TEST_ARGS ?=
+GO_TEST_ARGS ?= -cpu=4 -race
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
