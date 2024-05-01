@@ -67,6 +67,20 @@ var (
 			Namespace: "team2",
 		},
 	}
+	routeParent1 = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "parent1",
+			Namespace: "infra",
+		},
+	}
+	routeParent1Host = "parent1.com"
+	routeParent2Host = "parent2.com"
+	routeParent2     = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "parent2",
+			Namespace: "infra",
+		},
+	}
 	pathTeam1 = "anything/team1/foo"
 	pathTeam2 = "anything/team2/foo"
 )
@@ -77,4 +91,5 @@ var (
 	cyclicRoutesManifest           = filepath.Join(util.MustGetThisDir(), "inputs/cyclic.yaml")
 	invalidChildRoutesManifest     = filepath.Join(util.MustGetThisDir(), "inputs/invalid_child.yaml")
 	headerQueryMatchRoutesManifest = filepath.Join(util.MustGetThisDir(), "inputs/header_query_match.yaml")
+	multipleParentsManifest        = filepath.Join(util.MustGetThisDir(), "inputs/multiple_parents.yaml")
 )
