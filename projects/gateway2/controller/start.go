@@ -57,6 +57,9 @@ type StartConfig struct {
 	// RouteOptionClient is the client used for retrieving RouteOption objects within the RouteOptionsPlugin
 	// NOTE: We may be able to move this entirely to the RouteOptionsPlugin
 	RouteOptionClient gatewayv1.RouteOptionClient
+	// VirtualHostOptionClient is the client used for retrieving VirtualHostOption objects within the VirtualHostOptionsPlugin
+	// NOTE: We may be able to move this entirely to the VirtualHostOptionsPlugin
+	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
 	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
 	StatusReporter reporter.StatusReporter
 
@@ -102,11 +105,12 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
-		Mgr:               mgr,
-		AuthConfigClient:  cfg.AuthConfigClient,
-		RouteOptionClient: cfg.RouteOptionClient,
-		StatusReporter:    cfg.StatusReporter,
-		KickXds:           inputChannels.Kick,
+		Mgr:                     mgr,
+		RouteOptionClient:       cfg.RouteOptionClient,
+		VirtualHostOptionClient: cfg.VirtualHostOptionClient,
+		StatusReporter:          cfg.StatusReporter,
+		KickXds:                 inputChannels.Kick,
+		AuthConfigClient:        cfg.AuthConfigClient,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
