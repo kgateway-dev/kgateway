@@ -3,17 +3,15 @@ package istio
 import (
 	"context"
 
-	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
+	"github.com/stretchr/testify/suite"
 )
 
-// istioTestingSuite is the entire Suite of tests for the "Istio" integration cases
+// istioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto-mtls is disabled
+// and Upstreams do not have sslConfig values set
 type istioTestingSuite struct {
 	suite.Suite
 
@@ -54,24 +52,6 @@ func (s *istioTestingSuite) TearDownSuite() {
 	s.NoError(err, "can delete setup manifest")
 }
 
-func (s *istioTestingSuite) BeforeEach() {
-	// ensure that auto mtls is enabled
-	upgradeOpts := s.helmOptions
-	upgradeOpts.ExtraArgs = []string{
-		"--set", "global.istioIntegration.enableAutoMtls=true",
-		// TODO: why is this getting overwritten?
-		"--set", "kubeGateway.enabled=true",
-	}
-	err := helm.HelmUpgradeInstallGloo(upgradeOpts)
-	s.NoError(err, "can upgrade gloo with automtls disabled")
-
-	gomega.Eventually(func(g gomega.Gomega) {
-		settings, err := s.testInstallation.ResourceClients.SettingsClient().Read(s.testInstallation.Metadata.InstallNamespace, "default", clients.ReadOpts{})
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "can read settings")
-		g.Expect(settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue()).To(gomega.BeTrue(), "settings have auto mtls enabled")
-	}).Should(gomega.Succeed(), "settings have auto mtls enabled")
-}
-
 func (s *istioTestingSuite) TestStrictPeerAuth() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
@@ -90,22 +70,6 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 			curl.WithPath("/headers"),
 		},
 		expectedMtlsResponse)
-
-	// Disable automtls
-	upgradeOpts := s.helmOptions
-	upgradeOpts.ExtraArgs = []string{
-		"--set", "global.istioIntegration.enableAutoMtls=false",
-		// TODO: why is this getting overwritten?
-		"--set", "kubeGateway.enabled=true",
-	}
-	err = helm.HelmUpgradeInstallGloo(upgradeOpts)
-	s.NoError(err, "can upgrade gloo with automtls disabled")
-
-	gomega.Eventually(func(g gomega.Gomega) {
-		settings, err := s.testInstallation.ResourceClients.SettingsClient().Read(s.testInstallation.Metadata.InstallNamespace, "default", clients.ReadOpts{})
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "can read settings")
-		g.Expect(settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue()).To(gomega.BeFalse(), "settings have auto mtls disabled")
-	}).Should(gomega.Succeed(), "settings have auto mtls disabled")
 
 	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -127,33 +91,6 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, permissivePeerAuthManifest)
 	s.NoError(err, "can apply permissivePeerAuth")
-
-	// With auto mtls enabled in the mesh, the response should contain the X-Forwarded-Client-Cert header even with permissive mode
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		curlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
-		},
-		expectedMtlsResponse)
-
-	// Disable automtls
-	upgradeOpts := s.helmOptions
-	upgradeOpts.ExtraArgs = []string{
-		"--set", "global.istioIntegration.enableAutoMtls=false",
-		// TODO: why is this getting overwritten?
-		"--set", "kubeGateway.enabled=true",
-	}
-	err = helm.HelmUpgradeInstallGloo(upgradeOpts)
-	s.NoError(err, "can upgrade gloo with automtls disabled")
-
-	gomega.Eventually(func(g gomega.Gomega) {
-		settings, err := s.testInstallation.ResourceClients.SettingsClient().Read(s.testInstallation.Metadata.InstallNamespace, "default", clients.ReadOpts{})
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "can read settings")
-		g.Expect(settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue()).To(gomega.BeFalse(), "settings have auto mtls disabled")
-	}).Should(gomega.Succeed(), "settings have auto mtls disabled")
 
 	// With auto mtls disabled in the mesh, the response should not contain the X-Forwarded-Client-Cert header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(

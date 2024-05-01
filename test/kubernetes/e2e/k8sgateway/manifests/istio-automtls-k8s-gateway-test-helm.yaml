@@ -22,7 +22,7 @@ settings:
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
   gloo:
     istioOptions:
-        enableAutoMtls: false # Automtls is disabled in this test setup
+      enableAutoMtls: true
 gateway:
   persistProxySpec: true
   logLevel: info

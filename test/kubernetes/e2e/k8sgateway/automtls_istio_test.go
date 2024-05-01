@@ -17,15 +17,15 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestK8sGatewayIstio is the function which executes a series of tests against a given installation
-func TestK8sGatewayIstio(t *testing.T) {
+// TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
+func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-k8s-gw-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-k8s-gateway-test-helm.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-k8s-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -73,7 +73,7 @@ func TestK8sGatewayIstio(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
 	})
 
-	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation, helm.GetHelmOptions(testHelper)))
+	t.Run("IstioIntegrationAutoMtls", func(t *testing.T) {
+		suite.Run(t, istio.NewIstioAutoMtlsSuite(ctx, testInstallation, helm.GetHelmOptions(testHelper)))
 	})
 }
