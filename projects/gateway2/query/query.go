@@ -122,6 +122,8 @@ type GatewayQueries interface {
 	GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error)
 
 	GetLocalObjRef(ctx context.Context, from From, localObjRef apiv1.LocalObjectReference) (client.Object, error)
+
+	GetDelegatedRoutes(ctx context.Context, backendRef apiv1.BackendObjectReference, parentMatch apiv1.HTTPRouteMatch, parentRef types.NamespacedName) ([]apiv1.HTTPRoute, error)
 }
 
 type RoutesForGwResult struct {
@@ -157,7 +159,6 @@ type gatewayQueries struct {
 }
 
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
-
 	var list apiv1beta1.ReferenceGrantList
 	err := r.client.List(ctx, &list, client.InNamespace(tons), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(ReferenceGrantFromField, fromns)})
 	if err != nil {
@@ -207,26 +208,30 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) 
 					continue
 				}
 
-				if isHttpRouteAllowed(allowedKinds) {
-					if !allowedNs(hr.Namespace) {
-						continue
-					}
-					anyRoutesAllowed = true
-
-					if !parentRefMatchListener(ref, &l) {
-						continue
-					}
-					anyListenerMatched = true
-					if ok, hostnames := hostnameIntersect(&l, &hr); ok {
-						lrr := &ListenerRouteResult{
-							Route:     hr,
-							Hostnames: hostnames,
-							ParentRef: ref,
-						}
-						anyHostsMatch = true
-						lr.Routes = append(lr.Routes, lrr)
-					}
+				if !isHttpRouteAllowed(allowedKinds) {
+					continue
 				}
+				if !allowedNs(hr.Namespace) {
+					continue
+				}
+				anyRoutesAllowed = true
+
+				if !parentRefMatchListener(ref, &l) {
+					continue
+				}
+				anyListenerMatched = true
+
+				ok, hostnames := hostnameIntersect(&l, &hr)
+				if !ok {
+					continue
+				}
+				lrr := &ListenerRouteResult{
+					Route:     hr,
+					Hostnames: hostnames,
+					ParentRef: ref,
+				}
+				anyHostsMatch = true
+				lr.Routes = append(lr.Routes, lrr)
 			}
 
 			if !anyRoutesAllowed {
@@ -468,7 +473,6 @@ func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName stri
 		return nil, err
 	}
 	return ret, nil
-
 }
 
 func isHttpRouteAllowed(allowedKinds []metav1.GroupKind) bool {

@@ -13,9 +13,7 @@ import (
 	"github.com/onsi/gomega/types"
 )
 
-var (
-	_ types.GomegaMatcher = new(HaveHttpResponseMatcher)
-)
+var _ types.GomegaMatcher = new(HaveHttpResponseMatcher)
 
 // HaveOkResponse expects a http response with a 200 status code
 func HaveOkResponse() types.GomegaMatcher {
@@ -75,14 +73,8 @@ type HttpResponse struct {
 
 // HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains
 // particular expected properties (status, body..etc)
-// If an expected body isn't defined, we default to expecting an empty response
+// If an expected body isn't specified, the body is not matched
 func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
-	expectedBody := expected.Body
-	if expectedBody == nil {
-		// Default to an empty body
-		expectedBody = ""
-	}
-
 	expectedCustomMatcher := expected.Custom
 	if expected.Custom == nil {
 		// Default to an always accept matcher
@@ -95,9 +87,11 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 			expected.StatusCode,
 		},
 	})
-	partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPBodyMatcher{
-		Expected: expectedBody,
-	})
+	if expected.Body != nil {
+		partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPBodyMatcher{
+			Expected: expected.Body,
+		})
+	}
 	for headerName, headerMatch := range expected.Headers {
 		partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPHeaderWithValueMatcher{
 			Header: headerName,

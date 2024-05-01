@@ -26,9 +26,10 @@ func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefR
 			})
 		case errors.Is(err, ErrMissingReferenceGrant):
 			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonRefNotPermitted,
+				Type:    gwv1.RouteConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonRefNotPermitted,
+				Message: err.Error(),
 			})
 		case apierrors.IsNotFound(err):
 			reporter.SetCondition(reports.HTTPRouteCondition{
