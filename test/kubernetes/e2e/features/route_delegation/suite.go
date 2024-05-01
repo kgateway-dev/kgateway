@@ -167,7 +167,7 @@ func (s *tsuite) TestMultipleParents() {
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam1),
-			curl.WithHeader("Host", routeParent1Host),
+			curl.WithHostHeader(routeParent1Host),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
 
@@ -176,7 +176,7 @@ func (s *tsuite) TestMultipleParents() {
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam2),
-			curl.WithHeader("Host", routeParent1Host),
+			curl.WithHostHeader(routeParent1Host),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
 
@@ -185,7 +185,7 @@ func (s *tsuite) TestMultipleParents() {
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam1),
-			curl.WithHeader("Host", routeParent2Host),
+			curl.WithHostHeader(routeParent2Host),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
 
@@ -194,7 +194,7 @@ func (s *tsuite) TestMultipleParents() {
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam2),
-			curl.WithHeader("Host", routeParent2Host),
+			curl.WithHostHeader(routeParent2Host),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 }
