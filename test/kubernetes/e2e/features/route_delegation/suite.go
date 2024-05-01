@@ -46,6 +46,7 @@ func (s *tsuite) SetupSuite() {
 		"TestCyclic":           {commonManifest, cyclicRoutesManifest},
 		"TestInvalidChild":     {commonManifest, invalidChildRoutesManifest},
 		"TestHeaderQueryMatch": {commonManifest, headerQueryMatchRoutesManifest},
+		"TestMultipleParents":  {commonManifest, multipleParentsManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
@@ -56,6 +57,7 @@ func (s *tsuite) SetupSuite() {
 		recursiveRoutesManifest:        {routeRoot, routeTeam1, routeTeam2},
 		invalidChildRoutesManifest:     {routeRoot, routeTeam1, routeTeam2},
 		headerQueryMatchRoutesManifest: {routeRoot, routeTeam1, routeTeam2},
+		multipleParentsManifest:        {routeParent1, routeParent2, routeTeam1, routeTeam2},
 	}
 	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.TestCluster.ClusterContext)
 	s.Require().NoError(err)
@@ -155,6 +157,44 @@ func (s *tsuite) TestHeaderQueryMatch() {
 			curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2),
 			curl.WithHeader("headerX", "valX"),
 			curl.WithQueryParameters(map[string]string{"queryX": "valX"}),
+		},
+		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
+}
+
+func (s *tsuite) TestMultipleParents() {
+	// Assert traffic to parent1.com/anything/team1
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam1),
+			curl.WithHeader("Host", routeParent1Host),
+		},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+
+	// Assert traffic to parent1.com/anything/team2
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam2),
+			curl.WithHeader("Host", routeParent1Host),
+		},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+
+	// Assert traffic to parent2.com/anything/team1
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam1),
+			curl.WithHeader("Host", routeParent2Host),
+		},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+
+	// Assert traffic to parent2.com/anything/team2 fails as it is not selected by parent2 route
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam2),
+			curl.WithHeader("Host", routeParent2Host),
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 }
