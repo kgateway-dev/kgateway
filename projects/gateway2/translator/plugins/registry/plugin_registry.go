@@ -78,6 +78,7 @@ func BuildPlugins(
 	queries gwquery.GatewayQueries,
 	client client.Client,
 	routeOptionClient gatewayv1.RouteOptionClient,
+	vhostOptionClient gatewayv1.VirtualHostOptionClient,
 	statusReporter reporter.StatusReporter,
 ) []plugins.Plugin {
 	return []plugins.Plugin{
@@ -85,7 +86,7 @@ func BuildPlugins(
 		mirror.NewPlugin(queries),
 		redirect.NewPlugin(),
 		routeoptions.NewPlugin(queries, client, routeOptionClient, statusReporter),
-		virtualhostoptions.NewPlugin(queries, client),
+		virtualhostoptions.NewPlugin(queries, client, vhostOptionClient, statusReporter),
 		urlrewrite.NewPlugin(),
 	}
 }

@@ -1,0 +1,14 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualHostOption
+metadata:
+  name: remove-content-type
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+    namespace: default
+  options:
+    headerManipulation:
+      responseHeadersToRemove:
+        - "content-type"
