@@ -701,6 +701,9 @@ apis:
   gateway.solo.io.VirtualServiceSelectorExpressions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#VirtualServiceSelectorExpressions
     package: gateway.solo.io
+  gcp.options.gloo.solo.io.UpstreamSpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/gcp/gcp.proto.sk/#UpstreamSpec
+    package: gcp.options.gloo.solo.io
   gloo.solo.io.AccountCredentialsSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AccountCredentialsSecret
     package: gloo.solo.io

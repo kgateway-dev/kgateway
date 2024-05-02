@@ -22,6 +22,7 @@ var (
 	_ plugins.HttpFilterPlugin  = new(plugin)
 	_ plugins.VirtualHostPlugin = new(plugin)
 	_ plugins.RoutePlugin       = new(plugin)
+	_ plugins.UpstreamPlugin    = new(plugin)
 )
 
 // A series of names to be emitted in errors
@@ -33,6 +34,7 @@ const (
 	CachingExtensionName               = "caching"
 	DlpExtensionName                   = "dlp"
 	FailoverExtensionName              = "failover"
+	GcpExtensionName                   = "failover"
 	JwtExtensionName                   = "jwt"
 	LeftmostXffAddressExtensionName    = "leftmost_xff_address"
 	ProxyLatencyExtensionName          = "proxy_latency"
@@ -128,6 +130,10 @@ func (p *plugin) ProcessUpstream(_ plugins.Params, in *v1.Upstream, _ *envoy_con
 		enterpriseExtensions = append(enterpriseExtensions, FailoverExtensionName)
 	}
 
+	if isGcpConfiguredOnUpstream(in) {
+		enterpriseExtensions = append(enterpriseExtensions, GcpExtensionName)
+	}
+
 	return GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
@@ -206,6 +212,11 @@ func isDlpConfiguredOnListener(in *v1.HttpListener) bool {
 // failover
 func isFailoverConfiguredOnUpstream(in *v1.Upstream) bool {
 	return in.GetFailover() != nil
+}
+
+// failover
+func isGcpConfiguredOnUpstream(in *v1.Upstream) bool {
+	return in.GetGcp() != nil
 }
 
 // jwt
