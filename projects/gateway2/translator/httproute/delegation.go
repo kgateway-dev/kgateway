@@ -96,7 +96,7 @@ func validateChildRoute(
 	route gwv1.HTTPRoute,
 ) error {
 	if len(route.Spec.Hostnames) > 0 {
-		return eris.New("spec.hostnames must be unset on a delegatee route are inherited from the parent route")
+		return eris.New("spec.hostnames must be unset on a delegatee route as they are inherited from the parent route")
 	}
 	return nil
 }

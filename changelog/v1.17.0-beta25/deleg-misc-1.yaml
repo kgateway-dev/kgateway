@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6121
+    resolvesIssue: false
+    description: >-
+      "Route delegation: tweak status message for invalid hostname and create test namespaces reused between tests using common manifest."
