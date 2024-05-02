@@ -268,8 +268,10 @@ run-kube-e2e-tests: test
 #----------------------------------------------------------------------------------
 # Go Tests
 #----------------------------------------------------------------------------------
-GO_TEST_ENV ?=
-GO_TEST_ARGS ?=
+GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
+# Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
+# The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag
+GO_TEST_ARGS ?= -timeout=20m -cpu=4 -race
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
@@ -1074,6 +1076,39 @@ kind-build-and-load: kind-build-and-load-distroless
 endif # distroless images
 kind-build-and-load: # As of now the glooctl istio inject command is not smart enough to determine the variant used, so we always build the standard variant of the sds image.
 kind-build-and-load: kind-build-and-load-sds
+
+# Load existing images. This can speed up development if the images have already been built / are unchanged
+.PHONY: kind-load-standard
+kind-load-standard: kind-load-gloo
+kind-load-standard: kind-load-discovery
+kind-load-standard: kind-load-gloo-envoy-wrapper
+kind-load-standard: kind-load-sds
+kind-load-standard: kind-load-certgen
+kind-load-standard: kind-load-ingress
+kind-load-standard: kind-load-access-logger
+kind-load-standard: kind-load-kubectl
+
+.PHONY: kind-build-and-load-distroless
+kind-load-distroless: kind-load-gloo-distroless
+kind-load-distroless: kind-load-discovery-distroless
+kind-load-distroless: kind-load-gloo-envoy-wrapper-distroless
+kind-load-distroless: kind-load-sds-distroless
+kind-load-distroless: kind-load-certgen-distroless
+kind-load-distroless: kind-load-ingress-distroless
+kind-load-distroless: kind-load-access-logger-distroless
+kind-load-distroless: kind-load-kubectl-distroless
+
+.PHONY: kind-load ## Use to build all images and load them into kind
+kind-load: # Standard images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
+kind-load: kind-load-standard
+endif # standard images
+kind-load: # Distroless images
+ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all distroless))
+kind-load: kind-load-distroless
+endif # distroless images
+kind-load: # As of now the glooctl istio inject command is not smart enough to determine the variant used, so we always build the standard variant of the sds image.
+kind-load: kind-load-sds
 
 define kind_reload_msg
 The kind-reload-% targets exist in order to assist developers with the work cycle of

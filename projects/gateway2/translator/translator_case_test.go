@@ -89,13 +89,14 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 	}
 
 	routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
+	vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
 	statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
 	statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
 	for _, rtOpt := range routeOptions {
 		routeOptionClient.Write(&rtOpt.Spec, clients.WriteOpts{Ctx: ctx})
 	}
 
-	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, statusReporter))
+	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
 
 	results := make(map[types.NamespacedName]bool)
 	for _, gw := range gateways {
