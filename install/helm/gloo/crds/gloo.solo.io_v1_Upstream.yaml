@@ -553,6 +553,13 @@ spec:
                       type: object
                     type: array
                 type: object
+              gcp:
+                properties:
+                  audience:
+                    type: string
+                  host:
+                    type: string
+                type: object
               healthChecks:
                 items:
                   properties:
