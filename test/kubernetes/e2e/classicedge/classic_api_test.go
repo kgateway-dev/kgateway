@@ -50,6 +50,6 @@ func TestClassicEdgeGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewHeadlessSvcTestingSuite(ctx, testInstallation, false))
+		suite.Run(t, headless_svc.NewClassicHeadlessSvcSuite(ctx, testInstallation))
 	})
 }

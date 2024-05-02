@@ -85,5 +85,5 @@ is also the case for other env variables that are required for the test to run (
 If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
 
 ```
-"-test.run", "TestK8sGateway/RouteOptions/TestConfigureRouteOptionsWithTargetRef"
+-test.run="TestK8sGateway/RouteOptions/TestConfigureRouteOptionsWithTargetRef"
 ```
