@@ -41,3 +41,6 @@ gloo:
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
+# Disable discovery, not recommended for production.
+discovery:
+  enabled: false

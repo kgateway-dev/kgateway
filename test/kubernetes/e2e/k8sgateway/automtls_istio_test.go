@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
 	"github.com/solo-io/skv2/codegen/util"
@@ -56,14 +57,12 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
-	// If the env var SKIP_ISTIO_INSTALL=true, installation will be skipped
 	err = testInstallation.InstallMinimalIstio(ctx)
 	if err != nil {
 		t.Fatalf("failed to install istio: %v", err)
 	}
 
 	// Install Gloo Gateway
-	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		// istio proxy and sds are added to gateway and take a little longer to start up
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 10*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
@@ -71,6 +70,10 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 
 	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("HeadlessSvc", func(t *testing.T) {
+		suite.Run(t, headless_svc.NewHeadlessSvcTestingSuite(ctx, testInstallation, true))
 	})
 
 	t.Run("IstioIntegrationAutoMtls", func(t *testing.T) {

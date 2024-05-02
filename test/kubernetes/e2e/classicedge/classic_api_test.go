@@ -45,7 +45,6 @@ func TestClassicEdgeGateway(t *testing.T) {
 	})
 
 	// Install Gloo Gateway with only classic APIs enabled
-	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
