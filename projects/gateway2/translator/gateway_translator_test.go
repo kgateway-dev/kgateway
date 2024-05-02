@@ -120,7 +120,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should translate a basic configuration with child specifying matching parentRefs", func() {
 			results, err := TestCase{
-				Name:       "delegation-basic",
+				Name:       "delegation-parentRefs-match",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/basic_parentref_match.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -147,7 +147,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should translate a basic configuration with child specifying mismatched parentRefs", func() {
 			results, err := TestCase{
-				Name:       "delegation-basic",
+				Name:       "delegation-parentRefs-mismatch",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/basic_parentref_mismatch.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -174,7 +174,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should translate a configuration with multiple child routes", func() {
 			results, err := TestCase{
-				Name:       "delegation-basic",
+				Name:       "delegation-multiple-children",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/multiple_children.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -201,7 +201,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should detect invalid hostname on a delegatee route", func() {
 			results, err := TestCase{
-				Name:       "delegation-basic",
+				Name:       "delegation-invalid-child-hostname",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/basic_invalid_hostname.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -255,7 +255,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should not translate a cyclic child route", func() {
 			results, err := TestCase{
-				Name:       "delegation-recursive",
+				Name:       "delegation-cyclic",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/cyclic1.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -282,7 +282,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should not translate a recursive cyclic child route", func() {
 			results, err := TestCase{
-				Name:       "delegation-recursive",
+				Name:       "delegation-recursive-cyclic",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/cyclic2.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -309,7 +309,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should translate only matching child routes", func() {
 			results, err := TestCase{
-				Name:       "delegation-basic",
+				Name:       "delegation-rule-matcher",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/child_rule_matcher.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{
@@ -336,7 +336,7 @@ var _ = Describe("GatewayTranslator", func() {
 
 		It("should translate delegatee routes with multiple parents", func() {
 			results, err := TestCase{
-				Name:       "delegation-basic",
+				Name:       "delegation-multiple-parents",
 				InputFiles: []string{dir + "/testutils/inputs/delegation/multiple_parents.yaml"},
 				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 					{

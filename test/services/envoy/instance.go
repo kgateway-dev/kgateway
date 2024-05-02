@@ -117,11 +117,11 @@ func (ei *Instance) RunWith(runConfig RunConfig) error {
 	})
 }
 
-func (ei *Instance) RunWithConfigFile(port int, configFile string) error {
+func (ei *Instance) RunWithConfigFile(ctx context.Context, port int, configFile string) error {
 	runConfig := RunConfig{
 		Role:    "gloo-system~gateway-proxy",
 		Port:    uint32(port),
-		Context: context.TODO(),
+		Context: ctx,
 	}
 	boostrapBuilder := &fileBootstrapBuilder{
 		file: configFile,
