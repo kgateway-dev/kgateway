@@ -165,3 +165,8 @@ spec:
       namespaces:
         from: Same
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team2-root
+---
