@@ -282,10 +282,6 @@ func (h *SoloTestHelper) uninstallGloo(all bool) error {
 	return exec.RunCommand(h.RootDir, true, cmdArgs...)
 }
 
-func (h *SoloTestHelper) GetVersion() string {
-	return h.version
-}
-
 // Parses the Helm index file and returns the version of the chart.
 func getChartVersion(config TestConfig) (string, error) {
 
