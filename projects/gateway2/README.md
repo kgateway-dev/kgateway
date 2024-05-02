@@ -1,19 +1,21 @@
 ## Gloo Gateway
 
+Note, all commands should be run from the root of the gloo repo.
+
 # Test Locally 
 
 To create the local test environment in kind, run:
 
 ```shell
- ci/kind/setup-kind.sh; make kind-build-and-load
+./ci/kind/setup-kind.sh
 ```
 
-This will create the kind cluster, build the docker images. 
+This will create the kind cluster and build the docker images.
 
-Next use helm to install the gateway control plane where `GG_EXPERIMENTAL_K8S_GW_CONTROLLER` is the env that controls the k8s gateway controller:
+Next use helm to install the gateway control plane:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true
 ```
 
 To create a gateway, use the Gateway resource: 
@@ -40,7 +42,6 @@ Apply a test application such as bookinfo:
 
 ```shell  
 kubectl create namespace bookinfo
-
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo
 ```
 
@@ -68,24 +69,36 @@ spec:
 EOF 
 ```
 
+Expose the gateway that gets created via the Gateway resource:
+
+```shell
+kubectl port-forward deployment/gloo-proxy-http 8080:8080
+```
+
+Send some traffic through the gateway:
+
+```shell
+curl -I localhost:8080/productpage -H "host: www.example.com" -v
+```
+
 # Istio Integration
 
 This will create the kind cluster, build the docker images.
 
 ```shell
-  ci/kind/setup-kind.sh; make kind-build-and-load
+./ci/kind/setup-kind.sh
 ```
 
 Next we need to install Istio in the cluster along with the bookinfo test application in the mesh:
 
 ```shell
-./istio.sh
+./projects/gateway2/istio.sh
 ```
 
 Next use helm to install the gateway control plane with istio integration enabled:
 
 ```shell
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set global.istioSDS.enabled=true
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true --set global.istioSDS.enabled=true
 ```
 
 In order to enable automtls, set it to true in the settings:
