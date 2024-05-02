@@ -3,7 +3,6 @@ package istio
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
@@ -20,16 +19,12 @@ type istioAutoMtlsTestingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
-
-	// helmOptions contains the options that are passed to the helm command
-	helmOptions helm.InstallOptions
 }
 
-func NewIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation, helpOptions helm.InstallOptions) suite.TestingSuite {
+func NewIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &istioAutoMtlsTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		helmOptions:      helpOptions,
 	}
 }
 
@@ -70,17 +65,6 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 			curl.WithPath("/headers"),
 		},
 		expectedMtlsResponse)
-
-	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		curlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
-		},
-		expectedServiceUnavailableResponse)
 }
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {

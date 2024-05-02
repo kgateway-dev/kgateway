@@ -3,7 +3,7 @@ global:
   istioSDS:
     enabled: true
   istioIntegration:
-    enableAutoMtls: true
+    enableAutoMtls: true # Automtls is enabled in this test setup
   image:
     pullPolicy: IfNotPresent
   # Note: glooRbac.namespaced settings are not supported with Gloo Gateway https://github.com/solo-io/solo-projects/issues/6064
@@ -20,9 +20,6 @@ settings:
     replaceInvalidRoutes: true
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
-  gloo:
-    istioOptions:
-      enableAutoMtls: true
 gateway:
   persistProxySpec: true
   logLevel: info

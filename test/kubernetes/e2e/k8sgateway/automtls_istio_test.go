@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -25,7 +24,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "istio-k8s-gw-test",
+			InstallNamespace:   "automtls-istio-k8s-gw-test",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-k8s-gateway-test-helm.yaml"),
 		},
 	)
@@ -77,6 +76,6 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	})
 
 	t.Run("IstioIntegrationAutoMtls", func(t *testing.T) {
-		suite.Run(t, istio.NewIstioAutoMtlsSuite(ctx, testInstallation, helm.GetHelmOptions(testHelper)))
+		suite.Run(t, istio.NewIstioAutoMtlsSuite(ctx, testInstallation))
 	})
 }

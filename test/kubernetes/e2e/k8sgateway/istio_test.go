@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helm"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -77,6 +76,6 @@ func TestK8sGatewayIstio(t *testing.T) {
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation, helm.GetHelmOptions(testHelper)))
+		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation))
 	})
 }
