@@ -27,6 +27,10 @@ spec:
           port: 80
           kind: Upstream
           group: gloo.solo.io
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            hostname: jsonplaceholder.typicode.com
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
