@@ -2,6 +2,7 @@ package assertions
 
 import (
 	"testing"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
@@ -23,12 +24,23 @@ type Provider struct {
 
 	clusterContext     *cluster.Context
 	glooGatewayContext *gloogateway.Context
+
+	assertionOptions *AssertionOptions
+}
+
+type AssertionOptions struct {
+	timeout time.Duration
+	polling time.Duration
 }
 
 // NewProvider returns a Provider that will provide Assertions that can be executed against an
 // installation of Gloo Gateway
 func NewProvider(t *testing.T) *Provider {
 	gomega.RegisterTestingT(t)
+	assertionOptions := &AssertionOptions{
+		timeout: time.Second * 20,
+		polling: time.Millisecond * 200,
+	}
 	return &Provider{
 		Assert:  assert.New(t),
 		Require: require.New(t),
@@ -36,6 +48,7 @@ func NewProvider(t *testing.T) *Provider {
 
 		clusterContext:     nil,
 		glooGatewayContext: nil,
+		assertionOptions:   assertionOptions,
 	}
 }
 
@@ -56,4 +69,8 @@ func (p *Provider) WithGlooGatewayContext(ggCtx *gloogateway.Context) *Provider 
 // There are certain Assertions that can be invoked that do not require that Gloo Gateway be installed for them to be invoked
 func (p *Provider) expectGlooGatewayContextDefined() {
 	p.Require.NotNil(p.glooGatewayContext, "Provider attempted to create an Assertion that requires a Gloo Gateway installation, but none was configured")
+}
+
+func (p *Provider) SetAssertionOptions(opts *AssertionOptions) {
+	p.assertionOptions = opts
 }
