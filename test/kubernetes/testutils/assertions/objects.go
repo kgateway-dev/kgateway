@@ -16,8 +16,8 @@ func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client
 			innerG.Expect(err).NotTo(HaveOccurred(), "object %s %s should be available in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String())
 		}).
 			WithContext(ctx).
-			WithTimeout(p.assertionOptions.timeout).
-			WithPolling(p.assertionOptions.polling).
+			WithTimeout(p.assertionOptions.Timeout).
+			WithPolling(p.assertionOptions.Polling).
 			Should(Succeed())
 	}
 }
@@ -29,8 +29,8 @@ func (p *Provider) EventuallyObjectsNotExist(ctx context.Context, objects ...cli
 			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object %s %s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String())
 		}).
 			WithContext(ctx).
-			WithTimeout(p.assertionOptions.timeout).
-			WithPolling(p.assertionOptions.polling).
+			WithTimeout(p.assertionOptions.Timeout).
+			WithPolling(p.assertionOptions.Polling).
 			Should(Succeed())
 	}
 }

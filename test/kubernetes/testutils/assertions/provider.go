@@ -29,8 +29,8 @@ type Provider struct {
 }
 
 type AssertionOptions struct {
-	timeout time.Duration
-	polling time.Duration
+	Timeout time.Duration
+	Polling time.Duration
 }
 
 // NewProvider returns a Provider that will provide Assertions that can be executed against an
@@ -38,8 +38,8 @@ type AssertionOptions struct {
 func NewProvider(t *testing.T) *Provider {
 	gomega.RegisterTestingT(t)
 	assertionOptions := &AssertionOptions{
-		timeout: time.Second * 20,
-		polling: time.Millisecond * 200,
+		Timeout: time.Second * 20,
+		Polling: time.Millisecond * 200,
 	}
 	return &Provider{
 		Assert:  assert.New(t),
