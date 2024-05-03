@@ -20,7 +20,7 @@ import (
 // the k8s Gateway controller is disabled
 func TestClassicEdgeGateway(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
+	testCluster := e2e.MustTestCluster(nil)
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{

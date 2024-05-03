@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	k8scoreruntime "k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"os"
 	"os/exec"
@@ -44,9 +45,9 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	return testHelper
 }
 
-func MustTestCluster() *TestCluster {
+func MustTestCluster(additionalSchemes func(scheme *k8scoreruntime.Scheme) error) *TestCluster {
 	runtimeContext := k8sruntime.NewContext()
-	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName, additionalSchemes)
 
 	return &TestCluster{
 		RuntimeContext: runtimeContext,

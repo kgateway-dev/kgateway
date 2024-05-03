@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +16,7 @@ import (
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
-func MustKindContext(clusterName string) *Context {
+func MustKindContext(clusterName string, additionalSchemes func(scheme *runtime.Scheme) error) *Context {
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
@@ -31,7 +32,7 @@ func MustKindContext(clusterName string) *Context {
 	// This line prevents controller-runtime from complaining about log.SetLogger never being called
 	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	clt, err := client.New(restCfg, client.Options{
-		Scheme: kubetestclients.MustClientScheme(),
+		Scheme: kubetestclients.MustClientScheme(additionalSchemes),
 	})
 	if err != nil {
 		panic(err)

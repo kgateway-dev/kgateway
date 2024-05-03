@@ -24,7 +24,7 @@ import (
 // TestK8sGateway is the function which executes a series of tests against a given installation
 func TestK8sGateway(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
+	testCluster := e2e.MustTestCluster(nil)
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
