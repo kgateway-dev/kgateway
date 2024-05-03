@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6085
-    resolvesIssue: true
-    description: >-
-      Add end-to-end testing for the VirtualHostOptions feature as used by the Kubernetes Gateway API integration
