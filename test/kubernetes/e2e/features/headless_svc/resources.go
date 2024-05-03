@@ -1,8 +1,11 @@
 package headless_svc
 
 import (
+	"fmt"
 	"path/filepath"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,8 +30,8 @@ var (
 	getClassicEdgeResources = func(installNamespace string) []client.Object {
 		headlessSvcUpstream := &soloapis_gloov1.Upstream{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       "Upstream",
-				APIVersion: "gloo.solo.io/v1",
+				Kind:       gloov1.UpstreamGVK.Kind,
+				APIVersion: fmt.Sprintf("%s/%s", gloov1.UpstreamGVK.Group, gloov1.UpstreamGVK.Version),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "headless-nginx-upstream",
@@ -50,8 +53,8 @@ var (
 
 		headlessVs := &v1.VirtualService{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       "VirtualService",
-				APIVersion: "gateway.solo.io/v1",
+				Kind:       v1.VirtualServiceGVK.Kind,
+				APIVersion: fmt.Sprintf("%s/%s", v1.VirtualServiceGVK.Group, v1.VirtualServiceGVK.Version),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "headless-vs",
@@ -94,8 +97,8 @@ var (
 
 	gw = &gwv1.Gateway{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Gateway",
-			APIVersion: "gateway.networking.k8s.io/v1",
+			Kind:       utils.K8sGatewayGvk.Kind,
+			APIVersion: fmt.Sprintf("%s/%s", utils.K8sGatewayGvk.Group, utils.K8sGatewayGvk.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw",
@@ -121,8 +124,8 @@ var (
 	// k8s Gateway API resources
 	headlessSvcHTTPRoute = &gwv1.HTTPRoute{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "HTTPRoute",
-			APIVersion: "gateway.networking.k8s.io/v1",
+			Kind:       utils.HTTPRouteGvk.Kind,
+			APIVersion: fmt.Sprintf("%s/%s", utils.HTTPRouteGvk.Group, utils.HTTPRouteGvk.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "headless-httproute",

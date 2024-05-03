@@ -71,6 +71,22 @@ type HttpResponse struct {
 	Custom types.GomegaMatcher
 }
 
+func (r *HttpResponse) String() string {
+	var bodyString string
+	switch bodyMatcher := r.Body.(type) {
+	case string:
+		bodyString = bodyMatcher
+	case []byte:
+		bodyString = string(bodyMatcher)
+	case types.GomegaMatcher:
+		bodyString = fmt.Sprintf("%#v", bodyMatcher)
+	}
+
+	return fmt.Sprintf("HttpResponse{StatusCode: %d, Body: %s, Headers: %v, Custom: %v}",
+		r.StatusCode, bodyString, r.Headers, r.Custom)
+
+}
+
 // HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains
 // particular expected properties (status, body..etc)
 // If an expected body isn't specified, the body is not matched

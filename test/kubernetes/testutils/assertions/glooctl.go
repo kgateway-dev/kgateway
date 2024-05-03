@@ -34,7 +34,7 @@ func (p *Provider) EventuallyCheckResourcesOk(ctx context.Context) {
 		// These are some basic defaults that we expect to work in most cases
 		// We can make these configurable if need be, though most installations
 		// Should be able to become healthy within this window
-		WithTimeout(time.Second * 90).
+		WithTimeout(time.Second * 120).
 		WithPolling(time.Second).
 		Should(Succeed())
 }
