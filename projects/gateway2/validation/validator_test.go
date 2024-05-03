@@ -3,12 +3,14 @@ package validation_test
 import (
 	"context"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	// . "github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -21,15 +23,28 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	envoybuffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
+	gloovalidation "github.com/solo-io/gloo/projects/gloo/pkg/validation"
+	"github.com/solo-io/gloo/test/samples"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	k8scorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,6 +60,10 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		routeOptionClient sologatewayv1.RouteOptionClient
 		statusReporter    reporter.StatusReporter
 		inputChannels     *proxy_syncer.GatewayInputChannels
+
+		ctrl              *gomock.Controller
+		settings          *v1.Settings
+		registeredPlugins []plugins.Plugin
 	)
 
 	BeforeEach(func() {
@@ -62,13 +81,53 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		statusReporter = reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
 
 		inputChannels = proxy_syncer.NewGatewayInputChannels()
+
+		ctrl = gomock.NewController(T)
+		kube := fake.NewSimpleClientset()
+		kubeCoreCache, err := corecache.NewKubeCoreCache(context.Background(), kube)
+		Expect(err).NotTo(HaveOccurred())
+
+		opts := bootstrap.Opts{
+			Settings:  settings,
+			Secrets:   resourceClientFactory,
+			Upstreams: resourceClientFactory,
+			Consul: bootstrap.Consul{
+				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			},
+			KubeClient:    kube,
+			KubeCoreCache: kubeCoreCache,
+		}
+		registeredPlugins = registry.Plugins(opts)
 	})
 
 	AfterEach(func() {
 		cancel()
 	})
 
-	It("validates a RouteOption", func() {
+	FIt("validates a RouteOption with a dummy proxy", func() {
+		routeReplacingSanitizer, _ := sanitizer.NewRouteReplacingSanitizer(settings.GetGloo().GetInvalidConfigPolicy())
+		xdsSanitizer := sanitizer.XdsSanitizers{
+			sanitizer.NewUpstreamRemovingSanitizer(),
+			routeReplacingSanitizer,
+		}
+
+		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
+
+		translator := translator.NewTranslatorWithHasher(
+			utils.NewSslConfigTranslator(),
+			settings,
+			pluginRegistry,
+			translator.EnvoyCacheResourcesListToFnvHash,
+		)
+		vc := gloovalidation.ValidatorConfig{
+			Ctx: context.Background(),
+			GlooValidatorConfig: gloovalidation.GlooValidatorConfig{
+				XdsSanitizer: xdsSanitizer,
+				Translator:   translator,
+			},
+		}
+		gv := gloovalidation.NewValidator(vc)
+
 		deps := []client.Object{svc(), gw(), httpRoute(), attachedRouteOption()}
 		routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})
 		fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
@@ -89,8 +148,56 @@ var _ = Describe("RouteOptionsPlugin", func() {
 			GatewayQueries:  gwQueries,
 			Cl:              fakeClient,
 		}
-		validator.TranslateK8sGatewayProxies(ctx, rtOpt)
+
+		params := plugins.Params{
+			Ctx:      context.Background(),
+			Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
+		}
+		proxies, _ := validator.TranslateK8sGatewayProxies(ctx, params.Snapshot, rtOpt)
+		params.Snapshot.Proxies = proxies
+		gv.Sync(ctx, params.Snapshot)
+		rpt, err := gv.ValidateGloo(ctx, proxies[0], rtOpt, false)
+		Expect(err).NotTo(HaveOccurred())
+		r := rpt[0]
+		Expect(r.Proxy).To(Equal(proxies[0]))
+		Expect(r.ResourceReports).To(Equal(reporter.ResourceReports{}))
+		Expect(r.ProxyReport).To(matchers.MatchProto(validationutils.MakeReport(proxies[0])))
+
+		vhost := attachedVHostInternal()
+		proxies, _ = validator.TranslateK8sGatewayProxies(ctx, params.Snapshot, vhost)
+		params.Snapshot.Proxies = proxies
+		gv.Sync(ctx, params.Snapshot)
+		rpt, err = gv.ValidateGloo(ctx, proxies[0], vhost, false)
+		Expect(err).NotTo(HaveOccurred())
+		r = rpt[0]
+		Expect(r.Proxy).To(Equal(proxies[0]))
+		Expect(r.ResourceReports).To(Equal(reporter.ResourceReports{}))
+		Expect(r.ProxyReport).To(matchers.MatchProto(validationutils.MakeReport(proxies[0])))
 	})
+
+	// It("validates a RouteOption", func() {
+	// 	deps := []client.Object{svc(), gw(), httpRoute(), attachedRouteOption()}
+	// 	routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})
+	// 	fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
+	// 	gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+
+	// 	k8sGwExtensions, _ := extensions.NewK8sGatewayExtensions(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
+	// 		Cl:                fakeClient,
+	// 		Scheme:            sch,
+	// 		AuthConfigClient:  authConfigClient,
+	// 		RouteOptionClient: routeOptionClient,
+	// 		StatusReporter:    statusReporter,
+	// 		KickXds:           inputChannels.Kick,
+	// 	})
+
+	// 	rtOpt := attachedInternal()
+	// 	validator := validation.ValidationHelper{
+	// 		K8sGwExtensions: k8sGwExtensions,
+	// 		GatewayQueries:  gwQueries,
+	// 		Cl:              fakeClient,
+	// 	}
+	// 	validator.TranslateK8sGatewayProxies(ctx, rtOpt)
+	// })
 })
 
 func nsPtr(s string) *gwv1.Namespace {
@@ -172,6 +279,36 @@ func gw() *gwv1.Gateway {
 					// 		gw
 					// 	},
 					// },
+				},
+			},
+		},
+	}
+}
+
+func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
+	return &solokubev1.VirtualHostOption{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "policy",
+			Namespace: "default",
+		},
+		Spec: *attachedVHostInternal(),
+	}
+}
+
+func attachedVHostInternal() *sologatewayv1.VirtualHostOption {
+	return &sologatewayv1.VirtualHostOption{
+		TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      wellknown.GatewayKind,
+			Name:      "gw",
+			Namespace: wrapperspb.String("default"),
+		},
+		Options: &v1.VirtualHostOptions{
+			BufferPerRoute: &envoybuffer.BufferPerRoute{
+				Override: &envoybuffer.BufferPerRoute_Buffer{
+					Buffer: &envoybuffer.Buffer{
+						MaxRequestBytes: nil,
+					},
 				},
 			},
 		},

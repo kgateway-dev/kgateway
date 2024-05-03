@@ -9,7 +9,10 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -22,14 +25,76 @@ type ValidationHelper struct {
 	Cl              client.Client
 }
 
-type ValidatorClient struct {
+func (v *ValidationHelper) TranslateK8sGatewayProxies(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot, res resources.Resource) ([]*gloov1.Proxy, error) {
+	us := gloov1.NewUpstream("default", "zzz_fake-upstream-for-gloo-validation")
+	us.UpstreamType = &gloov1.Upstream_Static{
+		Static: &static.UpstreamSpec{
+			Hosts: []*static.Host{
+				{Addr: "solo.io", Port: 80},
+			},
+		},
+	}
+	snapshot.UpsertToResourceList(us)
+
+	routes := []*gloov1.Route{{
+		Action: &gloov1.Route_RouteAction{
+			RouteAction: &gloov1.RouteAction{
+				Destination: &gloov1.RouteAction_Single{
+					Single: &gloov1.Destination{
+						DestinationType: &gloov1.Destination_Upstream{
+							Upstream: us.GetMetadata().Ref(),
+						},
+					},
+				},
+			},
+		},
+	}}
+
+	aggregateListener := &gloov1.Listener{
+		Name:        "aggregate-listener",
+		BindAddress: "127.0.0.1",
+		BindPort:    8082,
+		ListenerType: &gloov1.Listener_AggregateListener{
+			AggregateListener: &gloov1.AggregateListener{
+				HttpResources: &gloov1.AggregateListener_HttpResources{
+					VirtualHosts: map[string]*gloov1.VirtualHost{
+						"virt1": {
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes:  routes,
+						},
+					},
+				},
+				HttpFilterChains: []*gloov1.AggregateListener_HttpFilterChain{{
+					HttpOptionsRef:  "opts1",
+					VirtualHostRefs: []string{"virt1"},
+				}},
+			},
+		},
+	}
+
+	proxy := &gloov1.Proxy{
+		Metadata: &core.Metadata{
+			Name:      "zzz-fake-proxy-for-validation",
+			Namespace: "gloo-system",
+		},
+		Listeners: []*gloov1.Listener{
+			aggregateListener,
+		},
+	}
+
+	// add the policy object we are validating to the correct location
+	switch policy := res.(type) {
+	case *sologatewayv1.RouteOption:
+		routes[0].Options = policy.GetOptions()
+	case *sologatewayv1.VirtualHostOption:
+		aggregateListener.GetAggregateListener().GetHttpResources().VirtualHosts["virt1"].Options = policy.GetOptions()
+	}
+
+	return []*gloov1.Proxy{proxy}, nil
 }
 
-func (v *ValidatorClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	return nil
-}
-
-func (v *ValidationHelper) TranslateK8sGatewayProxies(ctx context.Context, res resources.Resource) ([]*gloov1.Proxy, error) {
+func (v *ValidationHelper) TranslateK8sGatewayProxiesFull(ctx context.Context, res resources.Resource) ([]*gloov1.Proxy, error) {
 	// we need to find the Gateway associated with the resource
 	rtOpt, ok := res.(*sologatewayv1.RouteOption)
 	if !ok {

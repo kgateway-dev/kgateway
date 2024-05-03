@@ -302,15 +302,17 @@ func isK8sGatewayProxy(res resources.Resource) bool {
 
 func (v *validator) translateK8sGatewayProxies(
 	ctx context.Context,
+	snap *gloov1snap.ApiSnapshot,
 	res resources.Resource,
 ) ([]*gloov1.Proxy, error) {
-	return v.k8sGatewayValidator.TranslateK8sGatewayProxies(ctx, res)
+	return v.k8sGatewayValidator.TranslateK8sGatewayProxies(ctx, snap, res)
 }
 
-// validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. This was removed from the
-// main validation loop to allow it to be re-run against the original snapshot. The reason for this second validaiton run is to allow
-// the deletion of secrets, but only if they are not in use by the snapshot. This function does not know about
-// those use cases, but supports them with the opts.collectAllErrors flag, which is passed as 'true' when
+// validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. The supplied snapshot should have either been
+// modified to contain the resource being validated or in the case of DELETE validation, have the resource in question removed.
+// This was removed from the main validation loop to allow it to be re-run against the original snapshot.
+// The reason for this second validaiton run is to allow the deletion of secrets, but only if they are not in use by the snapshot.
+// This function does not know about those use cases, but supports them with the opts.collectAllErrors flag, which is passed as 'true' when
 // attempting to delete a secret. This flag overrides the usual behavior of continuing to the next proxy after the first error,
 // and instead collects all errors.
 //
@@ -346,7 +348,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 	)
 
 	if isK8sGatewayProxy(opts.Resource) {
-		proxies, errs = v.translateK8sGatewayProxies(ctx, opts.Resource)
+		proxies, errs = v.translateK8sGatewayProxies(ctx, snapshot, opts.Resource)
 	} else {
 		proxies, errs = v.translateGlooEdgeProxies(ctx, snapshot, opts.collectAllErrors)
 	}
