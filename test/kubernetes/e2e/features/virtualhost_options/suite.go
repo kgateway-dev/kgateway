@@ -45,6 +45,8 @@ func (s *testingSuite) TestConfigureVirtualHostOptions() {
 
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	
+	// Check healthy response with no content-length header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -82,7 +84,7 @@ func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionName() {
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 
-	// Check header manipulation is applied
+	// Check healthy response with added foo header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -127,7 +129,7 @@ func (s *testingSuite) TestMultipleVirtualHostOptions() {
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 
-	// Check header manipulation is applied
+	// Check healthy response with no content-length header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,

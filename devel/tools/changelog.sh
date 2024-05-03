@@ -10,7 +10,7 @@ BRANCH_NAME=$(git symbolic-ref -q HEAD | sed 's#^.*/##')
 DESCRIPTION=${DESCRIPTION:=""}
 
 CHANGELOG_DIR="changelog/$NEXT_VERSION"
-mkdir -p CHANGELOG_DIR
+mkdir -p "$CHANGELOG_DIR"
 
 CHANGELOG_FILE="$CHANGELOG_DIR/$BRANCH_NAME.yaml"
 
