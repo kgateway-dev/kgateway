@@ -26,7 +26,7 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
-	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
+	// curlPod is the Pod that will be used to execute curl requests, and is defined in the upstream manifest files
 	curlPodExecOpt = kubectl.PodExecOptions{
 		Name:      "curl",
 		Namespace: "curl",

@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-// testingSuite is the entire Suite of tests for the "Route Options" feature
+// testingSuite is the entire Suite of tests for the "Upstream" feature
 type testingSuite struct {
 	suite.Suite
 
@@ -41,7 +41,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, routeWithUpstreamManifest)
-	s.Assert().NoError(err, "can route to gloo.solo.io Upstreams")
+	s.Assert().NoError(err, "can apply gloo.solo.io Upstreams manifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
