@@ -2,6 +2,7 @@ package backendref
 
 import (
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -15,7 +16,7 @@ func RefIsService(ref gwv1.BackendObjectReference) bool {
 
 // RefIsUpstream checks if the BackendObjectReference is an Upstream.
 func RefIsUpstream(ref gwv1.BackendObjectReference) bool {
-	return (ref.Kind != nil && *ref.Kind == "Upstream") && (ref.Group != nil && *ref.Group == v1.GroupName)
+	return (ref.Kind != nil && string(*ref.Kind) == gloov1.UpstreamGVK.Kind) && (ref.Group != nil && *ref.Group == v1.GroupName)
 }
 
 // RefIsHTTPRoute checks if the BackendObjectReference is an HTTPRoute
