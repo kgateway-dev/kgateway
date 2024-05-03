@@ -283,7 +283,7 @@ func setRouteAction(
 		clusterName := "blackhole_cluster"
 		ns := "blackhole_ns"
 
-		obj, err := queries.GetBackendForRef(context.TODO(), queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
+		obj, err := queries.GetBackendForRef(ctx, queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
 		ptrClusterName := query.ProcessBackendRef(obj, err, reporter, backendRef.BackendObjectReference)
 		if ptrClusterName != nil {
 			clusterName = *ptrClusterName
@@ -320,6 +320,20 @@ func setRouteAction(
 								Namespace: ns,
 							},
 							Port: port,
+						},
+					},
+				},
+				Weight:  weight,
+				Options: nil,
+			})
+
+		case backendref.RefIsUpstream(backendRef.BackendObjectReference):
+			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
+				Destination: &v1.Destination{
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Name:      clusterName,
+							Namespace: ns,
 						},
 					},
 				},

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
+
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -59,12 +61,17 @@ func TestK8sGateway(t *testing.T) {
 		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 
+	t.Run("Upstreams", func(t *testing.T) {
+		suite.Run(t, upstreams.NewTestingSuite(ctx, testInstallation))
+	})
+
 	t.Run("HeadlessSvc", func(t *testing.T) {
 		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
 	})
 
 	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
+
 	})
 
 	t.Run("RouteDelegation", func(t *testing.T) {

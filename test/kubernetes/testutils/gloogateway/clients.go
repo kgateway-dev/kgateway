@@ -3,6 +3,8 @@ package gloogateway
 import (
 	"context"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 
@@ -18,12 +20,14 @@ type ResourceClients interface {
 	RouteOptionClient() gatewayv1.RouteOptionClient
 	VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient
 	ServiceClient() skkube.ServiceClient
+	UpstreamClient() v1.UpstreamClient
 }
 
 type clients struct {
 	routeOptionClient       gatewayv1.RouteOptionClient
-	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
 	serviceClient           skkube.ServiceClient
+	upstreamClient          v1.UpstreamClient
+	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
 }
 
 func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (ResourceClients, error) {
@@ -35,6 +39,16 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		SharedCache: sharedClientCache,
 	}
 	routeOptionClient, err := gatewayv1.NewRouteOptionClient(ctx, routeOptionClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
+	upstreamClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         v1.UpstreamCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	upstreamClient, err := v1.NewUpstreamClient(ctx, upstreamClientFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +71,9 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 
 	return &clients{
 		routeOptionClient:       routeOptionClient,
-		virtualHostOptionClient: virtualHostOptionClient,
 		serviceClient:           serviceClient,
+		upstreamClient:          upstreamClient,
+		virtualHostOptionClient: virtualHostOptionClient,
 	}, nil
 }
 
@@ -72,4 +87,8 @@ func (c *clients) VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient {
 
 func (c *clients) ServiceClient() skkube.ServiceClient {
 	return c.serviceClient
+}
+
+func (c *clients) UpstreamClient() v1.UpstreamClient {
+	return c.upstreamClient
 }
