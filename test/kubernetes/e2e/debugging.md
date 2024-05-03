@@ -73,3 +73,17 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
   },
 }
 ```
+
+#### Goland
+
+In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or 
+`Debug 'TestXyz'`.
+
+You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of Gloo. This
+is also the case for other env variables that are required for the test to run (`CLUSTER_NAME`, etc.)
+
+If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
+
+```
+-test.run="TestK8sGateway/RouteOptions/TestConfigureRouteOptionsWithTargetRef"
+```

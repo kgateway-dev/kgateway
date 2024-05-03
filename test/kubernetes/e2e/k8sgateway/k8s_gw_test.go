@@ -47,7 +47,6 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	// Install Gloo Gateway
-	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
@@ -61,7 +60,7 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewHeadlessSvcTestingSuite(ctx, testInstallation, true))
+		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
 	})
 
 	t.Run("PortRouting", func(t *testing.T) {
