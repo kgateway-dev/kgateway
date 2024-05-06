@@ -33,7 +33,7 @@ Alternatively, you can use a custom debugger launch config that sets the `test.r
   "program": "${workspaceFolder}/test/kubernetes/e2e/k8sgateway/k8s_gw_test.go",
   "args": [
     "-test.run",
-    "TestK8sGateway/Deployer",
+    "TestK8sGateway$/Deployer",
     "-test.v",
   ],
   "env": {
@@ -76,7 +76,7 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
 
 #### Goland
 
-In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or 
+In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or
 `Debug 'TestXyz'`.
 
 You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of Gloo. This
