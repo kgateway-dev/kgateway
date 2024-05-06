@@ -30,7 +30,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-	err := testInstallation.AddIstioctl(ctx)
+	err := testInstallation.TestCluster.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 
 			// Generate istioctl bug report
-			testInstallation.CreateIstioBugReport()
+			testInstallation.TestCluster.CreateIstioBugReport(ctx)
 		}
 
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
@@ -50,7 +50,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 		})
 
 		// Uninstall Istio
-		err = testInstallation.UninstallIstio()
+		err = testInstallation.TestCluster.UninstallIstio()
 		if err != nil {
 			t.Fatalf("failed to uninstall istio: %v", err)
 		}
@@ -59,7 +59,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
-	err = testInstallation.InstallMinimalIstio(ctx)
+	err = testInstallation.TestCluster.InstallMinimalIstio(ctx)
 	if err != nil {
 		t.Fatalf("failed to install istio: %v", err)
 	}
