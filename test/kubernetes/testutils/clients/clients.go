@@ -52,8 +52,10 @@ func MustClientScheme(additionalSchemes func(scheme *runtime.Scheme) error) *run
 	err = v1.AddToScheme(clientScheme)
 	mustNotError(err)
 
-	err = additionalSchemes(clientScheme)
-	mustNotError(err)
+	if additionalSchemes != nil {
+		err = additionalSchemes(clientScheme)
+		mustNotError(err)
+	}
 
 	return clientScheme
 }

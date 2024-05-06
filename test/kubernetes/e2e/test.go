@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	k8scoreruntime "k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"os"
 	"os/exec"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	k8scoreruntime "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/rotisserie/eris"
 
