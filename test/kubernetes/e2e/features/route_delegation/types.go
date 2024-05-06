@@ -85,11 +85,30 @@ var (
 	pathTeam2 = "anything/team2/foo"
 )
 
+// ref: test/kubernetes/e2e/features/route_delegation/inputs/invalid_child_valid_standalone.yaml
 var (
-	basicRoutesManifest            = filepath.Join(util.MustGetThisDir(), "inputs/basic.yaml")
-	recursiveRoutesManifest        = filepath.Join(util.MustGetThisDir(), "inputs/recursive.yaml")
-	cyclicRoutesManifest           = filepath.Join(util.MustGetThisDir(), "inputs/cyclic.yaml")
-	invalidChildRoutesManifest     = filepath.Join(util.MustGetThisDir(), "inputs/invalid_child.yaml")
-	headerQueryMatchRoutesManifest = filepath.Join(util.MustGetThisDir(), "inputs/header_query_match.yaml")
-	multipleParentsManifest        = filepath.Join(util.MustGetThisDir(), "inputs/multiple_parents.yaml")
+	gatewayTestPort = 8090
+
+	proxyTestMeta = metav1.ObjectMeta{
+		Name:      "gloo-proxy-http-gateway-test",
+		Namespace: "infra",
+	}
+	proxyTestDeployment = &appsv1.Deployment{ObjectMeta: proxyTestMeta}
+	proxyTestService    = &corev1.Service{ObjectMeta: proxyTestMeta}
+
+	proxyTestHostPort = fmt.Sprintf("%s.%s.svc:%d", proxyTestService.Name, proxyTestService.Namespace, gatewayTestPort)
+
+	routeParentHost = "parent.com"
+	routeTeam2Host  = "team2.com"
+)
+
+var (
+	basicRoutesManifest                 = filepath.Join(util.MustGetThisDir(), "inputs/basic.yaml")
+	recursiveRoutesManifest             = filepath.Join(util.MustGetThisDir(), "inputs/recursive.yaml")
+	cyclicRoutesManifest                = filepath.Join(util.MustGetThisDir(), "inputs/cyclic.yaml")
+	invalidChildRoutesManifest          = filepath.Join(util.MustGetThisDir(), "inputs/invalid_child.yaml")
+	headerQueryMatchRoutesManifest      = filepath.Join(util.MustGetThisDir(), "inputs/header_query_match.yaml")
+	multipleParentsManifest             = filepath.Join(util.MustGetThisDir(), "inputs/multiple_parents.yaml")
+	invalidChildValidStandaloneManifest = filepath.Join(util.MustGetThisDir(), "inputs/invalid_child_valid_standalone.yaml")
+	unresolvedChildManifest             = filepath.Join(util.MustGetThisDir(), "inputs/unresolved_child.yaml")
 )
