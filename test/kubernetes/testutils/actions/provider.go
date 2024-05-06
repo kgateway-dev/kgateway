@@ -1,6 +1,10 @@
 package actions
 
 import (
+	"context"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -37,4 +41,8 @@ func (p *Provider) WithGlooGatewayContext(ggContext *gloogateway.Context) *Provi
 
 func (p *Provider) Kubectl() *kubectl.Cli {
 	return p.kubeCli
+}
+
+func (p *Provider) GlooctlCmd(ctx context.Context, args []string) cmdutils.Cmd {
+	return cliutil.Command(ctx, args...)
 }

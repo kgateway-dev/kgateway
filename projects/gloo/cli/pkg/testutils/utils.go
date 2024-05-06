@@ -1,67 +1,32 @@
 package testutils
 
 import (
-	"bytes"
-	"io"
-	"os"
+	"context"
 	"os/exec"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/go-utils/threadsafe"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/spf13/cobra"
-
 	errors "github.com/rotisserie/eris"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 )
 
 func Glooctl(args string) error {
-	app := cmd.GlooCli()
-	return ExecuteCli(app, args)
-}
-
-func ExecuteCli(command *cobra.Command, args string) error {
-	command.SetArgs(strings.Split(args, " "))
-	return command.Execute()
+	return cliutil.Command(context.Background(), args).Run().Cause()
 }
 
 func GlooctlOut(args string) (string, error) {
-	app := cmd.GlooCli()
-	return ExecuteCliOut(app, args)
-}
+	var outLocation threadsafe.Buffer
 
-func ExecuteCliOut(command *cobra.Command, args string) (string, error) {
-	stdOut := os.Stdout
-	stdErr := os.Stderr
-	r, w, err := os.Pipe()
-	if err != nil {
-		return "", err
+	runErr := cliutil.Command(context.Background(), args).WithStdout(&outLocation).Run()
+	if runErr != nil {
+		return "", runErr.Cause()
 	}
-	os.Stdout = w
-	os.Stderr = w
-
-	outC := make(chan string)
-
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	command.SetArgs(strings.Split(args, " "))
-	err = command.Execute()
-
-	// back to normal state
-	w.Close()
-	os.Stdout = stdOut // restoring the real stdout
-	os.Stderr = stdErr
-	out := <-outC
-
-	return strings.TrimSuffix(out, "\n"), err
+	return outLocation.String(), nil
 }
 
 func Make(dir, args string) error {
