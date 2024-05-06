@@ -1,7 +1,9 @@
-package classicedge_test
+package gloo_gateway_edge_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,16 +18,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestClassicEdgeGateway is the function which executes a series of tests against a given installation where
+// TestGlooGatewayEdgeGateway is the function which executes a series of tests against a given installation where
 // the k8s Gateway controller is disabled
-func TestClassicEdgeGateway(t *testing.T) {
+func TestGlooGatewayEdgeGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "classic-edge-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "classic-gateway-test-helm.yaml"),
+			InstallNamespace:   "gloo-gateway-edge-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "gloo-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -44,12 +46,22 @@ func TestClassicEdgeGateway(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	// Install Gloo Gateway with only classic APIs enabled
+	// Install Gloo Gateway with only Gloo Gateway APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewClassicHeadlessSvcSuite(ctx, testInstallation))
+		tempDir, err := os.MkdirTemp("", fmt.Sprintf("headless-svc-%s", testInstallation.Metadata.InstallNamespace))
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer func() {
+			// Delete the temporary directory after the test completes
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("Failed to remove temporary directory: %v", err)
+			}
+		}()
+		suite.Run(t, headless_svc.NewGlooGatewayHeadlessSvcSuite(ctx, testInstallation, tempDir))
 	})
 }

@@ -2,6 +2,8 @@ package k8sgateway_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -66,7 +68,18 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
+		// create a tmp output directory
+		tempDir, err := os.MkdirTemp("", fmt.Sprintf("headless-svc-%s", testInstallation.Metadata.InstallNamespace))
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer func() {
+			// Delete the temporary directory after the test completes
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("Failed to remove temporary directory: %v", err)
+			}
+		}()
+		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation, tempDir))
 	})
 
 	t.Run("PortRouting", func(t *testing.T) {
