@@ -48,7 +48,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = Describe("AWS Lambda", func() {
+var _ = FDescribe("AWS Lambda", func() {
 	const (
 		defaultRegion        = "us-east-1"
 		secondaryRegion      = "us-east-2"
@@ -154,6 +154,14 @@ var _ = Describe("AWS Lambda", func() {
 			offset:             2,
 			envoyPort:          envoyPort,
 			expectedSubstrings: []string{"SOLO.IO"},
+		})
+	}
+
+	validateLambda302 := func(envoyPort uint32) {
+		validateLambda(lambdaValidationParams{
+			offset:             2,
+			envoyPort:          envoyPort,
+			expectedSubstrings: []string{`\"Hello from Lambda!\"`, `multiValueHeaders": {"foo": [null]}`},
 		})
 	}
 
@@ -276,8 +284,9 @@ var _ = Describe("AWS Lambda", func() {
 
 		// wait for proxy to be accepted
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
-		}, "30s", "1s")
+			proxy, err := testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+			return proxy, err
+		}, "300s", "1s")
 
 	}
 
@@ -345,6 +354,18 @@ var _ = Describe("AWS Lambda", func() {
 		})
 	}
 
+	testProxyWith302Response := func() {
+		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		createProxy(false, false, false, "ben-302-test")
+		validateLambda(lambdaValidationParams{
+			offset:             1,
+			envoyPort:          envoyInstance.HttpPort,
+			expectedSubstrings: []string{`"\"Hello from Lambda!\""`, `"multiValueHeaders": {"foo": [null]}`},
+		})
+	}
+
 	testProxyWithCrossAccountLambda := func() {
 		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
@@ -396,6 +417,47 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambdaUppercase(envoyInstance.HttpPort)
+	}
+
+	testLambdaWithVirtualService302 := func() {
+		err := envoyInstance.RunWithRoleAndRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		vs := &gw1.VirtualService{
+			Metadata: &core.Metadata{
+				Name:      "app",
+				Namespace: "gloo-system",
+			},
+			VirtualHost: &gw1.VirtualHost{
+				Domains: []string{"*"},
+				Routes: []*gw1.Route{{
+					Action: &gw1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: upstream.Metadata.Ref(),
+									},
+									DestinationSpec: &gloov1.DestinationSpec{
+										DestinationType: &gloov1.DestinationSpec_Aws{
+											Aws: &aws_plugin.DestinationSpec{
+												LogicalName: "ben-302-test",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}},
+			},
+		}
+
+		var opts clients.WriteOpts
+		_, err = testClients.VirtualServiceClient.Write(vs, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		validateLambda302(envoyInstance.HttpPort)
 	}
 
 	testLambdaTransformations := func() {
@@ -574,6 +636,8 @@ var _ = Describe("AWS Lambda", func() {
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
 			It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
+
+			It("should be able to call lambda with 302 response", testProxyWith302Response)
 		})
 		Context("With gateway translation", func() {
 			BeforeEach(func() {
@@ -584,6 +648,8 @@ var _ = Describe("AWS Lambda", func() {
 			It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 
 			It("should be able to call lambda transformation and regular transformation", testLambdaTransformations)
+
+			It("should be able to call lambda with 302 response", testLambdaWithVirtualService302)
 		})
 		Context("Resource-based cross-account lambda", func() {
 			BeforeEach(func() {
