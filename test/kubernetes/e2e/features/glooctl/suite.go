@@ -45,16 +45,18 @@ var (
 	// checkOutputSuccessfulMessages is a map of messages that `glooctl check` will emit
 	// The key is the values of the `-x` flag that will exclude a given sub-check
 	checkOutputSuccessfulMessages = map[string]string{
-		"deployments":        "Checking deployments... OK",
-		"pods":               "Checking pods... OK",
-		"upstreams":          "Checking upstreams... OK",
-		"upstreamgroup":      "Checking upstream groups... OK",
-		"auth-configs":       "Checking auth configs... OK",
-		"rate-limit-configs": "Checking rate limit configs... OK",
-		"secrets":            "Checking secrets... OK",
-		"virtual-services":   "Checking virtual services... OK",
-		"gateways":           "Checking gateways... OK",
-		"proxies":            "Checking proxies... OK",
+		"deployments":          "Checking deployments... OK",
+		"pods":                 "Checking pods... OK",
+		"upstreams":            "Checking upstreams... OK",
+		"upstreamgroup":        "Checking upstream groups... OK",
+		"auth-configs":         "Checking auth configs... OK",
+		"rate-limit-configs":   "Checking rate limit configs... OK",
+		"virtual-host-options": "Checking VirtualHostOptions... OK",
+		"route-options":        "Checking RouteOptions... OK",
+		"secrets":              "Checking secrets... OK",
+		"virtual-services":     "Checking virtual services... OK",
+		"gateways":             "Checking gateways... OK",
+		"proxies":              "Checking proxies... OK",
 	}
 )
 
