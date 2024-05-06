@@ -63,3 +63,9 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
+    - name: Archive istioctl bug report on failure
+      if: ${{ failure() && exists('./_output/bug-report.tar.gz') }} # Only upload the artifact if the test failed and the artifact exists
+      uses: actions/upload-artifact@v2
+      with:
+        name: bug-report
+        path: ./_output/bug-report.tar.gz

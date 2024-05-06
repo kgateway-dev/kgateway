@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
@@ -300,6 +302,33 @@ func (i *TestInstallation) UninstallIstio() error {
 		return fmt.Errorf("istioctl uninstall failed: %w", err)
 	}
 	return nil
+}
+
+// CreateIstioBugReport generates an istioctl bug report and moves it to the _output directory
+func (i *TestInstallation) CreateIstioBugReport() {
+	// Generate istioctl bug report
+	if i.IstioctlBinary == "" {
+		log.Panic("istioctl binary not set. Cannot generate istioctl bug report.")
+	}
+
+	goModFile, err := modutils.GetCurrentModPackageFile()
+	if err != nil {
+		// This should never happen
+		log.Panic(err)
+	}
+
+	rootDir := filepath.Dir(goModFile)
+	artifactOutput := filepath.Join(rootDir, "_output")
+	bugReportCmd := exec.Command(i.IstioctlBinary, "bug-report", "--full-secrets", "--context", i.TestCluster.ClusterContext.KubeContext)
+	bugReportErr := bugReportCmd.Run()
+	if bugReportErr != nil {
+		fmt.Println("Error generating bug report:", bugReportErr)
+	}
+	mvCmd := exec.Command("mv", "bug-report.tar.gz", artifactOutput)
+	mvErr := mvCmd.Run()
+	if mvErr != nil {
+		fmt.Println("Error moving bug report file:", mvErr)
+	}
 }
 
 func GlooDirectory() string {
