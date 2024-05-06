@@ -161,7 +161,7 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambda(lambdaValidationParams{
 			offset:             2,
 			envoyPort:          envoyPort,
-			expectedSubstrings: []string{`\"302 test body\"`, `"multiValueHeaders": {"foo": [null, "bar"]}`},
+			expectedSubstrings: []string{`"statusCode": 302`, `\"302 test body\"`, `"multiValueHeaders": {"foo": [null, "bar"]}`},
 		})
 	}
 
@@ -362,7 +362,7 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambda(lambdaValidationParams{
 			offset:             1,
 			envoyPort:          envoyInstance.HttpPort,
-			expectedSubstrings: []string{`"\"302 test body\""`, `"multiValueHeaders": {"foo": [null, "bar"]}`},
+			expectedSubstrings: []string{`"statusCode": 302`, `"\"302 test body\""`, `"multiValueHeaders": {"foo": [null, "bar"]}`},
 		})
 	}
 
