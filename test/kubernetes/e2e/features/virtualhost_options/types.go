@@ -18,6 +18,7 @@ var (
 	targetRefManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "header-manipulation-targetref.yaml")
 	sectionNameVhOManifest = filepath.Join(util.MustGetThisDir(), "testdata", "section-name-vho.yaml")
 	extraVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho.yaml")
+	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "bad-vho.yaml")
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
@@ -47,6 +48,11 @@ var (
 	// SectionName VirtualHostOption resource to be created
 	sectionNameVirtualHostOptionMeta = metav1.ObjectMeta{
 		Name:      "add-foo-header",
+		Namespace: "default",
+	}
+	// Bad VirtualHostOption resource to be created
+	badVirtualHostOptionMeta = metav1.ObjectMeta{
+		Name:      "bad-retries",
 		Namespace: "default",
 	}
 

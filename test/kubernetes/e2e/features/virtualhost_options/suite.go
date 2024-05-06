@@ -7,6 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -45,7 +46,7 @@ func (s *testingSuite) TestConfigureVirtualHostOptions() {
 
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	
+
 	// Check healthy response with no content-length header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -60,9 +61,35 @@ func (s *testingSuite) TestConfigureVirtualHostOptions() {
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
 		s.getterForMeta(&virtualHostOptionMeta),
 		core.Status_Accepted,
-		"gloo-kube-gateway",
+		defaults.KubeGwReporter,
 	)
 }
+
+func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
+		s.NoError(err, "can delete manifest")
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, badVhOManifest)
+		s.NoError(err, "can delete manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+	})
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, targetRefManifest)
+	s.NoError(err, "can apply targetRefManifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, badVhOManifest)
+	s.NoError(err, "can apply badVhOManifest")
+
+	// Check resources are created for Gateway
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+
+	// Check status is rejected on bad VirtualHostOption
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&badVirtualHostOptionMeta),
+		core.Status_Rejected,
+		defaults.KubeGwReporter,
+	)
+}
+
 func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionName() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
@@ -98,18 +125,18 @@ func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionName() {
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
 		s.getterForMeta(&sectionNameVirtualHostOptionMeta),
 		core.Status_Accepted,
-		"gloo-kube-gateway",
+		defaults.KubeGwReporter,
 	)
 	// Check status is warning on VirtualHostOptions not selected for attachment
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
 		s.getterForMeta(&virtualHostOptionMeta),
 		[]string{"conflict with more-specific or older VirtualHostOption"},
-		"gloo-kube-gateway",
+		defaults.KubeGwReporter,
 	)
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
 		s.getterForMeta(&extraVirtualHostOptionMeta),
 		[]string{"conflict with more-specific or older VirtualHostOption"},
-		"gloo-kube-gateway",
+		defaults.KubeGwReporter,
 	)
 }
 func (s *testingSuite) TestMultipleVirtualHostOptions() {
@@ -143,13 +170,13 @@ func (s *testingSuite) TestMultipleVirtualHostOptions() {
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
 		s.getterForMeta(&virtualHostOptionMeta),
 		core.Status_Accepted,
-		"gloo-kube-gateway",
+		defaults.KubeGwReporter,
 	)
 	// Check status is warning on VirtualHostOptions not selected for attachment
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
 		s.getterForMeta(&extraVirtualHostOptionMeta),
 		[]string{"conflict with more-specific or older VirtualHostOption"},
-		"gloo-kube-gateway",
+		defaults.KubeGwReporter,
 	)
 }
 
