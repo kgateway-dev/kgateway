@@ -131,17 +131,27 @@ func (i *TestInstallation) String() string {
 	return i.Metadata.InstallNamespace
 }
 
-func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
+func (i *TestInstallation) InstallGlooGateway(
+	ctx context.Context,
+	installFn func(ctx context.Context) error,
+	generateClientsFn func(ctx context.Context, clusterCtx *cluster.Context) (gloogateway.ResourceClients, error),
+) {
 	if !testutils.ShouldSkipInstall() {
 		err := installFn(ctx)
 		i.Assertions.Require.NoError(err)
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
 	}
 
-	// We can only create the ResourceClients after the CRDs exist in the Cluster
-	clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
-	i.Assertions.Require.NoError(err)
-	i.ResourceClients = clients
+	if generateClientsFn != nil {
+		clients, err := generateClientsFn(ctx, i.TestCluster.ClusterContext)
+		i.Assertions.Require.NoError(err)
+		i.ResourceClients = clients
+	} else {
+		// We can only create the ResourceClients after the CRDs exist in the Cluster
+		clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+		i.Assertions.Require.NoError(err)
+		i.ResourceClients = clients
+	}
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {

@@ -47,7 +47,7 @@ func TestClassicEdgeGateway(t *testing.T) {
 	// Install Gloo Gateway with only classic APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	}, nil)
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
 		suite.Run(t, headless_svc.NewClassicHeadlessSvcSuite(ctx, testInstallation))
