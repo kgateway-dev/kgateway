@@ -2,6 +2,7 @@ package k8sgateway_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 	"path/filepath"
 	"testing"
 	"time"
@@ -71,10 +72,13 @@ func TestK8sGateway(t *testing.T) {
 
 	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
-
 	})
 
 	t.Run("RouteDelegation", func(t *testing.T) {
 		suite.Run(t, route_delegation.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("Glooctl", func(t *testing.T) {
+		suite.Run(t, glooctl.NewCRDSuite(ctx, testInstallation))
 	})
 }

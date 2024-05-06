@@ -16,14 +16,14 @@ import (
 )
 
 func Glooctl(args string) error {
-	return cliutil.Command(context.Background(), args).Run().Cause()
+	return cliutil.NewCli().RunCommand(context.Background(), args)
 }
 
 func GlooctlOut(args string) (string, error) {
 	var outLocation threadsafe.Buffer
+	cmd := cliutil.NewCli().Command(context.Background(), args).WithStdout(&outLocation)
 
-	runErr := cliutil.Command(context.Background(), args).WithStdout(&outLocation).Run()
-	if runErr != nil {
+	if runErr := cmd.Run(); runErr != nil {
 		return "", runErr.Cause()
 	}
 	return outLocation.String(), nil

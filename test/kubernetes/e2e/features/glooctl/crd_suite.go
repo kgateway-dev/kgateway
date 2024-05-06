@@ -29,10 +29,8 @@ func (s *crdSuite) TearDownSuite() {
 	// This is code that will be executed after an entire suite is run
 }
 
-func (s *crdSuite) BeforeTest(suiteName, testName string) {
-	// This is code that will be executed before each test is run
-}
-
-func (s *crdSuite) AfterTest(suiteName, testName string) {
-	// This is code that will be executed after each test is run
+func (s *crdSuite) TestCheckCRDsErrorsForMismatch() {
+	err := s.testInstallation.Actions.Glooctl().RunCommand(s.ctx, "check-crds", "--version", "1.9.0")
+	s.Error(err, "crds should be out of date")
+	s.Contains(err.Error(), "One or more CRDs are out of date")
 }
