@@ -1,6 +1,7 @@
 package httproute
 
 import (
+	"container/list"
 	"context"
 	"net/http"
 
@@ -39,8 +40,10 @@ func TranslateGatewayHTTPRouteRules(
 	hostnames := make([]gwv1.Hostname, len(route.Spec.Hostnames))
 	copy(hostnames, route.Spec.Hostnames)
 
+	delegationChain := list.New()
+
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames)
+		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
 	return finalRoutes
 }
 
@@ -57,6 +60,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
 	hostnames []gwv1.Hostname,
+	delegationChain *list.List,
 ) {
 	for _, rule := range route.Spec.Rules {
 		rule := rule
@@ -78,6 +82,7 @@ func translateGatewayHTTPRouteRulesUtil(
 			outputs,
 			routesVisited,
 			hostnames,
+			delegationChain,
 		)
 		for _, outputRoute := range outputRoutes {
 			// The above function will return a nil route if a matcher fails to apply plugins
@@ -103,6 +108,7 @@ func translateGatewayHTTPRouteRule(
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
 	hostnames []gwv1.Hostname,
+	delegationChain *list.List,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
@@ -128,16 +134,18 @@ func translateGatewayHTTPRouteRule(
 				match,
 				outputs,
 				routesVisited,
+				delegationChain,
 			)
 		}
 
 		rtCtx := &plugins.RouteContext{
-			Listener:  &gwListener,
-			Route:     gwroute,
-			Hostnames: hostnames,
-			Rule:      &rule,
-			Match:     &match,
-			Reporter:  reporter,
+			Listener:        &gwListener,
+			Route:           gwroute,
+			Hostnames:       hostnames,
+			DelegationChain: delegationChain,
+			Rule:            &rule,
+			Match:           &match,
+			Reporter:        reporter,
 		}
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
@@ -257,6 +265,7 @@ func setRouteAction(
 	match gwv1.HTTPRouteMatch,
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
+	delegationChain *list.List,
 ) bool {
 	var weightedDestinations []*v1.WeightedDestination
 	hasDelegatedRoute := false
@@ -268,7 +277,7 @@ func setRouteAction(
 			hasDelegatedRoute = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
-				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited)
+				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
 			if err != nil {
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,

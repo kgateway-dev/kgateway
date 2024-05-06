@@ -51,6 +51,7 @@ func (s *tsuite) SetupSuite() {
 		"TestMultipleParents":             {commonManifest, multipleParentsManifest},
 		"TestInvalidChildValidStandalone": {commonManifest, invalidChildValidStandaloneManifest},
 		"TestUnresolvedChild":             {commonManifest, unresolvedChildManifest},
+		"TestRouteOptions":                {commonManifest, routeOptionsManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
@@ -64,6 +65,7 @@ func (s *tsuite) SetupSuite() {
 		multipleParentsManifest:             {routeParent1, routeParent2, routeTeam1, routeTeam2},
 		invalidChildValidStandaloneManifest: {proxyTestService, proxyTestDeployment, routeRoot, routeTeam1, routeTeam2},
 		unresolvedChildManifest:             {routeRoot},
+		routeOptionsManifest:                {routeRoot, routeTeam1, routeTeam2},
 	}
 	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.TestCluster.ClusterContext)
 	s.Require().NoError(err)
@@ -250,4 +252,30 @@ func (s *tsuite) TestUnresolvedChild() {
 		assert.NoError(c, err, "route not found")
 		assert.True(c, utils.HTTPRouteStatusContainsMsg(route, "unresolved reference"), "missing status on invalid route")
 	}, 10*time.Second, 1*time.Second)
+}
+
+func (s *tsuite) TestRouteOptions() {
+	// Assert traffic to team1 route experiences the injected fault using RouteOption
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam1),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusTeapot,
+			Body:       ContainSubstring("fault filter abort"),
+		})
+
+	// Assert traffic to team2 route succeeds with path rewrite using RouteOption
+	// while also containing the response header set by the root RouteOption
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam2),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring("/anything/rewrite"),
+			Headers:    map[string]interface{}{"x-foo": Equal("baz")},
+		})
 }
