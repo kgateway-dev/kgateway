@@ -360,5 +360,32 @@ var _ = Describe("GatewayTranslator", func() {
 				Name:      "example-gateway",
 			}]).To(BeTrue())
 		})
+
+		It("should translate a route that is valid standalone but invalid as a delegatee", func() {
+			results, err := TestCase{
+				Name:       "delegation-invalid-child-valid-standalone",
+				InputFiles: []string{dir + "/testutils/inputs/delegation/invalid_child_valid_standalone.yaml"},
+				ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+					{
+						Namespace: "infra",
+						Name:      "example-gateway",
+					}: {
+						Proxy: dir + "/testutils/outputs/delegation/invalid_child_valid_standalone.yaml",
+						// Reports:     nil,
+					},
+				},
+			}.Run(ctx)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(1))
+			Expect(results).To(HaveKey(types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}))
+			Expect(results[types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			}]).To(BeTrue())
+		})
 	})
 })
