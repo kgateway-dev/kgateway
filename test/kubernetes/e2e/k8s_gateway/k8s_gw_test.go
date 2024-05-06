@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
+
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -48,7 +50,6 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	// Install Gloo Gateway
-	// If the env var SKIP_GLOO_INSTALL=true, installation will be skipped
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
@@ -65,12 +66,17 @@ func TestK8sGateway(t *testing.T) {
 		suite.Run(t, virtualhost_options.NewTestingSuite(ctx, testInstallation))
 	})
 
+	t.Run("Upstreams", func(t *testing.T) {
+		suite.Run(t, upstreams.NewTestingSuite(ctx, testInstallation))
+	})
+
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewHeadlessSvcTestingSuite(ctx, testInstallation, true))
+		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
 	})
 
 	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
+
 	})
 
 	t.Run("RouteDelegation", func(t *testing.T) {
