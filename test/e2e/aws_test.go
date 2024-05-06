@@ -161,7 +161,7 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambda(lambdaValidationParams{
 			offset:             2,
 			envoyPort:          envoyPort,
-			expectedSubstrings: []string{`\"Hello from Lambda!\"`, `multiValueHeaders": {"foo": [null]}`},
+			expectedSubstrings: []string{`\"302 test body\"`, `"multiValueHeaders": {"foo": [null, "bar"]}`},
 		})
 	}
 
@@ -358,11 +358,11 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		createProxy(false, false, false, "ben-302-test")
+		createProxy(false, false, false, "302-test")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
 			envoyPort:          envoyInstance.HttpPort,
-			expectedSubstrings: []string{`"\"Hello from Lambda!\""`, `"multiValueHeaders": {"foo": [null]}`},
+			expectedSubstrings: []string{`"\"302 test body\""`, `"multiValueHeaders": {"foo": [null, "bar"]}`},
 		})
 	}
 
@@ -441,7 +441,7 @@ var _ = Describe("AWS Lambda", func() {
 									DestinationSpec: &gloov1.DestinationSpec{
 										DestinationType: &gloov1.DestinationSpec_Aws{
 											Aws: &aws_plugin.DestinationSpec{
-												LogicalName: "ben-302-test",
+												LogicalName: "302-test",
 											},
 										},
 									},
