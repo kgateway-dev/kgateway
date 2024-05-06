@@ -8,18 +8,7 @@ import (
 	cli "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 )
 
-var (
-	cliCmder = NewCli()
-)
-
-// Command is a convenience wrapper over Cli.Command
-func Command(ctx context.Context, args ...string) cmdutils.Cmd {
-	return cliCmder.Command(ctx, args...).
-		WithStdout(io.Discard).
-		WithStderr(io.Discard)
-}
-
-// NewCli returns an implementation of the kubectl.Cli
+// NewCli returns an implementation of the Cli
 func NewCli() *Cli {
 	return &Cli{
 		receiver: io.Discard,
@@ -30,6 +19,13 @@ func NewCli() *Cli {
 type Cli struct {
 	// receiver is the default destination for the glooctl stdout and stderr
 	receiver io.Writer
+}
+
+// WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
+// of cmdutils.Cmd created by the Cli
+func (c *Cli) WithReceiver(receiver io.Writer) *Cli {
+	c.receiver = receiver
+	return c
 }
 
 // Command returns a Cmd
