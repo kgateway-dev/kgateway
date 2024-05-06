@@ -61,3 +61,6 @@ data
 
 # The istio binary downloaded for the kube2e tests
 istio-*/*
+
+# Bin directory created by e2e test
+.bin/
