@@ -18,6 +18,16 @@ We define all tests in the [features](./features) package. This is done for a va
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
 2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
+## Tests
+This package holds the entry point for each of our `TestInstallation`. 
+
+Each file is provided a build tag:
+```go
+//go:build cluster_example
+```
+This build tag is an indication to our CI pipeline for which cluster that tests should be executed against. This allows us to load balance our tests across multiple clusters. _If you forget to define a tag, it will be run against all clusters, so please do not do that_.
+
+
 ## Debugging
 
 Refer to the [Debugging guide](./debugging.md) for more information on how to debug tests.

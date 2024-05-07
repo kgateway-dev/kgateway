@@ -1,3 +1,5 @@
+//go:build cluster_one
+
 package k8sgateway_test
 
 import (

@@ -38,7 +38,7 @@ jobs:
         fi
 
   end_to_end_tests:
-    name: End-to-End (${{ matrix.test-suites.package }})
+    name: End-to-End (${{ matrix.test.cluster-id }})
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -46,20 +46,34 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-suites:
-        - package: 'k8sgateway'
-          go-test-args: '-v'
+        test:
+        - cluster-id: 'cluster_one'
+          go-test-args: '-v -tags=cluster_one'
         tool-versions:
         - cluster-node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
           kubectl: 'v1.28.4'
           kind: 'v0.20.0'
           helm: 'v3.13.2'
     steps:
-    - uses: actions/checkout@v3
-    - id: run-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
-      uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
     - id: auto-succeed-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
+    - uses: actions/checkout@v3
+    - id: setup-kind-cluster
+      name: Setup KinD Cluster
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      uses: ./.github/workflows/composite-actions/setup-kind-cluster
+      with:
+        cluster-name: kind
+        kind-version: ${{ matrix.tool-versions.kind }}
+        kind-node-version: ${{ matrix.tool-versions.cluster-node }}
+        kubectl-version: ${{ matrix.tool-versions.kubectl }}
+        helm-version: ${{ matrix.tool-versions.helm }}
+    - id: run-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
+      with:
+        cluster-name: kind
+        test-args: ${{ matrix.test.go-test-args }}
+
