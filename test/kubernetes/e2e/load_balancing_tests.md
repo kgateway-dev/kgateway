@@ -25,8 +25,6 @@ Each file is provided a build tag:
 
 This build tag is an indication to our CI pipeline for which cluster that tests should be executed against. This allows us to load balance our tests across multiple clusters. _If you forget to define a tag, it will be run against all clusters, so please do not do that_.
 
-
-
 ## Re-Balancing
 
 ### When should it occur?
@@ -36,4 +34,5 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 
 ### Steps to take
 1. Review the recent results from CI
-2. Document the 
+2. Document the results, on the [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml) that runs the tests
+3. Adjust the build tags for the tests in a standalone PR (no other changes)
