@@ -585,7 +585,7 @@ var _ = Describe("AWS Lambda", func() {
 
 			It("should be able to call lambda with unwrapAsApiGateway", testProxyWithUnwrapAsApiGateway)
 
-			FIt("should be able to call lambda with unwrapAsApiGateway with 302 response", testProxyWithUnwrapAsApiGateway302Response)
+			It("should be able to call lambda with unwrapAsApiGateway with 302 response", testProxyWithUnwrapAsApiGateway302Response)
 
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
