@@ -23,7 +23,7 @@ runs:
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       ## We want to move all tests into the /tests directory
       ## In the meantime, we rely on defining multiple packages where the tests are defined
-      TEST_PKG: test/kubernetes/e2e/tests,test/kubernetes/e2e/k8sgateway
+      TEST_PKG: ./test/kubernetes/e2e/tests,./test/kubernetes/e2e/k8sgateway
     shell: bash
     run: make go-test
   # TODO: Emit artifacts to shared location on failure
