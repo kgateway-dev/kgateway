@@ -33,6 +33,7 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 - All clusters are exhausted, and we need to introduce a new cluster into the rotation
 
 ### Steps to take
-1. Review the recent results from CI
-2. Document the results, on the [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml) that runs the tests
-3. Adjust the build tags for the tests in a standalone PR (no other changes)
+1. Review the recent results from CI, and capture them in a document
+2. Adjust the build tags for the tests
+4. Document the **new** results, on the [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml) that runs the tests
+4. Adjust the build tags for the tests in a standalone PR (no other changes), clearly documenting in the PR body the results before and after the change

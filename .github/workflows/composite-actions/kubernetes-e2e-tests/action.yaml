@@ -19,11 +19,28 @@ runs:
     run: make install-test-tools
   - name: Execute tests
     env:
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }}
+      # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
+      # Our goal is to load balance tests in a way that allows quick iteration on PRs
+      # If tests are exceeding the 25-minute limit, please see:
+      # /test/kubernetes/e2e/load_balancing_tests.md
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -timeout=25m
+      CLUSTER_NAME: ${{ inputs.cluster-name }}
+      TEST_PKG: ./test/kubernetes/e2e/tests
+    shell: bash
+    run: make go-test
+    ## We want to move all tests into the /tests directory
+    ## In the meantime, we rely on defining multiple packages where the tests are defined
+  - name: Execute tests (k8sgateway)
+    env:
+      # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
+      # Our goal is to load balance tests in a way that allows quick iteration on PRs
+      # If tests are exceeding the 25-minute limit, please see:
+      # /test/kubernetes/e2e/load_balancing_tests.md
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -timeout=25m
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       ## We want to move all tests into the /tests directory
       ## In the meantime, we rely on defining multiple packages where the tests are defined
-      TEST_PKG: ./test/kubernetes/e2e/tests,./test/kubernetes/e2e/k8sgateway
+      TEST_PKG: ./test/kubernetes/e2e/k8sgateway
     shell: bash
     run: make go-test
   # TODO: Emit artifacts to shared location on failure
