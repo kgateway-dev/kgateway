@@ -345,15 +345,27 @@ var _ = Describe("AWS Lambda", func() {
 		})
 	}
 
-	testProxyWithUnwrapAsApiGateway302Response := func() {
+	// this tests the case where a lambda returns non-string values in multiValueHeaders, a case which previously caused
+	// Envoy to return a 500 response
+	// lambda: https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/non-string-headers-test
+	// expected response:
+	//        'body': json.dumps('test body'),
+	//        'multiValueHeaders': {
+	//            'foo': [
+	//                None,
+	//                "bar",
+	//                123
+	//            ]
+	//        }
+	testProxyWithUnwrapAsApiGatewayNonStringHeaderResponse := func() {
 		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		createProxy(true, false, false, "302-test")
+		createProxy(true, false, false, "non-string-headers-test")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
 			envoyPort:          envoyInstance.HttpPort,
-			expectedSubstrings: []string{`"302 test body"`},
+			expectedSubstrings: []string{`"test body"`},
 			expectedHeaders:    http.Header{"Foo": []string{"null,bar,123"}},
 		})
 	}
@@ -584,7 +596,7 @@ var _ = Describe("AWS Lambda", func() {
 
 			It("should be able to call lambda with unwrapAsApiGateway", testProxyWithUnwrapAsApiGateway)
 
-			It("should be able to call lambda with unwrapAsApiGateway with 302 response", testProxyWithUnwrapAsApiGateway302Response)
+			It("should be able to call lambda with unwrapAsApiGateway with non-string headers in response", testProxyWithUnwrapAsApiGatewayNonStringHeaderResponse)
 
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
