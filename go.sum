@@ -1957,8 +1957,8 @@ github.com/solo-io/k8s-utils v0.6.0 h1:VF/EiQ0I2/EEqxitNvnQY9BWktYQf0oD0F4GQhGA1
 github.com/solo-io/k8s-utils v0.6.0/go.mod h1:cHiBkBOueJfqBRTxN7FA1xsX8s8XpIkVMXBsTXXZcVA=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=
 github.com/solo-io/protoc-gen-ext v0.0.18/go.mod h1:iGyCvmKmhJNXs5MgBcYFBF0om7LDnCVD2WwhOZGnqeA=
-github.com/solo-io/protoc-gen-openapi v0.1.1 h1:40gsfvDvz+Sd6HFXBzdkeE5QEuAdZnoy55J5QFzMzl4=
-github.com/solo-io/protoc-gen-openapi v0.1.1/go.mod h1:6d6gsEx74pW3UCA3G0al0GdMlYzGe/iCy2mPgGG9wI8=
+github.com/solo-io/protoc-gen-openapi v0.2.2 h1:OzyOAxiZuMAaLYWMNoTl2v9E7IXcl7UEeiTeCSwvCJ0=
+github.com/solo-io/protoc-gen-openapi v0.2.2/go.mod h1:osEjRl1miHqlq4Wl/8SEqHFoyydptPL1EzEdM9c4vfE=
 github.com/solo-io/skv2 v0.36.5 h1:DV2mbY8vSQFXpmKN0KsKAagWHQWUP1sRjM42YGCAos4=
 github.com/solo-io/skv2 v0.36.5/go.mod h1:0GKILLOrQiTKvGsf7UEFZJiDxJHrp0yKJQ6NbHzn+vY=
 github.com/solo-io/solo-apis v0.0.0-20231206142556-d2e3ed6d4476 h1:qtImo1deMtbVHKKkepwKfu1CDJBjGPvTmADtXVWBynE=

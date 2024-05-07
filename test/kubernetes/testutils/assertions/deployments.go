@@ -4,23 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
-
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 )
-
-func (p *Provider) RunningReplicas(deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) ClusterAssertion {
-	return func(ctx context.Context) {
-		ginkgo.GinkgoHelper()
-
-		p.EventuallyRunningReplicas(ctx, deploymentMeta, replicaMatcher)
-	}
-}
 
 func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) {
 	p.Gomega.Eventually(func(innerG Gomega) {
@@ -35,5 +24,4 @@ func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta
 		WithTimeout(time.Second * 30).
 		WithPolling(time.Millisecond * 200).
 		Should(Succeed())
-
 }

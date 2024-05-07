@@ -18,6 +18,10 @@ type RouteContext struct {
 	Listener *gwv1.Listener
 	// top-level HTTPRoute
 	Route *gwv1.HTTPRoute
+	// Hostnames associated with the Route.
+	// Note: this should be used over Route.spec.Hostnames as
+	// delegatee (child) routes of delegated routes will not have spec.Hostnames set.
+	Hostnames []gwv1.Hostname
 	// specific HTTPRouteRule of the HTTPRoute being processed, nil if the entire HTTPRoute is being processed
 	// rather than just a specific Rule
 	Rule *gwv1.HTTPRouteRule

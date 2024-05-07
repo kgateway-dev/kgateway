@@ -51,7 +51,7 @@ require (
 	github.com/solo-io/go-utils v0.24.8
 	github.com/solo-io/k8s-utils v0.6.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
-	github.com/solo-io/protoc-gen-openapi v0.1.1
+	github.com/solo-io/protoc-gen-openapi v0.2.2
 	github.com/solo-io/skv2 v0.36.5
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.28-bump`)
@@ -311,6 +311,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/metrics v0.28.3 // indirect
 	oras.land/oras-go v1.2.4 // indirect
+	sigs.k8s.io/controller-tools v0.14.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/kustomize/kustomize/v5 v5.0.4-0.20230601165947-6ce0bf390ce3 // indirect

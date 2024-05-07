@@ -124,7 +124,8 @@ spec:
                                     type: string
                                     x-kubernetes-int-or-string: true
                                   numerator:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                 type: object
                               runtimeKey:
@@ -138,7 +139,8 @@ spec:
                                     type: string
                                     x-kubernetes-int-or-string: true
                                   numerator:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                 type: object
                               runtimeKey:
@@ -180,7 +182,8 @@ spec:
                                                 regex:
                                                   type: string
                                                 subgroup:
-                                                  format: int32
+                                                  maximum: 4294967295
+                                                  minimum: 0
                                                   type: integer
                                               type: object
                                             type: array
@@ -272,7 +275,8 @@ spec:
                                         pipe:
                                           properties:
                                             mode:
-                                              format: int32
+                                              maximum: 4294967295
+                                              minimum: 0
                                               type: integer
                                             path:
                                               type: string
@@ -286,7 +290,8 @@ spec:
                                             namedPort:
                                               type: string
                                             portValue:
-                                              format: int32
+                                              maximum: 4294967295
+                                              minimum: 0
                                               type: integer
                                             protocol:
                                               type: string
@@ -336,7 +341,8 @@ spec:
                                     namedPort:
                                       type: string
                                     portValue:
-                                      format: int32
+                                      maximum: 4294967295
+                                      minimum: 0
                                       type: integer
                                     protocol:
                                       type: string
@@ -694,7 +700,8 @@ spec:
                               allowPartialMessage:
                                 type: boolean
                               maxRequestBytes:
-                                format: int32
+                                maximum: 4294967295
+                                minimum: 0
                                 type: integer
                               packAsBytes:
                                 type: boolean
@@ -704,7 +711,8 @@ spec:
                           statPrefix:
                             type: string
                           statusOnError:
-                            format: int32
+                            maximum: 4294967295
+                            minimum: 0
                             type: integer
                           transportApiVersion:
                             type: string
@@ -1163,7 +1171,8 @@ spec:
                               fillInterval:
                                 type: string
                               maxTokens:
-                                format: int32
+                                maximum: 4294967295
+                                minimum: 0
                                 type: integer
                               tokensPerFill:
                                 maximum: 4294967295
@@ -1186,7 +1195,8 @@ spec:
                           fillInterval:
                             type: string
                           maxTokens:
-                            format: int32
+                            maximum: 4294967295
+                            minimum: 0
                             type: integer
                           tokensPerFill:
                             maximum: 4294967295
