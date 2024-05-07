@@ -276,8 +276,7 @@ var _ = Describe("AWS Lambda", func() {
 
 		// wait for proxy to be accepted
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			proxy, err := testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
-			return proxy, err
+			return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 		}, "30s", "1s")
 
 	}
