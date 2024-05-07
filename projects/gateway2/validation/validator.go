@@ -12,6 +12,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+// TranslateK8sGatewayProxies builds an extremely basic "dummy" gloov1.Proxy object with the provided `res`
+// attached in the correct location, i.e. if a RouteOption is passed it will be on the Route or if a VirtualHostOption is
+// passed it will be on the VirtualHost
 func TranslateK8sGatewayProxies(ctx context.Context, snap *gloosnapshot.ApiSnapshot, res resources.Resource) ([]*gloov1.Proxy, error) {
 	us := gloov1.NewUpstream("default", "zzz_fake-upstream-for-gloo-validation")
 	us.UpstreamType = &gloov1.Upstream_Static{
@@ -82,10 +85,11 @@ func TranslateK8sGatewayProxies(ctx context.Context, snap *gloosnapshot.ApiSnaps
 	return []*gloov1.Proxy{proxy}, nil
 }
 
+// GetSimpleErrorFromGlooValidation will get the Errors for the provided `proxy` that exist in the provided `reports`
+// This function will return with the first error present if multiple reports exist
 func GetSimpleErrorFromGlooValidation(
 	reports []*gloovalidation.GlooValidationReport,
 	proxy *gloov1.Proxy,
-	allowWarnings bool,
 ) error {
 	var errs error
 

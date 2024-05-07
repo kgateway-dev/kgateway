@@ -107,7 +107,7 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 		gv.Sync(ctx, params.Snapshot)
 		rpt, err := gv.ValidateGloo(ctx, proxies[0], rtOpt, false)
 		Expect(err).NotTo(HaveOccurred())
-		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
+		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0])
 		Expect(err).To(HaveOccurred())
 		const faultErrorMsg = "Route Error: ProcessingError. Reason: *faultinjection.plugin: invalid abort status code '0', must be in range of [200,600)."
 		Expect(err.Error()).To(ContainSubstring(faultErrorMsg))
@@ -128,11 +128,11 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 		gv.Sync(ctx, params.Snapshot)
 		rpt, err := gv.ValidateGloo(ctx, proxies[0], rtOpt, false)
 		Expect(err).NotTo(HaveOccurred())
-		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
+		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0])
 		Expect(err).NotTo(HaveOccurred())
 		r := rpt[0]
 		proxyResourceReport := r.ResourceReports[proxies[0]]
-		Expect(proxyResourceReport.Errors).To(BeNil())
+		Expect(proxyResourceReport.Errors).NotTo(HaveOccurred())
 	})
 
 	It("validates and a rejects a bad VirtualHostOption", func() {
@@ -147,7 +147,7 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 		gv.Sync(ctx, params.Snapshot)
 		rpt, err := gv.ValidateGloo(ctx, proxies[0], vhost, false)
 		Expect(err).NotTo(HaveOccurred())
-		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
+		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0])
 		Expect(err).To(HaveOccurred())
 		const bufferErrorMsg = "VirtualHost Error: ProcessingError. Reason: invalid virtual host [vhost]: invalid BufferPerRoute.Buffer: embedded message failed validation | caused by: invalid Buffer.MaxRequestBytes: value is required and must not be nil."
 		Expect(err.Error()).To(ContainSubstring(bufferErrorMsg))
@@ -168,11 +168,11 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 		gv.Sync(ctx, params.Snapshot)
 		rpt, err := gv.ValidateGloo(ctx, proxies[0], vhost, false)
 		Expect(err).NotTo(HaveOccurred())
-		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
+		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0])
 		Expect(err).ToNot(HaveOccurred())
 		r := rpt[0]
 		proxyResourceReport := r.ResourceReports[proxies[0]]
-		Expect(proxyResourceReport.Errors).To(BeNil())
+		Expect(proxyResourceReport.Errors).NotTo(HaveOccurred())
 	})
 })
 

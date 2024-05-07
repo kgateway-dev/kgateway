@@ -323,9 +323,10 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 
 		// if we are validating K8s Gateway Policy resources, we only want the errors resulting from
 		// the RouteOption/VirtualHostOption, so let's grab that here and skip the more sophisticated
-		// error aggregation below
+		// error aggregation below. Note that we do not care about allowWarnings, as they are not
+		// used in this case, as we do not do a full translation and use a 'dummy' proxy
 		if validatingK8sGateway {
-			if err = k8sgwvalidation.GetSimpleErrorFromGlooValidation(glooReports, proxy, true); err != nil {
+			if err = k8sgwvalidation.GetSimpleErrorFromGlooValidation(glooReports, proxy); err != nil {
 				errs = multierror.Append(errs, err)
 			}
 			continue
