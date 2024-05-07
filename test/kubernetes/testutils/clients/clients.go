@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	glookubegateway "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
+	glookubegateway "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 )
 
 // MustClientset returns the Kubernetes Clientset, or panics
