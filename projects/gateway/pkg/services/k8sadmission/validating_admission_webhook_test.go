@@ -137,80 +137,6 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		},
 	}
 
-	FDescribe("GGv2 Policies", func() {
-		When("kubeGateway disabled", func() {
-			DescribeTable(
-				"always accepts",
-				func(fail bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
-					if fail {
-						setMockFunctions()
-					}
-					reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
-					res, err := srv.Client().Do(reviewRequest)
-					Expect(err).NotTo(HaveOccurred())
-
-					review, err := parseReviewResponse(res)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(review.Response).NotTo(BeNil())
-
-					Expect(review.Response.Allowed).To(BeTrue())
-					Expect(review.Proxies).To(BeEmpty())
-				},
-				Entry("RouteOption, CREATE, auto-accept = accepted", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
-				Entry("RouteOption, UPDATE, auto-accept = accepted", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
-				Entry("VirtualHostOption CREATE, auto-accept = accepted", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
-				Entry("VirtualHostOption UPDATE, auto-accept = accepted", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
-				Entry("RouteOption, CREATE, auto-fail = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
-				Entry("RouteOption, UPDATE, auto-fail = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
-				Entry("VirtualHostOption CREATE, auto-fail = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
-				Entry("VirtualHostOption UPDATE, auto-fail = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
-			)
-		})
-		When("kubeGateway enabled", func() {
-			JustBeforeEach(func() {
-				mv = &mockValidator{}
-				wh = &gatewayValidationWebhook{
-					webhookNamespace:   "namespace",
-					ctx:                context.TODO(),
-					validator:          mv,
-					kubeGatewayEnabled: true,
-				}
-				srv = httptest.NewServer(wh)
-			})
-
-			DescribeTable(
-				"webhook processes admission requests",
-				func(allowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
-					if !allowed {
-						setMockFunctions()
-					}
-					reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
-					res, err := srv.Client().Do(reviewRequest)
-					Expect(err).NotTo(HaveOccurred())
-
-					review, err := parseReviewResponse(res)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(review.Response).NotTo(BeNil())
-					if !allowed {
-						Expect(review.Response.Allowed).To(BeFalse())
-					} else {
-						Expect(review.Response.Allowed).To(BeTrue())
-					}
-					Expect(review.Proxies).To(BeEmpty())
-				},
-				Entry("RouteOption, CREATE, auto-accept = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
-				Entry("VirtualHostOption CREATE, auto-accept = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
-				Entry("RouteOption, CREATE, auto-fail = fail", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
-				Entry("VirtualHostOption CREATE, auto-fail = fail", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
-				// TODO(Law): add UPDATE tests here, need to handle oldObject similar to the status update tests
-				// Entry("RouteOption, UPDATE, auto-accept = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
-				// Entry("VirtualHostOption UPDATE, auto-accept = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
-				// Entry("RouteOption, UPDATE, auto-fail = fail", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
-				// Entry("VirtualHostOption UPDATE, auto-fail = fail", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
-			)
-		})
-	})
-
 	DescribeTable("processes admission requests with auto-accept validator", func(crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
 		reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
 		res, err := srv.Client().Do(reviewRequest)
@@ -530,6 +456,80 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 			err = w.Result().Body.Close()
 			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Describe("Kube Gateway API Policy Validation", func() {
+		When("kubeGateway disabled", func() {
+			DescribeTable(
+				"always accepts",
+				func(fail bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
+					if fail {
+						setMockFunctions()
+					}
+					reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
+					res, err := srv.Client().Do(reviewRequest)
+					Expect(err).NotTo(HaveOccurred())
+
+					review, err := parseReviewResponse(res)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(review.Response).NotTo(BeNil())
+
+					Expect(review.Response.Allowed).To(BeTrue())
+					Expect(review.Proxies).To(BeEmpty())
+				},
+				Entry("RouteOption, CREATE, auto-accept = accepted", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+				Entry("RouteOption, UPDATE, auto-accept = accepted", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
+				Entry("VirtualHostOption CREATE, auto-accept = accepted", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
+				Entry("VirtualHostOption UPDATE, auto-accept = accepted", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
+				Entry("RouteOption, CREATE, auto-fail = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+				Entry("RouteOption, UPDATE, auto-fail = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
+				Entry("VirtualHostOption CREATE, auto-fail = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
+				Entry("VirtualHostOption UPDATE, auto-fail = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
+			)
+		})
+		When("kubeGateway enabled", func() {
+			JustBeforeEach(func() {
+				mv = &mockValidator{}
+				wh = &gatewayValidationWebhook{
+					webhookNamespace:   "namespace",
+					ctx:                context.TODO(),
+					validator:          mv,
+					kubeGatewayEnabled: true,
+				}
+				srv = httptest.NewServer(wh)
+			})
+
+			DescribeTable(
+				"webhook processes admission requests",
+				func(allowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
+					if !allowed {
+						setMockFunctions()
+					}
+					reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
+					res, err := srv.Client().Do(reviewRequest)
+					Expect(err).NotTo(HaveOccurred())
+
+					review, err := parseReviewResponse(res)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(review.Response).NotTo(BeNil())
+					if !allowed {
+						Expect(review.Response.Allowed).To(BeFalse())
+					} else {
+						Expect(review.Response.Allowed).To(BeTrue())
+					}
+					Expect(review.Proxies).To(BeEmpty())
+				},
+				Entry("RouteOption, CREATE, auto-accept = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+				Entry("VirtualHostOption CREATE, auto-accept = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
+				Entry("RouteOption, CREATE, auto-fail = fail", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+				Entry("VirtualHostOption CREATE, auto-fail = fail", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
+				// TODO(Law): add UPDATE tests here, need to handle oldObject similar to the status update tests
+				// Entry("RouteOption, UPDATE, auto-accept = accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
+				// Entry("VirtualHostOption UPDATE, auto-accept = accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
+				// Entry("RouteOption, UPDATE, auto-fail = fail", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
+				// Entry("VirtualHostOption UPDATE, auto-fail = fail", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
+			)
 		})
 	})
 })
