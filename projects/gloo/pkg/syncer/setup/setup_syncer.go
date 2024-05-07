@@ -973,6 +973,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 				}
 			}
 
+			kubeGatewayEnabled := envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv)
 			validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
 				k8sadmission.NewWebhookConfig(
 					watchOpts.Ctx,
@@ -984,6 +985,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					gwOpts.Validation.AlwaysAcceptResources,
 					gwOpts.ReadGatewaysFromAllNamespaces,
 					gwOpts.GlooNamespace,
+					kubeGatewayEnabled, // pass kubeGateway flag to control validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)
 				),
 			)
 			if err != nil {

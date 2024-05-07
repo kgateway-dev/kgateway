@@ -17,12 +17,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/pkg/utils/envutils"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -101,9 +99,19 @@ type WebhookConfig struct {
 	alwaysAccept                  bool // accept all resources
 	readGatewaysFromAllNamespaces bool
 	webhookNamespace              string
+	kubeGatewayEnabled            bool
 }
 
-func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath, serverKeyPath string, alwaysAccept, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
+func NewWebhookConfig(
+	ctx context.Context,
+	validator validation.Validator,
+	watchNamespaces []string,
+	port int,
+	serverCertPath, serverKeyPath string,
+	alwaysAccept, readGatewaysFromAllNamespaces bool,
+	webhookNamespace string,
+	kubeGatewayEnabled bool,
+) WebhookConfig {
 	return WebhookConfig{
 		ctx:                           ctx,
 		validator:                     validator,
@@ -113,7 +121,9 @@ func NewWebhookConfig(ctx context.Context, validator validation.Validator, watch
 		serverKeyPath:                 serverKeyPath,
 		alwaysAccept:                  alwaysAccept,
 		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
-		webhookNamespace:              webhookNamespace}
+		webhookNamespace:              webhookNamespace,
+		kubeGatewayEnabled:            kubeGatewayEnabled,
+	}
 }
 
 func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
@@ -126,6 +136,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 	alwaysAccept := cfg.alwaysAccept
 	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
 	webhookNamespace := cfg.webhookNamespace
+	kubeGatewayEnabled := cfg.kubeGatewayEnabled
 
 	certProvider, err := NewCertificateProvider(serverCertPath, serverKeyPath, log.New(&debugLogger{ctx: ctx}, "validation-webhook-certificate-watcher", log.LstdFlags), ctx, 10*time.Second)
 	if err != nil {
@@ -139,6 +150,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 		alwaysAccept,
 		readGatewaysFromAllNamespaces,
 		webhookNamespace,
+		kubeGatewayEnabled,
 	)
 
 	mux := http.NewServeMux()
@@ -167,6 +179,7 @@ type gatewayValidationWebhook struct {
 	alwaysAccept                  bool                 // read only so no races
 	readGatewaysFromAllNamespaces bool                 // read only so no races
 	webhookNamespace              string               // read only so no races
+	kubeGatewayEnabled            bool                 // read only so no races
 }
 
 type AdmissionReviewWithProxies struct {
@@ -185,13 +198,24 @@ type AdmissionResponseWithProxies struct {
 	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
 }
 
-func NewGatewayValidationHandler(ctx context.Context, validator validation.Validator, watchNamespaces []string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) *gatewayValidationWebhook {
-	return &gatewayValidationWebhook{ctx: ctx,
+func NewGatewayValidationHandler(
+	ctx context.Context,
+	validator validation.Validator,
+	watchNamespaces []string,
+	alwaysAccept bool,
+	readGatewaysFromAllNamespaces bool,
+	webhookNamespace string,
+	kubeGatewayEnabled bool,
+) *gatewayValidationWebhook {
+	return &gatewayValidationWebhook{
+		ctx:                           ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,
 		alwaysAccept:                  alwaysAccept,
 		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
-		webhookNamespace:              webhookNamespace}
+		webhookNamespace:              webhookNamespace,
+		kubeGatewayEnabled:            kubeGatewayEnabled,
+	}
 }
 
 func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -485,7 +509,7 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 func (wh *gatewayValidationWebhook) shouldValidateGvk(gvk schema.GroupVersionKind) bool {
 	if gvk == gwv1.RouteOptionGVK || gvk == gwv1.VirtualHostOptionGVK {
 		// only validate RouteOption and VirtualHostOption resources if K8s Gateway is enabled
-		return envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv)
+		return wh.kubeGatewayEnabled
 	}
 
 	// no other special considerations at this point, so continue with validation
