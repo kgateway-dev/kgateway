@@ -1,4 +1,4 @@
-package edge_api_test
+package gloo_gateway_edge_test
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
 
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
@@ -17,16 +16,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestAutomtlsIstioEdgeApisGateway is the function which executes a series of tests against a given installation where
+// TestEdgeApiGateway is the function which executes a series of tests against a given installation where
 // the k8s Gateway controller is disabled
-func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
+func TestEdgeApiGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "automtls-istio-edge-api-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-edge-api-gateway-test-helm.yaml"),
+			InstallNamespace:   "edge-api-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-api-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -52,9 +51,5 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
 		suite.Run(t, headless_svc.NewEdgeApiHeadlessSvcSuite(ctx, testInstallation))
-	})
-
-	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewIstioAutoMtlsSuite(ctx, testInstallation))
 	})
 }

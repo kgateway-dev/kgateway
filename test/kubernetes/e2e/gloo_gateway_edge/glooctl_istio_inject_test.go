@@ -1,7 +1,9 @@
-package edge_api_test
+package gloo_gateway_edge_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -31,6 +33,10 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
+	err := testInstallation.AddIstioctl(ctx)
+	if err != nil {
+		t.Fatalf("failed to get istioctl: %v", err)
+	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
@@ -42,6 +48,13 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
+
+		// Uninstall Istio
+		err = testInstallation.UninstallIstio()
+		if err != nil {
+			t.Fatalf("failed to uninstall istio: %v", err)
+		}
+
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
@@ -59,6 +72,17 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 	}
 
 	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation))
+		// create a tmp output directory
+		tempDir, err := os.MkdirTemp("", fmt.Sprintf("headless-svc-%s", testInstallation.Metadata.InstallNamespace))
+		if err != nil {
+			t.Fatalf("Failed to create temporary directory: %v", err)
+		}
+		defer func() {
+			// Delete the temporary directory after the test completes
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("Failed to remove temporary directory: %v", err)
+			}
+		}()
+		suite.Run(t, istio.NewGlooTestingSuite(ctx, testInstallation, tempDir))
 	})
 }
