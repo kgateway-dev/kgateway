@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -31,6 +32,7 @@ type CobraCmd struct {
 	*cobra.Command
 	args []string
 
+	*sync.RWMutex
 	outWriter io.Writer
 }
 
@@ -70,6 +72,9 @@ func (c *CobraCmd) WithStderr(writer io.Writer) Cmd {
 //		4. Undo the change to stdout and stderr
 //		5. Write the contents back to whatever writer the caller configured
 func (c *CobraCmd) Run() *RunError {
+	c.Lock()
+	defer c.Unlock()
+
 	stdOut := os.Stdout
 	stdErr := os.Stderr
 

@@ -3,6 +3,7 @@ package glooctl
 import (
 	"context"
 	"fmt"
+	"github.com/onsi/gomega"
 	"os"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -41,56 +42,22 @@ func (s *testingSuite) TestCheckCRDsErrorsForMismatch() {
 	s.Contains(err.Error(), "One or more CRDs are out of date")
 }
 
-var (
-	// checkOutputSuccessfulMessages is a map of messages that `glooctl check` will emit
-	// The key is the values of the `-x` flag that will exclude a given sub-check
-	checkOutputSuccessfulMessages = map[string]string{
-		"deployments":          "Checking deployments... OK",
-		"pods":                 "Checking pods... OK",
-		"upstreams":            "Checking upstreams... OK",
-		"upstreamgroup":        "Checking upstream groups... OK",
-		"auth-configs":         "Checking auth configs... OK",
-		"rate-limit-configs":   "Checking rate limit configs... OK",
-		"virtual-host-options": "Checking VirtualHostOptions... OK",
-		"route-options":        "Checking RouteOptions... OK",
-		"secrets":              "Checking secrets... OK",
-		"virtual-services":     "Checking virtual services... OK",
-		"gateways":             "Checking gateways... OK",
-		"proxies":              "Checking proxies... OK",
-	}
-
-	// readOnlyWarningMessages is a map of messages that `glooctl check` will emit when --read-only mode is set
-	readOnlyWarningMessages = map[string]string{
-		"proxies": "Warning: checking proxies with port forwarding is disabled",
-		"xds":     "Warning: checking xds with port forwarding is disabled",
-	}
-)
-
 func (s *testingSuite) TestCheck() {
 	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace, "-x", "xds-metrics")
 	s.NoError(err)
 
-	for _, expectedSubstring := range checkOutputSuccessfulMessages {
-		s.Contains(output, expectedSubstring)
+	for _, expectedOutput := range checkOutputByKey {
+		gomega.Expect(output).To(expectedOutput.include)
 	}
 }
 
 func (s *testingSuite) TestCheckExclude() {
-	for excludeKey, keyOutput := range checkOutputSuccessfulMessages {
-		checkOutput, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
+	for excludeKey, expectedOutput := range checkOutputByKey {
+		output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
 			"-n", s.testInstallation.Metadata.InstallNamespace, "-x", fmt.Sprintf("xds-metrics,%s", excludeKey))
 		s.NoError(err)
-
-		for key := range checkOutputSuccessfulMessages {
-			if key == excludeKey {
-				// If we have excluded a key, it should not be present in the output
-				s.NotContains(checkOutput, keyOutput)
-			} else {
-				// If we have not excluded a key, it _should_ be present in the output
-				s.Contains(checkOutput, keyOutput)
-			}
-		}
+		gomega.Expect(output).To(expectedOutput.exclude)
 	}
 }
 
@@ -99,11 +66,11 @@ func (s *testingSuite) TestCheckReadOnly() {
 		"-n", s.testInstallation.Metadata.InstallNamespace, "--read-only")
 	s.NoError(err)
 
-	for _, expectedSubstring := range checkOutputSuccessfulMessages {
-		s.Contains(output, expectedSubstring)
-	}
-	for _, expectedWarning := range readOnlyWarningMessages {
-		s.Contains(output, expectedWarning)
+	for _, expectedOutput := range checkOutputByKey {
+		gomega.Expect(output).To(gomega.And(
+			expectedOutput.include,
+			expectedOutput.readOnly,
+		))
 	}
 }
 
