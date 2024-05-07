@@ -247,61 +247,6 @@ type validationOutput struct {
 	err          error
 }
 
-// the returned error is a multierror that may contain errors from several Edge Proxies, although this depends on collectAllErrors
-func (v *validator) translateGlooEdgeProxies(
-	ctx context.Context,
-	snapshot *gloov1snap.ApiSnapshot,
-	collectAllErrors bool,
-) ([]*gloov1.Proxy, error) {
-	var (
-		proxies []*gloov1.Proxy
-		errs    error
-	)
-
-	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
-
-	// translate all the proxies
-	for _, gatewayAndProxyName := range gatewaysByProxy {
-		proxyName := gatewayAndProxyName.Name
-		gatewayList := gatewayAndProxyName.Gateways
-
-		// Translate the proxy and process the errors
-		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
-
-		err := v.getErrorsFromResourceReports(reports)
-
-		if err != nil {
-			err = errors.Wrapf(err, couldNotRenderProxy)
-			errs = multierror.Append(errs, err)
-
-			if !collectAllErrors {
-				continue
-			}
-		}
-
-		// A nil proxy may have been returned if 0 listeners were created
-		// continue here even if collecting all errors, because the proxy is nil and there is nothing to validate
-		if proxy == nil {
-			continue
-		}
-		proxies = append(proxies, proxy)
-	}
-
-	return proxies, errs
-}
-
-// isK8sGatewayProxy returns true if we are evaluating a Policy resource in the context of K8s Gateway API support.
-// Currently the only signal needed to make this decision is if the resource being evaluated is a RouteOption
-// or a VirthalHostOption, as we only directly evaluate them in the validator to support K8s Gateway API mode.
-func isK8sGatewayProxy(res resources.Resource) bool {
-	switch res.(type) {
-	case *sologatewayv1.RouteOption, *sologatewayv1.VirtualHostOption:
-		return true
-	default:
-		return false
-	}
-}
-
 // validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. The supplied snapshot should have either been
 // modified to contain the resource being validated or in the case of DELETE validation, have the resource in question removed.
 // This was removed from the main validation loop to allow it to be re-run against the original snapshot.
@@ -423,6 +368,61 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxies:      proxies,
 		proxyReports: proxyReports,
 		err:          errs,
+	}
+}
+
+// the returned error is a multierror that may contain errors from several Edge Proxies, although this depends on collectAllErrors
+func (v *validator) translateGlooEdgeProxies(
+	ctx context.Context,
+	snapshot *gloov1snap.ApiSnapshot,
+	collectAllErrors bool,
+) ([]*gloov1.Proxy, error) {
+	var (
+		proxies []*gloov1.Proxy
+		errs    error
+	)
+
+	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
+
+	// translate all the proxies
+	for _, gatewayAndProxyName := range gatewaysByProxy {
+		proxyName := gatewayAndProxyName.Name
+		gatewayList := gatewayAndProxyName.Gateways
+
+		// Translate the proxy and process the errors
+		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
+
+		err := v.getErrorsFromResourceReports(reports)
+
+		if err != nil {
+			err = errors.Wrapf(err, couldNotRenderProxy)
+			errs = multierror.Append(errs, err)
+
+			if !collectAllErrors {
+				continue
+			}
+		}
+
+		// A nil proxy may have been returned if 0 listeners were created
+		// continue here even if collecting all errors, because the proxy is nil and there is nothing to validate
+		if proxy == nil {
+			continue
+		}
+		proxies = append(proxies, proxy)
+	}
+
+	return proxies, errs
+}
+
+// isK8sGatewayProxy returns true if we are evaluating a Policy resource in the context of K8s Gateway API support.
+// Currently the only signal needed to make this decision is if the resource being evaluated is a RouteOption
+// or a VirthalHostOption, as we only directly evaluate them in the validator to support K8s Gateway API mode.
+func isK8sGatewayProxy(res resources.Resource) bool {
+	switch res.(type) {
+	case *sologatewayv1.RouteOption, *sologatewayv1.VirtualHostOption:
+		return true
+	default:
+		return false
 	}
 }
 
