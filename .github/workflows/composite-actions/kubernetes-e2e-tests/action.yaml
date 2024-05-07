@@ -34,6 +34,7 @@ runs:
       GO_TEST_USER_ARGS: ${{ matrix.test-suites.go-test-args }}
       CLUSTER_NAME: 'kind'
       TEST_PKG: test/kubernetes/e2e/${{ matrix.test-suites.package }}
+      TEAR_DOWN: 'true'
     shell: bash
     run: make go-test
   # TODO: Emit artifacts to shared location on failure
