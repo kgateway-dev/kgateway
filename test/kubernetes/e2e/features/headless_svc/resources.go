@@ -20,14 +20,14 @@ import (
 )
 
 var (
-	headlessSvcSetupManifest  = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
-	k8sApiRoutingManifest     = filepath.Join(util.MustGetThisDir(), "testdata", "k8s_api.gen.yaml")
-	classicApiRoutingManifest = filepath.Join(util.MustGetThisDir(), "testdata", "classic_api.gen.yaml")
+	headlessSvcSetupManifest = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	k8sApiRoutingManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "k8s_api.gen.yaml")
+	edgeApiRoutingManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "edge_api.gen.yaml")
 
 	headlessSvcDomain = "headless.example.com"
 
-	// Classic Edge API resources
-	getClassicEdgeResources = func(installNamespace string) []client.Object {
+	// Edge API resources
+	getEdgeApisResources = func(installNamespace string) []client.Object {
 		headlessSvcUpstream := &soloapis_gloov1.Upstream{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       gloov1.UpstreamGVK.Kind,

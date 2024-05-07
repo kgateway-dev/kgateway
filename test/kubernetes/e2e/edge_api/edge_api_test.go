@@ -1,4 +1,4 @@
-package classicedge_test
+package edge_api_test
 
 import (
 	"context"
@@ -16,16 +16,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestClassicEdgeGateway is the function which executes a series of tests against a given installation where
+// TestEdgeApiGateway is the function which executes a series of tests against a given installation where
 // the k8s Gateway controller is disabled
-func TestClassicEdgeGateway(t *testing.T) {
+func TestEdgeApiGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "classic-edge-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "classic-gateway-test-helm.yaml"),
+			InstallNamespace:   "edge-api-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-api-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -44,12 +44,12 @@ func TestClassicEdgeGateway(t *testing.T) {
 		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
-	// Install Gloo Gateway with only classic APIs enabled
+	// Install Gloo Gateway with only Edge APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewClassicHeadlessSvcSuite(ctx, testInstallation))
+		suite.Run(t, headless_svc.NewEdgeApiHeadlessSvcSuite(ctx, testInstallation))
 	})
 }

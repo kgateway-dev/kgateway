@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type classicSuite struct {
+type edgeApiSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -22,36 +22,36 @@ type classicSuite struct {
 	testInstallation *e2e.TestInstallation
 }
 
-func NewClassicHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &classicSuite{
+func NewEdgeApiHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &edgeApiSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
 // SetupSuite generates manifest files for the test suite
-func (s *classicSuite) SetupSuite() {
-	resources := getClassicEdgeResources(s.testInstallation.Metadata.InstallNamespace)
-	err := utils.WriteResourcesToFile(resources, classicApiRoutingManifest)
+func (s *edgeApiSuite) SetupSuite() {
+	resources := getEdgeApisResources(s.testInstallation.Metadata.InstallNamespace)
+	err := utils.WriteResourcesToFile(resources, edgeApiRoutingManifest)
 	s.Require().NoError(err, "can write resources to file")
 }
 
-func (s *classicSuite) TestClassicRoutingHeadlessSvc() {
+func (s *edgeApiSuite) TestEdgeApisRoutingHeadlessSvc() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, headlessSvcSetupManifest)
 		s.NoError(err, "can delete setup manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, headlessService)
 
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, classicApiRoutingManifest)
-		s.NoError(err, "can delete setup classic routing manifest")
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeApiRoutingManifest)
+		s.NoError(err, "can delete edge apis routing manifest")
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headlessSvcSetupManifest)
 	s.Assert().NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, classicApiRoutingManifest)
-	s.NoError(err, "can setup classic routing manifest")
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeApiRoutingManifest)
+	s.NoError(err, "can setup edge apis routing manifest")
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
