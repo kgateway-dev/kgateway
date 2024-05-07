@@ -60,6 +60,9 @@ jobs:
       run: |
         echo "Regression tests auto-succeeded"
     - uses: actions/checkout@v3
+    - name: Prep Go Runner
+      uses: ./.github/workflows/composite-actions/prep-go-runner
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
     - id: setup-kind-cluster
       name: Setup KinD Cluster
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'

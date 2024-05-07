@@ -21,12 +21,7 @@ We define all tests in the [features](./features) package. This is done for a va
 ## Tests
 This package holds the entry point for each of our `TestInstallation`. 
 
-Each file is provided a build tag:
-```go
-//go:build cluster_example
-```
-This build tag is an indication to our CI pipeline for which cluster that tests should be executed against. This allows us to load balance our tests across multiple clusters. _If you forget to define a tag, it will be run against all clusters, so please do not do that_.
-
+See [Load balancing tests](./load_balancing_tests.md) for more information about how these tests are run in CI.
 
 ## Debugging
 
