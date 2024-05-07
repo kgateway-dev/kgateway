@@ -76,7 +76,7 @@ func TranslateK8sGatewayProxies(ctx context.Context, snap *gloosnapshot.ApiSnaps
 	case *sologatewayv1.RouteOption:
 		routes[0].Options = policy.GetOptions()
 	case *sologatewayv1.VirtualHostOption:
-		aggregateListener.GetAggregateListener().GetHttpResources().VirtualHosts["vhost"].Options = policy.GetOptions()
+		aggregateListener.GetAggregateListener().GetHttpResources().GetVirtualHosts()["vhost"].Options = policy.GetOptions()
 	}
 
 	return []*gloov1.Proxy{proxy}, nil
