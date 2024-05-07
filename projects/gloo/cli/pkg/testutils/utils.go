@@ -18,7 +18,14 @@ import (
 
 func Glooctl(argStr string) error {
 	args := strings.Split(argStr, " ")
-	return glooctl.NewCli().RunCommand(context.Background(), args...)
+
+	cmd := glooctl.NewCli().Command(context.Background(), args...)
+
+	// cmd.Run returns a RunError. We can either use Cause() to return the entire
+	// stacktrace, or Inner() to return the underlying error
+	// Since this was used extensively in tests, and we want to maintain backwards
+	// compatibility, we return Inner()
+	return cmd.Run().Inner()
 }
 
 func GlooctlOut(argStr string) (string, error) {
@@ -28,7 +35,11 @@ func GlooctlOut(argStr string) (string, error) {
 	cmd := glooctl.NewCli().Command(context.Background(), args...).WithStdout(&outLocation)
 
 	if runErr := cmd.Run(); runErr != nil {
-		return "", runErr.Cause()
+		// cmd.Run returns a RunError. We can either use Cause() to return the entire
+		// stacktrace, or Inner() to return the underlying error
+		// Since this was used extensively in tests, and we want to maintain backwards
+		// compatibility, we return Inner()
+		return "", runErr.Inner()
 	}
 	return outLocation.String(), nil
 }

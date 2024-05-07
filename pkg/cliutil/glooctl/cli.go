@@ -2,7 +2,6 @@ package glooctl
 
 import (
 	"context"
-	"io"
 
 	"github.com/solo-io/go-utils/threadsafe"
 
@@ -12,37 +11,17 @@ import (
 
 // NewCli returns an implementation of the Cli
 func NewCli() *Cli {
-	return &Cli{
-		receiver: io.Discard,
-	}
+	return &Cli{}
 }
 
-// Cli is a factory for cmdutils.CobraCmd, implementing cmdutils.Cmder
-type Cli struct {
-	// receiver is the default destination for the glooctl stdout and stderr
-	receiver io.Writer
-}
+// Cli is a factory for cmdutils.CobraCmd
+type Cli struct{}
 
-// WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
-// of cmdutils.Cmd created by the Cli
-func (c *Cli) WithReceiver(receiver io.Writer) *Cli {
-	c.receiver = receiver
-	return c
-}
-
-// Command returns a Cmd
-func (c *Cli) Command(ctx context.Context, arg ...string) cmdutils.Cmd {
+// Command returns a cmdutils.CobraCmd
+func (c *Cli) Command(ctx context.Context, args ...string) *cmdutils.CobraCmd {
 	// Under the hood we call the cobra.Command directly so that we re-use whatever functionality
 	// is available to users
-	cobraCommand := cli.CommandWithContext(ctx)
-	cobraCommand.SetContext(ctx)
-	cobraCommand.SetArgs(arg)
-
-	// For convenience, we set the stdout and stderr to the receiver
-	// This can still be overwritten by consumers who use the commands
-	return cmdutils.NewCobraCmd(cobraCommand, arg).
-		WithStderr(c.receiver).
-		WithStdout(c.receiver)
+	return cmdutils.NewCobraCmd(ctx, cli.CommandWithContext(ctx), args)
 }
 
 // RunCommand builds a Cmd and runs it

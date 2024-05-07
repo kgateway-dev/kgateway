@@ -49,6 +49,14 @@ func (e *RunError) OutputString() string {
 	return string(e.output)
 }
 
+// Inner returns the base error
+func (e *RunError) Inner() error {
+	if e == nil {
+		return nil
+	}
+	return e.inner
+}
+
 // Cause mimics github.com/pkg/errors's Cause pattern for errors
 func (e *RunError) Cause() error {
 	if e == nil {
