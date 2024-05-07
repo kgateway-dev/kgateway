@@ -58,10 +58,17 @@ var (
 		"gateways":             "Checking gateways... OK",
 		"proxies":              "Checking proxies... OK",
 	}
+
+	// readOnlyWarningMessages is a map of messages that `glooctl check` will emit when --read-only mode is set
+	readOnlyWarningMessages = map[string]string{
+		"proxies": "Warning: checking proxies with port forwarding is disabled",
+		"xds":     "Warning: checking xds with port forwarding is disabled",
+	}
 )
 
-func (s *testingSuite) TestCheckOk() {
-	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx, "-x", "xds-metrics")
+func (s *testingSuite) TestCheck() {
+	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "-x", "xds-metrics")
 	s.NoError(err)
 
 	for _, expectedSubstring := range checkOutputSuccessfulMessages {
@@ -69,9 +76,10 @@ func (s *testingSuite) TestCheckOk() {
 	}
 }
 
-func (s *testingSuite) TestCheckExcludeOk() {
+func (s *testingSuite) TestCheckExclude() {
 	for excludeKey, keyOutput := range checkOutputSuccessfulMessages {
-		checkOutput, err := s.testInstallation.Actions.Glooctl().Check(s.ctx, "-x", fmt.Sprintf("xds-metrics,%s", excludeKey))
+		checkOutput, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
+			"-n", s.testInstallation.Metadata.InstallNamespace, "-x", fmt.Sprintf("xds-metrics,%s", excludeKey))
 		s.NoError(err)
 
 		for key := range checkOutputSuccessfulMessages {
@@ -86,7 +94,33 @@ func (s *testingSuite) TestCheckExcludeOk() {
 	}
 }
 
+func (s *testingSuite) TestCheckReadOnly() {
+	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--read-only")
+	s.NoError(err)
+
+	for _, expectedSubstring := range checkOutputSuccessfulMessages {
+		s.Contains(output, expectedSubstring)
+	}
+	for _, expectedWarning := range readOnlyWarningMessages {
+		s.Contains(output, expectedWarning)
+	}
+}
+
+func (s *testingSuite) TestCheckKubeContext() {
+	// When passing an invalid kube-context, `glooctl check` should succeed
+	_, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", "invalid-context")
+	s.Error(err)
+	s.Contains(err.Error(), "Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"invalid-context\" does not exist")
+
+	// When passing the kube-context of the running cluster, `glooctl check` should succeed
+	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx, "--kube-context", s.testInstallation.TestCluster.ClusterContext.KubeContext)
+	s.NoError(err)
+}
+
 func (s *testingSuite) TestDebugLogsNoPanic() {
-	err := s.testInstallation.Actions.Glooctl().DebugLogs(s.ctx, "-n", s.testInstallation.Metadata.InstallNamespace)
+	err := s.testInstallation.Actions.Glooctl().DebugLogs(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace)
 	s.NoError(err)
 }
