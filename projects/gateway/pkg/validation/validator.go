@@ -16,7 +16,7 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
-	k8svalidation "github.com/solo-io/gloo/projects/gateway2/validation"
+	k8sgwvalidation "github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
@@ -122,7 +122,6 @@ type validator struct {
 	extensionValidator                    syncerValidation.Validator
 	allowWarnings                         bool
 	disableValidationAgainstPreviousState bool
-	k8sGatewayValidator                   k8svalidation.ValidationHelper
 }
 
 type validationOptions struct {
@@ -145,7 +144,6 @@ type ValidatorConfig struct {
 	ExtensionValidator                    syncerValidation.Validator
 	AllowWarnings                         bool
 	DisableValidationAgainstPreviousState bool
-	K8sGatewayValidator                   k8svalidation.ValidationHelper
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
@@ -155,7 +153,6 @@ func NewValidator(cfg ValidatorConfig) *validator {
 		translator:                            cfg.Translator,
 		allowWarnings:                         cfg.AllowWarnings,
 		disableValidationAgainstPreviousState: cfg.DisableValidationAgainstPreviousState,
-		k8sGatewayValidator:                   cfg.K8sGatewayValidator,
 	}
 }
 
@@ -293,19 +290,16 @@ func (v *validator) translateGlooEdgeProxies(
 	return proxies, errs
 }
 
+// isK8sGatewayProxy returns true if we are evaluating a Policy resource in the context of K8s Gateway API support.
+// Currently the only signal needed to make this decision is if the resource being evaluated is a RouteOption
+// or a VirthalHostOption, as we only directly evaluate them in the validator to support K8s Gateway API mode.
 func isK8sGatewayProxy(res resources.Resource) bool {
-	if _, ok := res.(*sologatewayv1.RouteOption); ok {
+	switch res.(type) {
+	case *sologatewayv1.RouteOption, *sologatewayv1.VirtualHostOption:
 		return true
+	default:
+		return false
 	}
-	return false
-}
-
-func (v *validator) translateK8sGatewayProxies(
-	ctx context.Context,
-	snap *gloov1snap.ApiSnapshot,
-	res resources.Resource,
-) ([]*gloov1.Proxy, error) {
-	return v.k8sGatewayValidator.TranslateK8sGatewayProxies(ctx, snap, res)
 }
 
 // validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. The supplied snapshot should have either been
@@ -347,8 +341,9 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		err          error
 	)
 
-	if isK8sGatewayProxy(opts.Resource) {
-		proxies, errs = v.translateK8sGatewayProxies(ctx, snapshot, opts.Resource)
+	validatingK8sGateway := isK8sGatewayProxy(opts.Resource)
+	if validatingK8sGateway {
+		proxies, errs = k8sgwvalidation.TranslateK8sGatewayProxies(ctx, snapshot, opts.Resource)
 	} else {
 		proxies, errs = v.translateGlooEdgeProxies(ctx, snapshot, opts.collectAllErrors)
 	}
@@ -381,6 +376,16 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			continue
 		}
 
+		// if we are validating K8s Gateway Policy resources, we only want the errors resulting from
+		// the RouteOption/VirtualHostOption, so let's grab that here and skip the more sophisticated
+		// error aggregation below
+		if validatingK8sGateway {
+			if err = k8sgwvalidation.GetSimpleErrorFromGlooValidation(glooReports, proxy, true); err != nil {
+				errs = multierror.Append(errs, err)
+			}
+			continue
+		}
+
 		// Collect the reports returned by the glooValidator
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
@@ -399,7 +404,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierror.Append(errs, err)
 		}
-
 	} // End of proxy validation loop
 
 	// Extension validation. Currently only supports rate limit.

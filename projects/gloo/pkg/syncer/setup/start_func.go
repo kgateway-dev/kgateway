@@ -4,14 +4,16 @@ import (
 	"context"
 
 	"golang.org/x/sync/errgroup"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
+	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 )
@@ -51,10 +53,11 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
-	k8sGatewayExtensions extensions.K8sGatewayExtensions,
-	inputChannels *proxy_syncer.GatewayInputChannels,
-	mgr manager.Manager,
 	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
+	authConfigClient api.AuthConfigClient,
+	routeOptionClient gateway.RouteOptionClient,
+	vhOptionClient gateway.VirtualHostOptionClient,
+	statusClient resources.StatusClient,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
@@ -64,15 +67,18 @@ func K8sGatewayControllerStartFunc(
 			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, proxyClient)
 		}
 
+		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
 		return controller.Start(ctx, controller.StartConfig{
-			K8sGatewayExtensions:      k8sGatewayExtensions,
+			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
 			Opts:                      opts,
-			Mgr:                       mgr,
-			InputChannels:             inputChannels,
+			QueueStatusForProxies:     queueStatusForProxies,
 
-			ProxyClient:           proxyClient,
-			QueueStatusForProxies: queueStatusForProxies,
+			ProxyClient:             proxyClient,
+			AuthConfigClient:        authConfigClient,
+			RouteOptionClient:       routeOptionClient,
+			VirtualHostOptionClient: vhOptionClient,
+			StatusReporter:          statusReporter,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

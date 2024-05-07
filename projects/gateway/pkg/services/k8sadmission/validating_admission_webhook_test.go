@@ -16,6 +16,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	validation2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,11 +39,11 @@ import (
 
 var _ = Describe("ValidatingAdmissionWebhook", func() {
 
+	const errMsg = "didn't say the magic word"
 	var (
-		srv    *httptest.Server
-		mv     *mockValidator
-		wh     *gatewayValidationWebhook
-		errMsg = "didn't say the magic word"
+		srv *httptest.Server
+		mv  *mockValidator
+		wh  *gatewayValidationWebhook
 	)
 
 	BeforeEach(func() {
@@ -110,6 +112,32 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	routeTable := &v1.RouteTable{Metadata: &core.Metadata{Namespace: "namespace", Name: "rt"}}
 
+	routeOption := &v1.RouteOption{
+		Metadata: &core.Metadata{
+			Name:      "policy",
+			Namespace: "default",
+		},
+		Options: &gloov1.RouteOptions{
+			Faults: &faultinjection.RouteFaults{
+				Abort: &faultinjection.RouteAbort{
+					Percentage: 4.19,
+					HttpStatus: 500,
+				},
+			},
+		},
+	}
+	vHostOption := &v1.VirtualHostOption{
+		Metadata: &core.Metadata{
+			Name:      "policy",
+			Namespace: "default",
+		},
+		Options: &gloov1.VirtualHostOptions{
+			HeaderManipulation: &headers.HeaderManipulation{
+				RequestHeadersToRemove: []string{"hello"},
+			},
+		},
+	}
+
 	DescribeTable("processes admission requests with auto-accept validator", func(crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
 		reviewRequest := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
 		res, err := srv.Client().Do(reviewRequest)
@@ -131,6 +159,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("upstream, accepted", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
 		Entry("upstream deletion, accepted", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
 		Entry("secret deletion, accepted", gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
+		Entry("route option, accepted", v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+		Entry("virtualHost option, accepted", v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
 	)
 
 	DescribeTable("processes admission requests with auto-fail validator", func(crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
@@ -159,6 +189,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("upstream, rejected", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
 		Entry("upstream deletion, rejected", gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
 		Entry("secret deletion, rejected", gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
+		Entry("route option, rejected", v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+		Entry("virtualHost option, rejected", v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
 	)
 
 	DescribeTable("processes status updates with auto-fail validator", func(expectAllowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resource resources.InputResource) {
@@ -238,6 +270,10 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("route table update, accepted", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Update, routeTable),
 		Entry("upstream create, rejected", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
 		Entry("upstream update, accepted", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Update, upstream),
+		Entry("route option create, rejected", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+		Entry("route option update, accepted", true, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
+		Entry("virtualHost create, rejected", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
+		Entry("virtualHost update, accepted", true, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
 	)
 
 	DescribeTable("processes metadata updates with auto-fail validator", func(expectAllowed bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resource resources.InputResource) {
@@ -307,6 +343,10 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("route table update, rejected", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Update, routeTable),
 		Entry("upstream create, rejected", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
 		Entry("upstream update, rejected", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Update, upstream),
+		Entry("route option create, rejected", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Create, routeOption),
+		Entry("route option update, rejected", false, v1.RouteOptionCrd, v1.RouteOptionCrd.GroupVersionKind(), v1beta1.Update, routeOption),
+		Entry("virtualHost create, rejected", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Create, vHostOption),
+		Entry("virtualHost update, rejected", false, v1.VirtualHostOptionCrd, v1.VirtualHostOptionCrd.GroupVersionKind(), v1beta1.Update, vHostOption),
 	)
 
 	Context("invalid yaml", func() {

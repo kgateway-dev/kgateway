@@ -33,7 +33,7 @@ spec:
     faults:
       abort:
         percentage: 100
-        httpStatus: 500
+        #httpStatus: 500
     timeout: 11s
 ---
 apiVersion: v1

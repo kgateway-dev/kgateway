@@ -99,8 +99,7 @@ var _ = BeforeSuite(func() {
 	var gatewayClassObjName api.ObjectName = api.ObjectName(gatewayClassName)
 
 	exts, err := extensions.NewK8sGatewayExtensions(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
-		Cl:     k8sClient,
-		Scheme: scheme,
+		Mgr: mgr,
 	})
 	Expect(err).ToNot(HaveOccurred())
 	cfg := controller.GatewayConfig{

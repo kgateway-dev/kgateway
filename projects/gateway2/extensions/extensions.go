@@ -4,14 +4,13 @@ import (
 	"context"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/solo-io/gloo/pkg/version"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
 // K8sGatewayExtensions is responsible for providing implementations for translation utilities
@@ -26,12 +25,12 @@ type K8sGatewayExtensions interface {
 
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
 type K8sGatewayExtensionsFactoryParameters struct {
-	Cl                client.Client
-	Scheme            *runtime.Scheme
-	AuthConfigClient  v1.AuthConfigClient
-	RouteOptionClient gatewayv1.RouteOptionClient
-	StatusReporter    reporter.StatusReporter
-	KickXds           func(ctx context.Context)
+	Mgr                     controllerruntime.Manager
+	AuthConfigClient        v1.AuthConfigClient
+	RouteOptionClient       gatewayv1.RouteOptionClient
+	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
+	StatusReporter          reporter.StatusReporter
+	KickXds                 func(ctx context.Context)
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
@@ -46,29 +45,29 @@ func NewK8sGatewayExtensions(
 	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
-		params.Cl,
-		params.Scheme,
-		params.RouteOptionClient,
-		params.StatusReporter,
+		mgr:                     params.Mgr,
+		routeOptionClient:       params.RouteOptionClient,
+		virtualHostOptionClient: params.VirtualHostOptionClient,
+		statusReporter:          params.StatusReporter,
 	}, nil
 }
 
 type k8sGatewayExtensions struct {
-	cl                client.Client
-	scheme            *runtime.Scheme
-	routeOptionClient gatewayv1.RouteOptionClient
-	statusReporter    reporter.StatusReporter
+	mgr                     controllerruntime.Manager
+	routeOptionClient       gatewayv1.RouteOptionClient
+	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
+	statusReporter          reporter.StatusReporter
 }
 
 // CreatePluginRegistry returns the PluginRegistry
 func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
 	queries := query.NewData(
-		e.cl,
-		e.scheme,
+		e.mgr.GetClient(),
+		e.mgr.GetScheme(),
 	)
 	plugins := registry.BuildPlugins(
 		queries,
-		e.cl,
+		e.mgr.GetClient(),
 		e.routeOptionClient,
 		e.statusReporter,
 	)

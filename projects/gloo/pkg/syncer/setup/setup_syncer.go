@@ -52,12 +52,8 @@ import (
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	k8sgwextensions "github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/status"
-	k8svalidation "github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -84,9 +80,6 @@ import (
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	ctrl "sigs.k8s.io/controller-runtime"
-	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 // TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
@@ -863,49 +856,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
 
-	setupLog := ctrl.Log.WithName("setup")
-	var zapOpts []ctrlzap.Opts
-	// if cfg.Dev {
-	// 	setupLog.Info("starting log in dev mode")
-	// 	opts = append(opts, ctrlzap.UseDevMode(true))
-	// }
-	ctrl.SetLogger(ctrlzap.New(zapOpts...))
-
-	mgrOpts := ctrl.Options{
-		Scheme:           scheme.NewScheme(),
-		PprofBindAddress: "127.0.0.1:9099",
-		// if you change the port here, also change the port "health" in the helmchart.
-		HealthProbeBindAddress: ":9093",
-		Metrics: metricsserver.Options{
-			BindAddress: ":9092",
-		},
-	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		return err
-	}
-
-	statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
-	inputChannels := proxy_syncer.NewGatewayInputChannels()
-	k8sGwExtensions, err := extensions.K8sGatewayExtensionsFactory(watchOpts.Ctx, k8sgwextensions.K8sGatewayExtensionsFactoryParameters{
-		Cl:                mgr.GetClient(),
-		Scheme:            mgr.GetScheme(),
-		AuthConfigClient:  authConfigClient,
-		RouteOptionClient: routeOptionClient,
-		StatusReporter:    statusReporter,
-		KickXds:           inputChannels.Kick,
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to create k8s gw extensions")
-		return err
-	}
-	k8sValidator := k8svalidation.ValidationHelper{
-		K8sGwExtensions: k8sGwExtensions,
-		GatewayQueries:  query.NewData(mgr.GetClient(), mgr.GetScheme()),
-		Cl:              mgr.GetClient(),
-	}
-
 	// filter the list of extensions to only include the rate limit extension for validation
 	syncerValidatorExtensions := []syncer.TranslatorSyncerExtension{}
 	for _, ext := range syncerExtensions {
@@ -924,7 +874,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		GlooValidator:                         validator.ValidateGloo,
 		ExtensionValidator:                    extensionValidator,
 		DisableValidationAgainstPreviousState: disableValidationAgainstPreviousState,
-		K8sGatewayValidator:                   k8sValidator,
 	}
 	if gwOpts.Validation != nil {
 		valOpts := gwOpts.Validation
@@ -934,23 +883,29 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
+	var (
+		gwv2StatusSyncer       status.GatewayStatusSyncer
+		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
+	)
 	// startFuncs represents the set of StartFunc that should be executed at startup
 	// At the moment, the functionality is used minimally.
 	// Overtime, we should break up this large function into smaller StartFunc
 	startFuncs := map[string]StartFunc{}
 
-	var (
-		gwv2StatusSyncer       status.GatewayStatusSyncer
-		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
-	)
 	if opts.GlooGateway.EnableK8sGatewayController {
 
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
 
 		// Share proxyClient and status syncer with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(proxyClient, k8sGwExtensions, inputChannels, mgr, gwv2StatusSyncer.QueueStatusForProxies)
-
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(
+			proxyClient,
+			gwv2StatusSyncer.QueueStatusForProxies,
+			authConfigClient,
+			routeOptionClient,
+			virtualHostOptionClient,
+			statusClient,
+		)
 	}
 
 	translationSync := syncer.NewTranslatorSyncer(
