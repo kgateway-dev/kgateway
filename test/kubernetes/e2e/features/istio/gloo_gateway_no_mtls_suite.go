@@ -44,6 +44,9 @@ func (s *glooIstioTestingSuite) SetupSuite() {
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
+	s.NoError(err, "can apply generated manifest")
 }
 
 func (s *glooIstioTestingSuite) TearDownSuite() {

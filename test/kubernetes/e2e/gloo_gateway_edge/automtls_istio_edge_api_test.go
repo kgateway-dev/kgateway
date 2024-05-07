@@ -69,7 +69,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 
 	t.Run("IstioIntegration", func(t *testing.T) {
 		// create a tmp output directory
-		tempDir, err := os.MkdirTemp("", fmt.Sprintf("headless-svc-%s", testInstallation.Metadata.InstallNamespace))
+		tempDir, err := os.MkdirTemp("", fmt.Sprintf("istio-automtls-%s", testInstallation.Metadata.InstallNamespace))
 		if err != nil {
 			t.Fatalf("Failed to create temporary directory: %v", err)
 		}
