@@ -15,7 +15,7 @@ Our previous strategy was to group tests by domain:
 This did not scale well because different domains had a different amount of tests. Therefore, we noticed that it would take some test clusters twice as long to complete the tests as others.
 
 ### What is our current strategy?
-Our current strategy is to group tests by runtime. 
+Our current strategy is to group tests by runtime. This allows us to easily move tests between clusters as necessary, following the Kubernetes mantra "cattle, not pets".
 
 
 Each file is provided a build tag:

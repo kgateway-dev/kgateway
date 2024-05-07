@@ -47,12 +47,14 @@ jobs:
       fail-fast: false
       matrix:
         test:
+        # May 7th: ~13 minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_one'
           go-test-args: '-v -tags=cluster_one'
           cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
           kubectl-version: 'v1.28.4'
           kind-version: 'v0.20.0'
           helm-version: 'v3.13.2'
+        # May 7th: ~10 minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_two'
           go-test-args: '-v -tags=cluster_two'
           cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
