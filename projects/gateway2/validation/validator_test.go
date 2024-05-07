@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -34,7 +35,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ = Describe("RouteOptionsPlugin", func() {
+var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -94,11 +95,10 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		cancel()
 	})
 
-	It("validates a RouteOption with a dummy proxy", func() {
-		const faultErrorMsg = "Route Error: ProcessingError. Reason: *faultinjection.plugin: invalid abort status code '0', must be in range of [200,600)."
+	It("validates and rejects a bad RouteOption", func() {
 		gv := gloovalidation.NewValidator(vc)
 
-		rtOpt := attachedInternal()
+		rtOpt := routeOptWithBadConfig()
 		params := plugins.Params{
 			Ctx:      ctx,
 			Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
@@ -109,24 +109,43 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
 		Expect(err).To(HaveOccurred())
+		const faultErrorMsg = "Route Error: ProcessingError. Reason: *faultinjection.plugin: invalid abort status code '0', must be in range of [200,600)."
 		Expect(err.Error()).To(ContainSubstring(faultErrorMsg))
 		r := rpt[0]
 		proxyResourceReport := r.ResourceReports[proxies[0]]
 		Expect(proxyResourceReport.Errors.Error()).To(ContainSubstring(faultErrorMsg))
 	})
 
-	It("validates a VirtualHostOption with a dummy proxy", func() {
+	It("validates and accepts a good RouteOption", func() {
+		gv := gloovalidation.NewValidator(vc)
+
+		rtOpt := routeOptWithGoodConfig()
+		params := plugins.Params{
+			Ctx:      ctx,
+			Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
+		}
+		proxies, _ := validation.TranslateK8sGatewayProxies(ctx, params.Snapshot, rtOpt)
+		gv.Sync(ctx, params.Snapshot)
+		rpt, err := gv.ValidateGloo(ctx, proxies[0], rtOpt, false)
+		Expect(err).NotTo(HaveOccurred())
+		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
+		Expect(err).NotTo(HaveOccurred())
+		r := rpt[0]
+		proxyResourceReport := r.ResourceReports[proxies[0]]
+		Expect(proxyResourceReport.Errors).To(BeNil())
+	})
+
+	It("validates and a rejects a bad VirtualHostOption", func() {
 		gv := gloovalidation.NewValidator(vc)
 
 		params := plugins.Params{
 			Ctx:      ctx,
 			Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
 		}
-		vhost := attachedVHostInternal()
+		vhost := vHostOptWithBadConfig()
 		proxies, _ := validation.TranslateK8sGatewayProxies(ctx, params.Snapshot, vhost)
 		gv.Sync(ctx, params.Snapshot)
 		rpt, err := gv.ValidateGloo(ctx, proxies[0], vhost, false)
-		validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
 		Expect(err).NotTo(HaveOccurred())
 		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
 		Expect(err).To(HaveOccurred())
@@ -136,9 +155,28 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		proxyResourceReport := r.ResourceReports[proxies[0]]
 		Expect(proxyResourceReport.Errors.Error()).To(ContainSubstring(bufferErrorMsg))
 	})
+
+	It("validates and accepts a good VirtualHostOption", func() {
+		gv := gloovalidation.NewValidator(vc)
+
+		params := plugins.Params{
+			Ctx:      ctx,
+			Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
+		}
+		vhost := vHostOptWithGoodConfig()
+		proxies, _ := validation.TranslateK8sGatewayProxies(ctx, params.Snapshot, vhost)
+		gv.Sync(ctx, params.Snapshot)
+		rpt, err := gv.ValidateGloo(ctx, proxies[0], vhost, false)
+		Expect(err).NotTo(HaveOccurred())
+		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0], true)
+		Expect(err).ToNot(HaveOccurred())
+		r := rpt[0]
+		proxyResourceReport := r.ResourceReports[proxies[0]]
+		Expect(proxyResourceReport.Errors).To(BeNil())
+	})
 })
 
-func attachedVHostInternal() *sologatewayv1.VirtualHostOption {
+func vHostOptWithBadConfig() *sologatewayv1.VirtualHostOption {
 	return &sologatewayv1.VirtualHostOption{
 		TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
 			Group:     gwv1.GroupVersion.Group,
@@ -158,7 +196,13 @@ func attachedVHostInternal() *sologatewayv1.VirtualHostOption {
 	}
 }
 
-func attachedInternal() *sologatewayv1.RouteOption {
+func vHostOptWithGoodConfig() *sologatewayv1.VirtualHostOption {
+	vHostOpt := proto.Clone(vHostOptWithBadConfig()).(*sologatewayv1.VirtualHostOption)
+	vHostOpt.GetOptions().GetBufferPerRoute().GetBuffer().MaxRequestBytes = wrapperspb.UInt32(1024)
+	return vHostOpt
+}
+
+func routeOptWithBadConfig() *sologatewayv1.RouteOption {
 	return &sologatewayv1.RouteOption{
 		Metadata: &core.Metadata{
 			Name:      "policy",
@@ -174,9 +218,14 @@ func attachedInternal() *sologatewayv1.RouteOption {
 			Faults: &faultinjection.RouteFaults{
 				Abort: &faultinjection.RouteAbort{
 					Percentage: 4.19,
-					// HttpStatus: 500,
 				},
 			},
 		},
 	}
+}
+
+func routeOptWithGoodConfig() *sologatewayv1.RouteOption {
+	rtOpt := proto.Clone(routeOptWithBadConfig()).(*sologatewayv1.RouteOption)
+	rtOpt.GetOptions().GetFaults().GetAbort().HttpStatus = 500
+	return rtOpt
 }
