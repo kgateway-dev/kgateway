@@ -144,7 +144,7 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
-	if testutils.ShouldSkipInstall() || !testutils.ShouldTearDown() {
+	if testutils.ShouldSkipInstall() {
 		return
 	}
 	err := uninstallFn(ctx)

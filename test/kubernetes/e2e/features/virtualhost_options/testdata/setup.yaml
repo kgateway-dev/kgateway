@@ -13,7 +13,7 @@ spec:
           from: Same
     - protocol: HTTP
       port: 8081
-      name: http_other
+      name: other
       allowedRoutes:
         namespaces:
           from: Same
