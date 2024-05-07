@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -39,10 +40,14 @@ func flattenDelegatedRoutes(
 ) error {
 	parentRef := types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name}
 	routesVisited.Insert(parentRef)
+	defer routesVisited.Delete(parentRef)
 
 	children, err := queries.GetDelegatedRoutes(ctx, backendRef.BackendObjectReference, parentMatch, parentRef)
 	if err != nil {
 		return err
+	}
+	if len(children) == 0 {
+		return eris.Errorf("unresolved reference %s", backendref.ToString(backendRef.BackendObjectReference))
 	}
 
 	// Child routes inherit the hostnames from the parent route
@@ -88,7 +93,6 @@ func flattenDelegatedRoutes(
 			ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames)
 	}
 
-	routesVisited.Delete(parentRef)
 	return nil
 }
 
