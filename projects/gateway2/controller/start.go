@@ -137,12 +137,12 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		Kick:           inputChannels.Kick,
 		Extensions:     k8sGwExtensions,
 	}
-	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
+	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}
 
-	if err := secrets.NewSecretsController(ctx, mgr, inputChannels); err != nil {
+	if err = secrets.NewSecretsController(ctx, mgr, inputChannels); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}
