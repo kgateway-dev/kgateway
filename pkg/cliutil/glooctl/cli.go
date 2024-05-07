@@ -2,8 +2,9 @@ package glooctl
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/threadsafe"
 	"io"
+
+	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	cli "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"

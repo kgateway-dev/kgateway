@@ -2,10 +2,11 @@ package k8sgateway_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 

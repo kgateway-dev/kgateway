@@ -2,9 +2,10 @@ package testutils
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/cliutil/glooctl"
 	"os/exec"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/cliutil/glooctl"
 
 	"github.com/solo-io/go-utils/threadsafe"
 
@@ -15,13 +16,16 @@ import (
 	errors "github.com/rotisserie/eris"
 )
 
-func Glooctl(args string) error {
-	return glooctl.NewCli().RunCommand(context.Background(), args)
+func Glooctl(argStr string) error {
+	args := strings.Split(argStr, " ")
+	return glooctl.NewCli().RunCommand(context.Background(), args...)
 }
 
-func GlooctlOut(args string) (string, error) {
+func GlooctlOut(argStr string) (string, error) {
+	args := strings.Split(argStr, " ")
+
 	var outLocation threadsafe.Buffer
-	cmd := glooctl.NewCli().Command(context.Background(), args).WithStdout(&outLocation)
+	cmd := glooctl.NewCli().Command(context.Background(), args...).WithStdout(&outLocation)
 
 	if runErr := cmd.Run(); runErr != nil {
 		return "", runErr.Cause()
