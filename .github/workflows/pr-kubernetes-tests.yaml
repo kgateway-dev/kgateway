@@ -49,11 +49,17 @@ jobs:
         test:
         - cluster-id: 'cluster_one'
           go-test-args: '-v -tags=cluster_one'
-        tool-versions:
-        - cluster-node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
-          kubectl: 'v1.28.4'
-          kind: 'v0.20.0'
-          helm: 'v3.13.2'
+          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          kubectl-version: 'v1.28.4'
+          kind-version: 'v0.20.0'
+          helm-version: 'v3.13.2'
+        - cluster-id: 'cluster_two'
+          go-test-args: '-v -tags=cluster_two'
+          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          kubectl-version: 'v1.28.4'
+          kind-version: 'v0.20.0'
+          helm-version: 'v3.13.2'
+
     steps:
     - id: auto-succeed-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
@@ -69,10 +75,10 @@ jobs:
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
         cluster-name: kind
-        kind-version: ${{ matrix.tool-versions.kind }}
-        kind-node-version: ${{ matrix.tool-versions.cluster-node }}
-        kubectl-version: ${{ matrix.tool-versions.kubectl }}
-        helm-version: ${{ matrix.tool-versions.helm }}
+        kind-version: ${{ matrix.test.kind-version }}
+        kind-node-version: ${{ matrix.test.cluster-node-version }}
+        kubectl-version: ${{ matrix.test.kubectl-version }}
+        helm-version: ${{ matrix.test.helm-version }}
     - id: run-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
