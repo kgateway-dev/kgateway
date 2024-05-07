@@ -33,13 +33,15 @@ func (c *Cli) WithReceiver(receiver io.Writer) *Cli {
 func (c *Cli) Command(ctx context.Context, arg ...string) cmdutils.Cmd {
 	// Under the hood we call the cobra.Command directly so that we re-use whatever functionality
 	// is available to users
-	cmd := cli.CommandWithContext(ctx)
-	cmd.SetContext(ctx)
-	cmd.SetArgs(arg)
+	cobraCommand := cli.CommandWithContext(ctx)
+	cobraCommand.SetContext(ctx)
+	cobraCommand.SetArgs(arg)
 
-	return &cmdutils.CobraCmd{
-		Command: cmd,
-	}
+	// For convenience, we set the stdout and stderr to the receiver
+	// This can still be overwritten by consumers who use the commands
+	return cmdutils.NewCobraCmd(cobraCommand, arg).
+		WithStderr(c.receiver).
+		WithStdout(c.receiver)
 }
 
 // RunCommand builds a Cmd and runs it

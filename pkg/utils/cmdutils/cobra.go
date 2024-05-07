@@ -12,11 +12,11 @@ var (
 	_ Cmd = &CobraCmd{}
 )
 
-func NewCobraCmd(cmd *cobra.Command, args []string) *CobraCmd {
+func NewCobraCmd(command *cobra.Command, args []string) *CobraCmd {
 	var combinedOutput threadsafe.Buffer
 
 	return &CobraCmd{
-		Command: cmd,
+		Command: command,
 		args:    args,
 
 		outWriter:      io.Discard,
@@ -59,7 +59,7 @@ func (c *CobraCmd) Run() *RunError {
 	c.SetOut(io.MultiWriter(c.outWriter, c.combinedOutput))
 	c.SetErr(io.MultiWriter(c.errWriter, c.combinedOutput))
 
-	if err := c.Execute(); err != nil {
+	if err := c.Command.Execute(); err != nil {
 		return &RunError{
 			command:    c.args,
 			output:     c.combinedOutput.Bytes(),
