@@ -27,8 +27,13 @@ var (
 
 // GetControlPlaneXdsPort gets the xDS port from the gloo Service.
 func GetControlPlaneXdsPort(ctx context.Context, svcClient skkube.ServiceClient) (int32, error) {
-	// this is the namespace where gloo is running
+	// When this code is invoked from within the running Pod, this will contain the namespace where Gloo is running
 	svcNamespace := utils.GetPodNamespace()
+	return GetNamespacedControlPlaneXdsPort(ctx, svcNamespace, svcClient)
+}
+
+// GetNamespacedControlPlaneXdsPort gets the xDS port from the Gloo Service, provided the namespace the Service is running in
+func GetNamespacedControlPlaneXdsPort(ctx context.Context, svcNamespace string, svcClient skkube.ServiceClient) (int32, error) {
 	glooSvc, err := svcClient.Read(svcNamespace, kubeutils.GlooServiceName, clients.ReadOpts{Ctx: ctx})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -37,7 +42,7 @@ func GetControlPlaneXdsPort(ctx context.Context, svcClient skkube.ServiceClient)
 		return 0, err
 	}
 
-	// find the xds port on the gloo service
+	// find the xds port on the Gloo Service
 	for _, port := range glooSvc.Spec.Ports {
 		if port.Name == kubeutils.GlooXdsPortName {
 			return port.Port, nil

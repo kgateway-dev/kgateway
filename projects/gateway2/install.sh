@@ -10,6 +10,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 helm upgrade --install --create-namespace \
   --namespace gloo-system gloo \
   ./_test/gloo-1.0.0-ci1.tgz \
+  --set kubeGateway.enabled=true \
   -f - <<EOF
 discovery:
   enabled: false

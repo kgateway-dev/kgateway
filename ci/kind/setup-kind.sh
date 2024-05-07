@@ -20,6 +20,8 @@ KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, us
 ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"
 # Set the default image variant to standard
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
+# If true, run extra steps to set up k8s gateway api conformance test environment
+CONFORMANCE="${CONFORMANCE:-false}"
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
@@ -64,7 +66,46 @@ USE_SILENCE_REDIRECTS=true make -s build-cli-local
 # 5. Apply the Kubernetes Gateway API CRDs
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
 
-# 6. Install additional resources used for particular KUBE2E tests
+# 6. Conformance test setup
+if [[ $CONFORMANCE == "true" ]]; then
+  echo "Running conformance test setup"
+
+  kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
+
+  # Wait for MetalLB to become available.
+  kubectl rollout status -n metallb-system deployment/controller --timeout 2m
+  kubectl rollout status -n metallb-system daemonset/speaker --timeout 2m
+  kubectl wait -n metallb-system  pod -l app=metallb --for=condition=Ready --timeout=10s
+
+  SUBNET=$(docker network inspect  kind -f '{{(index .IPAM.Config 0).Subnet}}'| cut -d '.' -f1,2)
+  MIN=${SUBNET}.255.0
+  MAX=${SUBNET}.255.231
+
+  # Note: each line below must begin with one tab character; this is to get EOF working within
+  # an if block. The `-` in the `<<-EOF`` strips out the leading tab from each line, see
+  # https://tldp.org/LDP/abs/html/here-docs.html
+	kubectl apply -f - <<-EOF
+	apiVersion: metallb.io/v1beta1
+	kind: IPAddressPool
+	metadata:
+	  name: address-pool
+	  namespace: metallb-system
+	spec:
+	  addresses:
+	    - ${MIN}-${MAX}
+	---
+	apiVersion: metallb.io/v1beta1
+	kind: L2Advertisement
+	metadata:
+	  name: advertisement
+	  namespace: metallb-system
+	spec:
+	  ipAddressPools:
+	    - address-pool
+	EOF
+fi
+
+# 7. Install additional resources used for particular KUBE2E tests
 if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then
   TARGET_ARCH=x86_64
   if [[ $ARCH == 'arm64' ]]; then

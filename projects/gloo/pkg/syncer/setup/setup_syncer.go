@@ -1030,7 +1030,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	go func() {
 		// It is critical that the RunGlooWithExtensions function does not block.
 		// As a result, we monitor the runErrorGroup and just drop errors on the shared "errs" channel if one occurs
-		errs <- runErrorGroup.Wait()
+		runErr := runErrorGroup.Wait()
+		if runErr != nil {
+			errs <- runErr
+		}
 	}()
 
 	go func() {

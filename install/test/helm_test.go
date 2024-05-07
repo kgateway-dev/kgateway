@@ -28,7 +28,6 @@ import (
 
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -74,12 +73,7 @@ func GetValidationEnvVar() corev1.EnvVar {
 		Value: "true",
 	}
 }
-func GetK8sGwControllerEnvVar() corev1.EnvVar {
-	return corev1.EnvVar{
-		Name:  constants.GlooGatewayEnableK8sGwControllerEnv,
-		Value: "true",
-	}
-}
+
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
@@ -4319,8 +4313,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: ` + constants.GlooGatewayEnableK8sGwControllerEnv + `
-            value: "true"
           - name: START_STATS_SERVER
             value: "true"
           - name: VALIDATION_MUST_START
@@ -4696,7 +4688,7 @@ metadata:
 						selector = map[string]string{
 							"gloo": "gloo",
 						}
-						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetK8sGwControllerEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
+						container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats(), GetValidationEnvVar())
 						glooAnnotations := make(map[string]string)
 						for k, v := range statsAnnotations {
 							glooAnnotations[k] = v
@@ -4866,7 +4858,7 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 					It("can disable validation", func() {
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{GetPodNamespaceEnvVar(), GetK8sGwControllerEnvVar(), GetPodNamespaceStats()}
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
 						glooDeployment.Spec.Template.Spec.Volumes = []corev1.Volume{{
 							Name: "labels-volume",
 							VolumeSource: corev1.VolumeSource{
@@ -5721,10 +5713,6 @@ metadata:
 													ValueFrom: &corev1.EnvVarSource{
 														FieldRef: &corev1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 													},
-												},
-												{
-													Name:  constants.GlooGatewayEnableK8sGwControllerEnv,
-													Value: "true",
 												},
 												{
 													Name:  "START_STATS_SERVER",

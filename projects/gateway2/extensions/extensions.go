@@ -69,6 +69,7 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.
 		queries,
 		e.mgr.GetClient(),
 		e.routeOptionClient,
+		e.virtualHostOptionClient,
 		e.statusReporter,
 	)
 	return registry.NewPluginRegistry(plugins)
