@@ -1,13 +1,13 @@
 package testutils
 
 import (
+	"bytes"
 	"context"
+	"github.com/spf13/cobra"
+	"io"
+	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/solo-io/gloo/pkg/cliutil/glooctl"
-
-	"github.com/solo-io/go-utils/threadsafe"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -17,31 +17,65 @@ import (
 )
 
 func Glooctl(argStr string) error {
-	args := strings.Split(argStr, " ")
-
-	cmd := glooctl.NewCli().Command(context.Background(), args...)
-
-	// cmd.Run returns a RunError. We can either use Cause() to return the entire
-	// stacktrace, or Inner() to return the underlying error
-	// Since this was used extensively in tests, and we want to maintain backwards
-	// compatibility, we return Inner()
-	return cmd.Run().Inner()
+	return NewCli().Execute(context.Background(), argStr)
 }
 
 func GlooctlOut(argStr string) (string, error) {
-	args := strings.Split(argStr, " ")
+	return NewCli().ExecuteOut(context.Background(), argStr)
+}
 
-	var outLocation threadsafe.Buffer
-	cmd := glooctl.NewCli().Command(context.Background(), args...).WithStdout(&outLocation)
+func ExecuteCommandWithArgs(command *cobra.Command, args ...string) error {
+	command.SetArgs(args)
+	return command.Execute()
+}
 
-	if runErr := cmd.Run(); runErr != nil {
-		// cmd.Run returns a RunError. We can either use Cause() to return the entire
-		// stacktrace, or Inner() to return the underlying error
-		// Since this was used extensively in tests, and we want to maintain backwards
-		// compatibility, we return Inner()
-		return "", runErr.Inner()
+// ExecuteCommandWithArgsOut executes the provided cobra.Command with the defined arguments
+// Any output to Stdout or Stderr will be returned in a string, and if an error was encountered
+// an error will be returned optionally
+//
+// NOTE:
+//
+//	cobra.Command's support configuring an alternative to using stdout and stderr
+//	However, glooctl does not rely on this functionality and uses os.Stdout directly
+//	We opt to bake this complexity directly into this tool, instead of forcing developers to
+//	be aware of it. As a result, we do the following:
+//		1. Capture the stdout and stderr Files
+//		2. Update them to point to a writer of our choosing
+//		3. Execute the command
+//		4. Undo the change to stdout and stderr
+//		5. Return the output string
+//
+// Update May 7th: @sam-heilbron tried to call this function within a struct following
+// our cmdutils.Cmd interface. However, even with no functional changes, it was triggering
+// a data-race when updating os.Stdout
+func ExecuteCommandWithArgsOut(command *cobra.Command, args ...string) (string, error) {
+	stdOut := os.Stdout
+	stdErr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		return "", err
 	}
-	return outLocation.String(), nil
+	os.Stdout = w
+	os.Stderr = w
+
+	outC := make(chan string)
+
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	err = ExecuteCommandWithArgs(command, args...)
+
+	// back to normal state
+	w.Close()
+	os.Stdout = stdOut // restoring the real stdout
+	os.Stderr = stdErr
+	out := <-outC
+
+	return strings.TrimSuffix(out, "\n"), err
 }
 
 func Make(dir, args string) error {
