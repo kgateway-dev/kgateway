@@ -34,15 +34,31 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestConfigureVirtualHostOptions() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
-		s.NoError(err, "can delete manifest")
+func (s *testingSuite) cleanupFunc(resources map[string]string) func() {
+	return func() {
+		for k, v := range resources {
+			err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, v)
+			s.NoError(err, "can delete "+k)
+		}
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-	})
+	}
+}
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, targetRefManifest)
-	s.NoError(err, "can apply targetRefManifest")
+func (s *testingSuite) setup(resources map[string]string) {
+	for k, v := range resources {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, v)
+		s.NoError(err, "can apply "+k)
+	}
+}
+func (s *testingSuite) TestConfigureVirtualHostOptions() {
+	resources := map[string]string{
+		"setupManifest":    setupManifest,
+		"basicVhOManifest": basicVhOManifest,
+	}
+
+	s.T().Cleanup(s.cleanupFunc(resources))
+
+	s.setup(resources)
 
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
@@ -59,25 +75,22 @@ func (s *testingSuite) TestConfigureVirtualHostOptions() {
 
 	// Check status is accepted on VirtualHostOption
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		s.getterForMeta(&virtualHostOptionMeta),
+		s.getterForMeta(&basicVirtualHostOptionMeta),
 		core.Status_Accepted,
 		defaults.KubeGwReporter,
 	)
 }
 
 func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
-		s.NoError(err, "can delete manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, badVhOManifest)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-	})
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, targetRefManifest)
-	s.NoError(err, "can apply targetRefManifest")
+	resources := map[string]string{
+		"setupManifest":    setupManifest,
+		"basicVhOManifest": basicVhOManifest,
+		"badVhOManifest":   badVhOManifest,
+	}
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, badVhOManifest)
-	s.NoError(err, "can apply badVhOManifest")
+	s.T().Cleanup(s.cleanupFunc(resources))
+
+	s.setup(resources)
 
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
@@ -90,36 +103,45 @@ func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
 	)
 }
 
+// The goal here is to test the behavior when multiple VHOs target a gateway with multiple listeners and only some
+// conflict. This will generate a warning on the conflicted resource, but the VHO should be attached properly and
+// options propagated for the listener.
 func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionName() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
-		s.NoError(err, "can delete targetRefManifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, extraVhOManifest)
-		s.NoError(err, "can delete extraVhOManifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, sectionNameVhOManifest)
-		s.NoError(err, "can delete sectionNameVhOManifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-	})
+	resources := map[string]string{
+		"setupManifest":          setupManifest,
+		"basicVhOManifest":       basicVhOManifest,
+		"extraVhOManifest":       extraVhOManifest,
+		"sectionNameVhOManifest": sectionNameVhOManifest,
+	}
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, targetRefManifest)
-	s.NoError(err, "can apply targetRefManifest")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, extraVhOManifest)
-	s.NoError(err, "can apply extraVhOManifest")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, sectionNameVhOManifest)
-	s.NoError(err, "can apply sectionNameVhOManifest")
+	s.T().Cleanup(s.cleanupFunc(resources))
+
+	s.setup(resources)
 
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 
-	// Check healthy response with added foo header
+	// Check healthy response with added foo header to listener targeted by sectionName
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
 		},
 		expectedResponseWithFooHeader)
+
+	// Check healthy response with content-length removed to listener NOT targeted by sectionName
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		curlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8081),
+		},
+		expectedResponseWithoutContentLength)
 
 	// Check status is accepted on VirtualHostOption with section name
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
@@ -127,31 +149,34 @@ func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionName() {
 		core.Status_Accepted,
 		defaults.KubeGwReporter,
 	)
-	// Check status is warning on VirtualHostOptions not selected for attachment
+	// Check status is warning on VirtualHostOption with conflicting attachment,
+	// despite being properly attached to another listener
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
-		s.getterForMeta(&virtualHostOptionMeta),
+		s.getterForMeta(&basicVirtualHostOptionMeta),
 		[]string{"conflict with more-specific or older VirtualHostOption"},
 		defaults.KubeGwReporter,
 	)
+
+	// Check status is warning on VirtualHostOption not selected for attachment
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
 		s.getterForMeta(&extraVirtualHostOptionMeta),
 		[]string{"conflict with more-specific or older VirtualHostOption"},
 		defaults.KubeGwReporter,
 	)
 }
-func (s *testingSuite) TestMultipleVirtualHostOptions() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, targetRefManifest)
-		s.NoError(err, "can delete targetRefManifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, extraVhOManifest)
-		s.NoError(err, "can delete extraVhOManifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, targetRefManifest)
-	s.NoError(err, "can apply targetRefManifest")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, extraVhOManifest)
-	s.NoError(err, "can apply extraVhOManifest")
+// The goal here is to test the behavior when multiple VHOs are targeting a gateway without sectionName. The expected
+// behavior is that the oldest resource is used
+func (s *testingSuite) TestMultipleVirtualHostOptions() {
+	resources := map[string]string{
+		"setupManifest":    setupManifest,
+		"basicVhOManifest": basicVhOManifest,
+		"extraVhOManifest": extraVhOManifest,
+	}
+
+	s.T().Cleanup(s.cleanupFunc(resources))
+
+	s.setup(resources)
 
 	// Check resources are created for Gateway
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
@@ -168,20 +193,17 @@ func (s *testingSuite) TestMultipleVirtualHostOptions() {
 
 	// Check status is accepted on older VirtualHostOption
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		s.getterForMeta(&virtualHostOptionMeta),
+		s.getterForMeta(&basicVirtualHostOptionMeta),
 		core.Status_Accepted,
 		defaults.KubeGwReporter,
 	)
-	// Check status is warning on VirtualHostOptions not selected for attachment
+	// Check status is warning on newer VirtualHostOption not selected for attachment
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
 		s.getterForMeta(&extraVirtualHostOptionMeta),
 		[]string{"conflict with more-specific or older VirtualHostOption"},
 		defaults.KubeGwReporter,
 	)
 }
-
-// TODO(jbohanon) add negative test
-// TODO(jbohanon) add test for multiple vhopts targeting valid gateways/listeners as well as unattached
 
 func (s *testingSuite) getterForMeta(meta *metav1.ObjectMeta) helpers.InputResourceGetter {
 	return func() (resources.InputResource, error) {

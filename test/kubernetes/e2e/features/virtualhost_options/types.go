@@ -15,12 +15,13 @@ import (
 )
 
 var (
-	targetRefManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "header-manipulation-targetref.yaml")
+	setupManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	basicVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "basic-vho.yaml")
 	sectionNameVhOManifest = filepath.Join(util.MustGetThisDir(), "testdata", "section-name-vho.yaml")
 	extraVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho.yaml")
 	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "bad-vho.yaml")
 
-	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
+	// When we apply the setup file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
@@ -36,7 +37,7 @@ var (
 	}
 
 	// VirtualHostOption resource to be created
-	virtualHostOptionMeta = metav1.ObjectMeta{
+	basicVirtualHostOptionMeta = metav1.ObjectMeta{
 		Name:      "remove-content-length",
 		Namespace: "default",
 	}
