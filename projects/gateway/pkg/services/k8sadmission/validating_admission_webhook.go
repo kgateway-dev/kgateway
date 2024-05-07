@@ -17,10 +17,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -441,6 +443,11 @@ func (wh *gatewayValidationWebhook) validateGvk(ctx context.Context, gvk schema.
 	var reports *validation.Reports
 	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
 
+	// check to see if we should perform validation for this GVK
+	if !wh.shouldValidateGvk(gvk) {
+		return nil, nil
+	}
+
 	newResource := newResourceFunc()
 	oldResource := newResourceFunc()
 
@@ -473,6 +480,16 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 		return reports, errs
 	}
 	return reports, nil
+}
+
+func (wh *gatewayValidationWebhook) shouldValidateGvk(gvk schema.GroupVersionKind) bool {
+	if gvk == gwv1.RouteOptionGVK || gvk == gwv1.VirtualHostOptionGVK {
+		// only validate RouteOption and VirtualHostOption resources if K8s Gateway is enabled
+		return envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv)
+	}
+
+	// no other special considerations at this point, so continue with validation
+	return true
 }
 
 // shouldValidateResource determines if a resource should be validated AND populates `resource` (and `oldResource` if applicable) from the objects[s] in the `admissionRequest`

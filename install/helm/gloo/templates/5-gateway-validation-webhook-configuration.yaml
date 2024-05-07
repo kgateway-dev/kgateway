@@ -24,10 +24,12 @@ webhooks:
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
   rules:
+{{- if .Values.kubeGateway.enabled }}
   - operations: [ "CREATE", "UPDATE" ]
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["routeoptions", "virtualhostoptions"]
+{{- end }}{{/* if .Values.kubeGateway.enabled */}}
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "virtualservices" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
