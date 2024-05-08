@@ -11,6 +11,6 @@ func (p *Provider) EventuallyPodsAreReady(ctx context.Context, namespace string,
 	return kube.WaitUntilPodsRunning(ctx, timeout, namespace, podNames...)
 }
 
-func (p *Provider) GetPodsInNamespace(ctx context.Context, namespace string, labelSelector map[string]string) string {
+func (p *Provider) FindPodNameByLabel(ctx context.Context, namespace string, labelSelector map[string]string) string {
 	return kube.FindPodNameByLabel(p.clusterContext.RestConfig, ctx, namespace, labels.SelectorFromSet(labelSelector).String())
 }
