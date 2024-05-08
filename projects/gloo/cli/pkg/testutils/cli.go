@@ -9,32 +9,38 @@ import (
 	cli "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 )
 
-// NewCli returns an implementation of the Cli
-func NewCli() *Cli {
-	return &Cli{}
+// NewGlooCli returns an implementation of the GlooCli
+func NewGlooCli() *GlooCli {
+	return &GlooCli{}
 }
 
-// Cli is way to execute glooctl commands consistently
-type Cli struct{}
+// GlooCli is way to execute glooctl commands consistently
+// It has the benefit of invoking the underlying *cobra.Command directly,
+// meaning that we do not rely on any generating binaries
+type GlooCli struct{}
 
 // NewCommand returns a fresh cobra.Command
-func (c *Cli) NewCommand(ctx context.Context) *cobra.Command {
+func (c *GlooCli) NewCommand(ctx context.Context) *cobra.Command {
 	// Under the hood we call the cobra.Command directly so that we re-use whatever functionality is available to users
 	return cli.CommandWithContext(ctx)
 }
 
 // Execute executes an arbitrary glooctl command
-func (c *Cli) Execute(ctx context.Context, argStr string) error {
+func (c *GlooCli) Execute(ctx context.Context, argStr string) error {
 	return ExecuteCommandWithArgs(c.NewCommand(ctx), strings.Split(argStr, " ")...)
 }
 
 // ExecuteOut executes an arbitrary glooctl command
-func (c *Cli) ExecuteOut(ctx context.Context, argStr string) (string, error) {
+// It returns a string containing the output that is piped to stdout and stdrr
+// It optionally returns an error if one was encountered
+func (c *GlooCli) ExecuteOut(ctx context.Context, argStr string) (string, error) {
 	return ExecuteCommandWithArgsOut(c.NewCommand(ctx), strings.Split(argStr, " ")...)
 }
 
-// Check attempts to check the installation, and returns an error if one was encountered
-func (c *Cli) Check(ctx context.Context, extraArgs ...string) (string, error) {
+// Check attempts to check the installation
+// It returns a string containing the output that a user would see if they invoked `glooctl check`
+// It optionally returns an error if one was encountered
+func (c *GlooCli) Check(ctx context.Context, extraArgs ...string) (string, error) {
 	checkArgs := append([]string{
 		"check",
 	}, extraArgs...)
@@ -43,15 +49,15 @@ func (c *Cli) Check(ctx context.Context, extraArgs ...string) (string, error) {
 }
 
 // CheckCrds attempts to check the CRDs in the cluster, and returns an error if one was encountered
-func (c *Cli) CheckCrds(ctx context.Context, extraArgs ...string) error {
+func (c *GlooCli) CheckCrds(ctx context.Context, extraArgs ...string) error {
 	checkCrdArgs := append([]string{
 		"check-crds",
 	}, extraArgs...)
 	return ExecuteCommandWithArgs(c.NewCommand(ctx), checkCrdArgs...)
 }
 
-// DebugLogs attempts to output the logs to a specified file
-func (c *Cli) DebugLogs(ctx context.Context, extraArgs ...string) error {
+// DebugLogs attempts to output the logs to a specified file, and returns an error if one was encountered
+func (c *GlooCli) DebugLogs(ctx context.Context, extraArgs ...string) error {
 	debugLogsArgs := append([]string{
 		"debug",
 		"logs",

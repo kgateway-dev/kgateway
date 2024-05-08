@@ -10,27 +10,21 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type testingSuite struct {
+type checkSuite struct {
 	suite.Suite
 
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
+func NewCheckSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &checkSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
-}
-
-func (s *testingSuite) TearDownSuite() {
-}
-
-func (s *testingSuite) TestCheck() {
+func (s *checkSuite) TestCheck() {
 	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace, "-x", "xds-metrics")
 	s.NoError(err)
@@ -40,7 +34,7 @@ func (s *testingSuite) TestCheck() {
 	}
 }
 
-func (s *testingSuite) TestCheckExclude() {
+func (s *checkSuite) TestCheckExclude() {
 	for excludeKey, expectedOutput := range checkOutputByKey {
 		output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
 			"-n", s.testInstallation.Metadata.InstallNamespace, "-x", fmt.Sprintf("xds-metrics,%s", excludeKey))
@@ -49,7 +43,7 @@ func (s *testingSuite) TestCheckExclude() {
 	}
 }
 
-func (s *testingSuite) TestCheckReadOnly() {
+func (s *checkSuite) TestCheckReadOnly() {
 	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace, "--read-only")
 	s.NoError(err)
@@ -62,7 +56,7 @@ func (s *testingSuite) TestCheckReadOnly() {
 	}
 }
 
-func (s *testingSuite) TestCheckKubeContext() {
+func (s *checkSuite) TestCheckKubeContext() {
 	// When passing an invalid kube-context, `glooctl check` should succeed
 	_, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", "invalid-context")
@@ -75,7 +69,7 @@ func (s *testingSuite) TestCheckKubeContext() {
 	s.NoError(err)
 }
 
-func (s *testingSuite) TestDebugLogsNoPanic() {
+func (s *checkSuite) TestDebugLogsNoPanic() {
 	err := s.testInstallation.Actions.Glooctl().DebugLogs(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace)
 	s.NoError(err)

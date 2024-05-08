@@ -17,14 +17,32 @@ import (
 	errors "github.com/rotisserie/eris"
 )
 
+// Glooctl executes a glooctl command, passing the provided string as the arguments
+// No output is expected or returned, and if an error was encountered, it will be returned
+// otherwise nill will be returned
+//
+// Example:
+//
+//	argStr = "install gateway --dry-run"
+//	This will result in the following command being executed: `glooctl install gateway --dry-run`
 func Glooctl(argStr string) error {
-	return NewCli().Execute(context.Background(), argStr)
+	return NewGlooCli().Execute(context.Background(), argStr)
 }
 
+// GlooctlOut executes a glooctl command, passing the provided string as the arguments
+// Any output to Stdout or Stderr will be returned in a string, and if an error was encountered
+// an error will be returned optionally
+//
+// Example:
+//
+//	argStr = "install gateway --dry-run"
+//	This will result in the following command being executed: `glooctl install gateway --dry-run`
 func GlooctlOut(argStr string) (string, error) {
-	return NewCli().ExecuteOut(context.Background(), argStr)
+	return NewGlooCli().ExecuteOut(context.Background(), argStr)
 }
 
+// ExecuteCommandWithArgs executes the provided cobra.Command with the defined arguments
+// If an error was encountered it will be returned, nil otherwise
 func ExecuteCommandWithArgs(command *cobra.Command, args ...string) error {
 	command.SetArgs(args)
 	return command.Execute()

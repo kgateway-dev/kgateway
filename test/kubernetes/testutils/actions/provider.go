@@ -12,7 +12,7 @@ import (
 // This provider is just a wrapper around sub-providers, so it exposes methods to access those providers
 type Provider struct {
 	kubeCli *kubectl.Cli
-	glooCli *testutils.Cli
+	glooCli *testutils.GlooCli
 
 	glooGatewayContext *gloogateway.Context
 }
@@ -21,7 +21,7 @@ type Provider struct {
 func NewActionsProvider() *Provider {
 	return &Provider{
 		kubeCli:            nil,
-		glooCli:            testutils.NewCli(),
+		glooCli:            testutils.NewGlooCli(),
 		glooGatewayContext: nil,
 	}
 }
@@ -42,6 +42,6 @@ func (p *Provider) Kubectl() *kubectl.Cli {
 	return p.kubeCli
 }
 
-func (p *Provider) Glooctl() *testutils.Cli {
+func (p *Provider) Glooctl() *testutils.GlooCli {
 	return p.glooCli
 }

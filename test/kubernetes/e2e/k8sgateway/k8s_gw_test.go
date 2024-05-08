@@ -98,6 +98,10 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	t.Run("Glooctl", func(t *testing.T) {
-		suite.Run(t, glooctl.NewTestingSuite(ctx, testInstallation))
+
+		t.Run("Check", func(t *testing.T) {
+			suite.Run(t, glooctl.NewCheckSuite(ctx, testInstallation))
+		})
+
 	})
 }
