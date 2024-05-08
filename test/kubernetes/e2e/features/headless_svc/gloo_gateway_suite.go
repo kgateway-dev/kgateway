@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type glooGatewaySuite struct {
+type edgeGatewaySuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -26,9 +26,9 @@ type glooGatewaySuite struct {
 	routingManifestFile string
 }
 
-func NewGlooGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation, outputDirectory string) suite.TestingSuite {
-	manifestFile := filepath.Join(outputDirectory, GlooGatewayApiRoutingGeneratedFileName)
-	return &glooGatewaySuite{
+func NewEdgeGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation, outputDirectory string) suite.TestingSuite {
+	manifestFile := filepath.Join(outputDirectory, EdgeGatewayApiRoutingGeneratedFileName)
+	return &edgeGatewaySuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
 		routingManifestFile: manifestFile,
@@ -36,20 +36,20 @@ func NewGlooGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInsta
 }
 
 // SetupSuite generates manifest files for the test suite
-func (s *glooGatewaySuite) SetupSuite() {
-	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace)
+func (s *edgeGatewaySuite) SetupSuite() {
+	resources := GetEdgeGatewayResources(s.testInstallation.Metadata.InstallNamespace)
 	err := utils.WriteResourcesToFile(resources, s.routingManifestFile)
 	s.Require().NoError(err, "can write resources to file")
 }
 
-func (s *glooGatewaySuite) TestGlooGatewayRoutingHeadlessSvc() {
+func (s *edgeGatewaySuite) TestEdgeGatewayRoutingHeadlessSvc() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, headlessSvcSetupManifest)
 		s.NoError(err, "can delete setup manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, headlessService)
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.routingManifestFile)
-		s.NoError(err, "can delete setup gloo gateway routing manifest")
+		s.NoError(err, "can delete setup Edge Gateway API routing manifest")
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headlessSvcSetupManifest)
@@ -57,7 +57,7 @@ func (s *glooGatewaySuite) TestGlooGatewayRoutingHeadlessSvc() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
-	s.NoError(err, "can setup gloo gateway routing manifest")
+	s.NoError(err, "can setup Edge Gateway API routing manifest")
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,

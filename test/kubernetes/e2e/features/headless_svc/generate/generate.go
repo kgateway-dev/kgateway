@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"path/filepath"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -11,7 +12,11 @@ import (
 )
 
 // Dev tool to generate the manifest files for the test suite for demo and docs purposes
+//
+//go:generate go run ./generate.go
 func main() {
+	log.Println("starting generate for headless svc examples")
+
 	// use the k8s gateway api resources
 	k8sApiResources := []client.Object{headless_svc.K8sGateway, headless_svc.HeadlessSvcHTTPRoute}
 	k8sApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "testdata", headless_svc.K8sApiRoutingGeneratedFileName)
@@ -21,13 +26,14 @@ func main() {
 		panic(err)
 	}
 
-	// use the Gloo gateway api resources
+	// use the Gloo Edge Gateway api resources
 	exampleNs := defaults.GlooSystem
-	glooGatewayApiResources := headless_svc.GetGlooGatewayEdgeResources(exampleNs)
-	glooGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "testdata", headless_svc.GlooGatewayApiRoutingGeneratedFileName)
-	err = utils.WriteResourcesToFile(glooGatewayApiResources, glooGatewayApiRoutingGeneratedExample)
+	edgeGatewayApiResources := headless_svc.GetEdgeGatewayResources(exampleNs)
+	edgeGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "testdata", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)
+	err = utils.WriteResourcesToFile(edgeGatewayApiResources, edgeGatewayApiRoutingGeneratedExample)
 	if err != nil {
 		panic(err)
 	}
 
+	log.Println("finished generate for headless svc examples")
 }

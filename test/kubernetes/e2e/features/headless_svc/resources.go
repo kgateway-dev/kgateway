@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,12 +15,15 @@ import (
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"
 	soloapis_kubernetes "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/options/kubernetes"
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
 )
 
 const (
 	// Resources are defined as go structs and written to yaml files in the input directory
 	K8sApiRoutingGeneratedFileName         = "k8s_api.gen.yaml"
-	GlooGatewayApiRoutingGeneratedFileName = "gloo_gateway_api.gen.yaml"
+	EdgeGatewayApiRoutingGeneratedFileName = "gloo_gateway_api.gen.yaml"
 
 	headlessSvcDomain = "headless.example.com"
 )
@@ -30,8 +31,8 @@ const (
 var (
 	headlessSvcSetupManifest = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
 
-	// GetGlooGatewayEdgeResources returns the Gloo Gateway Edge API resources
-	GetGlooGatewayEdgeResources = func(installNamespace string) []client.Object {
+	// GetEdgeGatewayResources returns the Gloo Gateway Edge API resources
+	GetEdgeGatewayResources = func(installNamespace string) []client.Object {
 		headlessSvcUpstream := &soloapis_gloov1.Upstream{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       gloov1.UpstreamGVK.Kind,
