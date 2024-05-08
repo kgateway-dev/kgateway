@@ -96,6 +96,7 @@ var _ = Describe("AWS Lambda", func() {
 		requestBody                     string
 		expectedSubstrings              []string
 		requestHeaders, expectedHeaders http.Header
+		exactExpectedHeaderKeys         []string
 		requestUrl                      *url.URL
 		expectedStatus                  *int
 	}
@@ -144,7 +145,7 @@ var _ = Describe("AWS Lambda", func() {
 			g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedStatus,
 				Body:       testmatchers.ContainSubstrings(params.expectedSubstrings),
-				Custom:     testmatchers.ContainHeaders(params.expectedHeaders),
+				Custom:     And(testmatchers.ContainHeaders(params.expectedHeaders), testmatchers.ContainHeaderKeysExact(params.exactExpectedHeaderKeys)),
 			}))
 
 		}, "30s", "1s").Should(Succeed())
@@ -367,6 +368,33 @@ var _ = Describe("AWS Lambda", func() {
 			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`"test body"`},
 			expectedHeaders:    http.Header{"Foo": []string{"null,bar,123"}},
+		})
+	}
+
+	// this tests the case where a lambda returns malformed multiValueHeaders, a case which previously caused Envoy to
+	// return a 500 response
+	// we now expect a 200 response with no body and no headers
+	// lambda: https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/malformed-headers-test
+	// expected response:
+	//        'body': json.dumps('test body'),
+	//        'multiValueHeaders': {
+	//            'foo': {
+	//                None,
+	//                "bar",
+	//                123
+	//            }
+	//        }
+	testProxyWithUnwrapAsApiGatewayMalformedHeaderResponse := func() {
+		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		createProxy(true, false, false, "malformed-headers-test")
+		validateLambda(lambdaValidationParams{
+			offset:                  1,
+			envoyPort:               envoyInstance.HttpPort,
+			expectedSubstrings:      []string{"{}"},
+			expectedHeaders:         map[string][]string{},
+			exactExpectedHeaderKeys: []string{"Date", "Server", "Content-Length"},
 		})
 	}
 
@@ -596,7 +624,9 @@ var _ = Describe("AWS Lambda", func() {
 
 			It("should be able to call lambda with unwrapAsApiGateway", testProxyWithUnwrapAsApiGateway)
 
-			It("should be able to call lambda with unwrapAsApiGateway with non-string headers in response", testProxyWithUnwrapAsApiGatewayNonStringHeaderResponse)
+			FIt("should be able to call lambda with unwrapAsApiGateway with non-string headers in response", testProxyWithUnwrapAsApiGatewayNonStringHeaderResponse)
+
+			FIt("should be able to call lambda with unwrapAsApiGateway with malformed headers in response", testProxyWithUnwrapAsApiGatewayMalformedHeaderResponse)
 
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
