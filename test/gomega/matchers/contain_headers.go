@@ -68,6 +68,7 @@ func ContainHeaderKeysExact(keys []string) types.GomegaMatcher {
 	}
 	//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
 	lenMatcher := gomega.WithTransform(transforms.WithHeaderKeys(), gomega.HaveLen(len(keys)))
+	//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
 	keyMatcher := gomega.WithTransform(transforms.WithHeaderKeys(), gomega.ContainElements(keys))
 	return gomega.And(lenMatcher, keyMatcher)
 }
