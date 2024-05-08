@@ -149,7 +149,7 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = validation.GetSimpleErrorFromGlooValidation(rpt, proxies[0])
 		Expect(err).To(HaveOccurred())
-		const bufferErrorMsg = "VirtualHost Error: ProcessingError. Reason: invalid virtual host [vhost]: invalid BufferPerRoute.Buffer: embedded message failed validation | caused by: invalid Buffer.MaxRequestBytes: value is required and must not be nil."
+		const bufferErrorMsg = "VirtualHost Error: ProcessingError. Reason: invalid virtual host [vhost] while processing plugin buffer: invalid BufferPerRoute.Buffer: embedded message failed validation | caused by: invalid Buffer.MaxRequestBytes: value is required and must not be nil."
 		Expect(err.Error()).To(ContainSubstring(bufferErrorMsg))
 		r := rpt[0]
 		proxyResourceReport := r.ResourceReports[proxies[0]]
