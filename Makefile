@@ -283,7 +283,7 @@ GO_TEST_USER_ARGS ?=
 
 # The istio version to use for the e2e tests
 # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"
+export ISTIO_VERSION ?= "${ISTIO_VERSION:-1.19.9}"
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
