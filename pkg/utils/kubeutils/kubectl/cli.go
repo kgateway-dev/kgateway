@@ -233,10 +233,6 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 	return stdout + stderr, err
 }
 
-func (c *Cli) WaitUntilPodsRunning(ctx context.Context, timeout time.Duration, namespace string, podNames ...string) error {
-	return kube.WaitUntilPodsRunning(ctx, timeout, namespace, podNames...)
-}
-
 func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (string, string, error) {
 	args = append([]string{"--context", kubeContext}, args...)
 	return c.Execute(ctx, stdin, args...)
