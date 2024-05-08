@@ -17,13 +17,9 @@ This did not scale well because different domains had a different amount of test
 ### What is our current strategy?
 Our current strategy is to group tests by runtime. This allows us to easily move tests between clusters as necessary, following the Kubernetes mantra "cattle, not pets".
 
+The groupings are defined in our [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml). This allows us to isolate this complexity to our CI pipeline and not impact local development.
 
-Each file is provided a build tag:
-```go
-//go:build cluster_example
-```
-
-This build tag is an indication to our CI pipeline for which cluster that tests should be executed against. This allows us to load balance our tests across multiple clusters. _If you forget to define a tag, it will be run against all clusters, so please do not do that_.
+ _A side effect of this approach is that if you add a new test function and forget to add it in CI, it will not run. In the short term we have accepted this drawback, expecting PR review to identify it. If this is not sufficient, we will build automation to detect this._.
 
 ## Re-Balancing
 
@@ -34,6 +30,6 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 
 ### Steps to take
 1. Review the recent results from CI, and capture them in a document
-2. Adjust the build tags for the tests
-4. Document the **new** results, on the [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml) that runs the tests
-4. Adjust the build tags for the tests in a standalone PR (no other changes), clearly documenting in the PR body the results before and after the change
+2. Adjust the run functions that are invoked in our [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+4. Document the **new** results, on the matrix that runs the tests
+4. Open a PR clearly documenting in the PR body the results before and after the change
