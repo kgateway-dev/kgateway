@@ -19,7 +19,7 @@ func main() {
 
 	// use the k8s gateway api resources
 	k8sApiResources := []client.Object{headless_svc.K8sGateway, headless_svc.HeadlessSvcHTTPRoute}
-	k8sApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "testdata", headless_svc.K8sApiRoutingGeneratedFileName)
+	k8sApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.K8sApiRoutingGeneratedFileName)
 
 	err := utils.WriteResourcesToFile(k8sApiResources, k8sApiRoutingGeneratedExample)
 	if err != nil {
@@ -29,7 +29,7 @@ func main() {
 	// use the Gloo Edge Gateway api resources
 	exampleNs := defaults.GlooSystem
 	edgeGatewayApiResources := headless_svc.GetEdgeGatewayResources(exampleNs)
-	edgeGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "testdata", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)
+	edgeGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)
 	err = utils.WriteResourcesToFile(edgeGatewayApiResources, edgeGatewayApiRoutingGeneratedExample)
 	if err != nil {
 		panic(err)
