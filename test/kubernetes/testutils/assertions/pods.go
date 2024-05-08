@@ -3,6 +3,7 @@ package assertions
 import (
 	"context"
 	"github.com/solo-io/k8s-utils/testutils/kube"
+	"k8s.io/apimachinery/pkg/labels"
 	"time"
 )
 
@@ -10,6 +11,6 @@ func (p *Provider) EventuallyPodsAreReady(ctx context.Context, namespace string,
 	return kube.WaitUntilPodsRunning(ctx, timeout, namespace, podNames...)
 }
 
-func (p *Provider) GetPodsInNamespace(ctx context.Context, namespace, labelSelector string) string {
-	return kube.FindPodNameByLabel(p.clusterContext.RestConfig, ctx, namespace, labelSelector)
+func (p *Provider) GetPodsInNamespace(ctx context.Context, namespace string, labelSelector map[string]string) string {
+	return kube.FindPodNameByLabel(p.clusterContext.RestConfig, ctx, namespace, labels.SelectorFromSet(labelSelector).String())
 }
