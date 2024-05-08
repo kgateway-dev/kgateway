@@ -338,7 +338,7 @@ generated-code: fmt
 
 .PHONY: go-generate-all
 go-generate-all: clean-vendor-any ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
-	GO111MODULE=on go generate ./...
+	GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore GO111MODULE=on go generate ./...
 
 .PHONY: go-generate-apis
 go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
