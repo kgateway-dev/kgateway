@@ -2,6 +2,7 @@ package k8sgateway_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,6 +36,18 @@ func TestK8sGateway(t *testing.T) {
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
+	// create a tmp output directory for generated resources
+	tempOutputDir, err := os.MkdirTemp("", testInstallation.Metadata.InstallNamespace)
+	if err != nil {
+		t.Fatalf("Failed to create temporary directory: %v", err)
+	}
+	defer func() {
+		// Delete the temporary directory after the test completes
+		if err := os.RemoveAll(tempOutputDir); err != nil {
+			t.Errorf("Failed to remove temporary directory: %v", err)
+		}
+	}()
+
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
@@ -66,7 +79,7 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
+		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation, tempOutputDir))
 	})
 
 	t.Run("PortRouting", func(t *testing.T) {

@@ -33,7 +33,20 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-	err := testInstallation.AddIstioctl(ctx)
+
+	// create a tmp output directory for generated resources
+	tempOutputDir, err := os.MkdirTemp("", testInstallation.Metadata.InstallNamespace)
+	if err != nil {
+		t.Fatalf("Failed to create temporary directory: %v", err)
+	}
+	defer func() {
+		// Delete the temporary directory after the test completes
+		if err := os.RemoveAll(tempOutputDir); err != nil {
+			t.Errorf("Failed to remove temporary directory: %v", err)
+		}
+	}()
+
+	err = testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
 	}
@@ -70,7 +83,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewEdgeApiHeadlessSvcSuite(ctx, testInstallation))
+		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation, tempOutputDir))
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {
