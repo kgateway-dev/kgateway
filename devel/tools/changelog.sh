@@ -9,9 +9,16 @@ NEXT_VERSION=$(echo -n $CURRENT_VERSION | sed -E "s/$OLD_VERSION$/$NEW_VERSION/"
 BRANCH_NAME=$(git symbolic-ref -q HEAD | sed 's#^.*/##')
 DESCRIPTION=${DESCRIPTION:=""}
 
-mkdir -p "changelog/$NEXT_VERSION"
+CHANGELOG_DIR="changelog/$NEXT_VERSION"
+mkdir -p "$CHANGELOG_DIR"
 
-cat <<EOF > "changelog/$NEXT_VERSION/$BRANCH_NAME.yaml"
+CHANGELOG_FILE="$CHANGELOG_DIR/$BRANCH_NAME.yaml"
+
+if [[ ! -f $CHANGELOG_FILE ]]; then
+    echo "Creating $CHANGELOG_FILE"
+fi
+
+cat <<EOF > "$CHANGELOG_FILE"
 changelog:
   - type: FIX
     issueLink:
@@ -19,4 +26,11 @@ changelog:
     description: >-
       "${DESCRIPTION}"
 EOF
-echo Created "changelog/$NEXT_VERSION/$BRANCH_NAME.yaml"
+
+echo "Wrote to $CHANGELOG_FILE"
+
+# TODO this is a quick hack to avoid args parsing. If this script grows in complexity, parsing args will be more appropriate than this check.
+if [[ $# > 0 ]] && [[ "$1" == "edit" ]]; then
+    echo "Editing..."
+    "$EDITOR" "$CHANGELOG_FILE"
+fi
