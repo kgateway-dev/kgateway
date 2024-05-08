@@ -91,7 +91,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 	routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
 	vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
 	statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
-	statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+	statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	for _, rtOpt := range routeOptions {
 		routeOptionClient.Write(&rtOpt.Spec, clients.WriteOpts{Ctx: ctx})
 	}

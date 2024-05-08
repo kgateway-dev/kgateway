@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -79,7 +80,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 
 			vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
 			statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
-			statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, vhOptionClient.BaseClient())
+			statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, vhOptionClient.BaseClient())
 			plugin = NewPlugin(gwQueries, fakeClient, vhOptionClient, statusReporter)
 		})
 		When("outListener is not an AggregateListener", func() {
