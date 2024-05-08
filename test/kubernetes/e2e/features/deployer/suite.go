@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
@@ -79,6 +79,36 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 			xdsClusterAssertion(s.testInstallation),
 		)
 	}
+
+}
+
+func (s *testingSuite) TestConfigureIstioIntegrationFromGatewayParameters() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, istioGatewayParametersManifestFile)
+		s.NoError(err, "can delete manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, gwParams)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, deployerProvisionManifestFile)
+		s.NoError(err, "can delete manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
+	s.Require().NoError(err, "can apply manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
+	s.Require().NoError(err, "can apply manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, Equal(1))
+
+	// Assert Istio integration is enabled and correct Istio image is set
+	listOpts := metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
+	}
+	matcher := And(assertions.PodHasContainersMatcher("sds", ""), assertions.PodHasContainersMatcher("istio-proxy", "istio/proxyv2:1.20.6"))
+
+	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), listOpts, matcher)
 
 }
 
