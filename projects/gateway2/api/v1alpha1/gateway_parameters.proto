@@ -117,11 +117,11 @@ message EnvoyBootstrap {
 message SdsIntegration {
   // Configuration for the container running Gloo sds.
   // If not provided, the default values will be used.
-  SdsContainer sds_container = 2;
+  SdsContainer sds_container = 1;
 
   // Istio integration configuration
   // If not provided, the default values will be used.
-  IstioIntegration istio_integration = 7;
+  IstioIntegration istio_integration = 2;
 
 }
 
@@ -166,9 +166,15 @@ message SdsContainer {
   // for details.
   kube.gateway.gloo.solo.io.ResourceRequirements resources = 3;
 
+  // Initial SDS container configuration.
+  SdsBootstrap bootstrap = 4;
+}
+
+// Configuration for the sds instance that is provisioned from a Kubernetes Gateway.
+message SdsBootstrap {
   // Log level for sds.  Options include "info", "debug", "warn", "error", "panic" and "fatal".
   // Default level is "info".
-  string log_level = 4;
+  string log_level = 1;
 }
 
 // Configuration for the container running the istio-proxy.

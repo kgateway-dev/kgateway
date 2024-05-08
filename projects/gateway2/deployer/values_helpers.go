@@ -106,7 +106,7 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 	// if type is not set, it will default to 0 ("ClusterIP")
 	return &helmSds{
 		Image:           getImage(sdsConfig.GetSdsContainer().GetImage()),
-		LogLevel:        ptrTo(sdsConfig.GetSdsContainer().GetLogLevel()),
+		LogLevel:        ptrTo(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
 		Resources:       sdsConfig.GetSdsContainer().GetResources(),
 		SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
 
