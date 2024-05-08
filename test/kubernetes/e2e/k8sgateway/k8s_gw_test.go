@@ -103,5 +103,8 @@ func TestK8sGateway(t *testing.T) {
 			suite.Run(t, glooctl.NewCheckSuite(ctx, testInstallation))
 		})
 
+		t.Run("Debug", func(t *testing.T) {
+			suite.Run(t, glooctl.NewDebugSuite(ctx, testInstallation))
+		})
 	})
 }
