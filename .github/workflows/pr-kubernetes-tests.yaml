@@ -80,8 +80,7 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
     - id: setup-kind-cluster
       name: Setup KinD Cluster
-      if: false
-      # if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
         cluster-name: kind
