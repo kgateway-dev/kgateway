@@ -18,6 +18,12 @@ We define all tests in the [features](./features) package. This is done for a va
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
 2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
+## Environment Variables
+
+Some tests may require environment variables to be set. Some required env vars are:
+
+- Istio features: Require `ISTIO_VERSION` to be set. The tests running in CI use `ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"` to default to a specific version of Istio.
+
 ## Debugging
 
 Refer to the [Debugging guide](./debugging.md) for more information on how to debug tests.

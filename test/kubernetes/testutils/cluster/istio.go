@@ -16,14 +16,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
-const (
-	IstioctlVersionEnv  = "ISTIOCTL_VERSION"
-	defaultIstioVersion = "1.19.9"
-)
-
 func GetIstioctl(ctx context.Context) (string, error) {
 	// Download istioctl binary
-	istioctlBinary, err := downloadIstio(ctx, getIstioctlVersionOrDefault())
+	istioctlBinary, err := downloadIstio(ctx, getIstioVersion())
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
@@ -63,21 +58,22 @@ func installIstioOperator(
 	return ctx.Err()
 }
 
-func getIstioctlVersionOrDefault() string {
-	if version := os.Getenv(IstioctlVersionEnv); version != "" {
+func getIstioVersion() string {
+	if version := os.Getenv(glooruntime.IstioVersionEnv); version != "" {
 		return version
 	} else {
-		return defaultIstioVersion
+		// Fail loudly if ISTIO_VERSION is not set
+		panic(fmt.Sprintf("%s environment variable must be specified to run", glooruntime.IstioVersionEnv))
 	}
 }
 
 // Download istioctl binary from istio.io/downloadIstio and returns the path to the binary
 func downloadIstio(ctx context.Context, version string) (string, error) {
 	if version == "" {
-		contextutils.LoggerFrom(ctx).Infof("ISTIOCTL_VERSION not specified, using istioctl from PATH")
+		contextutils.LoggerFrom(ctx).Infof("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")
 		if err != nil {
-			return "", eris.New("ISTIOCTL_VERSION environment variable must be specified or istioctl must be installed")
+			return "", eris.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
 		}
 
 		contextutils.LoggerFrom(ctx).Infof("using istioctl path: %s", binaryPath)
@@ -136,7 +132,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 
 	cmd := exec.Command("sh", "-")
 
-	cmd.Env = append(cmd.Env, fmt.Sprintf("ISTIO_VERSION=%s", version))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", glooruntime.IstioVersionEnv, version))
 	cmd.Dir = installLocation
 
 	cmd.Stdin = res.Body
@@ -175,7 +171,7 @@ func CreateIstioBugReport(ctx context.Context, istioctlBinary, kubeContext strin
 	}
 
 	rootDir := filepath.Dir(goModFile)
-	artifactOutput := filepath.Join(rootDir, "_output")
+	artifactOutput := filepath.Join(rootDir, "_output", "test_failure_report")
 	bugReportCmd := exec.Command(istioctlBinary, "bug-report", "--full-secrets", "--context", kubeContext)
 	bugReportErr := bugReportCmd.Run()
 	if bugReportErr != nil {

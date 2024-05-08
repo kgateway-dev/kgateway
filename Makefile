@@ -28,6 +28,7 @@ help: ## Output the self-documenting make targets
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
+TEST_FAILURE_OUTPUT_DIR ?= $(OUTPUT_DIR)/test_failure_report
 DEPSGOBIN := $(OUTPUT_DIR)/.bin
 
 # Important to use binaries built from module.
@@ -42,6 +43,8 @@ IMAGE_REGISTRY ?= quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
+# Make sure _output/bug_report exists
+$(shell mkdir -p $(TEST_FAILURE_OUTPUT_DIR))
 
 # a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
 VERSION ?= 1.0.1-dev
@@ -277,6 +280,10 @@ GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
 GO_TEST_USER_ARGS ?=
+
+# The istio version to use for the e2e tests
+# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
+ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
