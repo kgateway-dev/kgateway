@@ -2,9 +2,10 @@ package assertions
 
 import (
 	"context"
+	"time"
+
 	"github.com/solo-io/k8s-utils/testutils/kube"
 	"k8s.io/apimachinery/pkg/labels"
-	"time"
 )
 
 func (p *Provider) EventuallyPodsAreReady(ctx context.Context, namespace string, timeout time.Duration, podNames ...string) error {
