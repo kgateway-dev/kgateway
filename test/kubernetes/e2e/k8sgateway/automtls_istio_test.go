@@ -1,4 +1,4 @@
-//go:build cluster_two
+//go:build cluster_two || all
 
 package k8sgateway_test
 

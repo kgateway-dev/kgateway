@@ -1,4 +1,4 @@
-//go:build cluster_one
+//go:build cluster_one || all
 
 package tests_test
 
