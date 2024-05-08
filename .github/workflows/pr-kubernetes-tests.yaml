@@ -38,7 +38,7 @@ jobs:
         fi
 
   end_to_end_tests:
-    name: End-to-End (${{ matrix.test-suites.package }})
+    name: End-to-End (${{ matrix.test.cluster-id }})
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -46,20 +46,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-suites:
-        - package: 'k8sgateway'
-          go-test-args: '-v'
-        tool-versions:
-        - cluster-node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
-          kubectl: 'v1.28.4'
-          kind: 'v0.20.0'
-          helm: 'v3.13.2'
+        # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
+        # Our goal is to load balance tests in a way that allows quick iteration on PRs
+        # If tests are exceeding the 25-minute limit, please see:
+        # /test/kubernetes/e2e/load_balancing_tests.md
+        test:
+        # May 7th: ~13 minutes execution time (see load_balancing_tests.md)
+        - cluster-id: 'cluster_one'
+          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          kind-version: 'v0.20.0'
+          kubectl-version: 'v1.28.4'
+          helm-version: 'v3.13.2'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '(^TestK8sGateway$$)'
+
+        # May 7th: ~10 minutes execution time (see load_balancing_tests.md)
+        - cluster-id: 'cluster_two'
+          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          kind-version: 'v0.20.0'
+          kubectl-version: 'v1.28.4'
+          helm-version: 'v3.13.2'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestK8sGatewayIstio$$|^TestClassicEdgeGateway$$)'
+
     steps:
-    - uses: actions/checkout@v3
-    - id: run-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
-      uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
     - id: auto-succeed-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
+    - uses: actions/checkout@v3
+    - name: Prep Go Runner
+      uses: ./.github/workflows/composite-actions/prep-go-runner
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+    - id: setup-kind-cluster
+      name: Setup KinD Cluster
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      uses: ./.github/workflows/composite-actions/setup-kind-cluster
+      with:
+        cluster-name: kind
+        kind-node-version: ${{ matrix.test.cluster-node-version }}
+        kind-version: ${{ matrix.test.kind-version }}
+        kubectl-version: ${{ matrix.test.kubectl-version }}
+        helm-version: ${{ matrix.test.helm-version }}
+    - id: run-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
+      with:
+        cluster-name: kind
+        test-args: ${{ matrix.test.go-test-args }}
+        run-regex: ${{ matrix.test.go-test-run-regex }}
+

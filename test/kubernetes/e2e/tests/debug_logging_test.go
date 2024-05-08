@@ -1,4 +1,7 @@
-package example
+package tests
+
+// This file is an example for developers.
+// We intentionally define a build tag that is not selected to run as part of our CI pipeline
 
 import (
 	"context"
@@ -16,15 +19,15 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestInstallationWithErrorLogLevel is the function which executes a series of tests against a given installation
-func TestInstallationWithErrorLogLevel(t *testing.T) {
+// TestInstallationWithDebugLogLevel is the function which executes a series of tests against a given installation
+func TestInstallationWithDebugLogLevel(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "error-example",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "error-example.yaml"),
+			InstallNamespace:   "debug-example",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
 		},
 	)
 
@@ -50,8 +53,8 @@ func TestInstallationWithErrorLogLevel(t *testing.T) {
 	// The name here is important for debuggability
 	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName
 	// In this case, the output would be:
-	// TestBasicInstallation/Example/{test name}
-	// We prefer to follow CamelCase convention for names of these sub-tests
+	// TestInstallationWithDebugLogLevel/Example/{test name}
+	// We prefer to follow CamelCase convention for names of these subtests
 	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})
