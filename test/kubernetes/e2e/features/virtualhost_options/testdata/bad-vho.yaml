@@ -7,7 +7,6 @@ spec:
     group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-    namespace: default
     sectionName: http
   options:
     retries:

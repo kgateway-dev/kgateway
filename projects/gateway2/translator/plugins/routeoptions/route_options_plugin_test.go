@@ -52,7 +52,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 		routeOptionClient, _ = sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
 		statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
-		statusReporter = reporter.NewReporter(defaults.KubeGwReporter, statusClient, routeOptionClient.BaseClient())
+		statusReporter = reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	})
 
 	AfterEach(func() {

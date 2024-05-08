@@ -58,7 +58,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 			return s.testInstallation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
 		},
 		core.Status_Accepted,
-		defaults.KubeGwReporter,
+		defaults.KubeGatewayReporter,
 	)
 }
 

@@ -68,7 +68,7 @@ func K8sGatewayControllerStartFunc(
 		}
 
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-		statusReporter := reporter.NewReporter(defaults.KubeGwReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
+		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
 
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,

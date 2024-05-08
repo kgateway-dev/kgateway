@@ -80,7 +80,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 
 			vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
 			statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
-			statusReporter := reporter.NewReporter(defaults.KubeGwReporter, statusClient, vhOptionClient.BaseClient())
+			statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, vhOptionClient.BaseClient())
 			plugin = NewPlugin(gwQueries, fakeClient, vhOptionClient, statusReporter)
 		})
 		When("outListener is not an AggregateListener", func() {

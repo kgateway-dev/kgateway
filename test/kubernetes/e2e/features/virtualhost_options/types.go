@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
@@ -28,13 +27,6 @@ var (
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
-
-	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
-	curlPodExecOpt = kubectl.PodExecOptions{
-		Name:      "curl",
-		Namespace: "curl",
-		Container: "curl",
-	}
 
 	// VirtualHostOption resource to be created
 	basicVirtualHostOptionMeta = metav1.ObjectMeta{
