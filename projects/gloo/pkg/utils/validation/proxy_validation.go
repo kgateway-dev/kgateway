@@ -389,6 +389,14 @@ func AppendVirtualHostError(virtualHostReport *validation.VirtualHostReport, err
 	})
 }
 
+func AppendVirtualHostErrorWithMetadata(virtualHostReport *validation.VirtualHostReport, errType validation.VirtualHostReport_Error_Type, reason string, metadata *v1.SourceMetadata) {
+	virtualHostReport.Errors = append(virtualHostReport.GetErrors(), &validation.VirtualHostReport_Error{
+		Type:     errType,
+		Reason:   reason,
+		Metadata: metadata,
+	})
+}
+
 func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, errType validation.HttpListenerReport_Error_Type, reason string) {
 	httpListenerReport.Errors = append(httpListenerReport.GetErrors(), &validation.HttpListenerReport_Error{
 		Type:   errType,

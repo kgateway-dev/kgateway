@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	// ref: test/kubernetes/e2e/features/delegation/inputs/common.yaml
+	// ref: test/kubernetes/e2e/features/delegation/testdata/common.yaml
 	gatewayPort = 8080
 )
 
-// ref: test/kubernetes/e2e/features/delegation/inputs/common.yaml
+// ref: test/kubernetes/e2e/features/delegation/testdata/common.yaml
 var (
-	commonManifest = filepath.Join(util.MustGetThisDir(), "inputs/common.yaml")
+	commonManifest = filepath.Join(util.MustGetThisDir(), "testdata", "common.yaml")
 	proxyMeta      = metav1.ObjectMeta{
 		Name:      "gloo-proxy-http-gateway",
 		Namespace: "infra",
@@ -47,7 +47,7 @@ var (
 	}
 )
 
-// ref: test/kubernetes/e2e/features/delegation/inputs/basic.yaml
+// ref: test/kubernetes/e2e/features/delegation/testdata/basic.yaml
 var (
 	routeRoot = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -103,12 +103,12 @@ var (
 )
 
 var (
-	basicRoutesManifest                 = filepath.Join(util.MustGetThisDir(), "inputs/basic.yaml")
-	recursiveRoutesManifest             = filepath.Join(util.MustGetThisDir(), "inputs/recursive.yaml")
-	cyclicRoutesManifest                = filepath.Join(util.MustGetThisDir(), "inputs/cyclic.yaml")
-	invalidChildRoutesManifest          = filepath.Join(util.MustGetThisDir(), "inputs/invalid_child.yaml")
-	headerQueryMatchRoutesManifest      = filepath.Join(util.MustGetThisDir(), "inputs/header_query_match.yaml")
-	multipleParentsManifest             = filepath.Join(util.MustGetThisDir(), "inputs/multiple_parents.yaml")
-	invalidChildValidStandaloneManifest = filepath.Join(util.MustGetThisDir(), "inputs/invalid_child_valid_standalone.yaml")
-	unresolvedChildManifest             = filepath.Join(util.MustGetThisDir(), "inputs/unresolved_child.yaml")
+	basicRoutesManifest                 = filepath.Join(util.MustGetThisDir(), "testdata", "basic.yaml")
+	recursiveRoutesManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "recursive.yaml")
+	cyclicRoutesManifest                = filepath.Join(util.MustGetThisDir(), "testdata", "cyclic.yaml")
+	invalidChildRoutesManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "invalid_child.yaml")
+	headerQueryMatchRoutesManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "header_query_match.yaml")
+	multipleParentsManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "multiple_parents.yaml")
+	invalidChildValidStandaloneManifest = filepath.Join(util.MustGetThisDir(), "testdata", "invalid_child_valid_standalone.yaml")
+	unresolvedChildManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "unresolved_child.yaml")
 )
