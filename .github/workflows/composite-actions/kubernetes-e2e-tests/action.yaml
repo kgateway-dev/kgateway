@@ -10,6 +10,11 @@ inputs:
   test-args:
     required: true
     description: The list of arguments passed to the test invocation
+  run-regex:
+    required: true
+    # In the future, it would be preferable to accept this as a list of strings
+    # and to then build the regex from that list
+    description: The regex passed to the test invocation with the -run flag
 
 runs:
   using: "composite"
@@ -19,28 +24,9 @@ runs:
     run: make install-test-tools
   - name: Execute tests
     env:
-      # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
-      # Our goal is to load balance tests in a way that allows quick iteration on PRs
-      # If tests are exceeding the 25-minute limit, please see:
-      # /test/kubernetes/e2e/load_balancing_tests.md
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -timeout=25m
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run ${{ inputs.run-regex }}
       CLUSTER_NAME: ${{ inputs.cluster-name }}
-      TEST_PKG: ./test/kubernetes/e2e/tests
-    shell: bash
-    run: make go-test
-    ## We want to move all tests into the /tests directory
-    ## In the meantime, we rely on defining multiple packages where the tests are defined
-  - name: Execute tests (k8sgateway)
-    env:
-      # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
-      # Our goal is to load balance tests in a way that allows quick iteration on PRs
-      # If tests are exceeding the 25-minute limit, please see:
-      # /test/kubernetes/e2e/load_balancing_tests.md
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -timeout=25m
-      CLUSTER_NAME: ${{ inputs.cluster-name }}
-      ## We want to move all tests into the /tests directory
-      ## In the meantime, we rely on defining multiple packages where the tests are defined
-      TEST_PKG: ./test/kubernetes/e2e/k8sgateway
+      TEST_PKG: ./test/kubernetes/e2e/...
     shell: bash
     run: make go-test
   # TODO: Emit artifacts to shared location on failure

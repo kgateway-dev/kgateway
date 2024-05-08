@@ -46,21 +46,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
+        # Our goal is to load balance tests in a way that allows quick iteration on PRs
+        # If tests are exceeding the 25-minute limit, please see:
+        # /test/kubernetes/e2e/load_balancing_tests.md
         test:
         # May 7th: ~13 minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_one'
-          go-test-args: '-v -tags=cluster_one'
           cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
-          kubectl-version: 'v1.28.4'
           kind-version: 'v0.20.0'
+          kubectl-version: 'v1.28.4'
           helm-version: 'v3.13.2'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '(^TestK8sGateway$)'
+
         # May 7th: ~10 minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_two'
-          go-test-args: '-v -tags=cluster_two'
           cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
-          kubectl-version: 'v1.28.4'
           kind-version: 'v0.20.0'
+          kubectl-version: 'v1.28.4'
           helm-version: 'v3.13.2'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$|^TestK8sGatewayIstio|^TestClassicEdgeGateway$)'
 
     steps:
     - id: auto-succeed-tests
@@ -77,8 +84,8 @@ jobs:
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
         cluster-name: kind
-        kind-version: ${{ matrix.test.kind-version }}
         kind-node-version: ${{ matrix.test.cluster-node-version }}
+        kind-version: ${{ matrix.test.kind-version }}
         kubectl-version: ${{ matrix.test.kubectl-version }}
         helm-version: ${{ matrix.test.helm-version }}
     - id: run-tests
@@ -87,4 +94,5 @@ jobs:
       with:
         cluster-name: kind
         test-args: ${{ matrix.test.go-test-args }}
+        run-regex: ${{ matrix.test.go-test-run-regex }}
 

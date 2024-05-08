@@ -1,9 +1,7 @@
-//go:build cluster_example || all
+package tests
 
 // This file is an example for developers.
 // We intentionally define a build tag that is not selected to run as part of our CI pipeline
-
-package tests
 
 import (
 	"context"

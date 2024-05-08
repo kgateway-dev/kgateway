@@ -1,5 +1,3 @@
-//go:build cluster_two || all
-
 package tests_test
 
 import (
