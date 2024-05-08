@@ -29,7 +29,7 @@ type glooIstioTestingSuite struct {
 }
 
 func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, routingManifestPath string) suite.TestingSuite {
-	routingManifestFile := filepath.Join(routingManifestPath, edgeApisRoutingResourcesFileName)
+	routingManifestFile := filepath.Join(routingManifestPath, EdgeApisRoutingResourcesFileName)
 	return &glooIstioTestingSuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
@@ -37,8 +37,16 @@ func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, ro
 	}
 }
 
+func (s *glooIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest(disableAutomtls bool) string {
+	if disableAutomtls {
+		return filepath.Join(s.routingManifestPath, DisableAutomtlsEdgeApisRoutingResourcesFileName)
+	} else {
+		return filepath.Join(s.routingManifestPath, EdgeApisRoutingResourcesFileName)
+	}
+}
+
 func (s *glooIstioTestingSuite) SetupSuite() {
-	resources := getGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace)
+	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, false, false)
 	err := utils.WriteResourcesToFile(resources, s.routingManifestFile)
 	s.NoError(err, "can write resources to file")
 

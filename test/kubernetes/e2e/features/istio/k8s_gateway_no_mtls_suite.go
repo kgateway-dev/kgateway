@@ -33,13 +33,13 @@ func (s *istioTestingSuite) SetupSuite() {
 	s.NoError(err, "can apply setup manifest")
 
 	// Ensure that the proxy service and deployment are created
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingManifest)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingSvcManifest)
 	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 }
 
 func (s *istioTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingManifest)
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingSvcManifest)
 	s.NoError(err, "can delete k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 
