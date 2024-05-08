@@ -2,7 +2,7 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: headless-vs
-  namespace: classic-edge-test
+  namespace: gloo-system
 spec:
   virtualHost:
     domains:
@@ -14,14 +14,14 @@ spec:
         single:
           upstream:
             name: headless-nginx-upstream
-            namespace: classic-edge-test
+            namespace: gloo-system
 status: {}
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   name: headless-nginx-upstream
-  namespace: classic-edge-test
+  namespace: gloo-system
 spec:
   kube:
     selector:
