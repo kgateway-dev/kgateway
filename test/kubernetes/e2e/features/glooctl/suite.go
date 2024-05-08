@@ -37,7 +37,8 @@ func (s *testingSuite) TearDownSuite() {
 }
 
 func (s *testingSuite) TestCheckCRDsErrorsForMismatch() {
-	err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx, "--version", "1.9.0")
+	err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--version", "1.9.0")
 	s.Error(err, "crds should be out of date")
 	s.Contains(err.Error(), "One or more CRDs are out of date")
 }
@@ -82,7 +83,8 @@ func (s *testingSuite) TestCheckKubeContext() {
 	s.Contains(err.Error(), "Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"invalid-context\" does not exist")
 
 	// When passing the kube-context of the running cluster, `glooctl check` should succeed
-	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx, "--kube-context", s.testInstallation.TestCluster.ClusterContext.KubeContext)
+	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.TestCluster.ClusterContext.KubeContext)
 	s.NoError(err)
 }
 
