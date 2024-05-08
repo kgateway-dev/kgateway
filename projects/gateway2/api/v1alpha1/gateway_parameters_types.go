@@ -37,7 +37,7 @@ type KubernetesProxyConfig struct {
 	// Configuration for the container running Envoy.
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
 	// Configuration for the pods that will be created.
-	PodTemplate *Pod `json:"podTempalte,omitempty"`
+	PodTemplate *Pod `json:"podTemplate,omitempty"`
 	// Configuration for the Kubernetes Service that exposes the Envoy proxy over
 	// the network.
 	Service *Service `json:"service,omitempty"`

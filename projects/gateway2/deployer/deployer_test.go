@@ -22,7 +22,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
@@ -333,7 +332,7 @@ var _ = Describe("Deployer", func() {
 								ExtraAnnotations: map[string]string{
 									"foo": "bar",
 								},
-								SecurityContext: &v1.PodSecurityContext{
+								SecurityContext: &corev1.PodSecurityContext{
 									RunAsUser:  func() *int64 { var i int64 = 1; return &i }(),
 									RunAsGroup: func() *int64 { var i int64 = 2; return &i }(),
 								},
