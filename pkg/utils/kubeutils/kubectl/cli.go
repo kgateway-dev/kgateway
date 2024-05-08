@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -151,20 +150,6 @@ func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, ex
 		fmt.Sprintf("deployment/%s", deployment),
 	}, extraArgs...)
 	return c.RunCommand(ctx, rolloutArgs...)
-}
-
-// ScaleDeployment scales the deployment to the desired number of replicas
-func (c *Cli) ScaleDeployment(ctx context.Context, deploymentMeta types.NamespacedName, replicas int) error {
-	scaleArgs := []string{
-		"scale",
-		"deployment",
-		deploymentMeta.Name,
-		"-n",
-		deploymentMeta.Namespace,
-		"--replicas",
-		strconv.Itoa(replicas),
-	}
-	return c.RunCommand(ctx, scaleArgs...)
 }
 
 // StartPortForward creates a PortForwarder based on the provides options, starts it, and returns the PortForwarder
