@@ -170,32 +170,6 @@ func ExtraArgs(args ...string) func(*InstallOptions) {
 	}
 }
 
-// Inject Istio into the gateway
-func (h *SoloTestHelper) InjectIstio(ctx context.Context, deploymentType string, timeout time.Duration, options ...InstallOption) error {
-	log.Printf("glooctl inject istio")
-	glooctlCommand := []string{
-		filepath.Join(h.BuildAssetDir, h.GlooctlExecName),
-		"istio", "inject", "-n", h.InstallNamespace,
-	}
-	if h.Verbose {
-		glooctlCommand = append(glooctlCommand, "-v")
-	}
-
-	io := &InstallOptions{
-		GlooctlCommand: glooctlCommand,
-		Verbose:        true,
-	}
-	for _, opt := range options {
-		opt(io)
-	}
-
-	if err := glooctlInstallWithTimeout(h.RootDir, io, time.Minute*2); err != nil {
-		return errors.Wrapf(err, "error running glooctl install command")
-	}
-
-	return nil
-}
-
 // Installs Gloo (and, optionally, the test server)
 func (h *SoloTestHelper) InstallGloo(ctx context.Context, deploymentType string, timeout time.Duration, options ...InstallOption) error {
 	log.Printf("installing gloo in [%s] mode to namespace [%s]", deploymentType, h.InstallNamespace)
