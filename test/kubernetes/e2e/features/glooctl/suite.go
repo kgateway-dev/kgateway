@@ -3,8 +3,9 @@ package glooctl
 import (
 	"context"
 	"fmt"
-	"github.com/onsi/gomega"
 	"os"
+
+	"github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"

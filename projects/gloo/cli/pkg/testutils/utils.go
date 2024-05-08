@@ -3,11 +3,12 @@ package testutils
 import (
 	"bytes"
 	"context"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/spf13/cobra"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"

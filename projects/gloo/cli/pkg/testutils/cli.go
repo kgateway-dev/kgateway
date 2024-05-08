@@ -2,8 +2,9 @@ package testutils
 
 import (
 	"context"
-	"github.com/spf13/cobra"
 	"strings"
+
+	"github.com/spf13/cobra"
 
 	cli "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 )
