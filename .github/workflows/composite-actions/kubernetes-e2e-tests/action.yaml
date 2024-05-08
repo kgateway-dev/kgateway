@@ -3,37 +3,46 @@ name: Kubernetes End-to-End tests
 # These tests are located in the /test/kubernetes/e2e directory
 description: Kubernetes End-to-End tests
 
+inputs:
+  cluster-name:
+    required: true
+    description: The name of the KinD cluster
+  test-args:
+    required: true
+    description: The list of arguments passed to the test invocation
+  run-regex:
+    required: true
+    # In the future, it would be preferable to accept this as a list of strings
+    # and to then build the regex from that list
+    description: The regex passed to the test invocation with the -run flag
+
 runs:
   using: "composite"
   steps:
-  - name: Prep Go Runner
-    uses: ./.github/workflows/composite-actions/prep-go-runner
-  - name: Install kind
-    uses: helm/kind-action@v1.5.0
-    with:
-      install_only: true
-      version: ${{ matrix.tool-versions.kind }}
-  - uses: azure/setup-kubectl@v3
-    id: kubectl
-    with:
-      version: ${{ matrix.tool-versions.kubectl }}
-  - uses: azure/setup-helm@v3
-    with:
-      version: ${{ matrix.tool-versions.helm }}
-  - name: Setup test env
-    shell: bash
-    env:
-      CLUSTER_NAME: 'kind'
-      CLUSTER_NODE_VERSION: ${{ matrix.tool-versions.cluster-node }}
-    run: ./ci/kind/setup-kind.sh
   - name: Install test tools
     shell: bash
     run: make install-test-tools
   - name: Execute tests
     env:
-      GO_TEST_USER_ARGS: ${{ matrix.test-suites.go-test-args }}
-      CLUSTER_NAME: 'kind'
-      TEST_PKG: test/kubernetes/e2e/${{ matrix.test-suites.package }}
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
+      CLUSTER_NAME: ${{ inputs.cluster-name }}
+      TEST_PKG: ./test/kubernetes/e2e/tests
+    shell: bash
+    run: make go-test
+  - name: Execute tests (k8s gateway)
+    env:
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
+      CLUSTER_NAME: ${{ inputs.cluster-name }}
+      # We should migrate tests out of this directory, into the /tests directory
+      TEST_PKG: ./test/kubernetes/e2e/k8sgateway
+    shell: bash
+    run: make go-test
+  - name: Execute tests (edge gateway)
+    env:
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
+      CLUSTER_NAME: ${{ inputs.cluster-name }}
+      # We should migrate tests out of this directory, into the /tests directory
+      TEST_PKG: ./test/kubernetes/e2e/gloo_gateway_edge
     shell: bash
     run: make go-test
   # TODO: Emit artifacts to shared location on failure
