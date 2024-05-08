@@ -55,8 +55,8 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 	// The name here is important for debuggability
 	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName
 	// In this case, the output would be:
-	// TestBasicInstallation/Example/{test name}
-	// We prefer to follow CamelCase convention for names of these sub-tests
+	// TestInstallationWithDebugLogLevel/Example/{test name}
+	// We prefer to follow CamelCase convention for names of these subtests
 	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})
