@@ -7,3 +7,21 @@ CVE-2022-1996
 # This CVE is not exploitable in Gloo Edge, and a fix is not yet available in the library
 # https://github.com/solo-io/solo-projects/issues/4016
 CVE-2022-37315
+
+# https://github.com/advisories/GHSA-4374-p667-p6c8
+# This HTTP2 vulnerability is not exploitable in Gloo Edge as the kubectl image is only used for jobs, not serving traffic
+# A fix is not available in the supported Kubernetes version
+# https://github.com/solo-io/gloo/issues/9443
+CVE-2023-39325
+
+# https://github.com/advisories/GHSA-vvjp-q62m-2vph
+# A fix is not available in the supported Kubernetes version and only affects Windows filepaths
+# https://github.com/solo-io/gloo/issues/9443
+CVE-2023-45283
+
+# https://github.com/advisories/GHSA-4v7x-pqxf-cx7m
+# This vulnerability is resolved on all images except kubectl.
+# This HTTP2 vulnerability is not exploitable in Gloo Edge as the kubectl image is only used for jobs, not serving traffic.
+# A fix is not available in the supported Kubernetes version
+# https://github.com/solo-io/gloo/issues/9443
+CVE-2023-45288
