@@ -2,6 +2,7 @@ package headless_svc
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/stretchr/testify/suite"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,20 +21,26 @@ type k8sGatewaySuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
+
+	// routingManifestFile is the file where the generated manifest files will be written for routing resources for the test suite
+	routingManifestFile string
 }
 
-func NewK8sGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewK8sGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation, outputDirectory string) suite.TestingSuite {
+	routingManifestFile := filepath.Join(outputDirectory, K8sApiRoutingGeneratedFileName)
 	return &k8sGatewaySuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		ctx:                 ctx,
+		testInstallation:    testInst,
+		routingManifestFile: routingManifestFile,
 	}
 }
 
 // SetupSuite generates manifest files for the test suite
 func (s *k8sGatewaySuite) SetupSuite() {
 	// use the k8s gateway api resources
-	resources := []client.Object{gw, headlessSvcHTTPRoute}
-	err := utils.WriteResourcesToFile(resources, k8sApiRoutingManifest)
+	resources := []client.Object{K8sGateway, HeadlessSvcHTTPRoute}
+
+	err := utils.WriteResourcesToFile(resources, s.routingManifestFile)
 	s.Require().NoError(err, "can write resources to file")
 }
 
@@ -43,7 +50,7 @@ func (s *k8sGatewaySuite) TestConfigureRoutingHeadlessSvc() {
 		s.NoError(err, "can delete setup manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, headlessService)
 
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sApiRoutingManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.routingManifestFile)
 		s.NoError(err, "can delete setup k8s routing manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, k8sApiProxyDeployment, k8sApiProxyService)
 	})
@@ -52,7 +59,7 @@ func (s *k8sGatewaySuite) TestConfigureRoutingHeadlessSvc() {
 	s.Assert().NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sApiRoutingManifest)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
 	s.NoError(err, "can setup k8s routing manifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, k8sApiProxyDeployment, k8sApiProxyService)
