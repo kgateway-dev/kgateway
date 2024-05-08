@@ -170,7 +170,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			if staticMetadata := virtualHost.GetMetadataStatic(); staticMetadata != nil {
 				validation.AppendVirtualHostErrorWithMetadata(vhostReport,
 					validationapi.VirtualHostReport_Error_ProcessingError,
-					fmt.Sprintf("invalid virtual host [%s] while processing plugin %T: %s", virtualHost.GetName(), plugin, err.Error()),
+					fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
 					staticMetadata,
 				)
 				continue
@@ -179,7 +179,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			// Otherwise with no metadata, report the error without any source info
 			validation.AppendVirtualHostError(vhostReport,
 				validationapi.VirtualHostReport_Error_ProcessingError,
-				fmt.Sprintf("invalid virtual host [%s] while processing plugin %T: %s", virtualHost.GetName(), plugin, err.Error()),
+				fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
 			)
 		}
 	}

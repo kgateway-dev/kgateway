@@ -1,7 +1,7 @@
 package defaults
 
 const (
-	KubeGatewayReporter = "gloo-kube-gateway"
 	GlooReporter        = "gloo"
-	GlooGatewayReporter = "gateway"
+	EdgeGatewayReporter = "gateway"
+	KubeGatewayReporter = "gloo-kube-gateway"
 )
