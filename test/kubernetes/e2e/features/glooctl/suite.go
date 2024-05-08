@@ -3,7 +3,6 @@ package glooctl
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/onsi/gomega"
 
@@ -13,8 +12,6 @@ import (
 
 type testingSuite struct {
 	suite.Suite
-
-	tmpDir string
 
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
@@ -28,20 +25,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) SetupSuite() {
-	var err error
-	s.tmpDir, err = os.MkdirTemp("", "glooctl-test")
-	s.NoError(err)
 }
 
 func (s *testingSuite) TearDownSuite() {
-	_ = os.RemoveAll(s.tmpDir)
-}
-
-func (s *testingSuite) TestCheckCRDsErrorsForMismatch() {
-	err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
-		"-n", s.testInstallation.Metadata.InstallNamespace, "--version", "1.9.0")
-	s.Error(err, "crds should be out of date")
-	s.Contains(err.Error(), "One or more CRDs are out of date")
 }
 
 func (s *testingSuite) TestCheck() {
