@@ -624,9 +624,9 @@ var _ = Describe("AWS Lambda", func() {
 
 			It("should be able to call lambda with unwrapAsApiGateway", testProxyWithUnwrapAsApiGateway)
 
-			FIt("should be able to call lambda with unwrapAsApiGateway with non-string headers in response", testProxyWithUnwrapAsApiGatewayNonStringHeaderResponse)
+			It("should be able to call lambda with unwrapAsApiGateway with non-string headers in response", testProxyWithUnwrapAsApiGatewayNonStringHeaderResponse)
 
-			FIt("should be able to call lambda with unwrapAsApiGateway with malformed headers in response", testProxyWithUnwrapAsApiGatewayMalformedHeaderResponse)
+			It("should be able to call lambda with unwrapAsApiGateway with malformed headers in response", testProxyWithUnwrapAsApiGatewayMalformedHeaderResponse)
 
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
