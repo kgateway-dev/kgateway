@@ -41,7 +41,6 @@ func (s *istioInjectTestingSuite) TestCanInject() {
 		"--istio-namespace", "istio-system",
 		"--kube-context", s.testInstallation.TestCluster.ClusterContext.KubeContext)
 	out, err := injectCmd.CombinedOutput()
-	println(string(out))
 	s.Assert().NoError(err, "Failed to inject istio")
 	s.Assert().Contains(string(out), "Istio injection was successful!")
 

@@ -23,25 +23,23 @@ type istioUninjectTestingSuite struct {
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
 
-	glooctlExecName string
+	glooctlPath string
 }
 
 func NewIstioUninjectTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, glooctlPath string) suite.TestingSuite {
-	return &istioInjectTestingSuite{
+	return &istioUninjectTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 		glooctlPath:      glooctlPath,
 	}
 }
 
-func (s *istioUninjectTestingSuite) TestCanInject() {
+func (s *istioUninjectTestingSuite) TestCanUninject() {
 	// Uninject istio with glooctl
-	injectCmd := exec.Command(s.glooctlExecName, "istio", "uninject",
+	uninjectCmd := exec.Command(s.glooctlPath, "istio", "uninject",
 		"--namespace", s.testInstallation.Metadata.InstallNamespace,
-		"--istio-namespace", "istio-system",
 		"--kube-context", s.testInstallation.TestCluster.ClusterContext.KubeContext)
-	out, err := injectCmd.CombinedOutput()
-	println(string(out))
+	out, err := uninjectCmd.CombinedOutput()
 	s.Assert().NoError(err, "Failed to uninject istio")
 	s.Assert().Contains(string(out), "Istio was successfully uninjected")
 
