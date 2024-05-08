@@ -192,6 +192,9 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
 			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
+			IstioSDS: &helmIstioSds{
+				Enabled: &d.inputs.IstioValues.SDSEnabled,
+			},
 		},
 	}
 

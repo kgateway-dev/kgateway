@@ -48,6 +48,9 @@ type helmGateway struct {
 
 	// serviceaccount values
 	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
+
+	//TODO(npolshak) Remove this once default GatewayParameters are supported
+	IstioSDS *helmIstioSds `json:"istioSDS,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port

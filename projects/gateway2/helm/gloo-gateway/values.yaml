@@ -33,6 +33,9 @@ gateway:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
+  # TODO(npolshak) Remove this once default GatewayParameters are supported
+  istioSDS:
+    enabled: false
   sds:
     image:
       registry: quay.io/solo-io

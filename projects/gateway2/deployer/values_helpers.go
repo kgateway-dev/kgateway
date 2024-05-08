@@ -11,6 +11,7 @@ import (
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"golang.org/x/exp/slices"
+	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -106,7 +107,7 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 	// if type is not set, it will default to 0 ("ClusterIP")
 	return &helmSds{
 		Image:           getImage(sdsConfig.GetSdsContainer().GetImage()),
-		LogLevel:        ptrTo(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
+		LogLevel:        ptr.To(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
 		Resources:       sdsConfig.GetSdsContainer().GetResources(),
 		SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
 
@@ -116,13 +117,24 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 
 // Convert istio values from GatewayParameters into helm values to be used by the deployer.
 func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
-	return &helmIstioSds{
-		Enabled:         ptrTo(istioConfig.GetEnabled().GetValue()),
-		Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
-		LogLevel:        ptrTo(istioConfig.GetIstioContainer().GetLogLevel()),
-		Resources:       istioConfig.GetIstioContainer().GetResources(),
-		SecurityContext: istioConfig.GetIstioContainer().GetSecurityContext(),
+	var istioVals *helmIstioSds
+
+	// if istioConfig is nil, istio sds is disabled and values can be ignored
+	if istioConfig != nil && istioConfig.GetEnabled() != nil {
+		istioVals = &helmIstioSds{
+			Enabled:         ptr.To(istioConfig.GetEnabled().GetValue()),
+			Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
+			LogLevel:        ptr.To(istioConfig.GetIstioContainer().GetLogLevel()),
+			Resources:       istioConfig.GetIstioContainer().GetResources(),
+			SecurityContext: istioConfig.GetIstioContainer().GetSecurityContext(),
+		}
+	} else {
+		// if istioConfig is nil, istio sds is disabled
+		istioVals = &helmIstioSds{
+			Enabled: ptr.To(false),
+		}
 	}
+	return istioVals
 }
 
 // Convert an image from GatewayParameters into a helm image to be used by the deployer.
@@ -132,7 +144,7 @@ func getImage(image *v1alpha1kube.Image) *helmImage {
 		Repository: &image.Repository,
 		Tag:        &image.Tag,
 		Digest:     &image.Digest,
-		PullPolicy: ptrTo(image.GetPullPolicy().String()),
+		PullPolicy: ptr.To(image.GetPullPolicy().String()),
 	}
 }
 
@@ -205,8 +217,4 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ","), nil
-}
-
-func ptrTo[T any](a T) *T {
-	return &a
 }

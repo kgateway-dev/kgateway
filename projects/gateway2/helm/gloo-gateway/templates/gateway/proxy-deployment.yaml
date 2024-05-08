@@ -81,9 +81,9 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
-{{- if $gateway.istioSDS.enabled }}
+{{- if or $gateway.istioSDS.enabled $gateway.sds.istio.enabled }}
       - name: sds
-        image: "{{ template "gloo-gateway.gateway.sds.image" $gateway.sds.image }}"
+        image: {{ $gateway.sds.image }}
         imagePullPolicy: IfNotPresent
         env:
           - name: POD_NAME
@@ -120,7 +120,7 @@ spec:
           - mountPath: /etc/envoy
             name: envoy-config
       - name: istio-proxy
-        image: "{{ template "gloo-gateway.gateway.sds.istio.image" $gateway.sds.istio.image }}"
+        image: {{ $gateway.sds.istio.image }}
         # TODO(npolshak): Add configurable envoySidecarResources
         args:
           - proxy
