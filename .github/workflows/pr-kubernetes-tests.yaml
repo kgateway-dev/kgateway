@@ -58,7 +58,7 @@ jobs:
           kubectl-version: 'v1.28.4'
           helm-version: 'v3.13.2'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGateway$$)'
+          go-test-run-regex: '(^TestK8sGateway\$)'
 
         # May 7th: ~10 minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_two'
@@ -67,7 +67,7 @@ jobs:
           kubectl-version: 'v1.28.4'
           helm-version: 'v3.13.2'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestK8sGatewayIstio$$|^TestClassicEdgeGateway$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls\$|^TestK8sGatewayIstio\$|^TestClassicEdgeGateway\$)'
 
     steps:
     - id: auto-succeed-tests
@@ -80,7 +80,8 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
     - id: setup-kind-cluster
       name: Setup KinD Cluster
-      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      if: false
+      # if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
         cluster-name: kind
