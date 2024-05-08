@@ -108,14 +108,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should translate a basic configuration with child specifying matching parentRefs", func() {
@@ -135,14 +131,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should translate a basic configuration with child specifying mismatched parentRefs", func() {
@@ -162,14 +154,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should translate a configuration with multiple child routes", func() {
@@ -189,14 +177,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should detect invalid hostname on a delegatee route", func() {
@@ -243,14 +227,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should not translate a cyclic child route", func() {
@@ -270,14 +250,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should not translate a recursive cyclic child route", func() {
@@ -297,14 +273,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should translate only matching child routes", func() {
@@ -324,14 +296,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should translate delegatee routes with multiple parents", func() {
@@ -351,14 +319,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 
 		It("should translate a route that is valid standalone but invalid as a delegatee", func() {
@@ -378,14 +342,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).To(HaveLen(1))
-			Expect(results).To(HaveKey(types.NamespacedName{
+			Expect(results).To(HaveKeyWithValue(types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
-			}))
-			Expect(results[types.NamespacedName{
-				Namespace: "infra",
-				Name:      "example-gateway",
-			}]).To(BeTrue())
+			}, BeTrue()))
 		})
 	})
 })

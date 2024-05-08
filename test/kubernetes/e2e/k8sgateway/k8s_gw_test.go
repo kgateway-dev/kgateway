@@ -2,6 +2,7 @@ package k8sgateway_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -34,6 +36,18 @@ func TestK8sGateway(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
+
+	// create a tmp output directory for generated resources
+	tempOutputDir, err := os.MkdirTemp("", testInstallation.Metadata.InstallNamespace)
+	if err != nil {
+		t.Fatalf("Failed to create temporary directory: %v", err)
+	}
+	defer func() {
+		// Delete the temporary directory after the test completes
+		if err := os.RemoveAll(tempOutputDir); err != nil {
+			t.Errorf("Failed to remove temporary directory: %v", err)
+		}
+	}()
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
@@ -61,12 +75,16 @@ func TestK8sGateway(t *testing.T) {
 		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 
+	t.Run("VirtualHostOptions", func(t *testing.T) {
+		suite.Run(t, virtualhost_options.NewTestingSuite(ctx, testInstallation))
+	})
+
 	t.Run("Upstreams", func(t *testing.T) {
 		suite.Run(t, upstreams.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
+		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation, tempOutputDir))
 	})
 
 	t.Run("PortRouting", func(t *testing.T) {
