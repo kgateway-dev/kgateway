@@ -23,6 +23,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -51,7 +52,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 		routeOptionClient, _ = sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
 		statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
-		statusReporter = reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+		statusReporter = reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	})
 
 	AfterEach(func() {

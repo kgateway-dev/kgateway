@@ -11,6 +11,12 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    - protocol: HTTP
+      port: 8081
+      name: other
+      allowedRoutes:
+        namespaces:
+          from: Same
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -25,21 +31,6 @@ spec:
     - backendRefs:
         - name: example-svc
           port: 8080
----
-apiVersion: gateway.solo.io/v1
-kind: VirtualHostOption
-metadata:
-  name: remove-content-length
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: gw
-    namespace: default
-  options:
-    headerManipulation:
-      responseHeadersToRemove:
-        - "content-length"
 ---
 apiVersion: v1
 kind: Service
