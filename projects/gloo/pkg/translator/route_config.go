@@ -164,10 +164,22 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run the plugins
 	for _, plugin := range h.pluginRegistry.GetVirtualHostPlugins() {
 		if err := plugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
-			validation.AppendVirtualHostError(
-				vhostReport,
+			// Check if the incoming v1.VirtualHost has metadata to track the 'source' object
+			// that created it. If we do have this metadata, include it with
+			// the virtual host error, so that other components can easily find it
+			if staticMetadata := virtualHost.GetMetadataStatic(); staticMetadata != nil {
+				validation.AppendVirtualHostErrorWithMetadata(vhostReport,
+					validationapi.VirtualHostReport_Error_ProcessingError,
+					fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
+					staticMetadata,
+				)
+				continue
+			}
+
+			// Otherwise with no metadata, report the error without any source info
+			validation.AppendVirtualHostError(vhostReport,
 				validationapi.VirtualHostReport_Error_ProcessingError,
-				fmt.Sprintf("invalid virtual host [%s]: %v", virtualHost.GetName(), err.Error()),
+				fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
 			)
 		}
 	}
