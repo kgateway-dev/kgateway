@@ -95,27 +95,27 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 func (s *tsuite) TestBasic() {
 	// Assert traffic to team1 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 }
 
 func (s *tsuite) TestRecursive() {
 	// Assert traffic to team1 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 }
 
 func (s *tsuite) TestCyclic() {
 	// Assert traffic to team1 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route fails with HTTP 404 as it is a cyclic route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
@@ -132,7 +132,7 @@ func (s *tsuite) TestCyclic() {
 func (s *tsuite) TestInvalidChild() {
 	// Assert traffic to team1 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route fails with HTTP 404 as the route is invalid due to specifying a hostname on the child route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
@@ -155,7 +155,7 @@ func (s *tsuite) TestHeaderQueryMatch() {
 			curl.WithHeader("headerX", "valX"),
 			curl.WithQueryParameters(map[string]string{"query1": "val1", "queryX": "valX"}),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route fails with HTTP 404 as it does not match the parent's header and query parameters
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
@@ -175,7 +175,7 @@ func (s *tsuite) TestMultipleParents() {
 			curl.WithPath(pathTeam1),
 			curl.WithHostHeader(routeParent1Host),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to parent1.com/anything/team2
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
@@ -184,7 +184,7 @@ func (s *tsuite) TestMultipleParents() {
 			curl.WithPath(pathTeam2),
 			curl.WithHostHeader(routeParent1Host),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 
 	// Assert traffic to parent2.com/anything/team1
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
@@ -193,7 +193,7 @@ func (s *tsuite) TestMultipleParents() {
 			curl.WithPath(pathTeam1),
 			curl.WithHostHeader(routeParent2Host),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to parent2.com/anything/team2 fails as it is not selected by parent2 route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
@@ -213,7 +213,7 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 			curl.WithPath(pathTeam1),
 			curl.WithHostHeader(routeParentHost),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route on parent hostname fails with HTTP 404 as the route is invalid due to specifying a hostname on the child route
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
@@ -231,7 +231,7 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 			curl.WithPath(pathTeam2),
 			curl.WithHostHeader(routeTeam2Host),
 		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("anything")})
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 
 	invalidRoute := &gwv1.HTTPRoute{}
 	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,

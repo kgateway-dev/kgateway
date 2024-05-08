@@ -16,6 +16,7 @@ import (
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 // StartFunc represents a function that will be called with the initialized bootstrap.Opts
@@ -67,7 +68,7 @@ func K8sGatewayControllerStartFunc(
 		}
 
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
+		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
 
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
