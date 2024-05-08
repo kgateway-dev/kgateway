@@ -1,8 +1,6 @@
 package runtime
 
 import (
-	"os"
-
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -29,8 +27,8 @@ func NewContext() Context {
 	}
 
 	return Context{
-		// ClusterName is derived from the environment variable
-		ClusterName: os.Getenv(testutils.ClusterName),
+		// ClusterName is derived from the environment variable, defaulting to "kind"
+		ClusterName: envutils.GetOrDefault(testutils.ClusterName, "kind"),
 
 		RunSource: runSource,
 	}

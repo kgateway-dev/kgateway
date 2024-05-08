@@ -28,13 +28,7 @@ import (
 // The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
 // in favor of using the exact tool that users rely on
 func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	rootDir := filepath.Join(cwd, "../../../../")
-	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, rootDir, installation.Metadata.InstallNamespace)
+	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, GlooDirectory(), installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
 	}
