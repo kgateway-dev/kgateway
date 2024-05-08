@@ -1,4 +1,7 @@
-package example
+package tests
+
+// This file is an example for developers.
+// We intentionally define a build tag that is not selected to run as part of our CI pipeline
 
 import (
 	"context"
@@ -47,6 +50,11 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
+	// The name here is important for debuggability
+	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName
+	// In this case, the output would be:
+	// TestInstallationWithDebugLogLevel/Example/{test name}
+	// We prefer to follow CamelCase convention for names of these subtests
 	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))
 	})

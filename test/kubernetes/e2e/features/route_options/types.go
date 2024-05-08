@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	targetRefManifest      = filepath.Join(util.MustGetThisDir(), "inputs/fault-injection-targetref.yaml")
-	filterExtensioManifest = filepath.Join(util.MustGetThisDir(), "inputs/fault-injection-filter-extension.yaml")
+	targetRefManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "fault-injection-targetref.yaml")
+	filterExtensioManifest = filepath.Join(util.MustGetThisDir(), "testdata", "fault-injection-filter-extension.yaml")
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
