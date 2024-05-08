@@ -314,21 +314,21 @@ var _ = Describe("Deployer", func() {
 								Replicas: &three,
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+								Bootstrap: gw2_v1alpha1.EnvoyBootstrap{
 									LogLevel: "debug",
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
-								Image: &v1alpha1.Image{
+								Image: v1alpha1.Image{
 									Registry:   "foo",
 									Repository: "bar",
 									Tag:        "bat",
 									PullPolicy: corev1.PullAlways,
 								},
 							},
-							PodTemplate: &v1alpha1.Pod{
+							PodTemplate: v1alpha1.Pod{
 								ExtraAnnotations: map[string]string{
 									"foo": "bar",
 								},
@@ -337,7 +337,7 @@ var _ = Describe("Deployer", func() {
 									RunAsGroup: func() *int64 { var i int64 = 2; return &i }(),
 								},
 							},
-							Service: &v1alpha1.Service{
+							Service: v1alpha1.Service{
 								Type:      corev1.ServiceTypeClusterIP,
 								ClusterIP: "99.99.99.99",
 								ExtraAnnotations: map[string]string{

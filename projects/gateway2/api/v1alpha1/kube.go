@@ -10,7 +10,7 @@ type Autoscaling struct {
 	// workload to match demand. See
 	// https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 	// for details.
-	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontal_pod_autoscaler,omitempty"`
+	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty"`
 }
 
 // Horizontal pod autoscaling configuration. See
@@ -19,18 +19,18 @@ type Autoscaling struct {
 type HorizontalPodAutoscaler struct {
 	// The lower limit for the number of replicas to which the autoscaler can
 	// scale down. Defaults to 1.
-	MinReplicas *uint32 `json:"min_replicas,omitempty"`
+	MinReplicas *uint32 `json:"minReplicas,omitempty"`
 	// The upper limit for the number of replicas to which the autoscaler can
 	// scale up. Cannot be less than `minReplicas`. Defaults to 100.
-	MaxReplicas *uint32 `json:"max_replicas,omitempty"`
+	MaxReplicas *uint32 `json:"maxReplicas,omitempty"`
 	// The target value of the average CPU utilization across all relevant pods,
 	// represented as a percentage of the requested value of the resource for the
 	// pods. Defaults to 80.
-	TargetCpuUtilizationPercentage *uint32 `json:"target_cpu_utilization_percentage,omitempty"`
+	TargetCpuUtilizationPercentage *uint32 `json:"targetCpuUtilizationPercentage,omitempty"`
 	// The target value of the average memory utilization across all relevant
 	// pods, represented as a percentage of the requested value of the resource
 	// for the pods. Defaults to 80.
-	TargetMemoryUtilizationPercentage *uint32 `json:"target_memory_utilization_percentage,omitempty"`
+	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
 // A container image. See https://kubernetes.io/docs/concepts/containers/images
@@ -73,30 +73,30 @@ type Service struct {
 	// on the implications of setting `clusterIP`.
 	ClusterIP string `json:"clusterIP,omitempty"`
 	// Additional labels to add to the Service object metadata.
-	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Service object metadata.
-	ExtraAnnotations map[string]string `json:"extra_annotations,omitempty"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
-	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Pod object metadata.
-	ExtraAnnotations map[string]string `json:"extra_annotations,omitempty"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	// The pod security context. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
 	// for details.
-	SecurityContext *corev1.PodSecurityContext `json:"security_context,omitempty"`
+	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty"`
 	// An optional list of references to secrets in the same namespace to use for
 	// pulling any of the images used by this Pod spec. See
 	// https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 	// for details.
-	ImagePullSecrets []corev1.LocalObjectReference `json:"image_pull_secrets,omitempty"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// A selector which must be true for the pod to fit on a node. See
 	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
 	// details.
-	NodeSelector map[string]string `json:"node_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3"`
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// If specified, the pod's scheduling constraints. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core
 	// for details.

@@ -37,12 +37,12 @@ type KubernetesProxyConfig struct {
 	// Configuration for the container running Envoy.
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
 	// Configuration for the pods that will be created.
-	PodTemplate *Pod `json:"podTemplate,omitempty"`
+	PodTemplate Pod `json:"podTemplate,omitempty"`
 	// Configuration for the Kubernetes Service that exposes the Envoy proxy over
 	// the network.
-	Service *Service `json:"service,omitempty"`
+	Service Service `json:"service,omitempty"`
 	// Autoscaling configuration.
-	Autoscaling *Autoscaling `json:"autoscaling,omitempty"`
+	Autoscaling Autoscaling `json:"autoscaling,omitempty"`
 }
 
 type ProxyDeployment struct {
@@ -53,7 +53,7 @@ type ProxyDeployment struct {
 type EnvoyContainer struct {
 
 	// Initial envoy configuration.
-	Bootstrap *EnvoyBootstrap `json:"bootstrap,omitempty"`
+	Bootstrap EnvoyBootstrap `json:"bootstrap,omitempty"`
 	// The envoy container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
@@ -64,15 +64,15 @@ type EnvoyContainer struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	Image *Image `json:"image,omitempty"`
+	Image Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
-	SecurityContext *corev1.SecurityContext `json:"security_context,omitempty"`
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+	Resources ResourceRequirements `json:"resources,omitempty"`
 }
 type EnvoyBootstrap struct {
 
@@ -80,7 +80,7 @@ type EnvoyBootstrap struct {
 	// "critical" and "off". Defaults to "info". See
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
 	// for more information.
-	LogLevel string `json:"log_level,omitempty"`
+	LogLevel string `json:"logLevel,omitempty"`
 	// Envoy log levels for specific components. The keys are component names and
 	// the values are one of "trace", "debug", "info", "warn", "error",
 	// "critical", or "off", e.g.
@@ -97,7 +97,7 @@ type EnvoyBootstrap struct {
 	// for more information.
 	//
 	// Note: the keys and values cannot be empty, but they are not otherwise validated.
-	ComponentLogLevels map[string]string `json:"component_log_levels,omitempty"`
+	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
 }
 
 func init() {

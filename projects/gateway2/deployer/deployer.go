@@ -218,14 +218,14 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	svcConfig := kubeProxyConfig.Service
 
 	// deployment values
-	autoscalingVals := getAutoscalingValues(kubeProxyConfig.Autoscaling)
+	autoscalingVals := getAutoscalingValues(&kubeProxyConfig.Autoscaling)
 	vals.Gateway.Autoscaling = autoscalingVals
 	if autoscalingVals == nil && deployConfig != nil {
 		vals.Gateway.ReplicaCount = deployConfig.Replicas
 	}
 
 	// service values
-	vals.Gateway.Service = getServiceValues(svcConfig)
+	vals.Gateway.Service = getServiceValues(&svcConfig)
 
 	// pod template values
 	vals.Gateway.ExtraPodAnnotations = podConfig.ExtraAnnotations
@@ -246,9 +246,9 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 		return nil, err
 	}
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
-	vals.Gateway.Resources = envoyContainerConfig.Resources
+	vals.Gateway.Resources = &envoyContainerConfig.Resources
 	vals.Gateway.SecurityContext = envoyContainerConfig.SecurityContext
-	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.Image)
+	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), &envoyContainerConfig.Image)
 
 	return vals, nil
 }

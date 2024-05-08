@@ -49,33 +49,33 @@ spec:
                   autoscaling:
                     description: Autoscaling configuration.
                     properties:
-                      horizontal_pod_autoscaler:
+                      horizontalPodAutoscaler:
                         description: |-
                           If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
                           workload to match demand. See
                           https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
                           for details.
                         properties:
-                          max_replicas:
+                          maxReplicas:
                             description: |-
                               The upper limit for the number of replicas to which the autoscaler can
                               scale up. Cannot be less than `minReplicas`. Defaults to 100.
                             format: int32
                             type: integer
-                          min_replicas:
+                          minReplicas:
                             description: |-
                               The lower limit for the number of replicas to which the autoscaler can
                               scale down. Defaults to 1.
                             format: int32
                             type: integer
-                          target_cpu_utilization_percentage:
+                          targetCpuUtilizationPercentage:
                             description: |-
                               The target value of the average CPU utilization across all relevant pods,
                               represented as a percentage of the requested value of the resource for the
                               pods. Defaults to 80.
                             format: int32
                             type: integer
-                          target_memory_utilization_percentage:
+                          targetMemoryUtilizationPercentage:
                             description: |-
                               The target value of the average memory utilization across all relevant
                               pods, represented as a percentage of the requested value of the resource
@@ -97,7 +97,7 @@ spec:
                       bootstrap:
                         description: Initial envoy configuration.
                         properties:
-                          component_log_levels:
+                          componentLogLevels:
                             additionalProperties:
                               type: string
                             description: "Envoy log levels for specific components.
@@ -110,7 +110,7 @@ spec:
                               more information.\n\n\nNote: the keys and values cannot
                               be empty, but they are not otherwise validated."
                             type: object
-                          log_level:
+                          logLevel:
                             description: |-
                               Envoy log level. Options include "trace", "debug", "info", "warn", "error",
                               "critical" and "off". Defaults to "info". See
@@ -161,7 +161,7 @@ spec:
                             description: The minimum amount of compute resources required.
                             type: object
                         type: object
-                      security_context:
+                      securityContext:
                         description: |-
                           The security context for this container. See
                           https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
@@ -332,7 +332,7 @@ spec:
                             type: object
                         type: object
                     type: object
-                  podTempalte:
+                  podTemplate:
                     description: Configuration for the pods that will be created.
                     properties:
                       affinity:
@@ -1112,18 +1112,18 @@ spec:
                                 type: array
                             type: object
                         type: object
-                      extra_annotations:
+                      extraAnnotations:
                         additionalProperties:
                           type: string
                         description: Additional annotations to add to the Pod object
                           metadata.
                         type: object
-                      extra_labels:
+                      extraLabels:
                         additionalProperties:
                           type: string
                         description: Additional labels to add to the Pod object metadata.
                         type: object
-                      image_pull_secrets:
+                      imagePullSecrets:
                         description: |-
                           An optional list of references to secrets in the same namespace to use for
                           pulling any of the images used by this Pod spec. See
@@ -1143,7 +1143,7 @@ spec:
                           type: object
                           x-kubernetes-map-type: atomic
                         type: array
-                      node_selector:
+                      nodeSelector:
                         additionalProperties:
                           type: string
                         description: |-
@@ -1151,7 +1151,7 @@ spec:
                           https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
                           details.
                         type: object
-                      security_context:
+                      securityContext:
                         description: |-
                           The pod security context. See
                           https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
@@ -1386,13 +1386,13 @@ spec:
                           https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
                           on the implications of setting `clusterIP`.
                         type: string
-                      extra_annotations:
+                      extraAnnotations:
                         additionalProperties:
                           type: string
                         description: Additional annotations to add to the Service
                           object metadata.
                         type: object
-                      extra_labels:
+                      extraLabels:
                         additionalProperties:
                           type: string
                         description: Additional labels to add to the Service object

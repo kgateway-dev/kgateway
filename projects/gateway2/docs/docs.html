@@ -27,7 +27,7 @@ Resource Types:
 <tbody>
 <tr>
 <td>
-<code>horizontal_pod_autoscaler</code><br/>
+<code>horizontalPodAutoscaler</code><br/>
 <em>
 <a href="#gateway.gloo.solo.io/v1alpha1.HorizontalPodAutoscaler">
 HorizontalPodAutoscaler
@@ -60,7 +60,7 @@ for details.</p>
 <tbody>
 <tr>
 <td>
-<code>log_level</code><br/>
+<code>logLevel</code><br/>
 <em>
 string
 </em>
@@ -74,7 +74,7 @@ for more information.</p>
 </tr>
 <tr>
 <td>
-<code>component_log_levels</code><br/>
+<code>componentLogLevels</code><br/>
 <em>
 map[string]string
 </em>
@@ -149,7 +149,7 @@ pullPolicy: IfNotPresent
 </tr>
 <tr>
 <td>
-<code>security_context</code><br/>
+<code>securityContext</code><br/>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
 Kubernetes core/v1.SecurityContext
@@ -303,7 +303,7 @@ for details.</p>
 <tbody>
 <tr>
 <td>
-<code>min_replicas</code><br/>
+<code>minReplicas</code><br/>
 <em>
 uint32
 </em>
@@ -315,7 +315,7 @@ scale down. Defaults to 1.</p>
 </tr>
 <tr>
 <td>
-<code>max_replicas</code><br/>
+<code>maxReplicas</code><br/>
 <em>
 uint32
 </em>
@@ -327,7 +327,7 @@ scale up. Cannot be less than <code>minReplicas</code>. Defaults to 100.</p>
 </tr>
 <tr>
 <td>
-<code>target_cpu_utilization_percentage</code><br/>
+<code>targetCpuUtilizationPercentage</code><br/>
 <em>
 uint32
 </em>
@@ -340,7 +340,7 @@ pods. Defaults to 80.</p>
 </tr>
 <tr>
 <td>
-<code>target_memory_utilization_percentage</code><br/>
+<code>targetMemoryUtilizationPercentage</code><br/>
 <em>
 uint32
 </em>
@@ -475,7 +475,7 @@ EnvoyContainer
 </tr>
 <tr>
 <td>
-<code>podTempalte</code><br/>
+<code>podTemplate</code><br/>
 <em>
 <a href="#gateway.gloo.solo.io/v1alpha1.Pod">
 Pod
@@ -533,7 +533,7 @@ Autoscaling
 <tbody>
 <tr>
 <td>
-<code>extra_labels</code><br/>
+<code>extraLabels</code><br/>
 <em>
 map[string]string
 </em>
@@ -544,7 +544,7 @@ map[string]string
 </tr>
 <tr>
 <td>
-<code>extra_annotations</code><br/>
+<code>extraAnnotations</code><br/>
 <em>
 map[string]string
 </em>
@@ -555,7 +555,7 @@ map[string]string
 </tr>
 <tr>
 <td>
-<code>security_context</code><br/>
+<code>securityContext</code><br/>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#podsecuritycontext-v1-core">
 Kubernetes core/v1.PodSecurityContext
@@ -570,7 +570,7 @@ for details.</p>
 </tr>
 <tr>
 <td>
-<code>image_pull_secrets</code><br/>
+<code>imagePullSecrets</code><br/>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#localobjectreference-v1-core">
 []Kubernetes core/v1.LocalObjectReference
@@ -586,7 +586,7 @@ for details.</p>
 </tr>
 <tr>
 <td>
-<code>node_selector</code><br/>
+<code>nodeSelector</code><br/>
 <em>
 map[string]string
 </em>
@@ -746,7 +746,7 @@ on the implications of setting <code>clusterIP</code>.</p>
 </tr>
 <tr>
 <td>
-<code>extra_labels</code><br/>
+<code>extraLabels</code><br/>
 <em>
 map[string]string
 </em>
@@ -757,7 +757,7 @@ map[string]string
 </tr>
 <tr>
 <td>
-<code>extra_annotations</code><br/>
+<code>extraAnnotations</code><br/>
 <em>
 map[string]string
 </em>
@@ -771,5 +771,5 @@ map[string]string
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>ec560b097</code>.
+on git commit <code>def717359</code>.
 </em></p>
