@@ -10,19 +10,13 @@ Each feature suite is invoked as a subtest of the top level suite. The subtests 
 
 ## Workflows
 
-### Defining tests by the cluster build tag
-In CI, we rely on build tags to [load balance](./load_balancing_tests.md) tests across different Kubernetes clusters. For local development, this is irrelevant. To ensure that when you execute tests, they do run, be sure to supply the:
-```
--tags=all
-```
-
 ### Running a single feature's suite
 
 Since each feature suite is a subtest of the top level suite, you can run a single feature suite by running the top level suite with the `-run` flag.
 
 For example, to run the `Deployer` feature suite in `TestK8sGateway`, you can run:
 ```bash
-go test -tags=all -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run TestK8sGateway/Deployer
+go test -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run TestK8sGateway/Deployer
 ```
 
 #### VSCode
@@ -58,7 +52,7 @@ Similar to running a specific feature suite, you can run a single test within a 
 
 For example, to run `TestProvisionDeploymentAndService` in `Deployer` feature suite that is a part of `TestK8sGateway`, you can run:
 ```bash
-go test -tags=all -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run TestK8sGateway/Deployer/TestProvisionDeploymentAndService
+go test -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run TestK8sGateway/Deployer/TestProvisionDeploymentAndService
 ```
 
 Alternatively, with VSCode you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
