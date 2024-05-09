@@ -560,12 +560,14 @@ func (p *Plugin) validateTransformation(
 		)
 	}
 
+	// If the user has disabled transformation validation, then always return nil
+	if p.settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
+		return nil
+	}
+
 	err = bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
 	p.validationLruCache.Add(transformHash, err)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (p *Plugin) getTransformations(

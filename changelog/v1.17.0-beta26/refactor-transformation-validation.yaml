@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Refactor `bootstrap.ValidateBootstrap()` by moving the `DisableTransformationValidation` check into the transformation plugin. This way the `bootstrap.ValidateBootstrap()` can be used in other areas independent of this setting.

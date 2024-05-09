@@ -37,11 +37,6 @@ func ValidateBootstrap(
 	filterName string,
 	msg proto.Message,
 ) error {
-	// If the user has disabled transformation validation, then always return nil
-	if settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
-		return nil
-	}
-
 	bootstrapYaml, err := buildPerFilterBootstrapYaml(filterName, msg)
 	if err != nil {
 		return err
