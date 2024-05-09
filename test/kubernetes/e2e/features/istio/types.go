@@ -28,6 +28,14 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
+	// httpbinDeployment is the Deployment that is in the Istio mesh
+	httpbinDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httpbin",
+			Namespace: "httpbin",
+		},
+	}
+
 	// curlPod is the Pod that will be used to execute curl requests, and is defined in the fault injection manifest files
 	curlPodExecOpt = kubectl.PodExecOptions{
 		Name:      "curl",

@@ -3,6 +3,7 @@ package istio
 import (
 	"context"
 
+	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -31,6 +32,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *istioTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
+	// Check that istio injection is successful and httpbin is running
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, httpbinDeployment.ObjectMeta, gomega.Equal(1))
 
 	// Ensure that the proxy service and deployment are created
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingManifest)
@@ -45,6 +48,8 @@ func (s *istioTestingSuite) TearDownSuite() {
 
 	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
+
 }
 
 func (s *istioTestingSuite) TestStrictPeerAuth() {
@@ -65,7 +70,8 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 			curl.WithHostHeader("httpbin"),
 			curl.WithPath("/headers"),
 		},
-		expectedServiceUnavailableResponse)
+		expectedServiceUnavailableResponse,
+	)
 }
 
 func (s *istioTestingSuite) TestPermissivePeerAuth() {
