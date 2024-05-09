@@ -130,10 +130,7 @@ func (i *TestInstallation) String() string {
 	return i.Metadata.InstallNamespace
 }
 
-func (i *TestInstallation) InstallGlooGateway(
-	ctx context.Context,
-	installFn func(ctx context.Context) error,
-) {
+func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
 	if !testutils.ShouldSkipInstall() {
 		err := installFn(ctx)
 		i.Assertions.Require.NoError(err)
