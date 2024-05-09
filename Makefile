@@ -28,7 +28,6 @@ help: ## Output the self-documenting make targets
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
-TEST_FAILURE_OUTPUT_DIR ?= $(OUTPUT_DIR)/test_failure_report
 DEPSGOBIN := $(OUTPUT_DIR)/.bin
 
 # Important to use binaries built from module.
@@ -43,8 +42,6 @@ IMAGE_REGISTRY ?= quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
-# Make sure _output/bug_report exists
-$(shell mkdir -p $(TEST_FAILURE_OUTPUT_DIR))
 
 # a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
 VERSION ?= 1.0.1-dev
@@ -77,7 +74,13 @@ GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
 GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine3.18
 
-TEST_ASSET_DIR := $(ROOTDIR)/_test
+TEST_ASSET_DIR ?= $(ROOTDIR)/_test
+
+# This is the location where assets are placed after a test failure
+# This is used by our e2e tests to emit information about the running instance of Gloo Gateway
+BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
+$(BUG_REPORT_DIR):
+	mkdir -p $(BUG_REPORT_DIR)
 
 # Used to install ca-certificates in GLOO_DISTROLESS_BASE_IMAGE
 PACKAGE_DONOR_IMAGE ?= debian:11
@@ -283,7 +286,8 @@ GO_TEST_USER_ARGS ?=
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
+go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset before each invocation
+	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
 	$(TEST_PKG)
 
@@ -306,6 +310,10 @@ clean-tests:
 	find * -type f -name '*.test' -exec rm {} \;
 	find * -type f -name '*.cov' -exec rm {} \;
 	find * -type f -name 'junit*.xml' -exec rm {} \;
+
+.PHONY: clean-bug-report
+clean-bug-report:
+	rm -rf $(BUG_REPORT_DIR)
 
 .PHONY: clean-vendor-any
 clean-vendor-any:

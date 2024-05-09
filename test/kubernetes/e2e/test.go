@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	glooruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
+	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 )
 
@@ -21,13 +21,7 @@ import (
 // The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
 // in favor of using the exact tool that users rely on
 func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	rootDir := filepath.Join(cwd, "../../../../")
-	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, rootDir, installation.Metadata.InstallNamespace)
+	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +32,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 }
 
 func MustTestCluster() *TestCluster {
-	runtimeContext := glooruntime.NewContext()
+	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
 	return &TestCluster{
@@ -51,7 +45,7 @@ func MustTestCluster() *TestCluster {
 // Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
 type TestCluster struct {
 	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
-	RuntimeContext glooruntime.Context
+	RuntimeContext testruntime.Context
 
 	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
 	ClusterContext *cluster.Context
@@ -88,6 +82,11 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		Assertions: assertions.NewProvider(t).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
+
+		// GeneratedFiles contains the unique location where files generated during the execution
+		// of tests against this installation will be stored
+		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
+		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
 	}
 	c.activeInstallations[installation.String()] = installation
 
@@ -95,6 +94,10 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 }
 
 func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation) {
+	if err := os.RemoveAll(installation.GeneratedFiles.TempDir); err != nil {
+		panic(fmt.Sprintf("Failed to remove temporary directory: %s", installation.GeneratedFiles.TempDir))
+	}
+
 	delete(c.activeInstallations, installation.String())
 }
 
@@ -138,6 +141,9 @@ type TestInstallation struct {
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
 	Assertions *assertions.Provider
+
+	// GeneratedFiles is the collection of directories and files that this test installation _may_ create
+	GeneratedFiles GeneratedFiles
 }
 
 func (i *TestInstallation) String() string {
@@ -168,6 +174,10 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
-	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
-	logsCmd.Run()
+	// This is a work in progress
+	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
+	// That way we can upload it in CI, or inspect it locally
+	logFile := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.txt")
+	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo", ">", logFile)
+	_ = logsCmd.Run()
 }

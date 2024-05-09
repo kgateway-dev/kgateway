@@ -2,6 +2,7 @@ package actions
 
 import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
@@ -11,6 +12,7 @@ import (
 // This provider is just a wrapper around sub-providers, so it exposes methods to access those providers
 type Provider struct {
 	kubeCli *kubectl.Cli
+	glooCli *testutils.GlooCli
 
 	glooGatewayContext *gloogateway.Context
 }
@@ -19,6 +21,7 @@ type Provider struct {
 func NewActionsProvider() *Provider {
 	return &Provider{
 		kubeCli:            nil,
+		glooCli:            testutils.NewGlooCli(),
 		glooGatewayContext: nil,
 	}
 }
@@ -37,4 +40,8 @@ func (p *Provider) WithGlooGatewayContext(ggContext *gloogateway.Context) *Provi
 
 func (p *Provider) Kubectl() *kubectl.Cli {
 	return p.kubeCli
+}
+
+func (p *Provider) Glooctl() *testutils.GlooCli {
+	return p.glooCli
 }
