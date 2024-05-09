@@ -45,7 +45,7 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	}, nil)
+	})
 
 	t.Run("Example", func(t *testing.T) {
 		suite.Run(t, example.NewTestingSuite(ctx, testInstallation))

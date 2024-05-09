@@ -78,7 +78,7 @@ func TestK8sGatewayIstio(t *testing.T) {
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		// istio proxy and sds are added to gateway and take a little longer to start up
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 10*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	}, nil)
+	})
 
 	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))

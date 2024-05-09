@@ -45,7 +45,7 @@ func TestInstallationWithErrorLogLevel(t *testing.T) {
 
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	}, nil)
+	})
 
 	// The name here is important for debuggability
 	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName

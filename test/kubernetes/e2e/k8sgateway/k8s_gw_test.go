@@ -65,7 +65,7 @@ func TestK8sGateway(t *testing.T) {
 	// Install Gloo Gateway
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	}, nil)
+	})
 
 	t.Run("Deployer", func(t *testing.T) {
 		suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
