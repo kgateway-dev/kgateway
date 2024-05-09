@@ -4,11 +4,10 @@ import (
 	"net/http"
 	"path/filepath"
 
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,8 +24,7 @@ var (
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyService = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
 	// VirtualHostOption resource to be created
 	basicVirtualHostOptionMeta = metav1.ObjectMeta{
@@ -51,20 +49,20 @@ var (
 
 	expectedResponseWithoutContentLength = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Custom:     Not(matchers.ContainHeaderKeys([]string{"content-length"})),
+		Custom:     gomega.Not(matchers.ContainHeaderKeys([]string{"content-length"})),
 		Body:       gstruct.Ignore(),
 	}
 
 	expectedResponseWithoutContentType = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Custom:     Not(matchers.ContainHeaderKeys([]string{"content-type"})),
+		Custom:     gomega.Not(matchers.ContainHeaderKeys([]string{"content-type"})),
 		Body:       gstruct.Ignore(),
 	}
 
 	expectedResponseWithFooHeader = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Headers: map[string]interface{}{
-			"foo": Equal("bar"),
+			"foo": gomega.Equal("bar"),
 		},
 		// Make sure the content-length isn't being removed as a function of the unwanted VHO
 		Custom: matchers.ContainHeaderKeys([]string{"content-length"}),
