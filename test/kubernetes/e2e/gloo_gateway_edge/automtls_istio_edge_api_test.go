@@ -81,5 +81,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 
 	t.Run("IstioIntegration", func(t *testing.T) {
 		suite.Run(t, istio.NewGlooIstioAutoMtlsSuite(ctx, testInstallation))
+
+		suite.Run(t, istio.NewUpstreamToIstioAutoMtlsSuite(ctx, testInstallation))
 	})
 }

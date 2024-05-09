@@ -14,9 +14,9 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-// upgradeToIstioAutoMtlsTestingSuite is the entire Suite of tests for the "Istio" integration cases where an Upstream with
+// upstreamToIstioAutoMtlsTestingSuite is the entire Suite of tests for the "Istio" integration cases where an Upstream with
 // sslConfig set is switched to using automtls
-type upgradeToIstioAutoMtlsTestingSuite struct {
+type upstreamToIstioAutoMtlsTestingSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -29,8 +29,8 @@ type upgradeToIstioAutoMtlsTestingSuite struct {
 	routingManifestPath string
 }
 
-func NewUpgradeToIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation, routingManifestPath string) suite.TestingSuite {
-	routingManifestFile := filepath.Join(routingManifestPath, UpstreamSslConfigEdgeApisFileName)
+func NewUpstreamToIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	routingManifestFile := filepath.Join(testInst.GeneratedFiles.TempDir, UpstreamSslConfigEdgeApisFileName)
 	return &glooIstioAutoMtlsTestingSuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
@@ -38,7 +38,7 @@ func NewUpgradeToIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInsta
 	}
 }
 
-func (s *upgradeToIstioAutoMtlsTestingSuite) SetupSuite() {
+func (s *upstreamToIstioAutoMtlsTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 
@@ -52,12 +52,12 @@ func (s *upgradeToIstioAutoMtlsTestingSuite) SetupSuite() {
 	s.NoError(err, "can write upstream resources to file")
 }
 
-func (s *upgradeToIstioAutoMtlsTestingSuite) TearDownSuite() {
+func (s *upstreamToIstioAutoMtlsTestingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 }
 
-func (s *upgradeToIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest(setSSLConfig bool) string {
+func (s *upstreamToIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest(setSSLConfig bool) string {
 	if setSSLConfig {
 		return filepath.Join(s.routingManifestPath, UpstreamSslConfigEdgeApisFileName)
 	} else {
@@ -66,7 +66,7 @@ func (s *upgradeToIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest(setSS
 	}
 }
 
-func (s *upgradeToIstioAutoMtlsTestingSuite) TestUpgrade() {
+func (s *upstreamToIstioAutoMtlsTestingSuite) TestUpgrade() {
 	s.T().Cleanup(func() {
 		// Clean up the final resources
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.getEdgeGatewayRoutingManifest(false))
@@ -106,7 +106,7 @@ func (s *upgradeToIstioAutoMtlsTestingSuite) TestUpgrade() {
 		expectedMtlsResponse)
 }
 
-func (s *upgradeToIstioAutoMtlsTestingSuite) TestDowngrade() {
+func (s *upstreamToIstioAutoMtlsTestingSuite) TestDowngrade() {
 	s.T().Cleanup(func() {
 		// Clean up the final resources
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.getEdgeGatewayRoutingManifest(true))
