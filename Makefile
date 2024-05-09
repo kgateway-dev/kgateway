@@ -281,13 +281,9 @@ GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race
 # For example, you may want to run tests multiple times, or with various timeouts
 GO_TEST_USER_ARGS ?=
 
-# The istio version to use for the e2e tests
-# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-export ISTIO_VERSION ?= "${ISTIO_VERSION:-1.19.9}"
-
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
+	$(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
 	$(TEST_PKG)
 
