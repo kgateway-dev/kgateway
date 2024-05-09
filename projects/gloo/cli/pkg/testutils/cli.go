@@ -64,3 +64,27 @@ func (c *GlooCli) DebugLogs(ctx context.Context, extraArgs ...string) error {
 	}, extraArgs...)
 	return ExecuteCommandWithArgs(c.NewCommand(ctx), debugLogsArgs...)
 }
+
+// IstioInject inject istio-proxy and sds
+func (c *GlooCli) IstioInject(ctx context.Context, installNamespace, kubeContext string, extraArgs ...string) (string, error) {
+	checkArgs := append([]string{
+		"istio", "inject",
+		"--namespace", installNamespace,
+		"--istio-namespace", "istio-system",
+		"--kube-context", kubeContext,
+	}, extraArgs...)
+
+	return ExecuteCommandWithArgsOut(c.NewCommand(ctx), checkArgs...)
+}
+
+// IstioUninject uninjects istio-proxy and sds
+func (c *GlooCli) IstioUninject(ctx context.Context, installNamespace, kubeContext string, extraArgs ...string) (string, error) {
+	checkArgs := append([]string{
+		"istio", "inject",
+		"--namespace", installNamespace,
+		"--istio-namespace", "istio-system",
+		"--kube-context", kubeContext,
+	}, extraArgs...)
+
+	return ExecuteCommandWithArgsOut(c.NewCommand(ctx), checkArgs...)
+}
