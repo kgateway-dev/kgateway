@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6048
+    resolvesIssue: false
+    description: >-
+      Add Gloo Edge Gateway api e2e test for Istio integration with strict/permissive peer auth. Add glooctl inject/uninject
+      test for Istio integration.
