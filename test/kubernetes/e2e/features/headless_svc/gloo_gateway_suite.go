@@ -26,8 +26,8 @@ type edgeGatewaySuite struct {
 	routingManifestFile string
 }
 
-func NewEdgeGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation, outputDirectory string) suite.TestingSuite {
-	manifestFile := filepath.Join(outputDirectory, EdgeGatewayApiRoutingGeneratedFileName)
+func NewEdgeGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	manifestFile := filepath.Join(testInst.GeneratedFiles.TempDir, EdgeGatewayApiRoutingGeneratedFileName)
 	return &edgeGatewaySuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
