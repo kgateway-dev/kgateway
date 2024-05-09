@@ -26,8 +26,8 @@ type k8sGatewaySuite struct {
 	routingManifestFile string
 }
 
-func NewK8sGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation, outputDirectory string) suite.TestingSuite {
-	routingManifestFile := filepath.Join(outputDirectory, K8sApiRoutingGeneratedFileName)
+func NewK8sGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	routingManifestFile := filepath.Join(testInst.GeneratedFiles.TempDir, K8sApiRoutingGeneratedFileName)
 	return &k8sGatewaySuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
