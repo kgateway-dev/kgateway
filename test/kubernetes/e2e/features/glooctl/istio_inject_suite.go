@@ -21,15 +21,12 @@ type istioInjectTestingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
-
-	glooctlPath string
 }
 
-func NewIstioInjectTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, glooctlExecName string) suite.TestingSuite {
+func NewIstioInjectTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &istioInjectTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		glooctlPath:      glooctlExecName,
 	}
 }
 
