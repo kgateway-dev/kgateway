@@ -27,11 +27,11 @@ type glooIstioAutoMtlsTestingSuite struct {
 	routingManifestPath string
 }
 
-func NewGlooIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation, routingManifestPath string) suite.TestingSuite {
+func NewGlooIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &glooIstioAutoMtlsTestingSuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
-		routingManifestPath: routingManifestPath,
+		routingManifestPath: testInst.GeneratedFiles.TempDir,
 	}
 }
 

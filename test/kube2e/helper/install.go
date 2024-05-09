@@ -2,7 +2,6 @@ package helper
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -220,29 +219,6 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, deploymentType string,
 		}
 	}
 	return nil
-}
-
-// Wait for the glooctl command to respond, err on timeout.
-// The command returns as soon as certgen completes and all other
-// deployments have been applied, which should only be delayed if
-// there's an issue pulling the certgen docker image.
-// Without this timeout, it would just hang indefinitely.
-func glooctlCommandWithTimeout(rootDir string, glooctlCmd []string, timeout time.Duration) error {
-	runResponse := make(chan error, 1)
-	go func() {
-		err := exec.RunCommand(rootDir, true, glooctlCmd...)
-		if err != nil {
-			runResponse <- errors.Wrapf(err, "error while running glooctl command", glooctlCmd)
-		}
-		runResponse <- nil
-	}()
-
-	select {
-	case err := <-runResponse:
-		return err // can be nil
-	case <-time.After(timeout):
-		return errors.New(fmt.Sprintf("timeout running glooctl command %v", glooctlCmd))
-	}
 }
 
 // Wait for the glooctl install command to respond, err on timeout.

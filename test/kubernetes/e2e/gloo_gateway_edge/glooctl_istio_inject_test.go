@@ -2,8 +2,6 @@ package gloo_gateway_edge_test
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -36,7 +34,6 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
 	}
-	glooctlPath := filepath.Join(testHelper.RootDir, testHelper.BuildAssetDir, testHelper.GlooctlExecName)
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
@@ -71,25 +68,14 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 
 	// NOTE: Order of tests is important here because the tests are dependent on each other (e.g. the inject test must run before the istio test)
 	t.Run("GlooctlIstioInject", func(t *testing.T) {
-		suite.Run(t, glooctl.NewIstioInjectTestingSuite(ctx, testInstallation, glooctlPath))
+		suite.Run(t, glooctl.NewIstioInjectTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {
-		// create a tmp output directory
-		tempDir, err := os.MkdirTemp("", fmt.Sprintf("istio-glooctl-inject-%s", testInstallation.Metadata.InstallNamespace))
-		if err != nil {
-			t.Fatalf("Failed to create temporary directory: %v", err)
-		}
-		defer func() {
-			// Delete the temporary directory after the test completes
-			if err := os.RemoveAll(tempDir); err != nil {
-				t.Errorf("Failed to remove temporary directory: %v", err)
-			}
-		}()
-		suite.Run(t, istio.NewGlooTestingSuite(ctx, testInstallation, tempDir))
+		suite.Run(t, istio.NewGlooTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("GlooctlIstioUninject", func(t *testing.T) {
-		suite.Run(t, glooctl.NewIstioUninjectTestingSuite(ctx, testInstallation, glooctlPath))
+		suite.Run(t, glooctl.NewIstioUninjectTestingSuite(ctx, testInstallation))
 	})
 }

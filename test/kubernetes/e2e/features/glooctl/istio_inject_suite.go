@@ -3,7 +3,6 @@ package glooctl
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -22,27 +21,20 @@ type istioInjectTestingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
-
-	glooctlPath string
 }
 
-func NewIstioInjectTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, glooctlExecName string) suite.TestingSuite {
+func NewIstioInjectTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &istioInjectTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		glooctlPath:      glooctlExecName,
 	}
 }
 
 func (s *istioInjectTestingSuite) TestCanInject() {
 	// Inject istio with glooctl
-	injectCmd := exec.Command(s.glooctlPath, "istio", "inject",
-		"--namespace", s.testInstallation.Metadata.InstallNamespace,
-		"--istio-namespace", "istio-system",
-		"--kube-context", s.testInstallation.TestCluster.ClusterContext.KubeContext)
-	out, err := injectCmd.CombinedOutput()
+	out, err := s.testInstallation.Actions.Glooctl().IstioInject(s.ctx, s.testInstallation.Metadata.InstallNamespace, s.testInstallation.TestCluster.ClusterContext.KubeContext)
 	s.Assert().NoError(err, "Failed to inject istio")
-	s.Assert().Contains(string(out), "Istio injection was successful!")
+	s.Assert().Contains(out, "Istio injection was successful!")
 
 	matcher := gomega.And(assertions.PodHasContainersMatcher("sds"), assertions.PodHasContainersMatcher("istio-proxy"))
 	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx,
