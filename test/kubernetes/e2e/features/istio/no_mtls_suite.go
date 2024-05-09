@@ -2,7 +2,6 @@ package istio
 
 import (
 	"context"
-	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
@@ -72,7 +71,6 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 			curl.WithPath("/headers"),
 		},
 		expectedServiceUnavailableResponse,
-		60*time.Second, // Allow for a longer timeout for the request to complete to ensure Istio has propagated the config
 	)
 }
 

@@ -2,7 +2,6 @@ package istio
 
 import (
 	"context"
-	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -70,7 +69,6 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 			curl.WithPath("/headers"),
 		},
 		expectedMtlsResponse,
-		60*time.Second, // Allow for a longer timeout for the request to complete to ensure Istio has propagated the config
 	)
 }
 
