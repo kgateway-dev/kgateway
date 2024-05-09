@@ -55,17 +55,9 @@ type TestCluster struct {
 
 	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
 	ClusterContext *cluster.Context
-
-	// activeInstallations is the set of TestInstallation that have been created for this cluster.
-	// Since tests are run serially, this will only have a single entry at a time
-	activeInstallations map[string]*TestInstallation
 }
 
-func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext *gloogateway.Context) *TestInstallation {
-	if c.activeInstallations == nil {
-		c.activeInstallations = make(map[string]*TestInstallation, 2)
-	}
-
+func CreateTestInstallation(t *testing.T, c *TestCluster, glooGatewayContext *gloogateway.Context) *TestInstallation {
 	installation := &TestInstallation{
 		// Create a reference to the TestCluster, and all of it's metadata
 		TestCluster: c,
@@ -91,17 +83,8 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
 		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
 	}
-	c.activeInstallations[installation.String()] = installation
-
+	runtime.SetFinalizer(installation, installation.finalize)
 	return installation
-}
-
-func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation) {
-	if err := os.RemoveAll(installation.GeneratedFiles.TempDir); err != nil {
-		panic(fmt.Sprintf("Failed to remove temporary directory: %s", installation.GeneratedFiles.TempDir))
-	}
-
-	delete(c.activeInstallations, installation.String())
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
@@ -133,6 +116,12 @@ type TestInstallation struct {
 
 func (i *TestInstallation) String() string {
 	return i.Metadata.InstallNamespace
+}
+
+func (i *TestInstallation) finalize() {
+	if err := os.RemoveAll(i.GeneratedFiles.TempDir); err != nil {
+		panic(fmt.Sprintf("Failed to remove temporary directory: %s", i.GeneratedFiles.TempDir))
+	}
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {

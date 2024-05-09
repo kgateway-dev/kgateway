@@ -28,8 +28,9 @@ import (
 func TestK8sGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
+		testCluster,
 		&gloogateway.Context{
 			InstallNamespace:   "k8s-gw-test",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
@@ -48,7 +49,6 @@ func TestK8sGateway(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Gloo Gateway

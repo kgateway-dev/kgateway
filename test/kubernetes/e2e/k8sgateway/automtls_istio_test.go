@@ -21,8 +21,9 @@ import (
 func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
+		testCluster,
 		&gloogateway.Context{
 			InstallNamespace:   "automtls-istio-k8s-gw-test",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-k8s-gateway-test-helm.yaml"),
@@ -51,8 +52,6 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to uninstall istio: %v", err)
 		}
-
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy

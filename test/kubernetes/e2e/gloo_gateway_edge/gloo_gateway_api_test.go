@@ -21,8 +21,9 @@ import (
 func TestGlooGatewayEdgeGateway(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
+		testCluster,
 		&gloogateway.Context{
 			InstallNamespace:   "gloo-gateway-edge-test",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "gloo-gateway-test-helm.yaml"),
@@ -41,7 +42,6 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled

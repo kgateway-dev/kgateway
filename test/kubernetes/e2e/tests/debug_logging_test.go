@@ -23,8 +23,9 @@ import (
 func TestInstallationWithDebugLogLevel(t *testing.T) {
 	ctx := context.Background()
 	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
+		testCluster,
 		&gloogateway.Context{
 			InstallNamespace:   "debug-example",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
@@ -43,7 +44,6 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
