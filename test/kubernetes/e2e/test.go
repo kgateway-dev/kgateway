@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/rotisserie/eris"
@@ -19,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	k8sruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
+	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -28,13 +27,7 @@ import (
 // The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
 // in favor of using the exact tool that users rely on
 func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	rootDir := filepath.Join(cwd, "../../../../")
-	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, rootDir, installation.Metadata.InstallNamespace)
+	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +38,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 }
 
 func MustTestCluster() *TestCluster {
-	runtimeContext := k8sruntime.NewContext()
+	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
 	return &TestCluster{
@@ -58,7 +51,7 @@ func MustTestCluster() *TestCluster {
 // Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
 type TestCluster struct {
 	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
-	RuntimeContext k8sruntime.Context
+	RuntimeContext testruntime.Context
 
 	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
 	ClusterContext *cluster.Context
@@ -92,6 +85,11 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		Assertions: assertions.NewProvider(t).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
+
+		// GeneratedFiles contains the unique location where files generated during the execution
+		// of tests against this installation will be stored
+		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
+		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
 	}
 	c.activeInstallations[installation.String()] = installation
 
@@ -99,6 +97,10 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 }
 
 func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation) {
+	if err := os.RemoveAll(installation.GeneratedFiles.TempDir); err != nil {
+		panic(fmt.Sprintf("Failed to remove temporary directory: %s", installation.GeneratedFiles.TempDir))
+	}
+
 	delete(c.activeInstallations, installation.String())
 }
 
@@ -124,6 +126,9 @@ type TestInstallation struct {
 
 	// IstioctlBinary is the path to the istioctl binary that can be used to interact with Istio
 	IstioctlBinary string
+
+	// GeneratedFiles is the collection of directories and files that this test installation _may_ create
+	GeneratedFiles GeneratedFiles
 }
 
 func (i *TestInstallation) String() string {
@@ -154,8 +159,12 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
-	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
-	logsCmd.Run()
+	// This is a work in progress
+	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
+	// That way we can upload it in CI, or inspect it locally
+	logFile := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.txt")
+	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo", ">", logFile)
+	_ = logsCmd.Run()
 }
 
 const (
@@ -204,6 +213,39 @@ func (i *TestInstallation) InstallIstioOperator(
 	return ctx.Err()
 }
 
+// GeneratedFiles is a collection of files that are generated during the execution of a set of tests
+type GeneratedFiles struct {
+	// TempDir is the directory where any temporary files should be created
+	// Tests may create files for any number of reasons:
+	// - A: When a test renders objects in a file, and then uses this file to create and delete values
+	// - B: When a test invokes a command that produces a file as a side effect (glooctl, for example)
+	// Files in this directory are an implementation detail of the test itself.
+	// As a result, it is the callers responsibility to clean up the TempDir when the tests complete
+	TempDir string
+
+	// FailureDir is the directory where any assets that are produced on failure will be created
+	FailureDir string
+}
+
+// MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the directories
+func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
+	tmpDir, err := os.MkdirTemp("", tmpDirId)
+	if err != nil {
+		panic(err)
+	}
+
+	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId)
+	err = os.MkdirAll(failureDir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	return GeneratedFiles{
+		TempDir:    tmpDir,
+		FailureDir: failureDir,
+	}
+}
+
 func getIstioctlVersionOrDefault() string {
 	if version := os.Getenv(IstioctlVersionEnv); version != "" {
 		return version
@@ -225,7 +267,7 @@ func DownloadIstio(ctx context.Context, version string) (string, error) {
 
 		return binaryPath, nil
 	}
-	installLocation := filepath.Join(GlooDirectory(), ".bin")
+	installLocation := filepath.Join(testutils.GitRootDirectory(), ".bin")
 	binaryDir := filepath.Join(installLocation, fmt.Sprintf("istio-%s", version), "bin")
 	binaryLocation := filepath.Join(binaryDir, "istioctl")
 
@@ -300,12 +342,4 @@ func (i *TestInstallation) UninstallIstio() error {
 		return fmt.Errorf("istioctl uninstall failed: %w", err)
 	}
 	return nil
-}
-
-func GlooDirectory() string {
-	data, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	if err != nil {
-		panic(err)
-	}
-	return strings.TrimSpace(string(data))
 }
