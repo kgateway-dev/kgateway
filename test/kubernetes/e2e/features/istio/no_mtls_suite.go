@@ -62,9 +62,6 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
 	s.NoError(err, "can apply strictPeerAuthManifest")
 
-	// TODO(npolshak) Remove after getting ci debug report for the test run in oss
-	s.Fail("TODO: remove me")
-
 	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
