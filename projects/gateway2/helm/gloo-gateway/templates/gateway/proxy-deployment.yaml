@@ -81,7 +81,7 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
-{{- if or $gateway.istioSDS.enabled $gateway.sds.istio.enabled }}
+{{- if or $gateway.istioSDS.enabled $gateway.sds.istioIntegration.enabled }}
       - name: sds
         image: {{ $gateway.sds.image }}
         imagePullPolicy: IfNotPresent
@@ -98,6 +98,8 @@ spec:
                 fieldPath: metadata.namespace
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
+          - name: LOG_LEVEL
+            value: {{ $gateway.sds.sdsBootstrap.logLevel }}
         ports:
           - containerPort: 8234
             name: sds
@@ -120,7 +122,7 @@ spec:
           - mountPath: /etc/envoy
             name: envoy-config
       - name: istio-proxy
-        image: {{ $gateway.sds.istio.image }}
+        image: {{ $gateway.sds.istioIntegration.image }}
         # TODO(npolshak): Add configurable envoySidecarResources
         args:
           - proxy
@@ -135,7 +137,7 @@ spec:
           - 45s
           - --parentShutdownDuration
           - 1m0s
-          - --proxyLogLevel=warning
+          - --proxyLogLevel={{ $gateway.sds.istioIntegration.logLevel }}
           - --proxyComponentLogLevel=misc:error
           - --connectTimeout
           - 10s
@@ -226,7 +228,7 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-{{- if $gateway.istioSDS.enabled }}
+{{- if or $gateway.istioSDS.enabled $gateway.sds.istioIntegration.enabled }}
       - emptyDir:
           medium: Memory
         name: istio-certs
@@ -379,7 +381,7 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-        {{- if $gateway.istioSDS.enabled }}
+        {{- if or $gateway.istioSDS.enabled $gateway.sds.istioIntegration.enabled }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
           http2_protocol_options: {}

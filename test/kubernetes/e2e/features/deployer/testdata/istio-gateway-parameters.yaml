@@ -20,12 +20,13 @@ metadata:
   name: gw-params
 spec:
   kube:
+    deployment:
+      replicas: 1
     sds:
       istioIntegration:
         enabled: true
         istioContainer:
           image:
-            image:
-              registry: docker.io/istio
-              repository: proxyv2
-              tag: 1.20.6 # Override default istio-proxy image tag
+            registry: docker.io/istio
+            repository: proxyv2
+            tag: 1.20.6 # Override default istio-proxy image tag

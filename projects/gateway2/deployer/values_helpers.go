@@ -103,16 +103,30 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 		return nil
 	}
 
-	// convert the service type enum to its string representation;
-	// if type is not set, it will default to 0 ("ClusterIP")
-	return &helmSds{
-		Image:           getImage(sdsConfig.GetSdsContainer().GetImage()),
-		LogLevel:        ptr.To(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
-		Resources:       sdsConfig.GetSdsContainer().GetResources(),
-		SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
+	var sds *helmSds
+	if sdsConfig.GetSdsContainer() == nil {
+		sds = &helmSds{
+			Istio: getIstioValues(sdsConfig.GetIstioIntegration()),
+		}
+	} else {
+		var bootstrap *sdsBootstrap
+		if sdsConfig.GetSdsContainer() != nil {
+			bootstrap = &sdsBootstrap{
+				LogLevel: ptr.To(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
+			}
+		}
 
-		Istio: getIstioValues(sdsConfig.GetIstioIntegration()),
+		// convert the service type enum to its string representation;
+		// if type is not set, it will default to 0 ("ClusterIP")
+		sds = &helmSds{
+			Image:           getImage(sdsConfig.GetSdsContainer().GetImage()),
+			Resources:       sdsConfig.GetSdsContainer().GetResources(),
+			SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
+			SdsBootstrap:    bootstrap,
+			Istio:           getIstioValues(sdsConfig.GetIstioIntegration()),
+		}
 	}
+	return sds
 }
 
 // Convert istio values from GatewayParameters into helm values to be used by the deployer.
@@ -121,12 +135,18 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig != nil && istioConfig.GetEnabled() != nil {
-		istioVals = &helmIstioSds{
-			Enabled:         ptr.To(istioConfig.GetEnabled().GetValue()),
-			Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
-			LogLevel:        ptr.To(istioConfig.GetIstioContainer().GetLogLevel()),
-			Resources:       istioConfig.GetIstioContainer().GetResources(),
-			SecurityContext: istioConfig.GetIstioContainer().GetSecurityContext(),
+		if istioConfig.GetIstioContainer() == nil {
+			istioVals = &helmIstioSds{
+				Enabled: ptr.To(istioConfig.GetEnabled().GetValue()),
+			}
+		} else {
+			istioVals = &helmIstioSds{
+				Enabled:         ptr.To(istioConfig.GetEnabled().GetValue()),
+				Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
+				LogLevel:        ptr.To(istioConfig.GetIstioContainer().GetLogLevel()),
+				Resources:       istioConfig.GetIstioContainer().GetResources(),
+				SecurityContext: istioConfig.GetIstioContainer().GetSecurityContext(),
+			}
 		}
 	} else {
 		// if istioConfig is nil, istio sds is disabled
@@ -138,14 +158,36 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 }
 
 // Convert an image from GatewayParameters into a helm image to be used by the deployer.
-func getImage(image *v1alpha1kube.Image) *helmImage {
-	return &helmImage{
-		Registry:   &image.Registry,
-		Repository: &image.Repository,
-		Tag:        &image.Tag,
-		Digest:     &image.Digest,
-		PullPolicy: ptr.To(image.GetPullPolicy().String()),
+func getImage(overrideImage *v1alpha1kube.Image) *helmImage {
+	// if no overrides are provided, use the default values
+	if overrideImage == nil {
+		return nil
 	}
+
+	image := &helmImage{}
+
+	if overrideImage.GetRepository() != "" {
+		image.Repository = ptr.To(overrideImage.GetRepository())
+	}
+	if overrideImage.GetTag() != "" {
+		image.Tag = ptr.To(overrideImage.GetTag())
+	}
+	if overrideImage.GetRegistry() != "" {
+		image.Registry = ptr.To(overrideImage.GetRegistry())
+	}
+	if overrideImage.GetDigest() != "" {
+		image.Digest = ptr.To(overrideImage.GetDigest())
+	}
+
+	// get the string representation of pull policy, unless it's unspecified, in which case we
+	// leave it empty to fall back to the default value
+	pullPolicy := ""
+	if overrideImage.GetPullPolicy() != v1alpha1kube.Image_Unspecified {
+		pullPolicy = v1alpha1kube.Image_PullPolicy_name[int32(overrideImage.GetPullPolicy())]
+	}
+	image.PullPolicy = ptr.To(pullPolicy)
+
+	return image
 }
 
 // Get the default image values for the envoy container in the proxy deployment.
