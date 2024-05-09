@@ -22,7 +22,7 @@ func MustKindContext(clusterName string, additionalSchemes func(scheme *runtime.
 		// We fall back to the cluster named `kind` if no cluster name was provided
 		clusterName = "kind"
 	}
-	
+
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
