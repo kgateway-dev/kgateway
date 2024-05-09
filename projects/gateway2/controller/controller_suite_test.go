@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -38,13 +39,16 @@ var (
 	ctx       context.Context
 	cancel    context.CancelFunc
 
-	gatewayClassName      string
-	gatewayControllerName string
-	kubeconfig            string
+	kubeconfig string
+)
+
+const (
+	gatewayClassName      = "clsname"
+	altGatewayClassName   = "clsname-alt"
+	gatewayControllerName = "controller/name"
 )
 
 func getAssetsDir() string {
-
 	assets := ""
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
@@ -60,9 +64,6 @@ var _ = BeforeSuite(func() {
 	log.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	ctx, cancel = context.WithCancel(context.TODO())
-
-	gatewayClassName = "clsname"
-	gatewayControllerName = "controller/name"
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -100,8 +101,6 @@ var _ = BeforeSuite(func() {
 	kubeconfig = generateKubeConfiguration(cfg)
 	mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 
-	var gatewayClassObjName api.ObjectName = api.ObjectName(gatewayClassName)
-
 	exts, err := extensions.NewK8sGatewayExtensions(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
 		Mgr: mgr,
 	})
@@ -109,7 +108,7 @@ var _ = BeforeSuite(func() {
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		GWClassName:    gatewayClassObjName,
+		GWClasses:      sets.New(gatewayClassName, altGatewayClassName),
 		AutoProvision:  true,
 		Kick:           func(ctx context.Context) { return },
 		Extensions:     exts,
@@ -170,6 +169,7 @@ func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Controller Suite")
 }
+
 func generateKubeConfiguration(restconfig *rest.Config) string {
 	clusters := make(map[string]*clientcmdapi.Cluster)
 	authinfos := make(map[string]*clientcmdapi.AuthInfo)
