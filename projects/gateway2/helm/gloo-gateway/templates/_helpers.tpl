@@ -54,6 +54,7 @@ helm.sh/chart: {{ include "gloo-gateway.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
 
 {{/*
@@ -62,7 +63,6 @@ Selector labels
 {{- define "gloo-gateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "gloo-gateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
 
 {{/*
