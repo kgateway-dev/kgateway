@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6048
+    resolvesIssue: false
+    description: >-
+      Add istioctl bug-report to the end-to-end tests on failure.
