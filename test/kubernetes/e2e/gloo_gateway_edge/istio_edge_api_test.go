@@ -83,7 +83,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation, tempOutputDir))
+		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation))
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {

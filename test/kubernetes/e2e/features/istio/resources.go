@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	edgeApisRoutingResourcesFileName = "edge-apis-routing.gen.yaml"
+	EdgeApisRoutingResourcesFileName = "edge-apis-routing.gen.yaml"
 
 	httpbinSvc = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "httpbin", Namespace: "httpbin"}}
 
 	// Edge API resources for no sslConfig on Upstream
-	getGlooGatewayEdgeResources = func(installNamespace string) []client.Object {
+	GetGlooGatewayEdgeResources = func(installNamespace string) []client.Object {
 		httpbinUpstream := &soloapis_gloov1.Upstream{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       gloov1.UpstreamGVK.Kind,

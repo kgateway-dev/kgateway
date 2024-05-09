@@ -24,34 +24,38 @@ type glooIstioAutoMtlsTestingSuite struct {
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
 
-	// routingManifestFile is the path to the manifest file that contains the routing resources
-	routingManifestFile string
+	// routingManifestPath is the path to the manifest directory that contains the routing resources
+	routingManifestPath string
 }
 
 func NewGlooIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation, routingManifestPath string) suite.TestingSuite {
-	routingManifestFile := filepath.Join(routingManifestPath, edgeApisRoutingResourcesFileName)
 	return &glooIstioAutoMtlsTestingSuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
-		routingManifestFile: routingManifestFile,
+		routingManifestPath: routingManifestPath,
 	}
 }
 
+func (s *glooIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest() string {
+	// TODO(npolshak): Support other upstream configurations (auto mtls disabled, sslConfig overwrite, etc.)
+	return filepath.Join(s.routingManifestPath, EdgeApisRoutingResourcesFileName)
+}
+
 func (s *glooIstioAutoMtlsTestingSuite) SetupSuite() {
-	resources := getGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace)
-	err := utils.WriteResourcesToFile(resources, s.routingManifestFile)
+	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace)
+	err := utils.WriteResourcesToFile(resources, s.getEdgeGatewayRoutingManifest())
 	s.NoError(err, "can write resources to file")
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 
 	// Ensure that the proxy service and deployment are created
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.getEdgeGatewayRoutingManifest())
 	s.NoError(err, "can apply generated routing manifest")
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.routingManifestFile)
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.getEdgeGatewayRoutingManifest())
 	s.NoError(err, "can delete generated routing manifest")
 
 	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
