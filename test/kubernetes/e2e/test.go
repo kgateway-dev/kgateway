@@ -11,8 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	k8scoreruntime "k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/test/kube2e"
@@ -46,9 +44,9 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	return testHelper
 }
 
-func MustTestCluster(additionalSchemes func(scheme *k8scoreruntime.Scheme) error) *TestCluster {
+func MustTestCluster() *TestCluster {
 	runtimeContext := k8sruntime.NewContext()
-	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName, additionalSchemes)
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName, nil)
 
 	return &TestCluster{
 		RuntimeContext: runtimeContext,
@@ -135,7 +133,6 @@ func (i *TestInstallation) String() string {
 func (i *TestInstallation) InstallGlooGateway(
 	ctx context.Context,
 	installFn func(ctx context.Context) error,
-	generateClientsFn func(ctx context.Context, clusterCtx *cluster.Context) (gloogateway.ResourceClients, error),
 ) {
 	if !testutils.ShouldSkipInstall() {
 		err := installFn(ctx)
@@ -143,16 +140,10 @@ func (i *TestInstallation) InstallGlooGateway(
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
 	}
 
-	if generateClientsFn != nil {
-		clients, err := generateClientsFn(ctx, i.TestCluster.ClusterContext)
-		i.Assertions.Require.NoError(err)
-		i.ResourceClients = clients
-	} else {
-		// We can only create the ResourceClients after the CRDs exist in the Cluster
-		clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
-		i.Assertions.Require.NoError(err)
-		i.ResourceClients = clients
-	}
+	// We can only create the ResourceClients after the CRDs exist in the Cluster
+	clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	i.Assertions.Require.NoError(err)
+	i.ResourceClients = clients
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {

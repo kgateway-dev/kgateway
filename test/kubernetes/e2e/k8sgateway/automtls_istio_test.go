@@ -21,7 +21,7 @@ import (
 // TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
 func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster(nil)
+	testCluster := e2e.MustTestCluster()
 	testInstallation := testCluster.RegisterTestInstallation(
 		t,
 		&gloogateway.Context{
