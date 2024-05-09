@@ -42,7 +42,7 @@ func TestK8sGatewayIstio(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 
 			// Generate istioctl bug report
-			testInstallation.TestCluster.CreateIstioBugReport(ctx, testInstallation.GeneratedFiles.TempDir)
+			testInstallation.TestCluster.CreateIstioBugReport(ctx, testInstallation.GeneratedFiles.FailureDir)
 		}
 
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
