@@ -374,6 +374,7 @@ var _ = Describe("AWS Lambda", func() {
 	// this tests the case where a lambda returns malformed multiValueHeaders, a case which previously caused Envoy to
 	// return a 500 response
 	// we now expect a 200 response with no body and no headers
+	// the headers are malformed because multiValueHeaders is an object and not an array
 	// lambda: https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/malformed-headers-test
 	// expected response:
 	//        'body': json.dumps('test body'),
