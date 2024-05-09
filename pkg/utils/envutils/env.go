@@ -17,12 +17,3 @@ func IsEnvDefined(envVarName string) bool {
 	envValue := os.Getenv(envVarName)
 	return len(envValue) > 0
 }
-
-// GetOrDefault returns the environment variable value, if it is defined, or the defaultValue if it is not defined
-func GetOrDefault(envVarName string, defaultValue string) string {
-	envValue := os.Getenv(envVarName)
-	if len(envValue) > 0 {
-		return envValue
-	}
-	return defaultValue
-}

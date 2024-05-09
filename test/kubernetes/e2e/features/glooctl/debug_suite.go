@@ -2,10 +2,11 @@ package glooctl
 
 import (
 	"context"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/stretchr/testify/suite"
 	"os"
 	"path/filepath"
+
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/stretchr/testify/suite"
 )
 
 // debugSuite contains the set of tests to validate the behavior of `glooctl debug`
