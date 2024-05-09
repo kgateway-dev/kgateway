@@ -18,6 +18,11 @@ import (
 
 // MustKindContext returns the Context for a KinD cluster with the given name
 func MustKindContext(clusterName string, additionalSchemes func(scheme *runtime.Scheme) error) *Context {
+	if len(clusterName) == 0 {
+		// We fall back to the cluster named `kind` if no cluster name was provided
+		clusterName = "kind"
+	}
+	
 	kubeCtx := fmt.Sprintf("kind-%s", clusterName)
 
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
