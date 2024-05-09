@@ -118,8 +118,8 @@ func (c *TestCluster) UninstallIstio() error {
 	return cluster.UninstallIstio(c.IstioctlBinary, c.ClusterContext.KubeContext)
 }
 
-func (c *TestCluster) CreateIstioBugReport(ctx context.Context) {
-	cluster.CreateIstioBugReport(ctx, c.IstioctlBinary, c.ClusterContext.KubeContext)
+func (c *TestCluster) CreateIstioBugReport(ctx context.Context, artifactOutputDir string) {
+	cluster.CreateIstioBugReport(ctx, c.IstioctlBinary, c.ClusterContext.KubeContext, artifactOutputDir)
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
@@ -180,4 +180,37 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	logFile := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.txt")
 	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo", ">", logFile)
 	_ = logsCmd.Run()
+}
+
+// GeneratedFiles is a collection of files that are generated during the execution of a set of tests
+type GeneratedFiles struct {
+	// TempDir is the directory where any temporary files should be created
+	// Tests may create files for any number of reasons:
+	// - A: When a test renders objects in a file, and then uses this file to create and delete values
+	// - B: When a test invokes a command that produces a file as a side effect (glooctl, for example)
+	// Files in this directory are an implementation detail of the test itself.
+	// As a result, it is the callers responsibility to clean up the TempDir when the tests complete
+	TempDir string
+
+	// FailureDir is the directory where any assets that are produced on failure will be created
+	FailureDir string
+}
+
+// MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the directories
+func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
+	tmpDir, err := os.MkdirTemp("", tmpDirId)
+	if err != nil {
+		panic(err)
+	}
+
+	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId)
+	err = os.MkdirAll(failureDir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	return GeneratedFiles{
+		TempDir:    tmpDir,
+		FailureDir: failureDir,
+	}
 }

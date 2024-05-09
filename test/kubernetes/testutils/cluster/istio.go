@@ -13,7 +13,6 @@ import (
 	glooruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
 func GetIstioctl(ctx context.Context) (string, error) {
@@ -158,26 +157,18 @@ func UninstallIstio(istioctlBinary, kubeContext string) error {
 }
 
 // CreateIstioBugReport generates an istioctl bug report and moves it to the _output directory
-func CreateIstioBugReport(ctx context.Context, istioctlBinary, kubeContext string) {
+func CreateIstioBugReport(ctx context.Context, istioctlBinary, kubeContext, artifactOutputDir string) {
 	// Generate istioctl bug report
 	if istioctlBinary == "" {
 		contextutils.LoggerFrom(ctx).Panic("istioctl binary not set. Cannot generate istioctl bug report.")
 	}
 
-	goModFile, err := modutils.GetCurrentModPackageFile()
-	if err != nil {
-		// This should never happen
-		contextutils.LoggerFrom(ctx).Panic(err)
-	}
-
-	rootDir := filepath.Dir(goModFile)
-	artifactOutput := filepath.Join(rootDir, "_output", "test_failure_report")
 	bugReportCmd := exec.Command(istioctlBinary, "bug-report", "--full-secrets", "--context", kubeContext)
 	bugReportErr := bugReportCmd.Run()
 	if bugReportErr != nil {
 		fmt.Println("Error generating bug report:", bugReportErr)
 	}
-	mvCmd := exec.Command("mv", "bug-report.tar.gz", artifactOutput)
+	mvCmd := exec.Command("mv", "bug-report.tar.gz", artifactOutputDir)
 	mvErr := mvCmd.Run()
 	if mvErr != nil {
 		fmt.Println("Error moving bug report file:", mvErr)

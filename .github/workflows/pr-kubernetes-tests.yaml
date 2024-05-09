@@ -99,9 +99,9 @@ jobs:
         cluster-name: kind
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
-    - name: Archive istioctl bug report on failure
-      if: ${{ failure() && hashFiles('./_output/test_failure_report/bug-report.tar.gz') != '' }} # Only upload the artifact if the test failed and the artifact exists
-      uses: actions/upload-artifact@v2
+    - name: Archive bug report directory on failure
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
       with:
         name: bug-report
-        path: ./_output/bug-report.tar.gz
+        path: ./_test/bug_report
