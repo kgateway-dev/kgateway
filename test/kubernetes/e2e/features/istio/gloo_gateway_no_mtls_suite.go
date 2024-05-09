@@ -28,8 +28,8 @@ type glooIstioTestingSuite struct {
 	routingManifestFile string
 }
 
-func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, routingManifestPath string) suite.TestingSuite {
-	routingManifestFile := filepath.Join(routingManifestPath, EdgeApisRoutingResourcesFileName)
+func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	routingManifestFile := filepath.Join(testInst.GeneratedFiles.TempDir, EdgeApisRoutingResourcesFileName)
 	return &glooIstioTestingSuite{
 		ctx:                 ctx,
 		testInstallation:    testInst,
