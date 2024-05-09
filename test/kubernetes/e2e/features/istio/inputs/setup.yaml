@@ -59,18 +59,11 @@ spec:
             - "600s" # override default 10s
           ports:
             - containerPort: 8080
-        - name: curl
-          image: curlimages/curl:7.83.1
           resources:
             requests:
               cpu: "100m"
             limits:
               cpu: "200m"
-          imagePullPolicy: IfNotPresent
-          command:
-            - "tail"
-            - "-f"
-            - "/dev/null"
 ---
 apiVersion: v1
 kind: Namespace
@@ -94,3 +87,8 @@ spec:
         - "tail"
         - "-f"
         - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+        limits:
+          cpu: "200m"
