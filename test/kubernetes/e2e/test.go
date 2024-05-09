@@ -87,6 +87,9 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
+		// GeneratedFiles contains the unique location where files generated during the execution
+		// of tests against this installation will be stored
+		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
 		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
 	}
 	c.activeInstallations[installation.String()] = installation
@@ -207,24 +210,25 @@ func (i *TestInstallation) InstallIstioOperator(
 	return ctx.Err()
 }
 
+// GeneratedFiles is a collection of files that are generated during the execution of a set of tests
 type GeneratedFiles struct {
 	// TempDir is the directory where any temporary files should be created
-	// This allows us to run the same feature against multiple TestInstallation's and
-	// have a clear separation for the files that are generated
 	TempDir string
 
+	// FailureDir is the directory where any assets that are produced on failure will be created
 	FailureDir string
 }
 
-func MustGeneratedFiles(tmpDirPattern string) GeneratedFiles {
-	tmpDir, err := os.MkdirTemp("", tmpDirPattern)
+// MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the temporary directory
+func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
+	tmpDir, err := os.MkdirTemp("", tmpDirId)
 	if err != nil {
 		panic(err)
 	}
 
 	return GeneratedFiles{
 		TempDir:    tmpDir,
-		FailureDir: filepath.Join(GlooDirectory(), "_output"),
+		FailureDir: filepath.Join(GlooDirectory(), "_output", tmpDirId),
 	}
 }
 
