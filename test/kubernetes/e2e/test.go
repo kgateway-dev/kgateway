@@ -39,7 +39,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 
 func MustTestCluster() *TestCluster {
 	runtimeContext := testruntime.NewContext()
-	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName, nil)
 
 	return &TestCluster{
 		RuntimeContext: runtimeContext,
