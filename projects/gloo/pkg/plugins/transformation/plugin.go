@@ -565,7 +565,7 @@ func (p *Plugin) validateTransformation(
 		return nil
 	}
 
-	err = bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
+	err = bootstrap.ValidateBootstrap(ctx, FilterName, transformations)
 	p.validationLruCache.Add(transformHash, err)
 	return err
 }
