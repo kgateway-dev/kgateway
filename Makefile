@@ -286,13 +286,10 @@ GO_TEST_USER_ARGS ?=
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset before each invocation
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
 	$(TEST_PKG)
-
-.PHONY: go-test-clean
-go-test-clean: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset before each invocation
-go-test-clean: go-test
 
 #----------------------------------------------------------------------------------
 # Clean

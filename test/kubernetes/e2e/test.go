@@ -216,6 +216,11 @@ func (i *TestInstallation) InstallIstioOperator(
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
 type GeneratedFiles struct {
 	// TempDir is the directory where any temporary files should be created
+	// Tests may create files for any number of reasons:
+	// - A: When a test renders objects in a file, and then uses this file to create and delete values
+	// - B: When a test invokes a command that produces a file as a side effect (glooctl, for example)
+	// Files in this directory are an implementation detail of the test itself.
+	// As a result, it is the callers responsibility to clean up the TempDir when the tests complete
 	TempDir string
 
 	// FailureDir is the directory where any assets that are produced on failure will be created
