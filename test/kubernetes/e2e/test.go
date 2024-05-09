@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/rotisserie/eris"
@@ -19,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	k8sruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
+	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -28,7 +27,7 @@ import (
 // The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
 // in favor of using the exact tool that users rely on
 func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
-	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, GlooDirectory(), installation.Metadata.InstallNamespace)
+	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +38,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 }
 
 func MustTestCluster() *TestCluster {
-	runtimeContext := k8sruntime.NewContext()
+	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
 	return &TestCluster{
@@ -52,7 +51,7 @@ func MustTestCluster() *TestCluster {
 // Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
 type TestCluster struct {
 	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
-	RuntimeContext k8sruntime.Context
+	RuntimeContext testruntime.Context
 
 	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
 	ClusterContext *cluster.Context
@@ -160,8 +159,12 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
-	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
-	logsCmd.Run()
+	// This is a work in progress
+	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
+	// That way we can upload it in CI, or inspect it locally
+	logFile := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.txt")
+	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo", ">", logFile)
+	_ = logsCmd.Run()
 }
 
 const (
@@ -219,16 +222,22 @@ type GeneratedFiles struct {
 	FailureDir string
 }
 
-// MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the temporary directory
+// MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the directories
 func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
 	tmpDir, err := os.MkdirTemp("", tmpDirId)
 	if err != nil {
 		panic(err)
 	}
 
+	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId)
+	err = os.MkdirAll(failureDir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
 	return GeneratedFiles{
 		TempDir:    tmpDir,
-		FailureDir: filepath.Join(GlooDirectory(), "_output", tmpDirId),
+		FailureDir: failureDir,
 	}
 }
 
@@ -253,7 +262,7 @@ func DownloadIstio(ctx context.Context, version string) (string, error) {
 
 		return binaryPath, nil
 	}
-	installLocation := filepath.Join(GlooDirectory(), ".bin")
+	installLocation := filepath.Join(testutils.GitRootDirectory(), ".bin")
 	binaryDir := filepath.Join(installLocation, fmt.Sprintf("istio-%s", version), "bin")
 	binaryLocation := filepath.Join(binaryDir, "istioctl")
 
@@ -328,12 +337,4 @@ func (i *TestInstallation) UninstallIstio() error {
 		return fmt.Errorf("istioctl uninstall failed: %w", err)
 	}
 	return nil
-}
-
-func GlooDirectory() string {
-	data, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	if err != nil {
-		panic(err)
-	}
-	return strings.TrimSpace(string(data))
 }
