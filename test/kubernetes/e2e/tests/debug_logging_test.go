@@ -22,10 +22,8 @@ import (
 // TestInstallationWithDebugLogLevel is the function which executes a series of tests against a given installation
 func TestInstallationWithDebugLogLevel(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		testCluster,
 		&gloogateway.Context{
 			InstallNamespace:   "debug-example",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),

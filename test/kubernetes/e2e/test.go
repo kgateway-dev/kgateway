@@ -37,30 +37,36 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	return testHelper
 }
 
-func MustTestCluster() *TestCluster {
+// CreateTestInstallation is the simplest way to construct a TestInstallation in Gloo Gateway OSS
+// It is syntactic sugar on top of CreateTestInstallationForCluster
+func CreateTestInstallation(
+	t *testing.T,
+	glooGatewayContext *gloogateway.Context,
+) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
-	return &TestCluster{
-		RuntimeContext: runtimeContext,
-		ClusterContext: clusterContext,
-	}
+	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, glooGatewayContext)
 }
 
-// TestCluster is the structure around a set of tests that run against a Kubernetes Cluster
-// Within a TestCluster, we spin off multiple TestInstallation to test the behavior of a particular installation
-type TestCluster struct {
-	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
-	RuntimeContext testruntime.Context
-
-	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
-	ClusterContext *cluster.Context
-}
-
-func CreateTestInstallation(t *testing.T, c *TestCluster, glooGatewayContext *gloogateway.Context) *TestInstallation {
+// CreateTestInstallationForCluster is the standard way to construct a TestInstallation
+// It accepts context objects from 3 relevant sources:
+//
+//	runtime - These are properties that are supplied at runtime and will impact how tests are executed
+//	cluster - These are properties that are used to connect to the Kubernetes cluster
+//	glooGateway - These are properties that are relevant to how Gloo Gateway will be configured
+func CreateTestInstallationForCluster(
+	t *testing.T,
+	runtimeContext testruntime.Context,
+	clusterContext *cluster.Context,
+	glooGatewayContext *gloogateway.Context,
+) *TestInstallation {
 	installation := &TestInstallation{
-		// Create a reference to the TestCluster, and all of it's metadata
-		TestCluster: c,
+		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
+		RuntimeContext: runtimeContext,
+
+		// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
+		ClusterContext: clusterContext,
 
 		// Maintain a reference to the Metadata used for this installation
 		Metadata: glooGatewayContext,
@@ -70,12 +76,12 @@ func CreateTestInstallation(t *testing.T, c *TestCluster, glooGatewayContext *gl
 
 		// Create an operations provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
-			WithClusterContext(c.ClusterContext).
+			WithClusterContext(clusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
 		// Create an assertions provider, and point it to the running installation
 		Assertions: assertions.NewProvider(t).
-			WithClusterContext(c.ClusterContext).
+			WithClusterContext(clusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
 
 		// GeneratedFiles contains the unique location where files generated during the execution
@@ -92,8 +98,11 @@ func CreateTestInstallation(t *testing.T, c *TestCluster, glooGatewayContext *gl
 type TestInstallation struct {
 	fmt.Stringer
 
-	// TestCluster contains the properties of the TestCluster this TestInstallation is a part of
-	TestCluster *TestCluster
+	// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
+	RuntimeContext testruntime.Context
+
+	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
+	ClusterContext *cluster.Context
 
 	// Metadata contains the properties used to install Gloo Gateway
 	Metadata *gloogateway.Context
@@ -132,7 +141,7 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 	}
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
-	clients, err := gloogateway.NewResourceClients(ctx, i.TestCluster.ClusterContext)
+	clients, err := gloogateway.NewResourceClients(ctx, i.ClusterContext)
 	i.Assertions.Require.NoError(err)
 	i.ResourceClients = clients
 }
@@ -190,9 +199,9 @@ func (i *TestInstallation) InstallIstioOperator(
 	if operatorFile == "" {
 		// use the minimal profile by default if no operator file is provided
 		// yes | istioctl install --context <kube-context> --set profile=minimal
-		cmd = exec.Command("sh", "-c", "yes | "+i.IstioctlBinary+" install --context "+i.TestCluster.ClusterContext.KubeContext+" --set profile=minimal")
+		cmd = exec.Command("sh", "-c", "yes | "+i.IstioctlBinary+" install --context "+i.ClusterContext.KubeContext+" --set profile=minimal")
 	} else {
-		cmd = exec.Command("sh", "-c", "yes | "+i.IstioctlBinary, "install", "-y", "--context", i.TestCluster.ClusterContext.KubeContext, "-f", operatorFile)
+		cmd = exec.Command("sh", "-c", "yes | "+i.IstioctlBinary, "install", "-y", "--context", i.ClusterContext.KubeContext, "-f", operatorFile)
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -324,7 +333,7 @@ func DownloadIstio(ctx context.Context, version string) (string, error) {
 
 func (i *TestInstallation) UninstallIstio() error {
 	// sh -c yes | istioctl uninstall —purge —context <kube-context>
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context %s", i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context %s", i.IstioctlBinary, i.ClusterContext.KubeContext))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

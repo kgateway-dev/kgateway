@@ -20,10 +20,8 @@ import (
 // TestK8sGatewayIstio is the function which executes a series of tests against a given installation
 func TestK8sGatewayIstio(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		testCluster,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-k8s-gw-test",
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-k8s-gateway-test-helm.yaml"),
