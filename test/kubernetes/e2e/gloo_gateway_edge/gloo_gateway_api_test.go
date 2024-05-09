@@ -50,6 +50,6 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation, testInstallation.GeneratedFiles.TempDir))
+		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation))
 	})
 }
