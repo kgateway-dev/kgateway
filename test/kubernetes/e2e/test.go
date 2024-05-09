@@ -53,9 +53,6 @@ type TestCluster struct {
 	// activeInstallations is the set of TestInstallation that have been created for this cluster.
 	// Since tests are run serially, this will only have a single entry at a time
 	activeInstallations map[string]*TestInstallation
-
-	// IstioctlBinary is the path to the istioctl binary that can be used to interact with Istio
-	IstioctlBinary string
 }
 
 func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext *gloogateway.Context) *TestInstallation {
@@ -101,25 +98,25 @@ func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation)
 	delete(c.activeInstallations, installation.String())
 }
 
-func (c *TestCluster) AddIstioctl(ctx context.Context) error {
+func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
 	istioctl, err := cluster.GetIstioctl(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to download istio: %w", err)
 	}
-	c.IstioctlBinary = istioctl
+	i.IstioctlBinary = istioctl
 	return nil
 }
 
-func (c *TestCluster) InstallMinimalIstio(ctx context.Context) error {
-	return cluster.InstallMinimalIstio(ctx, c.IstioctlBinary, c.ClusterContext.KubeContext)
+func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
+	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext)
 }
 
-func (c *TestCluster) UninstallIstio() error {
-	return cluster.UninstallIstio(c.IstioctlBinary, c.ClusterContext.KubeContext)
+func (i *TestInstallation) UninstallIstio() error {
+	return cluster.UninstallIstio(i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext)
 }
 
-func (c *TestCluster) CreateIstioBugReport(ctx context.Context, artifactOutputDir string) {
-	cluster.CreateIstioBugReport(ctx, c.IstioctlBinary, c.ClusterContext.KubeContext, artifactOutputDir)
+func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
+	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
@@ -144,6 +141,9 @@ type TestInstallation struct {
 
 	// GeneratedFiles is the collection of directories and files that this test installation _may_ create
 	GeneratedFiles GeneratedFiles
+
+	// IstioctlBinary is the path to the istioctl binary that can be used to interact with Istio
+	IstioctlBinary string
 }
 
 func (i *TestInstallation) String() string {

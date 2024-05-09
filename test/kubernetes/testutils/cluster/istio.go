@@ -79,7 +79,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 
 		return binaryPath, nil
 	}
-	installLocation := filepath.Join(glooruntime.GlooDirectory(), ".bin")
+	installLocation := filepath.Join(testutils.GitRootDirectory(), ".bin")
 	binaryDir := filepath.Join(installLocation, fmt.Sprintf("istio-%s", version), "bin")
 	binaryLocation := filepath.Join(binaryDir, "istioctl")
 
