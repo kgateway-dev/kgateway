@@ -87,3 +87,20 @@ If there are multiple tests in a feature suite, you can run a single test by add
 ```
 -test.run="TestK8sGateway/RouteOptions/TestConfigureRouteOptionsWithTargetRef"
 ```
+
+
+### Running the same tests as our CI pipeline
+We [load balance tests](./load_balancing_tests.md) across different clusters when executing them in CI. If you would like to replicate the exact set of tests that are run for a given cluster, you should:
+1. Inspect the `go-test-run-regex` defined in the [test matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+```
+go-test-run-regex: '(^TestK8sGateway$$)'
+```
+_NOTE: There is `$$` in the GitHub action definition, since a single `$` is expanded_
+2. Inspect the `go-test-args` defined in the [test matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+```
+go-test-args: '-v -timeout=25m'
+```
+3. Combine these arguments when invoking go test:
+```bash
+TEST_PKG=./test/kubernetes/e2e/... GO_TEST_USER_ARGS= -v -timeout=25m -run '(^TestK8sGateway$)' make go-test
+```
