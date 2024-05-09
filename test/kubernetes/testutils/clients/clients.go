@@ -25,7 +25,7 @@ func MustClientset() *kubernetes.Clientset {
 	return clientset
 }
 
-func MustClientScheme(additionalSchemes func(scheme *runtime.Scheme) error) *runtime.Scheme {
+func MustClientScheme(registerAdditionalSchemes func(scheme *runtime.Scheme) error) *runtime.Scheme {
 	clientScheme := runtime.NewScheme()
 
 	// K8s API resources
@@ -52,8 +52,8 @@ func MustClientScheme(additionalSchemes func(scheme *runtime.Scheme) error) *run
 	err = v1.AddToScheme(clientScheme)
 	mustNotError(err)
 
-	if additionalSchemes != nil {
-		err = additionalSchemes(clientScheme)
+	if registerAdditionalSchemes != nil {
+		err = registerAdditionalSchemes(clientScheme)
 		mustNotError(err)
 	}
 
