@@ -198,14 +198,20 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 		}
 	}
 
-	knownVirtualHostOptions, err := checkVirtualHostOptions(ctx, printer, opts, namespaces)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	var knownVirtualHostOptions []string
+	if included := doesNotContain(opts.Top.CheckName, "virtual-host-options"); included {
+		knownVirtualHostOptions, err = checkVirtualHostOptions(ctx, printer, opts, namespaces)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
-	knownRouteOptions, err := checkRouteOptions(ctx, printer, opts, namespaces)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	var knownRouteOptions []string
+	if included := doesNotContain(opts.Top.CheckName, "route-options"); included {
+		knownRouteOptions, err = checkRouteOptions(ctx, printer, opts, namespaces)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "secrets"); included {
