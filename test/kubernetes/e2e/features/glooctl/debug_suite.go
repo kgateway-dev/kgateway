@@ -55,25 +55,13 @@ func (s *debugSuite) TestLogsZipFile() {
 	s.NoError(err, "Output file should have been generated")
 }
 
-/**
+func (s *debugSuite) TestLogsFile() {
+	outputFile := filepath.Join(s.tmpDir, "log.txt")
 
-It("should create a tar file at location specified in --file when --zip is enabled", func() {
-				outputFile := filepath.Join(tmpDir, "log.tgz")
+	err := s.testInstallation.Actions.Glooctl().DebugLogs(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--file", outputFile, "--zip", "false")
+	s.NoError(err)
 
-				_, err := GlooctlOut("debug", "logs", "-n", testHelper.InstallNamespace, "--file", outputFile, "--zip", "true")
-				Expect(err).NotTo(HaveOccurred(), "glooctl command should have succeeded")
-
-				_, err = os.Stat(outputFile)
-				Expect(err).NotTo(HaveOccurred(), "Output file should have been generated")
-			})
-
-			It("should create a text file at location specified in --file when --zip is not enabled", func() {
-				outputFile := filepath.Join(tmpDir, "log.txt")
-
-				_, err := GlooctlOut("debug", "logs", "-n", testHelper.InstallNamespace, "--file", outputFile, "--zip", "false")
-				Expect(err).NotTo(HaveOccurred(), "glooctl command should have succeeded")
-
-				_, err = os.Stat(outputFile)
-				Expect(err).NotTo(HaveOccurred(), "Output file should have been generated")
-			})
-*/
+	_, err = os.Stat(outputFile)
+	s.NoError(err, "Output file should have been generated")
+}
