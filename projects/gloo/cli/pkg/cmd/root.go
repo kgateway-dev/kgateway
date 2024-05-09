@@ -34,10 +34,14 @@ import (
 	"k8s.io/kubectl/pkg/cmd"
 )
 
+const (
+	Name = "glooctl"
+)
+
 func App(opts *options.Options, preRunFuncs []RunnableCommand, postRunFuncs []RunnableCommand, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 
 	app := &cobra.Command{
-		Use:   "glooctl",
+		Use:   Name,
 		Short: "CLI for Gloo",
 		Long: `glooctl is the unified CLI for Gloo.
 	Find more information at https://solo.io`,
@@ -86,10 +90,10 @@ func App(opts *options.Options, preRunFuncs []RunnableCommand, postRunFuncs []Ru
 	return app
 }
 
-func GlooCli() *cobra.Command {
+func CommandWithContext(ctx context.Context) *cobra.Command {
 	opts := &options.Options{
 		Top: options.Top{
-			Ctx: context.Background(),
+			Ctx: ctx,
 		},
 	}
 
@@ -143,6 +147,10 @@ func GlooCli() *cobra.Command {
 	var postRunFuncs []RunnableCommand
 
 	return App(opts, preRunFuncs, postRunFuncs, optionsFunc)
+}
+
+func GlooCli() *cobra.Command {
+	return CommandWithContext(context.Background())
 }
 
 type RunnableCommand func(*options.Options, *cobra.Command) error
