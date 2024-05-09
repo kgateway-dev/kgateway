@@ -30,7 +30,7 @@ func NewDebugSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.Te
 func (s *debugSuite) SetupSuite() {
 	var err error
 
-	s.tmpDir, err = os.MkdirTemp("", "debug-suite-dir")
+	s.tmpDir, err = os.MkdirTemp(s.testInstallation.GeneratedFiles.TempDir, "debug-suite-dir")
 	s.Require().NoError(err)
 }
 

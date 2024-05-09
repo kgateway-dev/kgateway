@@ -86,6 +86,8 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 		Assertions: assertions.NewProvider(t).
 			WithClusterContext(c.ClusterContext).
 			WithGlooGatewayContext(glooGatewayContext),
+
+		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
 	}
 	c.activeInstallations[installation.String()] = installation
 
@@ -93,6 +95,10 @@ func (c *TestCluster) RegisterTestInstallation(t *testing.T, glooGatewayContext 
 }
 
 func (c *TestCluster) UnregisterTestInstallation(installation *TestInstallation) {
+	if err := os.RemoveAll(installation.GeneratedFiles.TempDir); err != nil {
+		panic(fmt.Sprintf("Failed to remove temporary directory: %s", installation.GeneratedFiles.TempDir))
+	}
+
 	delete(c.activeInstallations, installation.String())
 }
 
@@ -118,6 +124,9 @@ type TestInstallation struct {
 
 	// IstioctlBinary is the path to the istioctl binary that can be used to interact with Istio
 	IstioctlBinary string
+
+	// GeneratedFiles is the collection of directories and files that this test installation _may_ create
+	GeneratedFiles GeneratedFiles
 }
 
 func (i *TestInstallation) String() string {
@@ -196,6 +205,27 @@ func (i *TestInstallation) InstallIstioOperator(
 	}
 
 	return ctx.Err()
+}
+
+type GeneratedFiles struct {
+	// TempDir is the directory where any temporary files should be created
+	// This allows us to run the same feature against multiple TestInstallation's and
+	// have a clear separation for the files that are generated
+	TempDir string
+
+	FailureDir string
+}
+
+func MustGeneratedFiles(tmpDirPattern string) GeneratedFiles {
+	tmpDir, err := os.MkdirTemp("", tmpDirPattern)
+	if err != nil {
+		panic(err)
+	}
+
+	return GeneratedFiles{
+		TempDir:    tmpDir,
+		FailureDir: filepath.Join(GlooDirectory(), "_output"),
+	}
 }
 
 func getIstioctlVersionOrDefault() string {
