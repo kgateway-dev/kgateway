@@ -69,7 +69,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, Equal(1))
 
 	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
-	if s.testInstallation.TestCluster.RuntimeContext.RunSource == runtime.LocalDevelopment {
+	if s.testInstallation.RuntimeContext.RunSource == runtime.LocalDevelopment {
 		// There are failures when opening port-forwards to the Envoy Admin API in CI
 		// Those are currently being investigated
 		s.testInstallation.Assertions.AssertEnvoyAdminApi(
