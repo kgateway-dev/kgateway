@@ -67,7 +67,14 @@ type Plugin struct {
 }
 
 func NewPlugin() *Plugin {
-	return &Plugin{}
+	mCacheHits := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
+	mCacheMisses := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
+
+	return &Plugin{
+		validator: validator.New(ExtensionName, FilterName,
+			validator.WithCacheHitCounter(mCacheHits),
+			validator.WithCacheMissCounter(mCacheMisses)),
+	}
 }
 
 func (p *Plugin) Name() string {
@@ -83,16 +90,6 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.TranslateTransformation = TranslateTransformation
 	p.escapeCharacters = params.Settings.GetGloo().GetTransformationEscapeCharacters()
 	p.logRequestResponseInfo = params.Settings.GetGloo().GetLogTransformationRequestResponseInfo().GetValue()
-	// Skip validation if disabled
-	if !p.settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
-		mCacheHits := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
-		mCacheMisses := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
-
-		p.validator = validator.New(ExtensionName, FilterName,
-			validator.WithCacheHitCounter(mCacheHits),
-			validator.WithCacheMissCounter(mCacheMisses))
-	}
-
 }
 
 func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {

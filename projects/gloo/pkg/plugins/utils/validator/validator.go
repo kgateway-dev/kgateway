@@ -56,7 +56,7 @@ func (v validator) ValidateConfig(ctx context.Context, config HashableProtoMessa
 		return err
 	}
 
-	// This transformation has already been validated, return the result
+	// This proto has already been validated, return the result
 	if err, ok := v.validationLruCache.Get(hash); ok {
 		utils.MeasureOne(
 			ctx,
@@ -66,12 +66,11 @@ func (v validator) ValidateConfig(ctx context.Context, config HashableProtoMessa
 		// so return it as a nil err after cast worst case.
 		errCasted, _ := err.(error)
 		return errCasted
-	} else {
-		utils.MeasureOne(
-			ctx,
-			v.cacheMisses,
-		)
 	}
+	utils.MeasureOne(
+		ctx,
+		v.cacheMisses,
+	)
 
 	err = bootstrap.ValidateBootstrap(ctx, v.filterName, config)
 	v.validationLruCache.Add(hash, err)
