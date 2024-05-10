@@ -60,11 +60,8 @@ spec:
         - "tail"
         - "-f"
         - "/dev/null"
-<<<<<<< HEAD:test/kubernetes/e2e/features/route_options/testdata/setup.yaml
-=======
       resources:
         requests:
           cpu: "100m"
         limits:
           cpu: "200m"
->>>>>>> main:test/kubernetes/e2e/features/route_options/testdata/fault-injection-targetref.yaml
