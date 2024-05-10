@@ -691,7 +691,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		extensions.ApiEmitterChannel,
 	)
 
-	rpt := reporter.NewReporter("gloo",
+	rpt := reporter.NewReporter(defaults.GlooReporter,
 		statusClient,
 		hybridUsClient.BaseClient(),
 		proxyClient.BaseClient(),

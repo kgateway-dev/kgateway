@@ -3,8 +3,6 @@ package route_options
 import (
 	"context"
 
-	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -12,6 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
@@ -55,14 +54,12 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 
 	// Check status is accepted on RouteOption
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		s.ctx,
 		func() (resources.InputResource, error) {
 			return s.testInstallation.ResourceClients.RouteOptionClient().Read(routeOptionMeta.GetNamespace(), routeOptionMeta.GetName(), clients.ReadOpts{})
 		},
-		gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"State":      gomega.Equal(core.Status_Accepted),
-			"ReportedBy": gomega.Equal("gloo-kube-gateway"), // TODO: this should likely be a constant
-		}))
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
 }
 
 func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
