@@ -24,7 +24,7 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "glooctl-edge-api-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-api-gateway-test-helm.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "gloo-gateway-test-helm.yaml"),
 		},
 	)
 
