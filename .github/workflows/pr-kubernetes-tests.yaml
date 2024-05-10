@@ -6,6 +6,10 @@ on:
 env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
+# The istio version to use for the e2e tests
+# TODO(npolshak): Test across multiple versions of Istio
+# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
+  ISTIO_VERSION: "1.19.9"
 
 jobs:
   prepare_env:
@@ -95,4 +99,9 @@ jobs:
         cluster-name: kind
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
-
+    - name: Archive bug report directory on failure
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: bug-report
+        path: ./_test/bug_report
