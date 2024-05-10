@@ -2,6 +2,8 @@ package utils
 
 import (
 	"reflect"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 // ShallowMerge sets dst to the value of src, if src is non-zero and dst is zero-valued or overwrite=true.
@@ -39,4 +41,26 @@ func isEmptyValue(v reflect.Value) bool {
 		return true
 	}
 	return false
+}
+
+// ShallowMergeRouteOptions merges the top-level fields of src into dst.
+// The fields in dst that have non-zero values will not be overwritten.
+// It performs a shallow merge of top-level fields only.
+func ShallowMergeRouteOptions(dst, src *v1.RouteOptions) *v1.RouteOptions {
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src.Clone().(*v1.RouteOptions)
+	}
+
+	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
+
+	for i := range dstValue.NumField() {
+		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
+		ShallowMerge(dstField, srcField, false)
+	}
+
+	return dst
 }
