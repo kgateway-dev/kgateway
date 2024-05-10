@@ -64,3 +64,8 @@ spec:
         - "tail"
         - "-f"
         - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+        limits:
+          cpu: "200m"

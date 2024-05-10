@@ -23,6 +23,12 @@ This package holds the entry point for each of our `TestInstallation`.
 
 See [Load balancing tests](./load_balancing_tests.md) for more information about how these tests are run in CI.
 
+## Environment Variables
+
+Some tests may require environment variables to be set. Some required env vars are:
+
+- Istio features: Require `ISTIO_VERSION` to be set. The tests running in CI use `ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"` to default to a specific version of Istio.
+
 ## Debugging
 
 Refer to the [Debugging guide](./debugging.md) for more information on how to debug tests.

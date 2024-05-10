@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Kubernetes GEP-1762 would require setting this label. Istio currently
+      uses this label in a few places to determine which Pods are instances of
+      which Gateway resources.
