@@ -7,9 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/validator"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/utils/lru"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -22,7 +21,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
@@ -49,8 +47,6 @@ var (
 	UnknownTransformationType = func(transformation interface{}) error {
 		return fmt.Errorf("unknown transformation type %T", transformation)
 	}
-	mCacheHits   = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
-	mCacheMisses = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
 )
 
 type TranslateTransformationFn func(*transformation.Transformation, *wrapperspb.BoolValue, *wrapperspb.BoolValue) (*envoytransformation.Transformation, error)
@@ -66,16 +62,12 @@ type Plugin struct {
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
 	logRequestResponseInfo     bool
-	// validationLruCache is a map of: (transformation hash) -> error state
-	// this is usually a typed error but may be an untyped nil interface
-	validationLruCache *lru.Cache
-	escapeCharacters   *wrapperspb.BoolValue
+	escapeCharacters           *wrapperspb.BoolValue
+	validator                  validator.Validator
 }
 
 func NewPlugin() *Plugin {
-	return &Plugin{
-		validationLruCache: lru.New(1024),
-	}
+	return &Plugin{}
 }
 
 func (p *Plugin) Name() string {
@@ -91,6 +83,16 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.TranslateTransformation = TranslateTransformation
 	p.escapeCharacters = params.Settings.GetGloo().GetTransformationEscapeCharacters()
 	p.logRequestResponseInfo = params.Settings.GetGloo().GetLogTransformationRequestResponseInfo().GetValue()
+	// Skip validation if disabled
+	if !p.settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
+		mCacheHits := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
+		mCacheMisses := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
+
+		p.validator = validator.New(ExtensionName, FilterName,
+			validator.WithCacheHitCounter(mCacheHits),
+			validator.WithCacheMissCounter(mCacheMisses))
+	}
+
 }
 
 func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {
@@ -536,38 +538,12 @@ func (p *Plugin) validateTransformation(
 	ctx context.Context,
 	transformations *envoytransformation.RouteTransformations,
 ) error {
-
-	transformHash, err := transformations.Hash(nil)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).DPanicf("error hashing transformation, should never happen: %v", err)
-		return err
-	}
-
-	// This transformation has already been validated, return the result
-	if err, ok := p.validationLruCache.Get(transformHash); ok {
-		utils.MeasureOne(
-			ctx,
-			mCacheHits,
-		)
-		// Error may be nil here since it's just the cached result
-		// so return it as a nil err after cast worst case.
-		errCasted, _ := err.(error)
-		return errCasted
-	} else {
-		utils.MeasureOne(
-			ctx,
-			mCacheMisses,
-		)
-	}
-
 	// If the user has disabled transformation validation, then always return nil
 	if p.settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
 		return nil
 	}
 
-	err = bootstrap.ValidateBootstrap(ctx, FilterName, transformations)
-	p.validationLruCache.Add(transformHash, err)
-	return err
+	return p.validator.ValidateConfig(ctx, transformations)
 }
 
 func (p *Plugin) getTransformations(
