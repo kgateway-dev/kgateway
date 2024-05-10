@@ -70,7 +70,6 @@ func (c *GlooCli) IstioInject(ctx context.Context, installNamespace, kubeContext
 	injectArgs := append([]string{
 		"istio", "inject",
 		"--namespace", installNamespace,
-		"--istio-namespace", "istio-system",
 		"--kube-context", kubeContext,
 	}, extraArgs...)
 
@@ -82,7 +81,6 @@ func (c *GlooCli) IstioUninject(ctx context.Context, installNamespace, kubeConte
 	uninjectArgs := append([]string{
 		"istio", "uninject",
 		"--namespace", installNamespace,
-		"--istio-namespace", "istio-system",
 		"--kube-context", kubeContext,
 	}, extraArgs...)
 
