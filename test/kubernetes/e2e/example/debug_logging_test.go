@@ -1,4 +1,4 @@
-package tests
+package example
 
 // This file is an example for developers.
 // We intentionally define a build tag that is not selected to run as part of our CI pipeline
