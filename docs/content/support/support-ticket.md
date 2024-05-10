@@ -54,13 +54,13 @@ When you contact Solo Support, you can choose a priority for your request:
 
 |Priority Level| Standard Support Policy    |Enhanced Support Policy|
 |--|----------------------------|--|
-|Urgent**| 1 hour (24/7/365)          |15 minutes (24/7/365)|
+|Urgent`**`| 1 hour (24/7/365)          |15 minutes (24/7/365)|
 |High|4 Business Hours Local Time |2 hours (24/7/365)|
 |Normal|8 Business Hours Local Time|4 Business Hours Local Time|
 |Low|24 Business Hours Local Time|12 Business Hours Local Time|
 
 {{% notice warning %}}
-**To report Urgent priority, production-related issues, you must contact Solo’s Support Hotline at `+1-601-476-5646`. 
+`**`For urgent priority issues that impact production, call the [Support Hotline](https://support.solo.io/hc/en-us/articles/25251551340692-Support-Number).
 {{% /notice %}} 
 
 {{% notice note %}}

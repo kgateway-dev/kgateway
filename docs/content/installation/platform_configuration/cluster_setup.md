@@ -6,28 +6,26 @@ description: How to prepare a Kubernetes cluster for Gloo Edge installation.
 
 Installing Gloo Edge will require an environment for installation. Kubernetes and OpenShift are common targets for the installation of Gloo Edge. In this document we will review how to prepare different Kubernetes and OpenShift environments for the installation of Gloo Edge. 
 
-Click on the links below for details specific to your Kubernetes distribution:
+---
 
-- [Minikube](#minikube)
-- [Minishift](#minishift)
-- [Kind (Kubernetes in Docker)](#kind)
-- [OpenShift](#openshift)
-- [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
-  - [Private clusters](#private-clusters)
-- [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
-- [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
-- [Additional Notes](#additional-notes)
-  - [DNS Records](#dns-records)
-  - [Certificate Management](#certificate-management)
-- [Next Steps](#next-steps)
+## Before you begin
 
-{{% notice note %}}
-Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
-{{% /notice %}}
+1. Plan to install a [supported version of Kubernetes]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}}).
 
-{{% notice note %}}
-This document assumes you have `kubectl` installed. Details on how to install [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
-{{% /notice %}}
+2. [Install `kubectl`, the Kubernetes CLI tool](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+
+3. Follow the instructions for your Kubernetes distribution:
+   - [Minikube](#minikube)
+   - [Minishift](#minishift)
+   - [Kind (Kubernetes in Docker)](#kind)
+   - [OpenShift](#openshift)
+   - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
+   - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
+   - [Amazon Elastic Container Service for Kubernetes (EKS)]   (#amazon-elastic-container-service-for-kubernetes-eks)
+   - [Additional Notes](#additional-notes)
+     - [DNS Records](#dns-records)
+     - [Certificate Management](#certificate-management)
+   - [Next Steps](#next-steps)
 
 ---
 
