@@ -5,11 +5,7 @@ description: How to install Gloo Edge to run in Gateway Mode on Kubernetes (Defa
 weight: 10
 ---
 
-Gloo Edge can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). The following document will take you through the process of either installation, [verifying the installation](#verify-your-installation), and [how to remove Gloo Edge](#uninstall) if necessary.
-
-{{% notice note %}}
-Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
-{{% /notice %}}
+Gloo Edge can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). Follow this guide to install, [verify the installation](#verify-your-installation), or [uninstall](#uninstall) Gloo Edge.
 
 ---
 
@@ -19,10 +15,9 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
    {{% notice note %}}
    Pay attention to provider-specific information in the setup guide. For example, [OpenShift]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) requires stricter multi-tenant support, so the setup guide includes an example Helm chart `values.yaml` file that you must supply while installing Gloo Edge Enterprise.
    {{% /notice %}}
-2. Get your Gloo Edge Enterprise license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
-   {{% notice info %}}
-   You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
-   {{% /notice %}}
+
+2. **Enterprise Edition only**: Get your Gloo Edge Enterprise license key. {{< readfile file="static/content/license-key" markdown="true">}}
+
 3. Check whether `glooctl`, the Gloo Edge command line tool (CLI), is installed.
    ```bash
    glooctl version
