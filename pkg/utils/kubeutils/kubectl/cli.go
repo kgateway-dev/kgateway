@@ -85,6 +85,23 @@ func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) er
 		Cause()
 }
 
+// ApplyFileOut applies the resources defined in a file, and returns an error if one occurred
+func (c *Cli) ApplyFileWithRunError(ctx context.Context, fileName string, extraArgs ...string) error {
+	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
+
+	fileInput, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = fileInput.Close()
+	}()
+
+	return c.Command(ctx, applyArgs...).
+		WithStdin(fileInput).
+		Run()
+}
+
 // ApplyFile applies the resources defined in a file, and returns an error if one occurred
 func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
 	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)

@@ -30,12 +30,20 @@ type testingSuite struct {
 
 	// maps test name to a list of manifests to apply before the test
 	manifests map[string][]string
+
+	// validationEnabled tracks if the validating webhook was enabled and will reject invalid resources
+	validationEnabled bool
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewTestingSuite(
+	ctx context.Context,
+	testInst *e2e.TestInstallation,
+	validationEnabled bool,
+) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		ctx:               ctx,
+		testInstallation:  testInst,
+		validationEnabled: validationEnabled,
 	}
 }
 
@@ -62,8 +70,12 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.NoError(err, "can apply "+manifest)
+		err := s.testInstallation.Actions.Kubectl().ApplyFileWithRunError(s.ctx, manifest)
+		if strings.Contains(manifest, "bad") {
+			s.ErrorContains(err, "Validating *v1.VirtualHostOption failed")
+		} else {
+			s.NoError(err, "can apply "+manifest)
+		}
 	}
 }
 
@@ -74,6 +86,10 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
+		if strings.Contains(manifest, "bad") {
+			// this resource was rejected so no need to delete
+			continue
+		}
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
 		s.NoError(err, "can delete "+manifest)
 	}
@@ -99,12 +115,16 @@ func (s *testingSuite) TestConfigureVirtualHostOptions() {
 }
 
 func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
-	// Check status is rejected on bad VirtualHostOption
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		s.getterForMeta(&badVirtualHostOptionMeta),
-		core.Status_Rejected,
-		defaults.KubeGatewayReporter,
-	)
+	if s.validationEnabled {
+		// TODO: assert that resource doesn't exist in cluster
+	} else {
+		// Check status is rejected on bad VirtualHostOption
+		s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+			s.getterForMeta(&badVirtualHostOptionMeta),
+			core.Status_Rejected,
+			defaults.KubeGatewayReporter,
+		)
+	}
 }
 
 // The goal here is to test the behavior when multiple VHOs target a gateway with multiple listeners and only some
