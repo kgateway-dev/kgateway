@@ -80,7 +80,7 @@ func (c *GlooCli) IstioInject(ctx context.Context, installNamespace, kubeContext
 // IstioUninject uninjects istio-proxy and sds
 func (c *GlooCli) IstioUninject(ctx context.Context, installNamespace, kubeContext string, extraArgs ...string) (string, error) {
 	uninjectArgs := append([]string{
-		"istio", "inject",
+		"istio", "uninject",
 		"--namespace", installNamespace,
 		"--istio-namespace", "istio-system",
 		"--kube-context", kubeContext,

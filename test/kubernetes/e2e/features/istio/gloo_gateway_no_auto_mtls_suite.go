@@ -73,7 +73,7 @@ func (s *glooIstioTestingSuite) TestStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
 		expectedServiceUnavailableResponse)
@@ -95,7 +95,7 @@ func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
 		expectedPlaintextResponse)

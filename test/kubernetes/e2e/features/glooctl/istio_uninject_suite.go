@@ -6,8 +6,9 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,7 +41,10 @@ func (s *istioUninjectTestingSuite) TestCanUninject() {
 	s.Assert().NoError(err, "Failed to uninject istio")
 	s.Assert().Contains(out, "Istio was successfully uninjected")
 
-	matcher := gomega.And(gomega.Not(assertions.PodHasContainersMatcher("sds")), gomega.Not(assertions.PodHasContainersMatcher("istio-proxy")))
+	matcher := gomega.And(
+		gomega.Not(matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.SDSContainerName})),
+		gomega.Not(matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.IstioProxyName})),
+	)
 	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx,
 		s.testInstallation.Metadata.InstallNamespace,
 		metav1.ListOptions{LabelSelector: fmt.Sprintf("gloo=%s", defaults.GatewayProxyName)},
