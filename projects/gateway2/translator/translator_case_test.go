@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -38,7 +39,7 @@ type TestCase struct {
 type ActualTestResult struct {
 	Proxy *v1.Proxy
 	// Reports     map[types.NamespacedName]*reports.GatewayReport
-	//TODO(Law): figure out how RouteReports fit in
+	// TODO(Law): figure out how RouteReports fit in
 }
 
 type ExpectedTestResult struct {
@@ -73,6 +74,15 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 			case *gwv1.Gateway:
 				gateways = append(gateways, obj)
 			case *solokubev1.RouteOption:
+				// XXX(HACK): We need to set the metadata on the Spec since
+				// routeOptionClient.Write() calls Validate() internally that
+				// expects this to be set.
+				if obj.Spec.Metadata == nil {
+					obj.Spec.Metadata = &core.Metadata{
+						Namespace: obj.Namespace,
+						Name:      obj.Name,
+					}
+				}
 				routeOptions = append(routeOptions, obj)
 				dependencies = append(dependencies, obj)
 			default:
