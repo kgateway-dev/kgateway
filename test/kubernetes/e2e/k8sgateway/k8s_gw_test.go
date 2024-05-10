@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
+
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 
 	"github.com/solo-io/skv2/codegen/util"
@@ -18,14 +20,14 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
 // TestK8sGateway is the function which executes a series of tests against a given installation
 func TestK8sGateway(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "k8s-gw-test",
@@ -45,7 +47,6 @@ func TestK8sGateway(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Gloo Gateway
@@ -61,6 +62,10 @@ func TestK8sGateway(t *testing.T) {
 		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 
+	t.Run("VirtualHostOptions", func(t *testing.T) {
+		suite.Run(t, virtualhost_options.NewTestingSuite(ctx, testInstallation))
+	})
+
 	t.Run("Upstreams", func(t *testing.T) {
 		suite.Run(t, upstreams.NewTestingSuite(ctx, testInstallation))
 	})
@@ -71,10 +76,20 @@ func TestK8sGateway(t *testing.T) {
 
 	t.Run("PortRouting", func(t *testing.T) {
 		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
-
 	})
 
 	t.Run("RouteDelegation", func(t *testing.T) {
 		suite.Run(t, route_delegation.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("Glooctl", func(t *testing.T) {
+
+		t.Run("Check", func(t *testing.T) {
+			suite.Run(t, glooctl.NewCheckSuite(ctx, testInstallation))
+		})
+
+		t.Run("Debug", func(t *testing.T) {
+			suite.Run(t, glooctl.NewDebugSuite(ctx, testInstallation))
+		})
 	})
 }

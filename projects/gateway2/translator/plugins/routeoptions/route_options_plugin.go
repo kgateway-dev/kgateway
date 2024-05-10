@@ -1,6 +1,7 @@
 package routeoptions
 
 import (
+	"container/list"
 	"context"
 	"errors"
 	"fmt"
@@ -29,8 +30,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ plugins.RoutePlugin = &plugin{}
-var _ plugins.StatusPlugin = &plugin{}
+var (
+	_ plugins.RoutePlugin  = &plugin{}
+	_ plugins.StatusPlugin = &plugin{}
+)
 
 var routeOptionGK = schema.GroupKind{
 	Group: sologatewayv1.RouteOptionGVK.Group,
@@ -85,20 +88,26 @@ func (p *plugin) ApplyRoutePlugin(
 	// check for RouteOptions applied to full Route
 	routeOptions, routeOptionKube := p.handleAttachment(ctx, routeCtx)
 
-	// allow for ExtensionRef filter override
-	filterRouteOptions, err := p.handleFilter(ctx, routeCtx)
-	if err != nil {
-		return err
-	}
-	if filterRouteOptions != nil {
-		routeOptions = filterRouteOptions
+	// allow for ExtensionRef filter override only when this route is not
+	// a child in a delegation tree. With delegation, only targetRef based
+	// policy attachment to a route is supported.
+	filterOverride := false
+	if routeCtx.DelegationChain == nil || routeCtx.DelegationChain.Len() == 0 {
+		filterRouteOptions, err := p.handleFilter(ctx, routeCtx)
+		if err != nil {
+			return err
+		}
+		if filterRouteOptions != nil {
+			routeOptions = filterRouteOptions
+			filterOverride = true
+		}
 	}
 
 	if routeOptions != nil {
 		// clobber the existing RouteOptions; merge semantics may be desired later
 		outputRoute.Options = routeOptions
 
-		if filterRouteOptions == nil {
+		if !filterOverride {
 			// if we didn't use a filter to derive the RouteOptions for this v1.Route, let's track the
 			// RouteOption policy object that was used so we can report status on it
 			routeutils.AppendSourceToRoute(outputRoute, routeOptionKube)
@@ -175,23 +184,30 @@ func (p *plugin) handleAttachment(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 ) (*gloov1.RouteOptions, *solokubev1.RouteOption) {
+	// parentRouteRef refers to the parent route in a delegation chain.
+	// The condition below allows it to be optional in the RouteContext
+	var parentRouteRef *list.Element
+	if routeCtx.DelegationChain != nil {
+		parentRouteRef = routeCtx.DelegationChain.Front()
+	}
+
 	// TODO: This is far too naive and we should optimize the amount of querying we do.
 	// Route plugins run on every match for every Rule in a Route but the attached options are
 	// the same each time; i.e. HTTPRoute <-1:1-> RouteOptions.
 	// We should only make this query once per HTTPRoute.
-	attachedOptions := getAttachedRouteOptions(ctx, routeCtx.Route, p.rtOptQueries)
-	if len(attachedOptions) == 0 {
+	attachedOption, err := p.rtOptQueries.GetRouteOptionForRoute(
+		ctx, types.NamespacedName{Name: routeCtx.Route.Name, Namespace: routeCtx.Route.Namespace},
+		parentRouteRef,
+	)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Errorf("error getting RouteOptions for Route: %v", err)
+		return nil, nil
+	}
+	if attachedOption == nil || attachedOption.Spec.GetOptions() == nil {
 		return nil, nil
 	}
 
-	// sort attached options and apply only the earliest
-	utils.SortByCreationTime(attachedOptions)
-	earliestOption := attachedOptions[0]
-
-	if earliestOption.Spec.GetOptions() != nil {
-		return earliestOption.Spec.GetOptions(), earliestOption
-	}
-	return nil, nil
+	return attachedOption.Spec.GetOptions(), attachedOption
 }
 
 func (p *plugin) handleFilter(
@@ -230,26 +246,6 @@ func (p *plugin) handleFilter(
 		return routeOption.Spec.GetOptions(), nil
 	}
 	return nil, nil
-}
-
-func getAttachedRouteOptions(ctx context.Context, route *gwv1.HTTPRoute, queries rtoptquery.RouteOptionQueries) []*solokubev1.RouteOption {
-	var routeOptionList solokubev1.RouteOptionList
-	err := queries.GetRouteOptionsForRoute(ctx, route, &routeOptionList)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("error while Listing RouteOptions: %v", err)
-		// TODO: add status to policy on error
-		return nil
-	}
-
-	// as the RouteOptionList does not contain pointers, and RouteOption is a concrete proto message,
-	// we need to turn it into a pointer slice to avoid copying proto message state around, copying locks, etc.
-	// while we perform operations on the RouteOptionList
-	ptrSlice := []*solokubev1.RouteOption{}
-	items := routeOptionList.Items
-	for i := range items {
-		ptrSlice = append(ptrSlice, &items[i])
-	}
-	return ptrSlice
 }
 
 func formatNotFoundMessage(routeCtx *plugins.RouteContext, filter *gwv1.HTTPRouteFilter) string {

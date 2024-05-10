@@ -45,6 +45,7 @@ func (t *testBootstrap) SetMetadata(meta *core.Metadata) {
 func (t *testBootstrap) Equal(_ any) bool {
 	return false
 }
+
 func (t *testBootstrap) GetMetadata() *core.Metadata {
 	return nil
 }
@@ -61,6 +62,7 @@ func (objs *clientObjects) findDeployment(namespace, name string) *appsv1.Deploy
 	}
 	return nil
 }
+
 func (objs *clientObjects) findServiceAccount(namespace, name string) *corev1.ServiceAccount {
 	for _, obj := range *objs {
 		if sa, ok := obj.(*corev1.ServiceAccount); ok {
@@ -71,6 +73,7 @@ func (objs *clientObjects) findServiceAccount(namespace, name string) *corev1.Se
 	}
 	return nil
 }
+
 func (objs *clientObjects) findService(namespace, name string) *corev1.Service {
 	for _, obj := range *objs {
 		if svc, ok := obj.(*corev1.Service); ok {
@@ -81,6 +84,7 @@ func (objs *clientObjects) findService(namespace, name string) *corev1.Service {
 	}
 	return nil
 }
+
 func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigMap {
 	for _, obj := range *objs {
 		if cm, ok := obj.(*corev1.ConfigMap); ok {
@@ -125,7 +129,6 @@ var _ = Describe("Deployer", func() {
 			Mgr: mgr,
 		})
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 	Context("special cases", func() {
 		BeforeEach(func() {
@@ -231,7 +234,6 @@ var _ = Describe("Deployer", func() {
 			for _, obj := range objs2 {
 				Expect(obj.GetName()).To(Equal("gloo-proxy-bar"))
 			}
-
 		})
 	})
 
@@ -420,6 +422,7 @@ var _ = Describe("Deployer", func() {
 					gatewayContainer := dep.Spec.Template.Spec.Containers[0]
 					Expect(gatewayContainer.Name).To(Equal("gloo-gateway"))
 					Expect(gatewayContainer.Image).To(ContainSubstring("quay.io/solo-io/gloo-envoy-wrapper"))
+					Expect(dep.Spec.Template.Labels["gateway.networking.k8s.io/gateway-name"]).To(Equal(inp.gw.Name))
 
 					svc := objs.findService(defaultNamespace, defaultServiceName)
 					Expect(svc).ToNot(BeNil())
@@ -490,7 +493,6 @@ var _ = Describe("Deployer", func() {
 						default:
 							Fail("unknown container name " + container.Name)
 						}
-
 					}
 					Expect(foundGw).To(BeTrue())
 					Expect(foundSds).To(BeTrue())
