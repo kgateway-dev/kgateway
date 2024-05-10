@@ -12,7 +12,10 @@ import (
 	"k8s.io/utils/lru"
 )
 
-// Validator validates an envoy config by running it by envoy in validate mode. This requires the envoy binary to be present at $ENVOY_BINARY_PATH (defaults to /usr/local/bin/envoy)
+const DefaultCacheSize int = 1024
+
+// Validator validates an envoy config by running it by envoy in validate mode. This requires the envoy binary to be present at $ENVOY_BINARY_PATH (defaults to /usr/local/bin/envoy).
+// Results are cached via an LRU cache for performance
 type Validator interface {
 	// ValidateConfig validates the given envoy config and returns any out and error from envoy. Returns nil if the envoy binary is not found.
 	ValidateConfig(ctx context.Context, config HashableProtoMessage) error
@@ -34,7 +37,7 @@ func New(name string, filterName string, opts ...Option) validator {
 	cfg := processOptions(name, opts...)
 	return validator{
 		filterName:         filterName,
-		validationLruCache: lru.New(1024),
+		validationLruCache: lru.New(cfg.cacheSize),
 		cacheHits:          cfg.cacheHits,
 		cacheMisses:        cfg.cacheMisses,
 	}
