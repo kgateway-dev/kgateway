@@ -39,7 +39,7 @@ func CreateTestInstallation(
 	glooGatewayContext *gloogateway.Context,
 ) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
-	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName, nil)
+	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
 	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, glooGatewayContext)
 }
@@ -98,15 +98,15 @@ func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
 }
 
 func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
-	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext)
+	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
 }
 
 func (i *TestInstallation) UninstallIstio() error {
-	return cluster.UninstallIstio(i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext)
+	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
 }
 
 func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
-	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.TestCluster.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
+	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
