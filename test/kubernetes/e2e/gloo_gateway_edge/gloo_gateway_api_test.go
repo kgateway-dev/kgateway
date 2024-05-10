@@ -20,8 +20,7 @@ import (
 // the k8s Gateway controller is disabled
 func TestGlooGatewayEdgeGateway(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "gloo-gateway-edge-test",
@@ -41,7 +40,6 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
