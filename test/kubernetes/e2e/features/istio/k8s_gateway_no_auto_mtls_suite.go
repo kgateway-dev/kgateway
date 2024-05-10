@@ -68,7 +68,7 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedServiceUnavailableResponse,
 	)
@@ -90,7 +90,7 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedPlaintextResponse)
 }

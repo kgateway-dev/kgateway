@@ -67,7 +67,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedMtlsResponse,
 	)
@@ -99,7 +99,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedMtlsResponse)
 }
