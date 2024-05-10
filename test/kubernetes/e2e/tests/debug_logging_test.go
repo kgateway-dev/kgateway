@@ -22,8 +22,7 @@ import (
 // TestInstallationWithDebugLogLevel is the function which executes a series of tests against a given installation
 func TestInstallationWithDebugLogLevel(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "debug-example",
@@ -43,7 +42,6 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
 			return testHelper.UninstallGlooAll()
 		})
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
