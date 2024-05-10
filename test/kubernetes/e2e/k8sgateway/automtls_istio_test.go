@@ -20,8 +20,7 @@ import (
 // TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
 func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "automtls-istio-k8s-gw-test",
@@ -54,8 +53,6 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to uninstall istio: %v", err)
 		}
-
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
