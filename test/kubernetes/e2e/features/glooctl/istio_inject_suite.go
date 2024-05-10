@@ -36,7 +36,7 @@ func NewIstioInjectTestingSuite(ctx context.Context, testInst *e2e.TestInstallat
 
 func (s *istioInjectTestingSuite) TestCanInject() {
 	// Inject istio with glooctl
-	out, err := s.testInstallation.Actions.Glooctl().IstioInject(s.ctx, s.testInstallation.Metadata.InstallNamespace, s.testInstallation.TestCluster.ClusterContext.KubeContext)
+	out, err := s.testInstallation.Actions.Glooctl().IstioInject(s.ctx, s.testInstallation.Metadata.InstallNamespace, s.testInstallation.ClusterContext.KubeContext)
 	s.Assert().NoError(err, "Failed to inject istio")
 	s.Assert().Contains(out, "Istio injection was successful!")
 

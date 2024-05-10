@@ -21,8 +21,7 @@ import (
 // the k8s Gateway controller is disabled
 func TestIstioEdgeApiGateway(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-edge-api-gateway-test",
@@ -53,8 +52,6 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to uninstall istio: %v", err)
 		}
-
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
