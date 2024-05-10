@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
@@ -83,14 +84,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
-		expectedResponseWithBasicTargetRefHeader)
+	s.assertEventuallyCurlRespondsWith(expectedResponseWithBasicTargetRefHeader)
 
 	// Check status is accepted on RouteOption
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
@@ -101,6 +95,146 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRef() {
 }
 
 func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
+	s.assertEventuallyCurlRespondsWith(expectedResponseWithBasicHeader)
+
+	// TODO(npolshak): Statuses are not supported for filter extensions yet
+}
+
+func (s *testingSuite) TestConfigureInvalidRouteOptionsWithTargetRef() {
+	// Check status is rejected on RouteOption
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&badRtoTargetRefMeta),
+		core.Status_Rejected,
+		defaults.KubeGatewayReporter,
+	)
+}
+
+func (s *testingSuite) TestConfigureInvalidRouteOptionsWithFilterExtension() {
+	// Check status is rejected on RouteOption
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&badRtoMeta),
+		core.Status_Rejected,
+		defaults.KubeGatewayReporter,
+	)
+}
+
+// will fail until manual setup added
+func (s *testingSuite) TestConfigureRouteOptionsWithMultipleTargetRefManualSetup() {
+	// Manually apply our manifests so we can assert that basic rto exists before applying extra rto.
+	// This is needed because our solo-kit clients currently do not return creationTimestamp
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	s.NoError(err, "can apply "+setupManifest)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1Manifest)
+	s.NoError(err, "can apply "+httproute1Manifest)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicRtoTargetRefManifest)
+	s.NoError(err, "can apply "+basicRtoTargetRefManifest)
+	// Check status is accepted before moving on to apply conflicting rto
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&basicRtoTargetRefMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, extraRtoTargetRefManifest)
+	s.NoError(err, "can apply "+extraRtoTargetRefManifest)
+
+	// Check status is accepted on conflicted RouteOption. RouteOptions do not currently
+	// produce warnings on conflicts like VirtualHostOptions do
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&extraRtoTargetRefMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+
+	// Check status is still accepted on attached RouteOption.
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&basicRtoTargetRefMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+	// TODO(jbohanon) figure out how to check tracking the source and/or add warnings to
+	// conflicted RouteOption resources
+
+	// make sure we are getting responses with the older RouteOption applied
+	s.assertEventuallyCurlRespondsWith(expectedResponseWithBasicTargetRefHeader)
+}
+
+// We currently only honor the first listed RouteOptions extension ref. To validate this in this test
+// we apply the extra rto (second listed) first, then apply the basic rto (first listed) and verify
+// that we are seeing behavior congruent with the basic rto.
+func (s *testingSuite) TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup() {
+	// Manually apply our manifests so we can assert that basic rto exists before applying extra rto.
+	// This is needed because our solo-kit clients currently do not return creationTimestamp
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	s.NoError(err, "can apply "+setupManifest)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1MultipleExtensionsManifest)
+	s.NoError(err, "can apply "+httproute1MultipleExtensionsManifest)
+
+	// here we apply the extra manifest first so that it is older
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, extraRtoManifest)
+	s.NoError(err, "can apply "+extraRtoManifest)
+	// Check status is accepted before moving on to apply conflicting rto
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&extraRtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicRtoManifest)
+	s.NoError(err, "can apply "+basicRtoManifest)
+
+	// Check status is accepted on ignored extension ref RouteOption. RouteOptions do not currently
+	// produce warnings on conflicts like VirtualHostOptions do
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&extraRtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+
+	// Check status is still accepted on attached RouteOption.
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&basicRtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+	// TODO(jbohanon) figure out how to check tracking the source and/or add warnings to
+	// ignored RouteOption resources listed as extensionRef
+
+	// make sure we are getting responses with the first-listed RouteOption applied
+	s.assertEventuallyCurlRespondsWith(expectedResponseWithBasicHeader)
+}
+
+func (s *testingSuite) TestConfigureRouteOptionsWithTargetRefAndFilterExtension() {
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&basicRtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+
+	// Check status is still accepted on attached RouteOption.
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&basicRtoTargetRefMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+	// make sure we are getting responses with the extension ref RouteOption applied
+	s.assertEventuallyCurlRespondsWith(expectedResponseWithBasicHeader)
+}
+
+// This helper function adds the standard format for getter construction, allowing a reader to
+// more easily view what is happening in the main test
+func (s *testingSuite) getterForMeta(meta *metav1.ObjectMeta) helpers.InputResourceGetter {
+	return func() (resources.InputResource, error) {
+		return s.testInstallation.ResourceClients.RouteOptionClient().Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{})
+	}
+}
+
+// This helper function adds the standard options passed to this assertion, allowing a reader to
+// more easily view what is being asserted in the main test
+func (s *testingSuite) assertEventuallyCurlRespondsWith(response *matchers.HttpResponse) {
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -108,30 +242,5 @@ func (s *testingSuite) TestConfigureRouteOptionsWithFilterExtension() {
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
 		},
-		expectedResponseWithBasicHeader)
-
-	// TODO(npolshak): Statuses are not supported for filter extensions yet
-}
-
-func (s *testingSuite) TestConfigureInvalidRouteOptionsWithTargetRef() {
-}
-
-func (s *testingSuite) TestConfigureInvalidRouteOptionsWithFilterExtension() {
-}
-
-// will fail until manual setup added
-func (s *testingSuite) TestConfigureRouteOptionsWithMultipleTargetRefManualSetup() {
-}
-
-// will fail until manual setup added
-func (s *testingSuite) TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup() {
-}
-
-func (s *testingSuite) TestConfigureRouteOptionsWithTargetRefAndFilterExtension() {
-}
-
-func (s *testingSuite) getterForMeta(meta *metav1.ObjectMeta) helpers.InputResourceGetter {
-	return func() (resources.InputResource, error) {
-		return s.testInstallation.ResourceClients.RouteOptionClient().Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{})
-	}
+		response)
 }
