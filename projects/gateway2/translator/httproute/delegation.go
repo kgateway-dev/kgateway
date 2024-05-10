@@ -1,6 +1,7 @@
 package httproute
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 
@@ -37,10 +38,14 @@ func flattenDelegatedRoutes(
 	parentMatch gwv1.HTTPRouteMatch,
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
+	delegationChain *list.List,
 ) error {
 	parentRef := types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name}
 	routesVisited.Insert(parentRef)
 	defer routesVisited.Delete(parentRef)
+
+	lRef := delegationChain.PushFront(parentRef)
+	defer delegationChain.Remove(lRef)
 
 	children, err := queries.GetDelegatedRoutes(ctx, backendRef.BackendObjectReference, parentMatch, parentRef)
 	if err != nil {
@@ -90,7 +95,7 @@ func flattenDelegatedRoutes(
 		}
 
 		translateGatewayHTTPRouteRulesUtil(
-			ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames)
+			ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames, delegationChain)
 	}
 
 	return nil
