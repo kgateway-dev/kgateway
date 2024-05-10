@@ -4,7 +4,7 @@ description: How do I replace an expired license for Gloo Edge Enterprise?
 weight: 50
 ---
 
-Gloo Edge Enterprise requires a time-limited license key in order to fully operate. You initially provide this license at installation time, as described [here]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}).
+{{< readfile file="static/content/license-key" markdown="true">}} This guide provides instructions for how to update the enterprise license.
 
 The license key is stored as a Kubernetes secret in the cluster. When the key expires, the pods that mount the secret might crash. To update the license key, patch the secret and restart the Gloo Edge deployments. During the upgrade, the data plane continues to run, but you might not be able to modify the configurations for Gloo custom resources through the management plane.
 
