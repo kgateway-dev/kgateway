@@ -17,7 +17,12 @@ import (
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
-func MustKindContext(clusterName string, registerAdditionalSchemes func(scheme *runtime.Scheme) error) *Context {
+func MustKindContext(clusterName string) *Context {
+	return MustKindContextWithScheme(clusterName, kubetestclients.MustClientScheme())
+}
+
+// MustKindContextWithScheme returns the Context for a KinD cluster with the given name and scheme
+func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Context {
 	if len(clusterName) == 0 {
 		// We fall back to the cluster named `kind` if no cluster name was provided
 		clusterName = "kind"
@@ -38,7 +43,7 @@ func MustKindContext(clusterName string, registerAdditionalSchemes func(scheme *
 	// This line prevents controller-runtime from complaining about log.SetLogger never being called
 	log.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 	clt, err := client.New(restCfg, client.Options{
-		Scheme: kubetestclients.MustClientScheme(registerAdditionalSchemes),
+		Scheme: scheme,
 	})
 	if err != nil {
 		panic(err)

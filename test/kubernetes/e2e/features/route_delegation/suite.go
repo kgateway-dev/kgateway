@@ -67,7 +67,7 @@ func (s *tsuite) SetupSuite() {
 		unresolvedChildManifest:             {routeRoot},
 		routeOptionsManifest:                {routeRoot, routeTeam1, routeTeam2},
 	}
-	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.TestCluster.ClusterContext)
+	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.ClusterContext)
 	s.Require().NoError(err)
 	s.ti.ResourceClients = clients
 }
@@ -124,7 +124,7 @@ func (s *tsuite) TestCyclic() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
 	cyclicRoute := &gwv1.HTTPRoute{}
-	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		cyclicRoute)
 	s.Require().NoError(err)
@@ -141,7 +141,7 @@ func (s *tsuite) TestInvalidChild() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
 	invalidRoute := &gwv1.HTTPRoute{}
-	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
@@ -236,7 +236,7 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 
 	invalidRoute := &gwv1.HTTPRoute{}
-	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
@@ -246,7 +246,7 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 func (s *tsuite) TestUnresolvedChild() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		route := &gwv1.HTTPRoute{}
-		err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+		err := s.ti.ClusterContext.Client.Get(s.ctx,
 			types.NamespacedName{Name: routeRoot.Name, Namespace: routeRoot.Namespace},
 			route)
 		assert.NoError(c, err, "route not found")
