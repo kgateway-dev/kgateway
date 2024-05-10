@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// glooIstioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto-mtls is disabled
+// glooIstioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mtls is disabled
 // and Upstreams do not have sslConfig values set
 type glooIstioTestingSuite struct {
 	suite.Suite

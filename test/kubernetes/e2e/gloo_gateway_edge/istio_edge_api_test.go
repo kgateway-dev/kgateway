@@ -2,7 +2,6 @@ package gloo_gateway_edge
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,19 +32,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
-	// create a tmp output directory for generated resources
-	tempOutputDir, err := os.MkdirTemp("", testInstallation.Metadata.InstallNamespace)
-	if err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", err)
-	}
-	defer func() {
-		// Delete the temporary directory after the test completes
-		if err := os.RemoveAll(tempOutputDir); err != nil {
-			t.Errorf("Failed to remove temporary directory: %v", err)
-		}
-	}()
-
-	err = testInstallation.AddIstioctl(ctx)
+	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
 	}

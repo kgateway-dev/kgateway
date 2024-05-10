@@ -13,6 +13,9 @@ import (
 )
 
 // istioUninjectTestingSuite is the entire Suite of tests for the "glooctl istio uninject" integration cases
+// NOTE: This suite is not intended to be run as a standalone test suite. It applies the "glooctl unistio inject" command
+// to an existing installation of Gloo Gateway where the istio-proxy and sds containers have already been injected
+// and verifies that the necessary resources are removed.
 type istioUninjectTestingSuite struct {
 	suite.Suite
 
@@ -31,7 +34,8 @@ func NewIstioUninjectTestingSuite(ctx context.Context, testInst *e2e.TestInstall
 }
 
 func (s *istioUninjectTestingSuite) TestCanUninject() {
-	// Uninject istio with glooctl
+	// Uninject istio with glooctl. This assumes that the istio-proxy and sds containers have already been injected
+	// by the `glooctl istio inject` command in the `istioInjectTestingSuite`
 	out, err := s.testInstallation.Actions.Glooctl().IstioUninject(s.ctx, s.testInstallation.Metadata.InstallNamespace, s.testInstallation.TestCluster.ClusterContext.KubeContext)
 	s.Assert().NoError(err, "Failed to uninject istio")
 	s.Assert().Contains(out, "Istio was successfully uninjected")
