@@ -58,7 +58,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 ) {
 	p.AssertEventualCurlResponse(ctx, podOpts, curlOptions, expectedResponse)
 
-	pollTimeout := 5 * time.Second
+	pollTimeout := 3 * time.Second
 	pollInterval := 1 * time.Second
 	if len(timeout) > 0 {
 		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
