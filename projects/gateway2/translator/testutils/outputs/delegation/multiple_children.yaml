@@ -23,16 +23,6 @@ listeners:
                     name: svc-a
                     namespace: a
           - matchers:
-            - prefix: /
-            options: {}
-            routeAction:
-              single:
-                kube:
-                  port: 80
-                  ref:
-                    name: example-svc
-                    namespace: infra
-          - matchers:
             - regex: /b/.*
             options: {}
             routeAction:
@@ -42,6 +32,17 @@ listeners:
                   ref:
                     name: svc-b
                     namespace: b
+          - matchers:
+            - prefix: /
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+
   bindAddress: '::'
   bindPort: 8080
   name: http
