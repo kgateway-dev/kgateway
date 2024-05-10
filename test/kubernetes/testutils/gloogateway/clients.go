@@ -23,7 +23,7 @@ type ResourceClients interface {
 	UpstreamClient() v1.UpstreamClient
 }
 
-type clients struct {
+type Clients struct {
 	routeOptionClient       gatewayv1.RouteOptionClient
 	serviceClient           skkube.ServiceClient
 	upstreamClient          v1.UpstreamClient
@@ -69,7 +69,7 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		return nil, err
 	}
 
-	return &clients{
+	return &Clients{
 		routeOptionClient:       routeOptionClient,
 		serviceClient:           serviceClient,
 		upstreamClient:          upstreamClient,
@@ -77,18 +77,18 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 	}, nil
 }
 
-func (c *clients) RouteOptionClient() gatewayv1.RouteOptionClient {
+func (c *Clients) RouteOptionClient() gatewayv1.RouteOptionClient {
 	return c.routeOptionClient
 }
 
-func (c *clients) VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient {
+func (c *Clients) VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient {
 	return c.virtualHostOptionClient
 }
 
-func (c *clients) ServiceClient() skkube.ServiceClient {
+func (c *Clients) ServiceClient() skkube.ServiceClient {
 	return c.serviceClient
 }
 
-func (c *clients) UpstreamClient() v1.UpstreamClient {
+func (c *Clients) UpstreamClient() v1.UpstreamClient {
 	return c.upstreamClient
 }
