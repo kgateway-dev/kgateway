@@ -13,6 +13,9 @@ import (
 )
 
 // istioInjectTestingSuite is the entire Suite of tests for the "glooctl istio inject" integration cases
+// NOTE: This suite is not intended to be run as a standalone test suite. It applies the "glooctl istio inject" command
+// to an existing installation of Gloo Gateway and verifies that the necessary resources are created, but does not clean
+// up the state after the `inject` command is run. To clean up the state run the `istioUninjectTestingSuite` after this.
 type istioInjectTestingSuite struct {
 	suite.Suite
 

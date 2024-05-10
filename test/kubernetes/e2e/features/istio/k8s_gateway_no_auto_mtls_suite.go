@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// istioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto-mtls is disabled
+// istioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mtls is disabled
 // and Upstreams do not have sslConfig values set
 type istioTestingSuite struct {
 	suite.Suite
