@@ -90,6 +90,29 @@ var _ = Describe("GatewayTranslator", func() {
 			Name:      "gw",
 		}]).To(BeTrue())
 	})
+
+	It("should correctly sort routes", func() {
+		results, err := TestCase{
+			Name:       "delegation-basic",
+			InputFiles: []string{filepath.Join(dir, "testutils/inputs/route-sort.yaml")},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "infra",
+					Name:      "example-gateway",
+				}: {
+					Proxy: filepath.Join(dir, "testutils/outputs/route-sort.yaml"),
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results).To(HaveKeyWithValue(types.NamespacedName{
+			Namespace: "infra",
+			Name:      "example-gateway",
+		}, BeTrue()))
+	})
 })
 
 var _ = DescribeTable("Route Delegation translator",
