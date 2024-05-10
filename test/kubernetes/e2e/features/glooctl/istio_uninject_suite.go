@@ -37,7 +37,7 @@ func NewIstioUninjectTestingSuite(ctx context.Context, testInst *e2e.TestInstall
 func (s *istioUninjectTestingSuite) TestCanUninject() {
 	// Uninject istio with glooctl. This assumes that the istio-proxy and sds containers have already been injected
 	// by the `glooctl istio inject` command in the `istioInjectTestingSuite`
-	out, err := s.testInstallation.Actions.Glooctl().IstioUninject(s.ctx, s.testInstallation.Metadata.InstallNamespace, s.testInstallation.TestCluster.ClusterContext.KubeContext)
+	out, err := s.testInstallation.Actions.Glooctl().IstioUninject(s.ctx, s.testInstallation.Metadata.InstallNamespace, s.testInstallation.ClusterContext.KubeContext)
 	s.Assert().NoError(err, "Failed to uninject istio")
 	s.Assert().Contains(out, "Istio was successfully uninjected")
 
