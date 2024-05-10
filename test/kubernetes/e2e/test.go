@@ -84,29 +84,8 @@ func CreateTestInstallationForCluster(
 		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
 		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
 	}
-	runtime.SetFinalizer(installation, installation.finalize)
+	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
 	return installation
-}
-
-func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
-	istioctl, err := cluster.GetIstioctl(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to download istio: %w", err)
-	}
-	i.IstioctlBinary = istioctl
-	return nil
-}
-
-func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
-	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
-}
-
-func (i *TestInstallation) UninstallIstio() error {
-	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
-}
-
-func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
-	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
@@ -147,6 +126,27 @@ func (i *TestInstallation) finalize() {
 	if err := os.RemoveAll(i.GeneratedFiles.TempDir); err != nil {
 		panic(fmt.Sprintf("Failed to remove temporary directory: %s", i.GeneratedFiles.TempDir))
 	}
+}
+
+func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
+	istioctl, err := cluster.GetIstioctl(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to download istio: %w", err)
+	}
+	i.IstioctlBinary = istioctl
+	return nil
+}
+
+func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
+	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
+}
+
+func (i *TestInstallation) UninstallIstio() error {
+	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
+}
+
+func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
+	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
