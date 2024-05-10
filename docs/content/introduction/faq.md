@@ -151,7 +151,7 @@ If you create a VirtualService and assign it TLS/SSL configuration, it will be b
 
 ### How can I associate a specific VirtualService to a specific gateway listener?
 
-In the event you have multiple gateways or listeners on gateway or you want more fine-grained control over how a VirtualService gets associated with a Gateway, you can explicitly add the VirtualService name to the Gateway resource like this:
+In the event you have multiple gateways or multiple listeners on a gateway, or you want more fine-grained control over how a VirtualService gets associated with a Gateway, you can explicitly add the VirtualService name to the Gateway resource like this:
 
 {{< highlight yaml "hl_lines=9-12" >}}
 apiVersion: gateway.solo.io/v1
