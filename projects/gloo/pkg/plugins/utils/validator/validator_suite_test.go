@@ -1,4 +1,4 @@
-package transformation
+package validator
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestTransformation(t *testing.T) {
+func TestValidator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Transformation Suite")
+	RunSpecs(t, "Validation Suite")
 }
