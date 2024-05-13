@@ -25,7 +25,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-edge-api-gateway-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-api-gateway-test-helm.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-gateway-test-helm.yaml"),
 		},
 	)
 
