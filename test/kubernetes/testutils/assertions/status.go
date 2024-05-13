@@ -1,17 +1,17 @@
 package assertions
 
 import (
+	"strings"
 	"time"
-
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e/helper"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // Checks GetNamespacedStatuses status for gloo installation namespace
@@ -66,4 +66,24 @@ func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.Name
 	}
 
 	return namespacedStatuses, nil
+}
+
+// AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
+// the given substring in its message. A description can optionally be provided to the assertion.
+func (p *Provider) AssertHTTPRouteStatusContainsSubstring(
+	route *gwv1.HTTPRoute,
+	substr string,
+	description ...string) {
+
+	found := false
+	for _, parent := range route.Status.RouteStatus.Parents {
+		for _, condition := range parent.Conditions {
+			if strings.Contains(condition.Message, substr) {
+				found = true
+				break
+			}
+		}
+	}
+
+	p.Gomega.Expect(found).To(gomega.BeTrue(), description)
 }
