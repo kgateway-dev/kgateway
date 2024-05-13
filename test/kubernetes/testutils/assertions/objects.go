@@ -15,8 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const WebhookReject = "webhook-reject"
-
 func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client.Object) {
 	for _, o := range objects {
 		p.Gomega.Eventually(ctx, func(innerG Gomega) {
