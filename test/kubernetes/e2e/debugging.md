@@ -16,8 +16,9 @@ Since each feature suite is a subtest of the top level suite, you can run a sing
 
 For example, to run the `Deployer` feature suite in `TestK8sGateway`, you can run:
 ```bash
-go test -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run TestK8sGateway/Deployer
+go test -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run ^TestK8sGateway$/^Deployer$
 ```
+Note that the `-run` flag takes a sequence of regular expressions, and that each part may match a substring of a suite/test name. See https://pkg.go.dev/cmd/go#hdr-Testing_flags for details. To match only exact suite/test names, use the `^` and `$` characters as shown.
 
 #### VSCode
 
@@ -33,7 +34,7 @@ Alternatively, you can use a custom debugger launch config that sets the `test.r
   "program": "${workspaceFolder}/test/kubernetes/e2e/k8sgateway/k8s_gw_test.go",
   "args": [
     "-test.run",
-    "TestK8sGateway$/Deployer",
+    "^TestK8sGateway$/^Deployer$",
     "-test.v",
   ],
   "env": {
@@ -52,7 +53,7 @@ Similar to running a specific feature suite, you can run a single test within a 
 
 For example, to run `TestProvisionDeploymentAndService` in `Deployer` feature suite that is a part of `TestK8sGateway`, you can run:
 ```bash
-go test -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run TestK8sGateway/Deployer/TestProvisionDeploymentAndService
+go test -v -timeout 600s ./test/kubernetes/e2e/k8sgateway -run ^TestK8sGateway$/^Deployer$/^TestProvisionDeploymentAndService$
 ```
 
 Alternatively, with VSCode you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
@@ -65,7 +66,7 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
   "program": "${workspaceFolder}/test/kubernetes/e2e/k8sgateway/k8s_gw_test.go",
   "args": [
     "-test.run",
-    "TestK8sGateway/Deployer/TestProvisionDeploymentAndService",
+    "^TestK8sGateway$/^Deployer$/^TestProvisionDeploymentAndService$",
     "-test.v",
   ],
   "env": {
@@ -85,7 +86,7 @@ is also the case for other env variables that are required for the test to run (
 If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
 
 ```
--test.run="TestK8sGateway/RouteOptions/TestConfigureRouteOptionsWithTargetRef"
+-test.run="^TestK8sGateway$/^RouteOptions$/^TestConfigureRouteOptionsWithTargetRef$"
 ```
 
 
