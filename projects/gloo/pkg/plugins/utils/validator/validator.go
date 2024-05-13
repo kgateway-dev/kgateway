@@ -12,6 +12,7 @@ import (
 	"k8s.io/utils/lru"
 )
 
+// DefaultCacheSize defines the default size of the LRU cache used by the validator
 const DefaultCacheSize int = 1024
 
 // Validator validates an envoy config by running it by envoy in validate mode. This requires the envoy binary to be present at $ENVOY_BINARY_PATH (defaults to /usr/local/bin/envoy).
@@ -19,13 +20,16 @@ const DefaultCacheSize int = 1024
 type Validator interface {
 	// ValidateConfig validates the given envoy config and returns any out and error from envoy. Returns nil if the envoy binary is not found.
 	ValidateConfig(ctx context.Context, config HashableProtoMessage) error
+
+	// CacheLength returns the returns the number of items in the cache
+	CacheLength() int
 }
 
 type validator struct {
 	filterName string
-	// validationLruCache is a map of: (config hash) -> error state
+	// lruCache is a map of: (config hash) -> error state
 	// this is usually a typed error but may be an untyped nil interface
-	validationLruCache *lru.Cache
+	lruCache *lru.Cache
 	// Counter to increment on cache hits
 	cacheHits *stats.Int64Measure
 	// Counter to increment on cache misses
@@ -33,13 +37,13 @@ type validator struct {
 }
 
 // New returns a new Validator
-func New(name string, filterName string, opts ...Option) validator {
+func New(name string, filterName string, opts ...Option) Validator {
 	cfg := processOptions(name, opts...)
 	return validator{
-		filterName:         filterName,
-		validationLruCache: lru.New(cfg.cacheSize),
-		cacheHits:          cfg.cacheHits,
-		cacheMisses:        cfg.cacheMisses,
+		filterName:  filterName,
+		lruCache:    lru.New(cfg.cacheSize),
+		cacheHits:   cfg.cacheHits,
+		cacheMisses: cfg.cacheMisses,
 	}
 }
 
@@ -57,7 +61,7 @@ func (v validator) ValidateConfig(ctx context.Context, config HashableProtoMessa
 	}
 
 	// This proto has already been validated, return the result
-	if err, ok := v.validationLruCache.Get(hash); ok {
+	if err, ok := v.lruCache.Get(hash); ok {
 		utils.MeasureOne(
 			ctx,
 			v.cacheHits,
@@ -73,6 +77,10 @@ func (v validator) ValidateConfig(ctx context.Context, config HashableProtoMessa
 	)
 
 	err = bootstrap.ValidateBootstrap(ctx, v.filterName, config)
-	v.validationLruCache.Add(hash, err)
+	v.lruCache.Add(hash, err)
 	return err
+}
+
+func (v validator) CacheLength() int {
+	return v.lruCache.Len()
 }

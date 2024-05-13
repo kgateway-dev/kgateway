@@ -15,15 +15,10 @@ type config struct {
 
 type Option func(*config)
 
-func WithCacheHitCounter(counter *stats.Int64Measure) Option {
+func WithCounters(cacheHits, cacheMisses *stats.Int64Measure) Option {
 	return func(s *config) {
-		s.cacheHits = counter
-	}
-}
-
-func WithCacheMissCounter(counter *stats.Int64Measure) Option {
-	return func(s *config) {
-		s.cacheMisses = counter
+		s.cacheHits = cacheHits
+		s.cacheMisses = cacheMisses
 	}
 }
 

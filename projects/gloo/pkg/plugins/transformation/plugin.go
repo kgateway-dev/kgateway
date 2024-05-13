@@ -72,8 +72,7 @@ func NewPlugin() *Plugin {
 
 	return &Plugin{
 		validator: validator.New(ExtensionName, FilterName,
-			validator.WithCacheHitCounter(mCacheHits),
-			validator.WithCacheMissCounter(mCacheMisses)),
+			validator.WithCounters(mCacheHits, mCacheMisses)),
 	}
 }
 
