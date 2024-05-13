@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Kubernetes e2e test consolidation/cleanup.
