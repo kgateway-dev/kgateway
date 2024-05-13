@@ -34,7 +34,6 @@ var _ = Describe("RouteWrappersTest", func() {
 	}
 	DescribeTable("Route Sorting",
 		func(wrapperA, wrapperB *SortableRoute, expected bool) {
-
 			Expect(
 				routeWrapperLessFunc(wrapperA, wrapperB),
 			).Should(Equal(expected))
@@ -56,7 +55,7 @@ var _ = Describe("RouteWrappersTest", func() {
 			false,
 		),
 		Entry(
-			"ExactPaths will take precedence over prefix",
+			"Exact paths will take precedence over prefix",
 			&SortableRoute{
 				HttpRoute: defaultRt(),
 				Route: &v1.Route{
@@ -84,7 +83,7 @@ var _ = Describe("RouteWrappersTest", func() {
 			true,
 		),
 		Entry(
-			"ExactPaths will take precedence over Regex",
+			"Exact paths will take precedence over Regex",
 			&SortableRoute{
 				HttpRoute: defaultRt(),
 				Route: &v1.Route{
@@ -110,6 +109,90 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			true,
+		),
+		Entry(
+			"Regex paths will take precedence over Prefix",
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Regex{
+								Regex: "/regex.*",
+							},
+						},
+					},
+				},
+			},
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/prefix",
+							},
+						},
+					},
+				},
+			},
+			false,
+		),
+		Entry(
+			"Regex paths will not take precedence over Regex regardless of their lengths",
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Regex{
+								Regex: "/regex.*",
+							},
+						},
+					},
+				},
+			},
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Regex{
+								Regex: "/re.*",
+							},
+						},
+					},
+				},
+			},
+			false,
+		),
+		Entry(
+			"Regex paths will not take precedence over Regex regardless of their lengths",
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Regex{
+								Regex: "/re.*",
+							},
+						},
+					},
+				},
+			},
+			&SortableRoute{
+				HttpRoute: defaultRt(),
+				Route: &v1.Route{
+					Matchers: []*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Regex{
+								Regex: "/regex.*",
+							},
+						},
+					},
+				},
+			},
+			false,
 		),
 		Entry(
 			"PrefixPaths check length",
