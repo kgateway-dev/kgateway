@@ -91,7 +91,8 @@ func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...strin
 	return err
 }
 
-// ApplyFileOut applies the resources defined in a file, and returns an error if one occurred
+// ApplyFileWithOutput applies the resources defined in a file,
+// if an error occurred, it will be returned along with the output of the command
 func (c *Cli) ApplyFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
 	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
 
@@ -124,7 +125,8 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 	return err
 }
 
-// DeleteFile deletes the resources defined in a file, and returns an error if one occurred
+// DeleteFileWithOutput deletes the resources defined in a file,
+// if an error occurred, it will be returned along with the output of the command
 func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
 	applyArgs := append([]string{"delete", "-f", fileName}, extraArgs...)
 
