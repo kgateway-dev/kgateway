@@ -1,4 +1,4 @@
-package gloo_gateway_edge_test
+package tests_test
 
 import (
 	"context"
@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-
+	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
 // TestGlooGatewayEdgeGateway is the function which executes a series of tests against a given installation where
@@ -24,7 +22,7 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "gloo-gateway-edge-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "gloo-gateway-test-helm.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-gateway-test-helm.yaml"),
 		},
 	)
 
