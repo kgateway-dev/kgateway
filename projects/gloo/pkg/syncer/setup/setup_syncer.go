@@ -984,7 +984,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					gwOpts.Validation.AlwaysAcceptResources,
 					gwOpts.ReadGatewaysFromAllNamespaces,
 					gwOpts.GlooNamespace,
-					opts.GlooGateway.EnableK8sGatewayController, // ontrols validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)
+					opts.GlooGateway.EnableK8sGatewayController, // controls validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)
 				),
 			)
 			if err != nil {

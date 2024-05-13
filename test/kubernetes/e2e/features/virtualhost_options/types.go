@@ -18,7 +18,7 @@ var (
 	basicVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "basic-vho.yaml")
 	sectionNameVhOManifest = filepath.Join(util.MustGetThisDir(), "testdata", "section-name-vho.yaml")
 	extraVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho.yaml")
-	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "bad-vho.yaml")
+	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "webhook-reject-bad-vho.yaml")
 
 	// When we apply the setup file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{

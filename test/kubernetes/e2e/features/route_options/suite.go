@@ -23,20 +23,15 @@ type testingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
-
-	// validationEnabled tracks if the validating webhook was enabled and will reject invalid resources
-	validationEnabled bool
 }
 
 func NewTestingSuite(
 	ctx context.Context,
 	testInst *e2e.TestInstallation,
-	validationEnabled bool,
 ) suite.TestingSuite {
 	return &testingSuite{
-		ctx:               ctx,
-		testInstallation:  testInst,
-		validationEnabled: validationEnabled,
+		ctx:              ctx,
+		testInstallation: testInst,
 	}
 }
 

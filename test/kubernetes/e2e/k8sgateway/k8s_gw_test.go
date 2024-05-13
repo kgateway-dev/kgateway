@@ -30,8 +30,9 @@ func TestK8sGateway(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "k8s-gw-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
+			InstallNamespace:       "k8s-gw-test",
+			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
+			ValidationAlwaysAccept: false,
 		},
 	)
 
@@ -59,11 +60,11 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	t.Run("RouteOptions", func(t *testing.T) {
-		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation, true))
+		suite.Run(t, route_options.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("VirtualHostOptions", func(t *testing.T) {
-		suite.Run(t, virtualhost_options.NewTestingSuite(ctx, testInstallation, true))
+		suite.Run(t, virtualhost_options.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("Upstreams", func(t *testing.T) {
