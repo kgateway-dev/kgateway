@@ -127,7 +127,7 @@ func (s *tsuite) TestCyclic() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		cyclicRoute)
 	s.Require().NoError(err)
-	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(cyclicRoute, "cyclic reference detected", "missing status on cyclic route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(cyclicRoute, "cyclic reference detected")
 }
 
 func (s *tsuite) TestInvalidChild() {
@@ -144,7 +144,7 @@ func (s *tsuite) TestInvalidChild() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset", "missing status on invalid route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
 }
 
 func (s *tsuite) TestHeaderQueryMatch() {
@@ -239,7 +239,7 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset", "missing status on invalid route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
 }
 
 func (s *tsuite) TestUnresolvedChild() {
@@ -249,7 +249,7 @@ func (s *tsuite) TestUnresolvedChild() {
 			types.NamespacedName{Name: routeRoot.Name, Namespace: routeRoot.Namespace},
 			route)
 		assert.NoError(c, err, "route not found")
-		s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(route, "unresolved reference", "missing status on invalid route")
+		s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(route, "unresolved reference")
 	}, 10*time.Second, 1*time.Second)
 }
 

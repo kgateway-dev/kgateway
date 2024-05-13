@@ -1,11 +1,11 @@
 package assertions
 
 import (
-	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
@@ -69,21 +69,16 @@ func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.Name
 }
 
 // AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
-// the given substring in its message. A description can optionally be provided to the assertion.
-func (p *Provider) AssertHTTPRouteStatusContainsSubstring(
-	route *gwv1.HTTPRoute,
-	substr string,
-	description ...string) {
-
-	found := false
-	for _, parent := range route.Status.RouteStatus.Parents {
-		for _, condition := range parent.Conditions {
-			if strings.Contains(condition.Message, substr) {
-				found = true
-				break
-			}
-		}
-	}
-
-	p.Gomega.Expect(found).To(gomega.BeTrue(), description)
+// the given message substring.
+func (p *Provider) AssertHTTPRouteStatusContainsSubstring(route *gwv1.HTTPRoute, message string) {
+	matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
+		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Message": matchers.ContainSubstrings([]string{message}),
+				})),
+			})),
+		}),
+	})
+	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
 }
