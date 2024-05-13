@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"container/list"
 	"context"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -22,6 +23,9 @@ type RouteContext struct {
 	// Note: this should be used over Route.spec.Hostnames as
 	// delegatee (child) routes of delegated routes will not have spec.Hostnames set.
 	Hostnames []gwv1.Hostname
+	// DelegationChain is a doubly linked list containing the delegation chain from child to its ancestors
+	// excluding the child itself, where the elements are the NamespacedName type
+	DelegationChain *list.List
 	// specific HTTPRouteRule of the HTTPRoute being processed, nil if the entire HTTPRoute is being processed
 	// rather than just a specific Rule
 	Rule *gwv1.HTTPRouteRule
