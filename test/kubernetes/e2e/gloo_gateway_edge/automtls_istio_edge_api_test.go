@@ -30,7 +30,6 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
@@ -54,7 +53,13 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		}
 	})
 
-	// Install Gloo Gateway with only Edge APIs enabled
+	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
+	err = testInstallation.InstallMinimalIstio(ctx)
+	if err != nil {
+		t.Fatalf("failed to install istio: %v", err)
+	}
+
+	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
