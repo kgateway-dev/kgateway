@@ -37,7 +37,7 @@ type validator struct {
 }
 
 // New returns a new Validator
-func New(name string, filterName string, opts ...Option) Validator {
+func New(name string, filterName string, opts ...Option) validator {
 	cfg := processOptions(name, opts...)
 	return validator{
 		filterName:  filterName,
