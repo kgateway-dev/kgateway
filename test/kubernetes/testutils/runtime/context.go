@@ -28,15 +28,9 @@ func NewContext() Context {
 		runSource = PullRequest
 	}
 
-	// get clusterName from env var, default to "kind" if not set
-	clusterName := os.Getenv(testutils.ClusterName)
-	if clusterName == "" {
-		clusterName = "kind"
-	}
-
 	return Context{
 		// ClusterName is derived from the environment variable
-		ClusterName: clusterName,
+		ClusterName: os.Getenv(testutils.ClusterName),
 
 		RunSource: runSource,
 	}
