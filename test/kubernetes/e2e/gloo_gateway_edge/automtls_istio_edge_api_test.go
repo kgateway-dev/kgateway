@@ -25,7 +25,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "automtls-istio-edge-api-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-edge-api-gateway-test-helm.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "automtls-istio-edge-api-gateway-test-helm.yaml"),
 		},
 	)
 
