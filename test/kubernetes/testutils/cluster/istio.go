@@ -15,13 +15,9 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-const (
-	defaultIstioVersion = "1.19.9"
-)
-
 func GetIstioctl(ctx context.Context) (string, error) {
 	// Download istioctl binary
-	istioctlBinary, err := downloadIstio(ctx, getIstioVersion(ctx))
+	istioctlBinary, err := downloadIstio(ctx, getIstioVersion())
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
@@ -61,14 +57,12 @@ func installIstioOperator(
 	return ctx.Err()
 }
 
-func getIstioVersion(ctx context.Context) string {
+func getIstioVersion() string {
 	if version := os.Getenv(glooruntime.IstioVersionEnv); version != "" {
 		return version
 	} else {
-		contextutils.LoggerFrom(ctx).Infof("%s environment variable is not set; using default version %s",
-			glooruntime.IstioVersionEnv,
-			defaultIstioVersion)
-		return defaultIstioVersion
+		// Fail loudly if ISTIO_VERSION is not set
+		panic(fmt.Sprintf("%s environment variable must be specified to run", glooruntime.IstioVersionEnv))
 	}
 }
 
