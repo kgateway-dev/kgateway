@@ -41,6 +41,9 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	t.Cleanup(func() {
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
+
+			// Generate istioctl bug report
+			testInstallation.CreateIstioBugReport(ctx)
 		}
 
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
