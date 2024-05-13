@@ -17,7 +17,7 @@ import (
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 )
 
 const (
@@ -102,8 +102,8 @@ var (
 
 	K8sGateway = &gwv1.Gateway{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       utils.K8sGatewayGvk.Kind,
-			APIVersion: fmt.Sprintf("%s/%s", utils.K8sGatewayGvk.Group, utils.K8sGatewayGvk.Version),
+			Kind:       resources.K8sGatewayGvk.Kind,
+			APIVersion: fmt.Sprintf("%s/%s", resources.K8sGatewayGvk.Group, resources.K8sGatewayGvk.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw",
@@ -129,8 +129,8 @@ var (
 	// k8s Gateway API resources
 	HeadlessSvcHTTPRoute = &gwv1.HTTPRoute{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       utils.HTTPRouteGvk.Kind,
-			APIVersion: fmt.Sprintf("%s/%s", utils.HTTPRouteGvk.Group, utils.HTTPRouteGvk.Version),
+			Kind:       resources.HTTPRouteGvk.Kind,
+			APIVersion: fmt.Sprintf("%s/%s", resources.HTTPRouteGvk.Group, resources.HTTPRouteGvk.Version),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "headless-httproute",

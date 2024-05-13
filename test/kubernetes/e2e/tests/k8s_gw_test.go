@@ -1,4 +1,4 @@
-package k8sgateway_test
+package tests_test
 
 import (
 	"context"
@@ -6,22 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
-
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
-
-	"github.com/solo-io/skv2/codegen/util"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/skv2/codegen/util"
+	"github.com/stretchr/testify/suite"
 )
 
 // TestK8sGateway is the function which executes a series of tests against a given installation

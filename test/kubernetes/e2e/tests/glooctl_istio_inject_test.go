@@ -1,4 +1,4 @@
-package gloo_gateway_edge
+package tests_test
 
 import (
 	"context"
@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
-
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
@@ -17,20 +16,19 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestIstioEdgeApiGateway is the function which executes a series of tests against a given installation where
-// the k8s Gateway controller is disabled
-func TestIstioEdgeApiGateway(t *testing.T) {
+// TestGlooctlIstioInjectEdgeApiGateway is the function which executes a series of tests against a given installation where
+// the k8s Gateway controller is disabled and glooctl istio inject is used to inject istio into the installation
+func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "istio-edge-api-gateway-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-api-gateway-test-helm.yaml"),
+			InstallNamespace:   "glooctl-edge-api-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-gateway-test-helm.yaml"),
 		},
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
@@ -60,16 +58,21 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 		t.Fatalf("failed to install istio: %v", err)
 	}
 
-	// Install Gloo Gateway with only Edge APIs enabled
+	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation))
+	// NOTE: Order of tests is important here because the tests are dependent on each other (e.g. the inject test must run before the istio test)
+	t.Run("GlooctlIstioInject", func(t *testing.T) {
+		suite.Run(t, glooctl.NewIstioInjectTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {
 		suite.Run(t, istio.NewGlooTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("GlooctlIstioUninject", func(t *testing.T) {
+		suite.Run(t, glooctl.NewIstioUninjectTestingSuite(ctx, testInstallation))
 	})
 }

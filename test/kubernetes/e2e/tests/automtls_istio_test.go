@@ -1,4 +1,4 @@
-package gloo_gateway_edge_test
+package tests_test
 
 import (
 	"context"
@@ -7,25 +7,23 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
-
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestAutomtlsIstioEdgeApisGateway is the function which executes a series of tests against a given installation where
-// the k8s Gateway controller is disabled
-func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
+// TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
+func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "automtls-istio-edge-api-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "automtls-istio-edge-api-gateway-test-helm.yaml"),
+			InstallNamespace:   "automtls-istio-k8s-gw-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-k8s-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -40,6 +38,9 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	t.Cleanup(func() {
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
+
+			// Generate istioctl bug report
+			testInstallation.CreateIstioBugReport(ctx)
 		}
 
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
@@ -59,16 +60,21 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		t.Fatalf("failed to install istio: %v", err)
 	}
 
-	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
+	// Install Gloo Gateway
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+		// istio proxy and sds are added to gateway and take a little longer to start up
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 10*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+	})
+
+	t.Run("PortRouting", func(t *testing.T) {
+		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation))
+		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
 	})
 
-	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewGlooIstioAutoMtlsSuite(ctx, testInstallation))
+	t.Run("IstioIntegrationAutoMtls", func(t *testing.T) {
+		suite.Run(t, istio.NewIstioAutoMtlsSuite(ctx, testInstallation))
 	})
 }

@@ -4,14 +4,13 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
-	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // glooIstioAutoMtlsTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mTLS is enabled
@@ -42,8 +41,8 @@ func (s *glooIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest() string {
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) SetupSuite() {
-	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace)
-	err := utils.WriteResourcesToFile(resources, s.getEdgeGatewayRoutingManifest())
+	gwResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace)
+	err := resources.WriteResourcesToFile(gwResources, s.getEdgeGatewayRoutingManifest())
 	s.NoError(err, "can write resources to file")
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
