@@ -1,4 +1,4 @@
-package gloo_gateway_edge_test
+package tests_test
 
 import (
 	"context"
@@ -17,19 +17,20 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestAutomtlsIstioEdgeApisGateway is the function which executes a series of tests against a given installation where
+// TestIstioEdgeApiGateway is the function which executes a series of tests against a given installation where
 // the k8s Gateway controller is disabled
-func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
+func TestIstioEdgeApiGateway(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "automtls-istio-edge-api-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "automtls-istio-edge-api-gateway-test-helm.yaml"),
+			InstallNamespace:   "istio-edge-api-gateway-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-api-gateway-test-helm.yaml"),
 		},
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
+
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
@@ -59,7 +60,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		t.Fatalf("failed to install istio: %v", err)
 	}
 
-	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
+	// Install Gloo Gateway with only Edge APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
@@ -69,6 +70,6 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewGlooIstioAutoMtlsSuite(ctx, testInstallation))
+		suite.Run(t, istio.NewGlooTestingSuite(ctx, testInstallation))
 	})
 }
