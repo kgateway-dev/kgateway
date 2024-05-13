@@ -16,7 +16,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -33,15 +32,9 @@ func getEnvoyPath() string {
 
 func ValidateBootstrap(
 	ctx context.Context,
-	settings *v1.Settings,
 	filterName string,
 	msg proto.Message,
 ) error {
-	// If the user has disabled transformation validation, then always return nil
-	if settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
-		return nil
-	}
-
 	bootstrapYaml, err := buildPerFilterBootstrapYaml(filterName, msg)
 	if err != nil {
 		return err
