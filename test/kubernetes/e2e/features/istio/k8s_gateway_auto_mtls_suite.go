@@ -129,7 +129,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedPlaintextResponse)
 }

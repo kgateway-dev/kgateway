@@ -14,7 +14,7 @@ import (
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"
 	soloapis_kubernetes "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/options/kubernetes"
-	ssl "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/ssl"
+	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/ssl"
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
