@@ -71,7 +71,7 @@ jobs:
           kubectl-version: 'v1.28.4'
           helm-version: 'v3.13.2'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGateway/Deployer$|^TestK8sGateway/RouteOptions$|^TestK8sGateway/VirtualHostOptions$|^TestK8sGateway/Upstreams$|^TestK8sGateway/HeadlessSvc$|^TestK8sGateway/PortRouting$)'
+          go-test-run-regex: '(^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$)'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_three'
