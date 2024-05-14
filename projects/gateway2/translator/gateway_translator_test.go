@@ -157,5 +157,5 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("RouteOptions ignore child override on conflict", "route_options_inheritance_child_override_ignore.yaml"),
 	Entry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml"),
 	Entry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml"),
-	Entry("RouteOptions filter override on child should be ignored", "route_options_filter_override_ignore.yaml"),
+	Entry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
 )

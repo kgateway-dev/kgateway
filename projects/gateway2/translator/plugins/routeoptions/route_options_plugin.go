@@ -22,9 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -34,11 +32,6 @@ var (
 	_ plugins.RoutePlugin  = &plugin{}
 	_ plugins.StatusPlugin = &plugin{}
 )
-
-var routeOptionGK = schema.GroupKind{
-	Group: sologatewayv1.RouteOptionGVK.Group,
-	Kind:  sologatewayv1.RouteOptionGVK.Kind,
-}
 
 // holds the data structures needed to derive and report a classic GE status
 type legacyStatus struct {
@@ -86,21 +79,9 @@ func (p *plugin) ApplyRoutePlugin(
 	outputRoute *gloov1.Route,
 ) error {
 	// check for RouteOptions applied to full Route
-	routeOptions, routeOptionKube := p.handleAttachment(ctx, routeCtx)
-
-	// allow for ExtensionRef filter override only when this route is not
-	// a child in a delegation tree. With delegation, only targetRef based
-	// policy attachment to a route is supported.
-	filterOverride := false
-	if routeCtx.DelegationChain == nil || routeCtx.DelegationChain.Len() == 0 {
-		filterRouteOptions, err := p.handleFilter(ctx, routeCtx)
-		if err != nil {
-			return err
-		}
-		if filterRouteOptions != nil {
-			routeOptions = filterRouteOptions
-			filterOverride = true
-		}
+	routeOptions, routeOptionKube, filterOverride, err := p.handleAttachment(ctx, routeCtx)
+	if err != nil {
+		return err
 	}
 
 	if routeOptions != nil {
@@ -183,7 +164,7 @@ func (p *plugin) trackAcceptedRouteOption(
 func (p *plugin) handleAttachment(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-) (*gloov1.RouteOptions, *solokubev1.RouteOption) {
+) (*gloov1.RouteOptions, *solokubev1.RouteOption, bool, error) {
 	// parentRouteRef refers to the parent route in a delegation chain.
 	// The condition below allows it to be optional in the RouteContext
 	var parentRouteRef *list.Element
@@ -195,67 +176,35 @@ func (p *plugin) handleAttachment(
 	// Route plugins run on every match for every Rule in a Route but the attached options are
 	// the same each time; i.e. HTTPRoute <-1:1-> RouteOptions.
 	// We should only make this query once per HTTPRoute.
-	attachedOption, err := p.rtOptQueries.GetRouteOptionForRoute(
-		ctx, types.NamespacedName{Name: routeCtx.Route.Name, Namespace: routeCtx.Route.Namespace},
+	attachedOption, filterOverride, err := p.rtOptQueries.GetRouteOptionForRouteRule(
+		ctx,
+		types.NamespacedName{Name: routeCtx.Route.Name, Namespace: routeCtx.Route.Namespace},
+		routeCtx.Rule,
 		parentRouteRef,
+		p.gwQueries,
 	)
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Errorf("error getting RouteOptions for Route: %v", err)
-		return nil, nil
-	}
-	if attachedOption == nil || attachedOption.Spec.GetOptions() == nil {
-		return nil, nil
-	}
-
-	return attachedOption.Spec.GetOptions(), attachedOption
-}
-
-func (p *plugin) handleFilter(
-	ctx context.Context,
-	routeCtx *plugins.RouteContext,
-) (*gloov1.RouteOptions, error) {
-	filter := utils.FindExtensionRefFilter(routeCtx, routeOptionGK)
-	if filter == nil {
-		return nil, nil
-	}
-
-	routeOption := &solokubev1.RouteOption{}
-	err := utils.GetExtensionRefObj(context.Background(), routeCtx, p.gwQueries, filter.ExtensionRef, routeOption)
-	if err != nil {
 		switch {
-		case apierrors.IsNotFound(err):
-			notFoundMsg := formatNotFoundMessage(routeCtx, filter)
-			routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:    gwv1.RouteConditionResolvedRefs,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: notFoundMsg,
-			})
-			return nil, errors.New(notFoundMsg)
 		case errors.Is(err, utils.ErrTypesNotEqual):
 		case errors.Is(err, utils.ErrNotSettable):
 			devErr := fmt.Errorf("developer error while getting RouteOptions as ExtensionRef: %w", err)
 			contextutils.LoggerFrom(ctx).DPanic(devErr)
-			return nil, devErr
 		default:
-			return nil, fmt.Errorf("error while getting RouteOptions as ExtensionRef route filter: %w", err)
+			routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
+				Type:    gwv1.RouteConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonBackendNotFound,
+				Message: err.Error(),
+			})
 		}
+		return nil, nil, false, err
+	}
+	if attachedOption == nil || attachedOption.Spec.GetOptions() == nil {
+		return nil, nil, false, nil
 	}
 
-	if routeOption.Spec.GetOptions() != nil {
-		return routeOption.Spec.GetOptions(), nil
-	}
-	return nil, nil
-}
-
-func formatNotFoundMessage(routeCtx *plugins.RouteContext, filter *gwv1.HTTPRouteFilter) string {
-	return fmt.Sprintf(
-		"extensionRef '%s' of type %s.%s in namespace '%s' not found",
-		filter.ExtensionRef.Group,
-		filter.ExtensionRef.Kind,
-		filter.ExtensionRef.Name,
-		routeCtx.Route.GetNamespace(),
-	)
+	return attachedOption.Spec.GetOptions(), attachedOption, filterOverride, nil
 }
 
 // given a ProxyReport, extract and aggregate all Route errors that have RouteOption source metadata

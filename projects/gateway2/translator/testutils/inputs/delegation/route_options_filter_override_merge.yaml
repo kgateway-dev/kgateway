@@ -81,7 +81,7 @@ spec:
         extensionRef:
           group: gateway.solo.io
           kind: RouteOption
-          name: route-a-opt
+          name: route-a-opt-1
 ---
 apiVersion: v1
 kind: Service
@@ -96,7 +96,21 @@ spec:
 apiVersion: gateway.solo.io/v1
 kind: RouteOption
 metadata:
-  name: route-a-opt
+  name: route-a-opt-1
+  namespace: a
+spec:
+  options:
+    faults:
+      abort:
+        percentage: 80
+        httpStatus: 404
+    headerManipulation:
+      requestHeadersToRemove: ["foo"]
+---
+apiVersion: gateway.solo.io/v1
+kind: RouteOption
+metadata:
+  name: route-a-opt-2
   namespace: a
 spec:
   targetRef:
@@ -106,5 +120,12 @@ spec:
   options:
     faults:
       abort:
-        percentage: 80
-        httpStatus: 404
+        percentage: 70
+        httpStatus: 403
+    headerManipulation:
+      requestHeadersToRemove: ["baz"]
+    cors:
+      exposeHeaders:
+        - foo
+      allowOrigin:
+        - baz
