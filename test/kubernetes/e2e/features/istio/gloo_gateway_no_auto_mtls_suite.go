@@ -2,6 +2,7 @@ package istio
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
@@ -24,54 +25,54 @@ type glooIstioTestingSuite struct {
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
 
-	// routingManifestFile is the path to the manifest file that contains the routing resources
-	routingManifestFile string
+	// generated routing manifest file names
+	noMtlsGlooResourcesFile string
+	sslGlooResourcesFile    string
 }
 
 func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	routingManifestFile := filepath.Join(testInst.GeneratedFiles.TempDir, EdgeApisRoutingResourcesFileName)
-	return &glooIstioTestingSuite{
-		ctx:                 ctx,
-		testInstallation:    testInst,
-		routingManifestFile: routingManifestFile,
-	}
-}
+	noMtlsGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{})))
+	sslGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{SetSslConfig: true})))
 
-func (s *glooIstioAutoMtlsTestingSuite) getEdgeGatewayRoutingManifest(disableAutomtls bool) string {
-	if disableAutomtls {
-		return filepath.Join(s.routingManifestPath, DisableAutomtlsEdgeApisRoutingResourcesFileName)
-	} else {
-		return filepath.Join(s.routingManifestPath, EdgeApisRoutingResourcesFileName)
+	return &glooIstioTestingSuite{
+		ctx:                     ctx,
+		testInstallation:        testInst,
+		noMtlsGlooResourcesFile: noMtlsGlooResourcesFile,
+		sslGlooResourcesFile:    sslGlooResourcesFile,
 	}
 }
 
 func (s *glooIstioTestingSuite) SetupSuite() {
-	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, false, false)
-	err := utils.WriteResourcesToFile(resources, s.routingManifestFile)
+	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{})
+	err := utils.WriteResourcesToFile(resources, s.noMtlsGlooResourcesFile)
+	s.NoError(err, "can write resources to file")
+
+	sslResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{SetSslConfig: true})
+	err = utils.WriteResourcesToFile(sslResources, s.sslGlooResourcesFile)
 	s.NoError(err, "can write resources to file")
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
-	s.NoError(err, "can apply generated manifest")
 }
 
 func (s *glooIstioTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.routingManifestFile)
-	s.NoError(err, "can delete generated routing manifest")
-
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 }
 
 func (s *glooIstioTestingSuite) TestStrictPeerAuth() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.noMtlsGlooResourcesFile)
+		s.NoError(err, "can delete generated routing manifest")
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
 		s.NoError(err, "can delete manifest")
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.noMtlsGlooResourcesFile)
+	s.NoError(err, "can apply generated manifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
 	s.NoError(err, "can apply strictPeerAuthManifest")
 
 	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
@@ -91,9 +92,15 @@ func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, permissivePeerAuthManifest)
 		s.NoError(err, "can delete manifest")
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
+		s.NoError(err, "can delete manifest")
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, permissivePeerAuthManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.noMtlsGlooResourcesFile)
+	s.NoError(err, "can apply generated manifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, permissivePeerAuthManifest)
 	s.NoError(err, "can apply permissivePeerAuth")
 
 	// With auto mtls disabled in the mesh, the response should not contain the X-Forwarded-Client-Cert header
@@ -107,4 +114,32 @@ func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
 			curl.WithPort(80),
 		},
 		expectedPlaintextResponse)
+}
+
+func (s *glooIstioTestingSuite) TestUpstreamSSLConfigStrictPeerAuth() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.sslGlooResourcesFile)
+		s.NoError(err, "can delete generated routing manifest")
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
+		s.NoError(err, "can delete manifest")
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslGlooResourcesFile)
+	s.NoError(err, "can apply generated manifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
+	s.NoError(err, "can apply strictPeerAuthManifest")
+
+	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		curlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
+			curl.WithHostHeader("httpbin"),
+			curl.WithPath("headers"),
+			curl.WithPort(80),
+		},
+		expectedMtlsResponse)
 }

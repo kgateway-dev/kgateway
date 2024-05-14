@@ -18,17 +18,35 @@ import (
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+type UpstreamConfigOpts struct {
+	DisableIstioAutoMtls bool
+	SetSslConfig         bool
+}
+
 var (
-	EdgeApisRoutingResourcesFileName                = "edge-apis-routing.gen.yaml"
-	DisableAutomtlsEdgeApisRoutingResourcesFileName = "disable-automtls-edge-apis-routing.gen.yaml"
-	UpstreamSslConfigEdgeApisFileName               = "upstream-ssl-config-edge-apis.gen.yaml"
+	EdgeApisRoutingFileName                     = "edge-apis-routing.gen.yaml"
+	DisableAutomtlsEdgeApisFileName             = "disable-automtls-edge-apis-routing.gen.yaml"
+	UpstreamSslConfigEdgeApisFileName           = "upstream-ssl-config-edge-apis.gen.yaml"
+	UpstreamSslConfigAndDisableAutomtlsFileName = "sslconfig-and-disable-automtls-edge-apis-routing.gen.yaml"
 
 	httpbinSvc = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "httpbin", Namespace: "httpbin"}}
 
-	// GetGlooGatewayEdgeResources defines the Edge API resources for no sslConfig on Upstream
-	GetGlooGatewayEdgeResources = func(installNamespace string, disableIstioAutoMtls, setSslConfig bool) []client.Object {
+	getGlooGatewayEdgeResourceFilmeName = func(config UpstreamConfigOpts) string {
+		if config.SetSslConfig && config.DisableIstioAutoMtls {
+			return UpstreamSslConfigAndDisableAutomtlsFileName
+		} else if config.SetSslConfig {
+			return UpstreamSslConfigEdgeApisFileName
+		} else if config.DisableIstioAutoMtls {
+			return DisableAutomtlsEdgeApisFileName
+		} else {
+			return EdgeApisRoutingFileName
+		}
+	}
+
+	// GetGlooGatewayEdgeResources defines the Edge API resources based on the UpstreamConfigOpts and the file name of the generated manifest
+	GetGlooGatewayEdgeResources = func(installNamespace string, config UpstreamConfigOpts) []client.Object {
 		var sslConfig *ssl.UpstreamSslConfig
-		if setSslConfig {
+		if config.SetSslConfig {
 			/*
 				This should match the basic istio integration sslConfig:
 					sslConfig:
@@ -65,7 +83,7 @@ var (
 				Namespace: installNamespace,
 			},
 			Spec: soloapis_gloov1.UpstreamSpec{
-				DisableIstioAutoMtls: &wrappers.BoolValue{Value: disableIstioAutoMtls},
+				DisableIstioAutoMtls: &wrappers.BoolValue{Value: config.DisableIstioAutoMtls},
 				UpstreamType: &soloapis_gloov1.UpstreamSpec_Kube{
 					Kube: &soloapis_kubernetes.UpstreamSpec{
 						Selector: map[string]string{
@@ -121,6 +139,7 @@ var (
 
 		var resources []client.Object
 		resources = append(resources, headlessVs, httpbinUpstream)
+
 		return resources
 	}
 )
