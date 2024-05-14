@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -43,12 +43,12 @@ func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) su
 }
 
 func (s *glooIstioTestingSuite) SetupSuite() {
-	resources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{})
-	err := utils.WriteResourcesToFile(resources, s.noMtlsGlooResourcesFile)
+	noMtlsResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{})
+	err := resources.WriteResourcesToFile(noMtlsResources, s.noMtlsGlooResourcesFile)
 	s.NoError(err, "can write resources to file")
 
 	sslResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{SetSslConfig: true})
-	err = utils.WriteResourcesToFile(sslResources, s.sslGlooResourcesFile)
+	err = resources.WriteResourcesToFile(sslResources, s.sslGlooResourcesFile)
 	s.NoError(err, "can write resources to file")
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)

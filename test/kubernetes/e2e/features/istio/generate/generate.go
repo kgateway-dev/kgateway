@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 	"github.com/solo-io/skv2/codegen/util"
 )
 
@@ -25,7 +25,7 @@ func main() {
 	// use the Gloo Edge Gateway api resources with automtls enabled
 	edgeGatewayApiResources := istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{})
 	automtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-enabled-%s", istio.EdgeApisRoutingFileName))
-	err := utils.WriteResourcesToFile(edgeGatewayApiResources, automtlsGeneratedExample)
+	err := resources.WriteResourcesToFile(edgeGatewayApiResources, automtlsGeneratedExample)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,7 @@ func main() {
 	// automtls disabled
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{DisableIstioAutoMtls: true})
 	disableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-disabled-%s", istio.EdgeApisRoutingFileName))
-	err = utils.WriteResourcesToFile(edgeGatewayApiResources, disableAutomtlsGeneratedExample)
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, disableAutomtlsGeneratedExample)
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func main() {
 	// Upstream sslConfig is set
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true})
 	upstreamSslConfigGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-disabled-%s", istio.EdgeApisRoutingFileName))
-	err = utils.WriteResourcesToFile(edgeGatewayApiResources, upstreamSslConfigGeneratedExample)
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, upstreamSslConfigGeneratedExample)
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +49,7 @@ func main() {
 	// Upstream sslConfig is set and automtls is disabled
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true, DisableIstioAutoMtls: true})
 	sslConfigAndDisableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-and-automtls-disabled-%s", istio.EdgeApisRoutingFileName))
-	err = utils.WriteResourcesToFile(edgeGatewayApiResources, sslConfigAndDisableAutomtlsGeneratedExample)
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, sslConfigAndDisableAutomtlsGeneratedExample)
 	if err != nil {
 		panic(err)
 	}

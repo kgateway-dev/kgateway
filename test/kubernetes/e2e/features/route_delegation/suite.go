@@ -16,7 +16,6 @@ import (
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -128,7 +127,7 @@ func (s *tsuite) TestCyclic() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		cyclicRoute)
 	s.Require().NoError(err)
-	s.Require().True(utils.HTTPRouteStatusContainsMsg(cyclicRoute, "cyclic reference detected"), "missing status on cyclic route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(cyclicRoute, "cyclic reference detected")
 }
 
 func (s *tsuite) TestInvalidChild() {
@@ -145,7 +144,7 @@ func (s *tsuite) TestInvalidChild() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.Require().True(utils.HTTPRouteStatusContainsMsg(invalidRoute, "spec.hostnames must be unset"), "missing status on invalid route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
 }
 
 func (s *tsuite) TestHeaderQueryMatch() {
@@ -240,7 +239,7 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.Require().True(utils.HTTPRouteStatusContainsMsg(invalidRoute, "spec.hostnames must be unset"), "missing status on invalid route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
 }
 
 func (s *tsuite) TestUnresolvedChild() {
@@ -250,7 +249,7 @@ func (s *tsuite) TestUnresolvedChild() {
 			types.NamespacedName{Name: routeRoot.Name, Namespace: routeRoot.Namespace},
 			route)
 		assert.NoError(c, err, "route not found")
-		assert.True(c, utils.HTTPRouteStatusContainsMsg(route, "unresolved reference"), "missing status on invalid route")
+		s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(route, "unresolved reference")
 	}, 10*time.Second, 1*time.Second)
 }
 

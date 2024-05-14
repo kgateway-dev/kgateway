@@ -1,4 +1,4 @@
-package k8sgateway_test
+package tests_test
 
 import (
 	"context"
@@ -6,15 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
-	"github.com/solo-io/skv2/codegen/util"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/skv2/codegen/util"
+	"github.com/stretchr/testify/suite"
 )
 
 // TestK8sGatewayIstio is the function which executes a series of tests against a given installation

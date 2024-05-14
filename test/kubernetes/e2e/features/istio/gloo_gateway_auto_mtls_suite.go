@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
-	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // glooIstioAutoMtlsTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mTLS is enabled
@@ -54,22 +53,22 @@ func (s *glooIstioAutoMtlsTestingSuite) SetupSuite() {
 
 	// enabled automtls on upstream
 	enableAutomtlsResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{})
-	err = utils.WriteResourcesToFile(enableAutomtlsResources, s.enableAutomtlsFile)
+	err = resources.WriteResourcesToFile(enableAutomtlsResources, s.enableAutomtlsFile)
 	s.NoError(err, "can write automtls upstream resources to file")
 
 	// disable automtls on upstream
 	disableAutomtlsResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{DisableIstioAutoMtls: true})
-	err = utils.WriteResourcesToFile(disableAutomtlsResources, s.disableAutomtlsFile)
+	err = resources.WriteResourcesToFile(disableAutomtlsResources, s.disableAutomtlsFile)
 	s.NoError(err, "can write disabled automtls upstream resources to file")
 
 	// sslConfig and automtls on upstream
 	sslConfigResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{SetSslConfig: true})
-	err = utils.WriteResourcesToFile(sslConfigResources, s.sslConfigFile)
+	err = resources.WriteResourcesToFile(sslConfigResources, s.sslConfigFile)
 	s.NoError(err, "can write sslConfig automtls upstream resources to file")
 
 	// sslConfig and disable automtls on upstream
 	sslConfigAndDisableAutomtlsResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{SetSslConfig: true, DisableIstioAutoMtls: true})
-	err = utils.WriteResourcesToFile(sslConfigAndDisableAutomtlsResources, s.sslConfigAndDisableAutomtlsFile)
+	err = resources.WriteResourcesToFile(sslConfigAndDisableAutomtlsResources, s.sslConfigAndDisableAutomtlsFile)
 	s.NoError(err, "can write sslConfig and disable automtls upstream resources to file")
 }
 
