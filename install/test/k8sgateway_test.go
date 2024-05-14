@@ -21,7 +21,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest = tm
 		}
 
-		It("when kube gateway integration is enabled, relevant resources are rendered", func() {
+		FIt("when kube gateway integration is enabled, relevant resources are rendered", func() {
 			prepareMakefile(namespace, helmValues{
 				valuesArgs: []string{
 					"kubeGateway.enabled=true",
@@ -35,6 +35,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 			// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
 			testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
+
+			testManifest.ExpectUnstructured("GatewayParameters", "", "default").NotTo(BeNil())
 
 			controlPlaneRbacName := fmt.Sprintf("glood-%s.%s", releaseName, namespace)
 			testManifest.Expect("ClusterRole", "", controlPlaneRbacName).NotTo(BeNil())

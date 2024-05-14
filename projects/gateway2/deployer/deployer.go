@@ -34,10 +34,10 @@ import (
 
 var (
 	GetGatewayParametersError = eris.New("could not retrieve GatewayParameters")
-	getGatewayParametersError = func(err error, gwpNamespace string, gwpName string, gwNamespace string, gwName string) error {
+	getGatewayParametersError = func(err error, gwpNamespace, gwpName, gwNamespace, gwName, resourceType string) error {
 		wrapped := eris.Wrap(err, GetGatewayParametersError.Error())
-		return eris.Wrapf(wrapped, "(%s.%s) for Gateway (%s.%s)",
-			gwpNamespace, gwpName, gwNamespace, gwName)
+		return eris.Wrapf(wrapped, "(%s.%s) for %s (%s.%s)",
+			gwpNamespace, gwpName, resourceType, gwNamespace, gwName)
 	}
 	NilDeployerInputsErr = eris.New("nil inputs to NewDeployer")
 	NilK8sExtensionsErr  = eris.New("nil K8sGatewayExtensions to NewDeployer")
@@ -159,7 +159,7 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 	// check for a gateway params annotation on the Gateway
 	gwpName := gw.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
 	if gwpName == "" {
-		// there is no custom GatewayParameters; just use default values
+		// there is no custom GatewayParameters; use GatewayParameters attached to GatewayClass
 		logger.V(1).Info("no GatewayParameters found for Gateway",
 			"gatewayName", gw.GetName(),
 			"gatewayNamespace", gw.GetNamespace())
@@ -171,7 +171,32 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 	gwp := &v1alpha1.GatewayParameters{}
 	err := d.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
-		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName())
+		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
+	}
+
+	return gwp, nil
+}
+
+// Gets the GatewayParameters object (if any) associated with a given GatewayClass.
+func (d *Deployer) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
+	logger := log.FromContext(ctx)
+
+	// check for a gateway params annotation on the Gateway
+	gwpName := gwc.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
+	if gwpName == "" {
+		// there is no custom GatewayParameters; use default GatewayParameters
+		logger.V(1).Info("no GatewayParameters found for GatewayClass, using default values",
+			"gatewayClassName", gwc.GetName(),
+			"gatewayClassNamespace", gwc.GetNamespace())
+		return nil, nil
+	}
+
+	// the GatewayParameters must live in the same namespace as the Gateway
+	gwpNamespace := gwc.GetNamespace()
+	gwp := &v1alpha1.GatewayParameters{}
+	err := d.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
+	if err != nil {
+		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gwc.GetNamespace(), gwc.GetName(), "GatewayClass")
 	}
 
 	return gwp, nil

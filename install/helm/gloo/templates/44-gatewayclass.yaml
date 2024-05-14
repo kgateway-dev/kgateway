@@ -2,6 +2,8 @@
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
+  annotations: 
+    gateway.gloo.solo.io/gateway-parameters-name: "default"
   labels:
     {{- include "gloo-gateway.constLabels" . | nindent 4 }}
   name: gloo-gateway
