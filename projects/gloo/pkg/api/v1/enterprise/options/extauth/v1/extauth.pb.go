@@ -254,6 +254,8 @@ type AuthConfig struct {
 	//
 	// State is shared between successful requests on the chain, i.e., the headers returned from each
 	// successful auth service get appended into the final auth response.
+	//
+	// +kubebuilder:validation:MaxLength=100000
 	Configs []*AuthConfig_Config `protobuf:"bytes,3,rep,name=configs,proto3" json:"configs,omitempty"`
 	// How to handle processing of named configs within an auth config chain.
 	// An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
