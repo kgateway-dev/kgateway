@@ -3,8 +3,8 @@ package istio
 import (
 	"context"
 
-	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -33,22 +33,25 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	// Check that istio injection is successful and httpbin is running
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, httpbinDeployment.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin",
+	})
 }
 
 func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
+	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, strictPeerAuthManifest)
 		s.NoError(err, "can delete manifest")
 
 		// Routing with k8s svc as the destination
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingSvcManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, k8sRoutingSvcManifest)
 		s.NoError(err, "can delete k8s routing manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
@@ -57,6 +60,10 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingSvcManifest)
 	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+	})
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
 	s.NoError(err, "can apply strictPeerAuthManifest")
@@ -75,11 +82,11 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, permissivePeerAuthManifest)
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, permissivePeerAuthManifest)
 		s.NoError(err, "can delete manifest")
 
 		// Routing with k8s svc as the destination
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingSvcManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, k8sRoutingSvcManifest)
 		s.NoError(err, "can delete k8s routing manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
@@ -88,6 +95,10 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingSvcManifest)
 	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+	})
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, permissivePeerAuthManifest)
 	s.NoError(err, "can apply permissivePeerAuth")
@@ -106,11 +117,11 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, disablePeerAuthManifest)
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, disablePeerAuthManifest)
 		s.NoError(err, "can delete manifest")
 
 		// Routing with k8s svc as the destination
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingUpstreamManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, k8sRoutingUpstreamManifest)
 		s.NoError(err, "can delete k8s routing manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
@@ -119,6 +130,10 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, k8sRoutingUpstreamManifest)
 	s.NoError(err, "can apply k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+	})
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, disablePeerAuthManifest)
 	s.NoError(err, "can apply disablePeerAuthManifest")

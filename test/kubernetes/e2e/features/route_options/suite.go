@@ -41,15 +41,27 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) SetupSuite() {
+	// Check that the common setup manifest is applied
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	s.NoError(err, "can apply "+setupManifest)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, exampleSvc, ngnixPod)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, ngnixPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "gloo=kube-gateway",
+	})
+
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
 	s.manifests = map[string][]string{
-		"TestConfigureRouteOptionsWithTargetRef":                          {setupManifest, httproute1Manifest, basicRtoTargetRefManifest},
-		"TestConfigureRouteOptionsWithFilterExtension":                    {setupManifest, basicRtoManifest, httproute1ExtensionManifest},
-		"TestConfigureInvalidRouteOptionsWithTargetRef":                   {setupManifest, httproute1Manifest, badRtoTargetRefManifest},
-		"TestConfigureInvalidRouteOptionsWithFilterExtension":             {setupManifest, httproute1BadExtensionManifest, badRtoManifest},
-		"TestConfigureRouteOptionsWithMultipleTargetRefManualSetup":       {setupManifest, httproute1Manifest, basicRtoTargetRefManifest, extraRtoTargetRefManifest},
-		"TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup": {setupManifest, httproute1MultipleExtensionsManifest, basicRtoManifest, extraRtoManifest},
-		"TestConfigureRouteOptionsWithTargetRefAndFilterExtension":        {setupManifest, httproute1ExtensionManifest, basicRtoManifest, extraRtoTargetRefManifest},
+		"TestConfigureRouteOptionsWithTargetRef":                          {httproute1Manifest, basicRtoTargetRefManifest},
+		"TestConfigureRouteOptionsWithFilterExtension":                    {basicRtoManifest, httproute1ExtensionManifest},
+		"TestConfigureInvalidRouteOptionsWithTargetRef":                   {httproute1Manifest, badRtoTargetRefManifest},
+		"TestConfigureInvalidRouteOptionsWithFilterExtension":             {httproute1BadExtensionManifest, badRtoManifest},
+		"TestConfigureRouteOptionsWithMultipleTargetRefManualSetup":       {httproute1Manifest, basicRtoTargetRefManifest, extraRtoTargetRefManifest},
+		"TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup": {httproute1MultipleExtensionsManifest, basicRtoManifest, extraRtoManifest},
+		"TestConfigureRouteOptionsWithTargetRefAndFilterExtension":        {httproute1ExtensionManifest, basicRtoManifest, extraRtoTargetRefManifest},
 	}
 }
 
