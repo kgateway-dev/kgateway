@@ -3,5 +3,4 @@ changelog:
   description: >-
     Rebalance E2E test clusters
       
-    skipCI-kube-tests:true
     skipCI-docs-build:true
