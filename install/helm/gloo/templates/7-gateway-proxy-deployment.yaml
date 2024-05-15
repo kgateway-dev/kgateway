@@ -301,7 +301,7 @@ spec:
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
-        {{- with $global.glooMtls.sds.securityContext }}}
+        {{- with $global.glooMtls.sds.securityContext }}
         securityContext:
         {{- toYaml . | nindent 10  }}
         {{- end }}
