@@ -173,6 +173,39 @@ securityContext:{{ toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
 
+
+{{- /*
+This template is used to generate the container security context.
+It takes 3 values:
+  .values - the securityContext passed from the user in values.yaml
+  .defaults - the default securityContext for the pod or container
+  .podSecurityStandards - podSecurityStandard from values.yaml
+
+  Depending upon the value of .values.merge, the securityContext will be merged with the defaults or completely replaced.
+  In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
+Because of this, if a value is "true" in defaults it can not be modified with this method.
+
+      seccompProfile:
+        type: RuntimeDefault
+*/ -}}
+{{- define "gloo.containerSecurityContext" }}
+{{- $pss_restricted_defaults := dict 
+    "runAsNonRoot" true
+    "capabilities" (dict "drop" (list "ALL"))
+    "allowPrivilegeEscalation" false
+    "seccompProfile" (dict "type" "RuntimeDefault") }}
+{{- if and .podSecurityStandards .podSecurityStandards.useRestrictedContainerDefaults -}}
+    {{- $defaults := merge .defaults $pss_restricted_defaults -}}
+{{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults) }}
+{{ else }}
+{{- include "gloo.securityContext" (dict "values" .values "defaults" .defaults) }}
+{{- end }}
+{{- end }}
+
+
+
+
+
 {{- /*
 This takes an array of three values:
 - the top context

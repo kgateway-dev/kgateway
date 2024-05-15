@@ -128,8 +128,6 @@ spec:
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
 {{ include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
-
-{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults) | nindent 8 }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -170,7 +168,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}

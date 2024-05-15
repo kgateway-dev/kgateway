@@ -217,8 +217,7 @@ spec:
         {{- if not $spec.podTemplate.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
-
+        {{- include "gloo.containerSecurityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
@@ -301,9 +300,7 @@ spec:
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
-        {{- with $global.glooMtls.sds.securityContext }}
-{{ include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 8 }}
-        {{- end }}
+{{ include "gloo.securityContext" (dict "values" $global.glooMtls.sds.securityContext "defaults" (dict)) | indent 8 }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
         resources:

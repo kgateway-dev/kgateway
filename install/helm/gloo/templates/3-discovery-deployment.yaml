@@ -68,7 +68,7 @@ spec:
         {{- if not .Values.discovery.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.discovery.deployment.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" .Values.discovery.deployment.discoveryContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.discovery.deployment.discoveryContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
         env:
 {{- if .Values.license_secret_name }}
           - name: GLOO_LICENSE_KEY
