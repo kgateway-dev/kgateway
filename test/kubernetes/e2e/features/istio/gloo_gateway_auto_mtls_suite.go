@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
@@ -105,7 +106,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
@@ -135,7 +136,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
@@ -165,7 +166,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedPlaintextResponse)
+		expectedPlaintextResponse, time.Minute)
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) TestUpgrade() {
@@ -197,7 +198,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestUpgrade() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 
 	// Switch to automtls (remove sslConfig on upstream)
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.enableAutomtlsFile)
@@ -213,7 +214,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestUpgrade() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) TestDowngrade() {
@@ -245,7 +246,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestDowngrade() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 
 	// Switch to use sslConfig on upstream (do not explicitly disable automtls)
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslConfigFile)
@@ -261,7 +262,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestDowngrade() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 }
 
 func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
@@ -288,7 +289,7 @@ func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 
 	// Apply disable peer auth
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, disablePeerAuthManifest)
@@ -304,7 +305,7 @@ func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedServiceUnavailableResponse)
+		expectedServiceUnavailableResponse, time.Minute)
 
 	// Switch to use sslConfig on upstream (do not explictly disable automtls)
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslConfigAndDisableAutomtlsFile)
@@ -320,5 +321,5 @@ func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
 			curl.WithPath("/headers"),
 			curl.WithPort(80),
 		},
-		expectedPlaintextResponse)
+		expectedPlaintextResponse, time.Minute)
 }

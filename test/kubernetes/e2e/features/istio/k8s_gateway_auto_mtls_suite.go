@@ -2,7 +2,6 @@ package istio
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -35,10 +34,6 @@ func NewIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation) 
 }
 
 func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
-	if strings.Contains(testName, "ManualSetup") {
-		return
-	}
-
 	manifests, ok := s.manifests[testName]
 	if !ok {
 		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)

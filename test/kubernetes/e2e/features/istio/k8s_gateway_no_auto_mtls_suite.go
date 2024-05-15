@@ -2,7 +2,7 @@ package istio
 
 import (
 	"context"
-	"strings"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -27,10 +27,6 @@ type istioTestingSuite struct {
 }
 
 func (s *istioTestingSuite) BeforeTest(suiteName, testName string) {
-	if strings.Contains(testName, "ManualSetup") {
-		return
-	}
-
 	manifests, ok := s.manifests[testName]
 	if !ok {
 		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
@@ -92,7 +88,6 @@ func (s *istioTestingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
-
 }
 
 func (s *istioTestingSuite) TestStrictPeerAuth() {
@@ -105,8 +100,7 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 			curl.WithHostHeader("httpbin"),
 			curl.WithPath("headers"),
 		},
-		expectedServiceUnavailableResponse,
-	)
+		expectedServiceUnavailableResponse, time.Minute)
 }
 
 func (s *istioTestingSuite) TestPermissivePeerAuth() {
@@ -119,5 +113,5 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 			curl.WithHostHeader("httpbin"),
 			curl.WithPath("headers"),
 		},
-		expectedPlaintextResponse)
+		expectedPlaintextResponse, time.Minute)
 }

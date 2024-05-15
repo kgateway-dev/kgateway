@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -54,8 +54,8 @@ func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) su
 		testInstallation: testInst,
 		manifests: map[string][]string{
 			"TestStrictPeerAuth":                  {strictPeerAuthManifest, noMtlsGlooResourcesFile},
-			"TestPermissivePeerAuth":              {permissivePeerAuthManifest, sslGlooResourcesFile},
-			"TestUpstreamSSLConfigStrictPeerAuth": {strictPeerAuthManifest, k8sRoutingSvcManifest},
+			"TestPermissivePeerAuth":              {permissivePeerAuthManifest, noMtlsGlooResourcesFile},
+			"TestUpstreamSSLConfigStrictPeerAuth": {strictPeerAuthManifest, sslGlooResourcesFile},
 		},
 	}
 }
@@ -63,12 +63,44 @@ func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) su
 func (s *glooIstioTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, httpbinDeployment.ObjectMeta, gomega.Equal(1))
+	// Check that istio injection is successful and httpbin is running
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment, curlPod)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, curlPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=curl",
+	})
 }
 
 func (s *glooIstioTestingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
+}
+
+func (s *glooIstioTestingSuite) BeforeTest(suiteName, testName string) {
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+	}
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.NoError(err, "can apply "+manifest)
+	}
+}
+
+func (s *glooIstioTestingSuite) AfterTest(suiteName, testName string) {
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.Fail("no manifests found for " + testName)
+	}
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
+		s.NoError(err, "can delete "+manifest)
+	}
 }
 
 func (s *glooIstioTestingSuite) TestStrictPeerAuth() {
@@ -82,7 +114,7 @@ func (s *glooIstioTestingSuite) TestStrictPeerAuth() {
 			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
-		expectedServiceUnavailableResponse)
+		expectedServiceUnavailableResponse, time.Minute)
 }
 
 func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
@@ -96,7 +128,7 @@ func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
 			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
-		expectedPlaintextResponse)
+		expectedPlaintextResponse, time.Minute)
 }
 
 func (s *glooIstioTestingSuite) TestUpstreamSSLConfigStrictPeerAuth() {
@@ -110,5 +142,5 @@ func (s *glooIstioTestingSuite) TestUpstreamSSLConfigStrictPeerAuth() {
 			curl.WithPath("headers"),
 			curl.WithPort(80),
 		},
-		expectedMtlsResponse)
+		expectedMtlsResponse, time.Minute)
 }
