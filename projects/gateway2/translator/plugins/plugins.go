@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -24,7 +25,7 @@ type RouteContext struct {
 	// delegatee (child) routes of delegated routes will not have spec.Hostnames set.
 	Hostnames []gwv1.Hostname
 	// DelegationChain is a doubly linked list containing the delegation chain from child to its ancestors
-	// excluding the child itself, where the elements are the NamespacedName type
+	// excluding the child itself, where the elements are the DelegationCtx type
 	DelegationChain *list.List
 	// specific HTTPRouteRule of the HTTPRoute being processed, nil if the entire HTTPRoute is being processed
 	// rather than just a specific Rule
@@ -34,6 +35,11 @@ type RouteContext struct {
 	Match *gwv1.HTTPRouteMatch
 	// Reporter for the correct ParentRef associated with this HTTPRoute
 	Reporter reports.ParentRefReporter
+}
+
+type DelegationCtx struct {
+	Ref  types.NamespacedName
+	Rule *gwv1.HTTPRouteRule
 }
 
 type RoutePlugin interface {

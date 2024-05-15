@@ -14,17 +14,19 @@ listeners:
           routes:
           - matchers:
             - prefix: /a/1
-            metadataStatic:
-              sources:
-              - resourceKind: RouteOption
-                resourceRef:
-                  name: example-opt
-                  namespace: infra
             options:
+              cors:
+                allowOrigin:
+                - baz
+                exposeHeaders:
+                - foo
               faults:
                 abort:
                   httpStatus: 418
                   percentage: 100
+              headerManipulation:
+                requestHeadersToRemove:
+                - foo
             routeAction:
               single:
                 kube:
