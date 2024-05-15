@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
@@ -76,5 +77,9 @@ func TestK8sGatewayIstio(t *testing.T) {
 
 	t.Run("IstioIntegration", func(t *testing.T) {
 		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("IstioGatewayParameters", func(t *testing.T) {
+		suite.Run(t, deployer.NewIstioIntegrationTestingSuite(ctx, testInstallation))
 	})
 }

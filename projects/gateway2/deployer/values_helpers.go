@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
@@ -104,11 +105,23 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 	}
 
 	var sds *helmSds
+	// if sdsConfig is not nil, but unset use defaults for sds config
 	if sdsConfig.GetSdsContainer() == nil {
+		defaultSdsImage := helmImage{
+			Registry:   ptr.To("quay.io/solo-io"),
+			Repository: ptr.To("sds"),
+			Tag:        ptr.To(version.Version),
+		}
+
 		sds = &helmSds{
 			Istio: getIstioValues(sdsConfig.GetIstioIntegration()),
+			Image: ptr.To(defaultSdsImage),
+			SdsBootstrap: &sdsBootstrap{
+				LogLevel: ptr.To("info"),
+			},
 		}
 	} else {
+		// Use GatewayParameter overrides if provided
 		var bootstrap *sdsBootstrap
 		if sdsConfig.GetSdsContainer() != nil {
 			bootstrap = &sdsBootstrap{
@@ -133,13 +146,23 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 	var istioVals *helmIstioSds
 
+	defaultIstioImage := helmImage{
+		Registry:   ptr.To("docker.io/istio"),
+		Repository: ptr.To("proxyv2"),
+		Tag:        ptr.To("1.19.0"),
+	}
+
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
-	if istioConfig != nil && istioConfig.GetEnabled() != nil {
+	if istioConfig != nil && istioConfig.GetEnabled() != nil && !istioConfig.GetEnabled().GetValue() {
+		// If istioConfig is not nil, but unset use defaults for istio config
 		if istioConfig.GetIstioContainer() == nil {
 			istioVals = &helmIstioSds{
-				Enabled: ptr.To(istioConfig.GetEnabled().GetValue()),
+				Enabled:  ptr.To(istioConfig.GetEnabled().GetValue()),
+				Image:    ptr.To(defaultIstioImage),
+				LogLevel: ptr.To("warning"),
 			}
 		} else {
+			// Use GatewayParameter overrides if provided
 			istioVals = &helmIstioSds{
 				Enabled:         ptr.To(istioConfig.GetEnabled().GetValue()),
 				Image:           getImage(istioConfig.GetIstioContainer().GetImage()),
@@ -147,11 +170,6 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 				Resources:       istioConfig.GetIstioContainer().GetResources(),
 				SecurityContext: istioConfig.GetIstioContainer().GetSecurityContext(),
 			}
-		}
-	} else {
-		// if istioConfig is nil, istio sds is disabled
-		istioVals = &helmIstioSds{
-			Enabled: ptr.To(false),
 		}
 	}
 	return istioVals

@@ -10,9 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 )
@@ -79,39 +77,6 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 			xdsClusterAssertion(s.testInstallation),
 		)
 	}
-
-}
-
-func (s *testingSuite) TestConfigureIstioIntegrationFromGatewayParameters() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, istioGatewayParametersManifestFile)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, gwParams)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, deployerProvisionManifestFile)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
-	s.Require().NoError(err, "can apply manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
-	s.Require().NoError(err, "can apply manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
-
-	// Assert Istio integration is enabled and correct Istio image is set
-	listOpts := metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
-	}
-	matcher := gomega.And(
-		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.SDSContainerName}),
-		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.IstioProxyName}),
-	)
-
-	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), listOpts, matcher)
 
 }
 
