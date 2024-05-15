@@ -1,0 +1,11 @@
+apiVersion: gateway.solo.io/v1
+kind: RouteOption
+metadata:
+  name: extra-rto
+spec:
+  options:
+    headerManipulation:
+      responseHeadersToAdd:
+      - header:
+          key: foo
+          value: extra-rto

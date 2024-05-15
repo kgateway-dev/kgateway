@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
@@ -23,6 +24,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
+	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -37,7 +39,7 @@ type TestCase struct {
 type ActualTestResult struct {
 	Proxy *v1.Proxy
 	// Reports     map[types.NamespacedName]*reports.GatewayReport
-	//TODO(Law): figure out how RouteReports fit in
+	// TODO(Law): figure out how RouteReports fit in
 }
 
 type ExpectedTestResult struct {
@@ -72,6 +74,15 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 			case *gwv1.Gateway:
 				gateways = append(gateways, obj)
 			case *solokubev1.RouteOption:
+				// XXX(HACK): We need to set the metadata on the Spec since
+				// routeOptionClient.Write() calls Validate() internally that
+				// expects this to be set.
+				if obj.Spec.Metadata == nil {
+					obj.Spec.Metadata = &core.Metadata{
+						Namespace: obj.Namespace,
+						Name:      obj.Name,
+					}
+				}
 				routeOptions = append(routeOptions, obj)
 				dependencies = append(dependencies, obj)
 			default:
@@ -80,7 +91,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		}
 	}
 
-	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices)
+	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices, vhoptquery.IterateIndices)
 	queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
 	resourceClientFactory := &factory.MemoryResourceClientFactory{
@@ -88,13 +99,14 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 	}
 
 	routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
+	vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
 	statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
-	statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+	statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	for _, rtOpt := range routeOptions {
 		routeOptionClient.Write(&rtOpt.Spec, clients.WriteOpts{Ctx: ctx})
 	}
 
-	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, statusReporter))
+	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
 
 	results := make(map[types.NamespacedName]bool)
 	for _, gw := range gateways {

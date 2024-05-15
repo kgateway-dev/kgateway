@@ -52,33 +52,35 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 			if len(typedPathA.Prefix) != len(typedPathB.Prefix) {
 				return len(typedPathA.Prefix) < len(typedPathB.Prefix)
 			}
-		case *matchers.Matcher_Exact: // Exact always takes precedence
+		// Exact and Regex always takes precedence over prefix
+		case *matchers.Matcher_Exact, *matchers.Matcher_Regex:
 			return true
-		case *matchers.Matcher_Regex: // Prefix > regex
-			return false
 		}
+
 	case *matchers.Matcher_Exact:
-		// Exact always takes precedence, but for double exact it doesn't really matter
 		switch typedPathB := matchB.GetPathSpecifier().(type) {
-		case *matchers.Matcher_Prefix:
-			return false
 		case *matchers.Matcher_Exact:
 			if len(typedPathA.Exact) != len(typedPathB.Exact) {
 				return len(typedPathA.Exact) < len(typedPathB.Exact)
 			}
-		case *matchers.Matcher_Regex:
+
+		// Exact always takes precedence over regex and prefix
+		case *matchers.Matcher_Regex, *matchers.Matcher_Prefix:
 			return false
 		}
+
 	case *matchers.Matcher_Regex:
-		switch typedPathB := matchB.GetPathSpecifier().(type) {
+		switch matchB.GetPathSpecifier().(type) {
+		// Regex always takes precedence over prefix
 		case *matchers.Matcher_Prefix:
-			return true
+			return false
+		// Exact always takes precedence over regex
 		case *matchers.Matcher_Exact:
 			return true
 		case *matchers.Matcher_Regex:
-			if len(typedPathA.Regex) != len(typedPathB.Regex) {
-				return len(typedPathA.Regex) < len(typedPathB.Regex)
-			}
+			// Don't prioritize one regex over another based on their lengths
+			// as it doesn't make sense to do so and would be quite arbitrary,
+			// so prioritize on the remaining criteria evaluated below instead.
 		}
 	}
 

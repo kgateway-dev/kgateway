@@ -16,6 +16,7 @@ import (
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 // StartFunc represents a function that will be called with the initialized bootstrap.Opts
@@ -55,6 +56,8 @@ func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
 	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
 	authConfigClient api.AuthConfigClient,
+	routeOptionClient gateway.RouteOptionClient,
+	vhOptionClient gateway.VirtualHostOptionClient,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		if opts.ProxyDebugServer.Server != nil {
@@ -64,12 +67,8 @@ func K8sGatewayControllerStartFunc(
 			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, proxyClient)
 		}
 
-		routeOptionClient, err := gateway.NewRouteOptionClient(ctx, opts.RouteOptions)
-		if err != nil {
-			return err
-		}
 		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
-		statusReporter := reporter.NewReporter("gloo-kube-gateway", statusClient, routeOptionClient.BaseClient())
+		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
 
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
@@ -77,10 +76,11 @@ func K8sGatewayControllerStartFunc(
 			Opts:                      opts,
 			QueueStatusForProxies:     queueStatusForProxies,
 
-			ProxyClient:       proxyClient,
-			AuthConfigClient:  authConfigClient,
-			RouteOptionClient: routeOptionClient,
-			StatusReporter:    statusReporter,
+			ProxyClient:             proxyClient,
+			AuthConfigClient:        authConfigClient,
+			RouteOptionClient:       routeOptionClient,
+			VirtualHostOptionClient: vhOptionClient,
+			StatusReporter:          statusReporter,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API

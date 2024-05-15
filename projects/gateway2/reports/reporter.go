@@ -3,6 +3,7 @@ package reports
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -160,6 +161,10 @@ func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 
 // TODO: flesh out
 func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
+	var group string
+	if parentRef.Group != nil {
+		group = string(*parentRef.Group)
+	}
 	var kind string
 	if parentRef.Kind != nil {
 		kind = string(*parentRef.Kind)
@@ -169,7 +174,7 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 		ns = string(*parentRef.Namespace)
 	}
 	return ParentRefKey{
-		Group: string(parentRef.Name),
+		Group: group,
 		Kind:  kind,
 		NamespacedName: types.NamespacedName{
 			Namespace: ns,
@@ -190,6 +195,23 @@ func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefRepor
 		r.parents[key] = prr
 	}
 	return prr
+}
+
+// parentRefs returns a list of ParentReferences associated with the RouteReport.
+// It is used to update the Status of delegatee routes who may not specify
+// the parentRefs field.
+func (r *RouteReport) parentRefs() []gwv1.ParentReference {
+	var refs []gwv1.ParentReference
+	for key := range r.parents {
+		parentRef := gwv1.ParentReference{
+			Group:     ptr.To(gwv1.Group(key.Group)),
+			Kind:      ptr.To(gwv1.Kind(key.Kind)),
+			Name:      gwv1.ObjectName(key.Name),
+			Namespace: ptr.To(gwv1.Namespace(key.Namespace)),
+		}
+		refs = append(refs, parentRef)
+	}
+	return refs
 }
 
 func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {

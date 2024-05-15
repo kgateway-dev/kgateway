@@ -1,34 +1,53 @@
 package assertions
 
 import (
-	"context"
 	"time"
 
-	"github.com/onsi/gomega/types"
-
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// EventuallyResourceStatusMatchesState checks GetNamespacedStatuses status for gloo installation namespace
+// Checks GetNamespacedStatuses status for gloo installation namespace
+func (p *Provider) EventuallyResourceStatusMatchesWarningReasons(getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) {
+	ginkgo.GinkgoHelper()
+
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	gomega.Eventually(func(g gomega.Gomega) {
+		statusWarningsMatcher := matchers.MatchStatusInNamespace(
+			p.glooGatewayContext.InstallNamespace,
+			gomega.And(matchers.HaveWarningStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
+		)
+
+		status, err := getResourceNamespacedStatus(getter)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+		g.Expect(status).ToNot(gomega.BeNil())
+		g.Expect(status).To(gomega.HaveValue(statusWarningsMatcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 func (p *Provider) EventuallyResourceStatusMatchesState(
-	_ context.Context,
 	getter helpers.InputResourceGetter,
-	statusMatcher types.GomegaMatcher,
+	desiredState core.Status_State,
+	desiredReporter string,
 	timeout ...time.Duration,
 ) {
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
+		statusStateMatcher := matchers.MatchStatusInNamespace(
+			p.glooGatewayContext.InstallNamespace,
+			gomega.And(matchers.HaveState(desiredState), matchers.HaveReportedBy(desiredReporter)),
+		)
 		status, err := getResourceNamespacedStatus(getter)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
-		nsStatus := status.GetStatuses()[p.glooGatewayContext.InstallNamespace]
-		g.Expect(nsStatus).ToNot(gomega.BeNil())
-		g.Expect(nsStatus).To(gomega.HaveValue(statusMatcher))
+		g.Expect(status).ToNot(gomega.BeNil())
+		g.Expect(status).To(gomega.HaveValue(statusStateMatcher))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -47,4 +66,19 @@ func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.Name
 	}
 
 	return namespacedStatuses, nil
+}
+
+// AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
+// the given message substring.
+func (p *Provider) AssertHTTPRouteStatusContainsSubstring(route *gwv1.HTTPRoute, message string) {
+	matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
+		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Message": matchers.ContainSubstrings([]string{message}),
+				})),
+			})),
+		}),
+	})
+	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
 }

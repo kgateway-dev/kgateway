@@ -2,6 +2,7 @@ package translator_test
 
 import (
 	"context"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -73,8 +74,8 @@ var _ = Describe("GatewayTranslator", func() {
 			InputFiles: []string{dir + "/testutils/inputs/http-with-header-modifier"},
 			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
 				{
-					Namespace: "default",
 					Name:      "gw",
+					Namespace: "default",
 				}: {
 					Proxy: dir + "/testutils/outputs/http-with-header-modifier-proxy.yaml",
 					// Reports:     nil,
@@ -89,4 +90,72 @@ var _ = Describe("GatewayTranslator", func() {
 			Name:      "gw",
 		}]).To(BeTrue())
 	})
+
+	It("should correctly sort routes", func() {
+		results, err := TestCase{
+			Name:       "delegation-basic",
+			InputFiles: []string{filepath.Join(dir, "testutils/inputs/route-sort.yaml")},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "infra",
+					Name:      "example-gateway",
+				}: {
+					Proxy: filepath.Join(dir, "testutils/outputs/route-sort.yaml"),
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results).To(HaveKeyWithValue(types.NamespacedName{
+			Namespace: "infra",
+			Name:      "example-gateway",
+		}, BeTrue()))
+	})
 })
+
+var _ = DescribeTable("Route Delegation translator",
+	func(inputFile string) {
+		ctx := context.TODO()
+		dir := util.MustGetThisDir()
+
+		results, err := TestCase{
+			Name:       inputFile,
+			InputFiles: []string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "infra",
+					Name:      "example-gateway",
+				}: {
+					Proxy: filepath.Join(dir, "testutils/outputs/delegation", inputFile),
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results).To(HaveKeyWithValue(types.NamespacedName{
+			Namespace: "infra",
+			Name:      "example-gateway",
+		}, BeTrue()))
+	},
+	Entry("Basic config", "basic.yaml"),
+	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml"),
+	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml"),
+	Entry("Parent delegates to multiple chidren", "multiple_children.yaml"),
+	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml"),
+	Entry("Multi-level recursive delegation", "recursive.yaml"),
+	Entry("Cyclic child route", "cyclic1.yaml"),
+	Entry("Multi-level cyclic child route", "cyclic2.yaml"),
+	Entry("Child rule matcher", "child_rule_matcher.yaml"),
+	Entry("Child with multiple parents", "multiple_parents.yaml"),
+	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml"),
+	Entry("RouteOptions only on child", "route_options.yaml"),
+	Entry("RouteOptions inheritance from parent", "route_options_inheritance.yaml"),
+	Entry("RouteOptions ignore child override on conflict", "route_options_inheritance_child_override_ignore.yaml"),
+	Entry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml"),
+	Entry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml"),
+	Entry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
+)

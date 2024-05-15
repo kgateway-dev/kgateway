@@ -135,10 +135,10 @@ func istioInject(_ []string, opts *options.Options) error {
 			// Check if sidecars already exist
 			if len(containers) > 1 {
 				for _, container := range containers {
-					if container.Name == "sds" {
+					if container.Name == SDSContainerName {
 						return ErrSdsAlreadyPresent
 					}
-					if container.Name == "istio-proxy" {
+					if container.Name == IstioProxyName {
 						return ErrIstioAlreadyPresent
 					}
 				}

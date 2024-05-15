@@ -58,7 +58,8 @@ func (p *plugin) ApplyRoutePlugin(
 		return nil //TODO https://github.com/solo-io/gloo/pull/8890/files#r1391523183
 	}
 
-	if backendref.RefIsService(config.BackendRef) {
+	switch {
+	case backendref.RefIsService(config.BackendRef):
 		var port uint32
 		if config.BackendRef.Port != nil {
 			port = uint32(*config.BackendRef.Port)
@@ -79,7 +80,15 @@ func (p *plugin) ApplyRoutePlugin(
 			},
 			Percentage: 100.0,
 		}
-	} else {
+	case backendref.RefIsUpstream(config.BackendRef):
+		outputRoute.GetOptions().Shadowing = &shadowing.RouteShadowing{
+			Upstream: &core.ResourceRef{
+				Name:      *clusterName,
+				Namespace: obj.GetNamespace(),
+			},
+			Percentage: 100.0,
+		}
+	default:
 		// TODO(npolshak): support other backend types (Upstreams, etc.)
 		return errors.Errorf("unsupported backend type for mirror filter %v", config.BackendRef)
 	}
