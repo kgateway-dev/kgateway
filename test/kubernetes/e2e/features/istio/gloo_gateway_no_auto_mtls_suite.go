@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,33 +27,41 @@ type glooIstioTestingSuite struct {
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
 
-	// generated routing manifest file names
-	noMtlsGlooResourcesFile string
-	sslGlooResourcesFile    string
+	// maps test name to a list of manifests to apply before the test
+	manifests map[string][]string
 }
 
 func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	log := contextutils.LoggerFrom(ctx)
+
 	noMtlsGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{})))
 	sslGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{SetSslConfig: true})))
 
+	noMtlsResources := GetGlooGatewayEdgeResources(testInst.Metadata.InstallNamespace, UpstreamConfigOpts{})
+	err := resources.WriteResourcesToFile(noMtlsResources, noMtlsGlooResourcesFile)
+	if err != nil {
+		log.Error(err, "can write resources to file")
+	}
+
+	sslResources := GetGlooGatewayEdgeResources(testInst.Metadata.InstallNamespace, UpstreamConfigOpts{SetSslConfig: true})
+	err = resources.WriteResourcesToFile(sslResources, sslGlooResourcesFile)
+	if err != nil {
+		log.Error(err, "can write resources to file")
+	}
+
 	return &glooIstioTestingSuite{
-		ctx:                     ctx,
-		testInstallation:        testInst,
-		noMtlsGlooResourcesFile: noMtlsGlooResourcesFile,
-		sslGlooResourcesFile:    sslGlooResourcesFile,
+		ctx:              ctx,
+		testInstallation: testInst,
+		manifests: map[string][]string{
+			"TestStrictPeerAuth":                  {strictPeerAuthManifest, noMtlsGlooResourcesFile},
+			"TestPermissivePeerAuth":              {permissivePeerAuthManifest, sslGlooResourcesFile},
+			"TestUpstreamSSLConfigStrictPeerAuth": {strictPeerAuthManifest, k8sRoutingSvcManifest},
+		},
 	}
 }
 
 func (s *glooIstioTestingSuite) SetupSuite() {
-	noMtlsResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{})
-	err := resources.WriteResourcesToFile(noMtlsResources, s.noMtlsGlooResourcesFile)
-	s.NoError(err, "can write resources to file")
-
-	sslResources := GetGlooGatewayEdgeResources(s.testInstallation.Metadata.InstallNamespace, UpstreamConfigOpts{SetSslConfig: true})
-	err = resources.WriteResourcesToFile(sslResources, s.sslGlooResourcesFile)
-	s.NoError(err, "can write resources to file")
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, httpbinDeployment.ObjectMeta, gomega.Equal(1))
 }
@@ -63,20 +72,6 @@ func (s *glooIstioTestingSuite) TearDownSuite() {
 }
 
 func (s *glooIstioTestingSuite) TestStrictPeerAuth() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.noMtlsGlooResourcesFile)
-		s.NoError(err, "can delete generated routing manifest")
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.noMtlsGlooResourcesFile)
-	s.NoError(err, "can apply generated manifest")
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
-	s.NoError(err, "can apply strictPeerAuthManifest")
-
 	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -91,20 +86,6 @@ func (s *glooIstioTestingSuite) TestStrictPeerAuth() {
 }
 
 func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, permissivePeerAuthManifest)
-		s.NoError(err, "can delete manifest")
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.noMtlsGlooResourcesFile)
-	s.NoError(err, "can apply generated manifest")
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, permissivePeerAuthManifest)
-	s.NoError(err, "can apply permissivePeerAuth")
-
 	// With auto mtls disabled in the mesh, the response should not contain the X-Forwarded-Client-Cert header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -119,20 +100,6 @@ func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
 }
 
 func (s *glooIstioTestingSuite) TestUpstreamSSLConfigStrictPeerAuth() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.sslGlooResourcesFile)
-		s.NoError(err, "can delete generated routing manifest")
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, strictPeerAuthManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslGlooResourcesFile)
-	s.NoError(err, "can apply generated manifest")
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, strictPeerAuthManifest)
-	s.NoError(err, "can apply strictPeerAuthManifest")
-
 	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,

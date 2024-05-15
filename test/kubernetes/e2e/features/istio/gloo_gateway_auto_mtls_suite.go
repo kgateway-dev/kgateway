@@ -247,7 +247,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestDowngrade() {
 		},
 		expectedMtlsResponse)
 
-	// Switch to use sslConfig on upstream (do not explictly disable automtls)
+	// Switch to use sslConfig on upstream (do not explicitly disable automtls)
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslConfigFile)
 	s.NoError(err, "can apply generated routing manifest with sslConfig upstream")
 

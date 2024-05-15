@@ -1,7 +1,7 @@
 apiVersion: "security.istio.io/v1beta1"
 kind: "PeerAuthentication"
 metadata:
-  name: "test"
+  name: "permissive"
   namespace: "istio-system"
 spec:
   mtls:

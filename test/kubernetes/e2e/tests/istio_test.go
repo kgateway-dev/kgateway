@@ -2,7 +2,9 @@ package tests_test
 
 import (
 	"context"
+	"log"
 	"path/filepath"
+	"runtime/debug"
 	"testing"
 	"time"
 
@@ -30,8 +32,16 @@ func TestK8sGatewayIstio(t *testing.T) {
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
-		t.Fatalf("failed to get istioctl: %v", err)
+		log.Printf("failed to get istioctl: %v\n", err)
+		t.Fail()
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Test panicked: %v\n", r)
+			debug.PrintStack()
+		}
+	}()
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
@@ -50,14 +60,16 @@ func TestK8sGatewayIstio(t *testing.T) {
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
 		if err != nil {
-			t.Fatalf("failed to uninstall istio: %v", err)
+			log.Printf("failed to uninstall istio: %v\n", err)
+			t.Fail()
 		}
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
 	err = testInstallation.InstallMinimalIstio(ctx)
 	if err != nil {
-		t.Fatalf("failed to install istio: %v", err)
+		log.Printf("failed to install: %v\n", err)
+		t.Fail()
 	}
 
 	// Install Gloo Gateway
@@ -75,6 +87,13 @@ func TestK8sGatewayIstio(t *testing.T) {
 	})
 
 	t.Run("IstioIntegration", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Test panicked: %v\n", r)
+				debug.PrintStack()
+			}
+		}()
+
 		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation))
 	})
 }

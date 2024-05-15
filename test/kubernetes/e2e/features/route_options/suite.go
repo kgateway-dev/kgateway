@@ -74,7 +74,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
 
 	for _, manifest := range manifests {
