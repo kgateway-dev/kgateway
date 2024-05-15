@@ -1,4 +1,4 @@
-package k8sgateway_test
+package tests_test
 
 import (
 	"context"
@@ -6,22 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
-	"github.com/solo-io/skv2/codegen/util"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/skv2/codegen/util"
+	"github.com/stretchr/testify/suite"
 )
 
 // TestK8sGatewayIstio is the function which executes a series of tests against a given installation
 func TestK8sGatewayIstio(t *testing.T) {
 	ctx := context.Background()
-	testCluster := e2e.MustTestCluster()
-	testInstallation := testCluster.RegisterTestInstallation(
+	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-k8s-gw-test",
@@ -54,8 +52,6 @@ func TestK8sGatewayIstio(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to uninstall istio: %v", err)
 		}
-
-		testCluster.UnregisterTestInstallation(testInstallation)
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy

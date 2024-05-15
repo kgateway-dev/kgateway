@@ -43,7 +43,7 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 
 func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingManifest)
-	s.NoError(err, "can apply k8s routing manifest")
+	s.NoError(err, "can delete k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 
 	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
@@ -66,7 +66,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedMtlsResponse,
 	)
@@ -88,7 +88,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedMtlsResponse)
 }

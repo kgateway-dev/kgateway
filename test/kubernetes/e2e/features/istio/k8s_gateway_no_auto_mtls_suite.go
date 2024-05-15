@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// istioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto-mtls is disabled
+// istioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mtls is disabled
 // and Upstreams do not have sslConfig values set
 type istioTestingSuite struct {
 	suite.Suite
@@ -43,7 +43,7 @@ func (s *istioTestingSuite) SetupSuite() {
 
 func (s *istioTestingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, k8sRoutingManifest)
-	s.NoError(err, "can apply k8s routing manifest")
+	s.NoError(err, "can delete k8s routing manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 
 	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
@@ -68,7 +68,7 @@ func (s *istioTestingSuite) TestStrictPeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedServiceUnavailableResponse,
 	)
@@ -90,7 +90,7 @@ func (s *istioTestingSuite) TestPermissivePeerAuth() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
+			curl.WithPath("headers"),
 		},
 		expectedPlaintextResponse)
 }

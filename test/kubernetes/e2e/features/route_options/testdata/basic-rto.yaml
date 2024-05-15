@@ -1,0 +1,11 @@
+apiVersion: gateway.solo.io/v1
+kind: RouteOption
+metadata:
+  name: basic-rto
+spec:
+  options:
+    headerManipulation:
+      responseHeadersToAdd:
+      - header:
+          key: foo
+          value: basic-rto

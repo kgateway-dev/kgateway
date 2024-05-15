@@ -29,20 +29,4 @@ runs:
       TEST_PKG: ./test/kubernetes/e2e/tests
     shell: bash
     run: make go-test
-  - name: Execute tests (k8s gateway)
-    env:
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
-      CLUSTER_NAME: ${{ inputs.cluster-name }}
-      # We should migrate tests out of this directory, into the /tests directory
-      TEST_PKG: ./test/kubernetes/e2e/k8sgateway
-    shell: bash
-    run: make go-test
-  - name: Execute tests (edge gateway)
-    env:
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
-      CLUSTER_NAME: ${{ inputs.cluster-name }}
-      # We should migrate tests out of this directory, into the /tests directory
-      TEST_PKG: ./test/kubernetes/e2e/gloo_gateway_edge
-    shell: bash
-    run: make go-test
   # TODO: Emit artifacts to shared location on failure

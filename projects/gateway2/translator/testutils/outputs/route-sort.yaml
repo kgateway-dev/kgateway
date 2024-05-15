@@ -1,0 +1,143 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher: {}
+      virtualHostRefs:
+      - http~example_com
+    httpResources:
+      virtualHosts:
+        http~example_com:
+          domains:
+          - example.com
+          name: http~example_com
+          routes:
+          - matchers:
+            - exact: /a/1/2
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - exact: /x/1/2
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - exact: /a/1
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - exact: /x/1
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - regex: /a/.*
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - regex: /b/c/.*
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - regex: /x/.*
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - regex: /x/y/.*
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - prefix: /a/1
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - prefix: /x/1
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - prefix: /a
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+          - matchers:
+            - prefix: /x
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 80
+                  ref:
+                    name: example-svc
+                    namespace: infra
+  bindAddress: '::'
+  bindPort: 8080
+  name: http
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: infra
+  name: infra-example-gateway
+  namespace: gloo-system
