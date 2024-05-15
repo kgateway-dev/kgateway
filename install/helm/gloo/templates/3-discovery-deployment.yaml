@@ -59,12 +59,11 @@ spec:
 {{- end}}
         # container security context
         {{- $capabilities := dict "drop" (list "ALL") -}}
-        {{- $securityDefaults := dict 
+        {{- $securityDefaults := dict
             "readOnlyRootFilesystem" true
             "allowPrivilegeEscalation" false
             "runAsNonRoot" true
-            "capabilities" $capabilities
-        }}
+            "capabilities" $capabilities -}}
         {{- if not .Values.discovery.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.discovery.deployment.runAsUser }}
         {{- end -}}

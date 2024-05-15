@@ -192,7 +192,7 @@ Because of this, if a value is "true" in defaults it can not be modified with th
     "capabilities" (dict "drop" (list "ALL"))
     "allowPrivilegeEscalation" false
     "seccompProfile" (dict "type" "RuntimeDefault") }}
-{{ $defaults := .defaults }}
+{{- $defaults := .defaults }}
 {{- if .podSecurityStandards -}}
   {{- if .podSecurityStandards.useRestrictedContainerDefaults -}}
     {{- $defaults = merge .defaults $pss_restricted_defaults -}}

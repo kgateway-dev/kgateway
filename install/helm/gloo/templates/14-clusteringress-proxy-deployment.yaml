@@ -59,7 +59,7 @@ spec:
 {{ toYaml .Values.settings.integrations.knative.proxy.resources | indent 10}}
 {{- end}}
         {{- $capabilities := dict "drop" (list "ALL") "add" (list "NET_BIND_SERVICE") -}}
-        {{- $securityDefaults := dict 
+        {{- $securityDefaults := dict
             "readOnlyRootFilesystem" true
             "allowPrivilegeEscalation" false
             "capabilities" $capabilities
