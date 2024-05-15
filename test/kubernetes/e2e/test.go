@@ -202,7 +202,10 @@ func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
 		panic(err)
 	}
 
-	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId)
+	// Get cluster id if it is set in the env to avoid conflicts when uploading artifacts on failed workflow runs
+	clusterId := os.Getenv(testutils.ClusterId)
+
+	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId, clusterId)
 	err = os.MkdirAll(failureDir, os.ModePerm)
 	if err != nil {
 		panic(err)
