@@ -125,7 +125,7 @@ func translateGatewayHTTPRouteRule(
 				ctx,
 				queries,
 				gwroute,
-				rule.BackendRefs,
+				rule,
 				outputRoute,
 				reporter,
 				baseReporter,
@@ -256,7 +256,7 @@ func setRouteAction(
 	ctx context.Context,
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
-	backendRefs []gwv1.HTTPBackendRef,
+	rule gwv1.HTTPRouteRule,
 	outputRoute *v1.Route,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -269,6 +269,7 @@ func setRouteAction(
 ) bool {
 	var weightedDestinations []*v1.WeightedDestination
 	hasDelegatedRoute := false
+	backendRefs := rule.BackendRefs
 
 	for _, backendRef := range backendRefs {
 		// If the backend is an HTTPRoute, it implies route delegation
@@ -277,7 +278,7 @@ func setRouteAction(
 			hasDelegatedRoute = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
-				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
+				ctx, queries, gwroute, rule, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
 			if err != nil {
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,

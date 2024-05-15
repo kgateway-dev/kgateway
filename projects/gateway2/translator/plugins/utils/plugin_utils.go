@@ -54,14 +54,14 @@ func FindAppliedRouteFilter(
 // references the supplied GroupKind in the Rule being processed.
 // Returns nil if the Rule doesn't contain a matching ExtensionRef filter
 func FindExtensionRefFilter(
-	routeCtx *plugins.RouteContext,
+	rule *gwv1.HTTPRouteRule,
 	gk schema.GroupKind,
 ) *gwv1.HTTPRouteFilter {
-	if routeCtx.Rule == nil {
+	if rule == nil {
 		return nil
 	}
 	// TODO: check full Filter list for duplicates and error?
-	for _, filter := range routeCtx.Rule.Filters {
+	for _, filter := range rule.Filters {
 		if filter.Type == gwv1.HTTPRouteFilterExtensionRef {
 			if filter.ExtensionRef.Group == gwv1.Group(gk.Group) && filter.ExtensionRef.Kind == gwv1.Kind(gk.Kind) {
 				return &filter
@@ -83,12 +83,22 @@ var (
 // A nil error indicates success and `obj` should be usable as normal.
 func GetExtensionRefObj(
 	ctx context.Context,
-	routeCtx *plugins.RouteContext,
+	route *gwv1.HTTPRoute,
 	queries query.GatewayQueries,
 	extensionRef *gwv1.LocalObjectReference,
 	obj client.Object,
 ) error {
-	localObj, err := queries.GetLocalObjRef(ctx, queries.ObjToFrom(routeCtx.Route), *extensionRef)
+	return GetExtensionRefObjFrom(ctx, queries.ObjToFrom(route), queries, extensionRef, obj)
+}
+
+func GetExtensionRefObjFrom(
+	ctx context.Context,
+	from query.From,
+	queries query.GatewayQueries,
+	extensionRef *gwv1.LocalObjectReference,
+	obj client.Object,
+) error {
+	localObj, err := queries.GetLocalObjRef(ctx, from, *extensionRef)
 	if err != nil {
 		return err
 	}
