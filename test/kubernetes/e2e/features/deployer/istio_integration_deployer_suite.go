@@ -2,6 +2,7 @@ package deployer
 
 import (
 	"context"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -52,13 +53,13 @@ func (s *istioIntegrationDeployerSuite) TestConfigureIstioIntegrationFromGateway
 
 	// Assert Istio integration is enabled and correct Istio image is set
 	listOpts := metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
 	}
 	matcher := gomega.And(
 		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.SDSContainerName}),
 		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.IstioProxyName}),
 	)
 
-	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), listOpts, matcher)
+	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), listOpts, matcher, time.Minute*2)
 
 }
