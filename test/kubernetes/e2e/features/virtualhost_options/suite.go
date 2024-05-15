@@ -49,7 +49,7 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: "app.kubernetes.io/name=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "gloo=kube-gateway",
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
 	})
 
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
