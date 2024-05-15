@@ -29,3 +29,6 @@ gatewayProxies:
         failureThreshold: 2
         initialDelaySeconds: 5
         periodSeconds: 5
+global:
+  podSecurityStandards:
+    useRestrictedContainerDefaults: true
