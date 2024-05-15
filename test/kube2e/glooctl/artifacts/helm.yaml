@@ -1,3 +1,6 @@
+global:
+  podSecurityStandards:
+    useRestrictedContainerDefaults: true
 gateway:
   persistProxySpec: true
   logLevel: info

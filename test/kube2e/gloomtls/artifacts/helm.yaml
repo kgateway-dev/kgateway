@@ -6,6 +6,8 @@ global:
     nameSuffix: e2e-test-rbac-suffix
   glooMtls:
     enabled: true
+  podSecurityStandards:
+    useRestrictedContainerDefaults: true
 settings:
   singleNamespace: true
   create: true
@@ -19,55 +21,9 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
-  rolloutJob:
-    containerSecurityContext:
-      mergePolicy: helm-merge
-      runAsNonRoot: true
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-          - ALL
-      seccompProfile:
-        type: RuntimeDefault
-  certGenJob:
-    containerSecurityContext:
-      runAsNonRoot: true
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-          - ALL
-      seccompProfile:
-        type: RuntimeDefault
-discovery:
-  deployment:
-    discoveryContainerSecurityContext:
-      mergePolicy: helm-merge
-      seccompProfile:
-        type: RuntimeDefault
 gloo:
   logLevel: info
-  disableLeaderElection: false
-  deployment:
-    replicas: 2
-    customEnv:
-    # We scale the Gloo component frequently in tests, and need leadership to be established quickly
-    # Therefore, we set values to lower thresholds than the defaults
-    - name: LEADER_ELECTION_LEASE_DURATION
-      value: 4s
-    - name: LEADER_ELECTION_RENEW_PERIOD
-      value: 3s
-    - name: LEADER_ELECTION_RETRY_PERIOD
-      value: 1s
-    livenessProbeEnabled: true
-    glooContainerSecurityContext:
-      mergePolicy: helm-merge
-      seccompProfile:
-        type: RuntimeDefault
+  disableLeaderElection: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
-    podTemplate:
-      glooContainerSecurityContext:
-        mergePolicy: helm-merge
-        seccompProfile:
-          type: RuntimeDefault

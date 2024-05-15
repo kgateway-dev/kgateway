@@ -300,7 +300,7 @@ spec:
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
-{{ include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.sds.securityContext "defaults" (dict) .Values.global.podSecurityStandards) | nindent 8 }}
+{{ include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.sds.securityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
         resources:
