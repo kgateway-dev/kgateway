@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,6 +31,7 @@ func flattenDelegatedRoutes(
 	ctx context.Context,
 	queries query.GatewayQueries,
 	parent *gwv1.HTTPRoute,
+	rule gwv1.HTTPRouteRule,
 	backendRef gwv1.HTTPBackendRef,
 	parentReporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -44,7 +46,11 @@ func flattenDelegatedRoutes(
 	routesVisited.Insert(parentRef)
 	defer routesVisited.Delete(parentRef)
 
-	lRef := delegationChain.PushFront(parentRef)
+	delegationCtx := plugins.DelegationCtx{
+		Ref:  parentRef,
+		Rule: &rule,
+	}
+	lRef := delegationChain.PushFront(delegationCtx)
 	defer delegationChain.Remove(lRef)
 
 	children, err := queries.GetDelegatedRoutes(ctx, backendRef.BackendObjectReference, parentMatch, parentRef)
