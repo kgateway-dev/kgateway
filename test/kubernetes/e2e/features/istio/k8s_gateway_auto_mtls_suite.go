@@ -36,7 +36,7 @@ func NewIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation) 
 func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
 
 	for _, manifest := range manifests {
@@ -46,15 +46,14 @@ func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	// Check that test resources are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
-	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw"}, time.Minute*2)
 }
 
 func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for " + testName)
+		s.FailNow("no manifests found for " + testName)
 	}
 
 	for _, manifest := range manifests {
@@ -69,13 +68,9 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	// Check that istio injection is successful and httpbin is running
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment, curlPod)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=httpbin",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, curlPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=curl",
-	})
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{LabelSelector: "app=httpbin"}, time.Minute*2)
 
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
 	s.manifests = map[string][]string{

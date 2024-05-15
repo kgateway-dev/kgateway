@@ -70,7 +70,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
 
 	for _, manifest := range manifests {
@@ -82,7 +82,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 func (s *testingSuite) AfterTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for " + testName)
+		s.FailNow("no manifests found for " + testName)
 	}
 
 	for _, manifest := range manifests {

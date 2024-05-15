@@ -64,13 +64,10 @@ func (s *glooIstioTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	// Check that istio injection is successful and httpbin is running
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment, curlPod)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=httpbin",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, curlPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=curl",
-	})
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	// httpbin can take a while to start up with Istio sidecar
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{LabelSelector: "app=httpbin"}, time.Minute*2)
 }
 
 func (s *glooIstioTestingSuite) TearDownSuite() {
@@ -82,7 +79,7 @@ func (s *glooIstioTestingSuite) TearDownSuite() {
 func (s *glooIstioTestingSuite) BeforeTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
 
 	for _, manifest := range manifests {
@@ -94,7 +91,7 @@ func (s *glooIstioTestingSuite) BeforeTest(suiteName, testName string) {
 func (s *glooIstioTestingSuite) AfterTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for " + testName)
+		s.FailNow("no manifests found for " + testName)
 	}
 
 	for _, manifest := range manifests {

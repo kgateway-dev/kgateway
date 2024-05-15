@@ -2,7 +2,6 @@ package tests_test
 
 import (
 	"context"
-	"log"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,8 +32,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
-		log.Printf("failed to get istioctl: %v\n", err)
-		t.Fail()
+		t.Fatalf("failed to get istioctl: %v", err)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
@@ -54,16 +52,14 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
 		if err != nil {
-			log.Printf("failed to uninstall: %v\n", err)
-			t.Fail()
+			t.Fatalf("failed to uninstall: %v\n", err)
 		}
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
 	err = testInstallation.InstallMinimalIstio(ctx)
 	if err != nil {
-		log.Printf("failed to install: %v\n", err)
-		t.Fail()
+		t.Fatalf("failed to install: %v\n", err)
 	}
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
