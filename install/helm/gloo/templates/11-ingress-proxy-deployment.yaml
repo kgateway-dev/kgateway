@@ -70,7 +70,7 @@ spec:
         {{- if .Values.ingressProxy.deployment.runAsUser  -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.ingressProxy.deployment.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" .Values.ingressProxy.deployment.ingressProxyContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.ingressProxy.deployment.ingressProxyContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
         ports:
         - containerPort: {{ .Values.ingressProxy.deployment.httpPort }}
           name: http
