@@ -7014,7 +7014,6 @@ func securityContextFieldsStripeGroupB(securityRoot string, extraArgs ...string)
 	}
 }
 
-//nolint:unparam // kind always receives "Deployment"
 func getContainer(t TestManifest, kind string, resourceName string, containerName string) *corev1.Container {
 	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
 		if u.GetKind() == kind && u.GetName() == resourceName {
@@ -7025,29 +7024,32 @@ func getContainer(t TestManifest, kind string, resourceName string, containerNam
 
 	Expect(resources.NumResources()).To(Equal(1))
 
-	switch kind {
-	case "Deployment":
-		return extractContainerFromDeployment(resources, containerName)
-	case "Job":
-		return extractContainerFromJob(resources, containerName)
-	case "CronJob":
-		return extractContainerFromCronJob(resources, containerName)
-	default:
-		Fail("Unsupported kind:" + kind)
-		return nil
-	}
-}
-
-func extractContainerFromDeployment(td TestManifest, containerName string) *corev1.Container {
 	var foundContainer corev1.Container
-	td.ExpectAll(func(deployment *unstructured.Unstructured) {
+	resources.ExpectAll(func(deployment *unstructured.Unstructured) {
 		foundExpected := false
 		deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-		structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-		Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-		for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+		var containers []corev1.Container
+
+		switch kind {
+		case "Deployment":
+			structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", structuredDeployment))
+			containers = structuredDeployment.Spec.Template.Spec.Containers
+		case "Job":
+			structuredJob, ok := deploymentObject.(*batchv1.Job)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured job", structuredJob))
+			containers = structuredJob.Spec.Template.Spec.Containers
+		case "CronJob":
+			structuredCronJob, ok := deploymentObject.(*batchv1.CronJob)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured cronjob", structuredCronJob))
+			containers = structuredCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers
+		default:
+			Fail("Unsupported kind:" + kind)
+		}
+
+		for _, container := range containers {
 			if container.Name == containerName {
 				foundExpected = true
 				foundContainer = container
@@ -7058,50 +7060,7 @@ func extractContainerFromDeployment(td TestManifest, containerName string) *core
 	})
 
 	return &foundContainer
-}
 
-func extractContainerFromJob(td TestManifest, containerName string) *corev1.Container {
-	var foundContainer corev1.Container
-	td.ExpectAll(func(deployment *unstructured.Unstructured) {
-		foundExpected := false
-		jobObject, err := kuberesource.ConvertUnstructured(deployment)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-		structuredDeployment, ok := jobObject.(*batchv1.Job)
-		Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-		for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-			if container.Name == containerName {
-				foundExpected = true
-				foundContainer = container
-			}
-		}
-
-		Expect(foundExpected).To(BeTrue())
-	})
-
-	return &foundContainer
-}
-
-func extractContainerFromCronJob(td TestManifest, containerName string) *corev1.Container {
-	var foundContainer corev1.Container
-	td.ExpectAll(func(deployment *unstructured.Unstructured) {
-		foundExpected := false
-		jobObject, err := kuberesource.ConvertUnstructured(deployment)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-		structuredDeployment, ok := jobObject.(*batchv1.CronJob)
-		Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-		for _, container := range structuredDeployment.Spec.JobTemplate.Spec.Template.Spec.Containers {
-			if container.Name == containerName {
-				foundExpected = true
-				foundContainer = container
-			}
-		}
-
-		Expect(foundExpected).To(BeTrue())
-	})
-
-	return &foundContainer
 }
 
 func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deployment {
