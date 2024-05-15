@@ -302,8 +302,7 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         {{- with $global.glooMtls.sds.securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
+{{ include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 8 }}
         {{- end }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
