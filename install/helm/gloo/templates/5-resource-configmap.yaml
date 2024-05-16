@@ -4,7 +4,7 @@ metadata:
   name: gloo-custom-resource-config
   namespace: {{ .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: custom-resources
 data:
   {{- $cr := include "gloo.customResources" . | indent 4 -}}

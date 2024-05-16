@@ -9,7 +9,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 - kind: ServiceAccount
@@ -33,7 +33,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 - kind: ServiceAccount
@@ -57,7 +57,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 {{- if .Values.discovery.enabled }}
@@ -80,7 +80,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 - kind: ServiceAccount
@@ -99,7 +99,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 - kind: ServiceAccount
@@ -126,7 +126,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 - kind: ServiceAccount
@@ -148,7 +148,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 - kind: ServiceAccount
@@ -170,7 +170,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   {{- end }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 subjects:
 {{- if .Values.discovery.enabled }}
