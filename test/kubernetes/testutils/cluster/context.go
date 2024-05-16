@@ -28,4 +28,7 @@ type Context struct {
 
 	// A set of clients for interacting with the Kubernetes Cluster
 	Clientset *kubernetes.Clientset
+
+	// Cluster id is a unique identifier for the cluster running in CI
+	ClusterId string
 }

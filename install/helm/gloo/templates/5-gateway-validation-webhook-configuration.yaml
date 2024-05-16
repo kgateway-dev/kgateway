@@ -5,7 +5,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway
   annotations:
     {{- if not .Values.gateway.validation.webhook.disableHelmHook }}
@@ -33,7 +33,7 @@ webhooks:
     apiVersions: ["v1"]
     resources: ["routetables"]
   - operations: [ "CREATE", "UPDATE" ]
-{{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support 
+{{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support
 specific resources, we will manage the resources that the webhook receives via the helm configurations*/}}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]

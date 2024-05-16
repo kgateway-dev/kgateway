@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,7 +25,25 @@ var (
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
 	}
-	proxyService = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gloo-proxy-gw",
+			Namespace: "default",
+		},
+	}
+	nginxPod = &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx",
+			Namespace: "default",
+		},
+	}
+	exampleSvc = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-svc",
+			Namespace: "default",
+		},
+	}
 
 	// VirtualHostOption resource to be created
 	basicVirtualHostOptionMeta = metav1.ObjectMeta{

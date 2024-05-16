@@ -38,6 +38,7 @@ type Global struct {
 	Graphql              interface{}        `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
 	ConfigMaps           []*GlobalConfigMap `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
 	ExtraCustomResources *bool              `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	AdditionalLabels     map[string]string  `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
 }
 
 type Namespace struct {

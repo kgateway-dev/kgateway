@@ -10,7 +10,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy-access-logger
   name: gateway-proxy-access-logger
   namespace: {{ $.Release.Namespace }}
