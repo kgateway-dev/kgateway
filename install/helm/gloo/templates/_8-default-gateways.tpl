@@ -10,7 +10,7 @@ metadata:
   name: {{ $name | kebabcase }}
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -66,7 +66,7 @@ metadata:
   name: {{ $name | kebabcase }}-ssl
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
 spec:
   {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
@@ -121,7 +121,7 @@ metadata:
   name: {{ $name | kebabcase }}-failover
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
 spec:
 {{- if $gatewaySettings.ipv4Only }}
   bindAddress: "0.0.0.0"
