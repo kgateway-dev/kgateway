@@ -174,7 +174,7 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 					SslConfig:               matchedGateway.GetMatcher().GetSslConfig(),
 					SourcePrefixRanges:      matchedGateway.GetMatcher().GetSourcePrefixRanges(),
 					PrefixRanges:            matchedGateway.GetMatcher().GetPrefixRanges(),
-					DestinationPort:         matchedGateway.Matcher.GetDestinationPort(),
+					DestinationPort:         matchedGateway.GetMatcher().GetDestinationPort(),
 					PassthroughCipherSuites: matchedGateway.GetMatcher().GetPassthroughCipherSuites(),
 				},
 				TcpListener: a.TcpTranslator.ComputeTcpListener(matchedGateway.GetTcpGateway()),
@@ -202,7 +202,7 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 						SslConfig:          reconciledSslConfig,
 						SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
 						PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
-						DestinationPort:    matchedGateway.Matcher.GetDestinationPort(),
+						DestinationPort:    matchedGateway.GetMatcher().GetDestinationPort(),
 					}
 
 					builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
@@ -215,7 +215,7 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 					SslConfig:          nil,
 					SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
 					PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
-					DestinationPort:    matchedGateway.Matcher.GetDestinationPort(),
+					DestinationPort:    matchedGateway.GetMatcher().GetDestinationPort(),
 				}
 
 				builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
