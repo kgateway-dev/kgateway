@@ -13,8 +13,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
 	utils2 "github.com/solo-io/gloo/pkg/utils"
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
+	k8sgwvalidation "github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
@@ -245,10 +247,11 @@ type validationOutput struct {
 	err          error
 }
 
-// validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. This was removed from the
-// main validation loop to allow it to be re-run against the original snapshot. The reason for this second validaiton run is to allow
-// the deletion of secrets, but only if they are not in use by the snapshot. This function does not know about
-// those use cases, but supports them with the opts.collectAllErrors flag, which is passed as 'true' when
+// validateProxiesAndExtensions validates a snapshot against the Gloo and Gateway Translations. The supplied snapshot should have either been
+// modified to contain the resource being validated or in the case of DELETE validation, have the resource in question removed.
+// This was removed from the main validation loop to allow it to be re-run against the original snapshot.
+// The reason for this second validaiton run is to allow the deletion of secrets, but only if they are not in use by the snapshot.
+// This function does not know about those use cases, but supports them with the opts.collectAllErrors flag, which is passed as 'true' when
 // attempting to delete a secret. This flag overrides the usual behavior of continuing to the next proxy after the first error,
 // and instead collects all errors.
 //
@@ -283,34 +286,15 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		err          error
 	)
 
-	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
+	validatingK8sGateway := isK8sGatewayProxy(opts.Resource)
+	if validatingK8sGateway {
+		proxies, errs = k8sgwvalidation.TranslateK8sGatewayProxies(ctx, snapshot, opts.Resource)
+	} else {
+		proxies, errs = v.translateGlooEdgeProxies(ctx, snapshot, opts.collectAllErrors)
+	}
 
-	// translate all the proxies
-	for _, gatewayAndProxyName := range gatewaysByProxy {
-		proxyName := gatewayAndProxyName.Name
-		gatewayList := gatewayAndProxyName.Gateways
-
-		// Translate the proxy and process the errors
-		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
-
-		err := v.getErrorsFromResourceReports(reports)
-
-		if err != nil {
-			err = errors.Wrapf(err, couldNotRenderProxy)
-			errs = multierror.Append(errs, err)
-
-			if !opts.collectAllErrors {
-				continue
-			}
-		}
-
-		// A nil proxy may have been returned if 0 listeners were created
-		// continue here even if collecting all errors, because the proxy is nil and there is nothing to validate
-		if proxy == nil {
-			continue
-		}
-		proxies = append(proxies, proxy)
-
+	// Now perform gloo validation for all the Proxies
+	for _, proxy := range proxies {
 		// Validate the proxy with the Gloo validator
 		// This validation also attempts to modify the snapshot, so when validating the unmodified snapshot a nil resource is passed in so no modifications are made
 		resourceToModify := opts.Resource
@@ -337,6 +321,17 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			continue
 		}
 
+		// if we are validating K8s Gateway Policy resources, we only want the errors resulting from
+		// the RouteOption/VirtualHostOption, so let's grab that here and skip the more sophisticated
+		// error aggregation below. Note that we do not care about allowWarnings, as they are not
+		// used in this case, as we do not do a full translation and use a 'dummy' proxy
+		if validatingK8sGateway {
+			if err = k8sgwvalidation.GetSimpleErrorFromGlooValidation(glooReports, proxy); err != nil {
+				errs = multierror.Append(errs, err)
+			}
+			continue
+		}
+
 		// Collect the reports returned by the glooValidator
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
@@ -355,7 +350,6 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierror.Append(errs, err)
 		}
-
 	} // End of proxy validation loop
 
 	// Extension validation. Currently only supports rate limit.
@@ -375,6 +369,61 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		proxies:      proxies,
 		proxyReports: proxyReports,
 		err:          errs,
+	}
+}
+
+// the returned error is a multierror that may contain errors from several Edge Proxies, although this depends on collectAllErrors
+func (v *validator) translateGlooEdgeProxies(
+	ctx context.Context,
+	snapshot *gloov1snap.ApiSnapshot,
+	collectAllErrors bool,
+) ([]*gloov1.Proxy, error) {
+	var (
+		proxies []*gloov1.Proxy
+		errs    error
+	)
+
+	gatewaysByProxy := utils.SortedGatewaysByProxyName(snapshot.Gateways)
+
+	// translate all the proxies
+	for _, gatewayAndProxyName := range gatewaysByProxy {
+		proxyName := gatewayAndProxyName.Name
+		gatewayList := gatewayAndProxyName.Gateways
+
+		// Translate the proxy and process the errors
+		proxy, reports := v.translator.Translate(ctx, proxyName, snapshot, gatewayList)
+
+		err := v.getErrorsFromResourceReports(reports)
+
+		if err != nil {
+			err = errors.Wrapf(err, couldNotRenderProxy)
+			errs = multierror.Append(errs, err)
+
+			if !collectAllErrors {
+				continue
+			}
+		}
+
+		// A nil proxy may have been returned if 0 listeners were created
+		// continue here even if collecting all errors, because the proxy is nil and there is nothing to validate
+		if proxy == nil {
+			continue
+		}
+		proxies = append(proxies, proxy)
+	}
+
+	return proxies, errs
+}
+
+// isK8sGatewayProxy returns true if we are evaluating a Policy resource in the context of K8s Gateway API support.
+// Currently the only signal needed to make this decision is if the resource being evaluated is a RouteOption
+// or a VirthalHostOption, as we only directly evaluate them in the validator to support K8s Gateway API mode.
+func isK8sGatewayProxy(res resources.Resource) bool {
+	switch res.(type) {
+	case *sologatewayv1.RouteOption, *sologatewayv1.VirtualHostOption:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -680,7 +729,15 @@ func findBreakingErrors(errs error) bool {
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
 func (v *validator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
-	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: true, DryRun: dryRun, AcquireLock: true})
+	opts := &validationOptions{
+		Ctx:         ctx,
+		Resource:    resource,
+		Gvk:         gvk,
+		Delete:      true,
+		DryRun:      dryRun,
+		AcquireLock: true,
+	}
+	_, err := v.validateResource(opts)
 	return err
 }
 
@@ -692,7 +749,15 @@ func (v *validator) ValidateModifiedGvk(ctx context.Context, gvk schema.GroupVer
 
 func (v *validator) validateModifiedResource(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun, acquireLock bool) (*Reports, error) {
 	var reports *Reports
-	reports, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: false, DryRun: dryRun, AcquireLock: acquireLock})
+	opts := &validationOptions{
+		Ctx:         ctx,
+		Resource:    resource,
+		Gvk:         gvk,
+		Delete:      false,
+		DryRun:      dryRun,
+		AcquireLock: acquireLock,
+	}
+	reports, err := v.validateResource(opts)
 	if err != nil {
 		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", resource)}}
 	}
