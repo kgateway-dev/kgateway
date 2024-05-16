@@ -9,7 +9,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-certgen
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}

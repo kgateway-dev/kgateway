@@ -8,7 +8,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: {{ .Values.ingressProxy.label }}
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
