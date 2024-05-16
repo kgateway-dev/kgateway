@@ -7,6 +7,30 @@ k8s:
 kubeGateway:
   # disable the integration by default, since it requires extra steps to set up (i.e. applying Gateway API CRDs)
   enabled: false
+  defaultGatewayParameters:
+    deployment:
+      replicas: 1
+    envoyContainer:
+      image:
+        registry: quay.io/solo-io
+        repository: gloo-envoy-wrapper
+    # sds:
+    #   sdsContainer:
+    #     sdsBootstrap:
+    #       logLevel: warning
+    #     image:
+    #       repository: sds
+    #   istioIntegration:
+    #     enabled: false
+    #     istioDiscoveryAddress: istiod.istio-system.svc.cluster.local:15012
+    #     istioMetaMeshId: mesh
+    #     istioMetaClusterId: cluster
+    #     istioContainer:
+    #       logLevel: warning
+    #       image:
+    #         registry: docker.io/istio
+    #         repository: proxyv2
+    #         tag: 1.18.2
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot

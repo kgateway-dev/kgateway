@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "gloo-gateway.constLabels" . | nindent 4 }}
   name: default
+  namespace: default
+{{- if .Values.kubeGateway.defaultGatewayParameters }}
 spec:
-  # TODO(jbohanon)
+  kube:
+{{- toYaml .Values.kubeGateway.defaultGatewayParameters | nindent 4 -}}
+{{- end -}}{{/* if .Values.kubeGateway.defaultGatewayParameters */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}
