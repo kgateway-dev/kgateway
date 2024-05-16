@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
@@ -98,7 +97,7 @@ func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 }
 
 // Convert sds values from GatewayParameters into helm values to be used by the deployer.
-func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
+func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Image) *helmSds {
 	// if sdsConfig is nil, sds is disabled
 	if sdsConfig == nil {
 		return nil
@@ -108,9 +107,8 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 	// if sdsConfig is not nil, but unset use defaults for sds config
 	if sdsConfig.GetSdsContainer() == nil {
 		defaultSdsImage := helmImage{
-			Registry:   ptr.To("quay.io/solo-io"),
-			Repository: ptr.To("sds"),
-			Tag:        ptr.To(version.Version),
+			Repository: ptr.To(defaultSds.Repository),
+			Tag:        ptr.To(defaultSds.Tag),
 		}
 
 		sds = &helmSds{
@@ -132,7 +130,7 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration) *helmSds {
 		// convert the service type enum to its string representation;
 		// if type is not set, it will default to 0 ("ClusterIP")
 		sds = &helmSds{
-			Image:           getImage(sdsConfig.GetSdsContainer().GetImage()),
+			Image:           getMergedSdsImageValues(defaultSds, sdsConfig.GetSdsContainer().GetImage()),
 			Resources:       sdsConfig.GetSdsContainer().GetResources(),
 			SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
 			SdsBootstrap:    bootstrap,
@@ -217,6 +215,48 @@ func getDefaultEnvoyImageValues(image extensions.Image) *helmImage {
 	return &helmImage{
 		Repository: &image.Repository,
 		Tag:        &image.Tag,
+	}
+}
+
+// Get the image values for the sds container in the proxy deployment. This is done by:
+// 1. getting the image values from a GatewayParameter
+// 2. for values not provided, fall back to the defaults (if any) from the k8s gw extensions
+func getMergedSdsImageValues(defaultImage extensions.Image, overrideImage *v1alpha1kube.Image) *helmImage {
+	// if no overrides are provided, use the default values
+	if overrideImage == nil {
+		return &helmImage{
+			Repository: ptr.To(defaultImage.Repository),
+			Tag:        ptr.To("1.0.0-ci1"), // TODO: why is version.Version empty here?
+			//Tag:        ptr.To(defaultImage.Tag),
+		}
+	}
+
+	// for repo and tag, fall back to defaults if not provided
+	repository := overrideImage.GetRepository()
+	if repository == "" {
+		repository = defaultImage.Repository
+	}
+	tag := overrideImage.GetTag()
+	if tag == "" {
+		tag = defaultImage.Tag
+	}
+
+	registry := overrideImage.GetRegistry()
+	digest := overrideImage.GetDigest()
+
+	// get the string representation of pull policy, unless it's unspecified, in which case we
+	// leave it empty to fall back to the default value
+	pullPolicy := ""
+	if overrideImage.GetPullPolicy() != v1alpha1kube.Image_Unspecified {
+		pullPolicy = v1alpha1kube.Image_PullPolicy_name[int32(overrideImage.GetPullPolicy())]
+	}
+
+	return &helmImage{
+		Registry:   &registry,
+		Repository: &repository,
+		Tag:        &tag,
+		Digest:     &digest,
+		PullPolicy: &pullPolicy,
 	}
 }
 

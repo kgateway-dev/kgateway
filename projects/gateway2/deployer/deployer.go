@@ -249,7 +249,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
 
 	// sds values
-	vals.Gateway.Sds = getSdsValues(sds)
+	vals.Gateway.Sds = getSdsValues(sds, d.inputs.Extensions.GetSdsImage())
 
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
