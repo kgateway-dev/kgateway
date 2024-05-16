@@ -364,10 +364,7 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        {{- with $global.glooMtls.istioProxy.securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+{{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.istioProxy.securityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
         {{- $istioProxyImage := merge $global.glooMtls.istioProxy.image $global.image }}
         image: {{ template "gloo.image" $istioProxyImage }}
         imagePullPolicy: {{ $istioProxyImage.pullPolicy }}
