@@ -81,6 +81,11 @@ TEST_ASSET_DIR ?= $(ROOTDIR)/_test
 BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
+	# Create bug report directory for each cluster in ci (cluster_one, cluster_two, etc.)
+	mkdir -p $(BUG_REPORT_DIR)/cluster_one
+	mkdir -p $(BUG_REPORT_DIR)/cluster_two
+	mkdir -p $(BUG_REPORT_DIR)/cluster_three
+	mkdir -p $(BUG_REPORT_DIR)/cluster_four
 
 # Used to install ca-certificates in GLOO_DISTROLESS_BASE_IMAGE
 PACKAGE_DONOR_IMAGE ?= debian:11

@@ -117,9 +117,10 @@ jobs:
         cluster-name: kind
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
+        cluster-id: ${{ matrix.test.cluster-id }}
     - name: Archive bug report directory on failure
       if: ${{ failure() }}
       uses: actions/upload-artifact@v4
       with:
         name: bug-report
-        path: ./_test/bug_report
+        path: ./_test/bug_report/${{ matrix.test.cluster-id }}
