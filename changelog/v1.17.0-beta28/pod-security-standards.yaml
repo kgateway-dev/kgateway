@@ -4,6 +4,11 @@ changelog:
     resolvesIssue: false
     description: >-
       Add helm values for all containers to allow for conforming to Pod Security Standards
+  - type: helm
+    description: >-
+      * Add helm values for all containers to allow defining containers' securityContexts
+      * Add global.podSecurityStandards.enableRestrictedContainerDefaults to default ot using a restricted set of container defaults
+      * Add new helper template to render the container securityContexts and apply the defaults if neccessary
   - type: DEPENDENCY_BUMP
     resolvesIssue: false
     dependencyOwner: solo-io

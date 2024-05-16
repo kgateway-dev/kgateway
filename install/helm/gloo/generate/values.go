@@ -42,7 +42,12 @@ type Global struct {
 }
 
 type PodSecurityStandards struct {
-	UseRestrictedContainerDefaults *bool `json:"useRestrictedContainerDefaults,omitempty" desc:"Set to true to default all containers to a security policy that confirms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). "`
+	Container *ContainerSecurityStandards `json:"container,omitempty" desc:"Container configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+}
+
+type ContainerSecurityStandards struct {
+	EnableRestrictedContainerDefaults *bool  `json:"enableRestrictedContainerDefaults,omitempty" desc:"Set to true to default all containers to a security policy that minimally conforms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). "`
+	DefaultSeccompProfileType         string `json:"defaultSeccompProfileType,omitempty" desc:"The seccomp profile type to use for default restricted container securityContexts. Valid values are 'RuntimeDefault' and 'Localhost'. Default is 'RuntimeDefault'. Has no effect if enableRestrictedContainerDefaults is false."`
 }
 
 type Namespace struct {

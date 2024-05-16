@@ -6323,6 +6323,7 @@ metadata:
 					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
+				// Helper function to apply the default restricted container security context
 				type applyContainerSecurityDefaults func(*corev1.SecurityContext)
 
 				applyDiscovery := applyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
@@ -6349,7 +6350,12 @@ metadata:
 					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 				})
 
-				DescribeTable("applies default retricted container security contexts", func(resourceName string, containerName string, resourceType string, securityRoot string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
+				getDefaultRestrictedContainerSecurityContext := func(seccompType string, applyContainerDefaults applyContainerSecurityDefaults) *corev1.SecurityContext {
+					// Use default value if not set
+					if seccompType == "" {
+						seccompType = "RuntimeDefault"
+					}
+
 					defaultRestrictedContainerSecurityContext := &corev1.SecurityContext{
 						RunAsNonRoot:             pointer.Bool(true),
 						AllowPrivilegeEscalation: pointer.Bool(false),
@@ -6357,24 +6363,38 @@ metadata:
 							Drop: []corev1.Capability{"ALL"},
 						},
 						SeccompProfile: &corev1.SeccompProfile{
-							Type: "RuntimeDefault",
+							Type: corev1.SeccompProfileType(seccompType),
 						},
 					}
+					applyContainerDefaults(defaultRestrictedContainerSecurityContext)
+					return defaultRestrictedContainerSecurityContext
+				}
 
-					applyDefaults(defaultRestrictedContainerSecurityContext)
-					// First helm template generates the baseline
-					// Run once "plain" to get the baseline as generated with no helm values passed
-					extraArgs = append([]string{
-						"global.podSecurityStandards.useRestrictedContainerDefaults=true",
-					}, extraArgs...)
+				FDescribeTable("applies default retricted container security contexts", func(resourceName string, containerName string, resourceType string, securityRoot string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: extraArgs,
-					})
+					for _, seccompTypeValue := range []string{"RuntimeDefault", "Localhost", ""} {
+						helmArgs := extraArgs
+						if seccompTypeValue != "" {
+							helmArgs = append([]string{
+								"global.podSecurityStandards.container.defaultSeccompProfileType=" + seccompTypeValue,
+							}, helmArgs...)
+						}
+						expectedDefaults := getDefaultRestrictedContainerSecurityContext(seccompTypeValue, applyDefaults)
 
-					container := getContainer(testManifest, resourceType, resourceName, containerName)
-					securityContext := container.SecurityContext
-					Expect(securityContext).To(Equal(defaultRestrictedContainerSecurityContext))
+						// First helm template generates the baseline
+						// Run once "plain" to get the baseline as generated with no helm values passed
+						helmArgs = append([]string{
+							"global.podSecurityStandards.container.enableRestrictedContainerDefaults=true",
+						}, helmArgs...)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: helmArgs,
+						})
+
+						container := getContainer(testManifest, resourceType, resourceName, containerName)
+						securityContext := container.SecurityContext
+						Expect(securityContext).To(Equal(expectedDefaults), "seccompTypeValue: %s", seccompTypeValue)
+					}
 
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext", applyDiscovery),

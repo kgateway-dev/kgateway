@@ -7,7 +7,8 @@ global:
   glooMtls:
     enabled: true
   podSecurityStandards:
-    useRestrictedContainerDefaults: true
+    container:
+      enableRestrictedContainerDefaults: true
 settings:
   singleNamespace: true
   create: true

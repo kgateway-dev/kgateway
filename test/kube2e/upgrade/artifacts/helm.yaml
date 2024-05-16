@@ -5,7 +5,8 @@ global:
     namespaced: true
     nameSuffix: e2e-test-rbac-suffix
   podSecurityStandards:
-    useRestrictedContainerDefaults: true
+    container:
+      enableRestrictedContainerDefaults: true
 settings:
   singleNamespace: true
   create: true

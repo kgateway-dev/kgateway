@@ -31,4 +31,5 @@ gatewayProxies:
         periodSeconds: 5
 global:
   podSecurityStandards:
-    useRestrictedContainerDefaults: true
+    container:
+      enableRestrictedContainerDefaults: true

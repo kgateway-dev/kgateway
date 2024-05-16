@@ -181,29 +181,44 @@ It takes 3 values:
   .defaults - the default securityContext for the pod or container
   .podSecurityStandards - podSecurityStandard from values.yaml
 
-  Depending upon the value of .values.merge, the securityContext will be merged with the defaults or completely replaced.
-  In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
-Because of this, if a value is "true" in defaults it can not be modified with this method.
-
+  If .podSecurityStandards.container.enableRestrictedContainerDefaults is true, the defaults will be set to a restricted set of values.
+  .podSecurityStandards.container.defaultSeccompProfileType can be used to set the seccompProfileType.
 */ -}}
 {{- define "gloo.containerSecurityContext" }}
+{{ $defaultSeccompProfileType := "RuntimeDefault"}}
+
+{{- /* set default seccompProfileType */ -}}
+
+{{- if .podSecurityStandards -}}
+  {{- if .podSecurityStandards.container -}}
+    {{- if .podSecurityStandards.container.defaultSeccompProfileType -}}
+      {{- $defaultSeccompProfileType = .podSecurityStandards.container.defaultSeccompProfileType -}}
+      {{- if and (ne $defaultSeccompProfileType "RuntimeDefault") (ne $defaultSeccompProfileType "Localhost") -}}
+        {{- fail printf "value '%s' is not an allowed value for defaultSeccompProfileType. Allowed values are 'RuntimeDefault' or 'Localhost'" . }}
+      {{- end -}}
+    {{ end -}}
+  {{ end -}}
+{{- end -}}
+
 {{- $pss_restricted_defaults := dict 
     "runAsNonRoot" true
     "capabilities" (dict "drop" (list "ALL"))
     "allowPrivilegeEscalation" false
-    "seccompProfile" (dict "type" "RuntimeDefault") }}
+    "seccompProfile" (dict "type" $defaultSeccompProfileType) }}
+
+{{- /* set defaults if appropriate */ -}}
 {{- $defaults := .defaults }}
 {{- if .podSecurityStandards -}}
-  {{- if .podSecurityStandards.useRestrictedContainerDefaults -}}
-    {{- $defaults = merge .defaults $pss_restricted_defaults -}}
+  {{- if .podSecurityStandards.container -}}
+    {{- if .podSecurityStandards.container.enableRestrictedContainerDefaults -}}
+      {{- $defaults = merge .defaults $pss_restricted_defaults -}}
+    {{ end -}}
   {{ end -}}
 {{- end -}}
 
+{{- /* call general securityContext template */ -}}
 {{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults) }}
 {{- end }}
-
-
-
 
 
 {{- /*
