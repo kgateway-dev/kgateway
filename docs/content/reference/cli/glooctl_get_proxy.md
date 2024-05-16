@@ -17,7 +17,6 @@ glooctl get proxy [flags]
 ### Options
 
 ```
-      --all    get all proxies
       --edge   include proxies produced from edge gateway resources
   -h, --help   help for proxy
       --kube   include proxies produced from k8s gateway resources

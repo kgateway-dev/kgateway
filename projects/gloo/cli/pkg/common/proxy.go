@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -80,17 +78,6 @@ func getProxiesFromControlPlane(opts *options.Options, name string, proxyEndpoin
 		Namespace: writeNamespace,
 		Source:    getProxySource(opts.Get.Proxy),
 		Selector:  opts.Get.Selector.MustMap(),
-	}
-
-	if opts.Get.Proxy.All {
-		// Each of the properties in a request act as a filter of the requested proxies.
-		// By supplying no filters, we are requesting all the proxies
-		proxyRequest = &debug.ProxyEndpointRequest{
-			Name:      "",
-			Namespace: metav1.NamespaceAll,
-			Source:    "",
-			Selector:  nil,
-		}
 	}
 
 	return requestProxiesFromControlPlane(opts, proxyRequest, proxyEndpointPort)
