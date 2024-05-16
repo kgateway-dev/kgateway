@@ -9,7 +9,7 @@ metadata:
   name: knative-internal-proxy-config
   namespace: {{ .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: knative-internal-proxy
 data:
   envoy.yaml: |

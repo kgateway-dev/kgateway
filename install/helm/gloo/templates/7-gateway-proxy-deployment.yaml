@@ -33,7 +33,7 @@ kind: DaemonSet
 {{- end}}
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
