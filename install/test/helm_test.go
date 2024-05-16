@@ -6772,6 +6772,11 @@ metadata:
 					valuesArgs: []string{
 						"global.additionalLabels.this=that",
 						"global.additionalLabels.the=other",
+
+						// Enabled components that have their own manifests
+						"settings.integrations.knative.enabled=true",
+						"accessLogger.enabled=true",
+						"ingress.enabled=true",
 					},
 				})
 
