@@ -40,12 +40,24 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) SetupSuite() {
+	// Check that the common setup manifest is applied
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	s.NoError(err, "can apply "+setupManifest)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, exampleSvc, nginxPod)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+	})
+
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
 	s.manifests = map[string][]string{
-		"TestConfigureVirtualHostOptions":                           {setupManifest, basicVhOManifest},
-		"TestConfigureInvalidVirtualHostOptions":                    {setupManifest, basicVhOManifest, badVhOManifest},
-		"TestConfigureVirtualHostOptionsWithSectionNameManualSetup": {setupManifest, basicVhOManifest, extraVhOManifest, sectionNameVhOManifest},
-		"TestMultipleVirtualHostOptionsManualSetup":                 {setupManifest, basicVhOManifest, extraVhOManifest},
+		"TestConfigureVirtualHostOptions":                           {basicVhOManifest},
+		"TestConfigureInvalidVirtualHostOptions":                    {basicVhOManifest, badVhOManifest},
+		"TestConfigureVirtualHostOptionsWithSectionNameManualSetup": {basicVhOManifest, extraVhOManifest, sectionNameVhOManifest},
+		"TestMultipleVirtualHostOptionsManualSetup":                 {basicVhOManifest, extraVhOManifest},
 	}
 }
 
@@ -70,7 +82,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 func (s *testingSuite) AfterTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for " + testName)
+		s.FailNow("no manifests found for " + testName)
 	}
 
 	for _, manifest := range manifests {

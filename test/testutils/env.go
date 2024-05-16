@@ -80,6 +80,9 @@ const (
 
 	// ClusterName is the name of the cluster used for e2e tests
 	ClusterName = "CLUSTER_NAME"
+
+	// ClusterId is the name of the cluster id used for e2e tests run in ci
+	ClusterId = "CLUSTER_ID"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

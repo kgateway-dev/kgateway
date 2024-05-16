@@ -3,24 +3,76 @@ package istio
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"
 	soloapis_kubernetes "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/options/kubernetes"
+	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/ssl"
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type UpstreamConfigOpts struct {
+	DisableIstioAutoMtls bool
+	SetSslConfig         bool
+}
+
 var (
-	EdgeApisRoutingResourcesFileName = "edge-apis-routing.gen.yaml"
+	EdgeApisRoutingFileName                     = "edge-apis-routing.gen.yaml"
+	DisableAutomtlsEdgeApisFileName             = "disable-automtls-edge-apis-routing.gen.yaml"
+	UpstreamSslConfigEdgeApisFileName           = "upstream-ssl-config-edge-apis.gen.yaml"
+	UpstreamSslConfigAndDisableAutomtlsFileName = "sslconfig-and-disable-automtls-edge-apis-routing.gen.yaml"
 
 	httpbinSvc = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "httpbin", Namespace: "httpbin"}}
 
-	// Edge API resources for no sslConfig on Upstream
-	GetGlooGatewayEdgeResources = func(installNamespace string) []client.Object {
+	getGlooGatewayEdgeResourceFilmeName = func(config UpstreamConfigOpts) string {
+		if config.SetSslConfig && config.DisableIstioAutoMtls {
+			return UpstreamSslConfigAndDisableAutomtlsFileName
+		} else if config.SetSslConfig {
+			return UpstreamSslConfigEdgeApisFileName
+		} else if config.DisableIstioAutoMtls {
+			return DisableAutomtlsEdgeApisFileName
+		} else {
+			return EdgeApisRoutingFileName
+		}
+	}
+
+	// GetGlooGatewayEdgeResources defines the Edge API resources based on the UpstreamConfigOpts and the file name of the generated manifest
+	GetGlooGatewayEdgeResources = func(installNamespace string, config UpstreamConfigOpts) []client.Object {
+		var sslConfig *ssl.UpstreamSslConfig
+		if config.SetSslConfig {
+			/*
+				This should match the basic istio integration sslConfig:
+					sslConfig:
+					  alpnProtocols:
+					  - istio
+					  sds:
+					    certificatesSecretName: istio_server_cert
+					    clusterName: gateway_proxy_sds
+					    targetUri: 127.0.0.1:8234
+					    validationContextName: istio_validation_context
+			*/
+			sslConfig = &ssl.UpstreamSslConfig{
+				AlpnProtocols: []string{"istio"},
+				SslSecrets: &ssl.UpstreamSslConfig_Sds{
+					Sds: &ssl.SDSConfig{
+						CertificatesSecretName: constants.IstioCertSecret,
+						SdsBuilder: &ssl.SDSConfig_ClusterName{
+							ClusterName: constants.SdsClusterName,
+						},
+						TargetUri:             constants.SdsTargetURI,
+						ValidationContextName: constants.IstioValidationContext,
+					},
+				},
+			}
+		}
+
 		httpbinUpstream := &soloapis_gloov1.Upstream{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       gloov1.UpstreamGVK.Kind,
@@ -31,6 +83,7 @@ var (
 				Namespace: installNamespace,
 			},
 			Spec: soloapis_gloov1.UpstreamSpec{
+				DisableIstioAutoMtls: &wrappers.BoolValue{Value: config.DisableIstioAutoMtls},
 				UpstreamType: &soloapis_gloov1.UpstreamSpec_Kube{
 					Kube: &soloapis_kubernetes.UpstreamSpec{
 						Selector: map[string]string{
@@ -41,6 +94,7 @@ var (
 						ServicePort:      8000,
 					},
 				},
+				SslConfig: sslConfig,
 			},
 		}
 
@@ -85,6 +139,7 @@ var (
 
 		var resources []client.Object
 		resources = append(resources, headlessVs, httpbinUpstream)
+
 		return resources
 	}
 )

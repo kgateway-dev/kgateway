@@ -44,7 +44,7 @@ func (p *Provider) AssertEventualCurlResponse(
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
 		WithContext(ctx).
-		Should(Succeed())
+		Should(Succeed(), "failed to get expected response")
 }
 
 // AssertEventuallyConsistentCurlResponse asserts that the response from a curl command

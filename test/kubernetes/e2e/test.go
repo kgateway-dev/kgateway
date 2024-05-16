@@ -81,8 +81,9 @@ func CreateTestInstallationForCluster(
 
 		// GeneratedFiles contains the unique location where files generated during the execution
 		// of tests against this installation will be stored
-		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
-		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
+		// By creating a unique location, per TestInstallation and per ClusterId we guarantee isolation
+		// between TestInstallation outputs per CI run
+		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace, clusterContext.ClusterId),
 	}
 	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
 	return installation
@@ -196,13 +197,14 @@ type GeneratedFiles struct {
 }
 
 // MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the directories
-func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
+func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 	tmpDir, err := os.MkdirTemp("", tmpDirId)
 	if err != nil {
 		panic(err)
 	}
 
-	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId)
+	// output path is in the format of bug_report/cluster_id/tmp_dir_id
+	failureDir := filepath.Join(testruntime.PathToBugReport(), clusterId, tmpDirId)
 	err = os.MkdirAll(failureDir, os.ModePerm)
 	if err != nil {
 		panic(err)
