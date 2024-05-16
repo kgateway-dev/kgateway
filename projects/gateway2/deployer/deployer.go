@@ -175,7 +175,16 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 		return nil, getGatewayParametersError(err, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
 	}
 
-	return gwp, nil
+	defaultGwp, err := d.getDefaultGatewayParameters(ctx, gw)
+	if err != nil {
+		return nil, err
+	}
+
+	return d.mergeGatewayParameters(gwp, defaultGwp)
+}
+
+func (d *Deployer) mergeGatewayParameters(moreSpecific, lessSpecific *v1alpha1.GatewayParameters) (*v1alpha1.GatewayParameters, error) {
+	return nil, nil
 }
 
 // gets the default GatewayParameters associated with the GatewayClass of the provided Gateway
