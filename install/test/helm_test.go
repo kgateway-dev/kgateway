@@ -240,6 +240,8 @@ kind: PodDisruptionBudget
 metadata:
   name: gloo-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   minAvailable: '2'
   selector:
@@ -264,6 +266,8 @@ kind: PodDisruptionBudget
 metadata:
   name: gloo-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   maxUnavailable: '2'
   selector:
@@ -2174,6 +2178,8 @@ kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   minAvailable: '2'
   selector:
@@ -2198,6 +2204,8 @@ kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   maxUnavailable: '2'
   selector:
@@ -2223,6 +2231,8 @@ kind: PodDisruptionBudget
 metadata:
   name: %s-pdb
   namespace: gloo-system
+  labels:
+    app: gloo
 spec:
   maxUnavailable: '2'
   selector:
@@ -6755,6 +6765,29 @@ metadata:
 				})
 
 				Expect(resources.NumResources()).To(Equal(2))
+			})
+
+			It("should add the additional labels to all resources", func() {
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{
+						"global.additionalLabels.this=that",
+						"global.additionalLabels.the=other",
+
+						// Enabled components that have their own manifests
+						"settings.integrations.knative.enabled=true",
+						"accessLogger.enabled=true",
+						"ingress.enabled=true",
+					},
+				})
+
+				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+					labelsObj := getFieldFromUnstructured(resource, "metadata", "labels")
+					Expect(labelsObj).To(BeAssignableToTypeOf(map[string]interface{}{}))
+					labels := labelsObj.(map[string]interface{})
+					Expect(labels["app"]).To(Equal("gloo"))
+					Expect(labels["this"]).To(Equal("that"))
+					Expect(labels["the"]).To(Equal("other"))
+				})
 			})
 
 		})
