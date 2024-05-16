@@ -883,6 +883,7 @@ spec:
                           type: string
                       type: object
                   type: object
+                maxItems: 100000
                 type: array
               failOnRedirect:
                 type: boolean

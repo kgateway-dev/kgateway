@@ -69,7 +69,7 @@ message AuthConfig {
     // State is shared between successful requests on the chain, i.e., the headers returned from each
     // successful auth service get appended into the final auth response.
     //
-    // +kubebuilder:validation:MaxLength=100000
+    // +kubebuilder:validation:MaxItems=100000
     repeated Config configs = 3;
 
     // How to handle processing of named configs within an auth config chain.
