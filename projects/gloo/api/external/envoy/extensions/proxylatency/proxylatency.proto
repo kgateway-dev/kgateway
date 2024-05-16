@@ -36,7 +36,7 @@ message ProxyLatency {
 
     // How to measure the request.
     // Affects the output stats.
-    // Does not affect metdata.
+    // Does not affect metadata.
     Measurement request = 1;
     // When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is
     // instead of when the first byte is sent upstream. This has the advantage of not measuring the time
