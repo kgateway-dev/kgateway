@@ -263,3 +263,11 @@ Otherwise it will generate ["Create", "Update", "Delete"]
 {{- end -}}
 {{ toJson $result }}
 {{- end -}}
+
+{{/* Additional labels added to every resource */}}
+{{- define "gloo.labels" -}}
+app: gloo
+{{- with .Values.global.additionalLabels | default dict }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
