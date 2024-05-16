@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6107
+    resolvesIssue: false
+    description: >-
+      Introduced a new default GatewayParameters which is associated with a GatewayClass and represents the default values applied to Gateways
+      created from that GatewayClass that don't otherwise have a specific GatewayParameters attached.
+  - type: HELM
+    description: >-
+      TODO

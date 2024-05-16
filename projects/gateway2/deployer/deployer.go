@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
@@ -163,7 +164,7 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 		logger.V(1).Info("no GatewayParameters found for Gateway",
 			"gatewayName", gw.GetName(),
 			"gatewayNamespace", gw.GetNamespace())
-		return nil, nil
+		return d.getDefaultGatewayParameters(ctx, gw)
 	}
 
 	// the GatewayParameters must live in the same namespace as the Gateway
@@ -177,22 +178,40 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 	return gwp, nil
 }
 
+// gets the default GatewayParameters associated with the GatewayClass of the provided Gateway
+func (d *Deployer) getDefaultGatewayParameters(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
+	gwc, err := d.getGatewayClassFromGateway(ctx, gw)
+	if err != nil {
+		return nil, err
+	}
+	return d.getGatewayParametersForGatewayClass(ctx, gwc)
+}
+
 // Gets the GatewayParameters object (if any) associated with a given GatewayClass.
 func (d *Deployer) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
 
 	// check for a gateway params annotation on the Gateway
-	gwpName := gwc.GetAnnotations()[wellknown.GatewayParametersAnnotationName]
+	paramRef := gwc.Spec.ParametersRef
+	if paramRef == nil {
+		return nil, eris.Errorf("no default GatewayParameters associated with GatewayClass %s/%s", gwc.GetNamespace(), gwc.GetName())
+	}
+	gwpName := paramRef.Name
 	if gwpName == "" {
-		// there is no custom GatewayParameters; use default GatewayParameters
-		logger.V(1).Info("no GatewayParameters found for GatewayClass, using default values",
+		// there is no custom GatewayParameters; use default values.
+		// this should never happen.
+		err := eris.New("no GatewayParameters found for GatewayClass")
+		logger.V(0).Error(err, "using default values",
 			"gatewayClassName", gwc.GetName(),
 			"gatewayClassNamespace", gwc.GetNamespace())
 		return nil, nil
 	}
 
-	// the GatewayParameters must live in the same namespace as the Gateway
-	gwpNamespace := gwc.GetNamespace()
+	gwpNamespace := ""
+	if paramRef.Namespace != nil {
+		gwpNamespace = string(*paramRef.Namespace)
+	}
+
 	gwp := &v1alpha1.GatewayParameters{}
 	err := d.cli.Get(ctx, client.ObjectKey{Namespace: gwpNamespace, Name: gwpName}, gwp)
 	if err != nil {
@@ -200,6 +219,24 @@ func (d *Deployer) getGatewayParametersForGatewayClass(ctx context.Context, gwc 
 	}
 
 	return gwp, nil
+}
+
+func (d *Deployer) getGatewayClassFromGateway(ctx context.Context, gw *api.Gateway) (*api.GatewayClass, error) {
+	if gw == nil {
+		return nil, eris.New("nil Gateway")
+	}
+
+	if gw.Spec.GatewayClassName == "" {
+		return nil, eris.New("GatewayClassName must not be empty")
+	}
+
+	gwc := &api.GatewayClass{}
+	err := d.cli.Get(ctx, client.ObjectKey{Name: string(gw.Spec.GatewayClassName)}, gwc)
+	if err != nil {
+		return nil, eris.Errorf("failed to get GatewayClass for Gateway %s/%s", gw.GetName(), gw.GetNamespace())
+	}
+
+	return gwc, nil
 }
 
 func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
@@ -325,12 +362,11 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	}
 
 	// Set owner ref
-	trueVal := true
 	for _, obj := range objs {
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,
-			Controller: &trueVal,
+			Controller: utils.PointerTo(true),
 			UID:        gw.UID,
 			Name:       gw.Name,
 		}})

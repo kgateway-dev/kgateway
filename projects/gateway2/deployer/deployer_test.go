@@ -8,7 +8,10 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
@@ -18,8 +21,9 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	appsv1 "k8s.io/api/apps/v1"
@@ -113,18 +117,65 @@ var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
-		gwc           *api.GatewayClass
 		k8sGatewayExt extensions.K8sGatewayExtensions
+		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/gloo/templates/43-gatewayparameters.yaml
+		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+			return &gw2_v1alpha1.GatewayParameters{
+				TypeMeta: metav1.TypeMeta{
+					Kind: gw2_v1alpha1.GatewayParametersGVK.Kind,
+					// The parsing expects GROUP/VERSION format in this field
+					APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.GatewayParametersGVK.Group, gw2_v1alpha1.GatewayParametersGVK.Version),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.DefaultGatewayParametersName,
+					UID:  "1237",
+				},
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_Kube{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
+								Deployment: &gw2_v1alpha1.ProxyDeployment{
+									Replicas: &wrappers.UInt32Value{Value: 2},
+								},
+							},
+							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
+								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+									LogLevel: "debug",
+									ComponentLogLevels: map[string]string{
+										"router":   "info",
+										"listener": "warn",
+									},
+								},
+								Image: &kube.Image{
+									Registry:   "scooby",
+									Repository: "dooby",
+									// Tag:        "doo",
+									PullPolicy: kube.Image_Always,
+								},
+							},
+							PodTemplate: &kube.Pod{
+								ExtraAnnotations: map[string]string{
+									"foo": "bar",
+								},
+								SecurityContext: &v1.PodSecurityContext{
+									RunAsUser:  utils.PointerTo(int64(1)),
+									RunAsGroup: utils.PointerTo(int64(2)),
+								},
+							},
+							Service: &kube.Service{
+								Type:      kube.Service_ClusterIP,
+								ClusterIP: "99.99.99.99",
+								ExtraAnnotations: map[string]string{
+									"foo": "bar",
+								},
+							},
+						},
+					},
+				},
+			}
+		}
 	)
 	BeforeEach(func() {
-		gwc = &api.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: wellknown.GatewayClassName,
-			},
-			Spec: api.GatewayClassSpec{
-				ControllerName: wellknown.GatewayControllerName,
-			},
-		}
 		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
 		Expect(err).NotTo(HaveOccurred())
 		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
@@ -133,10 +184,26 @@ var _ = Describe("Deployer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	Context("special cases", func() {
+		var (
+			gwc *api.GatewayClass
+		)
 		BeforeEach(func() {
+			gwc = &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.GatewayClassName,
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group: "gateway.gloo.solo.io",
+						Kind:  "GatewayParameters",
+						Name:  wellknown.DefaultGatewayParametersName,
+					},
+				},
+			}
 			var err error
 
-			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
+			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
 				ControlPlane: bootstrap.ControlPlane{
@@ -161,7 +228,7 @@ var _ = Describe("Deployer", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
+			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
 				ControlPlane: bootstrap.ControlPlane{
@@ -171,7 +238,7 @@ var _ = Describe("Deployer", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc), &deployer.Inputs{
+			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
 				ControlPlane: bootstrap.ControlPlane{
@@ -244,6 +311,7 @@ var _ = Describe("Deployer", func() {
 			dInputs        *deployer.Inputs
 			gw             *api.Gateway
 			gwp            *gw2_v1alpha1.GatewayParameters
+			gwc            *api.GatewayClass
 			arbitrarySetup func()
 		}
 
@@ -254,11 +322,11 @@ var _ = Describe("Deployer", func() {
 		}
 
 		var (
-			defaultGwpName        = "default-gateway-params"
+			gwpOverrideName       = "default-gateway-params"
 			defaultDeployerInputs = func() *deployer.Inputs {
 				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
 				Expect(err).NotTo(HaveOccurred())
-				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
+				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.Background(), extensions.K8sGatewayExtensionsFactoryParameters{
 					Mgr: mgr,
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -299,7 +367,23 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
-			defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+			defaultGatewayClass = func() *api.GatewayClass {
+				return &api.GatewayClass{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: wellknown.GatewayClassName,
+					},
+					Spec: api.GatewayClassSpec{
+						ControllerName: wellknown.GatewayControllerName,
+						ParametersRef: &api.ParametersReference{
+							Group: "gateway.gloo.solo.io",
+							Kind:  "GatewayParameters",
+							Name:  wellknown.DefaultGatewayParametersName,
+						},
+					},
+				}
+			}
+			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
 						Kind: gw2_v1alpha1.GatewayParametersGVK.Kind,
@@ -307,7 +391,7 @@ var _ = Describe("Deployer", func() {
 						APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.GatewayParametersGVK.Group, gw2_v1alpha1.GatewayParametersGVK.Version),
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      defaultGwpName,
+						Name:      gwpOverrideName,
 						Namespace: defaultNamespace,
 						UID:       "1236",
 					},
@@ -339,8 +423,8 @@ var _ = Describe("Deployer", func() {
 										"foo": "bar",
 									},
 									SecurityContext: &v1.PodSecurityContext{
-										RunAsUser:  func() *int64 { var i int64 = 1; return &i }(),
-										RunAsGroup: func() *int64 { var i int64 = 2; return &i }(),
+										RunAsUser:  utils.PointerTo(int64(3)),
+										RunAsGroup: utils.PointerTo(int64(4)),
 									},
 								},
 								Service: &kube.Service{
@@ -368,12 +452,70 @@ var _ = Describe("Deployer", func() {
 					dInputs: defaultDeployerInputs(),
 					gw:      defaultGateway(),
 					gwp:     defaultGatewayParams(),
+					gwc:     defaultGatewayClass(),
 				}
 			}
 			defaultDeploymentName     = fmt.Sprintf("gloo-proxy-%s", defaultGateway().Name)
 			defaultConfigMapName      = defaultDeploymentName
 			defaultServiceName        = defaultDeploymentName
 			defaultServiceAccountName = defaultDeploymentName
+
+			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) error {
+				expectedGwp := gwp.Spec.GetKube()
+				Expect(objs).NotTo(BeEmpty())
+				// Check we have Deployment, ConfigMap, ServiceAccount, Service
+				Expect(objs).To(HaveLen(4))
+				dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+				Expect(dep).ToNot(BeNil())
+				Expect(dep.Spec.Replicas).ToNot(BeNil())
+				Expect(*dep.Spec.Replicas).To(Equal(int32(expectedGwp.GetDeployment().Replicas.GetValue())))
+				expectedImage := fmt.Sprintf("%s/%s",
+					expectedGwp.GetEnvoyContainer().GetImage().GetRegistry(),
+					expectedGwp.GetEnvoyContainer().GetImage().GetRepository(),
+				)
+				Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(expectedImage))
+				if expectedTag := expectedGwp.GetEnvoyContainer().GetImage().GetTag(); expectedTag != "" {
+					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + expectedTag))
+				} else {
+					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + version.Version))
+				}
+				Expect(string(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal(expectedGwp.GetEnvoyContainer().GetImage().GetPullPolicy().String()))
+				Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.GetPodTemplate().GetExtraAnnotations()))
+				Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetPodTemplate().GetSecurityContext().GetRunAsUser()))
+				Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(expectedGwp.GetPodTemplate().GetSecurityContext().GetRunAsGroup()))
+
+				svc := objs.findService(defaultNamespace, defaultServiceName)
+				Expect(svc).ToNot(BeNil())
+				Expect(svc.GetAnnotations()).ToNot(BeNil())
+				Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.GetService().GetExtraAnnotations()))
+				Expect(string(svc.Spec.Type)).To(Equal(expectedGwp.GetService().GetType().String()))
+				Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.GetService().GetClusterIP()))
+
+				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
+				Expect(sa).ToNot(BeNil())
+
+				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+				Expect(cm).ToNot(BeNil())
+
+				logLevelsMap := expectedGwp.GetEnvoyContainer().GetBootstrap().GetComponentLogLevels()
+				levels := []types.GomegaMatcher{}
+				for k, v := range logLevelsMap {
+					levels = append(levels, gomega.ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
+				}
+
+				argsMatchers := []interface{}{
+					"--log-level",
+					expectedGwp.GetEnvoyContainer().GetBootstrap().GetLogLevel(),
+					"--component-log-level",
+					gomega.And(levels...),
+				}
+
+				Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
+					argsMatchers...,
+				))
+				return nil
+
+			}
 		)
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
@@ -390,10 +532,15 @@ var _ = Describe("Deployer", func() {
 				inp.arbitrarySetup()
 			}
 
-			// Catch a nil gwp so the fake client doesn't choke on the nil obj
+			// Catch nil objs so the fake client doesn't choke
 			gwp := inp.gwp
 			if gwp == nil {
-				gwp = &gw2_v1alpha1.GatewayParameters{}
+				gwp = defaultGatewayParams()
+			}
+
+			gwc := inp.gwc
+			if gwc == nil {
+				gwc = defaultGatewayClass()
 			}
 
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwp), inp.dInputs)
@@ -409,84 +556,31 @@ var _ = Describe("Deployer", func() {
 			// handle custom test validation func
 			Expect(expected.validationFunc(objs, inp)).NotTo(HaveOccurred())
 		},
-			Entry("No GatewayParameters", &input{
+			Entry("No GatewayParameters falls back on default GatewayParameters", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
-					Expect(objs).NotTo(BeEmpty())
-					// Check we have Deployment, ConfigMap, ServiceAccount, Service
-					Expect(objs).To(HaveLen(4))
-					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
-					Expect(cm).ToNot(BeNil())
-
-					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
-					Expect(dep).ToNot(BeNil())
-					Expect(dep.Spec.Replicas).ToNot(BeNil())
-					Expect(*dep.Spec.Replicas).To(Equal(int32(1)))
-					gatewayContainer := dep.Spec.Template.Spec.Containers[0]
-					Expect(gatewayContainer.Name).To(Equal("gloo-gateway"))
-					Expect(gatewayContainer.Image).To(ContainSubstring("quay.io/solo-io/gloo-envoy-wrapper"))
-					Expect(dep.Spec.Template.Labels["gateway.networking.k8s.io/gateway-name"]).To(Equal(inp.gw.Name))
-
-					svc := objs.findService(defaultNamespace, defaultServiceName)
-					Expect(svc).ToNot(BeNil())
-
-					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
-					Expect(sa).ToNot(BeNil())
-
-					return nil
+					return validateGatewayParametersPropagation(objs, defaultGatewayParams())
 				},
 			}),
 			Entry("GatewayParameters overrides", &input{
 				dInputs: defaultDeployerInputs(),
-				gw:      defaultGatewayWithGatewayParams(defaultGwpName),
-				gwp:     defaultGatewayParams(),
+				gw:      defaultGatewayWithGatewayParams(gwpOverrideName),
+				gwp:     defaultGatewayParamsOverride(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
-					Expect(objs).NotTo(BeEmpty())
-					// Check we have Deployment, ConfigMap, ServiceAccount, Service
-					Expect(objs).To(HaveLen(4))
-					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
-					Expect(dep).ToNot(BeNil())
-					Expect(dep.Spec.Replicas).ToNot(BeNil())
-					Expect(*dep.Spec.Replicas).To(Equal(int32(inp.gwp.Spec.GetKube().GetDeployment().Replicas.GetValue())))
-					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(Equal("foo/bar:bat"))
-					Expect(string(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal(inp.gwp.Spec.GetKube().GetEnvoyContainer().GetImage().GetPullPolicy().String()))
-					Expect(dep.Spec.Template.Annotations["foo"]).To(Equal("bar"))
-					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(inp.gwp.Spec.GetKube().GetPodTemplate().GetSecurityContext().GetRunAsUser()))
-					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(inp.gwp.Spec.GetKube().GetPodTemplate().GetSecurityContext().GetRunAsGroup()))
-
-					svc := objs.findService(defaultNamespace, defaultServiceName)
-					Expect(svc).ToNot(BeNil())
-					Expect(svc.GetAnnotations()).ToNot(BeNil())
-					Expect(svc.Annotations["foo"]).To(Equal("bar"))
-					Expect(string(svc.Spec.Type)).To(Equal(inp.gwp.Spec.GetKube().GetService().GetType().String()))
-					Expect(svc.Spec.ClusterIP).To(Equal(inp.gwp.Spec.GetKube().GetService().GetClusterIP()))
-
-					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
-					Expect(sa).ToNot(BeNil())
-
-					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
-					Expect(cm).ToNot(BeNil())
-					Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
-						"--log-level",
-						inp.gwp.Spec.GetKube().GetEnvoyContainer().GetBootstrap().GetLogLevel(),
-						"--component-log-level",
-						"listener:warn,router:info",
-					))
-					return nil
+					return validateGatewayParametersPropagation(objs, inp.gwp)
 				},
 			}),
 			Entry("correct deployment with sds enabled", &input{
 				dInputs: defaultDeployerInputsWithSds(),
 				gw:      defaultGateway(),
-				gwp:     defaultGatewayParams(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					containers := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers
 					Expect(containers).To(HaveLen(3))
-					foundGw, foundSds, foundIstioProxy := false, false, false
+					var foundGw, foundSds, foundIstioProxy bool
 					for _, container := range containers {
 						switch container.Name {
 						case "sds":
@@ -527,7 +621,6 @@ var _ = Describe("Deployer", func() {
 						GatewayClassName: "gloo-gateway",
 					},
 				},
-				gwp: defaultGatewayParams(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					Expect(objs).NotTo(BeEmpty())
@@ -571,7 +664,6 @@ var _ = Describe("Deployer", func() {
 						},
 					},
 				},
-				gwp: defaultGatewayParams(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					svc := objs.findService(defaultNamespace, defaultServiceName)
@@ -588,7 +680,6 @@ var _ = Describe("Deployer", func() {
 				dInputs:        defaultDeployerInputs(),
 				gw:             defaultGateway(),
 				arbitrarySetup: func() { version.Version = "testversion" },
-				gwp:            defaultGatewayParams(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
@@ -638,7 +729,7 @@ var _ = Describe("Deployer", func() {
 					node := envoyConfig["node"].(map[string]any)
 					proxyName := fmt.Sprintf("%s-%s", gw.Namespace, gw.Name)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", utils.GatewayApiProxyValue, gw.Namespace, proxyName),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, proxyName),
 					}))
 					return nil
 				},

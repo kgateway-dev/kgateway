@@ -2,6 +2,7 @@ package urlrewrite_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
@@ -10,10 +11,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
-
-func ptr[T any](i T) *T {
-	return &i
-}
 
 var _ = DescribeTable(
 	"UrlRewritePlugin",
@@ -39,10 +36,10 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterURLRewrite,
 			URLRewrite: &gwv1.HTTPURLRewriteFilter{
-				Hostname: ptr(gwv1.PreciseHostname("foo")),
+				Hostname: utils.PointerTo(gwv1.PreciseHostname("foo")),
 				Path: &gwv1.HTTPPathModifier{
 					Type:            gwv1.FullPathHTTPPathModifier,
-					ReplaceFullPath: ptr("/bar"),
+					ReplaceFullPath: utils.PointerTo("/bar"),
 				},
 			},
 		},
@@ -72,7 +69,7 @@ var _ = DescribeTable(
 			URLRewrite: &gwv1.HTTPURLRewriteFilter{
 				Path: &gwv1.HTTPPathModifier{
 					Type:               gwv1.PrefixMatchHTTPPathModifier,
-					ReplacePrefixMatch: ptr("/bar"),
+					ReplacePrefixMatch: utils.PointerTo("/bar"),
 				},
 			},
 		},
@@ -96,10 +93,10 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterURLRewrite,
 			URLRewrite: &gwv1.HTTPURLRewriteFilter{
-				Hostname: ptr(gwv1.PreciseHostname("foo")),
+				Hostname: utils.PointerTo(gwv1.PreciseHostname("foo")),
 				Path: &gwv1.HTTPPathModifier{
 					Type:               gwv1.PrefixMatchHTTPPathModifier,
-					ReplacePrefixMatch: ptr("/"),
+					ReplacePrefixMatch: utils.PointerTo("/"),
 				},
 			},
 		},
@@ -121,7 +118,7 @@ var _ = DescribeTable(
 		},
 		&gwv1.HTTPRouteMatch{
 			Path: &gwv1.HTTPPathMatch{
-				Value: ptr("/hello/world"),
+				Value: utils.PointerTo("/hello/world"),
 			},
 		},
 	),

@@ -21,7 +21,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest = tm
 		}
 
-		FIt("when kube gateway integration is enabled, relevant resources are rendered", func() {
+		It("when kube gateway integration is enabled, relevant resources are rendered", func() {
 			prepareMakefile(namespace, helmValues{
 				valuesArgs: []string{
 					"kubeGateway.enabled=true",

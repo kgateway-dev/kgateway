@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
@@ -28,7 +29,7 @@ func TestSingleMirror(t *testing.T) {
 		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
 			BackendRef: gwv1.BackendObjectReference{
 				Name: "foo",
-				Port: ptr(gwv1.PortNumber(8080)),
+				Port: utils.PointerTo(gwv1.PortNumber(8080)),
 			},
 		},
 	}
@@ -77,7 +78,7 @@ func TestUpstreamMirror(t *testing.T) {
 		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
 			BackendRef: gwv1.BackendObjectReference{
 				Name:  "foo",
-				Port:  ptr(gwv1.PortNumber(8080)),
+				Port:  utils.PointerTo(gwv1.PortNumber(8080)),
 				Kind:  &backendKind,
 				Group: &backendGroup,
 			},
@@ -175,7 +176,3 @@ func TestUpstreamMirror(t *testing.T) {
 // 	g.Expect(outputRoute.GetRoute().RequestMirrorPolicies[0].Cluster).To(gomega.Equal("bar-foo-8080"))
 // 	g.Expect(outputRoute.GetRoute().RequestMirrorPolicies[1].Cluster).To(gomega.Equal("foo-bar-8080"))
 // }
-
-func ptr[T any](i T) *T {
-	return &i
-}
