@@ -118,9 +118,21 @@ func (s *glooIstioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 		s.NoError(err, "can delete generated routing manifest")
 	})
 
-	// Ensure that the proxy service and deployment are created
+	// Initially use automtls (no sslConfig on upstream)
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.enableAutomtlsFile)
+	// Ensure that the proxy service and deployment are created
 	s.NoError(err, "can apply generated routing manifest")
+
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		curlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
+			curl.WithHostHeader("httpbin"),
+			curl.WithPath("/headers"),
+			curl.WithPort(80),
+		},
+		expectedMtlsResponse, time.Minute)
 
 	// Apply permissive peer auth policy
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, permissivePeerAuthManifest)
@@ -265,7 +277,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestDowngrade() {
 		expectedMtlsResponse, time.Minute)
 }
 
-func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
+func (s *glooIstioAutoMtlsTestingSuite) TestDisableAutomtlsOverridesSSLConfig() {
 	s.T().Cleanup(func() {
 		// Clean up peer auth
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, disablePeerAuthManifest)
@@ -276,10 +288,11 @@ func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
 		s.NoError(err, "can delete manifest")
 	})
 
-	// Initially use automtls (remove sslConfig on upstream)
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.enableAutomtlsFile)
-	s.NoError(err, "can apply generated routing manifest with automtls upstream")
+	// Uuse sslConfig on upstream with automtls disabled (sslConfig will overwrite automtls)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslConfigAndDisableAutomtlsFile)
+	s.NoError(err, "can apply generated routing manifest with sslConfig upstream")
 
+	// Check sslConfig upstream is working
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -295,7 +308,7 @@ func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, disablePeerAuthManifest)
 	s.NoError(err, "can apply disablePeerAuthManifest")
 
-	// Check peer auth policy is working
+	// Check disable peer auth policy is working when sslConfig is set
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -306,20 +319,4 @@ func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
 			curl.WithPort(80),
 		},
 		expectedServiceUnavailableResponse, time.Minute)
-
-	// Switch to use sslConfig on upstream (do not explictly disable automtls)
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslConfigAndDisableAutomtlsFile)
-	s.NoError(err, "can apply generated routing manifest with sslConfig upstream")
-
-	// Check sslConfig upstream is working
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		curlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
-			curl.WithHostHeader("httpbin"),
-			curl.WithPath("/headers"),
-			curl.WithPort(80),
-		},
-		expectedPlaintextResponse, time.Minute)
 }

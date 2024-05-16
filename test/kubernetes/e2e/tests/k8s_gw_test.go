@@ -27,8 +27,9 @@ func TestK8sGateway(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "k8s-gw-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
+			InstallNamespace:       "k8s-gw-test",
+			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
+			ValidationAlwaysAccept: false,
 		},
 	)
 

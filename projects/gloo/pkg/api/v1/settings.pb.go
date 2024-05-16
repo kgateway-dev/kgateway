@@ -3255,7 +3255,8 @@ type GatewayOptions_ValidationOptions struct {
 	AlwaysAccept *wrappers.BoolValue `protobuf:"bytes,6,opt,name=always_accept,json=alwaysAccept,proto3" json:"always_accept,omitempty"`
 	// Accept resources if validation produced a warning (defaults to true).
 	// By setting to false, this means that validation will start rejecting resources that would result
-	// in warnings, rather than just those that would result in errors.
+	// in warnings, rather than just those that would result in errors. Note that this setting has no impact on
+	// Kubernetes Gateway API validation, as warnings will always be allowed in that context.
 	AllowWarnings *wrappers.BoolValue `protobuf:"bytes,7,opt,name=allow_warnings,json=allowWarnings,proto3" json:"allow_warnings,omitempty"`
 	// Deprecated: See `server_enabled` and consider configuring it to `false` instead.
 	// Write a warning to route resources if validation produced a route ordering warning (defaults to false).

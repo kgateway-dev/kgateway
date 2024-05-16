@@ -34,7 +34,7 @@ var (
 	proxyDeployment = &appsv1.Deployment{
 		ObjectMeta: objectMetaInDefault("gloo-proxy-gw"),
 	}
-	ngnixPod = &corev1.Pod{
+	nginxPod = &corev1.Pod{
 		ObjectMeta: objectMetaInDefault("nginx"),
 	}
 	exampleSvc = &corev1.Service{

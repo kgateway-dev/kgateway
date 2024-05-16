@@ -129,7 +129,7 @@ func (s *glooIstioTestingSuite) TestPermissivePeerAuth() {
 }
 
 func (s *glooIstioTestingSuite) TestUpstreamSSLConfigStrictPeerAuth() {
-	// With auto mtls disabled in the mesh, the request should fail when the strict peer auth policy is applied
+	// With auto mtls disabled in the mesh, the request should succeed when Upstream is configured with sslConfig
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,

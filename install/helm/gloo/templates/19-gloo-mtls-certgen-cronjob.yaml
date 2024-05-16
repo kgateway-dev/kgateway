@@ -8,7 +8,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gloo-mtls-certgen-cronjob
   name: gloo-mtls-certgen-cronjob
   namespace: {{ .Release.Namespace }}

@@ -19,7 +19,6 @@ import (
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
@@ -29,7 +28,6 @@ type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
 type ProxySyncer struct {
-	translator     translator.Translator
 	controllerName string
 	writeNamespace string
 
@@ -72,7 +70,6 @@ func NewGatewayInputChannels() *GatewayInputChannels {
 // we reconcile gateway in the gateway controller. The `secretEvent` is kicked when a secret is created, updated,
 func NewProxySyncer(
 	controllerName, writeNamespace string,
-	translator translator.Translator,
 	inputs *GatewayInputChannels,
 	mgr manager.Manager,
 	k8sGwExtensions extensions.K8sGatewayExtensions,
@@ -82,7 +79,6 @@ func NewProxySyncer(
 	return &ProxySyncer{
 		controllerName:        controllerName,
 		writeNamespace:        writeNamespace,
-		translator:            translator,
 		inputs:                inputs,
 		mgr:                   mgr,
 		k8sGwExtensions:       k8sGwExtensions,

@@ -787,7 +787,8 @@ message GatewayOptions {
 
         // Accept resources if validation produced a warning (defaults to true).
         // By setting to false, this means that validation will start rejecting resources that would result
-        // in warnings, rather than just those that would result in errors.
+        // in warnings, rather than just those that would result in errors. Note that this setting has no impact on
+        // Kubernetes Gateway API validation, as warnings will always be allowed in that context.
         google.protobuf.BoolValue allow_warnings = 7;
 
         // Deprecated: See `server_enabled` and consider configuring it to `false` instead.

@@ -7,7 +7,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: resource-rollout
   name: gloo-resource-rollout-cleanup
   namespace: {{ .Release.Namespace }}
@@ -70,7 +70,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
   name: gloo-resource-rollout-cleanup
   namespace: {{ .Release.Namespace }}
@@ -84,7 +84,7 @@ metadata:
   name: gloo-resource-rollout-cleanup
   namespace: {{ .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
   annotations:
     "helm.sh/hook": pre-upgrade
@@ -100,7 +100,7 @@ metadata:
   name: gloo-resource-rollout-cleanup
   namespace: {{ .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
   annotations:
     "helm.sh/hook": pre-upgrade
