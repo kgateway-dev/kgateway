@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,6 +30,15 @@ var (
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	proxyService = &corev1.Service{
 		ObjectMeta: objectMetaInDefault("gloo-proxy-gw"),
+	}
+	proxyDeployment = &appsv1.Deployment{
+		ObjectMeta: objectMetaInDefault("gloo-proxy-gw"),
+	}
+	nginxPod = &corev1.Pod{
+		ObjectMeta: objectMetaInDefault("nginx"),
+	}
+	exampleSvc = &corev1.Service{
+		ObjectMeta: objectMetaInDefault("example-svc"),
 	}
 
 	// RouteOption resources to be created

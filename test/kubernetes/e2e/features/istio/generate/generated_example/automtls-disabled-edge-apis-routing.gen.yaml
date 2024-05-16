@@ -23,7 +23,7 @@ metadata:
   name: httpbin-upstream
   namespace: gloo-system
 spec:
-  disableIstioAutoMtls: false
+  disableIstioAutoMtls: true
   kube:
     selector:
       app: httpbin
