@@ -3319,9 +3319,25 @@ spec:
                           type: object
                         matcher:
                           properties:
+                            destinationPort:
+                              maximum: 4294967295
+                              minimum: 0
+                              type: integer
                             passthroughCipherSuites:
                               items:
                                 type: string
+                              type: array
+                            prefixRanges:
+                              items:
+                                properties:
+                                  addressPrefix:
+                                    type: string
+                                  prefixLen:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    nullable: true
+                                    type: integer
+                                type: object
                               type: array
                             sourcePrefixRanges:
                               items:

@@ -164,10 +164,8 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 	gateway *v1.Gateway,
 	matchedGateways []*v1.MatchedGateway,
 ) *gloov1.AggregateListener {
-
 	builder := newBuilder()
 	for _, matchedGateway := range matchedGateways {
-
 		switch gt := matchedGateway.GetGatewayType().(type) {
 		case *v1.MatchedGateway_TcpGateway:
 			// for now the parent gateway does not provide inheritable aspects so ignore it
@@ -175,6 +173,8 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 				Matcher: &gloov1.Matcher{
 					SslConfig:               matchedGateway.GetMatcher().GetSslConfig(),
 					SourcePrefixRanges:      matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+					PrefixRanges:            matchedGateway.GetMatcher().GetPrefixRanges(),
+					DestinationPort:         matchedGateway.Matcher.GetDestinationPort(),
 					PassthroughCipherSuites: matchedGateway.GetMatcher().GetPassthroughCipherSuites(),
 				},
 				TcpListener: a.TcpTranslator.ComputeTcpListener(matchedGateway.GetTcpGateway()),
@@ -201,6 +201,8 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 					matcher := &gloov1.Matcher{
 						SslConfig:          reconciledSslConfig,
 						SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+						PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
+						DestinationPort:    matchedGateway.Matcher.GetDestinationPort(),
 					}
 
 					builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
@@ -212,6 +214,8 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 				matcher := &gloov1.Matcher{
 					SslConfig:          nil,
 					SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+					PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
+					DestinationPort:    matchedGateway.Matcher.GetDestinationPort(),
 				}
 
 				builder.addHttpFilterChain(virtualHosts, httpOptions, matcher)
@@ -229,7 +233,6 @@ func (a *AggregateTranslator) computeListenerFromDelegatedGateway(
 	delegatedHttpGateway *v1.DelegatedHttpGateway,
 	delegatedTcpGateway *v1.DelegatedTcpGateway,
 ) *gloov1.AggregateListener {
-
 	// 1. Initialize the builder, used to aggregate resources
 	builder := newBuilder()
 
@@ -324,7 +327,6 @@ func (a *AggregateTranslator) processMatchableTcpGateway(
 	parentGateway *v1.Gateway,
 	matchableTcpGateway *v1.MatchableTcpGateway,
 	builder *aggregateListenerBuilder,
-
 ) {
 	validateTcpHosts(params, parentGateway, matchableTcpGateway.GetTcpGateway(), matchableTcpGateway.GetMatcher().GetSslConfig())
 	// for now the parent gateway does not provide inheritable aspects so ignore it

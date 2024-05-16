@@ -559,6 +559,27 @@ func (m *Matcher) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetPrefixRanges()) != len(target.GetPrefixRanges()) {
+		return false
+	}
+	for idx, v := range m.GetPrefixRanges() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPrefixRanges()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPrefixRanges()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if m.GetDestinationPort() != target.GetDestinationPort() {
+		return false
+	}
+
 	if len(m.GetPassthroughCipherSuites()) != len(target.GetPassthroughCipherSuites()) {
 		return false
 	}

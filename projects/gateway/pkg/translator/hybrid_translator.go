@@ -18,9 +18,7 @@ var _ ListenerTranslator = new(HybridTranslator)
 
 const HybridTranslatorName = "hybrid"
 
-var (
-	EmptyHybridGatewayMessage = "hybrid gateway does not have any populated matched gateways"
-)
+var EmptyHybridGatewayMessage = "hybrid gateway does not have any populated matched gateways"
 
 type HybridTranslator struct {
 	VirtualServiceTranslator *VirtualServiceTranslator
@@ -90,6 +88,8 @@ func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 			Matcher: &gloov1.Matcher{
 				SslConfig:          matchedGateway.GetMatcher().GetSslConfig(),
 				SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+				PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
+				DestinationPort:    matchedGateway.Matcher.GetDestinationPort(),
 			},
 		}
 
@@ -153,7 +153,6 @@ func validateTcpHosts(params Params, gateway *v1.Gateway, matchedgateway *v1.Tcp
 	matcherSNIDomains := tcpSSL.GetSniDomains()
 	domainMap := make(map[string]struct{})
 	for _, msd := range matcherSNIDomains {
-
 		domainMap[msd] = struct{}{}
 	}
 	conflictingHostDomains := make([]string, 0)
@@ -184,7 +183,6 @@ func (t *HybridTranslator) computeHybridListenerFromDelegatedGateways(
 	delegatedHttpGateway *v1.DelegatedHttpGateway,
 	delegatedTcpGateway *v1.DelegatedTcpGateway,
 ) *gloov1.HybridListener {
-
 	onSelectionError := func(err error) {
 		params.reports.AddError(gateway, err)
 	}
@@ -271,7 +269,6 @@ func (t *HybridTranslator) computeMatchedTcpListener(
 	params Params,
 	parentGateway *v1.Gateway,
 	matchableTcpGateway *v1.MatchableTcpGateway,
-
 ) *gloov1.MatchedListener {
 	validateTcpHosts(params, parentGateway, matchableTcpGateway.GetTcpGateway(), matchableTcpGateway.GetMatcher().GetSslConfig())
 	// for now the parent gateway does not provide inheritable aspects so ignore it

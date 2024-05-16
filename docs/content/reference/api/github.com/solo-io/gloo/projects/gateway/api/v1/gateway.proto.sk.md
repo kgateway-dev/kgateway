@@ -182,6 +182,8 @@ and the routing configuration to upstreams that are reachable via a specific por
 ```yaml
 "sslConfig": .gloo.solo.io.SslConfig
 "sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"prefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"destinationPort": int
 "passthroughCipherSuites": []string
 
 ```
@@ -190,6 +192,8 @@ and the routing configuration to upstreams that are reachable via a specific por
 | ----- | ---- | ----------- | 
 | `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
+| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `destinationPort` | `int` |  |
 | `passthroughCipherSuites` | `[]string` | Enterprise-only: Passthrough cipher suites is an allow-list of OpenSSL cipher suite names for which TLS passthrough will be enabled. If a client does not support any ciphers that are natively supported by Envoy, but does support one of the ciphers in the passthrough list, then traffic will be routed via TCP Proxy to a destination specified by the TcpGateway, where TLS can then be terminated. This field is only applicable to TcpGateways. |
 
 
