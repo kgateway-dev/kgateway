@@ -185,7 +185,7 @@ It takes 3 values:
   .podSecurityStandards.container.defaultSeccompProfileType can be used to set the seccompProfileType.
 */ -}}
 {{- define "gloo.containerSecurityContext" }}
-{{ $defaultSeccompProfileType := "RuntimeDefault"}}
+{{- $defaultSeccompProfileType := "RuntimeDefault"}}
 
 {{- /* set default seccompProfileType */ -}}
 
@@ -212,8 +212,8 @@ It takes 3 values:
   {{- if .podSecurityStandards.container -}}
     {{- if .podSecurityStandards.container.enableRestrictedContainerDefaults -}}
       {{- $defaults = merge .defaults $pss_restricted_defaults -}}
-    {{ end -}}
-  {{ end -}}
+    {{- end -}}
+  {{- end -}}
 {{- end -}}
 
 {{- /* call general securityContext template */ -}}
