@@ -65,7 +65,7 @@ func ProxyTable(list v1.ProxyList, w io.Writer) {
 			if i == 0 {
 				table.Append([]string{name, ns, createdBy, listener, strconv.Itoa(vhCount), getAggregateProxyStatus(proxy)})
 			} else {
-				table.Append([]string{"", "", createdBy, listener, "", ""})
+				table.Append([]string{"", "", "", listener, "", ""})
 			}
 		}
 	}
