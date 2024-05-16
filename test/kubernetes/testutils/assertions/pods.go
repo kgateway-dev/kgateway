@@ -33,10 +33,10 @@ func (p *Provider) EventuallyPodsMatches(
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		proxyPods, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).List(ctx, listOpt)
+		pods, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).List(ctx, listOpt)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list pods")
-		g.Expect(proxyPods.Items).NotTo(gomega.BeEmpty(), "No pods found")
-		for _, pod := range proxyPods.Items {
+		g.Expect(pods.Items).NotTo(gomega.BeEmpty(), "No pods found")
+		for _, pod := range pods.Items {
 			g.Expect(pod).To(matcher)
 		}
 	}).
