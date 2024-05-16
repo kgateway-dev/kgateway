@@ -87,20 +87,27 @@ func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) er
 
 // ApplyFile applies the resources defined in a file, and returns an error if one occurred
 func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	_, err := c.ApplyFileWithOutput(ctx, fileName, extraArgs...)
+	return err
+}
+
+// ApplyFileWithOutput applies the resources defined in a file,
+// if an error occurred, it will be returned along with the output of the command
+func (c *Cli) ApplyFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
 	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		_ = fileInput.Close()
 	}()
 
-	return c.Command(ctx, applyArgs...).
+	runErr := c.Command(ctx, applyArgs...).
 		WithStdin(fileInput).
-		Run().
-		Cause()
+		Run()
+	return runErr.OutputString(), runErr.Cause()
 }
 
 // Delete deletes the resources defined in the bytes, and returns an error if one occurred
@@ -114,20 +121,27 @@ func (c *Cli) Delete(ctx context.Context, content []byte, extraArgs ...string) e
 
 // DeleteFile deletes the resources defined in a file, and returns an error if one occurred
 func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	_, err := c.DeleteFileWithOutput(ctx, fileName, extraArgs...)
+	return err
+}
+
+// DeleteFileWithOutput deletes the resources defined in a file,
+// if an error occurred, it will be returned along with the output of the command
+func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
 	applyArgs := append([]string{"delete", "-f", fileName}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		_ = fileInput.Close()
 	}()
 
-	return c.Command(ctx, applyArgs...).
+	runErr := c.Command(ctx, applyArgs...).
 		WithStdin(fileInput).
-		Run().
-		Cause()
+		Run()
+	return runErr.OutputString(), runErr.Cause()
 }
 
 // DeleteFileSafe deletes the resources defined in a file, and returns an error if one occurred
