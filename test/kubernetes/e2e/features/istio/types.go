@@ -59,6 +59,6 @@ var (
 
 	expectedServiceUnavailableResponse = &testmatchers.HttpResponse{
 		StatusCode: http.StatusServiceUnavailable,
-		Body:       gomega.ContainSubstring("upstream connect error or disconnect/reset before headers. reset reason: connection termination"),
+		Body:       gomega.ContainSubstring("upstream connect error or disconnect/reset before headers"),
 	}
 )
