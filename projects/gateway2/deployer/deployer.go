@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/go-utils/contextutils"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -192,10 +193,19 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
 			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
+			// TODO(npolshak): Remove once default GatewayParameters are supported
 			IstioSDS: &istioSDS{
 				Enabled: &d.inputs.IstioValues.SDSEnabled,
 			},
 		},
+	}
+	contextutils.LoggerFrom(ctx).Errorf("SDS %s", d.inputs.Extensions.GetSdsImage().Tag)
+	contextutils.LoggerFrom(ctx).Errorf("ENVOY %s", d.inputs.Extensions.GetSdsImage().Tag)
+
+	// TODO(npolshak): Remove once default GatewayParameters are supported
+	if d.inputs.IstioValues.SDSEnabled {
+		// Is Istio integration is enabled, we need to set the SDS image tag
+		vals.Gateway.Sds = getDefaultSdsValues(d.inputs.Extensions.GetSdsImage())
 	}
 
 	// check if there is a GatewayParameters associated with this Gateway

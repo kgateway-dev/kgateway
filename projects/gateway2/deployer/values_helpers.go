@@ -96,6 +96,20 @@ func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 	}
 }
 
+func getDefaultSdsValues(defaultSds extensions.Image) *helmSds {
+	defaultSdsImage := helmImage{
+		Repository: ptr.To(defaultSds.Repository),
+		Tag:        ptr.To(defaultSds.Tag),
+	}
+
+	return &helmSds{
+		Image: ptr.To(defaultSdsImage),
+		SdsBootstrap: &sdsBootstrap{
+			LogLevel: ptr.To("info"),
+		},
+	}
+}
+
 // Convert sds values from GatewayParameters into helm values to be used by the deployer.
 func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Image) *helmSds {
 	// if sdsConfig is nil, sds is disabled
@@ -106,18 +120,8 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Imag
 	var sds *helmSds
 	// if sdsConfig is not nil, but unset use defaults for sds config
 	if sdsConfig.GetSdsContainer() == nil {
-		defaultSdsImage := helmImage{
-			Repository: ptr.To(defaultSds.Repository),
-			Tag:        ptr.To(defaultSds.Tag),
-		}
-
-		sds = &helmSds{
-			Istio: getIstioValues(sdsConfig.GetIstioIntegration()),
-			Image: ptr.To(defaultSdsImage),
-			SdsBootstrap: &sdsBootstrap{
-				LogLevel: ptr.To("info"),
-			},
-		}
+		sds = getDefaultSdsValues(defaultSds)
+		sds.Istio = getIstioValues(sdsConfig.GetIstioIntegration())
 	} else {
 		// Use GatewayParameter overrides if provided
 		var bootstrap *sdsBootstrap
@@ -226,8 +230,7 @@ func getMergedSdsImageValues(defaultImage extensions.Image, overrideImage *v1alp
 	if overrideImage == nil {
 		return &helmImage{
 			Repository: ptr.To(defaultImage.Repository),
-			Tag:        ptr.To("1.0.0-ci1"), // TODO: why is version.Version empty here?
-			//Tag:        ptr.To(defaultImage.Tag),
+			Tag:        ptr.To(defaultImage.Tag),
 		}
 	}
 

@@ -81,10 +81,7 @@ Create the name of the service account to use
 Return a container image value as a string
 */}}
 {{- define "gloo-gateway.gateway.image" -}}
-{{- $image := printf "%s/%s:%s" .registry .repository .chartVersion -}}
-{{- if .tag }}
-{{- $image = printf "%s/%s:%s" .registry .repository .tag -}}
-{{- end -}}
+{{- $image := printf "%s/%s:%s" .registry .repository .tag -}}
 {{- if .digest -}}
 {{- $image = printf "%s@%s" $image .digest -}}
 {{- end -}}{{- /* if .digest */ -}}
