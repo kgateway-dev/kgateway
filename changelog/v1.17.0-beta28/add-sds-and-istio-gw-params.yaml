@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6048
-    resolvesIssue: false
-    description: >-
-      Adds SDS and Istio values to GatewayParameters. Adds e2e tests for deploying k8s Gateway with GatewayParameters 
-      that overrides the default SDS and Istio values.
