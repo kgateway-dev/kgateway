@@ -6767,9 +6767,7 @@ metadata:
 				Expect(resources.NumResources()).To(Equal(2))
 			})
 
-			// As every resource created should have the additional labels, testing everyone of them can be tedious.
-			// Instead just validating that one of them has it is sufficient to ensure that the chart renders with the additional labels
-			It("should add the additional labels", func() {
+			It("should add the additional labels to all resources", func() {
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
 						"global.additionalLabels.this=that",
@@ -6777,11 +6775,16 @@ metadata:
 					},
 				})
 
-				deployment := getDeployment(testManifest, namespace, "gateway-proxy")
-				Expect(deployment.Labels).Should(SatisfyAll(
-					HaveKeyWithValue("this", "that"),
-					HaveKeyWithValue("the", "other")))
+				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+					labelsObj := getFieldFromUnstructured(resource, "metadata", "labels")
+					Expect(labelsObj).To(BeAssignableToTypeOf(map[string]interface{}{}))
+					labels := labelsObj.(map[string]interface{})
+					Expect(labels["app"]).To(Equal("gloo"))
+					Expect(labels["this"]).To(Equal("that"))
+					Expect(labels["the"]).To(Equal("other"))
+				})
 			})
+
 		})
 
 		Context("Reflection", func() {
