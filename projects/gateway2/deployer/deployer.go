@@ -16,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/go-utils/contextutils"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -199,8 +198,6 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 			},
 		},
 	}
-	contextutils.LoggerFrom(ctx).Errorf("SDS %s", d.inputs.Extensions.GetSdsImage().Tag)
-	contextutils.LoggerFrom(ctx).Errorf("ENVOY %s", d.inputs.Extensions.GetSdsImage().Tag)
 
 	// TODO(npolshak): Remove once default GatewayParameters are supported
 	if d.inputs.IstioValues.SDSEnabled {
