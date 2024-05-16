@@ -43,9 +43,9 @@ func (s *testingSuite) SetupSuite() {
 	// Check that the common setup manifest is applied
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply "+setupManifest)
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, exampleSvc, ngnixPod)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, exampleSvc, nginxPod)
 	// Check that test resources are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, ngnixPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{

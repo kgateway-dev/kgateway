@@ -265,7 +265,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestDowngrade() {
 		expectedMtlsResponse, time.Minute)
 }
 
-func (s *glooIstioAutoMtlsTestingSuite) DisableAutomtlsOverridesSSLConfig() {
+func (s *glooIstioAutoMtlsTestingSuite) TestDisableAutomtlsOverridesSSLConfig() {
 	s.T().Cleanup(func() {
 		// Clean up peer auth
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, disablePeerAuthManifest)

@@ -32,7 +32,7 @@ var (
 			Namespace: "default",
 		},
 	}
-	ngnixPod = &corev1.Pod{
+	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",
 			Namespace: "default",

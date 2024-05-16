@@ -40,7 +40,7 @@ func main() {
 
 	// Upstream sslConfig is set
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true})
-	upstreamSslConfigGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-disabled-%s", istio.EdgeApisRoutingFileName))
+	upstreamSslConfigGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-%s", istio.EdgeApisRoutingFileName))
 	err = resources.WriteResourcesToFile(edgeGatewayApiResources, upstreamSslConfigGeneratedExample)
 	if err != nil {
 		panic(err)
