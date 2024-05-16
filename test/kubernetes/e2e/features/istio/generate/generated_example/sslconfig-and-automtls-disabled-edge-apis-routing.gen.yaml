@@ -23,12 +23,20 @@ metadata:
   name: httpbin-upstream
   namespace: gloo-system
 spec:
-  disableIstioAutoMtls: false
+  disableIstioAutoMtls: true
   kube:
     selector:
       app: httpbin
     serviceName: httpbin
     serviceNamespace: httpbin
     servicePort: 8000
+  sslConfig:
+    alpnProtocols:
+    - istio
+    sds:
+      certificatesSecretName: istio_server_cert
+      clusterName: gateway_proxy_sds
+      targetUri: 127.0.0.1:8234
+      validationContextName: istio_validation_context
 status: {}
 ---

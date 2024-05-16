@@ -23,9 +23,33 @@ func main() {
 	log.Println("starting generate for istio examples")
 
 	// use the Gloo Edge Gateway api resources with automtls enabled
-	edgeGatewayApiResources := istio.GetGlooGatewayEdgeResources(exampleNs)
-	automtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-enabled-%s", istio.EdgeApisRoutingResourcesFileName))
+	edgeGatewayApiResources := istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{})
+	automtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-enabled-%s", istio.EdgeApisRoutingFileName))
 	err := resources.WriteResourcesToFile(edgeGatewayApiResources, automtlsGeneratedExample)
+	if err != nil {
+		panic(err)
+	}
+
+	// automtls disabled
+	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{DisableIstioAutoMtls: true})
+	disableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-disabled-%s", istio.EdgeApisRoutingFileName))
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, disableAutomtlsGeneratedExample)
+	if err != nil {
+		panic(err)
+	}
+
+	// Upstream sslConfig is set
+	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true})
+	upstreamSslConfigGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-%s", istio.EdgeApisRoutingFileName))
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, upstreamSslConfigGeneratedExample)
+	if err != nil {
+		panic(err)
+	}
+
+	// Upstream sslConfig is set and automtls is disabled
+	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true, DisableIstioAutoMtls: true})
+	sslConfigAndDisableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-and-automtls-disabled-%s", istio.EdgeApisRoutingFileName))
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, sslConfigAndDisableAutomtlsGeneratedExample)
 	if err != nil {
 		panic(err)
 	}
