@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6048
+    resolvesIssue: false
+    description: >-
+      Add Upstream resource e2e tests for Istio integration with disabled peer auth. Adds upgrade/downgrade tests 
+      for Upstream sslConfig switching to Istio auto mtls.

@@ -40,6 +40,9 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	t.Cleanup(func() {
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
+
+			// Generate istioctl bug report
+			testInstallation.CreateIstioBugReport(ctx)
 		}
 
 		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
@@ -49,14 +52,14 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
 		if err != nil {
-			t.Fatalf("failed to uninstall istio: %v", err)
+			t.Fatalf("failed to uninstall: %v\n", err)
 		}
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
 	err = testInstallation.InstallMinimalIstio(ctx)
 	if err != nil {
-		t.Fatalf("failed to install istio: %v", err)
+		t.Fatalf("failed to install: %v\n", err)
 	}
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled

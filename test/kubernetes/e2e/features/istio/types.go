@@ -15,10 +15,14 @@ import (
 )
 
 var (
-	setupManifest              = filepath.Join(util.MustGetThisDir(), "inputs/setup.yaml")
-	strictPeerAuthManifest     = filepath.Join(util.MustGetThisDir(), "inputs/strict-peer-auth.yaml")
-	permissivePeerAuthManifest = filepath.Join(util.MustGetThisDir(), "inputs/permissive-peer-auth.yaml")
-	k8sRoutingManifest         = filepath.Join(util.MustGetThisDir(), "inputs/k8srouting.yaml")
+	setupManifest = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+
+	strictPeerAuthManifest     = filepath.Join(util.MustGetThisDir(), "testdata", "strict-peer-auth.yaml")
+	permissivePeerAuthManifest = filepath.Join(util.MustGetThisDir(), "testdata", "permissive-peer-auth.yaml")
+	disablePeerAuthManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "disable-peer-auth.yaml")
+
+	k8sRoutingSvcManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "k8s-routing-svc.yaml")
+	k8sRoutingUpstreamManifest = filepath.Join(util.MustGetThisDir(), "testdata", "k8s-routing-upstream.yaml")
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
@@ -55,6 +59,6 @@ var (
 
 	expectedServiceUnavailableResponse = &testmatchers.HttpResponse{
 		StatusCode: http.StatusServiceUnavailable,
-		Body:       gomega.ContainSubstring("upstream connect error or disconnect/reset before headers. reset reason: connection termination"),
+		Body:       gomega.ContainSubstring("upstream connect error or disconnect/reset before headers"),
 	}
 )
