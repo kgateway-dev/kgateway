@@ -19,7 +19,6 @@ import (
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -98,10 +97,6 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	glooTranslator := translator.NewDefaultTranslator(
-		cfg.Opts.Settings,
-		cfg.GlooPluginRegistryFactory(ctx))
-
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
@@ -121,7 +116,6 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		wellknown.GatewayControllerName,
 		cfg.Opts.WriteNamespace,
-		glooTranslator,
 		inputChannels,
 		mgr,
 		k8sGwExtensions,
