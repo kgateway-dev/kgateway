@@ -140,7 +140,7 @@ ttlSecondsAfterFinished: {{ . }}
 
 {{- /*
 This template is used to generate the gloo pod or container security context.
-It takes 2 values:
+It takes 3 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
