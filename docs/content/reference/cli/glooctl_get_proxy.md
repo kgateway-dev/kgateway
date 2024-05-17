@@ -17,11 +17,9 @@ glooctl get proxy [flags]
 ### Options
 
 ```
-      --all               get all proxies
-      --edge              include proxies produced from edge gateway resources
-  -h, --help              help for proxy
-      --kube              include proxies produced from k8s gateway resources
-      --proxy-ns string   namespace where proxies are persisted (default "gloo-system")
+      --edge   include proxies produced from edge gateway resources
+  -h, --help   help for proxy
+      --kube   include proxies produced from k8s gateway resources
 ```
 
 ### Options inherited from parent commands
