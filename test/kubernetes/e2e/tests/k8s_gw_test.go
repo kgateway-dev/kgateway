@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/env"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
@@ -17,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 )
@@ -27,7 +29,7 @@ func TestK8sGateway(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:       "k8s-gw-test",
+			InstallNamespace:       env.GetOrDefault(testutils.InstallNamespace, "k8s-gw-test"),
 			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			ValidationAlwaysAccept: false,
 		},
@@ -81,7 +83,6 @@ func TestK8sGateway(t *testing.T) {
 	})
 
 	t.Run("Glooctl", func(t *testing.T) {
-
 		t.Run("Check", func(t *testing.T) {
 			suite.Run(t, glooctl.NewCheckSuite(ctx, testInstallation))
 		})

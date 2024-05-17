@@ -1,10 +1,19 @@
 package routeoptions
 
 import (
-	"container/list"
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -16,16 +25,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var (
@@ -79,25 +79,27 @@ func (p *plugin) ApplyRoutePlugin(
 	outputRoute *gloov1.Route,
 ) error {
 	// check for RouteOptions applied to full Route
-	routeOptions, routeOptionKube, filterOverride, err := p.handleAttachment(ctx, routeCtx)
+	routeOptions, _, sources, err := p.handleAttachment(ctx, routeCtx)
 	if err != nil {
 		return err
 	}
-
-	if routeOptions != nil {
-		// clobber the existing RouteOptions; merge semantics may be desired later
-		outputRoute.Options = routeOptions
-
-		if !filterOverride {
-			// if we didn't use a filter to derive the RouteOptions for this v1.Route, let's track the
-			// RouteOption policy object that was used so we can report status on it
-			routeutils.AppendSourceToRoute(outputRoute, routeOptionKube)
-
-			// track that we used this RouteOption is our status cache
-			// we do this so we can persist status later for all attached RouteOptions
-			p.trackAcceptedRouteOption(routeOptionKube)
-		}
+	if routeOptions == nil {
+		return nil
 	}
+
+	// If the route already has options set, we should override them.
+	// This is important because for delegated routes, the plugin will
+	// be invoked on the child routes multiple times for each parent route
+	// that may override them.
+	merged, usedExistingSources := glooutils.ShallowMergeRouteOptions(routeOptions, outputRoute.GetOptions())
+	outputRoute.Options = merged
+
+	// Track the RouteOption policy sources that are used so we can report status on it
+	routeutils.AppendSourceToRoute(outputRoute, sources, usedExistingSources)
+	// Track that we used this RouteOption is our status cache
+	// we do this so we can persist status later for all attached RouteOptions
+	p.trackAcceptedRouteOptions(sources)
+
 	return nil
 }
 
@@ -153,34 +155,31 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 }
 
 // tracks the attachment of a RouteOption so we know which RouteOptions to report status for
-func (p *plugin) trackAcceptedRouteOption(
-	routeOption *solokubev1.RouteOption,
+func (p *plugin) trackAcceptedRouteOptions(
+	sources []*gloov1.SourceMetadata_SourceRef,
 ) {
-	newStatus := legacyStatus{}
-	newStatus.subresourceStatus = make(map[string]*core.Status)
-	p.legacyStatusCache[client.ObjectKeyFromObject(routeOption)] = newStatus
+	for _, source := range sources {
+		var newStatus legacyStatus
+		newStatus.subresourceStatus = make(map[string]*core.Status)
+		p.legacyStatusCache[client.ObjectKey{
+			Namespace: source.GetResourceRef().GetNamespace(),
+			Name:      source.GetResourceRef().GetName(),
+		}] = newStatus
+	}
 }
 
 func (p *plugin) handleAttachment(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
-) (*gloov1.RouteOptions, *solokubev1.RouteOption, bool, error) {
-	// parentRouteRef refers to the parent route in a delegation chain.
-	// The condition below allows it to be optional in the RouteContext
-	var parentRouteRef *list.Element
-	if routeCtx.DelegationChain != nil {
-		parentRouteRef = routeCtx.DelegationChain.Front()
-	}
-
+) (*gloov1.RouteOptions, *solokubev1.RouteOption, []*gloov1.SourceMetadata_SourceRef, error) {
 	// TODO: This is far too naive and we should optimize the amount of querying we do.
 	// Route plugins run on every match for every Rule in a Route but the attached options are
 	// the same each time; i.e. HTTPRoute <-1:1-> RouteOptions.
 	// We should only make this query once per HTTPRoute.
-	attachedOption, filterOverride, err := p.rtOptQueries.GetRouteOptionForRouteRule(
+	attachedOption, sources, err := p.rtOptQueries.GetRouteOptionForRouteRule(
 		ctx,
 		types.NamespacedName{Name: routeCtx.Route.Name, Namespace: routeCtx.Route.Namespace},
 		routeCtx.Rule,
-		parentRouteRef,
 		p.gwQueries,
 	)
 	if err != nil {
@@ -198,13 +197,13 @@ func (p *plugin) handleAttachment(
 				Message: err.Error(),
 			})
 		}
-		return nil, nil, false, err
+		return nil, nil, nil, err
 	}
 	if attachedOption == nil || attachedOption.Spec.GetOptions() == nil {
-		return nil, nil, false, nil
+		return nil, nil, nil, nil
 	}
 
-	return attachedOption.Spec.GetOptions(), attachedOption, filterOverride, nil
+	return attachedOption.Spec.GetOptions(), attachedOption, sources, nil
 }
 
 // given a ProxyReport, extract and aggregate all Route errors that have RouteOption source metadata

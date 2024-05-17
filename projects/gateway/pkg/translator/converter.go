@@ -209,7 +209,7 @@ func (rv *routeVisitor) visit(
 				routeClone.Options = routeOpts.GetOptions()
 				continue
 			}
-			routeClone.Options = utils.ShallowMergeRouteOptions(routeClone.GetOptions(), routeOpts.GetOptions())
+			routeClone.Options, _ = utils.ShallowMergeRouteOptions(routeClone.GetOptions(), routeOpts.GetOptions())
 		}
 
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
@@ -524,7 +524,7 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 
 	// Merge options from parent routes
 	// If an option is defined on a parent route, it will override the child route's option
-	child.Options = utils.ShallowMergeRouteOptions(child.GetOptions(), parent.options)
+	child.Options, _ = utils.ShallowMergeRouteOptions(child.GetOptions(), parent.options)
 
 	return child, nil
 }
