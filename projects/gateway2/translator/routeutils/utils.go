@@ -1,27 +1,22 @@
 package routeutils
 
 import (
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func AppendSourceToRoute(route *v1.Route, source client.Object) {
+func AppendSourceToRoute(route *v1.Route, newSources []*gloov1.SourceMetadata_SourceRef, preserveExisting bool) {
 	meta := route.GetMetadataStatic()
 	if meta == nil {
-		meta = &v1.SourceMetadata{}
+		meta = &gloov1.SourceMetadata{}
 	}
 	sources := meta.GetSources()
-	sources = append(sources, &v1.SourceMetadata_SourceRef{
-		ResourceRef: &core.ResourceRef{
-			Name:      source.GetName(),
-			Namespace: source.GetNamespace(),
-		},
-		ResourceKind:       source.GetObjectKind().GroupVersionKind().Kind,
-		ObservedGeneration: source.GetGeneration(),
-	})
-	route.OpaqueMetadata = &v1.Route_MetadataStatic{
-		MetadataStatic: &v1.SourceMetadata{
+	if !preserveExisting {
+		sources = nil
+	}
+	sources = append(sources, newSources...)
+	route.OpaqueMetadata = &gloov1.Route_MetadataStatic{
+		MetadataStatic: &gloov1.SourceMetadata{
 			Sources: sources,
 		},
 	}
