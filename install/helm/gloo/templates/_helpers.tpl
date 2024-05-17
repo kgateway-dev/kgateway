@@ -156,7 +156,6 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
-
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
@@ -168,7 +167,6 @@ Because of this, if a value is "true" in defaults it can not be modified with th
     {{- end -}}
   {{- end }}
 {{- end -}}
-
 {{- if $overwrite -}}
   {{- $securityContext = or .values .defaults (dict) -}}
 {{- else -}}
@@ -198,13 +196,11 @@ It takes 4 values:
 */ -}}
 {{- define "gloo.containerSecurityContext" }}
 {{- $defaultSeccompProfileType := "RuntimeDefault"}}
-
 {{- /* set default seccompProfileType */ -}}
 {{ $indent := 0}}
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
-
 {{- if .podSecurityStandards -}}
   {{- if .podSecurityStandards.container -}}
     {{- if .podSecurityStandards.container.defaultSeccompProfileType -}}
@@ -215,13 +211,11 @@ It takes 4 values:
     {{ end -}}
   {{ end -}}
 {{- end -}}
-
 {{- $pss_restricted_defaults := dict 
     "runAsNonRoot" true
     "capabilities" (dict "drop" (list "ALL"))
     "allowPrivilegeEscalation" false
     "seccompProfile" (dict "type" $defaultSeccompProfileType) }}
-
 {{- /* set defaults if appropriate */ -}}
 {{- $defaults := .defaults }}
 {{- if .podSecurityStandards -}}
@@ -231,7 +225,6 @@ It takes 4 values:
     {{- end -}}
   {{- end -}}
 {{- end -}}
-
 {{- /* call general securityContext template */ -}}
 {{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults "indent" $indent) -}}
 {{- end }}
