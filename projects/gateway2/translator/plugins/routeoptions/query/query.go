@@ -1,7 +1,6 @@
 package query
 
 import (
-	"container/list"
 	"context"
 
 	"github.com/rotisserie/eris"
@@ -16,9 +15,10 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var routeOptionGK = schema.GroupKind{
@@ -27,22 +27,23 @@ var routeOptionGK = schema.GroupKind{
 }
 
 type RouteOptionQueries interface {
-	// Gets the RouteOption attached to the provided HTTPRoute.
-	// If multiple RouteOptions are attached to the route, it returns the earliest created resource.
-	// Note that currently, only RouteOptions in the same namespace as the HTTPRoute can be attached.
+	// GetRouteOptionForRouteRule returns the RouteOption attached to the given route and rule.
 	//
-	// When the given route is a delegatee/child route in a delegation tree, the RouteOption of its ancestors
-	// are recursively merged in priority order along the given delegation chain, along with any RouteOption
-	// that may be attached to the route itself. The creation timestamp is only considered if multiple RouteOptions
-	// attach to the same route for a route in the delegation chain, in which case the earliest created resource is
-	// picked for the merging process.
+	// It performs a merge of the ExtensionRef filter attachment and targetRef based attachment
+	// while giving priority to the ExtensionRef filter attachment.
+	// A lower priority RouteOption may augment the top-level fields in a higher priority RouteOption,
+	// but can never override them.
+	//
+	// When multiple RouteOptions are attached to the route via targetRef, only the earliest created
+	// resource is considered for the merge.
+	//
+	// It returns the merged RouteOption, a list of sources corresponding to the merge, and an error if one occurs.
 	GetRouteOptionForRouteRule(
 		ctx context.Context,
 		route types.NamespacedName,
 		rule *gwv1.HTTPRouteRule,
-		parentRef *list.Element,
 		gwQueries gwquery.GatewayQueries,
-	) (*solokubev1.RouteOption, bool, error)
+	) (*solokubev1.RouteOption, []*gloov1.SourceMetadata_SourceRef, error)
 }
 
 type routeOptionQueries struct {
@@ -57,49 +58,16 @@ func (r *routeOptionQueries) GetRouteOptionForRouteRule(
 	ctx context.Context,
 	route types.NamespacedName,
 	rule *gwv1.HTTPRouteRule,
-	parentRef *list.Element,
 	gwQueries gwquery.GatewayQueries,
-) (*solokubev1.RouteOption, bool, error) {
-	var err error
-	var mergedOpt *solokubev1.RouteOption
+) (*solokubev1.RouteOption, []*gloov1.SourceMetadata_SourceRef, error) {
+	var sources []*gloov1.SourceMetadata_SourceRef
 
-	if parentRef != nil {
-		delegationCtx, ok := parentRef.Value.(plugins.DelegationCtx)
-		if !ok {
-			return nil, false, eris.Errorf("invalid type %T in delegation chain, expected DelegationCtx", parentRef.Value)
-		}
-		mergedOpt, _, err = r.GetRouteOptionForRouteRule(
-			ctx, delegationCtx.Ref, delegationCtx.Rule, parentRef.Next(), gwQueries)
-	}
-
-	routeOpt, filterOverride, err := r.getPreferredRouteOption(ctx, route, rule, gwQueries)
+	override, err := lookupFilterOverride(ctx, route, rule, gwQueries)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, err
 	}
-	if mergedOpt == nil {
-		return routeOpt, filterOverride, nil
-	}
-
-	// merge scoped RouteOptions with parent giving preference to the parent
-	if routeOpt == nil {
-		routeOpt = new(solokubev1.RouteOption)
-	}
-	glooutils.ShallowMergeRouteOptions(mergedOpt.Spec.GetOptions(), routeOpt.Spec.GetOptions())
-
-	return mergedOpt, filterOverride, nil
-}
-
-// getPreferredRouteOption returns the most preferred RouteOption for the given route
-// when multiple RouteOptions are attached to the route by returning the earliest created RouteOption.
-func (r *routeOptionQueries) getPreferredRouteOption(
-	ctx context.Context,
-	route types.NamespacedName,
-	rule *gwv1.HTTPRouteRule,
-	gwQueries gwquery.GatewayQueries,
-) (*solokubev1.RouteOption, bool, error) {
-	merged, err := lookupFilterOverride(ctx, route, rule, gwQueries)
-	if err != nil {
-		return nil, false, err
+	if override != nil {
+		sources = append(sources, routeOptionToSourceRef(override))
 	}
 
 	var list solokubev1.RouteOptionList
@@ -109,11 +77,11 @@ func (r *routeOptionQueries) getPreferredRouteOption(
 		client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(RouteOptionTargetField, route.String())},
 		client.InNamespace(route.Namespace),
 	); err != nil {
-		return nil, false, err
+		return nil, nil, err
 	}
 
 	if len(list.Items) == 0 {
-		return merged, false, nil
+		return override, sources, nil
 	}
 
 	out := make([]*solokubev1.RouteOption, len(list.Items))
@@ -123,13 +91,17 @@ func (r *routeOptionQueries) getPreferredRouteOption(
 	utils.SortByCreationTime(out)
 	attached := out[0]
 
-	if merged == nil {
-		return attached, false, nil
+	if override == nil {
+		sources = append(sources, routeOptionToSourceRef(attached))
+		return attached, sources, nil
 	}
 
-	glooutils.ShallowMergeRouteOptions(merged.Spec.GetOptions(), attached.Spec.GetOptions())
+	_, usedAttached := glooutils.ShallowMergeRouteOptions(override.Spec.GetOptions(), attached.Spec.GetOptions())
+	if usedAttached {
+		sources = append(sources, routeOptionToSourceRef(attached))
+	}
 
-	return merged, true, nil
+	return override, sources, nil
 }
 
 func lookupFilterOverride(
@@ -183,4 +155,15 @@ func errFilterNotFound(namespace string, filter *gwv1.HTTPRouteFilter) error {
 		filter.ExtensionRef.Name,
 		namespace,
 	)
+}
+
+func routeOptionToSourceRef(opt *solokubev1.RouteOption) *gloov1.SourceMetadata_SourceRef {
+	return &gloov1.SourceMetadata_SourceRef{
+		ResourceRef: &core.ResourceRef{
+			Name:      opt.GetName(),
+			Namespace: opt.GetNamespace(),
+		},
+		ResourceKind:       opt.GetObjectKind().GroupVersionKind().Kind,
+		ObservedGeneration: opt.GetGeneration(),
+	}
 }
