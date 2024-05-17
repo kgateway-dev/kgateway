@@ -105,7 +105,7 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
 		} else {
 			// this should never happen
-			//contextutils.LoggerFrom(ctx).DPanicf("no registry found for proxy sync count %d", syncCount)
+			contextutils.LoggerFrom(ctx).DPanicf("no registry found for proxy sync count %d", syncCount)
 		}
 	}
 

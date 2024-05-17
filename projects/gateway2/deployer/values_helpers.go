@@ -102,11 +102,9 @@ func getDefaultSdsValues(defaultSds extensions.Image) *helmSds {
 		Tag:        ptr.To(defaultSds.Tag),
 	}
 
+	// The defaults are defined in values-template.yaml, but the default image tag and repository are set by the input extensions
 	return &helmSds{
 		Image: ptr.To(defaultSdsImage),
-		SdsBootstrap: &sdsBootstrap{
-			LogLevel: ptr.To("info"),
-		},
 	}
 }
 
@@ -148,20 +146,12 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Imag
 func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 	var istioVals *helmIstioSds
 
-	defaultIstioImage := helmImage{
-		Registry:   ptr.To("docker.io/istio"),
-		Repository: ptr.To("proxyv2"),
-		Tag:        ptr.To("1.19.0"),
-	}
-
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig != nil && istioConfig.GetEnabled() != nil && !istioConfig.GetEnabled().GetValue() {
 		// If istioConfig is not nil, but unset use defaults for istio config
 		if istioConfig.GetIstioContainer() == nil {
 			istioVals = &helmIstioSds{
-				Enabled:  ptr.To(istioConfig.GetEnabled().GetValue()),
-				Image:    ptr.To(defaultIstioImage),
-				LogLevel: ptr.To("warning"),
+				Enabled: ptr.To(istioConfig.GetEnabled().GetValue()),
 			}
 		} else {
 			// Use GatewayParameter overrides if provided
