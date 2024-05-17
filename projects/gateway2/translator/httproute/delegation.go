@@ -47,8 +47,7 @@ func flattenDelegatedRoutes(
 	defer routesVisited.Delete(parentRef)
 
 	delegationCtx := plugins.DelegationCtx{
-		Ref:  parentRef,
-		Rule: &rule,
+		Ref: parentRef,
 	}
 	lRef := delegationChain.PushFront(delegationCtx)
 	defer delegationChain.Remove(lRef)

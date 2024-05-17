@@ -14,6 +14,20 @@ listeners:
           routes:
           - matchers:
             - prefix: /a/1
+            metadataStatic:
+              sources:
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: route-a-opt-1
+                  namespace: a
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: route-a-opt-2
+                  namespace: a
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: example-opt
+                  namespace: infra
             options:
               cors:
                 allowOrigin:
