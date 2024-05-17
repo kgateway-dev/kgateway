@@ -11,6 +11,8 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ $name | kebabcase }}-pdb
   namespace: {{ $spec.namespace | default .Release.Namespace }}
+  labels:
+{{ include "gloo.labels" . | indent 4}}
 spec:
   {{- if $spec.podDisruptionBudget.minAvailable }}
   minAvailable: {{ $spec.podDisruptionBudget.minAvailable }}

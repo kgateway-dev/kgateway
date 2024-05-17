@@ -33,7 +33,10 @@ type testingSuite struct {
 	manifests map[string][]string
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewTestingSuite(
+	ctx context.Context,
+	testInst *e2e.TestInstallation,
+) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,

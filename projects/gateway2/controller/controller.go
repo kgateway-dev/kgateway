@@ -261,6 +261,7 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 
 func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.RouteOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileRouteOptions))
 	if err != nil {
@@ -271,6 +272,7 @@ func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 
 func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.VirtualHostOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileVirtualHostOptions))
 	if err != nil {

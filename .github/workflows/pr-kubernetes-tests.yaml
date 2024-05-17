@@ -89,7 +89,7 @@ jobs:
           kubectl-version: 'v1.28.4'
           helm-version: 'v3.13.2'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
 
     steps:
     - id: auto-succeed-tests
