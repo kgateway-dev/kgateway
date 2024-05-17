@@ -143,12 +143,20 @@ This template is used to generate the gloo pod or container security context.
 It takes 2 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
+  .indent - the number of spaces to indent the output. If not set, the output will not be indented.
+    The indentation argument is necessary because it is possible that no output will be rendered. 
+    If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
 
   Depending upon the value of .values.merge, the securityContext will be merged with the defaults or completely replaced.
   In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
 Because of this, if a value is "true" in defaults it can not be modified with this method.
 */ -}}
 {{- define "gloo.securityContext" }}
+{{ $indent := 0}}
+{{- if .indent -}}
+  {{- $indent = .indent -}}
+{{- end -}}
+
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
@@ -168,16 +176,22 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- end }}
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
 {{- $securityContext = omit $securityContext "mergePolicy" -}}
-securityContext:{{ toYaml $securityContext | nindent 2 }}
+{{- with $securityContext -}}
+{{ $toRender := dict "securityContext" $securityContext }}
+{{ toYaml $toRender | nindent $indent }}
+{{- end }}
 {{- end }}
 
 
 {{- /*
 This template is used to generate the container security context.
-It takes 3 values:
+It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
   .podSecurityStandards - podSecurityStandard from values.yaml
+  .indent - the number of spaces to indent the output. If not set, the output will not be indented.
+    The indentation argument is necessary because it is possible that no output will be rendered. 
+    If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
 
   If .podSecurityStandards.container.enableRestrictedContainerDefaults is true, the defaults will be set to a restricted set of values.
   .podSecurityStandards.container.defaultSeccompProfileType can be used to set the seccompProfileType.
@@ -186,6 +200,10 @@ It takes 3 values:
 {{- $defaultSeccompProfileType := "RuntimeDefault"}}
 
 {{- /* set default seccompProfileType */ -}}
+{{ $indent := 0}}
+{{- if .indent -}}
+  {{- $indent = .indent -}}
+{{- end -}}
 
 {{- if .podSecurityStandards -}}
   {{- if .podSecurityStandards.container -}}
@@ -215,7 +233,7 @@ It takes 3 values:
 {{- end -}}
 
 {{- /* call general securityContext template */ -}}
-{{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults) }}
+{{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults "indent" $indent) -}}
 {{- end }}
 
 

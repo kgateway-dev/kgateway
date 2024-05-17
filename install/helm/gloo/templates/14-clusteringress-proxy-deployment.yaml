@@ -64,7 +64,7 @@ spec:
             "allowPrivilegeEscalation" false
             "capabilities" $capabilities
         }}
-{{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards) | nindent 8 }}
+{{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
           name: http
