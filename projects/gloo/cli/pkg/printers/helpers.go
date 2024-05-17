@@ -35,7 +35,7 @@ func GenerateKubeCrdString(in resources.InputResource, resourceCrd crd.Crd) (str
 func PrintKubeCrdList(in resources.InputResourceList, resourceCrd crd.Crd) error {
 	for i, v := range in {
 		if i != 0 {
-			fmt.Print("\n --- \n")
+			fmt.Print("\n---\n")
 		}
 		if err := PrintKubeCrd(v, resourceCrd); err != nil {
 			return err

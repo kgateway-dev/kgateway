@@ -6,12 +6,12 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 func PrintProxies(proxies v1.ProxyList, outputType OutputType) error {
@@ -28,7 +28,7 @@ func PrintProxies(proxies v1.ProxyList, outputType OutputType) error {
 // PrintTable prints proxies using tables to io.Writer
 func ProxyTable(list v1.ProxyList, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Proxy", "Listeners", "Virtual Hosts", "Status"})
+	table.SetHeader([]string{"Proxy Name", "Proxy Namespace", "Created By", "Listeners", "Virtual Hosts", "Status"})
 
 	for _, proxy := range list {
 		var (
@@ -55,15 +55,17 @@ func ProxyTable(list v1.ProxyList, w io.Writer) {
 			}
 		}
 		name := proxy.GetMetadata().GetName()
+		ns := proxy.GetMetadata().GetNamespace()
+		createdBy := utils.GetTranslatorValue(proxy.GetMetadata())
 
 		if len(listeners) == 0 {
 			listeners = []string{""}
 		}
 		for i, listener := range listeners {
 			if i == 0 {
-				table.Append([]string{name, listener, strconv.Itoa(vhCount), getAggregateProxyStatus(proxy)})
+				table.Append([]string{name, ns, createdBy, listener, strconv.Itoa(vhCount), getAggregateProxyStatus(proxy)})
 			} else {
-				table.Append([]string{"", listener, "", ""})
+				table.Append([]string{"", "", "", listener, "", ""})
 			}
 		}
 	}
