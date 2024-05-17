@@ -4,14 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -20,6 +12,12 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
@@ -63,6 +61,13 @@ func NewGatewayInputChannels() *GatewayInputChannels {
 		secretEvent:  NewAsyncQueue[SecretInputs](),
 	}
 }
+
+var (
+	// labels used to uniquely identify Proxies that are managed by the kube gateway controller
+	kubeGatewayProxyLabels = map[string]string{
+		utils.ProxyTypeKey: utils.GatewayApiProxyValue,
+	}
+)
 
 // NewProxySyncer returns an implementation of the ProxySyncer
 // The provided GatewayInputChannels are used to trigger syncs.
@@ -212,17 +217,12 @@ func (s *ProxySyncer) reconcileProxies(ctx context.Context, proxyList gloo_solo_
 		s.writeNamespace,
 		proxyList,
 		func(original, desired *gloo_solo_io.Proxy) (bool, error) {
-			// ignore proxies that do not have our owner label
-			if original.GetMetadata().GetLabels() == nil || original.GetMetadata().GetLabels()[utils.ProxyTypeKey] != utils.GatewayApiProxyValue {
-				// TODO(npolshak): Currently we update all Gloo Gateway proxies. We should create a new label and ignore proxies that are not owned by Gloo control plane running in a specific namespace via POD_NAMESPACE
-				logger.Debugf("ignoring proxy %v in namespace %v, does not have owner label %v", original.GetMetadata().GetName(), original.GetMetadata().GetNamespace(), utils.GatewayApiProxyValue)
-				return false, nil
-			}
-			// otherwise always update
+			// always update
 			return true, nil
 		},
 		clients.ListOpts{
-			Ctx: ctx,
+			Ctx:      ctx,
+			Selector: kubeGatewayProxyLabels,
 		})
 	if err != nil {
 		// A write error to our cache should not impact translation
