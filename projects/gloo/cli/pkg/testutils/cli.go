@@ -86,3 +86,14 @@ func (c *GlooCli) IstioUninject(ctx context.Context, installNamespace, kubeConte
 
 	return ExecuteCommandWithArgsOut(c.NewCommand(ctx), uninjectArgs...)
 }
+
+// GetProxy attempts to get a proxy or list of proxies with the given args.
+// It returns a string containing the output that a user would see if they invoked `glooctl get proxy <args>`.
+// It optionally returns an error if one was encountered.
+func (c *GlooCli) GetProxy(ctx context.Context, extraArgs ...string) (string, error) {
+	getProxyArgs := append([]string{
+		"get",
+		"proxy",
+	}, extraArgs...)
+	return ExecuteCommandWithArgsOut(c.NewCommand(ctx), getProxyArgs...)
+}
