@@ -1,0 +1,38 @@
+# If readGatewaysFromAllNamespaces is false in Settings, these Gateways need to be applied in the
+# write namespace (discoveryNamespace in Settings) in order for the Edge controller to process them.
+# If readGatewaysFromAllNamespaces is true, the Gateways can be applied in any namespace.
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway1
+  labels:
+    app: gloo
+spec:
+  bindAddress: "::"
+  bindPort: 8081
+  httpGateway:
+    virtualServices:
+    - name: vs1
+      namespace: default
+  useProxyProto: false
+  ssl: false
+  proxyNames:
+  - proxy1
+---
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway2
+  labels:
+    app: gloo
+spec:
+  bindAddress: "::"
+  bindPort: 8082
+  httpGateway:
+    virtualServices:
+    - name: vs2
+      namespace: default
+  useProxyProto: false
+  ssl: false
+  proxyNames:
+  - proxy2
