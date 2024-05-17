@@ -81,7 +81,7 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
-{{- if or $gateway.istioSDS.enabled $gateway.sds.istioIntegration.enabled }}
+{{- if or $gateway.istioSDS.enabled $gateway.sds }}
       - name: sds
         image: "{{ template "gloo-gateway.gateway.image" $gateway.sds.image }}"
         imagePullPolicy: IfNotPresent
@@ -117,10 +117,12 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
-          - mountPath: /etc/istio-certs/
-            name: istio-certs
           - mountPath: /etc/envoy
             name: envoy-config
+{{- end }} {{/* if or $gateway.istioSDS.enabled $gateway.sds */}}
+{{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
+          - mountPath: /etc/istio-certs/
+            name: istio-certs
       - name: istio-proxy
         image: "{{ template "gloo-gateway.gateway.image" $gateway.sds.istioIntegration.image }}"
         # TODO(npolshak): Add configurable envoySidecarResources
@@ -211,7 +213,7 @@ spec:
             name: workload-socket
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
-{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -228,7 +230,8 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-{{- if or $gateway.istioSDS.enabled $gateway.sds.istioIntegration.enabled }}
+# TODO(npolshak): Remove istioSDS once default GatewayParameters are supported https://github.com/solo-io/solo-projects/issues/6107
+{{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
       - emptyDir:
           medium: Memory
         name: istio-certs
@@ -253,7 +256,7 @@ spec:
         emptyDir: {}
       - name: workload-certs
         emptyDir: {}
-{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
 {{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
@@ -381,7 +384,8 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-        {{- if or $gateway.istioSDS.enabled $gateway.sds.istioIntegration.enabled }}
+        # TODO(npolshak): Remove istioSDS once default GatewayParameters are supported https://github.com/solo-io/solo-projects/issues/6107
+        {{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
           http2_protocol_options: {}
@@ -394,7 +398,7 @@ data:
                       socket_address:
                         address: 127.0.0.1
                         port_value: 8234
-        {{- end }} {{/* if $gateway.istioSDS.enabled */}}
+        {{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3

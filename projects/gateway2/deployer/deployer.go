@@ -192,17 +192,18 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
 			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
-			// TODO(npolshak): Remove once default GatewayParameters are supported
+			// TODO(npolshak): Remove once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
 			IstioSDS: &istioSDS{
 				Enabled: &d.inputs.IstioValues.SDSEnabled,
 			},
 		},
 	}
 
-	// TODO(npolshak): Remove once default GatewayParameters are supported
+	// TODO(npolshak): Remove once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
 	if d.inputs.IstioValues.SDSEnabled {
 		// Is Istio integration is enabled, we need to set the SDS image tag
 		vals.Gateway.Sds = getDefaultSdsValues(d.inputs.Extensions.GetSdsImage())
+		vals.Gateway.Sds.Istio = getDefaultIstioValues()
 	}
 
 	// check if there is a GatewayParameters associated with this Gateway

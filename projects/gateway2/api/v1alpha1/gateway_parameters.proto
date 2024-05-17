@@ -127,20 +127,17 @@ message SdsIntegration {
 
 // Configuration for the Istio integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
 message IstioIntegration {
-  // Enables SDS cert-rotator sidecar for istio mTLS cert rotation
-  google.protobuf.BoolValue enabled = 1;
-
   // Configuration for the container running istio-proxy.
-  IstioContainer istio_container = 2;
+  IstioContainer istio_container = 1;
 
   // The address of the istio discovery service.
-  string istio_discovery_address = 3;
+  string istio_discovery_address = 2;
 
   // The mesh id of the istio mesh.
-  string istio_meta_mesh_id = 4;
+  string istio_meta_mesh_id = 3;
 
   // The cluster id of the istio cluster.
-  string istio_meta_cluster_id = 5;
+  string istio_meta_cluster_id = 4;
 }
 
 // Configuration for the container running Gloo sds.

@@ -33,26 +33,9 @@ gateway:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-  # TODO(npolshak) Remove this once default GatewayParameters are supported
+  # TODO(npolshak) Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
   istioSDS:
     enabled: false
-  sds:
-    sdsBootstrap:
-      logLevel: info
-    image:
-      registry: quay.io/solo-io
-      repository: sds
-      pullPolicy: IfNotPresent
-      # Overrides the image tag whose default is the chart appVersion.
-      tag: ""
-    istioIntegration:
-      enabled: false
-      image:
-        registry: docker.io/istio
-        repository: proxyv2
-        pullPolicy: IfNotPresent
-        tag: "1.18.2"
-      logLevel: warning
   securityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true

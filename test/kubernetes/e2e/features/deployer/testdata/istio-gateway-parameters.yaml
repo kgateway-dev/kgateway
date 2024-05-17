@@ -24,7 +24,6 @@ spec:
       replicas: 1
     sds:
       istioIntegration:
-        enabled: true
         istioContainer:
           image:
             registry: docker.io/istio

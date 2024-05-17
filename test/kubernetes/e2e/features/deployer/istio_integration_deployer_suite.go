@@ -46,9 +46,6 @@ func (s *istioIntegrationDeployerSuite) TestConfigureIstioIntegrationFromGateway
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
 	s.Require().NoError(err, "can apply manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
-	s.Require().NoError(err, "can apply manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 
 	// Assert Istio integration is enabled and correct Istio image is set

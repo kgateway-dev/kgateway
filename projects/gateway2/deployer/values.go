@@ -49,7 +49,7 @@ type helmGateway struct {
 	// serviceaccount values
 	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
 
-	//TODO(npolshak) Remove this once default GatewayParameters are supported
+	//TODO(npolshak) Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
 	IstioSDS *istioSDS `json:"istioSDS,omitempty"`
 }
 
@@ -104,13 +104,12 @@ type sdsBootstrap struct {
 	LogLevel *string `json:"logLevel,omitempty"`
 }
 
-// TODO: Remove this once default GatewayParameters are supported
+// TODO: Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
 type istioSDS struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type helmIstioSds struct {
-	Enabled  *bool      `json:"enabled,omitempty"`
 	Image    *helmImage `json:"image,omitempty"`
 	LogLevel *string    `json:"logLevel,omitempty"`
 	// Note: This is set by envoySidecarResources in helm chart

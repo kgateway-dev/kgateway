@@ -373,16 +373,6 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetEnabled()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEnabled()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetIstioContainer()) {
 			return false
