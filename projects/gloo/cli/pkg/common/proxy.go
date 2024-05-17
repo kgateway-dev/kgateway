@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -40,8 +38,13 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	if err != nil {
 		return nil, err
 	}
+	// get the namespace where Proxies are written. if discovery namespace is empty, defaults to the gloo install namespace
+	writeNamespace := settings.GetDiscoveryNamespace()
+	if writeNamespace == "" {
+		writeNamespace = opts.Metadata.GetNamespace()
+	}
 
-	return getProxiesFromControlPlane(opts, name, proxyEndpointPort)
+	return getProxiesFromControlPlane(opts, name, proxyEndpointPort, writeNamespace)
 }
 
 // ListProxiesFromSettings retrieves the proxies from the Control Plane via the ProxyEndpointServer API
@@ -67,25 +70,14 @@ func computeProxyEndpointPort(settings *gloov1.Settings) (string, error) {
 	return proxyEndpointPort, err
 }
 
-func getProxiesFromControlPlane(opts *options.Options, name string, proxyEndpointPort string) (gloov1.ProxyList, error) {
+func getProxiesFromControlPlane(opts *options.Options, name string, proxyEndpointPort string, writeNamespace string) (gloov1.ProxyList, error) {
 	proxyRequest := &debug.ProxyEndpointRequest{
 		Name: name,
-		// It is important that we use the Proxy.Namespace here, as opposed to the opts.Metadata.Namespace
+		// It is important that we use the writeNamespace (aka discoveryNamespace from Settings CR) here, as opposed to the opts.Metadata.Namespace.
 		// The former is where Proxies will be searched, the latter is where Gloo is installed
-		Namespace: opts.Get.Proxy.Namespace,
+		Namespace: writeNamespace,
 		Source:    getProxySource(opts.Get.Proxy),
 		Selector:  opts.Get.Selector.MustMap(),
-	}
-
-	if opts.Get.Proxy.All {
-		// Each of the properties in a request act as a filter of the requested proxies.
-		// By supplying no filters, we are requesting all the proxies
-		proxyRequest = &debug.ProxyEndpointRequest{
-			Name:      "",
-			Namespace: metav1.NamespaceAll,
-			Source:    "",
-			Selector:  nil,
-		}
 	}
 
 	return requestProxiesFromControlPlane(opts, proxyRequest, proxyEndpointPort)
