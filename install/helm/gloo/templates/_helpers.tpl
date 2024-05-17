@@ -177,8 +177,8 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
 {{- $securityContext = omit $securityContext "mergePolicy" -}}
 {{- with $securityContext -}}
-{{ $toRender := dict "securityContext" $securityContext }}
-{{ toYaml $toRender | nindent $indent }}
+{{- $toRender := dict "securityContext" $securityContext }}
+{{- toYaml $toRender | nindent $indent }}
 {{- end }}
 {{- end }}
 
