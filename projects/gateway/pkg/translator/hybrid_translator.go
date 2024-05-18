@@ -89,7 +89,7 @@ func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 				SslConfig:          matchedGateway.GetMatcher().GetSslConfig(),
 				SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
 				PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
-				DestinationPort:    matchedGateway.Matcher.GetDestinationPort(),
+				DestinationPort:    matchedGateway.GetMatcher().GetDestinationPort(),
 			},
 		}
 
