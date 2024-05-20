@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
+	glooutils "github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
@@ -180,11 +180,9 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 		return nil, err
 	}
 
-	return d.mergeGatewayParameters(gwp, defaultGwp)
-}
-
-func (d *Deployer) mergeGatewayParameters(moreSpecific, lessSpecific *v1alpha1.GatewayParameters) (*v1alpha1.GatewayParameters, error) {
-	return nil, nil
+	mergedGwp := defaultGwp
+	deepMergeGatewayParameters(mergedGwp, gwp)
+	return mergedGwp, nil
 }
 
 // gets the default GatewayParameters associated with the GatewayClass of the provided Gateway
@@ -375,7 +373,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,
-			Controller: utils.PointerTo(true),
+			Controller: glooutils.PointerTo(true),
 			UID:        gw.UID,
 			Name:       gw.Name,
 		}})
