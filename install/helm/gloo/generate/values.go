@@ -25,20 +25,30 @@ type Config struct {
 }
 
 type Global struct {
-	Image                *Image             `json:"image,omitempty"`
-	Extensions           interface{}        `json:"extensions,omitempty"`
-	GlooRbac             *Rbac              `json:"glooRbac,omitempty"`
-	GlooStats            Stats              `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
-	GlooMtls             Mtls               `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
-	IstioSDS             IstioSDS           `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	IstioIntegration     IstioIntegration   `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
-	ExtraSpecs           *bool              `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
-	ExtauthCustomYaml    *bool              `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
-	Console              interface{}        `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
-	Graphql              interface{}        `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
-	ConfigMaps           []*GlobalConfigMap `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
-	ExtraCustomResources *bool              `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
-	AdditionalLabels     map[string]string  `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
+	Image                *Image                `json:"image,omitempty"`
+	Extensions           interface{}           `json:"extensions,omitempty"`
+	GlooRbac             *Rbac                 `json:"glooRbac,omitempty"`
+	GlooStats            Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
+	GlooMtls             Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
+	IstioSDS             IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	IstioIntegration     IstioIntegration      `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
+	ExtraSpecs           *bool                 `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	ExtauthCustomYaml    *bool                 `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
+	Console              interface{}           `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
+	Graphql              interface{}           `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
+	ConfigMaps           []*GlobalConfigMap    `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
+	ExtraCustomResources *bool                 `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	AdditionalLabels     map[string]string     `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
+	PodSecurityStandards *PodSecurityStandards `json:"podSecurityStandards,omitempty" desc:"Configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+}
+
+type PodSecurityStandards struct {
+	Container *ContainerSecurityStandards `json:"container,omitempty" desc:"Container configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+}
+
+type ContainerSecurityStandards struct {
+	EnableRestrictedContainerDefaults *bool   `json:"enableRestrictedContainerDefaults,omitempty" desc:"Set to true to default all containers to a security policy that minimally conforms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). "`
+	DefaultSeccompProfileType         *string `json:"defaultSeccompProfileType,omitempty" desc:"The seccomp profile type to use for default restricted container securityContexts. Valid values are 'RuntimeDefault' and 'Localhost'. Default is 'RuntimeDefault'. Has no effect if enableRestrictedContainerDefaults is false."`
 }
 
 type Namespace struct {
@@ -87,14 +97,15 @@ type PodSpec struct {
 
 type JobSpec struct {
 	*PodSpec
-	ActiveDeadlineSeconds   *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
-	BackoffLimit            *int              `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
-	Completions             *int              `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
-	ManualSelector          *bool             `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
-	Parallelism             *int              `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
-	TtlSecondsAfterFinished *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest."`
-	ExtraPodLabels          map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
-	ExtraPodAnnotations     map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`
+	ActiveDeadlineSeconds    *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	BackoffLimit             *int              `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
+	Completions              *int              `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
+	ManualSelector           *bool             `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
+	Parallelism              *int              `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
+	TtlSecondsAfterFinished  *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest."`
+	ExtraPodLabels           map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
+	ExtraPodAnnotations      map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`
+	ContainerSecurityContext *SecurityContext  `json:"containerSecurityContext,omitempty" desc:"securityContext for the job. If this is defined it supercedes any values set in RunAsUser, RunAsGroup, FsGroup, ReadOnlyRootFilesystem or any other securityContext fields that may be individually set.  See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type DeploymentSpecSansResources struct {
@@ -184,8 +195,9 @@ type KnativeProxy struct {
 	Internal                            *KnativeProxyInternal `json:"internal,omitempty" desc:"kube resource overrides for knative internal proxy resources"`
 	*DeploymentSpec
 	*ServiceSpec
-	ConfigMap  *KubeResourceOverride `json:"configMap,omitempty"`
-	Deployment *KubeResourceOverride `json:"deployment,omitempty"`
+	ConfigMap                *KubeResourceOverride `json:"configMap,omitempty"`
+	Deployment               *KubeResourceOverride `json:"deployment,omitempty"`
+	ContainerSecurityContext *SecurityContext      `json:"containerSecurityContext,omitempty" desc:"securityContext for knative proxy containers. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type KnativeProxyInternal struct {
@@ -300,7 +312,7 @@ type KubeGateway struct {
 }
 
 type SecurityOpts struct {
-	MergePolicy *string `json:"mergePolicy,omitempty" desc:"How to combine the defined security policy with the default security policy. Valid values are \"\", \"no-merge\", and \"helm-merge\". If defined as an empty string or \"no-merge\", use the defined security context as is.  If \"helm-merge\", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is \"\"."`
+	MergePolicy *string `json:"mergePolicy,omitempty" desc:"How to combine the defined security policy with the default security policy. Valid values are \"\", \"no-merge\", and \"helm-merge\". If defined as an empty string or \"no-merge\", use the defined security context as is.  If \"helm-merge\", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is \"\"."`
 }
 type PodSecurityContext struct {
 	*corev1.PodSecurityContext
@@ -346,14 +358,15 @@ type Discovery struct {
 }
 
 type DiscoveryDeployment struct {
-	Image                     *Image            `json:"image,omitempty"`
-	Stats                     Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
-	FloatingUserId            *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser                 *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                   *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraDiscoveryLabels      map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
-	ExtraDiscoveryAnnotations map[string]string `json:"extraDiscoveryAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment."`
-	EnablePodSecurityContext  *bool             `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	Image                             *Image            `json:"image,omitempty"`
+	Stats                             Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
+	FloatingUserId                    *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser                         *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FsGroup                           *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraDiscoveryLabels              map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
+	ExtraDiscoveryAnnotations         map[string]string `json:"extraDiscoveryAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment."`
+	EnablePodSecurityContext          *bool             `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	DiscoveryContainerSecurityContext *SecurityContext  `json:"discoveryContainerSecurityContext,omitempty" desc:"securityContext for the discovery container. If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 	*DeploymentSpec
 }
 
@@ -636,17 +649,18 @@ type Failover struct {
 }
 
 type AccessLogger struct {
-	Image                        *Image                `json:"image,omitempty"`
-	Port                         *uint                 `json:"port,omitempty"`
-	ServiceName                  *string               `json:"serviceName,omitempty"`
-	Enabled                      *bool                 `json:"enabled,omitempty"`
-	Stats                        *Stats                `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
-	RunAsUser                    *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                      *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraAccessLoggerLabels      map[string]string     `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
-	ExtraAccessLoggerAnnotations map[string]string     `json:"extraAccessLoggerAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment."`
-	Service                      *KubeResourceOverride `json:"service,omitempty"`
-	Deployment                   *KubeResourceOverride `json:"deployment,omitempty"`
+	Image                                *Image                `json:"image,omitempty"`
+	Port                                 *uint                 `json:"port,omitempty"`
+	ServiceName                          *string               `json:"serviceName,omitempty"`
+	Enabled                              *bool                 `json:"enabled,omitempty"`
+	Stats                                *Stats                `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
+	RunAsUser                            *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FsGroup                              *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraAccessLoggerLabels              map[string]string     `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
+	ExtraAccessLoggerAnnotations         map[string]string     `json:"extraAccessLoggerAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment."`
+	Service                              *KubeResourceOverride `json:"service,omitempty"`
+	Deployment                           *KubeResourceOverride `json:"deployment,omitempty"`
+	AccessLoggerContainerSecurityContext *SecurityContext      `json:"accessLoggerContainerSecurityContext,omitempty" desc:"Security context for the access logger deployment.  If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details.""`
 	*DeploymentSpec
 }
 
@@ -658,12 +672,13 @@ type Ingress struct {
 }
 
 type IngressDeployment struct {
-	Image                   *Image            `json:"image,omitempty"`
-	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FloatingUserId          *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	ExtraIngressLabels      map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
-	ExtraIngressAnnotations map[string]string `json:"extraIngressAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment."`
-	Stats                   *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	Image                           *Image            `json:"image,omitempty"`
+	RunAsUser                       *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FloatingUserId                  *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	ExtraIngressLabels              map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
+	ExtraIngressAnnotations         map[string]string `json:"extraIngressAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment."`
+	Stats                           *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	IngressContainerSecurityContext *SecurityContext  `json:"ingressContainerSecurityContext,omitempty" desc:"Security context for the ingress deployment.  If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 	*DeploymentSpec
 }
 
@@ -677,15 +692,16 @@ type IngressProxy struct {
 }
 
 type IngressProxyDeployment struct {
-	Image                   *Image            `json:"image,omitempty"`
-	HttpPort                *int              `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
-	HttpsPort               *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
-	ExtraPorts              []interface{}     `json:"extraPorts,omitempty"`
-	ExtraAnnotations        map[string]string `json:"extraAnnotations,omitempty"`
-	FloatingUserId          *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
-	ExtraIngressProxyLabels map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
-	Stats                   *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	Image                                *Image            `json:"image,omitempty"`
+	HttpPort                             *int              `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
+	HttpsPort                            *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
+	ExtraPorts                           []interface{}     `json:"extraPorts,omitempty"`
+	ExtraAnnotations                     map[string]string `json:"extraAnnotations,omitempty"`
+	FloatingUserId                       *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser                            *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
+	ExtraIngressProxyLabels              map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
+	Stats                                *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	IngressProxyContainerSecurityContext *SecurityContext  `json:"ingressProxyContainerSecurityContext,omitempty" desc:"Security context for the ingress proxy deployment. If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 	*DeploymentSpec
 }
 
