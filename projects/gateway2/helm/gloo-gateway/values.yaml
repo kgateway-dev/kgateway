@@ -33,6 +33,7 @@ gateway:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
+  # TODO(npolshak) Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
   istioSDS:
     enabled: false
   securityContext:
