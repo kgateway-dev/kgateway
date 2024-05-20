@@ -49,7 +49,8 @@ message KubernetesProxyConfig {
   // Autoscaling configuration.
   kube.gateway.gloo.solo.io.Autoscaling autoscaling = 5;
 
-  // Sds configuration
+  // Sds configuration.
+  // A non-nil value will enable sds integration.  If empty config is provided, the default values will be used.
   SdsIntegration sds = 6;
 }
 
@@ -120,7 +121,7 @@ message SdsIntegration {
   SdsContainer sds_container = 1;
 
   // Istio integration configuration
-  // If not provided, the default values will be used.
+  // A non-nil value will enable sds integration. If empty config is provided, the default values will be used.
   IstioIntegration istio_integration = 2;
 
 }

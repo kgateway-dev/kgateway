@@ -121,7 +121,8 @@ type KubernetesProxyConfig struct {
 	Service *kube.Service `protobuf:"bytes,4,opt,name=service,proto3" json:"service,omitempty"`
 	// Autoscaling configuration.
 	Autoscaling *kube.Autoscaling `protobuf:"bytes,5,opt,name=autoscaling,proto3" json:"autoscaling,omitempty"`
-	// Sds configuration
+	// Sds configuration.
+	// A non-nil value will enable sds integration.  If empty config is provided, the default values will be used.
 	Sds *SdsIntegration `protobuf:"bytes,6,opt,name=sds,proto3" json:"sds,omitempty"`
 }
 
@@ -443,7 +444,7 @@ type SdsIntegration struct {
 	// If not provided, the default values will be used.
 	SdsContainer *SdsContainer `protobuf:"bytes,1,opt,name=sds_container,json=sdsContainer,proto3" json:"sds_container,omitempty"`
 	// Istio integration configuration
-	// If not provided, the default values will be used.
+	// A non-nil value will enable sds integration. If empty config is provided, the default values will be used.
 	IstioIntegration *IstioIntegration `protobuf:"bytes,2,opt,name=istio_integration,json=istioIntegration,proto3" json:"istio_integration,omitempty"`
 }
 

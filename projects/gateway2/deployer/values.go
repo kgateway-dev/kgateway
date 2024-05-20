@@ -34,7 +34,9 @@ type helmGateway struct {
 	NodeSelector        map[string]string                 `json:"nodeSelector,omitempty"`
 	Affinity            *extcorev1.Affinity               `json:"affinity,omitempty"`
 	Tolerations         []*extcorev1.Toleration           `json:"tolerations,omitempty"`
-	Sds                 *helmSds                          `json:"sds,omitempty"`
+
+	// sds values
+	Sds *helmSds `json:"sds,omitempty"`
 
 	// envoy container values
 	LogLevel          *string                            `json:"logLevel,omitempty"`
