@@ -2,12 +2,13 @@ package port_routing
 
 import (
 	"context"
-
-	"github.com/stretchr/testify/suite"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // portRoutingTestingSuite is the entire Suite of tests for the "PortRouting" cases
@@ -19,6 +20,9 @@ type portRoutingTestingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
+
+	// maps test name to a list of manifests to apply before the test
+	manifests map[string][]string
 }
 
 /*
@@ -40,6 +44,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	return &portRoutingTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
+		manifests: map[string][]string{
+			"TestInvalidPortAndValidTargetport":   {invalidPortAndValidTargetportManifest},
+			"TestMatchPortAndTargetport":          {matchPortandTargetportManifest},
+			"TestMatchPodPortWithoutTargetport":   {matchPodPortWithoutTargetportManifest},
+			"TestInvalidPortWithoutTargetport":    {invalidPortWithoutTargetportManifest},
+			"TestInvalidPortAndInvalidTargetport": {invalidPortAndInvalidTargetportManifest},
+		},
 	}
 }
 
@@ -47,6 +58,9 @@ func (s *portRoutingTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw"}, time.Minute*2)
 }
 
 func (s *portRoutingTestingSuite) TearDownSuite() {
@@ -55,16 +69,31 @@ func (s *portRoutingTestingSuite) TearDownSuite() {
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 }
 
+func (s *portRoutingTestingSuite) BeforeTest(suiteName, testName string) {
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
+	}
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.NoError(err, "can apply "+manifest)
+	}
+}
+
+func (s *portRoutingTestingSuite) AfterTest(suiteName, testName string) {
+	manifests, ok := s.manifests[testName]
+	if !ok {
+		s.FailNow("no manifests found for " + testName)
+	}
+
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
+		s.NoError(err, "can delete "+manifest)
+	}
+}
+
 func (s *portRoutingTestingSuite) TestInvalidPortAndValidTargetport() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, invalidPortAndValidTargetportManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortAndValidTargetportManifest)
-	s.NoError(err, "can apply invalidPortAndValidTargetportManifest")
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -76,15 +105,6 @@ func (s *portRoutingTestingSuite) TestInvalidPortAndValidTargetport() {
 }
 
 func (s *portRoutingTestingSuite) TestMatchPortAndTargetport() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, matchPortandTargetportManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, matchPortandTargetportManifest)
-	s.NoError(err, "can apply matchPortandTargetportManifest")
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -96,15 +116,6 @@ func (s *portRoutingTestingSuite) TestMatchPortAndTargetport() {
 }
 
 func (s *portRoutingTestingSuite) TestMatchPodPortWithoutTargetport() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, matchPodPortWithoutTargetportManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, matchPodPortWithoutTargetportManifest)
-	s.NoError(err, "can apply matchPodPortWithoutTargetportManifest")
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -116,15 +127,6 @@ func (s *portRoutingTestingSuite) TestMatchPodPortWithoutTargetport() {
 }
 
 func (s *portRoutingTestingSuite) TestInvalidPortWithoutTargetport() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, invalidPortWithoutTargetportManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortWithoutTargetportManifest)
-	s.NoError(err, "can apply invalidPortWithoutTargetportManifest")
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
@@ -135,16 +137,7 @@ func (s *portRoutingTestingSuite) TestInvalidPortWithoutTargetport() {
 		expectedServiceUnavailableResponse)
 }
 
-func (s *portRoutingTestingSuite) TestInvalidPortAndInvalidTargetportManifest() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, invalidPortAndInvalidTargetportManifest)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidPortAndInvalidTargetportManifest)
-	s.NoError(err, "can apply invalidPortAndInvalidTargetportManifest")
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+func (s *portRoutingTestingSuite) TestInvalidPortAndInvalidTargetport() {
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
