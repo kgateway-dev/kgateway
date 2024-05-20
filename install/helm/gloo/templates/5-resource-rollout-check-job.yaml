@@ -71,11 +71,11 @@ spec:
           volumeMounts:
             - name: custom-resource-config-volume
               mountPath: /etc/gloo-custom-resources
-          securityContext:
-            runAsNonRoot: true
-            {{- if not .Values.gateway.rolloutJob.floatingUserId }}
-            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.rolloutJob.runAsUser) -}}
-            {{- end }}
+          {{- $securityDefaults := dict "runAsNonRoot" true }}
+          {{- if not .Values.gateway.rolloutJob.floatingUserId -}}
+            {{- $_ := set $securityDefaults "runAsUser" .Values.gateway.rolloutJob.runAsUser }}
+          {{- end -}}
+          {{- include "gloo.containerSecurityContext" (dict "values" .Values.gateway.rolloutJob.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 10) }}
           {{- with .Values.gateway.rolloutJob.resources }}
           resources: {{ toYaml . | nindent 12}}
           {{- end }}
