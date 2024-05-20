@@ -84,7 +84,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId }}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end }}
-{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults) | indent 8 }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -127,7 +127,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
-{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults) | nindent 8 }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -158,17 +158,17 @@ spec:
           requests:
             cpu: 500m
             memory: 256Mi
-{{- end}}
+{{- end -}}
         {{- $capabilities := dict "drop" (list "ALL") -}}
-        {{- $securityDefaults := dict "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- $securityDefaults := dict "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false -}}
         {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
         {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
-        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
-        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */}}
+        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */ -}}
+        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */ -}}
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}

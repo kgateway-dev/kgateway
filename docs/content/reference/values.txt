@@ -71,6 +71,26 @@
 |settings.integrations.knative.proxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy.containerSecurityContext.capabilities.add[]|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.capabilities.drop[]|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.privileged|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.user|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.role|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.type|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.level|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.runAsUser|int64|||
+|settings.integrations.knative.proxy.containerSecurityContext.runAsGroup|int64|||
+|settings.integrations.knative.proxy.containerSecurityContext.runAsNonRoot|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.procMount|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seccompProfile.type|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeInternalAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the knative internal deployment.|
@@ -176,7 +196,7 @@
 |gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gloo.deployment.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|gloo.deployment.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -242,7 +262,7 @@
 |gloo.deployment.glooContainerSecurityContext.procMount|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
-|gloo.deployment.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|gloo.deployment.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -275,6 +295,26 @@
 |discovery.deployment.extraDiscoveryLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment.|
 |discovery.deployment.extraDiscoveryAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment.|
 |discovery.deployment.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
+|discovery.deployment.discoveryContainerSecurityContext.capabilities.add[]|string|||
+|discovery.deployment.discoveryContainerSecurityContext.capabilities.drop[]|string|||
+|discovery.deployment.discoveryContainerSecurityContext.privileged|bool|||
+|discovery.deployment.discoveryContainerSecurityContext.seLinuxOptions.user|string|||
+|discovery.deployment.discoveryContainerSecurityContext.seLinuxOptions.role|string|||
+|discovery.deployment.discoveryContainerSecurityContext.seLinuxOptions.type|string|||
+|discovery.deployment.discoveryContainerSecurityContext.seLinuxOptions.level|string|||
+|discovery.deployment.discoveryContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|discovery.deployment.discoveryContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|discovery.deployment.discoveryContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|discovery.deployment.discoveryContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|discovery.deployment.discoveryContainerSecurityContext.runAsUser|int64|||
+|discovery.deployment.discoveryContainerSecurityContext.runAsGroup|int64|||
+|discovery.deployment.discoveryContainerSecurityContext.runAsNonRoot|bool|||
+|discovery.deployment.discoveryContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|discovery.deployment.discoveryContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|discovery.deployment.discoveryContainerSecurityContext.procMount|string|||
+|discovery.deployment.discoveryContainerSecurityContext.seccompProfile.type|string|||
+|discovery.deployment.discoveryContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|discovery.deployment.discoveryContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
 |discovery.deployment.customEnv[].name|string|||
 |discovery.deployment.customEnv[].value|string|||
@@ -367,6 +407,26 @@
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest.|
 |gateway.certGenJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.certGenJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
+|gateway.certGenJob.containerSecurityContext.capabilities.add[]|string|||
+|gateway.certGenJob.containerSecurityContext.capabilities.drop[]|string|||
+|gateway.certGenJob.containerSecurityContext.privileged|bool|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions.user|string|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions.role|string|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions.type|string|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions.level|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|gateway.certGenJob.containerSecurityContext.runAsUser|int64|||
+|gateway.certGenJob.containerSecurityContext.runAsGroup|int64|||
+|gateway.certGenJob.containerSecurityContext.runAsNonRoot|bool|||
+|gateway.certGenJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gateway.certGenJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gateway.certGenJob.containerSecurityContext.procMount|string|||
+|gateway.certGenJob.containerSecurityContext.seccompProfile.type|string|||
+|gateway.certGenJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gateway.certGenJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
 |gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
@@ -404,6 +464,26 @@
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|300|Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest.|
 |gateway.rolloutJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.rolloutJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
+|gateway.rolloutJob.containerSecurityContext.capabilities.add[]|string|||
+|gateway.rolloutJob.containerSecurityContext.capabilities.drop[]|string|||
+|gateway.rolloutJob.containerSecurityContext.privileged|bool|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.user|string|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.role|string|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.type|string|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.level|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|gateway.rolloutJob.containerSecurityContext.runAsUser|int64|||
+|gateway.rolloutJob.containerSecurityContext.runAsGroup|int64|||
+|gateway.rolloutJob.containerSecurityContext.runAsNonRoot|bool|||
+|gateway.rolloutJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gateway.rolloutJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gateway.rolloutJob.containerSecurityContext.procMount|string|||
+|gateway.rolloutJob.containerSecurityContext.seccompProfile.type|string|||
+|gateway.rolloutJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gateway.rolloutJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
 |gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.rolloutJob.image.repository|string|kubectl|The image repository (name) for the container.|
@@ -441,6 +521,26 @@
 |gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest.|
 |gateway.cleanupJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.cleanupJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
+|gateway.cleanupJob.containerSecurityContext.capabilities.add[]|string|||
+|gateway.cleanupJob.containerSecurityContext.capabilities.drop[]|string|||
+|gateway.cleanupJob.containerSecurityContext.privileged|bool|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.user|string|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.role|string|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.type|string|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.level|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|gateway.cleanupJob.containerSecurityContext.runAsUser|int64|||
+|gateway.cleanupJob.containerSecurityContext.runAsGroup|int64|||
+|gateway.cleanupJob.containerSecurityContext.runAsNonRoot|bool|||
+|gateway.cleanupJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gateway.cleanupJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gateway.cleanupJob.containerSecurityContext.procMount|string|||
+|gateway.cleanupJob.containerSecurityContext.seccompProfile.type|string|||
+|gateway.cleanupJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gateway.cleanupJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
 |gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
@@ -592,7 +692,7 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.NAME.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|gatewayProxies.NAME.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
 |gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
 |gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -621,7 +721,7 @@
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -837,7 +937,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -866,7 +966,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -977,6 +1077,26 @@
 |ingress.deployment.extraIngressLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment.|
 |ingress.deployment.extraIngressAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment.|
 |ingress.deployment.stats|bool||Controls whether or not Envoy stats are enabled|
+|ingress.deployment.ingressContainerSecurityContext.capabilities.add[]|string|||
+|ingress.deployment.ingressContainerSecurityContext.capabilities.drop[]|string|||
+|ingress.deployment.ingressContainerSecurityContext.privileged|bool|||
+|ingress.deployment.ingressContainerSecurityContext.seLinuxOptions.user|string|||
+|ingress.deployment.ingressContainerSecurityContext.seLinuxOptions.role|string|||
+|ingress.deployment.ingressContainerSecurityContext.seLinuxOptions.type|string|||
+|ingress.deployment.ingressContainerSecurityContext.seLinuxOptions.level|string|||
+|ingress.deployment.ingressContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|ingress.deployment.ingressContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|ingress.deployment.ingressContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|ingress.deployment.ingressContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|ingress.deployment.ingressContainerSecurityContext.runAsUser|int64|||
+|ingress.deployment.ingressContainerSecurityContext.runAsGroup|int64|||
+|ingress.deployment.ingressContainerSecurityContext.runAsNonRoot|bool|||
+|ingress.deployment.ingressContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|ingress.deployment.ingressContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|ingress.deployment.ingressContainerSecurityContext.procMount|string|||
+|ingress.deployment.ingressContainerSecurityContext.seccompProfile.type|string|||
+|ingress.deployment.ingressContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|ingress.deployment.ingressContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |ingress.deployment.replicas|int|1|number of instances to deploy|
 |ingress.deployment.customEnv[].name|string|||
 |ingress.deployment.customEnv[].value|string|||
@@ -1033,6 +1153,26 @@
 |ingressProxy.deployment.runAsUser|float64||Explicitly set the user ID for the pod to run as. Default is 10101|
 |ingressProxy.deployment.extraIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment.|
 |ingressProxy.deployment.stats|bool||Controls whether or not Envoy stats are enabled|
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.capabilities.add[]|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.capabilities.drop[]|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.privileged|bool|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.seLinuxOptions.user|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.seLinuxOptions.role|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.seLinuxOptions.type|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.seLinuxOptions.level|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.runAsUser|int64|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.runAsGroup|int64|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.runAsNonRoot|bool|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.procMount|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.seccompProfile.type|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |ingressProxy.deployment.replicas|int|1|number of instances to deploy|
 |ingressProxy.deployment.customEnv[].name|string|||
 |ingressProxy.deployment.customEnv[].value|string|||
@@ -1107,6 +1247,26 @@
 |accessLogger.extraAccessLoggerAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment.|
 |accessLogger.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |accessLogger.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|accessLogger.accessLoggerContainerSecurityContext.capabilities.add[]|string|||
+|accessLogger.accessLoggerContainerSecurityContext.capabilities.drop[]|string|||
+|accessLogger.accessLoggerContainerSecurityContext.privileged|bool|||
+|accessLogger.accessLoggerContainerSecurityContext.seLinuxOptions.user|string|||
+|accessLogger.accessLoggerContainerSecurityContext.seLinuxOptions.role|string|||
+|accessLogger.accessLoggerContainerSecurityContext.seLinuxOptions.type|string|||
+|accessLogger.accessLoggerContainerSecurityContext.seLinuxOptions.level|string|||
+|accessLogger.accessLoggerContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|accessLogger.accessLoggerContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|accessLogger.accessLoggerContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|accessLogger.accessLoggerContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|accessLogger.accessLoggerContainerSecurityContext.runAsUser|int64|||
+|accessLogger.accessLoggerContainerSecurityContext.runAsGroup|int64|||
+|accessLogger.accessLoggerContainerSecurityContext.runAsNonRoot|bool|||
+|accessLogger.accessLoggerContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|accessLogger.accessLoggerContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|accessLogger.accessLoggerContainerSecurityContext.procMount|string|||
+|accessLogger.accessLoggerContainerSecurityContext.seccompProfile.type|string|||
+|accessLogger.accessLoggerContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|accessLogger.accessLoggerContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||
@@ -1193,7 +1353,7 @@
 |global.glooMtls.sds.securityContext.procMount|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.type|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.localhostProfile|string|||
-|global.glooMtls.sds.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|global.glooMtls.sds.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |global.glooMtls.sds.logLevel|string|info|Log level for sds.  Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info.|
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
@@ -1223,7 +1383,7 @@
 |global.glooMtls.envoy.securityContext.procMount|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.localhostProfile|string|||
-|global.glooMtls.envoy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|global.glooMtls.envoy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |global.glooMtls.istioProxy.image.tag|string|1.18.2|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1252,7 +1412,7 @@
 |global.glooMtls.istioProxy.securityContext.procMount|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.localhostProfile|string|||
-|global.glooMtls.istioProxy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
+|global.glooMtls.istioProxy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |global.glooMtls.istioProxy.logLevel|string|warning|Log level for istio-proxy. Options include "info", "debug", "warning", and "error". Default level is info Default is 'warning'.|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
@@ -1280,3 +1440,5 @@
 |global.configMaps[].data.NAME|string||Key-value pairs of ConfigMap data.|
 |global.extraCustomResources|bool||Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise.|
 |global.additionalLabels.NAME|string||Additional labels to add to all gloo resources.|
+|global.podSecurityStandards.container.enableRestrictedContainerDefaults|bool||Set to true to default all containers to a security policy that minimally conforms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). |
+|global.podSecurityStandards.container.defaultSeccompProfileType|string||The seccomp profile type to use for default restricted container securityContexts. Valid values are 'RuntimeDefault' and 'Localhost'. Default is 'RuntimeDefault'. Has no effect if enableRestrictedContainerDefaults is false.|
