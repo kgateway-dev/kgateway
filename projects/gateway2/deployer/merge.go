@@ -507,3 +507,9 @@ func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig_De
 
 	return dst
 }
+
+// The following exists only to exclude this file from the gettercheck.
+// This is a hacky workaround due to needing to pass pointers into `mergePointers` by field
+// access instead of by getter. We should add a way to exclude lines from the gettercheck.
+
+// Code generated DO NOT EDIT.
