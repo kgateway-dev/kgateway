@@ -81,9 +81,9 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
-{{- if $gateway.istioSDS.enabled }}
+{{- if or $gateway.istioSDS.enabled $gateway.sds }}
       - name: sds
-        image: "quay.io/solo-io/sds:{{ default .Chart.AppVersion }}"
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.sds.image }}"
         imagePullPolicy: IfNotPresent
         env:
           - name: POD_NAME
@@ -98,6 +98,8 @@ spec:
                 fieldPath: metadata.namespace
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
+          - name: LOG_LEVEL
+            value: {{ $gateway.sds.sdsBootstrap.logLevel }}
         ports:
           - containerPort: 8234
             name: sds
@@ -115,13 +117,14 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
-          - mountPath: /etc/istio-certs/
-            name: istio-certs
           - mountPath: /etc/envoy
             name: envoy-config
+{{- end }} {{/* if or $gateway.istioSDS.enabled $gateway.sds */}}
+{{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
+          - mountPath: /etc/istio-certs/
+            name: istio-certs
       - name: istio-proxy
-        # TODO(npolshak): Add configurable security context, istio proxy image and image pull policy
-        image: "docker.io/istio/proxyv2:1.18.2"
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.sds.istioIntegration.image }}"
         # TODO(npolshak): Add configurable envoySidecarResources
         args:
           - proxy
@@ -136,7 +139,7 @@ spec:
           - 45s
           - --parentShutdownDuration
           - 1m0s
-          - --proxyLogLevel=warning
+          - --proxyLogLevel={{ $gateway.sds.istioIntegration.logLevel }}
           - --proxyComponentLogLevel=misc:error
           - --connectTimeout
           - 10s
@@ -210,7 +213,7 @@ spec:
             name: workload-socket
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
-{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -227,7 +230,8 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-{{- if $gateway.istioSDS.enabled }}
+# TODO(npolshak): Remove istioSDS once default GatewayParameters are supported https://github.com/solo-io/solo-projects/issues/6107
+{{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
       - emptyDir:
           medium: Memory
         name: istio-certs
@@ -252,7 +256,7 @@ spec:
         emptyDir: {}
       - name: workload-certs
         emptyDir: {}
-{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
 {{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
@@ -380,7 +384,8 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-        {{- if $gateway.istioSDS.enabled }}
+        # TODO(npolshak): Remove istioSDS once default GatewayParameters are supported https://github.com/solo-io/solo-projects/issues/6107
+        {{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
           http2_protocol_options: {}
@@ -393,7 +398,7 @@ data:
                       socket_address:
                         address: 127.0.0.1
                         port_value: 8234
-        {{- end }} {{/* if $gateway.istioSDS.enabled */}}
+        {{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
