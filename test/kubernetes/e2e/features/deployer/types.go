@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	gwParametersManifestFile      = filepath.Join(util.MustGetThisDir(), "gateway-parameters.yaml")
-	deployerProvisionManifestFile = filepath.Join(util.MustGetThisDir(), "deployer-provision.yaml")
+	gwParametersManifestFile           = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-parameters.yaml")
+	deployerProvisionManifestFile      = filepath.Join(util.MustGetThisDir(), "testdata", "deployer-provision.yaml")
+	istioGatewayParametersManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "istio-gateway-parameters.yaml")
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
