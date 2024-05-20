@@ -192,10 +192,18 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
 			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
-			IstioSDS: &helmIstioSds{
+			// TODO(npolshak): Remove once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
+			IstioSDS: &istioSDS{
 				Enabled: &d.inputs.IstioValues.SDSEnabled,
 			},
 		},
+	}
+
+	// TODO(npolshak): Remove once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
+	if d.inputs.IstioValues.SDSEnabled {
+		// Is Istio integration is enabled, we need to set the SDS image tag
+		vals.Gateway.Sds = getDefaultSdsValues(d.inputs.Extensions.GetSdsImage())
+		vals.Gateway.Sds.Istio = getDefaultIstioValues()
 	}
 
 	// check if there is a GatewayParameters associated with this Gateway
@@ -216,6 +224,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
+	sds := kubeProxyConfig.GetSds()
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
@@ -240,13 +249,16 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-
 	vals.Gateway.LogLevel = &logLevel
 	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
 	if err != nil {
 		return nil, err
 	}
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
+
+	// sds values
+	vals.Gateway.Sds = getSdsValues(sds, d.inputs.Extensions.GetSdsImage())
+
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())

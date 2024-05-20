@@ -21,6 +21,9 @@ type K8sGatewayExtensions interface {
 
 	// GetEnvoyImage returns the envoy image and tag used by the proxy deployment.
 	GetEnvoyImage() Image
+
+	// GetSdsImage returns the sds image and tag used by the proxy deployment.
+	GetSdsImage() Image
 }
 
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
@@ -80,6 +83,14 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.
 func (e *k8sGatewayExtensions) GetEnvoyImage() Image {
 	return Image{
 		Repository: "gloo-envoy-wrapper",
+		Tag:        version.Version,
+	}
+}
+
+// GetSdsImage returns the image repo and tag to use for the sds container image
+func (e *k8sGatewayExtensions) GetSdsImage() Image {
+	return Image{
+		Repository: "sds",
 		Tag:        version.Version,
 	}
 }

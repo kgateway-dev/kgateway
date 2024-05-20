@@ -106,7 +106,7 @@ spec:
   {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
 {{ end -}}
 {{- if $spec.podTemplate.enablePodSecurityContext -}}
-{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults) | indent 6 -}}
+{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults "indent" 6) -}}
 {{- end -}}
 
 {{- if $spec.kind.deployment }}
@@ -217,8 +217,7 @@ spec:
         {{- if not $spec.podTemplate.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
-
+        {{- include "gloo.containerSecurityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
@@ -301,10 +300,7 @@ spec:
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
-        {{- with $global.glooMtls.sds.securityContext }}}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.sds.securityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
         resources:
@@ -368,10 +364,7 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        {{- with $global.glooMtls.istioProxy.securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.istioProxy.securityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         {{- $istioProxyImage := merge $global.glooMtls.istioProxy.image $global.image }}
         image: {{ template "gloo.image" $istioProxyImage }}
         imagePullPolicy: {{ $istioProxyImage.pullPolicy }}

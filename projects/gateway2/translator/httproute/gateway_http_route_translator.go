@@ -119,9 +119,10 @@ func translateGatewayHTTPRouteRule(
 			Options:  &v1.RouteOptions{},
 		}
 
-		hasDelegatedRoute := false
+		var delegatedRoutes []*v1.Route
+		var delegates bool
 		if len(rule.BackendRefs) > 0 {
-			hasDelegatedRoute = setRouteAction(
+			delegates = setRouteAction(
 				ctx,
 				queries,
 				gwroute,
@@ -132,7 +133,7 @@ func translateGatewayHTTPRouteRule(
 				pluginRegistry,
 				gwListener,
 				match,
-				outputs,
+				&delegatedRoutes,
 				routesVisited,
 				delegationChain,
 			)
@@ -147,14 +148,34 @@ func translateGatewayHTTPRouteRule(
 			Match:           &match,
 			Reporter:        reporter,
 		}
+
+		// Apply the plugins for this route
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
 			}
-		}
 
-		if outputRoute.GetAction() == nil && !hasDelegatedRoute {
+			// If this parent route has delegatee routes, override any applied policies
+			// that are on the child with the parent's policies.
+			// When a plugin is invoked on a route, it must override the existing route.
+			for _, child := range delegatedRoutes {
+				err := plugin.ApplyRoutePlugin(ctx, rtCtx, child)
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Errorf("error applying RoutePlugin to child route %s: %v", child.GetName(), err)
+				}
+			}
+		}
+		// Add the delegatee output routes to the final output list
+		*outputs = append(*outputs, delegatedRoutes...)
+
+		// It is possible for a parent route to not produce an output route action
+		// if it only delegates and does not directly route to a backend.
+		// We should only set a direct response action when there is no output action
+		// for a parent rule and when there are no delegated routes because this would
+		// otherwise result in a top level matcher with a direct response action for the
+		// path that the parent is delegating for.
+		if outputRoute.GetAction() == nil && !delegates {
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,
@@ -268,14 +289,14 @@ func setRouteAction(
 	delegationChain *list.List,
 ) bool {
 	var weightedDestinations []*v1.WeightedDestination
-	hasDelegatedRoute := false
 	backendRefs := rule.BackendRefs
+	delegates := false
 
 	for _, backendRef := range backendRefs {
 		// If the backend is an HTTPRoute, it implies route delegation
 		// for which delegated routes are recursively flattened and translated
 		if backendref.RefIsHTTPRoute(backendRef.BackendObjectReference) {
-			hasDelegatedRoute = true
+			delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
 				ctx, queries, gwroute, rule, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
@@ -379,5 +400,5 @@ func setRouteAction(
 		}
 	}
 
-	return hasDelegatedRoute
+	return delegates
 }

@@ -38,14 +38,19 @@ type RouteContext struct {
 }
 
 type DelegationCtx struct {
-	Ref  types.NamespacedName
-	Rule *gwv1.HTTPRouteRule
+	Ref types.NamespacedName
 }
 
 type RoutePlugin interface {
 	Plugin
 
 	// ApplyRoutePlugin is called for each Match in a given Rule
+	//
+	// For delegatee/child routes, this will be called multiple times for
+	// each route in the delegation chain starting from the child to the parent
+	// up the chain. Plugins may choose to override the existing configuration
+	// associated with a route when the plugin is invoked multiple times on the
+	// same route but with different configuration.
 	ApplyRoutePlugin(
 		ctx context.Context,
 		routeCtx *RouteContext,

@@ -1,0 +1,17 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6204
+    resolvesIssue: true
+    description: |
+      gateway2: simplify how plugins handle delegated routes
+
+      This change simplifies how plugins may perform merging
+      of policies in a delegation chain, particularly in the
+      case of RouteOptions. It performs an in-place merge
+      such that the policy on a child route may be overridden
+      by by a subsequent call to the plugin with a different
+      route context.
+
+      Further, it accurately tracks the source RouteOptions
+      involved in the merge so that the statuses on them
+      can be correctly reported.
