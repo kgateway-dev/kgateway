@@ -1,0 +1,20 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/8864
+    resolvesIssue: false
+    description: >-
+      Add helm values for all containers to allow for conforming to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
+  - type: HELM
+    description: >-
+      * Add helm values for all containers to allow defining containers' securityContexts
+      * Add global.podSecurityStandards.enableRestrictedContainerDefaults to default to using a restricted set of container defaults
+      * Add new helper template to render the container securityContexts and apply the defaults if neccessary
+    issueLink: https://github.com/solo-io/gloo/issues/8864
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    resolvesIssue: false
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.6.3
+    description: >-
+      Pull in support for converting unstructured k8s CronJobs into k8s resources.
