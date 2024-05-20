@@ -6365,7 +6365,6 @@ metadata:
 					securityContext.RunAsUser = pointer.Int64(int64(10101))
 				})
 				applyKnative := applyContainerSecurityDefaults(func(securityContext *v1.SecurityContext) {
-					securityContext.RunAsUser = pointer.Int64(int64(10101))
 					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 					securityContext.Capabilities = &v1.Capabilities{
 						Drop: []v1.Capability{"ALL"},

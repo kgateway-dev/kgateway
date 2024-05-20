@@ -64,9 +64,6 @@ spec:
             "allowPrivilegeEscalation" false
             "capabilities" $capabilities
         }}
-       {{- if .Values.settings.integrations.knative.proxy.runAsUser -}}
-          {{- $_ := set $securityDefaults "runAsUser" .Values.settings.integrations.knative.proxy.runAsUser }}
-        {{- end -}}
         {{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
