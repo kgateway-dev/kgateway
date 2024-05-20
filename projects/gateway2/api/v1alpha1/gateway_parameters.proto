@@ -131,13 +131,13 @@ message IstioIntegration {
   // Configuration for the container running istio-proxy.
   IstioContainer istio_container = 1;
 
-  // The address of the istio discovery service.
+  // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
   string istio_discovery_address = 2;
 
-  // The mesh id of the istio mesh.
+  // The mesh id of the istio mesh. Defaults to "cluster.local".
   string istio_meta_mesh_id = 3;
 
-  // The cluster id of the istio cluster.
+  // The cluster id of the istio cluster. Defaults to "Kubernetes".
   string istio_meta_cluster_id = 4;
 }
 

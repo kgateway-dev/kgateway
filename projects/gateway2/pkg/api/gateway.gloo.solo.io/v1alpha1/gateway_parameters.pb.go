@@ -502,11 +502,11 @@ type IstioIntegration struct {
 
 	// Configuration for the container running istio-proxy.
 	IstioContainer *IstioContainer `protobuf:"bytes,1,opt,name=istio_container,json=istioContainer,proto3" json:"istio_container,omitempty"`
-	// The address of the istio discovery service.
+	// The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
 	IstioDiscoveryAddress string `protobuf:"bytes,2,opt,name=istio_discovery_address,json=istioDiscoveryAddress,proto3" json:"istio_discovery_address,omitempty"`
-	// The mesh id of the istio mesh.
+	// The mesh id of the istio mesh. Defaults to "cluster.local".
 	IstioMetaMeshId string `protobuf:"bytes,3,opt,name=istio_meta_mesh_id,json=istioMetaMeshId,proto3" json:"istio_meta_mesh_id,omitempty"`
-	// The cluster id of the istio cluster.
+	// The cluster id of the istio cluster. Defaults to "Kubernetes".
 	IstioMetaClusterId string `protobuf:"bytes,4,opt,name=istio_meta_cluster_id,json=istioMetaClusterId,proto3" json:"istio_meta_cluster_id,omitempty"`
 }
 
