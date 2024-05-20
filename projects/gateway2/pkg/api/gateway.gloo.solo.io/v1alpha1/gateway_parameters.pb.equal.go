@@ -134,6 +134,16 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetSds()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSds()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSds(), target.GetSds()) {
+			return false
+		}
+	}
+
 	switch m.WorkloadType.(type) {
 
 	case *KubernetesProxyConfig_Deployment:
@@ -293,6 +303,246 @@ func (m *EnvoyBootstrap) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SdsIntegration) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SdsIntegration)
+	if !ok {
+		that2, ok := that.(SdsIntegration)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetSdsContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSdsContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSdsContainer(), target.GetSdsContainer()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioIntegration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioIntegration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioIntegration(), target.GetIstioIntegration()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *IstioIntegration) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*IstioIntegration)
+	if !ok {
+		that2, ok := that.(IstioIntegration)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetIstioDiscoveryAddress(), target.GetIstioDiscoveryAddress()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetIstioMetaMeshId(), target.GetIstioMetaMeshId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetIstioMetaClusterId(), target.GetIstioMetaClusterId()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SdsContainer) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SdsContainer)
+	if !ok {
+		that2, ok := that.(SdsContainer)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetImage()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetImage()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetImage(), target.GetImage()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetSecurityContext()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSecurityContext()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSecurityContext(), target.GetSecurityContext()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetResources()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResources()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResources(), target.GetResources()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetBootstrap()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBootstrap()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBootstrap(), target.GetBootstrap()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SdsBootstrap) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SdsBootstrap)
+	if !ok {
+		that2, ok := that.(SdsBootstrap)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *IstioContainer) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*IstioContainer)
+	if !ok {
+		that2, ok := that.(IstioContainer)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetImage()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetImage()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetImage(), target.GetImage()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetSecurityContext()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSecurityContext()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSecurityContext(), target.GetSecurityContext()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetResources()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResources()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResources(), target.GetResources()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
+		return false
 	}
 
 	return true

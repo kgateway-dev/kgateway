@@ -48,6 +48,10 @@ message KubernetesProxyConfig {
 
   // Autoscaling configuration.
   kube.gateway.gloo.solo.io.Autoscaling autoscaling = 5;
+
+  // Sds configuration.
+  // A non-nil value will enable sds integration.  If empty config is provided, the default values will be used.
+  SdsIntegration sds = 6;
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
@@ -107,6 +111,96 @@ message EnvoyBootstrap {
   //
   // Note: the keys and values cannot be empty, but they are not otherwise validated.
   map<string, string> component_log_levels = 2;
+}
+
+// Configuration for the sds integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
+// If not set, internal mtls authentication will not be used.
+message SdsIntegration {
+  // Configuration for the container running Gloo sds.
+  // If not provided, the default values will be used.
+  SdsContainer sds_container = 1;
+
+  // Istio integration configuration
+  // A non-nil value will enable sds integration. If empty config is provided, the default values will be used.
+  IstioIntegration istio_integration = 2;
+
+}
+
+// Configuration for the Istio integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
+message IstioIntegration {
+  // Configuration for the container running istio-proxy.
+  IstioContainer istio_container = 1;
+
+  // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
+  string istio_discovery_address = 2;
+
+  // The mesh id of the istio mesh. Defaults to "cluster.local".
+  string istio_meta_mesh_id = 3;
+
+  // The cluster id of the istio cluster. Defaults to "Kubernetes".
+  string istio_meta_cluster_id = 4;
+}
+
+// Configuration for the container running Gloo sds.
+message SdsContainer {
+  // The sds container image. See
+  // https://kubernetes.io/docs/concepts/containers/images
+  // for details.
+  //
+  // Default values for Edge OSS, which may be overridden individually:
+  //   registry: quay.io/solo-io
+  //   repository: sds / sds-ee
+  //   tag: <gloo version> (OSS) / <gloo-ee version> (EE)
+  //   pullPolicy: IfNotPresent
+  kube.gateway.gloo.solo.io.Image image = 1;
+
+  // The security context for this container. See
+  // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+  // for details.
+  k8s.io.api.core.v1.SecurityContext security_context = 2;
+
+  // The compute resources required by this container. See
+  // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  // for details.
+  kube.gateway.gloo.solo.io.ResourceRequirements resources = 3;
+
+  // Initial SDS container configuration.
+  SdsBootstrap bootstrap = 4;
+}
+
+// Configuration for the sds instance that is provisioned from a Kubernetes Gateway.
+message SdsBootstrap {
+  // Log level for sds.  Options include "info", "debug", "warn", "error", "panic" and "fatal".
+  // Default level is "info".
+  string log_level = 1;
+}
+
+// Configuration for the container running the istio-proxy.
+message IstioContainer {
+  // The envoy container image. See
+  // https://kubernetes.io/docs/concepts/containers/images
+  // for details.
+  //
+  // Default values, which may be overridden individually:
+  //   registry: docker.io/istio
+  //   repository: proxyv2
+  //   tag: <gloo version> (OSS) / <gloo-ee version> (EE)
+  //   pullPolicy: IfNotPresent
+  kube.gateway.gloo.solo.io.Image image = 1;
+
+  // The security context for this container. See
+  // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+  // for details.
+  k8s.io.api.core.v1.SecurityContext security_context = 2;
+
+  // The compute resources required by this container. See
+  // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  // for details.
+  kube.gateway.gloo.solo.io.ResourceRequirements resources = 3;
+
+  // Log level for istio-proxy. Options include "info", "debug", "warning", and "error".
+  // Default level is info Default is "warning".
+  string log_level = 4;
 }
 
 message GatewayParametersStatus {
