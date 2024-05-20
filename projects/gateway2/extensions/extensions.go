@@ -79,6 +79,7 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.
 // in the proxy deployment.
 func (e *k8sGatewayExtensions) GetEnvoyImage() Image {
 	return Image{
+		Registry:   "quay.io/solo-io",
 		Repository: "gloo-envoy-wrapper",
 		Tag:        version.Version,
 	}
@@ -94,6 +95,7 @@ func (e *k8sGatewayExtensions) GetEnvoyImage() Image {
 // Users may override the default OSS/EE Envoy image repo/tag (as well as other fields) completely via
 // a GatewayParameters CR attached to a Gateway.
 type Image struct {
+	Registry   string
 	Repository string
 	Tag        string
 }

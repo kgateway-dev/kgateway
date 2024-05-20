@@ -115,7 +115,11 @@ func getMergedEnvoyImageValues(defaultImage extensions.Image, overrideImage *v1a
 		return getDefaultEnvoyImageValues(defaultImage)
 	}
 
-	// for repo and tag, fall back to defaults if not provided
+	// for registry, repo and tag, fall back to defaults if not provided
+	registry := overrideImage.GetRegistry()
+	if registry == "" {
+		registry = defaultImage.Registry
+	}
 	repository := overrideImage.GetRepository()
 	if repository == "" {
 		repository = defaultImage.Repository
@@ -125,7 +129,6 @@ func getMergedEnvoyImageValues(defaultImage extensions.Image, overrideImage *v1a
 		tag = defaultImage.Tag
 	}
 
-	registry := overrideImage.GetRegistry()
 	digest := overrideImage.GetDigest()
 
 	// get the string representation of pull policy, unless it's unspecified, in which case we
