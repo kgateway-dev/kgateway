@@ -6380,7 +6380,7 @@ metadata:
 					return defaultRestrictedContainerSecurityContext
 				}
 
-				DescribeTable("applies default retricted container security contexts", func(resourceName string, containerName string, resourceType string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
+				DescribeTable("applies default restricted container security contexts", func(resourceName string, containerName string, resourceType string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
 
 					for _, seccompTypeValue := range []string{"RuntimeDefault", "Localhost", ""} {
 						helmArgs := extraArgs
