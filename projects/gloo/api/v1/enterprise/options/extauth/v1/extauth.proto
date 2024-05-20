@@ -45,6 +45,7 @@ message AuthConfig {
         google.protobuf.StringValue name = 9;
 
         oneof auth_config {
+            // +kubebuilder:validation:XValidation:rule="has(self.apr) || (has(self.encryption) && has(self.userList))",message="either apr or both encryption and userSource must be set"
             BasicAuth basic_auth = 1;
             OAuth oauth = 2 [deprecated = true];
             OAuth2 oauth2 = 8;
@@ -69,7 +70,8 @@ message AuthConfig {
     // State is shared between successful requests on the chain, i.e., the headers returned from each
     // successful auth service get appended into the final auth response.
     //
-    // +kubebuilder:validation:MaxItems=100000
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinItems=1
     repeated Config configs = 3;
 
     // How to handle processing of named configs within an auth config chain.
@@ -253,6 +255,7 @@ message AuthPlugin {
     // If not specified, defaults to the name of the plugin
     string exported_symbol_name = 3;
 
+    // +kubebuilder:validation:Required
     google.protobuf.Struct config = 4;
 }
 

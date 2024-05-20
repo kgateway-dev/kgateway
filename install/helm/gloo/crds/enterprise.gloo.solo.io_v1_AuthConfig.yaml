@@ -207,6 +207,10 @@ spec:
                               type: object
                           type: object
                       type: object
+                      x-kubernetes-validations:
+                      - message: either apr or both encryption and userSource must
+                          be set
+                        rule: has(self.apr) || (has(self.encryption) && has(self.userList))
                     hmacAuth:
                       properties:
                         parametersInHeaders:
@@ -881,9 +885,11 @@ spec:
                           type: string
                         pluginFileName:
                           type: string
+                      required:
+                      - config
                       type: object
                   type: object
-                maxItems: 100000
+                minItems: 1
                 type: array
               failOnRedirect:
                 type: boolean
@@ -895,6 +901,8 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
                 type: object
+            required:
+            - configs
             type: object
           status:
             default: {}
