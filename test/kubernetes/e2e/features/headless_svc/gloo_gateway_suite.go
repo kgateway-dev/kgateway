@@ -42,12 +42,6 @@ func (s *edgeGatewaySuite) SetupSuite() {
 	s.Require().NoError(err, "can write resources to file")
 }
 
-func (s *edgeGatewaySuite) TearDownSuite() {
-	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, s.routingManifestFile)
-	s.testInstallation.Assertions.ExpectObjectDeleted(s.routingManifestFile, err, output)
-	s.NoError(err, "can delete setup manifest")
-}
-
 func (s *edgeGatewaySuite) TestEdgeGatewayRoutingHeadlessSvc() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, headlessSvcSetupManifest)
