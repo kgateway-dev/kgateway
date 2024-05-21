@@ -38,7 +38,7 @@ import (
 	v19 "k8s.io/client-go/kubernetes/typed/events/v1"
 	v1beta17 "k8s.io/client-go/kubernetes/typed/events/v1beta1"
 	v1beta18 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	v1alpha13 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
+	v1beta31 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta3"
 	v1beta19 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
 	v1beta20 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
 	v1beta3 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta3"
@@ -492,10 +492,10 @@ func (mr *MockInterfaceMockRecorder) ExtensionsV1beta1() *gomock.Call {
 }
 
 // FlowcontrolV1alpha1 mocks base method.
-func (m *MockInterface) FlowcontrolV1alpha1() v1alpha13.FlowcontrolV1alpha1Interface {
+func (m *MockInterface) FlowcontrolV1alpha1() v1beta31.FlowcontrolV1alpha1Interface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FlowcontrolV1alpha1")
-	ret0, _ := ret[0].(v1alpha13.FlowcontrolV1alpha1Interface)
+	ret0, _ := ret[0].(v1beta31.FlowcontrolV1alpha1Interface)
 	return ret0
 }
 
