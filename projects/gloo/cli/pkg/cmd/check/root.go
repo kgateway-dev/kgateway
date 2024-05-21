@@ -378,10 +378,6 @@ func checkPods(ctx context.Context, printer printers.P, opts *options.Options) e
 				if conditionNotMet {
 					errorToPrint = fmt.Sprintf("Pod %s in namespace %s is unschedulable!%s", pod.Name, pod.Namespace, message)
 				}
-			case corev1.PodReadyToStartContainers:
-				if conditionNotMet {
-					errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not ready to start containers!%s", pod.Name, pod.Namespace, message)
-				}
 			case corev1.ContainersReady:
 				if conditionNotMet {
 					errorToPrint = fmt.Sprintf("Not all containers in pod %s in namespace %s are ready!%s", pod.Name, pod.Namespace, message)
