@@ -29,6 +29,13 @@ weight: 5
  
 Configure the proxy latency filter. This filter measures the latency
 incurred by the filter chain in a histogram.
+The filter fields are similar to the settings for [`COMMON_DURATION`](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage.html),
+introduced in Envoy 1.31.
+The filter also emits the following additional dynamic metadata fields,
+which you can use to augment the existing upstream options for access logging:
+- request_out_internal: first_byte_processed_millis
+- request_out: firstUpstreamTxByteSent
+- response_out: firstDownstreamTxByteSent
 
 ```yaml
 "request": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
@@ -42,12 +49,12 @@ incurred by the filter chain in a histogram.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `request` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How to measure the request. |
+| `request` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How to measure the request. Affects the output stats. Does not affect metadata. |
 | `measureRequestInternally` | `bool` | When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is instead of when the first byte is sent upstream. This has the advantage of not measuring the time selected for request measurment, finish measuring proxy latency when decodeHeader for this it takes a connection to form, which may skew the P99. filter is hit instead of when the first byte is sent upstream. This has the advantage of not for this to work the filter should be inserted last, just before the router filter. measuring the time it takes a connection to form, which may skew the P99. For this to work this filter should be inserted last, just before the router filter. This has no effect if other measurement type is selected, and has no effect on how response is measured. |
 | `response` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How measure the response. |
 | `chargeClusterStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per upstream cluster. If not specified, defaults to true. |
 | `chargeListenerStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per listener. If not specified, defaults to true. |
-| `emitDynamicMetadata` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should we emit request timing to dynamic metadata. defaults to true. |
+| `emitDynamicMetadata` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether request timing is emitted to dynamic metadata. If enabled, defaults to true. |
 
 
 
