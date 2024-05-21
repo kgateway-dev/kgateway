@@ -753,7 +753,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if opts.ProxyDebugServer.StartGrpcServer {
 		proxyDebugServer := opts.ProxyDebugServer
-		proxyDebugServer.Server.RegisterProxyReader(debug.EdgeGatewayTranslation, proxyClient)
+		proxyDebugServer.Server.RegisterProxyReader(proxyClient)
 		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
