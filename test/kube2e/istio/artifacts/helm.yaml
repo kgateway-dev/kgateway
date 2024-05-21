@@ -11,6 +11,9 @@ global:
         repository: proxyv2
         registry: docker.io/istio
         tag: 1.18.2 # This tag has to match the version of Istio being used in the test
+  podSecurityStandards:
+    container:
+      enableRestrictedContainerDefaults: true
 gloo:
   logLevel: info
   disableLeaderElection: true

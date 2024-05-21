@@ -58,16 +58,16 @@ spec:
 {{ toYaml .Values.discovery.deployment.resources | indent 10}}
 {{- end}}
         # container security context
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          {{- if not .Values.discovery.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.discovery.deployment.runAsUser) -}}
-          {{- end }}
-          capabilities:
-            drop:
-            - ALL
+        {{- $capabilities := dict "drop" (list "ALL") -}}
+        {{- $securityDefaults := dict
+            "readOnlyRootFilesystem" true
+            "allowPrivilegeEscalation" false
+            "runAsNonRoot" true
+            "capabilities" $capabilities -}}
+        {{- if not .Values.discovery.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.discovery.deployment.runAsUser }}
+        {{- end -}}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.discovery.deployment.discoveryContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         env:
 {{- if .Values.license_secret_name }}
           - name: GLOO_LICENSE_KEY
