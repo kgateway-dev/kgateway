@@ -54,16 +54,11 @@ func (s *edgeGatewaySuite) TestEdgeGatewayRoutingHeadlessSvc() {
 		s.NoError(err, "can delete setup manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, headlessService)
 
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.routingManifestFile)
-		s.NoError(err, "can delete setup Edge Gateway API routing manifest")
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headlessSvcSetupManifest)
 	s.Assert().NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
-	s.NoError(err, "can setup Edge Gateway API routing manifest")
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
