@@ -139,7 +139,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
-		IstioValues:    c.cfg.IstioValues,
 		ControlPlane:   c.cfg.ControlPlane,
 		Extensions:     c.cfg.Extensions,
 	})
