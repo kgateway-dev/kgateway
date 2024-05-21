@@ -42,15 +42,15 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) *tsuit
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestBasic":                       {basicRoutesManifest},
-		"TestRecursive":                   {recursiveRoutesManifest},
-		"TestCyclic":                      {cyclicRoutesManifest},
-		"TestInvalidChild":                {invalidChildRoutesManifest},
-		"TestHeaderQueryMatch":            {headerQueryMatchRoutesManifest},
-		"TestMultipleParents":             {multipleParentsManifest},
-		"TestInvalidChildValidStandalone": {invalidChildValidStandaloneManifest},
-		"TestUnresolvedChild":             {unresolvedChildManifest},
-		"TestRouteOptions":                {routeOptionsManifest},
+		"TestBasic":                       {commonManifest, basicRoutesManifest},
+		"TestRecursive":                   {commonManifest, recursiveRoutesManifest},
+		"TestCyclic":                      {commonManifest, cyclicRoutesManifest},
+		"TestInvalidChild":                {commonManifest, invalidChildRoutesManifest},
+		"TestHeaderQueryMatch":            {commonManifest, headerQueryMatchRoutesManifest},
+		"TestMultipleParents":             {commonManifest, multipleParentsManifest},
+		"TestInvalidChildValidStandalone": {commonManifest, invalidChildValidStandaloneManifest},
+		"TestUnresolvedChild":             {commonManifest, unresolvedChildManifest},
+		"TestRouteOptions":                {commonManifest, routeOptionsManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
@@ -69,11 +69,6 @@ func (s *tsuite) SetupSuite() {
 	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.ClusterContext)
 	s.Require().NoError(err)
 	s.ti.ResourceClients = clients
-
-	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, commonManifest)
-	s.Require().NoError(err)
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, s.manifestObjects[commonManifest]...)
-
 }
 
 func (s *tsuite) TearDownSuite() {
