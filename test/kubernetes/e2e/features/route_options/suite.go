@@ -68,7 +68,11 @@ func (s *testingSuite) SetupSuite() {
 	}
 }
 
-func (s *testingSuite) TearDownSuite() {}
+func (s *testingSuite) TearDownSuite() {
+	// Delete the common setup manifest
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
+	s.NoError(err, "can delete "+setupManifest)
+}
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	if strings.Contains(testName, "ManualSetup") {
