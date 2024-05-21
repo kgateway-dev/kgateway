@@ -222,7 +222,8 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 // Returns true for when configured for Istio integration where endpoints must
 // be defined by IP address rather than hostnames. For details, see:
 // * https://github.com/solo-io/gloo/issues/6195
-func isIstioInjectionEnabled() bool {
+func isIstioInjectionEnabled(ctx context.Context) bool {
+	contextutils.LoggerFrom(ctx).Warnf("istioIntegration.enableIstioSidecarOnGateway will soon be deprecated. Use istioSDS.enabled instead.")
 	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
 	return found && strings.ToLower(lookupResult) == "true"
 }
@@ -341,7 +342,7 @@ func computeGlooEndpoints(
 	var warnsToLog, errorsToLog []string
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
-	istioInjectionEnabled := isIstioInjectionEnabled()
+	istioInjectionEnabled := isIstioInjectionEnabled(ctx)
 
 	// for each upstream
 	for usRef, spec := range upstreams {
