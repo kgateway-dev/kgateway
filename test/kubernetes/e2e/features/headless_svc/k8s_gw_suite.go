@@ -56,11 +56,17 @@ func (s *k8sGatewaySuite) TestConfigureRoutingHeadlessSvc() {
 		s.NoError(err, "can delete setup manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, headlessService)
 
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, s.routingManifestFile)
+		s.NoError(err, "can delete setup k8s routing manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, k8sApiProxyDeployment, k8sApiProxyService)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headlessSvcSetupManifest)
 	s.Assert().NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
+	s.NoError(err, "can setup k8s routing manifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, k8sApiProxyDeployment, k8sApiProxyService)
 
