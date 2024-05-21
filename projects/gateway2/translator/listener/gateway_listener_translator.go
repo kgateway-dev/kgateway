@@ -169,6 +169,7 @@ func (ml *mergedListeners) appendHttpsListener(
 		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,
+		listener:          listener, // TODO(infocus7): ask jenny/ggv2-team why we aren't passing the listener here, but we are for http. was it just accidentally forgotten?
 	})
 }
 
