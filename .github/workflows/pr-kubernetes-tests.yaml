@@ -57,37 +57,37 @@ jobs:
         test:
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_one'
-          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
-          kubectl-version: 'v1.28.4'
-          helm-version: 'v3.13.2'
+          kubectl-version: 'v1.29.2'
+          helm-version: 'v3.14.4'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_two'
-          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
-          kubectl-version: 'v1.28.4'
-          helm-version: 'v3.13.2'
+          kubectl-version: 'v1.29.2'
+          helm-version: 'v3.14.4'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_three'
-          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
-          kubectl-version: 'v1.28.4'
-          helm-version: 'v3.13.2'
+          kubectl-version: 'v1.29.2'
+          helm-version: 'v3.14.4'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$)'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-id: 'cluster_four'
-          cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
-          kubectl-version: 'v1.28.4'
-          helm-version: 'v3.13.2'
+          kubectl-version: 'v1.29.2'
+          helm-version: 'v3.14.4'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
 
