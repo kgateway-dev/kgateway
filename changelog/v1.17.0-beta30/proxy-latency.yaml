@@ -1,0 +1,4 @@
+  changelog:
+    - type: NON_USER_FACING
+      description: Update proxy latency docs with more usage
+      issueLink: https://github.com/solo-io/gloo/issues/9317
