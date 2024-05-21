@@ -212,10 +212,10 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 				networkFilterTranslator: networkFilterTranslator,
 				sslConfigTranslator:     l.sslConfigTranslator,
 				sslConfigurations:       matchedListener.GetSslConfigurations(),
-				defaultSslConfig:        matcher.GetSslConfig(),          // HybridGateway only feature
-				prefixRanges:            matcher.GetPrefixRanges(),       // HybridGateway only feature
-				sourcePrefixRanges:      matcher.GetSourcePrefixRanges(), // HybridGateway only feature
-				destinationPort:         matcher.GetDestinationPort(),    // HybridGateway only feature
+				defaultSslConfig:        matcher.GetSslConfig(),                  // HybridGateway only feature
+				prefixRanges:            matcher.GetPrefixRanges(),               // HybridGateway only feature
+				sourcePrefixRanges:      matcher.GetSourcePrefixRanges(),         // HybridGateway only feature
+				destinationPort:         matcher.GetDestinationPort().GetValue(), // HybridGateway only feature
 			}
 
 			// This translator produces a single RouteConfiguration
@@ -243,10 +243,10 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 				parentListener:          listener,
 				listener:                listenerType.TcpListener,
 				report:                  hybridListenerReport.GetMatchedListenerReports()[utils.MatchedRouteConfigName(listener, matcher)].GetTcpListenerReport(),
-				defaultSslConfig:        matcher.GetSslConfig(),          // HybridGateway only feature
-				prefixRanges:            matcher.GetPrefixRanges(),       // HybridGateway only feature
-				sourcePrefixRanges:      matcher.GetSourcePrefixRanges(), // HybridGateway only feature
-				destinationPort:         matcher.GetDestinationPort(),    // HybridGateway only feature
+				defaultSslConfig:        matcher.GetSslConfig(),                  // HybridGateway only feature
+				prefixRanges:            matcher.GetPrefixRanges(),               // HybridGateway only feature
+				sourcePrefixRanges:      matcher.GetSourcePrefixRanges(),         // HybridGateway only feature
+				destinationPort:         matcher.GetDestinationPort().GetValue(), // HybridGateway only feature
 				passthroughCipherSuites: matcher.GetPassthroughCipherSuites(),
 			}
 
@@ -345,7 +345,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 			defaultSslConfig:        nil,
 			prefixRanges:            httpFilterChain.GetMatcher().GetPrefixRanges(),
 			sourcePrefixRanges:      httpFilterChain.GetMatcher().GetSourcePrefixRanges(),
-			destinationPort:         httpFilterChain.GetMatcher().GetDestinationPort(),
+			destinationPort:         httpFilterChain.GetMatcher().GetDestinationPort().GetValue(),
 		}
 
 		// This translator produces a single RouteConfiguration
@@ -391,7 +391,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 			defaultSslConfig:        matcher.GetSslConfig(),
 			prefixRanges:            matcher.GetPrefixRanges(),
 			sourcePrefixRanges:      matcher.GetSourcePrefixRanges(),
-			destinationPort:         matcher.GetDestinationPort(),
+			destinationPort:         matcher.GetDestinationPort().GetValue(),
 			passthroughCipherSuites: matcher.GetPassthroughCipherSuites(),
 		}
 

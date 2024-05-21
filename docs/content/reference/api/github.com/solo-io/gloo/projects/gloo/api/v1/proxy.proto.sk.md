@@ -285,17 +285,17 @@ Some traffic policies can be configured to work both on the listener and virtual
 "sslConfig": .gloo.solo.io.SslConfig
 "sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
 "prefixRanges": []solo.io.envoy.config.core.v3.CidrRange
-"destinationPort": int
+"destinationPort": .google.protobuf.UInt32Value
 "passthroughCipherSuites": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) |  |
-| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
-| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
-| `destinationPort` | `int` |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) | Source addresses to match. This is either the actual address used to connect or overridden using PROXY protocol or original_src. |
+| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) | Destination addresses to match. This is either the actual address used to connect or overridden using PROXY protocol or original_dst. |
+| `destinationPort` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional destination port to consider in determining a filter chain match. |
 | `passthroughCipherSuites` | `[]string` |  |
 
 

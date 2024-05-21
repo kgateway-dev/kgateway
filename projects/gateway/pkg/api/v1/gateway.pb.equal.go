@@ -576,8 +576,14 @@ func (m *Matcher) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetDestinationPort() != target.GetDestinationPort() {
-		return false
+	if h, ok := interface{}(m.GetDestinationPort()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDestinationPort()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDestinationPort(), target.GetDestinationPort()) {
+			return false
+		}
 	}
 
 	if len(m.GetPassthroughCipherSuites()) != len(target.GetPassthroughCipherSuites()) {

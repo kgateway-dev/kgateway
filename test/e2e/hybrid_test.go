@@ -4,11 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"syscall"
-
-	"math/rand"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -170,10 +169,7 @@ func (gt *GwTester) makeARequest(testContext *e2e.TestContext, srcip net.IP, sni
 }
 
 var _ = Describe("Hybrid Gateway", func() {
-
-	var (
-		testContext *e2e.TestContext
-	)
+	var testContext *e2e.TestContext
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
@@ -197,7 +193,6 @@ var _ = Describe("Hybrid Gateway", func() {
 	})
 
 	Context("catchall match for http", func() {
-
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
 			gw.GetHybridGateway().MatchedGateways = []*v1.MatchedGateway{
@@ -237,11 +232,9 @@ var _ = Describe("Hybrid Gateway", func() {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", "0.5s").Should(Succeed())
 		})
-
 	})
 
 	Context("SourcePrefixRanges match for http", func() {
-
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
 			gw.GetHybridGateway().MatchedGateways = []*v1.MatchedGateway{
@@ -280,11 +273,9 @@ var _ = Describe("Hybrid Gateway", func() {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", "0.5s").Should(Succeed())
 		})
-
 	})
 
 	Context("SourcePrefixRanges miss for tcp", func() {
-
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
 
@@ -319,7 +310,6 @@ var _ = Describe("Hybrid Gateway", func() {
 				g.Expect(err).Should(HaveOccurred())
 			}, "3s", "0.5s").Should(Succeed())
 		})
-
 	})
 
 	Context("PrefixRanges and DestinationPort match for http", func() {
@@ -344,7 +334,9 @@ var _ = Describe("Hybrid Gateway", func() {
 								},
 							},
 						},
-						DestinationPort: testContext.EnvoyInstance().HybridPort,
+						DestinationPort: &wrappers.UInt32Value{
+							Value: testContext.EnvoyInstance().HybridPort,
+						},
 					},
 					GatewayType: &v1.MatchedGateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{},
@@ -363,7 +355,6 @@ var _ = Describe("Hybrid Gateway", func() {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", "0.5s").Should(Succeed())
 		})
-
 	})
 
 	Context("permutations of servername and SourcePrefixRanges", func() {
@@ -716,6 +707,5 @@ var _ = Describe("Hybrid Gateway", func() {
 					}, "more-specific"),
 			)
 		})
-
 	})
 })

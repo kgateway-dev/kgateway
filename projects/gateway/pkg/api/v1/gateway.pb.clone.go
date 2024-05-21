@@ -378,7 +378,11 @@ func (m *Matcher) Clone() proto.Message {
 		}
 	}
 
-	target.DestinationPort = m.GetDestinationPort()
+	if h, ok := interface{}(m.GetDestinationPort()).(clone.Cloner); ok {
+		target.DestinationPort = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.DestinationPort = proto.Clone(m.GetDestinationPort()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
 
 	if m.GetPassthroughCipherSuites() != nil {
 		target.PassthroughCipherSuites = make([]string, len(m.GetPassthroughCipherSuites()))
