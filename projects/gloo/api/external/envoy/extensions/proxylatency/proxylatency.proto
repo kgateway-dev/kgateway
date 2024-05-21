@@ -11,6 +11,13 @@ option (extproto.clone_all) = true;
 
 // Configure the proxy latency filter. This filter measures the latency
 // incurred by the filter chain in a histogram.
+// The filter fields are similar to the settings for [`COMMON_DURATION`](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage.html),
+// introduced in Envoy 1.31.
+// The filter also emits the following additional dynamic metadata fields,
+// which you can use to augment the existing upstream options for access logging:
+// - request_out_internal: first_byte_processed_millis
+// - request_out: firstUpstreamTxByteSent
+// - response_out: firstDownstreamTxByteSent
 message ProxyLatency {
 
     // How to perform the latency measurement. Given an incoming request from downstream and
@@ -28,6 +35,8 @@ message ProxyLatency {
     }
 
     // How to measure the request.
+    // Affects the output stats.
+    // Does not affect metadata.
     Measurement request = 1;
     // When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is
     // instead of when the first byte is sent upstream. This has the advantage of not measuring the time
@@ -47,6 +56,7 @@ message ProxyLatency {
     // Charge a stat per listener. If not specified, defaults to true.
     google.protobuf.BoolValue charge_listener_stat = 4;
 
-    // Should we emit request timing to dynamic metadata. defaults to true.
+    // Whether request timing is emitted to dynamic metadata.
+    // If enabled, defaults to true.
     google.protobuf.BoolValue emit_dynamic_metadata= 6;
 }
