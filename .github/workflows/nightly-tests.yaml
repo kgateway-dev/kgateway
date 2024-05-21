@@ -29,6 +29,10 @@ on:
       run-performance:
         description: "Run performance tests"
         type: boolean
+      run-kubernetes-end-to-end:
+        # /tests/kubernetes/e2e/...
+        description: "Run Kubernetes e2e tests"
+        type: boolean
 
 jobs:
   regression_tests_main:
