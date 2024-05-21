@@ -110,14 +110,14 @@ func getDefaultSdsValues(defaultSds extensions.Image) *helmSds {
 	      tag: ""
 	*/
 	defaultSdsImage := helmImage{
-		Repository: ptr.To(defaultSds.Repository),
-		Tag:        ptr.To(defaultSds.Tag),
-		Registry:   ptr.To("quay.io/solo-io"),
+		Repository: &defaultSds.Repository,
+		Tag:        &defaultSds.Tag,
+		Registry:   &defaultSds.Registry,
 	}
 
 	// The defaults are defined in values-template.yaml, but the default image tag and repository are set by the input extensions
 	return &helmSds{
-		Image: ptr.To(defaultSdsImage),
+		Image: &defaultSdsImage,
 		SdsBootstrap: &sdsBootstrap{
 			LogLevel: ptr.To("info"),
 		},
@@ -135,13 +135,14 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Imag
 	// if sdsConfig is not nil, but unset use defaults for sds config
 	if sdsConfig.GetSdsContainer() == nil {
 		sds = getDefaultSdsValues(defaultSds)
-		sds.Istio = getIstioValues(sdsConfig.GetIstioIntegration())
 	} else {
 		// Use GatewayParameter overrides if provided
 		var bootstrap *sdsBootstrap
-		if sdsConfig.GetSdsContainer() != nil {
+		if sdsContainer := sdsConfig.GetSdsContainer(); sdsContainer != nil {
 			bootstrap = &sdsBootstrap{
-				LogLevel: ptr.To(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
+				// Calling ptr.To here is safe because the chained getters will always
+				// return a string since the chain terminates with GetLogLevel()
+				LogLevel: ptr.To(sdsContainer.GetBootstrap().GetLogLevel()),
 			}
 		}
 
@@ -152,9 +153,10 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Imag
 			Resources:       sdsConfig.GetSdsContainer().GetResources(),
 			SecurityContext: sdsConfig.GetSdsContainer().GetSecurityContext(),
 			SdsBootstrap:    bootstrap,
-			Istio:           getIstioValues(sdsConfig.GetIstioIntegration()),
 		}
 	}
+
+	sds.Istio = getIstioValues(sdsConfig.GetIstioIntegration())
 	return sds
 }
 

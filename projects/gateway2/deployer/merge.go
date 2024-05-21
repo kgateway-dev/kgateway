@@ -74,6 +74,8 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 
 	dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
 
+	dstKube.Sds = deepMergeSdsIntegration(dstKube.GetSds(), srcKube.GetSds())
+
 	if srcKube.GetWorkloadType() == nil {
 		return dst
 	}
@@ -341,6 +343,105 @@ func deepMergeHorizontalPodAutoscaler(dst, src *kube.HorizontalPodAutoscaler) *k
 	dst.MaxReplicas = mergePointers(dst.GetMaxReplicas(), src.GetMaxReplicas())
 	dst.TargetCpuUtilizationPercentage = mergePointers(dst.GetTargetCpuUtilizationPercentage(), src.GetTargetCpuUtilizationPercentage())
 	dst.TargetMemoryUtilizationPercentage = mergePointers(dst.GetTargetMemoryUtilizationPercentage(), src.GetTargetMemoryUtilizationPercentage())
+
+	return dst
+}
+func deepMergeSdsIntegration(dst, src *v1alpha1.SdsIntegration) *v1alpha1.SdsIntegration {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	// SdsContainer, IstioIntegration
+	dst.SdsContainer = deepMergeSdsContainer(dst.GetSdsContainer(), src.GetSdsContainer())
+	dst.IstioIntegration = deepMergeIstioIntegration(dst.GetIstioIntegration(), src.GetIstioIntegration())
+
+	return dst
+}
+func deepMergeSdsContainer(dst, src *v1alpha1.SdsContainer) *v1alpha1.SdsContainer {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+	dst.Bootstrap = deepMergeSdsBootstrap(dst.GetBootstrap(), src.GetBootstrap())
+
+	return dst
+}
+func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstrap {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	if src.GetLogLevel() != "" {
+		dst.LogLevel = src.GetLogLevel()
+	}
+
+	return dst
+}
+func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.IstioIntegration {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
+
+	if istioDiscoveryAddress := src.GetIstioDiscoveryAddress(); istioDiscoveryAddress != "" {
+		dst.IstioDiscoveryAddress = istioDiscoveryAddress
+	}
+	if istioMetaMeshId := src.GetIstioMetaMeshId(); istioMetaMeshId != "" {
+		dst.IstioMetaMeshId = istioMetaMeshId
+	}
+	if istioMetaClusterId := src.GetIstioMetaClusterId(); istioMetaClusterId != "" {
+		dst.IstioMetaClusterId = istioMetaClusterId
+	}
+
+	return dst
+}
+func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioContainer {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+	/*
+		Image *kube.Image `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
+		SecurityContext *v1.SecurityContext `protobuf:"bytes,2,opt,name=security_context,json=securityContext,proto3" json:"security_context,omitempty"`
+		Resources *kube.ResourceRequirements `protobuf:"bytes,3,opt,name=resources,proto3" json:"resources,omitempty"`
+		LogLevel string `protobuf:"bytes,4,opt,name=log_level,json=logLevel,proto3" json:"log_level,omitempty"`
+	*/
+
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+
+	if logLevel := src.GetLogLevel(); logLevel != "" {
+		dst.LogLevel = logLevel
+	}
 
 	return dst
 }

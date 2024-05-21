@@ -91,6 +91,7 @@ func (e *k8sGatewayExtensions) GetEnvoyImage() Image {
 // GetSdsImage returns the image repo and tag to use for the sds container image
 func (e *k8sGatewayExtensions) GetSdsImage() Image {
 	return Image{
+		Registry:   "quay.io/solo-io",
 		Repository: "sds",
 		Tag:        version.Version,
 	}
