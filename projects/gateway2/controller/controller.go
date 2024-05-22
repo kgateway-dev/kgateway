@@ -306,13 +306,7 @@ func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl
 }
 
 func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// find impacted gateways and queue them
-	hr := apiv1.HTTPRoute{}
-	err := r.cli.Get(ctx, req.NamespacedName, &hr)
-	if err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
+	// TODO: consider finding impacted gateways and queue them
 	// TODO: consider enabling this
 	//	// reconcile this specific route:
 	//	queries := query.NewData(r.cli, r.scheme)
