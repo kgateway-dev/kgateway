@@ -174,7 +174,7 @@ func getDefaultIstioValues() *helmIstioSds {
 			Registry:   ptr.To("docker.io/istio"),
 			Repository: ptr.To("proxyv2"),
 			PullPolicy: ptr.To(string(corev1.PullIfNotPresent)),
-			Tag:        ptr.To("1.18.2"),
+			Tag:        ptr.To("1.21.2"),
 		},
 		LogLevel: ptr.To("warning"),
 	}
