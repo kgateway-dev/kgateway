@@ -6,9 +6,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 )
 
-// TODO(jbohanon) most of this code should probably generated, and almost none of it should
-// live here
-
 // mergePointers will decide whether to use dst or src without dereferencing or recursing
 func mergePointers[T any](dst, src *T) *T {
 	// nil src override means just use dst
@@ -407,14 +404,27 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 
 	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
 
-	if istioDiscoveryAddress := src.GetIstioDiscoveryAddress(); istioDiscoveryAddress != "" {
-		dst.IstioDiscoveryAddress = istioDiscoveryAddress
+	// Do not allow per-gateway overrides of these values if they are set in the default
+	// GatewayParameters populated by helm values
+	dstIstioDiscoveryAddress := dst.GetIstioDiscoveryAddress()
+	srcIstioDiscoveryAddress := src.GetIstioDiscoveryAddress()
+	if dstIstioDiscoveryAddress == "" {
+		// Doesn't matter if we're overriding empty with empty
+		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
 	}
-	if istioMetaMeshId := src.GetIstioMetaMeshId(); istioMetaMeshId != "" {
-		dst.IstioMetaMeshId = istioMetaMeshId
+
+	dstIstioMetaMeshId := dst.GetIstioMetaMeshId()
+	srcIstioMetaMeshId := src.GetIstioMetaMeshId()
+	if dstIstioMetaMeshId == "" {
+		// Doesn't matter if we're overriding empty with empty
+		dstIstioMetaMeshId = srcIstioMetaMeshId
 	}
-	if istioMetaClusterId := src.GetIstioMetaClusterId(); istioMetaClusterId != "" {
-		dst.IstioMetaClusterId = istioMetaClusterId
+
+	dstIstioMetaClusterId := dst.GetIstioMetaClusterId()
+	srcIstioMetaClusterId := src.GetIstioMetaClusterId()
+	if dstIstioMetaClusterId == "" {
+		// Doesn't matter if we're overriding empty with empty
+		dstIstioMetaClusterId = srcIstioMetaClusterId
 	}
 
 	return dst
@@ -428,12 +438,6 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	if dst == nil {
 		return src
 	}
-	/*
-		Image *kube.Image `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
-		SecurityContext *v1.SecurityContext `protobuf:"bytes,2,opt,name=security_context,json=securityContext,proto3" json:"security_context,omitempty"`
-		Resources *kube.ResourceRequirements `protobuf:"bytes,3,opt,name=resources,proto3" json:"resources,omitempty"`
-		LogLevel string `protobuf:"bytes,4,opt,name=log_level,json=logLevel,proto3" json:"log_level,omitempty"`
-	*/
 
 	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
 	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
@@ -610,7 +614,8 @@ func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig_De
 }
 
 // The following exists only to exclude this file from the gettercheck.
-// This is a hacky workaround due to needing to pass pointers into `mergePointers` by field
+// This is a hacky workaround to disable gettercheck, but the current version of gettercheck
+// complains due to needing to pass pointers into `mergePointers` by field
 // access instead of by getter. We should add a way to exclude lines from the gettercheck.
 
 // Code generated DO NOT EDIT.
