@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -102,6 +103,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		totalResyncs++
 		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
+    startTime := time.Now()
 
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
@@ -148,6 +150,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
+		contextutils.LoggerFrom(ctx).Debugf("resynced %d proxies in %v", len(proxies), time.Since(startTime))
 	}
 
 	for {
