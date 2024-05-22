@@ -3,8 +3,8 @@ package backendref
 import (
 	"testing"
 
-	"k8s.io/utils/ptr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 

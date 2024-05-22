@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
-	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"

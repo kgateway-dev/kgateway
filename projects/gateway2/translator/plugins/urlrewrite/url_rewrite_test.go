@@ -2,13 +2,13 @@ package urlrewrite_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 

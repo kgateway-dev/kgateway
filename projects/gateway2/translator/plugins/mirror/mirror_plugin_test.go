@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
@@ -14,6 +13,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
