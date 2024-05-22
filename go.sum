@@ -2032,10 +2032,10 @@ github.com/solo-io/protoc-gen-openapi v0.2.2 h1:OzyOAxiZuMAaLYWMNoTl2v9E7IXcl7UE
 github.com/solo-io/protoc-gen-openapi v0.2.2/go.mod h1:osEjRl1miHqlq4Wl/8SEqHFoyydptPL1EzEdM9c4vfE=
 github.com/solo-io/skv2 v0.39.1 h1:dWaZTWgntAsvh4lTlojd3xE+g7NF4oYNonfcdpy0nXE=
 github.com/solo-io/skv2 v0.39.1/go.mod h1:Zsnl+OYmOkj+6KeaMfkzYIxHTVMC0w2gVApzNJRadM8=
-github.com/solo-io/solo-apis v0.0.0-20240503163415-57628abb2459 h1:fL/ZdBcFcxnQq5LZPP8h6eAMyrBai26JJqiCZ3j6HGo=
-github.com/solo-io/solo-apis v0.0.0-20240503163415-57628abb2459/go.mod h1:QXQQr/+kzCA+/GR/jzPuUqQY+aaTU+9Xht3xWm6eAfk=
-github.com/solo-io/solo-kit v0.34.3-0.20240521175337-4a5cc2ef8faf h1:wVwVnftXn9RB50MXPTaSgJrcRsIPkSue5LGKzvPsFKY=
-github.com/solo-io/solo-kit v0.34.3-0.20240521175337-4a5cc2ef8faf/go.mod h1:V3HpoFcW9in4UcakSIecEe99Uxdb+zkQzj6W7cKYIa8=
+github.com/solo-io/solo-apis v0.0.0-20240522025103-7588b4a81588 h1:PIER1OONGuaNFKWGSYV3PZlkjDy2u843mwLVkgeWils=
+github.com/solo-io/solo-apis v0.0.0-20240522025103-7588b4a81588/go.mod h1:jrHz6PAaUCM+h2+bSOje1wl1iilJhTUdJWJH2V2K7qg=
+github.com/solo-io/solo-kit v0.34.3-0.20240522024428-f6701054560b h1:lgbIk6a5U4oOXg+Ywrmw+eHIOSErumtmFeXXlyCfa3Y=
+github.com/solo-io/solo-kit v0.34.3-0.20240522024428-f6701054560b/go.mod h1:fxakm2fhYzT3UNsM4baURVz19wCa75sv/KBNi4lwv6Q=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
