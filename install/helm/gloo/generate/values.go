@@ -308,7 +308,17 @@ type Gloo struct {
 }
 
 type KubeGateway struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	Enabled           *bool                         `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	GatewayParameters map[string]*GatewayParameters `json:"gatewayParameters,omitempty" desc:"Map of GatewayClasses to default GatewayParameters"`
+}
+
+type GatewayParameters struct {
+	Image      *Image                 `json:"image,omitempty" desc:""`
+	Deployment *ProvisionedDeployment `json:",omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy"`
+}
+
+type ProvisionedDeployment struct {
+	Replicas *int64 `json:",omitempty" desc:"number of instances to deploy"`
 }
 
 type SecurityOpts struct {

@@ -180,6 +180,10 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 		v.PodTemplate.Image.Tag = &version
 	}
 
+	for _, v := range cfg.KubeGateway.GatewayParameters {
+		v.Image.Tag = &version
+	}
+
 	if repositoryPrefix != "" {
 		cfg.Global.Image.Registry = &repositoryPrefix
 	}
