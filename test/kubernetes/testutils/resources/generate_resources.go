@@ -79,6 +79,11 @@ func cleanUp(objYaml []byte) []byte {
 			continue
 		}
 
+		// Skip status lines when rendering resources
+		if isStatusLine(line) {
+			break
+		}
+
 		lines = append(lines, line)
 	}
 
@@ -91,4 +96,8 @@ func cleanUp(objYaml []byte) []byte {
 
 func isNullCreationTime(line string) bool {
 	return strings.TrimSpace(line) == "creationTimestamp: null"
+}
+
+func isStatusLine(line string) bool {
+	return strings.Contains(strings.TrimRight(line, " "), "status")
 }
