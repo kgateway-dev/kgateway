@@ -103,7 +103,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		totalResyncs++
 		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
-    startTime := time.Now()
+		startTime := time.Now()
 
 		var gwl apiv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
