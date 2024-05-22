@@ -314,11 +314,11 @@ type KubeGateway struct {
 
 type GatewayParameters struct {
 	Image      *Image                 `json:"image,omitempty" desc:""`
-	Deployment *ProvisionedDeployment `json:",omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy"`
+	Deployment *ProvisionedDeployment `json:"deployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy"`
 }
 
 type ProvisionedDeployment struct {
-	Replicas *int64 `json:",omitempty" desc:"number of instances to deploy"`
+	Replicas *int64 `json:"replicas,omitempty" desc:"number of instances to deploy"`
 }
 
 type SecurityOpts struct {
