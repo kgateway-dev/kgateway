@@ -16,9 +16,11 @@ import (
 
 var _ ListenerTranslator = new(HybridTranslator)
 
-const HybridTranslatorName = "hybrid"
+const (
+	HybridTranslatorName = "hybrid"
 
-var EmptyHybridGatewayMessage = "hybrid gateway does not have any populated matched gateways"
+	EmptyHybridGatewayMessage = "hybrid gateway does not have any populated matched gateways"
+)
 
 type HybridTranslator struct {
 	VirtualServiceTranslator *VirtualServiceTranslator
@@ -88,8 +90,6 @@ func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 			Matcher: &gloov1.Matcher{
 				SslConfig:          matchedGateway.GetMatcher().GetSslConfig(),
 				SourcePrefixRanges: matchedGateway.GetMatcher().GetSourcePrefixRanges(),
-				PrefixRanges:       matchedGateway.GetMatcher().GetPrefixRanges(),
-				DestinationPort:    matchedGateway.GetMatcher().GetDestinationPort(),
 			},
 		}
 
