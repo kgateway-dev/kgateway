@@ -11,7 +11,7 @@ import (
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/pkg/utils"
+	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
@@ -160,8 +160,8 @@ var _ = Describe("Deployer", func() {
 									"foo": "bar",
 								},
 								SecurityContext: &v1.PodSecurityContext{
-									RunAsUser:  utils.PointerTo(int64(1)),
-									RunAsGroup: utils.PointerTo(int64(2)),
+									RunAsUser:  ptr.To(int64(1)),
+									RunAsGroup: ptr.To(int64(2)),
 								},
 							},
 							Service: &kube.Service{
@@ -422,8 +422,8 @@ var _ = Describe("Deployer", func() {
 										"foo": "bar",
 									},
 									SecurityContext: &v1.PodSecurityContext{
-										RunAsUser:  utils.PointerTo(int64(3)),
-										RunAsGroup: utils.PointerTo(int64(4)),
+										RunAsUser:  ptr.To(int64(3)),
+										RunAsGroup: ptr.To(int64(4)),
 									},
 								},
 								Service: &kube.Service{

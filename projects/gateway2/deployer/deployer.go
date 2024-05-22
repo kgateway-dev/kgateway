@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/rotisserie/eris"
-	glooutils "github.com/solo-io/gloo/pkg/utils"
+	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
@@ -373,7 +373,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 		obj.SetOwnerReferences([]metav1.OwnerReference{{
 			Kind:       gw.Kind,
 			APIVersion: gw.APIVersion,
-			Controller: glooutils.PointerTo(true),
+			Controller: ptr.To(true),
 			UID:        gw.UID,
 			Name:       gw.Name,
 		}})

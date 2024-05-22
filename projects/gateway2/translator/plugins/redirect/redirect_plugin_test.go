@@ -2,7 +2,7 @@ package redirect_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/pkg/utils"
+	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
@@ -30,8 +30,8 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterRequestRedirect,
 			RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
-				Hostname:   utils.PointerTo(gwv1.PreciseHostname("foo")),
-				StatusCode: utils.PointerTo(301),
+				Hostname:   ptr.To(gwv1.PreciseHostname("foo")),
+				StatusCode: ptr.To(301),
 			},
 		},
 		&v1.Route{

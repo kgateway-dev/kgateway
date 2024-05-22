@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/pkg/utils"
+	"k8s.io/utils/ptr"
 	"github.com/solo-io/gloo/test/kube2e"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
@@ -165,7 +165,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name:      apiv1.ObjectName(gatewayRef.Name),
-								Namespace: utils.PointerTo(apiv1.Namespace(gatewayRef.Namespace)),
+								Namespace: ptr.To(apiv1.Namespace(gatewayRef.Namespace)),
 							}},
 						},
 						Rules: []gwv1.HTTPRouteRule{
@@ -173,8 +173,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 								Matches: []gwv1.HTTPRouteMatch{
 									{
 										Path: &gwv1.HTTPPathMatch{
-											Type:  utils.PointerTo(gwv1.PathMatchPathPrefix),
-											Value: utils.PointerTo("/"),
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/"),
 										},
 									},
 								},
@@ -183,7 +183,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: apiv1.ObjectName(helper.TestServerName),
-												Port: utils.PointerTo(apiv1.PortNumber(port)),
+												Port: ptr.To(apiv1.PortNumber(port)),
 											},
 										},
 									},
@@ -356,7 +356,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name:      apiv1.ObjectName(gatewayRef.Name),
-								Namespace: utils.PointerTo(apiv1.Namespace(gatewayRef.Namespace)),
+								Namespace: ptr.To(apiv1.Namespace(gatewayRef.Namespace)),
 							}},
 						},
 						Rules: []gwv1.HTTPRouteRule{
@@ -364,8 +364,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 								Matches: []gwv1.HTTPRouteMatch{
 									{
 										Path: &gwv1.HTTPPathMatch{
-											Type:  utils.PointerTo(gwv1.PathMatchPathPrefix),
-											Value: utils.PointerTo("/"),
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/"),
 										},
 									},
 								},
@@ -374,7 +374,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: apiv1.ObjectName(headlessServiceRef.Name),
-												Port: utils.PointerTo(apiv1.PortNumber(helper.TestServerPort)),
+												Port: ptr.To(apiv1.PortNumber(helper.TestServerPort)),
 											},
 										},
 									},
@@ -556,7 +556,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name:      apiv1.ObjectName(gatewayRef.Name),
-								Namespace: utils.PointerTo(apiv1.Namespace(gatewayRef.Namespace)),
+								Namespace: ptr.To(apiv1.Namespace(gatewayRef.Namespace)),
 							}},
 						},
 						Rules: []gwv1.HTTPRouteRule{
@@ -564,8 +564,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 								Matches: []gwv1.HTTPRouteMatch{
 									{
 										Path: &gwv1.HTTPPathMatch{
-											Type:  utils.PointerTo(gwv1.PathMatchPathPrefix),
-											Value: utils.PointerTo("/"),
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/"),
 										},
 									},
 								},
@@ -574,7 +574,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: apiv1.ObjectName(httpbinName),
-												Port: utils.PointerTo(apiv1.PortNumber(httpbinPort)),
+												Port: ptr.To(apiv1.PortNumber(httpbinPort)),
 											},
 										},
 									},
