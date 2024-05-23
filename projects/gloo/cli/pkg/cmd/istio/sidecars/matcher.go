@@ -16,11 +16,10 @@ var ErrNoSupportedSidecar = errors.New("no valid istio sidecar found for this is
 // in the gateway-proxy pod
 func GetIstioSidecar(istioVersion, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) (*corev1.Container, error) {
 
-	istio17to121Match, _ := regexp.MatchString("1.(7|8|9|1[0-9]|2[0-1]).[0-9]*", istioVersion)
-	//istio120to121Match, _ := regexp.MatchString("1.2[0|1].[0-9]*", istioVersion)
+	istio1dot7to1dotX, _ := regexp.MatchString("1.([7-9]|[1-9][0-9]+).[0-9]*", istioVersion)
 
-	if istio17to121Match {
-		return generateIstio17to119Sidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress), nil
+	if istio1dot7to1dotX {
+		return generateIstio17to1xSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress), nil
 	} else if strings.HasPrefix(istioVersion, "1.6.") {
 		return generateIstio16Sidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress), nil
 	}
