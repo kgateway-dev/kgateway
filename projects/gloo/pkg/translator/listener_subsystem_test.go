@@ -45,7 +45,7 @@ type ResourceAssertionHandler func(
 type ReportAssertionHandler func(
 	proxyReport *validation.ProxyReport)
 
-var _ = FDescribe("Listener Subsystem", func() {
+var _ = Describe("Listener Subsystem", func() {
 	// These tests validate that the ListenerSubsystemTranslatorFactory produces Translators
 	// which in turn create Envoy Listeners and RouteConfigurations with expected values
 	// The tests are non-exhaustive, as we expect each translator to more rigorously test the
