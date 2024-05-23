@@ -1,0 +1,151 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foo-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "foo.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /x
+      headers:
+      - type: Exact
+        name: header1
+        value: val1
+      queryParams:
+      - type: Exact
+        name: query1
+        value: val1
+      method: GET
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: infra
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+  annotations:
+    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /a/1
+      method: PUT # should translate as GET for parent example-route and PUT for parent foo-route
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: RegularExpression
+        value: /a/2/.*
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/3
+      headers:
+      - type: Exact
+        name: headerA
+        value: valA
+      queryParams:
+      - type: Exact
+        name: queryA
+        value: valA
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: a
+  annotations:
+    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - backendRefs:
+    - name: svc-b
+      port: 8090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a
+  namespace: a
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-b
+  namespace: a
+spec:
+  ports:
+    - protocol: TCP
+      port: 8090
+---
