@@ -2,17 +2,29 @@ package query
 
 import (
 	"context"
+	"path"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// inheritMatcherAnnotation is the annotation used on an child HTTPRoute that
+// participates in a delegation chain to indicate that child route should inherit
+// the route matcher from the parent route.
+const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matcher"
+
 // GetDelegatedRoutes returns the child routes that match the specified selector using
 // backend ref and the parent route matcher.
+//
+// A child route may other match a parent rule matcher or may opt to use inherit the parent's matcher.
+// In the case of rule inheritance, a child route does not need to match the parent matcher. By default.
+// a child route must match the parent matcher.
 //
 // A child route matches a parent if all of the following conditions are met:
 //
@@ -66,18 +78,42 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 	// Select the child routes that match the parent
 	var selected []gwv1.HTTPRoute
 	for _, child := range children {
+		inheritMatcher := shouldInheritMatcher(child)
+		matched := false
+
 		// Check if the child route has a prefix that matches the parent.
 		// Only rules matching the parent prefix are considered.
-		matched := false
-		for _, rule := range child.Spec.Rules {
+		for i, rule := range child.Spec.Rules {
 			var validMatches []gwv1.HTTPRouteMatch
+
+			// If the child route opts to inherit the parent's matcher and it does not specify its own matcher,
+			// simply inherit the parent's matcher.
+			if inheritMatcher && len(rule.Matches) == 0 {
+				validMatches = append(validMatches, parentMatch)
+				matched = true
+			}
+
 			for _, match := range rule.Matches {
+				// When inheriting the parent's matcher, all matches are valid.
+				// In this case, the child inherits the parents matcher so we merge
+				// the parent's matcher with the child's.
+				if inheritMatcher {
+					mergeParentChildRouteMatch(&parentMatch, &match)
+					validMatches = append(validMatches, match)
+					matched = true
+					continue
+				}
+
+				// Non-inherited matcher delegation requires matching child matcher to parent matcher
+				// to delegate from the parent route to the child.
 				if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, child.Namespace, child.Spec.ParentRefs); ok {
 					validMatches = append(validMatches, match)
 					matched = true
 				}
 			}
-			rule.Matches = validMatches
+
+			// Update the rule on the child instead of on a copy of the rule
+			child.Spec.Rules[i].Matches = validMatches
 		}
 		if matched {
 			selected = append(selected, child)
@@ -156,5 +192,104 @@ func isDelegatedRouteMatch(
 		}
 	}
 
+	// Validate that the child method matches the parent method
+	if parent.Method != nil && (child.Method == nil || *parent.Method != *child.Method) {
+		return false
+	}
+
 	return true
+}
+
+// shouldInheritMatcher returns true if the route indicates that it should inherit
+// its parent's matcher.
+func shouldInheritMatcher(route gwv1.HTTPRoute) bool {
+	val, ok := route.Annotations[inheritMatcherAnnotation]
+	if !ok {
+		return false
+	}
+	switch strings.ToLower(val) {
+	case "true", "yes", "enabled":
+		return true
+
+	default:
+		return false
+	}
+}
+
+// mergeParentChildRouteMatch merges the parent route match into the child.
+func mergeParentChildRouteMatch(
+	parent *gwv1.HTTPRouteMatch,
+	child *gwv1.HTTPRouteMatch,
+) {
+	if parent == nil || child == nil {
+		return
+	}
+
+	if child.Path == nil {
+		child.Path = &gwv1.HTTPPathMatch{
+			Type:  ptr.To(gwv1.PathMatchPathPrefix),
+			Value: ptr.To(""),
+		}
+	}
+	child.Path.Value = ptr.To(path.Join(*parent.Path.Value, *child.Path.Value))
+
+	// Inherit parent and child headers and query parameters while augmenting the merge
+	// with additions specified on the child
+	child.Headers = mergeHeaders(parent.Headers, child.Headers)
+	child.QueryParams = mergeQueries(parent.QueryParams, child.QueryParams)
+
+	// If parent specifies a method, inherit it
+	if parent.Method != nil {
+		child.Method = ptr.To(*parent.Method)
+	}
+}
+
+func mergeHeaders(
+	parent, child []gwv1.HTTPHeaderMatch,
+) []gwv1.HTTPHeaderMatch {
+	merged := make(map[gwv1.HTTPHeaderName]gwv1.HTTPHeaderMatch)
+	for _, h := range parent {
+		merged[h.Name] = h
+	}
+	for _, h := range child {
+		key := h.Name
+		// Only add the child if it does not conflict with the parent
+		if _, ok := merged[key]; !ok {
+			merged[key] = h
+		}
+	}
+	var result []gwv1.HTTPHeaderMatch
+	for _, h := range merged {
+		result = append(result, h)
+	}
+	// Sort for deterministic ordering
+	slices.SortFunc(result, func(a, b gwv1.HTTPHeaderMatch) int {
+		return strings.Compare(string(a.Name), string(b.Name))
+	})
+	return result
+}
+
+func mergeQueries(
+	parent, child []gwv1.HTTPQueryParamMatch,
+) []gwv1.HTTPQueryParamMatch {
+	merged := make(map[gwv1.HTTPHeaderName]gwv1.HTTPQueryParamMatch)
+	for _, h := range parent {
+		merged[h.Name] = h
+	}
+	for _, h := range child {
+		key := h.Name
+		// Only add the child if it does not conflict with the parent
+		if _, ok := merged[key]; !ok {
+			merged[key] = h
+		}
+	}
+	var result []gwv1.HTTPQueryParamMatch
+	for _, h := range merged {
+		result = append(result, h)
+	}
+	// Sort for deterministic ordering
+	slices.SortFunc(result, func(a, b gwv1.HTTPQueryParamMatch) int {
+		return strings.Compare(string(a.Name), string(b.Name))
+	})
+	return result
 }
