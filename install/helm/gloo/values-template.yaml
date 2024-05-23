@@ -11,7 +11,7 @@ kubeGateway:
     glooGateway:
       image:
         repository: gloo-envoy-wrapper
-      deployment:
+      proxyDeployment:
         replicas: 1
       service:
         type: LoadBalancer

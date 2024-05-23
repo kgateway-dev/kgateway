@@ -317,9 +317,9 @@ type GatewayParametersForGatewayClasses struct {
 }
 
 type GatewayParameters struct {
-	Image      *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
-	Deployment *ProvisionedDeployment `json:"deployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
-	Service    *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	Image           *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
+	ProxyDeployment *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service         *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
 }
 
 type ProvisionedDeployment struct {
