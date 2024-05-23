@@ -283,7 +283,7 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	svcConfig := kubeProxyConfig.GetService()
 	istioConfig := kubeProxyConfig.GetIstio()
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
-	istioContainerConfig := kubeProxyConfig.GetIstioContainer()
+	istioContainerConfig := istioConfig.GetIstioContainer()
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())

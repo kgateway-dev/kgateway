@@ -39,13 +39,10 @@ message KubernetesProxyConfig {
   // Configuration for the container running Envoy.
   EnvoyContainer envoy_container = 2;
 
-  // Configuration for the container running SDS. If an integration requiring SDS is not enabled, this
-  // is not rendered
+  // Configuration for the container running SDS. This field is rendered with defaults by 
+  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in 
+  // override GatewayParameters attached to a Gateway resource.
   SdsContainer sds_container = 7;
-
-  // Configuration for the container running istio-proxy. If the Istio integration is not enabled, this
-  // is not rendered
-  IstioContainer istio_container = 8;
 
   // Configuration for the pods that will be created.
   kube.gateway.gloo.solo.io.Pod pod_template = 3;
@@ -61,7 +58,7 @@ message KubernetesProxyConfig {
   IstioIntegration istio = 6;
 
   // NOT IMPLEMENTED
-  GlooMtls gloo_mtls = 9;
+  GlooMtls gloo_mtls = 8;
 }
 
 // NOT IMPLEMENTED
@@ -132,6 +129,11 @@ message IstioIntegration {
   // from the default GatewayParameters rendered from the helm chart. Set to true to override the default values with enabled; set to
   // false to override the default values with disabled.
   google.protobuf.BoolValue enabled = 5;
+
+  // Configuration for the container running istio-proxy. This field is rendered with defaults by 
+  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in 
+  // override GatewayParameters attached to a Gateway resource.
+  IstioContainer istio_container = 1;
 
   // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
   string istio_discovery_address = 2;
