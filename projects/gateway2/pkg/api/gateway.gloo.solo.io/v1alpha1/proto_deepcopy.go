@@ -5,26 +5,28 @@
 package v1alpha1
 
 import (
-    proto "github.com/golang/protobuf/proto"
+	proto "github.com/golang/protobuf/proto"
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 )
+
 // DeepCopyInto for the GatewayParameters.Spec
 func (in *GatewayParametersSpec) DeepCopyInto(out *GatewayParametersSpec) {
-    var p *GatewayParametersSpec
-    if h, ok := interface{}(in).(clone.Cloner); ok {
-        p = h.Clone().(*GatewayParametersSpec)
-    } else {
-        p = proto.Clone(in).(*GatewayParametersSpec)
-    }
-    *out = *p
+	var p *GatewayParametersSpec
+	if h, ok := interface{}(in).(clone.Cloner); ok {
+		p = h.Clone().(*GatewayParametersSpec)
+	} else {
+		p = proto.Clone(in).(*GatewayParametersSpec)
+	}
+	*out = *p
 }
+
 // DeepCopyInto for the GatewayParameters.Status
 func (in *GatewayParametersStatus) DeepCopyInto(out *GatewayParametersStatus) {
-    var p *GatewayParametersStatus
-    if h, ok := interface{}(in).(clone.Cloner); ok {
-        p = h.Clone().(*GatewayParametersStatus)
-    } else {
-        p = proto.Clone(in).(*GatewayParametersStatus)
-    }
-    *out = *p
+	var p *GatewayParametersStatus
+	if h, ok := interface{}(in).(clone.Cloner); ok {
+		p = h.Clone().(*GatewayParametersStatus)
+	} else {
+		p = proto.Clone(in).(*GatewayParametersStatus)
+	}
+	*out = *p
 }

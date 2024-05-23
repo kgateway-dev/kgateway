@@ -10,7 +10,7 @@ import (
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 )
 
-var _ = Describe("Kubernetes Gateway API integration", func() {
+var _ = FDescribe("Kubernetes Gateway API integration", func() {
 	var allTests = func(rendererTestCase renderTestCase) {
 		var (
 			testManifest TestManifest
@@ -36,7 +36,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
 			testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
 
-			testManifest.ExpectUnstructured("GatewayParameters", "", "default").NotTo(BeNil())
+			testManifest.ExpectUnstructured("GatewayParameters", namespace, "default").NotTo(BeNil())
 
 			controlPlaneRbacName := fmt.Sprintf("glood-%s.%s", releaseName, namespace)
 			testManifest.Expect("ClusterRole", "", controlPlaneRbacName).NotTo(BeNil())
