@@ -100,6 +100,46 @@ func (m *KubernetesProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetSdsContainer()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("SdsContainer")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSdsContainer(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("SdsContainer")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioContainer()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("IstioContainer")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetIstioContainer(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("IstioContainer")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	if h, ok := interface{}(m.GetPodTemplate()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("PodTemplate")); err != nil {
 			return 0, err
@@ -160,18 +200,38 @@ func (m *KubernetesProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetSds()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Sds")); err != nil {
+	if h, ok := interface{}(m.GetIstio()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Istio")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSds(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetIstio(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Sds")); err != nil {
+			if _, err = hasher.Write([]byte("Istio")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetGlooMtls()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("GlooMtls")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetGlooMtls(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("GlooMtls")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -204,6 +264,22 @@ func (m *KubernetesProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *GlooMtls) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.GlooMtls")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -385,62 +461,6 @@ func (m *EnvoyBootstrap) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *SdsIntegration) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.SdsIntegration")); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetSdsContainer()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("SdsContainer")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSdsContainer(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("SdsContainer")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	if h, ok := interface{}(m.GetIstioIntegration()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("IstioIntegration")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetIstioIntegration(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("IstioIntegration")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
 func (m *IstioIntegration) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -453,18 +473,18 @@ func (m *IstioIntegration) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetIstioContainer()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("IstioContainer")); err != nil {
+	if h, ok := interface{}(m.GetEnabled()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Enabled")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetIstioContainer(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetEnabled(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("IstioContainer")); err != nil {
+			if _, err = hasher.Write([]byte("Enabled")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

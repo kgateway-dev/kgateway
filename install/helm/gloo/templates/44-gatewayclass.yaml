@@ -11,5 +11,5 @@ spec:
     group: gateway.gloo.solo.io
     kind: GatewayParameters
     name: default
-    namespace: default
+    namespace: {{ .Release.Namespace }}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

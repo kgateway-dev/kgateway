@@ -35,8 +35,12 @@ type helmGateway struct {
 	Affinity            *extcorev1.Affinity               `json:"affinity,omitempty"`
 	Tolerations         []*extcorev1.Toleration           `json:"tolerations,omitempty"`
 
-	// sds values
-	Sds *helmSds `json:"sds,omitempty"`
+	// sds container values
+	SdsContainer *helmSdsContainer `json:"sdsContainer,omitempty"`
+	// istio container values
+	IstioContainer *helmIstioContainer `json:"istioContainer,omitempty"`
+	// istio integration values
+	Istio *helmIstio `json:"istio,omitempty"`
 
 	// envoy container values
 	LogLevel          *string                            `json:"logLevel,omitempty"`
@@ -93,34 +97,34 @@ type helmAutoscaling struct {
 	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
-type helmSds struct {
+type helmIstio struct {
+	Enabled               *bool   `json:"enabled,omitempty"`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
+}
+
+type helmSdsContainer struct {
 	Image           *helmImage                         `json:"image,omitempty"`
 	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
 	SdsBootstrap    *sdsBootstrap                      `json:"sdsBootstrap,omitempty"`
-
-	Istio *helmIstioSds `json:"istioIntegration,omitempty"`
 }
 
 type sdsBootstrap struct {
 	LogLevel *string `json:"logLevel,omitempty"`
 }
 
-// TODO: Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
 type istioSDS struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-type helmIstioSds struct {
+type helmIstioContainer struct {
 	Image    *helmImage `json:"image,omitempty"`
 	LogLevel *string    `json:"logLevel,omitempty"`
 	// Note: This is set by envoySidecarResources in helm chart
 	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
-
-	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
-	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
-	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
 }
 
 type helmServiceAccount struct {

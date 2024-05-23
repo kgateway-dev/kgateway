@@ -71,7 +71,9 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 
 	dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
 
-	dstKube.Sds = deepMergeSdsIntegration(dstKube.GetSds(), srcKube.GetSds())
+	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
+	dstKube.IstioContainer = deepMergeIstioContainer(dstKube.GetIstioContainer(), srcKube.GetIstioContainer())
+	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 
 	if srcKube.GetWorkloadType() == nil {
 		return dst
@@ -343,22 +345,6 @@ func deepMergeHorizontalPodAutoscaler(dst, src *kube.HorizontalPodAutoscaler) *k
 
 	return dst
 }
-func deepMergeSdsIntegration(dst, src *v1alpha1.SdsIntegration) *v1alpha1.SdsIntegration {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return src
-	}
-
-	// SdsContainer, IstioIntegration
-	dst.SdsContainer = deepMergeSdsContainer(dst.GetSdsContainer(), src.GetSdsContainer())
-	dst.IstioIntegration = deepMergeIstioIntegration(dst.GetIstioIntegration(), src.GetIstioIntegration())
-
-	return dst
-}
 func deepMergeSdsContainer(dst, src *v1alpha1.SdsContainer) *v1alpha1.SdsContainer {
 	// nil src override means just use dst
 	if src == nil {
@@ -402,7 +388,9 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 		return src
 	}
 
-	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
+	// if the user has defined the enabled value on an override GatewayParameters,
+	// we always want to use that
+	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
 
 	// Do not allow per-gateway overrides of these values if they are set in the default
 	// GatewayParameters populated by helm values

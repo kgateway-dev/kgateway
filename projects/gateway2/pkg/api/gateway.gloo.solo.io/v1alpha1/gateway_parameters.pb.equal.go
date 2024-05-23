@@ -104,6 +104,26 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetSdsContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSdsContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSdsContainer(), target.GetSdsContainer()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetPodTemplate()) {
 			return false
@@ -134,12 +154,22 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetSds()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetSds()) {
+	if h, ok := interface{}(m.GetIstio()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstio()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetSds(), target.GetSds()) {
+		if !proto.Equal(m.GetIstio(), target.GetIstio()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetGlooMtls()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGlooMtls()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGlooMtls(), target.GetGlooMtls()) {
 			return false
 		}
 	}
@@ -166,6 +196,30 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		if m.WorkloadType != target.WorkloadType {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GlooMtls) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GlooMtls)
+	if !ok {
+		that2, ok := that.(GlooMtls)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true
@@ -309,50 +363,6 @@ func (m *EnvoyBootstrap) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *SdsIntegration) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*SdsIntegration)
-	if !ok {
-		that2, ok := that.(SdsIntegration)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetSdsContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetSdsContainer()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetSdsContainer(), target.GetSdsContainer()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetIstioIntegration()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioIntegration()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetIstioIntegration(), target.GetIstioIntegration()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
 func (m *IstioIntegration) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -373,12 +383,12 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioContainer()) {
+	if h, ok := interface{}(m.GetEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnabled()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
+		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
 			return false
 		}
 	}

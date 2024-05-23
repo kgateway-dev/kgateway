@@ -197,20 +197,17 @@ func (d *Deployer) getDefaultGatewayParameters(ctx context.Context, gw *api.Gate
 func (d *Deployer) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
 
-	// check for a gateway params annotation on the Gateway
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
 		return nil, eris.Errorf("no default GatewayParameters associated with GatewayClass %s/%s", gwc.GetNamespace(), gwc.GetName())
 	}
 	gwpName := paramRef.Name
 	if gwpName == "" {
-		// there is no custom GatewayParameters; use default values.
-		// this should never happen.
 		err := eris.New("no GatewayParameters found for GatewayClass")
-		logger.V(0).Error(err, "using default values",
+		logger.Error(err,
 			"gatewayClassName", gwc.GetName(),
 			"gatewayClassNamespace", gwc.GetNamespace())
-		return nil, nil
+		return nil, err
 	}
 
 	gwpNamespace := ""
@@ -259,7 +256,6 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 				Host: &d.inputs.ControlPlane.Kube.XdsHost,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
-			Image: getDefaultEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage()),
 		},
 	}
 
@@ -281,7 +277,9 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
-	sds := kubeProxyConfig.GetSds()
+	istioConfig := kubeProxyConfig.GetIstio()
+	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
+	istioContainerConfig := kubeProxyConfig.GetIstioContainer()
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
@@ -313,12 +311,14 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 	}
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
 
-	// sds values
-	vals.Gateway.Sds = getSdsValues(sds, d.inputs.Extensions.GetSdsImage())
+	// istio values
+	vals.Gateway.Istio = getIstioValues(istioConfig)
+	vals.Gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
+	vals.Gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 
 	vals.Gateway.Resources = envoyContainerConfig.GetResources()
 	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	vals.Gateway.Image = getMergedEnvoyImageValues(d.inputs.Extensions.GetEnvoyImage(), envoyContainerConfig.GetImage())
+	vals.Gateway.Image = getEnvoyImageValues(envoyContainerConfig.GetImage())
 
 	return vals, nil
 }
