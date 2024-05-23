@@ -72,7 +72,6 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
 
 	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
-	dstKube.IstioContainer = deepMergeIstioContainer(dstKube.GetIstioContainer(), srcKube.GetIstioContainer())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 
 	if srcKube.GetWorkloadType() == nil {
@@ -391,6 +390,8 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 	// if the user has defined the enabled value on an override GatewayParameters,
 	// we always want to use that
 	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
+
+	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
 
 	// Do not allow per-gateway overrides of these values if they are set in the default
 	// GatewayParameters populated by helm values

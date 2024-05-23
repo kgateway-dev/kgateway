@@ -114,16 +114,6 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioContainer()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetPodTemplate()) {
 			return false
@@ -389,6 +379,16 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
 			return false
 		}
 	}
