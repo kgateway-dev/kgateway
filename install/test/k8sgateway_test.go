@@ -10,7 +10,7 @@ import (
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 )
 
-var _ = FDescribe("Kubernetes Gateway API integration", func() {
+var _ = Describe("Kubernetes Gateway API integration", func() {
 	var allTests = func(rendererTestCase renderTestCase) {
 		var (
 			testManifest TestManifest
