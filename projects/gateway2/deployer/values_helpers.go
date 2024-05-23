@@ -166,7 +166,7 @@ func getDefaultIstioValues() *helmIstioSds {
 	        registry: docker.io/istio
 	        repository: proxyv2
 	        pullPolicy: IfNotPresent
-	        tag: "1.18.2"
+	        tag: "1.21.2"
 	      logLevel: warning
 	*/
 	return &helmIstioSds{
