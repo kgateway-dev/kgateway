@@ -45,7 +45,6 @@ type GatewayConfig struct {
 	Kick           func(ctx context.Context)
 
 	ControlPlane bootstrap.ControlPlane
-	IstioValues  bootstrap.IstioValues
 
 	Extensions extensions.K8sGatewayExtensions
 }
