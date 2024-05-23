@@ -180,15 +180,9 @@ message Matcher {
     // SslConfig from VirtualServices will be ignored in a MatchedGateway
     gloo.solo.io.SslConfig ssl_config = 1;
 
-    // Source addresses to match. This is either the actual address used to connect
-    // or overridden using PROXY protocol or original_src.
+    // CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
+    // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
-    // Destination addresses to match. This is either the actual address used to connect
-    // or overridden using PROXY protocol or original_dst.
-    repeated .solo.io.envoy.config.core.v3.CidrRange prefix_ranges = 4;
-
-    // Optional destination port to consider in determining a filter chain match.
-    google.protobuf.UInt32Value destination_port = 5;
 
     // Enterprise-only: Passthrough cipher suites is an allow-list of OpenSSL cipher suite names for which TLS passthrough will be enabled.
     // If a client does not support any ciphers that are natively supported by Envoy, but does support one of the ciphers in the passthrough list,
