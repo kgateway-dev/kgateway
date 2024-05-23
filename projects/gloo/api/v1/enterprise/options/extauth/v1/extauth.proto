@@ -45,7 +45,8 @@ message AuthConfig {
         google.protobuf.StringValue name = 9;
 
         oneof auth_config {
-            // +kubebuilder:validation:XValidation:rule="has(self.apr) || (has(self.encryption) && has(self.userList))",message="either apr or both encryption and userSource must be set"
+            // +kubebuilder:validation:XValidation:rule="has(self.apr) || (has(self.encryption) && has(self.userList))",message="Either apr or both encryption and userSource must be set"
+            // +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : true",message="If apr is set, neither encryption nor userSource may be set"
             BasicAuth basic_auth = 1;
             OAuth oauth = 2 [deprecated = true];
             OAuth2 oauth2 = 8;
@@ -57,6 +58,7 @@ message AuthConfig {
             // If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 11;
+            // +kubebuilder:validation:XValidation:rule="has(self.grpc) || has(self.http)",message="Must specify grpc or http"
             PassThroughAuth pass_through_auth = 12;
             HmacAuth hmac_auth = 13;
             OpaServerAuth opa_server_auth = 14;
@@ -327,6 +329,7 @@ message BasicAuth {
 message HmacAuth {
     // Configuration for how secrets are stored.
     oneof secret_storage {
+        // +kubebuilder:validation:Required
         SecretRefList secret_refs = 1;
     }
     // Algorithm to use to turn the request into a hashable string
@@ -336,6 +339,9 @@ message HmacAuth {
 }
 message SecretRefList {
     // list of secrets as registered with the issuer
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinItems=1
     repeated core.solo.io.ResourceRef secret_refs = 1;
 }
 // Extract the HMAC parameters from the HTTP headers and use SHA-1 hashing
@@ -358,6 +364,9 @@ message OAuth {
 
     // we to redirect after successful auth, if we can't determine the original
     // url this should be your publicly available app url.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string app_url = 4 [deprecated = true];
 
     // a callback path relative to app url that will be used for OIDC callbacks.
@@ -373,6 +382,8 @@ message OAuth2 {
         // provide issuer location and let gloo handle OIDC flow for you.
         // requests authorized by validating the contents of ID token.
         // can also authorize the access token if configured.
+        //
+        // +kubebuilder:validation:XValidation:rule="has(self.clientAuthentication) ? !has(self.clientSecretRef) && !has(self.disableClientSecret) : has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="If clientAuthentication is set, neither clientSecretRef nor disableClientSecret may be set. Otherwise, clientSecretRef must be set or disableClientSecret must be true."
         OidcAuthorizationCode oidc_authorization_code = 1;
 
         // provide the access token on the request and let gloo handle authorization.
@@ -387,6 +398,8 @@ message OAuth2 {
         // provide issuer location and let Gloo handle Oauth2 flow for you.
         // requests authorized by validating the contents of access token.
         // Prefer to use OIDC for better security.
+        //
+        // +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true"
         PlainOAuth2 oauth2 = 3;
     }
 }
@@ -620,6 +633,9 @@ message ClaimToHeader {
 
 message OidcAuthorizationCode {
     // your client id as registered with the issuer
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string client_id = 1;
 
     // your client secret as registered with the issuer.
@@ -629,6 +645,9 @@ message OidcAuthorizationCode {
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string issuer_url = 3;
 
     // extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
@@ -643,10 +662,16 @@ message OidcAuthorizationCode {
 
     // where to redirect after successful auth, if we can't determine the original url.
     // this should be your publicly available app url.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string app_url = 5;
 
     // a callback path relative to app url that will be used for OIDC callbacks.
     // should not be used by the application.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string callback_path = 6;
 
     // a path relative to app url that will be used for logging out from an OIDC session.
@@ -781,6 +806,8 @@ message OidcAuthorizationCode {
          // Private Key JWT Authentication requires a signing key for the JWT and an duration for the JWT to be valid.
         message PrivateKeyJwt{
             // Signing key for the JWT used to authenticate the client
+            //
+            // +kubebuilder:validation:Required
             core.solo.io.ResourceRef signing_key_ref = 1;
             // Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
             // the future the expiration time is allowed to be. If omitted, default is 5s.
@@ -790,12 +817,15 @@ message OidcAuthorizationCode {
         // Configure how to authenticate the client
         oneof client_authentication_config {
             // Use the client secret method to authenticate the client
+            //
+            // +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true"
             ClientSecret client_secret = 1;
             // Use the private ket JWT method to authenticate the client
             PrivateKeyJwt private_key_jwt = 2;
         }
     }
 
+    // +kubebuilder:validation:XValidation:rule="has(self.clientSecret) || has(self.privateKeyJwt)",message="Must specify clientSecret or privateKeyJwt"
     ClientAuthentication client_authentication = 25;
 
     oneof Provider {
@@ -832,6 +862,9 @@ message OidcAuthorizationCode {
 
 message PlainOAuth2 {
     // Your client ID as registered with the issuer
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string client_id = 1;
 
     // Your client secret as registered with the issuer.
@@ -845,10 +878,16 @@ message PlainOAuth2 {
 
     // Where to redirect after successful auth, if Gloo can't determine the original URL.
     // Set this field to your publicly available app URL.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string app_url = 4;
 
     // A callback path relative to the app URL to be used for OAuth2 callbacks.
     // Do not use this path in the application itself.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string callback_path = 5;
 
     // Scopes to request for.
@@ -872,9 +911,15 @@ message PlainOAuth2 {
     string after_logout_url = 10;
 
     // The URL of the provider authorization endpoint.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string auth_endpoint = 11;
 
     // The URL of the provider token endpoint.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string token_endpoint = 12;
 
     // The URL of the provider token revocation endpoint.
@@ -909,6 +954,9 @@ message JwtValidation {
     // Specifies how to fetch JWKS from remote and how to cache it.
     message RemoteJwks {
         // The HTTP URI to fetch the JWKS.
+        //
+        // +kubebuilder:validation:Required
+        // +kubebuilder:validation:MinLength=1
         string url = 1;
 
         // The frequency at which the JWKS should be refreshed.
@@ -919,6 +967,9 @@ message JwtValidation {
     // Represents a locally available JWKS.
     message LocalJwks {
         // JWKS is embedded as a string.
+        //
+        // +kubebuilder:validation:Required
+        // +kubebuilder:validation:MinLength=1
         string inline_string = 1;
     }
 
@@ -944,6 +995,9 @@ message IntrospectionValidation {
     // The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
     // If provided, the (opaque) access token provided or received from the oauth authorization endpoint
     // will be validated against this endpoint, or locally cached responses for this access token.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string introspection_url = 1;
 
     // Your client id as registered with the issuer.
@@ -974,6 +1028,8 @@ message AccessTokenValidation {
         // If provided, the (opaque) access token provided or received from the oauth authorization endpoint
         // will be validated against this endpoint, or locally cached responses for this access token.
         // This field is deprecated as it does not support authenticated introspection requests
+        //
+        // +kubebuilder:validation:MinLength=1
         string introspection_url = 1 [deprecated = true];
 
         // Validate access tokens that conform to the
@@ -982,6 +1038,8 @@ message AccessTokenValidation {
 
         // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
         // [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+        //
+        // +kubebuilder:validation:XValidation:rule="has(self.clientId) && size(self.clientId) > 0 ? has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret) : !has(self.clientSecretRef)",message="If clientId is set, clientSecretRef must be set or disableClientSecret must be true. Otherwise, clientSecretRef must not be set."
         IntrospectionValidation introspection = 3;
 
         // In the future we may implement HMAC validation
@@ -1229,6 +1287,9 @@ message OpaAuth {
     // The query that determines the auth decision. The result of this query
     // must be either a boolean or an array with boolean as the first element. A boolean `true` value means that
     // the request will be authorized. Any other value, or error, means that the request will be denied.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string query = 2;
 
     // Additional Options for Opa Auth configuration.
@@ -1262,6 +1323,9 @@ message OpaAuthOptions {
 // auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
 message OpaServerAuth {
     // The package from your Rego policy bundle used to query the OPA data API.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string package = 1;
 
     // The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api).
@@ -1297,6 +1361,9 @@ message Ldap {
     }
 
     // Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string address = 1;
 
     // Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
@@ -1386,6 +1453,9 @@ message RetryPolicy {
 message PassThroughGrpc {
 
     // Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`.
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string address = 1;
 
     // Timeout for the auth server to respond. Defaults to 5s
@@ -1410,6 +1480,9 @@ message PassThroughHttp {
     // Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
     // To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service
     // pod as a base64-encoded string
+    //
+    // +kubebuilder:validation:Required
+    // +kubebuilder:validation:MinLength=1
     string url = 1;
 
     /* The passthrough http request can be configured to pass through the incoming request body,
