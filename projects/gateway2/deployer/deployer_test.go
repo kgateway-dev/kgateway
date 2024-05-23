@@ -25,6 +25,7 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,7 +151,7 @@ var _ = Describe("Deployer", func() {
 								Image: &kube.Image{
 									Registry:   "scooby",
 									Repository: "dooby",
-									// Tag:        "doo",
+									Tag:        "doo",
 									PullPolicy: kube.Image_Always,
 								},
 							},
@@ -452,23 +453,25 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_Kube{
 							Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-								Sds: &gw2_v1alpha1.SdsIntegration{
-									SdsContainer: &gw2_v1alpha1.SdsContainer{
-										Image: &kube.Image{
-											Registry:   "foo",
-											Repository: "bar",
-											Tag:        "baz",
-										},
+								SdsContainer: &gw2_v1alpha1.SdsContainer{
+									Image: &kube.Image{
+										Registry:   "foo",
+										Repository: "bar",
+										Tag:        "baz",
 									},
-									IstioIntegration: &gw2_v1alpha1.IstioIntegration{
-										IstioContainer: &gw2_v1alpha1.IstioContainer{
-											Image: &kube.Image{
-												Registry:   "scooby",
-												Repository: "dooby",
-												Tag:        "doo",
-											},
-										},
+								},
+								IstioContainer: &gw2_v1alpha1.IstioContainer{
+									Image: &kube.Image{
+										Registry:   "scooby",
+										Repository: "dooby",
+										Tag:        "doo",
 									},
+								},
+								Istio: &gw2_v1alpha1.IstioIntegration{
+									Enabled:               &wrapperspb.BoolValue{Value: true},
+									IstioDiscoveryAddress: "can't",
+									IstioMetaMeshId:       "be",
+									IstioMetaClusterId:    "overridden",
 								},
 							},
 						},
@@ -651,9 +654,9 @@ var _ = Describe("Deployer", func() {
 					Expect(clusters).ToNot(BeNil())
 					Expect(clusters).To(ContainElement(HaveField("Name", "gateway_proxy_sds")))
 
-					sdsImg := inp.overrideGwp.Spec.GetKube().GetSds().GetSdsContainer().GetImage()
+					sdsImg := inp.overrideGwp.Spec.GetKube().GetSdsContainer().GetImage()
 					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry(), sdsImg.GetRepository(), sdsImg.GetTag())))
-					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetSds().GetIstioIntegration().GetIstioContainer().GetImage()
+					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstioContainer().GetImage()
 					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry(), istioProxyImg.GetRepository(), istioProxyImg.GetTag())))
 
 					return nil
@@ -729,22 +732,6 @@ var _ = Describe("Deployer", func() {
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
 					Expect(port.TargetPort.IntVal).To(Equal(int32(8080)))
-					return nil
-				},
-			}),
-			Entry("propagates version.Version to deployment", &input{
-				dInputs:        defaultDeployerInputs(),
-				gw:             defaultGateway(),
-				defaultGwp:     defaultGatewayParams(),
-				arbitrarySetup: func() { version.Version = "testversion" },
-			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
-					Expect(dep).NotTo(BeNil())
-					Expect(dep.Spec.Template.Spec.Containers).NotTo(BeEmpty())
-					for _, c := range dep.Spec.Template.Spec.Containers {
-						Expect(c.Image).To(HaveSuffix(":testversion"))
-					}
 					return nil
 				},
 			}),

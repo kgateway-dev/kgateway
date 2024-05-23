@@ -144,7 +144,9 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstio {
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig == nil || !istioConfig.GetEnabled().GetValue() {
-		return nil
+		return &helmIstio{
+			Enabled: ptr.To(false),
+		}
 	}
 
 	return &helmIstio{

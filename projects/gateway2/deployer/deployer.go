@@ -112,6 +112,9 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 			"serviceAccount": map[string]any{
 				"create": true,
 			},
+			"istio": map[string]any{
+				"enabled": false,
+			},
 		},
 	}
 
