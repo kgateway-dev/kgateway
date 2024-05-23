@@ -299,7 +299,7 @@ func setRouteAction(
 			delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
-				ctx, queries, gwroute, rule, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
+				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
 			if err != nil {
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,
