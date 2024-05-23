@@ -2,8 +2,10 @@ package setup
 
 import (
 	"context"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
+	iosnapshot2 "github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/go-utils/stats"
 
 	"golang.org/x/sync/errgroup"
 
@@ -86,5 +88,25 @@ func K8sGatewayControllerStartFunc(
 			// At the moment, this is not tied to any user-facing API
 			Dev: false,
 		})
+	}
+}
+
+// AdminServerStartFunc returns the setup.StartFunc for the Admin Server
+// The Admin Server is the groundwork for an Administration Interface, similar to the of Envoy
+// https://github.com/solo-io/gloo/issues/6494
+func AdminServerStartFunc(history iosnapshot2.History) StartFunc {
+
+	// serverHandlers defines the custom handlers that the Admin Server will support
+	serverHandlers := admin.ServerHandlers(history)
+
+	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
+		// The Stats Server is used as the running server for our admin endpoints
+		//
+		// NOTE: There is a slight difference in how we run this server -vs- how we used to run it
+		// In the past, we would start the server once, at the beginning of the running container
+		// Now, we start a new server each time we invoke a StartFunc.
+		stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), serverHandlers)
+
+		return nil
 	}
 }

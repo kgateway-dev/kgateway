@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"net"
 	"net/http"
 	"os"
@@ -19,8 +20,6 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/admin"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/iosnapshot"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -915,7 +914,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// consumes and produces. This object is then used by our Admin ProxyEndpointServer, to provide this data on demand
 	snapshotHistory := iosnapshot.NewHistory()
 
-	startFuncs["admin-server"] = admin.StartFunc(snapshotHistory)
+	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,

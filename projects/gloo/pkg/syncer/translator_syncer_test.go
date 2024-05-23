@@ -3,8 +3,7 @@ package syncer_test
 import (
 	"context"
 	"fmt"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
