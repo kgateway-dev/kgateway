@@ -285,6 +285,7 @@ GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
 GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race
 
+
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
 GO_TEST_USER_ARGS ?=
