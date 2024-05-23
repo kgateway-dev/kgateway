@@ -460,15 +460,15 @@ var _ = Describe("Deployer", func() {
 										Tag:        "baz",
 									},
 								},
-								IstioContainer: &gw2_v1alpha1.IstioContainer{
-									Image: &kube.Image{
-										Registry:   "scooby",
-										Repository: "dooby",
-										Tag:        "doo",
-									},
-								},
 								Istio: &gw2_v1alpha1.IstioIntegration{
-									Enabled:               &wrapperspb.BoolValue{Value: true},
+									Enabled: &wrapperspb.BoolValue{Value: true},
+									IstioContainer: &gw2_v1alpha1.IstioContainer{
+										Image: &kube.Image{
+											Registry:   "scooby",
+											Repository: "dooby",
+											Tag:        "doo",
+										},
+									},
 									IstioDiscoveryAddress: "can't",
 									IstioMetaMeshId:       "be",
 									IstioMetaClusterId:    "overridden",
@@ -656,7 +656,7 @@ var _ = Describe("Deployer", func() {
 
 					sdsImg := inp.overrideGwp.Spec.GetKube().GetSdsContainer().GetImage()
 					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry(), sdsImg.GetRepository(), sdsImg.GetTag())))
-					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstioContainer().GetImage()
+					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstio().GetIstioContainer().GetImage()
 					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry(), istioProxyImg.GetRepository(), istioProxyImg.GetTag())))
 
 					return nil
