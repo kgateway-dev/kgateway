@@ -6,6 +6,8 @@ import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
+import "google/protobuf/wrappers.proto";
+
 // Configuration for a Kubernetes Service.
 message Service {
   // The Kubernetes Service type.
@@ -17,7 +19,7 @@ message Service {
   // and
   // https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
   // on the implications of setting `clusterIP`.
-  string clusterIP = 2;
+  google.protobuf.StringValue clusterIP = 2;
 
   // Additional labels to add to the Service object metadata.
   map<string, string> extra_labels = 3;
