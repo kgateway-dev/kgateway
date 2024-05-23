@@ -1,4 +1,10 @@
 changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6113
+    resolvesIssue: true
+    description: >-
+      Added default service type of LoadBalancer to default GatewayParameters. This value will be inherited by each deployed
+      gateway proxy unless it is overridden in a GatewayParameters attached to the Gateway resource which generated it.
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/solo-projects/issues/6107
     resolvesIssue: false
