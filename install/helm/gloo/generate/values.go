@@ -308,18 +308,22 @@ type Gloo struct {
 }
 
 type KubeGateway struct {
-	Enabled           *bool                         `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
-	GatewayParameters map[string]*GatewayParameters `json:"gatewayParameters,omitempty" desc:"Map of GatewayClasses to default GatewayParameters"`
+	Enabled           *bool                               `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	GatewayParameters *GatewayParametersForGatewayClasses `json:"gatewayParameters,omitempty" desc:"Maps GatewayClasses to default GatewayParameters"`
+}
+
+type GatewayParametersForGatewayClasses struct {
+	GlooGateway *GatewayParameters `json:"glooGateway" desc:"Default GatewayParameters for gloo-gateway GatewayClass."`
 }
 
 type GatewayParameters struct {
-	Image      *Image                 `json:"image,omitempty" desc:""`
-	Deployment *ProvisionedDeployment `json:"deployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy"`
-	Service    *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy"`
+	Image      *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
+	Deployment *ProvisionedDeployment `json:"deployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service    *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
 }
 
 type ProvisionedDeployment struct {
-	Replicas *int64 `json:"replicas,omitempty" desc:"number of instances to deploy"`
+	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy."`
 }
 
 type ProvisionedService struct {

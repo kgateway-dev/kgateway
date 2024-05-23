@@ -125,8 +125,8 @@ var _ = BeforeSuite(func() {
 		Spec: api.GatewayClassSpec{
 			ControllerName: api.GatewayController(gatewayControllerName),
 			ParametersRef: &api.ParametersReference{
-				Group:     "gateway.gloo.solo.io",
-				Kind:      "GatewayParameters",
+				Group:     api.Group(v1alpha1.GatewayParametersGVK.Group),
+				Kind:      api.Kind(v1alpha1.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
 				Namespace: ptr.To(api.Namespace("default")),
 			},

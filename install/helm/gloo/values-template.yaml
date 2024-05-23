@@ -10,7 +10,6 @@ kubeGateway:
   gatewayParameters:
     glooGateway:
       image:
-        registry: quay.io/solo-io
         repository: gloo-envoy-wrapper
       deployment:
         replicas: 1

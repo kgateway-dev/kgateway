@@ -129,7 +129,7 @@ var _ = Describe("Deployer", func() {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      wellknown.DefaultGatewayParametersName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					UID:       "1237",
 				},
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
@@ -200,7 +200,7 @@ var _ = Describe("Deployer", func() {
 						Group:     "gateway.gloo.solo.io",
 						Kind:      "GatewayParameters",
 						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: ptr.To(api.Namespace("default")),
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -254,7 +254,7 @@ var _ = Describe("Deployer", func() {
 			gw1 := &api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
 				TypeMeta: metav1.TypeMeta{
@@ -269,7 +269,7 @@ var _ = Describe("Deployer", func() {
 			gw2 := &api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bar",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
 				TypeMeta: metav1.TypeMeta{
@@ -377,7 +377,7 @@ var _ = Describe("Deployer", func() {
 							Group:     "gateway.gloo.solo.io",
 							Kind:      "GatewayParameters",
 							Name:      wellknown.DefaultGatewayParametersName,
-							Namespace: ptr.To(api.Namespace("default")),
+							Namespace: ptr.To(api.Namespace(defaultNamespace)),
 						},
 					},
 				}

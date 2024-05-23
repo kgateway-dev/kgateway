@@ -10,6 +10,6 @@ spec:
   parametersRef:
     group: gateway.gloo.solo.io
     kind: GatewayParameters
-    name: default
+    name: gloo-gateway
     namespace: {{ .Release.Namespace }}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

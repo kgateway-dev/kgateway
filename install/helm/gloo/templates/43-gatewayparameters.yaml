@@ -4,7 +4,7 @@ apiVersion: gateway.gloo.solo.io/v1alpha1
 metadata:
   labels:
     {{- include "gloo-gateway.constLabels" . | nindent 4 }}
-  name: default
+  name: gloo-gateway
   namespace: {{ .Release.Namespace }}
 spec:
   kube:
