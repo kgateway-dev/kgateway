@@ -208,9 +208,13 @@ spec:
                           type: object
                       type: object
                       x-kubernetes-validations:
-                      - message: either apr or both encryption and userSource must
+                      - message: Either apr or both encryption and userSource must
                           be set
                         rule: has(self.apr) || (has(self.encryption) && has(self.userList))
+                      - message: If apr is set, neither encryption nor userSource
+                          may be set
+                        rule: 'has(self.apr) ? !has(self.encryption) && !has(self.userList)
+                          : true'
                     hmacAuth:
                       properties:
                         parametersInHeaders:
@@ -225,8 +229,13 @@ spec:
                                   namespace:
                                     type: string
                                 type: object
+                              minItems: 1
                               type: array
+                          required:
+                          - secretRefs
                           type: object
+                      required:
+                      - secretRefs
                       type: object
                     jwt:
                       maxProperties: 0
@@ -234,6 +243,7 @@ spec:
                     ldap:
                       properties:
                         address:
+                          minLength: 1
                           type: string
                         allowedGroups:
                           items:
@@ -272,6 +282,8 @@ spec:
                           type: string
                         userDnTemplate:
                           type: string
+                      required:
+                      - address
                       type: object
                     name:
                       nullable: true
@@ -279,6 +291,7 @@ spec:
                     oauth:
                       properties:
                         appUrl:
+                          minLength: 1
                           type: string
                         authEndpointQueryParams:
                           additionalProperties:
@@ -301,6 +314,8 @@ spec:
                           items:
                             type: string
                           type: array
+                      required:
+                      - appUrl
                       type: object
                     oauth2:
                       properties:
@@ -327,11 +342,22 @@ spec:
                                   nullable: true
                                   type: boolean
                                 introspectionUrl:
+                                  minLength: 1
                                   type: string
                                 userIdAttributeName:
                                   type: string
+                              required:
+                              - introspectionUrl
                               type: object
+                              x-kubernetes-validations:
+                              - message: If clientId is set, clientSecretRef must
+                                  be set or disableClientSecret must be true. Otherwise,
+                                  clientSecretRef must not be set.
+                                rule: 'has(self.clientId) && size(self.clientId) >
+                                  0 ? has(self.clientSecretRef) || (has(self.disableClientSecret)
+                                  && self.disableClientSecret) : !has(self.clientSecretRef)'
                             introspectionUrl:
+                              minLength: 1
                               type: string
                             jwt:
                               properties:
@@ -340,14 +366,20 @@ spec:
                                 localJwks:
                                   properties:
                                     inlineString:
+                                      minLength: 1
                                       type: string
+                                  required:
+                                  - inlineString
                                   type: object
                                 remoteJwks:
                                   properties:
                                     refreshInterval:
                                       type: string
                                     url:
+                                      minLength: 1
                                       type: string
+                                  required:
+                                  - url
                                   type: object
                               type: object
                             requiredScopes:
@@ -365,16 +397,20 @@ spec:
                             afterLogoutUrl:
                               type: string
                             appUrl:
+                              minLength: 1
                               type: string
                             authEndpoint:
+                              minLength: 1
                               type: string
                             authEndpointQueryParams:
                               additionalProperties:
                                 type: string
                               type: object
                             callbackPath:
+                              minLength: 1
                               type: string
                             clientId:
+                              minLength: 1
                               type: string
                             clientSecretRef:
                               properties:
@@ -473,12 +509,24 @@ spec:
                                   type: object
                               type: object
                             tokenEndpoint:
+                              minLength: 1
                               type: string
                             tokenEndpointQueryParams:
                               additionalProperties:
                                 type: string
                               type: object
+                          required:
+                          - clientId
+                          - appUrl
+                          - callbackPath
+                          - authEndpoint
+                          - tokenEndpoint
                           type: object
+                          x-kubernetes-validations:
+                          - message: Either clientSecretRef must be set or disableClientSecret
+                              must be true
+                            rule: has(self.clientSecretRef) || (has(self.disableClientSecret)
+                              && self.disableClientSecret)
                         oidcAuthorizationCode:
                           properties:
                             accessToken:
@@ -498,6 +546,7 @@ spec:
                             afterLogoutUrl:
                               type: string
                             appUrl:
+                              minLength: 1
                               type: string
                             authEndpointQueryParams:
                               additionalProperties:
@@ -539,6 +588,7 @@ spec:
                                   type: string
                               type: object
                             callbackPath:
+                              minLength: 1
                               type: string
                             clientAuthentication:
                               properties:
@@ -555,6 +605,11 @@ spec:
                                       nullable: true
                                       type: boolean
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: Either clientSecretRef must be set or
+                                      disableClientSecret must be true
+                                    rule: has(self.clientSecretRef) || (has(self.disableClientSecret)
+                                      && self.disableClientSecret)
                                 privateKeyJwt:
                                   properties:
                                     signingKeyRef:
@@ -566,9 +621,15 @@ spec:
                                       type: object
                                     validFor:
                                       type: string
+                                  required:
+                                  - signingKeyRef
                                   type: object
                               type: object
+                              x-kubernetes-validations:
+                              - message: Must specify clientSecret or privateKeyJwt
+                                rule: has(self.clientSecret) || has(self.privateKeyJwt)
                             clientId:
+                              minLength: 1
                               type: string
                             clientSecretRef:
                               properties:
@@ -656,6 +717,7 @@ spec:
                                   type: array
                               type: object
                             issuerUrl:
+                              minLength: 1
                               type: string
                             jwksCacheRefreshPolicy:
                               properties:
@@ -762,7 +824,19 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                          required:
+                          - clientId
+                          - issuerUrl
+                          - appUrl
+                          - callbackPath
                           type: object
+                          x-kubernetes-validations:
+                          - message: If clientAuthentication is set, neither clientSecretRef
+                              nor disableClientSecret may be set. Otherwise, clientSecretRef
+                              must be set or disableClientSecret must be true.
+                            rule: 'has(self.clientAuthentication) ? !has(self.clientSecretRef)
+                              && !has(self.disableClientSecret) : has(self.clientSecretRef)
+                              || (has(self.disableClientSecret) && self.disableClientSecret)'
                       type: object
                     opaAuth:
                       properties:
@@ -783,7 +857,10 @@ spec:
                               type: boolean
                           type: object
                         query:
+                          minLength: 1
                           type: string
+                      required:
+                      - query
                       type: object
                     opaServerAuth:
                       properties:
@@ -795,11 +872,14 @@ spec:
                               type: boolean
                           type: object
                         package:
+                          minLength: 1
                           type: string
                         ruleName:
                           type: string
                         serverAddr:
                           type: string
+                      required:
+                      - package
                       type: object
                     passThroughAuth:
                       properties:
@@ -811,6 +891,7 @@ spec:
                         grpc:
                           properties:
                             address:
+                              minLength: 1
                               type: string
                             connectionTimeout:
                               type: string
@@ -831,6 +912,8 @@ spec:
                               type: object
                             tlsConfig:
                               type: object
+                          required:
+                          - address
                           type: object
                         http:
                           properties:
@@ -871,9 +954,15 @@ spec:
                                   type: boolean
                               type: object
                             url:
+                              minLength: 1
                               type: string
+                          required:
+                          - url
                           type: object
                       type: object
+                      x-kubernetes-validations:
+                      - message: Must specify grpc or http
+                        rule: has(self.grpc) || has(self.http)
                     pluginAuth:
                       properties:
                         config:
