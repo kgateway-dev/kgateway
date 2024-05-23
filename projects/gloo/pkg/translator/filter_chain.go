@@ -164,7 +164,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 	}
 
 	// 5. Apply destination PrefixRange to filter chain match,  if defined
-	if len(t.sourcePrefixRanges) > 0 {
+	if len(t.prefixRanges) > 0 {
 		for _, fc := range extFilterChains {
 			applyDestinationPrefixRangesToFilterChain(fc, t.prefixRanges)
 		}
