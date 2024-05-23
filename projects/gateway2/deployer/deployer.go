@@ -115,6 +115,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 			"istio": map[string]any{
 				"enabled": false,
 			},
+			"image": map[string]any{},
 		},
 	}
 

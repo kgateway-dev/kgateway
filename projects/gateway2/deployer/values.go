@@ -54,9 +54,6 @@ type helmGateway struct {
 
 	// serviceaccount values
 	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
-
-	//TODO(npolshak) Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
-	IstioSDS *istioSDS `json:"istioSDS,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -113,10 +110,6 @@ type helmSdsContainer struct {
 
 type sdsBootstrap struct {
 	LogLevel *string `json:"logLevel,omitempty"`
-}
-
-type istioSDS struct {
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type helmIstioContainer struct {

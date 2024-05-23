@@ -49,7 +49,7 @@ spec:
 {{- toYaml $global.glooMtls.sdsResources | nindent 8 }}
 {{- end -}}{{/* if $global.glooMtls.sdsResources */}}
     istio:
-      enabled: {{ $global.istioSds.enabled }} 
+      enabled: {{ or $global.istioSDS.enabled $global.glooMtls.enabled }} 
       istioDiscoveryAddress: istiod.istio-system.svc:15012
       istioMetaMeshId: cluster.local
       istioMetaClusterId: Kubernetes
