@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"net"
 
 	"google.golang.org/grpc"
@@ -18,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 )
@@ -106,7 +106,7 @@ type ValidationServer struct {
 // ProxyDebugServer returns proxies to callers outside the gloo pod - this is only necessary for UI/debugging purposes.
 type ProxyDebugServer struct {
 	*GrpcService
-	Server debug.ProxyEndpointServer
+	Server debug.Server
 }
 
 type GrpcService struct {

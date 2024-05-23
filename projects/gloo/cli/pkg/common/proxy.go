@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	gloodebug "github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"io"
 	"math"
 	"net"
@@ -12,8 +13,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
-
-	gloodebug "github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"

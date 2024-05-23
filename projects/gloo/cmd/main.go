@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug/inputsnapshot"
 	"net/http"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug/inputsnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils/probes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"

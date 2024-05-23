@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"golang.org/x/sync/errgroup"
 
@@ -15,7 +16,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 

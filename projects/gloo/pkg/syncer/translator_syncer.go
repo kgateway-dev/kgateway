@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/iosnapshot"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 
@@ -41,6 +43,8 @@ type translatorSyncer struct {
 	// used for debugging purposes only
 	latestSnap *v1snap.ApiSnapshot
 
+	snapshotHistory iosnapshot.History
+
 	statusSyncer *statusSyncer
 
 	// callback after proxy translation
@@ -74,6 +78,7 @@ func NewTranslatorSyncer(
 	writeNamespace string,
 	identity leaderelector.Identity,
 	onProxyTranslated OnProxiesTranslatedFn,
+	snapshotHistory iosnapshot.History,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
@@ -94,6 +99,7 @@ func NewTranslatorSyncer(
 			reportsLock:         sync.RWMutex{},
 		},
 		onProxyTranslated: onProxyTranslated,
+		snapshotHistory:   snapshotHistory,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?

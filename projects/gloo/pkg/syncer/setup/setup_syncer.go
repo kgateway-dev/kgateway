@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"net"
 	"net/http"
 	"os"
@@ -17,6 +18,8 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/admin"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/iosnapshot"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -63,7 +66,6 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -193,7 +195,7 @@ func NewProxyDebugServer(ctx context.Context, grpcServer *grpc.Server, bindAddr 
 			GrpcServer:      grpcServer,
 			StartGrpcServer: start,
 		},
-		Server: debug.NewProxyEndpointServer(),
+		Server: debug.NewServer(),
 	}
 }
 
@@ -908,6 +910,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		)
 	}
 
+	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
+	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
+	snapshotHistory := iosnapshot.NewHistory()
+
+	startFuncs["admin-server"] = admin.StartFunc(snapshotHistory)
+
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
 		sharedTranslator,
@@ -923,6 +931,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		opts.WriteNamespace,
 		opts.Identity,
 		gwv2StatusSyncCallback,
+		snapshotHistory,
 	)
 
 	syncers := v1snap.ApiSyncers{

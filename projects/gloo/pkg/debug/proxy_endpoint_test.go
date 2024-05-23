@@ -2,12 +2,12 @@ package debug_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	debug_api "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -21,7 +21,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 
 		edgeGatewayProxyClient v1.ProxyClient
 		k8sGatewayProxyClient  v1.ProxyClient
-		proxyEndpointServer    debug.ProxyEndpointServer
+		proxyEndpointServer    ProxyEndpointServer
 	)
 
 	BeforeEach(func() {
@@ -36,7 +36,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		proxyEndpointServer = debug.NewProxyEndpointServer()
+		proxyEndpointServer = NewProxyEndpointServer()
 		proxyEndpointServer.RegisterProxyReader(debug.EdgeGatewayTranslation, edgeGatewayProxyClient)
 		proxyEndpointServer.RegisterProxyReader(debug.K8sGatewayTranslation, k8sGatewayProxyClient)
 	})
