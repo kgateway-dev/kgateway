@@ -326,10 +326,13 @@ func (r *controllerReconciler) ReconcileReferenceGrants(ctx context.Context, req
 func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
-	// if a gateway
 	gwclass := &apiv1.GatewayClass{}
 	err := r.cli.Get(ctx, req.NamespacedName, gwclass)
 	if err != nil {
+		// NOTE: if this reconciliation is a result of a DELETE event, this err will be a NotFound,
+		// therefore we will return a nil error here and thus skip any additional reconciliation below.
+		// At the time of writing this comment, the retrieved GWClass object is only used to update the status,
+		// so it should be fine to return here, because there's no status update needed on a deleted resource.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
