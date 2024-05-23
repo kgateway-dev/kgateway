@@ -112,4 +112,5 @@ var (
 	invalidChildValidStandaloneManifest = filepath.Join(util.MustGetThisDir(), "testdata", "invalid_child_valid_standalone.yaml")
 	unresolvedChildManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "unresolved_child.yaml")
 	routeOptionsManifest                = filepath.Join(util.MustGetThisDir(), "testdata", "route_options.yaml")
+	matcherInheritanceManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "matcher_inheritance.yaml")
 )

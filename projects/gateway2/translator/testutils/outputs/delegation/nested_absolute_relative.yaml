@@ -1,0 +1,91 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher: {}
+      virtualHostRefs:
+      - http~example_com
+    httpResources:
+      virtualHosts:
+        http~example_com:
+          domains:
+          - example.com
+          name: http~example_com
+          routes:
+          - matchers:
+            - headers:
+              - name: parent-header
+                value: parent-header-val
+              - name: route-a-b-header-2
+                value: route-a-b-header-val-2
+              - name: route-a-b-d-header
+                value: route-a-b-d-header-val
+              methods:
+              - GET
+              prefix: /a/b/d/1
+              queryParameters:
+              - name: parent-query
+                value: parent-query-val
+              - name: route-a-b-query-2
+                value: route-a-b-query-val-2
+              - name: route-a-b-d-query
+                value: route-a-b-d-query-val
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 8080
+                  ref:
+                    name: svc-a-b-d
+                    namespace: a-b-d
+          - matchers:
+            - headers:
+              - name: parent-header
+                value: parent-header-val
+              - name: route-a-b-header
+                value: route-a-b-header-val
+              methods:
+              - GET
+              prefix: /a/b/c
+              queryParameters:
+              - name: parent-query
+                value: parent-query-val
+              - name: route-a-b-query
+                value: route-a-b-query-val
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 8080
+                  ref:
+                    name: svc-a-b
+                    namespace: a-b
+          - matchers:
+            - headers:
+              - name: parent-header
+                value: parent-header-val
+              - name: route-a-header
+                value: route-a-header-val
+              prefix: /a/1
+              queryParameters:
+              - name: parent-query
+                value: parent-query-val
+              - name: route-a-query
+                value: route-a-query-val
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 8080
+                  ref:
+                    name: svc-a
+                    namespace: a
+  bindAddress: '::'
+  bindPort: 8080
+  name: http
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: infra
+  name: infra-example-gateway
+  namespace: gloo-system
