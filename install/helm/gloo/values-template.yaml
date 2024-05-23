@@ -14,6 +14,8 @@ kubeGateway:
         repository: gloo-envoy-wrapper
       deployment:
         replicas: 1
+      service:
+        type: LoadBalancer
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot

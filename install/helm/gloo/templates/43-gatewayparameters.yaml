@@ -15,6 +15,10 @@ spec:
 {{- $image := merge $gg.image $global.image }}
     deployment:
       replicas: {{ $gg.deployment.replicas }}
+{{- if $gg.service }}
+    service:
+      type: {{ $gg.service.type }}
+{{- end -}}{{/* if $gg.service */}}
     envoyContainer:
       image:
 {{- toYaml $image | nindent 8 }}
