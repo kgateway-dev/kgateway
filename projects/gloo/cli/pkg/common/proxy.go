@@ -2,13 +2,14 @@ package common
 
 import (
 	"context"
-	gloodebug "github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"io"
 	"math"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	gloodebug "github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 

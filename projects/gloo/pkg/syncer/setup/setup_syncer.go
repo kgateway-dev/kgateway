@@ -3,7 +3,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -195,7 +196,7 @@ func NewProxyDebugServer(ctx context.Context, grpcServer *grpc.Server, bindAddr 
 			GrpcServer:      grpcServer,
 			StartGrpcServer: start,
 		},
-		Server: debug.NewServer(),
+		Server: debug.NewProxyEndpointServer(),
 	}
 }
 
@@ -911,7 +912,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
-	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
+	// consumes and produces. This object is then used by our Admin ProxyEndpointServer, to provide this data on demand
 	snapshotHistory := iosnapshot.NewHistory()
 
 	startFuncs["admin-server"] = admin.StartFunc(snapshotHistory)

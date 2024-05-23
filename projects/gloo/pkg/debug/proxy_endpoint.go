@@ -2,7 +2,6 @@ package debug
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup/servers/proxyendpoint"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
 
@@ -16,13 +15,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Server responds to requests for Proxies, and returns them
+// ProxyEndpointServer responds to requests for Proxies, and returns them
 // The server relies on ProxyReaders being registered with the server
-type Server interface {
+type ProxyEndpointServer interface {
 	// ProxyEndpointServiceServer exposes the user-facing API to request proxies
 	debug.ProxyEndpointServiceServer
 
-	// Register is used by the ControlPlane to register this service with a particular grpc.Server
+	// Register is used by the ControlPlane to register this service with a particular grpc.ProxyEndpointServer
 	Register(grpcServer *grpc.Server)
 
 	// RegisterProxyReader registers a given ProxyReader for a particular source
@@ -35,8 +34,8 @@ type proxyEndpointServer struct {
 	readersBySource map[ProxySource]v1.ProxyReader
 }
 
-// NewServer returns an implementation of the Server
-func NewServer() Server {
+// NewProxyEndpointServer returns an implementation of the ProxyEndpointServer
+func NewProxyEndpointServer() ProxyEndpointServer {
 	return &proxyEndpointServer{
 		readersBySource: make(map[ProxySource]v1.ProxyReader, 1),
 	}
@@ -124,15 +123,15 @@ func (p *proxyEndpointServer) getProxyReadersForSource(source string) ([]v1.Prox
 	}
 
 	// If the source is provided, validate that it is an available one
-	requestProxySource, ok := proxyendpoint.proxySourceByName[source]
+	requestProxySource, ok := proxySourceByName[source]
 	if !ok {
-		return nil, eris.Errorf("ProxyEndpointRequest.source (%s) is not a valid option. Available options are: %v", source, proxyendpoint.proxySourceByName)
+		return nil, eris.Errorf("ProxyEndpointRequest.source (%s) is not a valid option. Available options are: %v", source, proxySourceByName)
 	}
 
 	proxyReader, ok := p.readersBySource[requestProxySource]
 	if !ok {
 		// This should not really occur. If this does, it likely means that a developer forgot to write the code
-		// to register a given proxySource with the Server
+		// to register a given proxySource with the ProxyEndpointServer
 		return nil, eris.Errorf("ProxyEndpointRequest.source (%s) does not have a registered reader", source)
 	}
 

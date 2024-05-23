@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"golang.org/x/sync/errgroup"

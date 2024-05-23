@@ -2,8 +2,9 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"net"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -106,7 +107,7 @@ type ValidationServer struct {
 // ProxyDebugServer returns proxies to callers outside the gloo pod - this is only necessary for UI/debugging purposes.
 type ProxyDebugServer struct {
 	*GrpcService
-	Server debug.Server
+	Server debug.ProxyEndpointServer
 }
 
 type GrpcService struct {

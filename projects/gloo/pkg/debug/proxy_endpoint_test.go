@@ -2,6 +2,7 @@ package debug_test
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	. "github.com/onsi/ginkgo/v2"
