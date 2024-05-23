@@ -88,7 +88,7 @@ func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	svcType := v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())]
-	clusterIp := svcConfig.GetClusterIP()
+	clusterIp := svcConfig.GetClusterIP().GetValue()
 	return &helmService{
 		Type:             &svcType,
 		ClusterIP:        &clusterIp,
@@ -141,7 +141,7 @@ func getSdsValues(sdsConfig *v1alpha1.SdsIntegration, defaultSds extensions.Imag
 		var bootstrap *sdsBootstrap
 		if sdsConfig.GetSdsContainer() != nil {
 			bootstrap = &sdsBootstrap{
-				LogLevel: ptr.To(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel()),
+				LogLevel: ptr.To(sdsConfig.GetSdsContainer().GetBootstrap().GetLogLevel().GetValue()),
 			}
 		}
 
@@ -194,10 +194,10 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 			// Use GatewayParameter overrides if provided
 			mergedIstioImage := getMergedIstioImageValues(defaultIstioValues.Image, istioConfig.GetIstioContainer().GetImage())
 			var logLevel *string
-			if istioConfig.GetIstioContainer() == nil || istioConfig.GetIstioContainer().GetLogLevel() == "" {
+			if istioConfig.GetIstioContainer() == nil || istioConfig.GetIstioContainer().GetLogLevel().GetValue() == "" {
 				logLevel = defaultIstioValues.LogLevel
 			} else {
-				logLevel = ptr.To(istioConfig.GetIstioContainer().GetLogLevel())
+				logLevel = ptr.To(istioConfig.GetIstioContainer().GetLogLevel().GetValue())
 			}
 
 			istioVals = &helmIstioSds{
@@ -205,9 +205,9 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstioSds {
 				LogLevel:              logLevel,
 				Resources:             istioConfig.GetIstioContainer().GetResources(),
 				SecurityContext:       istioConfig.GetIstioContainer().GetSecurityContext(),
-				IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioDiscoveryAddress()),
-				IstioMetaMeshId:       ptr.To(istioConfig.GetIstioMetaMeshId()),
-				IstioMetaClusterId:    ptr.To(istioConfig.GetIstioMetaClusterId()),
+				IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioDiscoveryAddress().GetValue()),
+				IstioMetaMeshId:       ptr.To(istioConfig.GetIstioMetaMeshId().GetValue()),
+				IstioMetaClusterId:    ptr.To(istioConfig.GetIstioMetaClusterId().GetValue()),
 			}
 		}
 	}
@@ -236,17 +236,17 @@ func getMergedIstioImageValues(defaultImage *helmImage, overrideImage *v1alpha1k
 	}
 
 	// for repo and tag, fall back to defaults if not provided
-	repository := overrideImage.GetRepository()
+	repository := overrideImage.GetRepository().GetValue()
 	if repository == "" {
 		repository = *defaultImage.Repository
 	}
-	tag := overrideImage.GetTag()
+	tag := overrideImage.GetTag().GetValue()
 	if tag == "" {
 		tag = *defaultImage.Tag
 	}
 
-	registry := overrideImage.GetRegistry()
-	digest := overrideImage.GetDigest()
+	registry := overrideImage.GetRegistry().GetValue()
+	digest := overrideImage.GetDigest().GetValue()
 
 	// get the string representation of pull policy, unless it's unspecified, in which case we
 	// leave it empty to fall back to the default value
@@ -277,17 +277,17 @@ func getMergedSdsImageValues(defaultImage extensions.Image, overrideImage *v1alp
 	}
 
 	// for repo and tag, fall back to defaults if not provided
-	repository := overrideImage.GetRepository()
+	repository := overrideImage.GetRepository().GetValue()
 	if repository == "" {
 		repository = defaultImage.Repository
 	}
-	tag := overrideImage.GetTag()
+	tag := overrideImage.GetTag().GetValue()
 	if tag == "" {
 		tag = defaultImage.Tag
 	}
 
-	registry := overrideImage.GetRegistry()
-	digest := overrideImage.GetDigest()
+	registry := overrideImage.GetRegistry().GetValue()
+	digest := overrideImage.GetDigest().GetValue()
 
 	// get the string representation of pull policy, unless it's unspecified, in which case we
 	// leave it empty to fall back to the default value
@@ -315,17 +315,17 @@ func getMergedEnvoyImageValues(defaultImage extensions.Image, overrideImage *v1a
 	}
 
 	// for repo and tag, fall back to defaults if not provided
-	repository := overrideImage.GetRepository()
+	repository := overrideImage.GetRepository().GetValue()
 	if repository == "" {
 		repository = defaultImage.Repository
 	}
-	tag := overrideImage.GetTag()
+	tag := overrideImage.GetTag().GetValue()
 	if tag == "" {
 		tag = defaultImage.Tag
 	}
 
-	registry := overrideImage.GetRegistry()
-	digest := overrideImage.GetDigest()
+	registry := overrideImage.GetRegistry().GetValue()
+	digest := overrideImage.GetDigest().GetValue()
 
 	// get the string representation of pull policy, unless it's unspecified, in which case we
 	// leave it empty to fall back to the default value

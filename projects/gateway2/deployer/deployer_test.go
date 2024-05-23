@@ -321,16 +321,16 @@ var _ = Describe("Deployer", func() {
 								},
 								EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 									Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-										LogLevel: "debug",
+										LogLevel: &wrappers.StringValue{Value: "debug"},
 										ComponentLogLevels: map[string]string{
 											"router":   "info",
 											"listener": "warn",
 										},
 									},
 									Image: &kube.Image{
-										Registry:   "foo",
-										Repository: "bar",
-										Tag:        "bat",
+										Registry:   &wrappers.StringValue{Value: "foo"},
+										Repository: &wrappers.StringValue{Value: "bar"},
+										Tag:        &wrappers.StringValue{Value: "bat"},
 										PullPolicy: kube.Image_Always,
 									},
 								},
@@ -345,7 +345,7 @@ var _ = Describe("Deployer", func() {
 								},
 								Service: &kube.Service{
 									Type:      kube.Service_ClusterIP,
-									ClusterIP: "99.99.99.99",
+									ClusterIP: &wrappers.StringValue{Value: "99.99.99.99"},
 									ExtraAnnotations: map[string]string{
 										"foo": "bar",
 									},

@@ -290,8 +290,14 @@ func (m *EnvoyBootstrap) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetLogLevel()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogLevel()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogLevel(), target.GetLogLevel()) {
+			return false
+		}
 	}
 
 	if len(m.GetComponentLogLevels()) != len(target.GetComponentLogLevels()) {
@@ -383,16 +389,34 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetIstioDiscoveryAddress(), target.GetIstioDiscoveryAddress()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetIstioDiscoveryAddress()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioDiscoveryAddress()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioDiscoveryAddress(), target.GetIstioDiscoveryAddress()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetIstioMetaMeshId(), target.GetIstioMetaMeshId()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetIstioMetaMeshId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioMetaMeshId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioMetaMeshId(), target.GetIstioMetaMeshId()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetIstioMetaClusterId(), target.GetIstioMetaClusterId()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetIstioMetaClusterId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioMetaClusterId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioMetaClusterId(), target.GetIstioMetaClusterId()) {
+			return false
+		}
 	}
 
 	return true
@@ -483,8 +507,14 @@ func (m *SdsBootstrap) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetLogLevel()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogLevel()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogLevel(), target.GetLogLevel()) {
+			return false
+		}
 	}
 
 	return true
@@ -541,8 +571,14 @@ func (m *IstioContainer) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetLogLevel(), target.GetLogLevel()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetLogLevel()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogLevel()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogLevel(), target.GetLogLevel()) {
+			return false
+		}
 	}
 
 	return true
