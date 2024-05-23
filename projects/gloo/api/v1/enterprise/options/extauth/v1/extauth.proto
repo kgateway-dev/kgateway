@@ -1262,6 +1262,9 @@ message OpaAuthOptions {
 // auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
 message OpaServerAuth {
     // The package from your Rego policy bundle used to query the OPA data API.
+    //
+    // Validation:
+    // - required
     string package = 1;
 
     // The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api).
