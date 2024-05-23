@@ -31,7 +31,6 @@ func flattenDelegatedRoutes(
 	ctx context.Context,
 	queries query.GatewayQueries,
 	parent *gwv1.HTTPRoute,
-	rule gwv1.HTTPRouteRule,
 	backendRef gwv1.HTTPBackendRef,
 	parentReporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
