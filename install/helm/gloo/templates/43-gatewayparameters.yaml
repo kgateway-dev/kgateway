@@ -41,6 +41,7 @@ spec:
 {{- toYaml $global.glooMtls.sdsResources | nindent 8 }}
 {{- end -}}{{/* if $global.glooMtls.sdsResources */}}
     istio:
+      enabled: {{ or $global.istioSDS.enabled $global.glooMtls.enabled }} 
       istioContainer:
         image:
 {{- merge $global.glooMtls.istioProxy.image $global.image | toYaml | nindent 10 }}
@@ -53,7 +54,6 @@ spec:
         logLevel: {{ $global.glooMtls.istioProxy.logLevel }}
 {{- end -}}{{/* if $global.glooMtls.istioProxy.logLevel */}}
 {{- end -}}{{/* if $global.glooMtls.istioProxy */}}
-      enabled: {{ or $global.istioSDS.enabled $global.glooMtls.enabled }} 
       istioDiscoveryAddress: istiod.istio-system.svc:15012
       istioMetaMeshId: cluster.local
       istioMetaClusterId: Kubernetes

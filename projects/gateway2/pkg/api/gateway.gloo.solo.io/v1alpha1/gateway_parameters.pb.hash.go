@@ -200,26 +200,6 @@ func (m *KubernetesProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetGlooMtls()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("GlooMtls")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetGlooMtls(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("GlooMtls")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	switch m.WorkloadType.(type) {
 
 	case *KubernetesProxyConfig_Deployment:
@@ -244,22 +224,6 @@ func (m *KubernetesProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *GlooMtls) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.GlooMtls")); err != nil {
-		return 0, err
 	}
 
 	return hasher.Sum64(), nil

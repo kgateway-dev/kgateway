@@ -154,16 +154,6 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetGlooMtls()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetGlooMtls()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetGlooMtls(), target.GetGlooMtls()) {
-			return false
-		}
-	}
-
 	switch m.WorkloadType.(type) {
 
 	case *KubernetesProxyConfig_Deployment:
@@ -186,30 +176,6 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		if m.WorkloadType != target.WorkloadType {
 			return false
 		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *GlooMtls) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*GlooMtls)
-	if !ok {
-		that2, ok := that.(GlooMtls)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
 	}
 
 	return true
