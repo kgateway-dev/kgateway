@@ -462,7 +462,7 @@ var _ = Describe("Deployer", func() {
 					Expect(svc.GetAnnotations()).ToNot(BeNil())
 					Expect(svc.Annotations["foo"]).To(Equal("bar"))
 					Expect(string(svc.Spec.Type)).To(Equal(inp.gwp.Spec.GetKube().GetService().GetType().String()))
-					Expect(svc.Spec.ClusterIP).To(Equal(inp.gwp.Spec.GetKube().GetService().GetClusterIP()))
+					Expect(svc.Spec.ClusterIP).To(Equal(inp.gwp.Spec.GetKube().GetService().GetClusterIP().GetValue()))
 
 					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 					Expect(sa).ToNot(BeNil())
@@ -471,7 +471,7 @@ var _ = Describe("Deployer", func() {
 					Expect(cm).ToNot(BeNil())
 					Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
 						"--log-level",
-						inp.gwp.Spec.GetKube().GetEnvoyContainer().GetBootstrap().GetLogLevel(),
+						inp.gwp.Spec.GetKube().GetEnvoyContainer().GetBootstrap().GetLogLevel().GetValue(),
 						"--component-log-level",
 						"listener:warn,router:info",
 					))
