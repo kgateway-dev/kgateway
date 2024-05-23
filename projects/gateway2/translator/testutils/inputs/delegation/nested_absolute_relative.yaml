@@ -1,0 +1,195 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      - type: Exact
+        name: route-a-header
+        value: route-a-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+      - type: Exact
+        name: route-a-query
+        value: route-a-query-val
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/b
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+      method: GET
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "route-a-b"
+      namespace: a-b
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a
+  namespace: a
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a-b
+  namespace: a-b
+  annotations:
+    delegation.gateway.solo.io/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /c
+      headers:
+      - type: Exact
+        name: route-a-b-header
+        value: route-a-b-header-val
+      queryParams:
+      - type: Exact
+        name: route-a-b-query
+        value: route-a-b-query-val
+    backendRefs:
+    - name: svc-a-b
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /d
+      headers:
+      - type: Exact
+        name: route-a-b-header-2
+        value: route-a-b-header-val-2
+      queryParams:
+      - type: Exact
+        name: route-a-b-query-2
+        value: route-a-b-query-val-2
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "route-a-b-d"
+      namespace: a-b-d
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a-b
+  namespace: a-b
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a-b-d
+  namespace: a-b-d
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/b/d/1
+      headers:
+      - type: Exact
+        name: parent-header
+        value: parent-header-val
+      - type: Exact
+        name: route-a-b-header-2
+        value: route-a-b-header-val-2
+      - type: Exact
+        name: route-a-b-d-header
+        value: route-a-b-d-header-val
+      queryParams:
+      - type: Exact
+        name: parent-query
+        value: parent-query-val
+      - type: Exact
+        name: route-a-b-query-2
+        value: route-a-b-query-val-2
+      - type: Exact
+        name: route-a-b-d-query
+        value: route-a-b-d-query-val
+      method: GET
+    backendRefs:
+    - name: svc-a-b-d
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-a-b-d
+  namespace: a-b-d
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
