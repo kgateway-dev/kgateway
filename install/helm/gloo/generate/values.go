@@ -313,7 +313,7 @@ type KubeGateway struct {
 }
 
 type GatewayParametersForGatewayClasses struct {
-	GlooGateway *GatewayParameters `json:"glooGateway" desc:"Default GatewayParameters for gloo-gateway GatewayClass."`
+	GlooGateway *GatewayParameters `json:"glooGateway,omitempty" desc:"Default GatewayParameters for gloo-gateway GatewayClass."`
 }
 
 type GatewayParameters struct {
