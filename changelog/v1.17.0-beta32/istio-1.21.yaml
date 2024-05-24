@@ -4,3 +4,7 @@ changelog:
     resolvesIssue: false
     description: >
       Bump Istio supported version to 1.21 in docs/CI/tests
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/8990
+    description: >
+      The `ErrNoSupportedSidecar` has been removed from the `projects/gloo/cli/pkg/cmd/istio/sidecars` package as we no longer support any versions that would trigger this error.
