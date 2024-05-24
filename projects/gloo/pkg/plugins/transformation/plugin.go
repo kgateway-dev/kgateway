@@ -252,7 +252,7 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 	filters := []*envoyhttp.HttpFilter{
 		// Technically this is only necessary if the body is being transformed,
 		// Can potentially optimize this in the future
-		&envoyhttp.HttpFilter{
+		{
 			Name: WaitFilterName,
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 				TypedConfig: &anypb.Any{
@@ -260,7 +260,7 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 				},
 			},
 		},
-		&envoyhttp.HttpFilter{
+		{
 			Name: FilterName,
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 				TypedConfig: msg,
