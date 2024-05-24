@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 1e21ac11c4e26ec1
+    crd.solo.io/specHash: 11f344e187103476
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -96,11 +96,13 @@ spec:
                               type: string
                             type: object
                           logLevel:
+                            nullable: true
                             type: string
                         type: object
                       image:
                         properties:
                           digest:
+                            nullable: true
                             type: string
                           pullPolicy:
                             enum:
@@ -110,10 +112,13 @@ spec:
                             - Never
                             type: string
                           registry:
+                            nullable: true
                             type: string
                           repository:
+                            nullable: true
                             type: string
                           tag:
+                            nullable: true
                             type: string
                         type: object
                       resources:
@@ -197,6 +202,7 @@ spec:
                           image:
                             properties:
                               digest:
+                                nullable: true
                                 type: string
                               pullPolicy:
                                 enum:
@@ -206,13 +212,17 @@ spec:
                                 - Never
                                 type: string
                               registry:
+                                nullable: true
                                 type: string
                               repository:
+                                nullable: true
                                 type: string
                               tag:
+                                nullable: true
                                 type: string
                             type: object
                           logLevel:
+                            nullable: true
                             type: string
                           resources:
                             properties:
@@ -286,10 +296,13 @@ spec:
                             type: object
                         type: object
                       istioDiscoveryAddress:
+                        nullable: true
                         type: string
                       istioMetaClusterId:
+                        nullable: true
                         type: string
                       istioMetaMeshId:
+                        nullable: true
                         type: string
                     type: object
                   podTemplate:
@@ -693,11 +706,13 @@ spec:
                       bootstrap:
                         properties:
                           logLevel:
+                            nullable: true
                             type: string
                         type: object
                       image:
                         properties:
                           digest:
+                            nullable: true
                             type: string
                           pullPolicy:
                             enum:
@@ -707,10 +722,13 @@ spec:
                             - Never
                             type: string
                           registry:
+                            nullable: true
                             type: string
                           repository:
+                            nullable: true
                             type: string
                           tag:
+                            nullable: true
                             type: string
                         type: object
                       resources:
@@ -787,6 +805,7 @@ spec:
                   service:
                     properties:
                       clusterIP:
+                        nullable: true
                         type: string
                       extraAnnotations:
                         additionalProperties:

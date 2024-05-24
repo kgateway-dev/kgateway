@@ -46,20 +46,44 @@ func (m *Image) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetRegistry(), target.GetRegistry()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetRegistry()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRegistry()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRegistry(), target.GetRegistry()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetRepository(), target.GetRepository()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetRepository()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRepository()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRepository(), target.GetRepository()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetTag(), target.GetTag()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetTag()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTag()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTag(), target.GetTag()) {
+			return false
+		}
 	}
 
-	if strings.Compare(m.GetDigest(), target.GetDigest()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetDigest()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDigest()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDigest(), target.GetDigest()) {
+			return false
+		}
 	}
 
 	if m.GetPullPolicy() != target.GetPullPolicy() {
