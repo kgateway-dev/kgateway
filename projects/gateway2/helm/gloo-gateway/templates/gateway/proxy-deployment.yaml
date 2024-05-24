@@ -81,9 +81,9 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
-{{- if or $gateway.istioSDS.enabled $gateway.sds }}
+{{- if $gateway.istio.enabled }}
       - name: sds
-        image: "{{ template "gloo-gateway.gateway.image" $gateway.sds.image }}"
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.sdsContainer.image }}"
         imagePullPolicy: IfNotPresent
         env:
           - name: POD_NAME
@@ -99,7 +99,7 @@ spec:
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
           - name: LOG_LEVEL
-            value: {{ $gateway.sds.sdsBootstrap.logLevel }}
+            value: {{ $gateway.sdsContainer.sdsBootstrap.logLevel }}
         ports:
           - containerPort: 8234
             name: sds
@@ -119,12 +119,12 @@ spec:
         volumeMounts:
           - mountPath: /etc/envoy
             name: envoy-config
-{{- end }} {{/* if or $gateway.istioSDS.enabled $gateway.sds */}}
-{{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
+{{- end }} {{/* if $gateway.istio.enabled */}}
+{{- if $gateway.istio.enabled }}
           - mountPath: /etc/istio-certs/
             name: istio-certs
       - name: istio-proxy
-        image: "{{ template "gloo-gateway.gateway.image" $gateway.sds.istioIntegration.image }}"
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.istioContainer.image }}"
         # TODO(npolshak): Add configurable envoySidecarResources
         args:
           - proxy
@@ -139,7 +139,7 @@ spec:
           - 45s
           - --parentShutdownDuration
           - 1m0s
-          - --proxyLogLevel={{ $gateway.sds.istioIntegration.logLevel }}
+          - --proxyLogLevel={{ $gateway.istioContainer.logLevel }}
           - --proxyComponentLogLevel=misc:error
           - --connectTimeout
           - 10s
@@ -213,7 +213,7 @@ spec:
             name: workload-socket
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
-{{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
+{{- end }} {{/* if $gateway.istio.enabled */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -230,8 +230,7 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-# TODO(npolshak): Remove istioSDS once default GatewayParameters are supported https://github.com/solo-io/solo-projects/issues/6107
-{{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
+{{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory
         name: istio-certs
@@ -256,7 +255,7 @@ spec:
         emptyDir: {}
       - name: workload-certs
         emptyDir: {}
-{{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
+{{- end }} {{/* if $gateway.istio.enabled */}}
 {{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
@@ -384,8 +383,7 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-        # TODO(npolshak): Remove istioSDS once default GatewayParameters are supported https://github.com/solo-io/solo-projects/issues/6107
-        {{- if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) }}
+        {{- if $gateway.istio.enabled }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
           http2_protocol_options: {}
@@ -398,7 +396,7 @@ data:
                       socket_address:
                         address: 127.0.0.1
                         port_value: 8234
-        {{- end }} {{/* if or $gateway.istioSDS.enabled (and $gateway.sds $gateway.sds.istioIntegration) */}}
+        {{- end }} {{/* if $gateway.istio.enabled */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
