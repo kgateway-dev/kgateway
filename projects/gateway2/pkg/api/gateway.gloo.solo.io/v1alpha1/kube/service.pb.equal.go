@@ -50,14 +50,8 @@ func (m *Service) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetClusterIP()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetClusterIP()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetClusterIP(), target.GetClusterIP()) {
-			return false
-		}
+	if strings.Compare(m.GetClusterIP(), target.GetClusterIP()) != 0 {
+		return false
 	}
 
 	if len(m.GetExtraLabels()) != len(target.GetExtraLabels()) {

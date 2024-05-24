@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 )
@@ -35,6 +36,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 			// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
 			testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
+
+			testManifest.ExpectUnstructured("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName).NotTo(BeNil())
 
 			controlPlaneRbacName := fmt.Sprintf("glood-%s.%s", releaseName, namespace)
 			testManifest.Expect("ClusterRole", "", controlPlaneRbacName).NotTo(BeNil())

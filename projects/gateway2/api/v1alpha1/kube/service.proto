@@ -6,8 +6,6 @@ import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
-import "google/protobuf/wrappers.proto";
-
 // Configuration for a Kubernetes Service.
 message Service {
   // The Kubernetes Service type.
@@ -19,7 +17,7 @@ message Service {
   // and
   // https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
   // on the implications of setting `clusterIP`.
-  google.protobuf.StringValue clusterIP = 2;
+  string clusterIP = 2;
 
   // Additional labels to add to the Service object metadata.
   map<string, string> extra_labels = 3;
@@ -33,11 +31,14 @@ message Service {
   // for details on each service type.
   // Currently, only ClusterIP and LoadBalancer are supported.
   enum ServiceType {
-    // Exposes the Service on a cluster-internal IP. This is the default.
-    ClusterIP = 0;
+    // Unspecified allows us to mark a field for inheritance when overriding defaults. This is the default.
+    Unspecified = 0;
+
+    // Exposes the Service on a cluster-internal IP.
+    ClusterIP = 1;
 
     // Exposes the Service externally using an external load balancer.
-    LoadBalancer = 1;
+    LoadBalancer = 2;
 
     // Exposes the Service on each Node's IP at a static port.
     // Not currently supported, see
