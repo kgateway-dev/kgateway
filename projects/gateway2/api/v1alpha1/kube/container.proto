@@ -6,17 +6,23 @@ import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
+import "google/protobuf/wrappers.proto";
+
 // A container image. See https://kubernetes.io/docs/concepts/containers/images
 // for details.
 message Image {
   // The image registry.
-  string registry = 1;
+  google.protobuf.StringValue registry = 1;
+
   // The image repository (name).
-  string repository = 2;
+  google.protobuf.StringValue repository = 2;
+
   // The image tag.
-  string tag = 3;
+  google.protobuf.StringValue tag = 3;
+
   // The hash digest of the image, e.g. `sha256:12345...`
-  string digest = 4;
+  google.protobuf.StringValue digest = 4;
+
   // The image pull policy for the container. See
   // https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
   // for details.
