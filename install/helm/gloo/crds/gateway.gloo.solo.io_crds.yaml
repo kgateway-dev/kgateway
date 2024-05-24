@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: f7620f31f9f0fad8
+    crd.solo.io/specHash: 1e21ac11c4e26ec1
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -186,6 +186,111 @@ spec:
                                 type: string
                             type: object
                         type: object
+                    type: object
+                  istio:
+                    properties:
+                      enabled:
+                        nullable: true
+                        type: boolean
+                      istioContainer:
+                        properties:
+                          image:
+                            properties:
+                              digest:
+                                type: string
+                              pullPolicy:
+                                enum:
+                                - Unspecified
+                                - IfNotPresent
+                                - Always
+                                - Never
+                                type: string
+                              registry:
+                                type: string
+                              repository:
+                                type: string
+                              tag:
+                                type: string
+                            type: object
+                          logLevel:
+                            type: string
+                          resources:
+                            properties:
+                              limits:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                              requests:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
+                          securityContext:
+                            properties:
+                              allowPrivilegeEscalation:
+                                type: boolean
+                              capabilities:
+                                properties:
+                                  add:
+                                    items:
+                                      type: string
+                                    type: array
+                                  drop:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              privileged:
+                                type: boolean
+                              procMount:
+                                type: string
+                              readOnlyRootFilesystem:
+                                type: boolean
+                              runAsGroup:
+                                format: int64
+                                type: integer
+                              runAsNonRoot:
+                                type: boolean
+                              runAsUser:
+                                format: int64
+                                type: integer
+                              seLinuxOptions:
+                                properties:
+                                  level:
+                                    type: string
+                                  role:
+                                    type: string
+                                  type:
+                                    type: string
+                                  user:
+                                    type: string
+                                type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                type: object
+                              windowsOptions:
+                                properties:
+                                  gmsaCredentialSpec:
+                                    type: string
+                                  gmsaCredentialSpecName:
+                                    type: string
+                                  hostProcess:
+                                    type: boolean
+                                  runAsUserName:
+                                    type: string
+                                type: object
+                            type: object
+                        type: object
+                      istioDiscoveryAddress:
+                        type: string
+                      istioMetaClusterId:
+                        type: string
+                      istioMetaMeshId:
+                        type: string
                     type: object
                   podTemplate:
                     properties:
@@ -583,204 +688,99 @@ spec:
                           type: object
                         type: array
                     type: object
-                  sds:
+                  sdsContainer:
                     properties:
-                      istioIntegration:
+                      bootstrap:
                         properties:
-                          istioContainer:
-                            properties:
-                              image:
-                                properties:
-                                  digest:
-                                    type: string
-                                  pullPolicy:
-                                    enum:
-                                    - Unspecified
-                                    - IfNotPresent
-                                    - Always
-                                    - Never
-                                    type: string
-                                  registry:
-                                    type: string
-                                  repository:
-                                    type: string
-                                  tag:
-                                    type: string
-                                type: object
-                              logLevel:
-                                type: string
-                              resources:
-                                properties:
-                                  limits:
-                                    additionalProperties:
-                                      type: string
-                                    type: object
-                                  requests:
-                                    additionalProperties:
-                                      type: string
-                                    type: object
-                                type: object
-                              securityContext:
-                                properties:
-                                  allowPrivilegeEscalation:
-                                    type: boolean
-                                  capabilities:
-                                    properties:
-                                      add:
-                                        items:
-                                          type: string
-                                        type: array
-                                      drop:
-                                        items:
-                                          type: string
-                                        type: array
-                                    type: object
-                                  privileged:
-                                    type: boolean
-                                  procMount:
-                                    type: string
-                                  readOnlyRootFilesystem:
-                                    type: boolean
-                                  runAsGroup:
-                                    format: int64
-                                    type: integer
-                                  runAsNonRoot:
-                                    type: boolean
-                                  runAsUser:
-                                    format: int64
-                                    type: integer
-                                  seLinuxOptions:
-                                    properties:
-                                      level:
-                                        type: string
-                                      role:
-                                        type: string
-                                      type:
-                                        type: string
-                                      user:
-                                        type: string
-                                    type: object
-                                  seccompProfile:
-                                    properties:
-                                      localhostProfile:
-                                        type: string
-                                      type:
-                                        type: string
-                                    type: object
-                                  windowsOptions:
-                                    properties:
-                                      gmsaCredentialSpec:
-                                        type: string
-                                      gmsaCredentialSpecName:
-                                        type: string
-                                      hostProcess:
-                                        type: boolean
-                                      runAsUserName:
-                                        type: string
-                                    type: object
-                                type: object
-                            type: object
-                          istioDiscoveryAddress:
-                            type: string
-                          istioMetaClusterId:
-                            type: string
-                          istioMetaMeshId:
+                          logLevel:
                             type: string
                         type: object
-                      sdsContainer:
+                      image:
                         properties:
-                          bootstrap:
-                            properties:
-                              logLevel:
-                                type: string
+                          digest:
+                            type: string
+                          pullPolicy:
+                            enum:
+                            - Unspecified
+                            - IfNotPresent
+                            - Always
+                            - Never
+                            type: string
+                          registry:
+                            type: string
+                          repository:
+                            type: string
+                          tag:
+                            type: string
+                        type: object
+                      resources:
+                        properties:
+                          limits:
+                            additionalProperties:
+                              type: string
                             type: object
-                          image:
-                            properties:
-                              digest:
-                                type: string
-                              pullPolicy:
-                                enum:
-                                - Unspecified
-                                - IfNotPresent
-                                - Always
-                                - Never
-                                type: string
-                              registry:
-                                type: string
-                              repository:
-                                type: string
-                              tag:
-                                type: string
+                          requests:
+                            additionalProperties:
+                              type: string
                             type: object
-                          resources:
+                        type: object
+                      securityContext:
+                        properties:
+                          allowPrivilegeEscalation:
+                            type: boolean
+                          capabilities:
                             properties:
-                              limits:
-                                additionalProperties:
+                              add:
+                                items:
                                   type: string
-                                type: object
-                              requests:
-                                additionalProperties:
+                                type: array
+                              drop:
+                                items:
                                   type: string
-                                type: object
+                                type: array
                             type: object
-                          securityContext:
+                          privileged:
+                            type: boolean
+                          procMount:
+                            type: string
+                          readOnlyRootFilesystem:
+                            type: boolean
+                          runAsGroup:
+                            format: int64
+                            type: integer
+                          runAsNonRoot:
+                            type: boolean
+                          runAsUser:
+                            format: int64
+                            type: integer
+                          seLinuxOptions:
                             properties:
-                              allowPrivilegeEscalation:
-                                type: boolean
-                              capabilities:
-                                properties:
-                                  add:
-                                    items:
-                                      type: string
-                                    type: array
-                                  drop:
-                                    items:
-                                      type: string
-                                    type: array
-                                type: object
-                              privileged:
-                                type: boolean
-                              procMount:
+                              level:
                                 type: string
-                              readOnlyRootFilesystem:
+                              role:
+                                type: string
+                              type:
+                                type: string
+                              user:
+                                type: string
+                            type: object
+                          seccompProfile:
+                            properties:
+                              localhostProfile:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          windowsOptions:
+                            properties:
+                              gmsaCredentialSpec:
+                                type: string
+                              gmsaCredentialSpecName:
+                                type: string
+                              hostProcess:
                                 type: boolean
-                              runAsGroup:
-                                format: int64
-                                type: integer
-                              runAsNonRoot:
-                                type: boolean
-                              runAsUser:
-                                format: int64
-                                type: integer
-                              seLinuxOptions:
-                                properties:
-                                  level:
-                                    type: string
-                                  role:
-                                    type: string
-                                  type:
-                                    type: string
-                                  user:
-                                    type: string
-                                type: object
-                              seccompProfile:
-                                properties:
-                                  localhostProfile:
-                                    type: string
-                                  type:
-                                    type: string
-                                type: object
-                              windowsOptions:
-                                properties:
-                                  gmsaCredentialSpec:
-                                    type: string
-                                  gmsaCredentialSpecName:
-                                    type: string
-                                  hostProcess:
-                                    type: boolean
-                                  runAsUserName:
-                                    type: string
-                                type: object
+                              runAsUserName:
+                                type: string
                             type: object
                         type: object
                     type: object
@@ -798,6 +798,7 @@ spec:
                         type: object
                       type:
                         enum:
+                        - Unspecified
                         - ClusterIP
                         - LoadBalancer
                         type: string

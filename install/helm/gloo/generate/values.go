@@ -31,7 +31,7 @@ type Global struct {
 	GlooStats            Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
 	GlooMtls             Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
 	IstioSDS             IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	IstioIntegration     IstioIntegration      `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
+	IstioIntegration     IstioIntegration      `json:"istioIntegration,omitempty" desc:"Configs used to manage Gloo pod visibility for Istio's automatic discovery and sidecar injection."`
 	ExtraSpecs           *bool                 `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	ExtauthCustomYaml    *bool                 `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
 	Console              interface{}           `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
@@ -308,7 +308,26 @@ type Gloo struct {
 }
 
 type KubeGateway struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	Enabled           *bool                               `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	GatewayParameters *GatewayParametersForGatewayClasses `json:"gatewayParameters,omitempty" desc:"Maps GatewayClasses to default GatewayParameters"`
+}
+
+type GatewayParametersForGatewayClasses struct {
+	GlooGateway *GatewayParameters `json:"glooGateway,omitempty" desc:"Default GatewayParameters for gloo-gateway GatewayClass."`
+}
+
+type GatewayParameters struct {
+	Image           *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
+	ProxyDeployment *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service         *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+}
+
+type ProvisionedDeployment struct {
+	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy."`
+}
+
+type ProvisionedService struct {
+	Type *string `json:"type,omitempty" desc:"K8s service type"`
 }
 
 type SecurityOpts struct {
