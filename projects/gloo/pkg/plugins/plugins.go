@@ -195,6 +195,7 @@ type PluginRegistry interface {
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
+	GetUpstreamHttpFilterPlugins() []UpstreamHttpFilterPlugin
 	GetNetworkFilterPlugins() []NetworkFilterPlugin
 	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
 	GetVirtualHostPlugins() []VirtualHostPlugin
