@@ -38,20 +38,84 @@ func (m *Image) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetRegistry())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetRegistry()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Registry")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRegistry(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Registry")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetRepository())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetRepository()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Repository")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRepository(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Repository")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetTag())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetTag()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Tag")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetTag(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Tag")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetDigest())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetDigest()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Digest")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetDigest(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Digest")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetPullPolicy())
