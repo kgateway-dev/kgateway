@@ -142,16 +142,16 @@ var _ = Describe("Deployer", func() {
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-									LogLevel: "debug",
+									LogLevel: &wrappers.StringValue{Value: "debug"},
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
 								Image: &kube.Image{
-									Registry:   "scooby",
-									Repository: "dooby",
-									Tag:        "doo",
+									Registry:   &wrappers.StringValue{Value: "scooby"},
+									Repository: &wrappers.StringValue{Value: "dooby"},
+									Tag:        &wrappers.StringValue{Value: "doo"},
 									PullPolicy: kube.Image_Always,
 								},
 							},
@@ -166,7 +166,7 @@ var _ = Describe("Deployer", func() {
 							},
 							Service: &kube.Service{
 								Type:      kube.Service_ClusterIP,
-								ClusterIP: "99.99.99.99",
+								ClusterIP: &wrappers.StringValue{Value: "99.99.99.99"},
 								ExtraAnnotations: map[string]string{
 									"foo": "bar",
 								},
@@ -404,16 +404,16 @@ var _ = Describe("Deployer", func() {
 								},
 								EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 									Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-										LogLevel: "debug",
+										LogLevel: &wrappers.StringValue{Value: "debug"},
 										ComponentLogLevels: map[string]string{
 											"router":   "info",
 											"listener": "warn",
 										},
 									},
 									Image: &kube.Image{
-										Registry:   "foo",
-										Repository: "bar",
-										Tag:        "bat",
+										Registry:   &wrappers.StringValue{Value: "foo"},
+										Repository: &wrappers.StringValue{Value: "bar"},
+										Tag:        &wrappers.StringValue{Value: "bat"},
 										PullPolicy: kube.Image_Always,
 									},
 								},
@@ -428,7 +428,7 @@ var _ = Describe("Deployer", func() {
 								},
 								Service: &kube.Service{
 									Type:      kube.Service_ClusterIP,
-									ClusterIP: "99.99.99.99",
+									ClusterIP: &wrappers.StringValue{Value: "99.99.99.99"},
 									ExtraAnnotations: map[string]string{
 										"foo": "bar",
 									},
@@ -455,23 +455,23 @@ var _ = Describe("Deployer", func() {
 							Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 								SdsContainer: &gw2_v1alpha1.SdsContainer{
 									Image: &kube.Image{
-										Registry:   "foo",
-										Repository: "bar",
-										Tag:        "baz",
+										Registry:   &wrappers.StringValue{Value: "foo"},
+										Repository: &wrappers.StringValue{Value: "bar"},
+										Tag:        &wrappers.StringValue{Value: "baz"},
 									},
 								},
 								Istio: &gw2_v1alpha1.IstioIntegration{
 									Enabled: &wrapperspb.BoolValue{Value: true},
 									IstioContainer: &gw2_v1alpha1.IstioContainer{
 										Image: &kube.Image{
-											Registry:   "scooby",
-											Repository: "dooby",
-											Tag:        "doo",
+											Registry:   &wrappers.StringValue{Value: "scooby"},
+											Repository: &wrappers.StringValue{Value: "dooby"},
+											Tag:        &wrappers.StringValue{Value: "doo"},
 										},
 									},
-									IstioDiscoveryAddress: "can't",
-									IstioMetaMeshId:       "be",
-									IstioMetaClusterId:    "overridden",
+									IstioDiscoveryAddress: &wrappers.StringValue{Value: "can't"},
+									IstioMetaMeshId:       &wrappers.StringValue{Value: "be"},
+									IstioMetaClusterId:    &wrappers.StringValue{Value: "overridden"},
 								},
 							},
 						},
@@ -509,11 +509,11 @@ var _ = Describe("Deployer", func() {
 				Expect(dep.Spec.Replicas).ToNot(BeNil())
 				Expect(*dep.Spec.Replicas).To(Equal(int32(expectedGwp.GetDeployment().Replicas.GetValue())))
 				expectedImage := fmt.Sprintf("%s/%s",
-					expectedGwp.GetEnvoyContainer().GetImage().GetRegistry(),
-					expectedGwp.GetEnvoyContainer().GetImage().GetRepository(),
+					expectedGwp.GetEnvoyContainer().GetImage().GetRegistry().GetValue(),
+					expectedGwp.GetEnvoyContainer().GetImage().GetRepository().GetValue(),
 				)
 				Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(expectedImage))
-				if expectedTag := expectedGwp.GetEnvoyContainer().GetImage().GetTag(); expectedTag != "" {
+				if expectedTag := expectedGwp.GetEnvoyContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
 					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + expectedTag))
 				} else {
 					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + version.Version))
@@ -528,7 +528,7 @@ var _ = Describe("Deployer", func() {
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
 				Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.GetService().GetExtraAnnotations()))
 				Expect(string(svc.Spec.Type)).To(Equal(expectedGwp.GetService().GetType().String()))
-				Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.GetService().GetClusterIP()))
+				Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.GetService().GetClusterIP().GetValue()))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
@@ -544,7 +544,7 @@ var _ = Describe("Deployer", func() {
 
 				argsMatchers := []interface{}{
 					"--log-level",
-					expectedGwp.GetEnvoyContainer().GetBootstrap().GetLogLevel(),
+					expectedGwp.GetEnvoyContainer().GetBootstrap().GetLogLevel().GetValue(),
 					"--component-log-level",
 					gomega.And(levels...),
 				}
@@ -655,9 +655,9 @@ var _ = Describe("Deployer", func() {
 					Expect(clusters).To(ContainElement(HaveField("Name", "gateway_proxy_sds")))
 
 					sdsImg := inp.overrideGwp.Spec.GetKube().GetSdsContainer().GetImage()
-					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry(), sdsImg.GetRepository(), sdsImg.GetTag())))
+					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry().GetValue(), sdsImg.GetRepository().GetValue(), sdsImg.GetTag().GetValue())))
 					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstio().GetIstioContainer().GetImage()
-					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry(), istioProxyImg.GetRepository(), istioProxyImg.GetTag())))
+					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry().GetValue(), istioProxyImg.GetRepository().GetValue(), istioProxyImg.GetTag().GetValue())))
 
 					return nil
 				},
