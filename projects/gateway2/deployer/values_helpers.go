@@ -86,7 +86,7 @@ func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	svcType := v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())]
-	clusterIp := svcConfig.GetClusterIP()
+	clusterIp := svcConfig.GetClusterIP().GetValue()
 	return &helmService{
 		Type:             &svcType,
 		ClusterIP:        &clusterIp,
@@ -103,10 +103,10 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 
 	sdsConfigImage := sdsContainerConfig.GetImage()
 	sdsImage := &helmImage{
-		Registry:   ptr.To(sdsConfigImage.GetRegistry()),
-		Repository: ptr.To(sdsConfigImage.GetRepository()),
-		Tag:        ptr.To(sdsConfigImage.GetTag()),
-		Digest:     ptr.To(sdsConfigImage.GetDigest()),
+		Registry:   ptr.To(sdsConfigImage.GetRegistry().GetValue()),
+		Repository: ptr.To(sdsConfigImage.GetRepository().GetValue()),
+		Tag:        ptr.To(sdsConfigImage.GetTag().GetValue()),
+		Digest:     ptr.To(sdsConfigImage.GetDigest().GetValue()),
 		PullPolicy: ptr.To(sdsConfigImage.GetPullPolicy().String()),
 	}
 	return &helmSdsContainer{
@@ -114,7 +114,7 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 		Resources:       sdsContainerConfig.GetResources(),
 		SecurityContext: sdsContainerConfig.GetSecurityContext(),
 		SdsBootstrap: &sdsBootstrap{
-			LogLevel: ptr.To(sdsContainerConfig.GetBootstrap().GetLogLevel()),
+			LogLevel: ptr.To(sdsContainerConfig.GetBootstrap().GetLogLevel().GetValue()),
 		},
 	}
 }
@@ -126,15 +126,15 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 
 	istioConfigImage := istioContainerConfig.GetImage()
 	istioImage := &helmImage{
-		Registry:   ptr.To(istioConfigImage.GetRegistry()),
-		Repository: ptr.To(istioConfigImage.GetRepository()),
-		Tag:        ptr.To(istioConfigImage.GetTag()),
-		Digest:     ptr.To(istioConfigImage.GetDigest()),
+		Registry:   ptr.To(istioConfigImage.GetRegistry().GetValue()),
+		Repository: ptr.To(istioConfigImage.GetRepository().GetValue()),
+		Tag:        ptr.To(istioConfigImage.GetTag().GetValue()),
+		Digest:     ptr.To(istioConfigImage.GetDigest().GetValue()),
 		PullPolicy: ptr.To(istioConfigImage.GetPullPolicy().String()),
 	}
 	return &helmIstioContainer{
 		Image:           istioImage,
-		LogLevel:        ptr.To(istioContainerConfig.GetLogLevel()),
+		LogLevel:        ptr.To(istioContainerConfig.GetLogLevel().GetValue()),
 		Resources:       istioContainerConfig.GetResources(),
 		SecurityContext: istioContainerConfig.GetSecurityContext(),
 	}
@@ -151,9 +151,9 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstio {
 
 	return &helmIstio{
 		Enabled:               ptr.To(istioConfig.GetEnabled().GetValue()),
-		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioDiscoveryAddress()),
-		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioMetaMeshId()),
-		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioMetaClusterId()),
+		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioDiscoveryAddress().GetValue()),
+		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioMetaMeshId().GetValue()),
+		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioMetaClusterId().GetValue()),
 	}
 }
 
@@ -162,10 +162,10 @@ func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstio {
 // 2. for values not provided, fall back to the defaults (if any) from the k8s gw extensions
 func getEnvoyImageValues(envoyImage *v1alpha1kube.Image) *helmImage {
 	return &helmImage{
-		Registry:   ptr.To(envoyImage.GetRegistry()),
-		Repository: ptr.To(envoyImage.GetRepository()),
-		Tag:        ptr.To(envoyImage.GetTag()),
-		Digest:     ptr.To(envoyImage.GetDigest()),
+		Registry:   ptr.To(envoyImage.GetRegistry().GetValue()),
+		Repository: ptr.To(envoyImage.GetRepository().GetValue()),
+		Tag:        ptr.To(envoyImage.GetTag().GetValue()),
+		Digest:     ptr.To(envoyImage.GetDigest().GetValue()),
 		PullPolicy: ptr.To(envoyImage.GetPullPolicy().String()),
 	}
 }
