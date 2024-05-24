@@ -8,12 +8,12 @@ To allow for optimal performance in Gloo Edge, it is recommended to use Gloo [st
 
 ## Option 1: Route to a Kubernetes service directly
 
-You can configure your VirtualService to route to a Kubernetes service (`routeAction.single.kube`) instead of a Gloo Upstream (`routeAction.single.upstream`). 
+You can configure your VirtualService to route to a Kubernetes service (`routeAction.single.kube`) directly instead of using Upstream resources.
 
 {{% notice note %}}
 Consider the following information before choosing a Kubernetes service as your routing destination: 
 - For Gloo Edge to route traffic to a Kubernetes service directly, Gloo Edge requires scanning of all services in the cluster to create in-memory Upstream resources to represent them. Creating in-memory Upstream resources is automatically done for you if you set `disableKubernetesDestinations: false` in your Settings resource. 
-- Gloo uses these resources to validate that the upstream destination is valid and returns an error if the specified Kubernetes service cannot be found. Note that the in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time. In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true`. For more information, see [Disable Kubernetes destinations]({{< versioned_link_path fromRoot="/operations/production_deployment/#disable-kubernetes-destinations" >}}). 
+- Gloo Edge uses these resources to validate that the destination is valid and returns an error if the specified Kubernetes service cannot be found. Note that the in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time. In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true`. For more information, see [Disable Kubernetes destinations]({{< versioned_link_path fromRoot="/operations/production_deployment/#disable-kubernetes-destinations" >}}). 
 - Some Gloo Edge functionality, such as outlier detection policies or customizing load balancing modes, might not be available when using Kubernetes services as a routing destination. 
 {{% /notice %}}
 
@@ -50,7 +50,7 @@ Instead of routing to a Kubernetes service directly, you can create [Gloo Kubern
 
 To use Kubernetes Upstream resources: 
 
-1. Create a Kubernetes Upstream resource for your workload. The following configuration creates an upstream resource for the Petstore app that listens on port 8080 in the default namespace. 
+1. Create an upstream resource for your Kubernetes workload. The following configuration creates an upstream resource for the Petstore app that listens on port 8080 in the default namespace. 
    ```yaml
    apiVersion: gloo.solo.io/v1
    kind: Upstream
@@ -64,7 +64,7 @@ To use Kubernetes Upstream resources:
        servicePort: 8080
    ```
    
-2. Configure the Kubernetes Upstream as a routing destination in your VirtualService. The following example configuration forwards all requests to `/petstore` to the Petstore upstream in the `gloo-system` namespace.
+2. Configure the Upstream as a routing destination in your VirtualService. The following example configuration forwards all requests to `/petstore` to the Petstore upstream in the `gloo-system` namespace.
 
    {{< highlight yaml "hl_lines=6-8" >}}
 routes:
