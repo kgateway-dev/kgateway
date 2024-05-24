@@ -371,7 +371,7 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 		return src
 	}
 
-	if src.GetLogLevel() != "" {
+	if src.GetLogLevel() != nil {
 		dst.LogLevel = src.GetLogLevel()
 	}
 
@@ -397,21 +397,21 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 	// GatewayParameters populated by helm values
 	dstIstioDiscoveryAddress := dst.GetIstioDiscoveryAddress()
 	srcIstioDiscoveryAddress := src.GetIstioDiscoveryAddress()
-	if dstIstioDiscoveryAddress == "" {
+	if dstIstioDiscoveryAddress == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
 	}
 
 	dstIstioMetaMeshId := dst.GetIstioMetaMeshId()
 	srcIstioMetaMeshId := src.GetIstioMetaMeshId()
-	if dstIstioMetaMeshId == "" {
+	if dstIstioMetaMeshId == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaMeshId = srcIstioMetaMeshId
 	}
 
 	dstIstioMetaClusterId := dst.GetIstioMetaClusterId()
 	srcIstioMetaClusterId := src.GetIstioMetaClusterId()
-	if dstIstioMetaClusterId == "" {
+	if dstIstioMetaClusterId == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaClusterId = srcIstioMetaClusterId
 	}
@@ -432,7 +432,7 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 
-	if logLevel := src.GetLogLevel(); logLevel != "" {
+	if logLevel := src.GetLogLevel(); logLevel != nil {
 		dst.LogLevel = logLevel
 	}
 
@@ -471,19 +471,19 @@ func deepMergeImage(dst, src *kube.Image) *kube.Image {
 	// because all fields are not nullable, we treat empty strings as empty values
 	// and do not override with them
 
-	if src.GetRegistry() != "" {
+	if src.GetRegistry() != nil {
 		dst.Registry = src.GetRegistry()
 	}
 
-	if src.GetRepository() != "" {
+	if src.GetRepository() != nil {
 		dst.Repository = src.GetRepository()
 	}
 
-	if src.GetTag() != "" {
+	if src.GetTag() != nil {
 		dst.Tag = src.GetTag()
 	}
 
-	if src.GetDigest() != "" {
+	if src.GetDigest() != nil {
 		dst.Digest = src.GetDigest()
 	}
 
@@ -501,7 +501,7 @@ func deepMergeEnvoyBootstrap(dst, src *v1alpha1.EnvoyBootstrap) *v1alpha1.EnvoyB
 	if dst == nil {
 		return src
 	}
-	if src.GetLogLevel() != "" {
+	if src.GetLogLevel() != nil {
 		dst.LogLevel = src.GetLogLevel()
 	}
 
