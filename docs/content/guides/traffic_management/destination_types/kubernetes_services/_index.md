@@ -8,14 +8,13 @@ To allow for optimal performance in Gloo Edge, it is recommended to use Gloo [st
 
 ## Option 1: Route to a Kubernetes service directly
 
-You can configure your VirtualService to route to a Kubernetes service (`routeAction.kube`) instead of a Gloo Upstream. 
+You can configure your VirtualService to route to a Kubernetes service (`routeAction.single.kube`) instead of a Gloo Upstream (`routeAction.single.upstream`). 
 
 {{% notice note %}}
 Consider the following information before choosing a Kubernetes service as your routing destination: 
-- For Gloo Edge to route traffic to a Kubernetes service directly, Gloo Edge requires scanning of all services in the cluster to create in-memory Upstream resources to represent them. Creating in-memory Upstream resources is automatically done if you set `disableKubernetesDestinations: false` in your Settings resource. 
-- Gloo uses these resources to validate that the upstream destination is valid and returns an error if the specified Kubernetes service cannot be found. Note that the in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to the proxy. In addition, each Kubernetes endpoint and cluster is synced to all the proxies in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time.
-- When using Kubernetes services as a routing destination, Gloo Edge relies on `kube-proxy` to perform load balancing which can have further performance impacts. Routing to Gloo Upstreams bypasses `kube-proxy` as the request is routed to the pod directly. 
-- Some Gloo Edge functionality, such as policies, might not be available when using Kubernetes services as a routing destination. 
+- For Gloo Edge to route traffic to a Kubernetes service directly, Gloo Edge requires scanning of all services in the cluster to create in-memory Upstream resources to represent them. Creating in-memory Upstream resources is automatically done for you if you set `disableKubernetesDestinations: false` in your Settings resource. 
+- Gloo uses these resources to validate that the upstream destination is valid and returns an error if the specified Kubernetes service cannot be found. Note that the in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time. In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true`. For more information, see [Disable Kubernetes destinations]({{< versioned_link_path fromRoot="/operations/production_deployment/#disable-kubernetes-destinations" >}}). 
+- Some Gloo Edge functionality, such as outlier detection policies or customizing load balancing modes, might not be available when using Kubernetes services as a routing destination. 
 {{% /notice %}}
 
 To use Kubernetes services as a routing destination: 
@@ -47,7 +46,7 @@ routes:
 
 ## Option 2: Use Kubernetes Upstream resources
 
-Instead of routing to a Kubernetes service directly, you can create [Gloo Kubernetes Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/" %}}) resources that represent your Kubernetes workload. With Kubernetes Upstream resources, you can route requests to a specific pod in the cluster. This process bypasses `kube-proxy` which improves load balancing times for your workloads. 
+Instead of routing to a Kubernetes service directly, you can create [Gloo Kubernetes Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/" %}}) resources that represent your Kubernetes workload. With Kubernetes Upstream resources, you can route requests to a specific pod in the cluster. 
 
 To use Kubernetes Upstream resources: 
 
