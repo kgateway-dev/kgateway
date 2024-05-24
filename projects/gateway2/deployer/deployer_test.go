@@ -509,8 +509,8 @@ var _ = Describe("Deployer", func() {
 				Expect(dep.Spec.Replicas).ToNot(BeNil())
 				Expect(*dep.Spec.Replicas).To(Equal(int32(expectedGwp.GetDeployment().Replicas.GetValue())))
 				expectedImage := fmt.Sprintf("%s/%s",
-					expectedGwp.GetEnvoyContainer().GetImage().GetRegistry(),
-					expectedGwp.GetEnvoyContainer().GetImage().GetRepository(),
+					expectedGwp.GetEnvoyContainer().GetImage().GetRegistry().GetValue(),
+					expectedGwp.GetEnvoyContainer().GetImage().GetRepository().GetValue(),
 				)
 				Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(expectedImage))
 				if expectedTag := expectedGwp.GetEnvoyContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
@@ -655,9 +655,9 @@ var _ = Describe("Deployer", func() {
 					Expect(clusters).To(ContainElement(HaveField("Name", "gateway_proxy_sds")))
 
 					sdsImg := inp.overrideGwp.Spec.GetKube().GetSdsContainer().GetImage()
-					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry(), sdsImg.GetRepository(), sdsImg.GetTag())))
+					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry().GetValue(), sdsImg.GetRepository().GetValue(), sdsImg.GetTag().GetValue())))
 					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstio().GetIstioContainer().GetImage()
-					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry(), istioProxyImg.GetRepository(), istioProxyImg.GetTag())))
+					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry().GetValue(), istioProxyImg.GetRepository().GetValue(), istioProxyImg.GetTag().GetValue())))
 
 					return nil
 				},
