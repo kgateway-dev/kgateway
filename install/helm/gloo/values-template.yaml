@@ -7,6 +7,14 @@ k8s:
 kubeGateway:
   # disable the integration by default, since it requires extra steps to set up (i.e. applying Gateway API CRDs)
   enabled: false
+  gatewayParameters:
+    glooGateway:
+      image:
+        repository: gloo-envoy-wrapper
+      proxyDeployment:
+        replicas: 1
+      service:
+        type: LoadBalancer
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
