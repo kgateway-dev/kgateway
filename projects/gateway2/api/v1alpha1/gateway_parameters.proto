@@ -100,7 +100,7 @@ message EnvoyBootstrap {
   // "critical" and "off". Defaults to "info". See
   // https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
   // for more information.
-  string log_level = 1;
+  google.protobuf.StringValue log_level = 1;
 
   // Envoy log levels for specific components. The keys are component names and
   // the values are one of "trace", "debug", "info", "warn", "error",
@@ -134,13 +134,13 @@ message IstioIntegration {
   IstioContainer istio_container = 1;
 
   // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
-  string istio_discovery_address = 2;
+  google.protobuf.StringValue istio_discovery_address = 2;
 
   // The mesh id of the istio mesh. Defaults to "cluster.local".
-  string istio_meta_mesh_id = 3;
+  google.protobuf.StringValue istio_meta_mesh_id = 3;
 
   // The cluster id of the istio cluster. Defaults to "Kubernetes".
-  string istio_meta_cluster_id = 4;
+  google.protobuf.StringValue istio_meta_cluster_id = 4;
 }
 
 // Configuration for the container running Gloo sds.
@@ -171,7 +171,7 @@ message SdsContainer {
 message SdsBootstrap {
   // Log level for sds.  Options include "info", "debug", "warn", "error", "panic" and "fatal".
   // Default level is "info".
-  string log_level = 1;
+  google.protobuf.StringValue log_level = 1;
 }
 
 // Configuration for the container running the istio-proxy.
@@ -199,7 +199,7 @@ message IstioContainer {
 
   // Log level for istio-proxy. Options include "info", "debug", "warning", and "error".
   // Default level is info Default is "warning".
-  string log_level = 4;
+  google.protobuf.StringValue log_level = 4;
 }
 
 message GatewayParametersStatus {
