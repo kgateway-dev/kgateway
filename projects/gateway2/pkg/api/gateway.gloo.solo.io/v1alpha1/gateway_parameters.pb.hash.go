@@ -374,8 +374,24 @@ func (m *EnvoyBootstrap) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetLogLevel())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetLogLevel()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LogLevel")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetLogLevel(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("LogLevel")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	{
@@ -457,16 +473,64 @@ func (m *IstioIntegration) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetIstioDiscoveryAddress())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetIstioDiscoveryAddress()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("IstioDiscoveryAddress")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetIstioDiscoveryAddress(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("IstioDiscoveryAddress")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetIstioMetaMeshId())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetIstioMetaMeshId()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("IstioMetaMeshId")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetIstioMetaMeshId(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("IstioMetaMeshId")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetIstioMetaClusterId())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetIstioMetaClusterId()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("IstioMetaClusterId")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetIstioMetaClusterId(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("IstioMetaClusterId")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
@@ -581,8 +645,24 @@ func (m *SdsBootstrap) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetLogLevel())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetLogLevel()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LogLevel")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetLogLevel(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("LogLevel")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
@@ -661,8 +741,24 @@ func (m *IstioContainer) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetLogLevel())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetLogLevel()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LogLevel")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetLogLevel(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("LogLevel")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
