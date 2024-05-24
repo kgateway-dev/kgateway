@@ -155,6 +155,11 @@ type HttpFilterPlugin interface {
 	HttpFilters(params Params, listener *v1.HttpListener) ([]StagedHttpFilter, error)
 }
 
+type UpstreamHttpFilterPlugin interface {
+	Plugin
+	UpstreamHttpFilters(params Params, listener *v1.HttpListener) ([]*envoyhttp.HttpFilter, error)
+}
+
 type NetworkFilterPlugin interface {
 	Plugin
 	NetworkFiltersHTTP(params Params, listener *v1.HttpListener) ([]StagedNetworkFilter, error)

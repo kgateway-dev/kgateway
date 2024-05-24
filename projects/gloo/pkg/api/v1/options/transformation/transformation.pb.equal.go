@@ -285,6 +285,16 @@ func (m *TransformationStages) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPostRouting()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPostRouting()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPostRouting(), target.GetPostRouting()) {
+			return false
+		}
+	}
+
 	if m.GetInheritTransformation() != target.GetInheritTransformation() {
 		return false
 	}
