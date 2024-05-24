@@ -31,11 +31,14 @@ message Service {
   // for details on each service type.
   // Currently, only ClusterIP and LoadBalancer are supported.
   enum ServiceType {
-    // Exposes the Service on a cluster-internal IP. This is the default.
-    ClusterIP = 0;
+    // Unspecified allows us to mark a field for inheritance when overriding defaults. This is the default.
+    Unspecified = 0;
+
+    // Exposes the Service on a cluster-internal IP.
+    ClusterIP = 1;
 
     // Exposes the Service externally using an external load balancer.
-    LoadBalancer = 1;
+    LoadBalancer = 2;
 
     // Exposes the Service on each Node's IP at a static port.
     // Not currently supported, see
