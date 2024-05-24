@@ -45,7 +45,6 @@ type GatewayConfig struct {
 	Kick           func(ctx context.Context)
 
 	ControlPlane bootstrap.ControlPlane
-	IstioValues  bootstrap.IstioValues
 
 	Extensions extensions.K8sGatewayExtensions
 }
@@ -139,7 +138,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
-		IstioValues:    c.cfg.IstioValues,
 		ControlPlane:   c.cfg.ControlPlane,
 		Extensions:     c.cfg.Extensions,
 	})
