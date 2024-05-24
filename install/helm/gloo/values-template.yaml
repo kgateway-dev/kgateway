@@ -246,7 +246,7 @@ global:
       image:
         repository: proxyv2
         registry: docker.io/istio
-        tag: 1.21.2
+        tag: 1.22.0
       logLevel: warning
     envoy:
       image:
