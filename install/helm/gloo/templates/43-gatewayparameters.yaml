@@ -1,0 +1,62 @@
+{{- if .Values.kubeGateway.enabled -}}
+kind: GatewayParameters
+apiVersion: gateway.gloo.solo.io/v1alpha1
+metadata:
+  labels:
+    {{- include "gloo-gateway.constLabels" . | nindent 4 }}
+  name: gloo-gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  kube:
+{{- if .Values.kubeGateway.gatewayParameters }}
+{{- if .Values.kubeGateway.gatewayParameters.glooGateway }}
+{{- $gg := .Values.kubeGateway.gatewayParameters.glooGateway -}}
+{{- $global := .Values.global -}}
+{{- $image := merge $gg.image $global.image }}
+    deployment:
+      replicas: {{ $gg.proxyDeployment.replicas }}
+{{- if $gg.service }}
+    service:
+      type: {{ $gg.service.type }}
+{{- end -}}{{/* if $gg.service */}}
+    envoyContainer:
+      image:
+{{- toYaml $image | nindent 8 }}
+    podTemplate:
+      extraLabels:
+{{- include "gloo-gateway.constLabels" . | nindent 8 }}
+    sdsContainer:
+      image:
+{{- merge $global.glooMtls.sds.image $global.image | toYaml | nindent 8 }}
+{{- if $global.glooMtls.sds.securityContext -}}
+      securityContext:
+{{- toYaml $global.glooMtls.sds.securityContext | nindent 8 }}
+{{- end -}}{{/* if $global.glooMtls.sds.securityContext */}}
+{{- if $global.glooMtls.sds.logLevel }}
+      bootstrap:
+        logLevel: {{ $global.glooMtls.sds.logLevel }}
+{{- end -}}{{/* if $global.glooMtls.sds.logLevel */}}
+{{- if $global.glooMtls.sdsResources -}}
+      resources:
+{{- toYaml $global.glooMtls.sdsResources | nindent 8 }}
+{{- end -}}{{/* if $global.glooMtls.sdsResources */}}
+    istio:
+      enabled: {{ or $global.istioSDS.enabled $global.glooMtls.enabled }} 
+      istioContainer:
+        image:
+{{- merge $global.glooMtls.istioProxy.image $global.image | toYaml | nindent 10 }}
+{{- if $global.glooMtls.istioProxy -}}
+{{- if $global.glooMtls.istioProxy.securityContext }}
+        securityContext:
+{{- toYaml $global.glooMtls.istioProxy.securityContext | nindent 10 }}
+{{- end -}}{{/* if $global.glooMtls.istioProxy.securityContext */}}
+{{- if $global.glooMtls.istioProxy.logLevel }}
+        logLevel: {{ $global.glooMtls.istioProxy.logLevel }}
+{{- end -}}{{/* if $global.glooMtls.istioProxy.logLevel */}}
+{{- end -}}{{/* if $global.glooMtls.istioProxy */}}
+      istioDiscoveryAddress: istiod.istio-system.svc:15012
+      istioMetaMeshId: cluster.local
+      istioMetaClusterId: Kubernetes
+{{- end -}}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
+{{- end -}}{{/* if .Values.kubeGateway.gatewayParameters */}}
+{{- end }}{{/* if .Values.kubeGateway.enabled */}}

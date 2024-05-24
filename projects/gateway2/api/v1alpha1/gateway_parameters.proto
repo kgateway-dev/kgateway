@@ -39,6 +39,13 @@ message KubernetesProxyConfig {
   // Configuration for the container running Envoy.
   EnvoyContainer envoy_container = 2;
 
+  // Configuration for the container running SDS. This field is rendered with defaults by 
+  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in 
+  // override GatewayParameters attached to a Gateway resource.
+  // Note that if no integration requiring SDS is enabled, the SDS container will not be injected
+  // into the gateway proxy deployment.
+  SdsContainer sds_container = 7;
+
   // Configuration for the pods that will be created.
   kube.gateway.gloo.solo.io.Pod pod_template = 3;
 
@@ -49,9 +56,8 @@ message KubernetesProxyConfig {
   // Autoscaling configuration.
   kube.gateway.gloo.solo.io.Autoscaling autoscaling = 5;
 
-  // Sds configuration.
-  // A non-nil value will enable sds integration.  If empty config is provided, the default values will be used.
-  SdsIntegration sds = 6;
+  // Istio integration configuration.
+  IstioIntegration istio = 6;
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
@@ -113,22 +119,18 @@ message EnvoyBootstrap {
   map<string, string> component_log_levels = 2;
 }
 
-// Configuration for the sds integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
-// If not set, internal mtls authentication will not be used.
-message SdsIntegration {
-  // Configuration for the container running Gloo sds.
-  // If not provided, the default values will be used.
-  SdsContainer sds_container = 1;
-
-  // Istio integration configuration
-  // A non-nil value will enable sds integration. If empty config is provided, the default values will be used.
-  IstioIntegration istio_integration = 2;
-
-}
-
 // Configuration for the Istio integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
 message IstioIntegration {
-  // Configuration for the container running istio-proxy.
+  // If true, the Istio integration is enabled for this Gateway. Defaults to nil, which indicates the value should be inherited
+  // from the default GatewayParameters rendered from the helm chart. Set to true to override the default values with enabled; set to
+  // false to override the default values with disabled.
+  google.protobuf.BoolValue enabled = 5;
+
+  // Configuration for the container running istio-proxy. This field is rendered with defaults by 
+  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in 
+  // override GatewayParameters attached to a Gateway resource.
+  // Note that if Istio integration is not enabled, the istio container will not be injected
+  // into the gateway proxy deployment.
   IstioContainer istio_container = 1;
 
   // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
@@ -147,11 +149,8 @@ message SdsContainer {
   // https://kubernetes.io/docs/concepts/containers/images
   // for details.
   //
-  // Default values for Edge OSS, which may be overridden individually:
-  //   registry: quay.io/solo-io
-  //   repository: sds / sds-ee
-  //   tag: <gloo version> (OSS) / <gloo-ee version> (EE)
-  //   pullPolicy: IfNotPresent
+  // Default values are rendered into the default GatewayParameters from the helm
+  // values_template.yaml with any user overrides
   kube.gateway.gloo.solo.io.Image image = 1;
 
   // The security context for this container. See
