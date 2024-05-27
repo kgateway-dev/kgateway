@@ -2,16 +2,17 @@ package iosnapshot
 
 import (
 	"encoding/json"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"sync"
 )
 
 type History interface {
 	// SetApiSnapshot sets the latest input snapshot
-	SetApiSnapshot(latestInput json.Marshaler)
-	// GetInputCopy gets an in-memory copy of the output snapshot
+	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
+	// GetInputCopy gets an in-memory copy of the output snapshot for all components.
 	GetInputCopy() (map[string]interface{}, error)
-	// GetFilteredInput gets the input snapshot applies filters
-	GetFilteredInput(format string, filters Filters) ([]byte, error)
+	// GetInput gets the input snapshot for all components.
+	GetInput() ([]byte, error)
 }
 
 func NewHistory() History {
@@ -25,10 +26,23 @@ type history struct {
 	latestInput map[string]json.Marshaler
 }
 
-func (h *history) SetApiSnapshot(latestApiSnapshot json.Marshaler) {
+func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	h.Lock()
 	defer h.Unlock()
-	h.latestInput["api-snapshot"] = latestApiSnapshot
+
+	snapshotMarshaller := &apiSnapshotJsonMarshaller{
+		snap: latestApiSnapshot,
+	}
+	h.latestInput["api-snapshot"] = snapshotMarshaller
+}
+
+func (h *history) GetInput() ([]byte, error) {
+	input, err := h.GetInputCopy()
+	if err != nil {
+		return nil, err
+	}
+
+	return formatMap("json_compact", input)
 }
 
 func (h *history) GetInputCopy() (map[string]interface{}, error) {
@@ -44,17 +58,12 @@ func (h *history) GetInputCopy() (map[string]interface{}, error) {
 	return genericMaps, nil
 }
 
-func (h *history) GetFilteredInput(format string, filters Filters) ([]byte, error) {
-	input, err := h.GetInputCopy()
-	if err != nil {
-		return nil, err
-	}
-
-	// short circuit if no filters
-	if !filters.namespaces.Exists() && !filters.resourceTypes.Exists() {
-		return formatMap(format, input)
-	}
-
-	// TODO: respect namesapces in filterMap
-	return formatMap(format, input)
+type apiSnapshotJsonMarshaller struct {
+	snap *v1snap.ApiSnapshot
 }
+
+func (a apiSnapshotJsonMarshaller) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.snap)
+}
+
+var _ json.Marshaler = new(apiSnapshotJsonMarshaller)

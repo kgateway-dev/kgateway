@@ -81,8 +81,9 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
-	// TODO: Use iosnapshot.History to set the latestSnap
+	s.snapshotHistory.SetApiSnapshot(snap)
 	s.latestSnap = snap
+
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
