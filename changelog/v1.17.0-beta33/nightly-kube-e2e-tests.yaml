@@ -1,0 +1,14 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5191
+    resolvesIssue: false
+    description: >-
+      Fix the slack reporting of nightly test results. We do this by simplifying the message that is produced
+      and removing the assumption that failed tests will always produce artifacts in a particular location.
+      As we expand the tests that are run on our schedule (performance, conformance, kubernetes/e2e) this 
+      assumption was no longer true.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6185
+    resolvesIssue: false
+    description: >-
+      Introduce nightly schedule for our kubernetes/e2e tests

@@ -192,12 +192,10 @@ jobs:
           cache: false
           go-version-file: go.mod
       - uses: actions/download-artifact@v3
-      - name: send slack message
+      - name: Send Slack Message
         env:
           PARENT_JOB_URL: https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} # parent job hyperlink
           PREAMBLE: ${{ steps.compute-preamble.outputs.preamble }}  # text to hyperlink at start of slack message
           SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
         run: |
-          test_results="$(cat */test-out.json | jq -c --slurp .)"
-          echo $test_results
-          go run .github/workflows/helpers/notify-from-json.go $test_results
+          go run .github/workflows/helpers/notify/slack.go ${{ toJSON(needs) }}

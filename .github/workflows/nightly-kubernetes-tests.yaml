@@ -31,8 +31,7 @@ env:
 
 jobs:
   end_to_end_tests_main:
-    name: End-to-End (${{ matrix.test.cluster-id }})
-    needs: prepare_env
+    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-id }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
@@ -41,7 +40,7 @@ jobs:
       # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
       fail-fast: false
       matrix:
-        # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel
+        # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
         # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
         test:
         - cluster-id: 'cluster_one'
@@ -54,6 +53,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: main
     - name: Prep Go Runner
       uses: ./.github/workflows/composite-actions/prep-go-runner
     - id: setup-kind-cluster
@@ -69,12 +70,52 @@ jobs:
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
       with:
         cluster-name: kind
+        cluster-id: ${{ matrix.test.cluster-id }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
-        cluster-id: ${{ matrix.test.cluster-id }}
     - name: Archive bug report directory on failure
       if: ${{ failure() }}
       uses: actions/upload-artifact@v4
       with:
         name: bug-report
         path: ./_test/bug_report/${{ matrix.test.cluster-id }}
+
+  publish_results:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    if: ${{ always() }}
+    needs:
+      - end_to_end_tests_main
+    steps:
+      - uses: actions/checkout@v3
+      - name: compute-preamble
+        id: compute-preamble
+        shell: bash
+        run: |
+          echo "SLACK_CHANNEL=C04CJMXAH7A" >> $GITHUB_ENV     #edge-nightly-results by default
+          if [[ ${{github.event_name == 'workflow_dispatch'}} = true ]]; then
+            trigger="Gloo OSS Manual run"
+            branch=${{ inputs.branch }}
+            echo "SLACK_CHANNEL=C0314KESVNV" >> $GITHUB_ENV   #slack-integration-testing if manually run
+          elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
+            trigger="Gloo OSS nightlies"
+            branch="main"
+          fi
+          preamble="$trigger ($branch)"
+          echo "Setting PREAMBLE as $preamble"
+          echo "preamble=$preamble" >> $GITHUB_OUTPUT
+      - uses: actions/setup-go@v4
+        with:
+          # Caching in setup-go is on by default
+          # In our prep-go-runner we use a more configurable cache https://github.com/actions/cache
+          # In this step, we don't need to store a new cache entry because it runs infrequently and
+          # will pollute the cache entries
+          cache: false
+          go-version-file: go.mod
+      - name: Send Slack Message
+        env:
+          PARENT_JOB_URL: https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} # parent job hyperlink
+          PREAMBLE: ${{ steps.compute-preamble.outputs.preamble }}  # text to hyperlink at start of slack message
+          SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
+        run: |
+          go run .github/workflows/helpers/notify/slack.go ${{ toJSON(needs) }}
