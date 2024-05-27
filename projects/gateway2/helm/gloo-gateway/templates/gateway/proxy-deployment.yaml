@@ -81,9 +81,9 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
-{{- if $gateway.istioSDS.enabled }}
+{{- if $gateway.istio.enabled }}
       - name: sds
-        image: "quay.io/solo-io/sds:{{ default .Chart.AppVersion }}"
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.sdsContainer.image }}"
         imagePullPolicy: IfNotPresent
         env:
           - name: POD_NAME
@@ -98,6 +98,8 @@ spec:
                 fieldPath: metadata.namespace
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
+          - name: LOG_LEVEL
+            value: {{ $gateway.sdsContainer.sdsBootstrap.logLevel }}
         ports:
           - containerPort: 8234
             name: sds
@@ -115,13 +117,14 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
-          - mountPath: /etc/istio-certs/
-            name: istio-certs
           - mountPath: /etc/envoy
             name: envoy-config
+{{- end }} {{/* if $gateway.istio.enabled */}}
+{{- if $gateway.istio.enabled }}
+          - mountPath: /etc/istio-certs/
+            name: istio-certs
       - name: istio-proxy
-        # TODO(npolshak): Add configurable security context, istio proxy image and image pull policy
-        image: "docker.io/istio/proxyv2:1.18.2"
+        image: "{{ template "gloo-gateway.gateway.image" $gateway.istioContainer.image }}"
         # TODO(npolshak): Add configurable envoySidecarResources
         args:
           - proxy
@@ -136,7 +139,7 @@ spec:
           - 45s
           - --parentShutdownDuration
           - 1m0s
-          - --proxyLogLevel=warning
+          - --proxyLogLevel={{ $gateway.istioContainer.logLevel }}
           - --proxyComponentLogLevel=misc:error
           - --connectTimeout
           - 10s
@@ -210,7 +213,7 @@ spec:
             name: workload-socket
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
-{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- end }} {{/* if $gateway.istio.enabled */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -227,7 +230,7 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-{{- if $gateway.istioSDS.enabled }}
+{{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory
         name: istio-certs
@@ -252,7 +255,7 @@ spec:
         emptyDir: {}
       - name: workload-certs
         emptyDir: {}
-{{- end }} {{/* if $gateway.istioSDS.enabled */}}
+{{- end }} {{/* if $gateway.istio.enabled */}}
 {{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
@@ -380,7 +383,7 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-        {{- if $gateway.istioSDS.enabled }}
+        {{- if $gateway.istio.enabled }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
           http2_protocol_options: {}
@@ -393,7 +396,7 @@ data:
                       socket_address:
                         address: 127.0.0.1
                         port_value: 8234
-        {{- end }} {{/* if $gateway.istioSDS.enabled */}}
+        {{- end }} {{/* if $gateway.istio.enabled */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3

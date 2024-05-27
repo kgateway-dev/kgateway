@@ -6,12 +6,9 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
-
-func ptr[T any](i T) *T {
-	return &i
-}
 
 var _ = DescribeTable(
 	"RedirectPlugin",
@@ -33,8 +30,8 @@ var _ = DescribeTable(
 		gwv1.HTTPRouteFilter{
 			Type: gwv1.HTTPRouteFilterRequestRedirect,
 			RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
-				Hostname:   ptr(gwv1.PreciseHostname("foo")),
-				StatusCode: ptr(301),
+				Hostname:   ptr.To(gwv1.PreciseHostname("foo")),
+				StatusCode: ptr.To(301),
 			},
 		},
 		&v1.Route{

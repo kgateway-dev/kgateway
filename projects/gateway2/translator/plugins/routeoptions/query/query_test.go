@@ -1,7 +1,6 @@
 package query_test
 
 import (
-	"container/list"
 	"context"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,7 +10,6 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -52,13 +50,13 @@ var _ = Describe("Query", func() {
 			query := query.NewQuery(fakeClient)
 			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
-			rtOpt, filterOverride, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, nil, gwQuery)
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
 			Expect(rtOpt.GetName()).To(Equal("good-policy"))
 			Expect(rtOpt.GetNamespace()).To(Equal("default"))
-			Expect(filterOverride).To(BeFalse())
+			Expect(sources).To(HaveLen(1))
 		})
 
 		It("should not find an attached option when none are in the same namespace as route", func() {
@@ -76,11 +74,11 @@ var _ = Describe("Query", func() {
 			query := query.NewQuery(fakeClient)
 			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
-			rtOpt, filterOverride, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, nil, gwQuery)
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).To(BeNil())
-			Expect(filterOverride).To(BeFalse())
+			Expect(sources).To(BeEmpty())
 		})
 
 		It("should find the only attached option with a targetRef with omitted namespace", func() {
@@ -99,13 +97,13 @@ var _ = Describe("Query", func() {
 			query := query.NewQuery(fakeClient)
 			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
-			rtOpt, filterOverride, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, nil, gwQuery)
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
 			Expect(rtOpt.GetName()).To(Equal("good-policy-no-ns"))
 			Expect(rtOpt.GetNamespace()).To(Equal("default"))
-			Expect(filterOverride).To(BeFalse())
+			Expect(sources).To(HaveLen(1))
 		})
 
 		It("should not find an attached option when none are in the same namespace as route with omitted namespace", func() {
@@ -123,53 +121,11 @@ var _ = Describe("Query", func() {
 			query := query.NewQuery(fakeClient)
 			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
-			rtOpt, filterOverride, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, nil, gwQuery)
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).To(BeNil())
-			Expect(filterOverride).To(BeFalse())
-		})
-
-		Context("with delegation", func() {
-			It("should merge the parent and child RouteOption", func() {
-				ctx := context.Background()
-
-				parent := httpRoute()
-				delegationRef := plugins.DelegationCtx{
-					Ref: types.NamespacedName{Namespace: parent.GetNamespace(), Name: parent.GetName()},
-				}
-				child := childHTTPRoute()
-				childNsName := types.NamespacedName{Namespace: child.GetNamespace(), Name: child.GetName()}
-				parentRouteOpt := attachedRouteOption()
-				childRouteOpt := childRouteOption()
-
-				delegationChain := list.New()
-				delegationChain.PushFront(delegationRef)
-
-				deps := []client.Object{
-					parent,
-					child,
-					parentRouteOpt,
-					childRouteOpt,
-				}
-				fakeClient := builder.WithObjects(deps...).Build()
-
-				query := query.NewQuery(fakeClient)
-				gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
-
-				rtOpt, filterOverride, err := query.GetRouteOptionForRouteRule(ctx, childNsName, nil, delegationChain.Front(), gwQuery)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(rtOpt).ToNot(BeNil())
-				Expect(rtOpt.GetName()).To(Equal("good-policy"))
-				Expect(rtOpt.GetNamespace()).To(Equal("default"))
-				// Assert that parent options are prioritized in the merge
-				Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(Equal(parentRouteOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
-				Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetHttpStatus()).To(Equal(parentRouteOpt.Spec.GetOptions().GetFaults().GetAbort().GetHttpStatus()))
-				// Assert that child options are augmented with the parent options in the merge
-				Expect(rtOpt.Spec.GetOptions().GetPrefixRewrite().GetValue()).To(Equal(childRouteOpt.Spec.GetOptions().GetPrefixRewrite().GetValue()))
-				Expect(filterOverride).To(BeFalse())
-			})
+			Expect(sources).To(BeEmpty())
 		})
 	})
 })

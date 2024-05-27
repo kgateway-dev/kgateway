@@ -35,15 +35,19 @@ type helmGateway struct {
 	Affinity            *extcorev1.Affinity               `json:"affinity,omitempty"`
 	Tolerations         []*extcorev1.Toleration           `json:"tolerations,omitempty"`
 
+	// sds container values
+	SdsContainer *helmSdsContainer `json:"sdsContainer,omitempty"`
+	// istio container values
+	IstioContainer *helmIstioContainer `json:"istioContainer,omitempty"`
+	// istio integration values
+	Istio *helmIstio `json:"istio,omitempty"`
+
 	// envoy container values
 	LogLevel          *string                            `json:"logLevel,omitempty"`
 	ComponentLogLevel *string                            `json:"componentLogLevel,omitempty"`
 	Image             *helmImage                         `json:"image,omitempty"`
 	Resources         *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
-
-	// istio values
-	IstioSDS *helmIstioSds `json:"istioSDS,omitempty"`
 
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`
@@ -90,8 +94,30 @@ type helmAutoscaling struct {
 	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
-type helmIstioSds struct {
-	Enabled *bool `json:"enabled,omitempty"`
+type helmIstio struct {
+	Enabled               *bool   `json:"enabled,omitempty"`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
+}
+
+type helmSdsContainer struct {
+	Image           *helmImage                         `json:"image,omitempty"`
+	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
+	SdsBootstrap    *sdsBootstrap                      `json:"sdsBootstrap,omitempty"`
+}
+
+type sdsBootstrap struct {
+	LogLevel *string `json:"logLevel,omitempty"`
+}
+
+type helmIstioContainer struct {
+	Image    *helmImage `json:"image,omitempty"`
+	LogLevel *string    `json:"logLevel,omitempty"`
+	// Note: This is set by envoySidecarResources in helm chart
+	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
 }
 
 type helmServiceAccount struct {

@@ -61,17 +61,16 @@ spec:
         resources:
 {{ toYaml .Values.ingressProxy.deployment.resources | indent 10}}
 {{- end}}
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          {{- if .Values.ingressProxy.deployment.runAsUser }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.ingressProxy.deployment.runAsUser) }}
-          {{- end }}
-          capabilities:
-            drop:
-            - ALL
-            add:
-            - NET_BIND_SERVICE
+        {{- $capabilities := dict "drop" (list "ALL") "add" (list "NET_BIND_SERVICE") -}}
+        {{- $securityDefaults := dict
+            "readOnlyRootFilesystem" true
+            "allowPrivilegeEscalation" false
+            "capabilities" $capabilities
+        }}
+        {{- if .Values.ingressProxy.deployment.runAsUser  -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.ingressProxy.deployment.runAsUser }}
+        {{- end -}}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.ingressProxy.deployment.ingressProxyContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.ingressProxy.deployment.httpPort }}
           name: http

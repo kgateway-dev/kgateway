@@ -17,6 +17,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -164,7 +165,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name:      apiv1.ObjectName(gatewayRef.Name),
-								Namespace: ptrTo(apiv1.Namespace(gatewayRef.Namespace)),
+								Namespace: ptr.To(apiv1.Namespace(gatewayRef.Namespace)),
 							}},
 						},
 						Rules: []gwv1.HTTPRouteRule{
@@ -172,8 +173,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 								Matches: []gwv1.HTTPRouteMatch{
 									{
 										Path: &gwv1.HTTPPathMatch{
-											Type:  ptrTo(gwv1.PathMatchPathPrefix),
-											Value: ptrTo("/"),
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/"),
 										},
 									},
 								},
@@ -182,7 +183,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: apiv1.ObjectName(helper.TestServerName),
-												Port: ptrTo(apiv1.PortNumber(port)),
+												Port: ptr.To(apiv1.PortNumber(port)),
 											},
 										},
 									},
@@ -355,7 +356,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name:      apiv1.ObjectName(gatewayRef.Name),
-								Namespace: ptrTo(apiv1.Namespace(gatewayRef.Namespace)),
+								Namespace: ptr.To(apiv1.Namespace(gatewayRef.Namespace)),
 							}},
 						},
 						Rules: []gwv1.HTTPRouteRule{
@@ -363,8 +364,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 								Matches: []gwv1.HTTPRouteMatch{
 									{
 										Path: &gwv1.HTTPPathMatch{
-											Type:  ptrTo(gwv1.PathMatchPathPrefix),
-											Value: ptrTo("/"),
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/"),
 										},
 									},
 								},
@@ -373,7 +374,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: apiv1.ObjectName(headlessServiceRef.Name),
-												Port: ptrTo(apiv1.PortNumber(helper.TestServerPort)),
+												Port: ptr.To(apiv1.PortNumber(helper.TestServerPort)),
 											},
 										},
 									},
@@ -555,7 +556,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name:      apiv1.ObjectName(gatewayRef.Name),
-								Namespace: ptrTo(apiv1.Namespace(gatewayRef.Namespace)),
+								Namespace: ptr.To(apiv1.Namespace(gatewayRef.Namespace)),
 							}},
 						},
 						Rules: []gwv1.HTTPRouteRule{
@@ -563,8 +564,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 								Matches: []gwv1.HTTPRouteMatch{
 									{
 										Path: &gwv1.HTTPPathMatch{
-											Type:  ptrTo(gwv1.PathMatchPathPrefix),
-											Value: ptrTo("/"),
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/"),
 										},
 									},
 								},
@@ -573,7 +574,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: apiv1.ObjectName(httpbinName),
-												Port: ptrTo(apiv1.PortNumber(httpbinPort)),
+												Port: ptr.To(apiv1.PortNumber(httpbinPort)),
 											},
 										},
 									},
@@ -948,8 +949,3 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 		})
 	})
 })
-
-// gateway apis uses this to build test examples: https://github.com/kubernetes-sigs/gateway-api/blob/main/pkg/test/cel/main_test.go#L57
-func ptrTo[T any](a T) *T {
-	return &a
-}
