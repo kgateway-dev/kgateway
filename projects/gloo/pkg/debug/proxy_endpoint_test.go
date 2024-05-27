@@ -22,7 +22,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 
 		edgeGatewayProxyClient v1.ProxyClient
 		k8sGatewayProxyClient  v1.ProxyClient
-		proxyEndpointServer    ProxyEndpointServer
+		proxyEndpointServer    debug.ProxyEndpointServer
 	)
 
 	BeforeEach(func() {
@@ -37,7 +37,7 @@ var _ = Describe("Proxy Debug Endpoint", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		proxyEndpointServer = NewProxyEndpointServer()
+		proxyEndpointServer = debug.NewProxyEndpointServer()
 		proxyEndpointServer.RegisterProxyReader(debug.EdgeGatewayTranslation, edgeGatewayProxyClient)
 		proxyEndpointServer.RegisterProxyReader(debug.K8sGatewayTranslation, k8sGatewayProxyClient)
 	})

@@ -21,7 +21,7 @@ type ProxyEndpointServer interface {
 	// ProxyEndpointServiceServer exposes the user-facing API to request proxies
 	debug.ProxyEndpointServiceServer
 
-	// Register is used by the ControlPlane to register this service with a particular grpc.ProxyEndpointServer
+	// Register is used by the ControlPlane to register this service with a particular grpc.Server
 	Register(grpcServer *grpc.Server)
 
 	// RegisterProxyReader registers a given ProxyReader for a particular source
