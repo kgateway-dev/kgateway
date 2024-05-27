@@ -14,8 +14,17 @@
 // 	 export PREAMBLE="Gloo nightlies (dev)"
 // 	 export SLACKBOT_BEARER=${{ secrets.SLACKBOT_BEARER }}
 // 	 export SLACK_CHANNEL=C0314KESVNV
-//	 jobs='[{"result":"success"},{"result":"failure"}]'
-// 	 go run .github/workflows/helpers/notify/slack.go $jobs
+//	 results = {
+//    "end_to_end_tests_main": {
+//      "result": "success",
+//      "outputs": {}
+//    },
+//    "regression_tests_main": {
+//      "result": "skipped",
+//      "outputs": {}
+//    },
+//  }
+// 	go run .github/workflows/helpers/notify/slack.go $results
 
 package main
 
@@ -45,7 +54,7 @@ func main() {
 	requiredJobs := os.Args[1]
 	fmt.Printf("slack.go invoked with: %v", requiredJobs)
 
-	var requiredJobResults []GithubJobResult
+	var requiredJobResults map[string]GithubJobResult
 	err := json.Unmarshal([]byte(requiredJobs), &requiredJobResults)
 	if err != nil {
 		panic(err)

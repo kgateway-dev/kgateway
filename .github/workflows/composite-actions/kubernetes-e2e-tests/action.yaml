@@ -7,6 +7,9 @@ inputs:
   cluster-name:
     required: true
     description: The name of the KinD cluster
+  cluster-id:
+    required: true
+    description: The unique ID of the KinD cluster
   test-args:
     required: true
     description: The list of arguments passed to the test invocation

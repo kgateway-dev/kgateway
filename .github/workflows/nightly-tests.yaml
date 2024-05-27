@@ -33,12 +33,11 @@ on:
         default: false
       run-kubernetes-end-to-end:
         # /tests/kubernetes/e2e/...
-        description: "Whether to run the Kubernetes e2e tests"
+        description: "Run Kubernetes e2e tests"
         type: boolean
         default: false
       kubernetes-end-to-end-run-regex:
-        # /tests/kubernetes/e2e/...
-        description: "The regex to pass to the Kubernetes e2e tests"
+        description: "Kubernetes e2e tests -run regex"
         type: string
         required: false
         default: '^Test'
@@ -81,6 +80,7 @@ jobs:
           kubectl-version: ${{ matrix.test.kubectl-version }}
           helm-version: ${{ matrix.test.helm-version }}
       - id: run-tests
+        name: Run Kubernetes e2e Tests
         uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
         with:
           cluster-name: kind
