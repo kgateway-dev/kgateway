@@ -26,11 +26,74 @@ on:
       run-regression:
         description: "Run regression tests"
         type: boolean
+        default: false
       run-performance:
         description: "Run performance tests"
         type: boolean
+        default: false
+      run-kubernetes-end-to-end:
+        # /tests/kubernetes/e2e/...
+        description: "Whether to run the Kubernetes e2e tests"
+        type: boolean
+        default: false
+      kubernetes-end-to-end-run-regex:
+        # /tests/kubernetes/e2e/...
+        description: "The regex to pass to the Kubernetes e2e tests"
+        type: string
+        required: false
+        default: '^Test'
 
 jobs:
+  end_to_end_tests_main:
+    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-id }})
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      # Since we are running these on a schedule, there is no value in failing fast
+      # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
+      fail-fast: false
+      matrix:
+        # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
+        # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
+        test:
+          - cluster-id: 'cluster_one'
+            cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
+            kind-version: 'v0.20.0'
+            kubectl-version: 'v1.28.4'
+            helm-version: 'v3.13.2'
+            go-test-args: '-v -timeout=60m'
+            go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+      - name: Prep Go Runner
+        uses: ./.github/workflows/composite-actions/prep-go-runner
+      - id: setup-kind-cluster
+        name: Setup KinD Cluster
+        uses: ./.github/workflows/composite-actions/setup-kind-cluster
+        with:
+          cluster-name: kind
+          kind-node-version: ${{ matrix.test.cluster-node-version }}
+          kind-version: ${{ matrix.test.kind-version }}
+          kubectl-version: ${{ matrix.test.kubectl-version }}
+          helm-version: ${{ matrix.test.helm-version }}
+      - id: run-tests
+        uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
+        with:
+          cluster-name: kind
+          cluster-id: ${{ matrix.test.cluster-id }}
+          test-args: ${{ matrix.test.go-test-args }}
+          run-regex: ${{ matrix.test.go-test-run-regex }}
+      - name: Archive bug report directory on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bug-report
+          path: ./_test/bug_report/${{ matrix.test.cluster-id }}
+
   regression_tests_main:
     name: main regression tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
@@ -148,6 +211,7 @@ jobs:
     timeout-minutes: 5
     if: ${{ always() }}
     needs:
+      - end_to_end_tests_main
       - regression_tests_main
       - regression_tests_15
       - regression_tests_16
