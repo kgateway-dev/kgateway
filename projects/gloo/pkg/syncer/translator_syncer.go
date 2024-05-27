@@ -2,9 +2,10 @@ package syncer
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"

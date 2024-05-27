@@ -1,16 +1,55 @@
 package admin
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"fmt"
 	"net/http"
-)
 
-const (
-	InputSnapshotEndpoint = "/snapshots/input"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 )
 
 func ServerHandlers(history iosnapshot.History) func(mux *http.ServeMux, profiles map[string]string) {
-	return func(mux *http.ServeMux, profiles map[string]string) {
-		mux.Handle(InputSnapshotEndpoint, iosnapshot.NewInputServer(history))
+	return func(m *http.ServeMux, profiles map[string]string) {
+
+		m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
+			b, err := history.GetInput()
+			if err != nil {
+				respondError(w, err)
+				return
+			}
+
+			respondJson(w, b)
+		})
+
+		m.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
+			xdsEntries, err := history.GetXdsSnapshotCache()
+			if err != nil {
+				respondError(w, err)
+				return
+			}
+
+			respondJson(w, xdsEntries)
+		})
+
+	}
+}
+
+func respondJson(w http.ResponseWriter, response []byte) {
+	w.Header().Set("Content-Type", getContentType("json"))
+
+	_, _ = fmt.Fprintf(w, "%+v", string(response))
+}
+
+func respondError(w http.ResponseWriter, err error) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func getContentType(format string) string {
+	switch format {
+	case "", "json", "json_compact":
+		return "application/json"
+	case "yaml":
+		return "text/x-yaml"
+	default:
+		return "application/json"
 	}
 }

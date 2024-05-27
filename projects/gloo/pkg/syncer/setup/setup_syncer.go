@@ -3,7 +3,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
@@ -913,6 +914,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
 	// consumes and produces. This object is then used by our Admin ProxyEndpointServer, to provide this data on demand
 	snapshotHistory := iosnapshot.NewHistory()
+	snapshotHistory.SetXdsSnapshotCache(opts.ControlPlane.SnapshotCache)
 
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 

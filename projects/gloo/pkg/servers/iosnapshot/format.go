@@ -36,14 +36,3 @@ func formatMap(format string, genericMaps map[string]interface{}) ([]byte, error
 	}
 
 }
-
-func getContentType(format string) string {
-	switch format {
-	case "", "json", "json_compact":
-		return "application/json"
-	case "yaml":
-		return "text/x-yaml"
-	default:
-		return "application/json"
-	}
-}
