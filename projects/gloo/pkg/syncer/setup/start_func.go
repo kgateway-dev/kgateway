@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
-	iosnapshot2 "github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/go-utils/stats"
 
 	"golang.org/x/sync/errgroup"
@@ -93,10 +93,9 @@ func K8sGatewayControllerStartFunc(
 }
 
 // AdminServerStartFunc returns the setup.StartFunc for the Admin Server
-// The Admin Server is the groundwork for an Administration Interface, similar to the of Envoy
+// The Admin Server is the groundwork for an Administration Interface, similar to that of Envoy
 // https://github.com/solo-io/gloo/issues/6494
-func AdminServerStartFunc(history iosnapshot2.History) StartFunc {
-
+func AdminServerStartFunc(history iosnapshot.History) StartFunc {
 	// serverHandlers defines the custom handlers that the Admin Server will support
 	serverHandlers := admin.ServerHandlers(history)
 

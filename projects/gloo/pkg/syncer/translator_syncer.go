@@ -41,8 +41,12 @@ type translatorSyncer struct {
 	writeNamespace   string
 
 	// used for debugging purposes only
+	// Deprecated: https://github.com/solo-io/gloo/issues/6494
+	// Prefer to use the iosnapshot.History
 	latestSnap *v1snap.ApiSnapshot
 
+	// snapshotHistory is used for debugging purposes
+	// The syncer updates the History each time it runs, and the History is then used by the Admin Server
 	snapshotHistory iosnapshot.History
 
 	statusSyncer *statusSyncer

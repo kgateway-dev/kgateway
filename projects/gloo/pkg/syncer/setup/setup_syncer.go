@@ -912,7 +912,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
-	// consumes and produces. This object is then used by our Admin ProxyEndpointServer, to provide this data on demand
+	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
 	snapshotHistory := iosnapshot.NewHistory()
 	snapshotHistory.SetXdsSnapshotCache(opts.ControlPlane.SnapshotCache)
 
@@ -924,6 +924,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizers,
 		rpt,
+		// opts.DevMode should be deprecated
+		// https://github.com/solo-io/gloo/issues/6494
+		// We are starting to build out a true Admin Server, and enhancements should be added to that server
 		opts.DevMode,
 		syncerExtensions,
 		opts.Settings,

@@ -8,20 +8,23 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
+// History represents an object that maintains state about the running system
+// The ControlPlane will use the Setters to update the last known state,
+// and the Getters will be used by the Admin Server
 type History interface {
-	// SetApiSnapshot sets the latest input snapshot
+	// SetApiSnapshot sets the latest input ApiSnapshot
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
 	// GetInputCopy gets an in-memory copy of the output snapshot for all components.
 	GetInputCopy() (map[string]interface{}, error)
 	// GetInput gets the input snapshot for all components.
 	GetInput() ([]byte, error)
-
 	// SetXdsSnapshotCache sets the cache that is used to store the xDS snapshots
 	SetXdsSnapshotCache(cache cache.SnapshotCache)
-	// GetXdsSnapshotCache returns the cache that is used to store the xDS snapshots
+	// GetXdsSnapshotCache returns the entire cache of xDS snapshots
 	GetXdsSnapshotCache() ([]byte, error)
 }
 
+// NewHistory returns an implementation of the History interfacve
 func NewHistory() History {
 	return &history{
 		latestInput: map[string]json.Marshaler{},
@@ -35,6 +38,7 @@ type history struct {
 	xdsCache    cache.SnapshotCache
 }
 
+// SetApiSnapshot sets the latest input ApiSnapshot
 func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	h.Lock()
 	defer h.Unlock()
@@ -44,6 +48,7 @@ func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	}
 }
 
+// GetInput gets the input snapshot for all components.
 func (h *history) GetInput() ([]byte, error) {
 	input, err := h.GetInputCopy()
 	if err != nil {
@@ -53,6 +58,7 @@ func (h *history) GetInput() ([]byte, error) {
 	return formatMap("json_compact", input)
 }
 
+// GetInputCopy gets an in-memory copy of the output snapshot for all components.
 func (h *history) GetInputCopy() (map[string]interface{}, error) {
 	h.RLock()
 	defer h.RUnlock()
@@ -66,12 +72,14 @@ func (h *history) GetInputCopy() (map[string]interface{}, error) {
 	return genericMaps, nil
 }
 
+// SetXdsSnapshotCache sets the cache that is used to store the xDS snapshots
 func (h *history) SetXdsSnapshotCache(cache cache.SnapshotCache) {
 	h.Lock()
 	defer h.Unlock()
 	h.xdsCache = cache
 }
 
+// GetXdsSnapshotCache returns the entire cache of xDS snapshots
 func (h *history) GetXdsSnapshotCache() ([]byte, error) {
 	h.RLock()
 	defer h.RUnlock()
