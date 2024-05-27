@@ -97,6 +97,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d
+	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/gateway-api v1.0.1-0.20231102234148-3b5969669194
 )
 
@@ -304,7 +305,6 @@ require (
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.0 // indirect
 	k8s.io/apiserver v0.29.0 // indirect
