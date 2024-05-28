@@ -40,6 +40,15 @@ type history struct {
 
 // SetApiSnapshot sets the latest input ApiSnapshot
 func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
+	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
+	// any contention/issues, from impacting the runtime of the system
+	go func() {
+		h.setApiSnapshotSafe(latestApiSnapshot)
+	}()
+}
+
+// setApiSnapshotSafe sets the latest input ApiSnapshot
+func (h *history) setApiSnapshotSafe(latestApiSnapshot *v1snap.ApiSnapshot) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -74,6 +83,15 @@ func (h *history) GetInputCopy() (map[string]interface{}, error) {
 
 // SetXdsSnapshotCache sets the cache that is used to store the xDS snapshots
 func (h *history) SetXdsSnapshotCache(cache cache.SnapshotCache) {
+	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
+	// any contention/issues, from impacting the runtime of the system
+	go func() {
+		h.setXdsSnapshotCacheSafe(cache)
+	}()
+}
+
+// setXdsSnapshotCacheSafe sets the cache that is used to store the xDS snapshots
+func (h *history) setXdsSnapshotCacheSafe(cache cache.SnapshotCache) {
 	h.Lock()
 	defer h.Unlock()
 	h.xdsCache = cache
