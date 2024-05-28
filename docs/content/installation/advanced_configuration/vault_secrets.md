@@ -86,7 +86,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
      #kubernetesSecretSource: {}
      secretOptions:
        sources:
-       - kubernetesSecrets: {}
+       - kubernetes: {}
      # Add the refresh rate for polling config backends for changes
      # This setting is used for watching vault secrets and by other resource clients
      refreshRate: 15s
