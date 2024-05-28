@@ -1175,11 +1175,11 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(2))
 			// First filter should be wait filter
-			value := filters[0].GetTypedConfig()
+			value := filters[0].Filter.GetTypedConfig()
 			Expect(value.GetValue()).To(BeEmpty())
 			Expect(value.GetTypeUrl()).To(Equal("type.googleapis.com/envoy.config.filter.http.wait.v2.WaitFilterConfig"))
 			// Second filter will be the tranformation filter
-			value = filters[1].GetTypedConfig()
+			value = filters[1].Filter.GetTypedConfig()
 			filterConfig, err := utils.MessageToAny(&envoytransformation.FilterTransformations{
 				Stage: PostRoutingNumber,
 			})

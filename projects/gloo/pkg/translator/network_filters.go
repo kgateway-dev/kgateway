@@ -268,7 +268,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 
 func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFitlers(params plugins.Params, routerV3 *routerv3.Router) {
 
-	upstreamHttpFilters := []*envoyhttp.HttpFilter{}
+	upstreamHttpFilters := plugins.StagedUpstreamHttpFilterList{}
 	for _, plug := range h.upstreamHttpPlugins {
 		stagedFilters, err := plug.UpstreamHttpFilters(params, h.listener)
 		if err != nil {
@@ -277,8 +277,15 @@ func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFitlers(params plugins.P
 		upstreamHttpFilters = append(upstreamHttpFilters, stagedFilters...)
 	}
 
+	sort.Sort(upstreamHttpFilters)
+
+	sortedFilters := make([]*envoyhttp.HttpFilter, len(upstreamHttpFilters))
+	for i, filter := range upstreamHttpFilters {
+		sortedFilters[i] = filter.Filter
+	}
+
 	if len(upstreamHttpFilters) > 0 {
-		routerV3.UpstreamHttpFilters = upstreamHttpFilters
+		routerV3.UpstreamHttpFilters = sortedFilters
 		routerV3.UpstreamHttpFilters = append(routerV3.UpstreamHttpFilters, &envoyhttp.HttpFilter{
 			Name: "envoy.filters.http.upstream_codec",
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{

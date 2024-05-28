@@ -235,7 +235,7 @@ func (p *Plugin) requiresUpstreamFilter(listener *v1.HttpListener, stagedTransfo
 	}
 }
 
-func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpListener) ([]*envoyhttp.HttpFilter, error) {
+func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedUpstreamHttpFilter, error) {
 	if _, ok := p.upstreamFilterRequiredForListener[listener]; !ok {
 		return nil, nil
 	}
@@ -249,21 +249,31 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 		return nil, err
 	}
 
-	filters := []*envoyhttp.HttpFilter{
-		// Technically this is only necessary if the body is being transformed,
-		// Can potentially optimize this in the future
+	filters := []plugins.StagedUpstreamHttpFilter{
 		{
-			Name: WaitFilterName,
-			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-				TypedConfig: &anypb.Any{
-					TypeUrl: "type.googleapis.com/envoy.config.filter.http.wait.v2.WaitFilterConfig",
+			Filter: &envoyhttp.HttpFilter{
+				Name: FilterName,
+				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+					TypedConfig: msg,
 				},
+			},
+			Stage: plugins.UpstreamHTTPFilterStage{
+				RelativeTo: plugins.TransformationStage,
+				Weight:     0,
 			},
 		},
 		{
-			Name: FilterName,
-			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-				TypedConfig: msg,
+			Filter: &envoyhttp.HttpFilter{
+				Name: WaitFilterName,
+				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+					TypedConfig: &anypb.Any{
+						TypeUrl: "type.googleapis.com/envoy.config.filter.http.wait.v2.WaitFilterConfig",
+					},
+				},
+			},
+			Stage: plugins.UpstreamHTTPFilterStage{
+				RelativeTo: plugins.TransformationStage,
+				Weight:     -1,
 			},
 		},
 	}
