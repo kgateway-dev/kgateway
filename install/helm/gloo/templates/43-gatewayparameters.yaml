@@ -21,13 +21,13 @@ spec:
 {{- end -}}{{/* if $gg.service */}}
     envoyContainer:
       image:
-{{- toYaml $image | nindent 8 }}
+{{- include "gloo-gateway.deployerImage" $image | nindent 8 }}
     podTemplate:
       extraLabels:
 {{- include "gloo-gateway.constLabels" . | nindent 8 }}
     sdsContainer:
       image:
-{{- merge $global.glooMtls.sds.image $global.image | toYaml | nindent 8 }}
+{{- merge $global.glooMtls.sds.image $global.image | include "gloo-gateway.deployerImage" | nindent 8 }}
 {{- if $global.glooMtls.sds.securityContext -}}
       securityContext:
 {{- toYaml $global.glooMtls.sds.securityContext | nindent 8 }}
@@ -44,7 +44,7 @@ spec:
       enabled: {{ or $global.istioSDS.enabled $global.glooMtls.enabled }} 
       istioContainer:
         image:
-{{- merge $global.glooMtls.istioProxy.image $global.image | toYaml | nindent 10 }}
+{{- merge $global.glooMtls.istioProxy.image $global.image | include "gloo-gateway.deployerImage" | nindent 10 }}
 {{- if $global.glooMtls.istioProxy -}}
 {{- if $global.glooMtls.istioProxy.securityContext }}
         securityContext:
