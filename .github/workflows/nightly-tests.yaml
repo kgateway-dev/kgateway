@@ -257,4 +257,4 @@ jobs:
           PREAMBLE: ${{ steps.compute-preamble.outputs.preamble }}  # text to hyperlink at start of slack message
           SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
         run: |
-          go run .github/workflows/helpers/notify/slack.go ${{ toJSON(needs) }}
+          go run .github/workflows/helpers/notify/slack.go '${{ toJSON(needs) }}'

@@ -14,16 +14,7 @@
 // 	 export PREAMBLE="Gloo nightlies (dev)"
 // 	 export SLACKBOT_BEARER=${{ secrets.SLACKBOT_BEARER }}
 // 	 export SLACK_CHANNEL=C0314KESVNV
-//	 results = {
-//    "end_to_end_tests_main": {
-//      "result": "success",
-//      "outputs": {}
-//    },
-//    "regression_tests_main": {
-//      "result": "skipped",
-//      "outputs": {}
-//    },
-//  }
+//	 results ='{ "end_to_end_tests_main": { "result": "success", "outputs": {} }}'
 // 	go run .github/workflows/helpers/notify/slack.go $results
 
 package main

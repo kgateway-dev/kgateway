@@ -115,9 +115,9 @@ jobs:
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
       with:
         cluster-name: kind
+        cluster-id: ${{ matrix.test.cluster-id }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
-        cluster-id: ${{ matrix.test.cluster-id }}
     - name: Archive bug report directory on failure
       if: ${{ failure() }}
       uses: actions/upload-artifact@v4
