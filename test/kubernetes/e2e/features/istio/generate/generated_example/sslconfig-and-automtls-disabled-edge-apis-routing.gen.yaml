@@ -15,7 +15,6 @@ spec:
           upstream:
             name: httpbin-upstream
             namespace: gloo-system
-status: {}
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -38,5 +37,4 @@ spec:
       clusterName: gateway_proxy_sds
       targetUri: 127.0.0.1:8234
       validationContextName: istio_validation_context
-status: {}
 ---
