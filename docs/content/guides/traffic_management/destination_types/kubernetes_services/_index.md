@@ -50,7 +50,7 @@ Instead of routing to a Kubernetes service directly, you can create [Gloo Kubern
 
 To use Kubernetes Upstream resources: 
 
-1. Create an upstream resource for your Kubernetes workload. The following configuration creates an upstream resource for the Petstore app that listens on port 8080 in the default namespace. 
+1. Create an Upstream resource for your Kubernetes workload. The following configuration creates an Upstream resource for the Petstore app that listens on port 8080 in the default namespace. 
    ```yaml
    apiVersion: gloo.solo.io/v1
    kind: Upstream
