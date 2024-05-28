@@ -14,6 +14,18 @@ changelog:
   dependencyTag: v0.29.2
 - type: DEPENDENCY_BUMP
   dependencyOwner: k8s.io
+  dependencyRepo: apimachinery
+  dependencyTag: v0.29.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apiserver
+  dependencyTag: v0.29.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: cli-runtime
+  dependencyTag: v0.29.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
   dependencyRepo: client-go
   dependencyTag: v0.29.2
 - type: DEPENDENCY_BUMP
@@ -26,7 +38,15 @@ changelog:
   dependencyTag: v0.29.2
 - type: DEPENDENCY_BUMP
   dependencyOwner: sigs.k8s.io
+  dependencyRepo: component-helpers
+  dependencyTag: v0.29.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: sigs.k8s.io
   dependencyRepo: kubectl
+  dependencyTag: v0.29.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: sigs.k8s.io
+  dependencyRepo: metrics
   dependencyTag: v0.29.2
 - type: DEPENDENCY_BUMP
   dependencyOwner: sigs.k8s.io
