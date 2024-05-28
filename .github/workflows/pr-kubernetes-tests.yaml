@@ -9,7 +9,7 @@ env:
 # The istio version to use for the e2e tests
 # TODO(npolshak): Test across multiple versions of Istio
 # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-  ISTIO_VERSION: "1.19.9"
+  ISTIO_VERSION: "1.21.2"
 
 jobs:
   prepare_env:

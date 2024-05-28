@@ -132,6 +132,7 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 		Digest:     ptr.To(istioConfigImage.GetDigest().GetValue()),
 		PullPolicy: ptr.To(istioConfigImage.GetPullPolicy().String()),
 	}
+
 	return &helmIstioContainer{
 		Image:           istioImage,
 		LogLevel:        ptr.To(istioContainerConfig.GetLogLevel().GetValue()),
