@@ -32,16 +32,6 @@ spec:
           urlRewrite:
             hostname: jsonplaceholder.typicode.com
 ---
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  name: json-upstream
-spec:
-  static:
-    hosts:
-      - addr: jsonplaceholder.typicode.com
-        port: 80
----
 apiVersion: v1
 kind: Namespace
 metadata:
