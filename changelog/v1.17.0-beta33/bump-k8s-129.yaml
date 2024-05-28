@@ -1,5 +1,5 @@
 changelog:
-- type: BREAKING_CHANGE
+- type: DEPENDENCY_BUMP
   description: >
     Bump dependencies to support Kubernetes 1.29
   issueLink: https://github.com/solo-io/gloo/issues/8978
@@ -82,3 +82,8 @@ changelog:
   dependencyTag: v0.35.0
 - type: NON_USER_FACING
   description: Add the ability to run on-demand regression and performance tests in CI
+- type: BREAKING_CHANGE
+  description: >
+    Deprecate Gloo Edge as an Ingress Controller
+  issueLink: https://github.com/solo-io/gloo/issues/8978
+  resolvesIssue: false
