@@ -17,6 +17,7 @@ import (
 
 var (
 	routeWithUpstreamManifest = filepath.Join(util.MustGetThisDir(), "inputs/route-with-upstream.yaml")
+	upstreamManifest          = filepath.Join(util.MustGetThisDir(), "inputs/upstream-for-route.yaml")
 
 	// Proxy resource to be translated
 	glooProxyObjectMeta = metav1.ObjectMeta{
