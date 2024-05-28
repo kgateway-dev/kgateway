@@ -81,7 +81,7 @@ func CreateTestInstallationForCluster(
 
 		// GeneratedFiles contains the unique location where files generated during the execution
 		// of tests against this installation will be stored
-		// By creating a unique location, per TestInstallation and per ClusterId we guarantee isolation
+		// By creating a unique location, per TestInstallation and per Cluster.Name we guarantee isolation
 		// between TestInstallation outputs per CI run
 		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace, clusterContext.Name),
 	}
