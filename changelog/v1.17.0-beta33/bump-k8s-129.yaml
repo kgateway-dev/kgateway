@@ -1,5 +1,5 @@
 changelog:
-- type: DEPENDENCY_BUMP
+- type: NON_USER_FACING
   description: >
     Bump dependencies to support Kubernetes 1.29
   issueLink: https://github.com/solo-io/gloo/issues/8978
