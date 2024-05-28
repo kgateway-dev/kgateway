@@ -70,9 +70,10 @@ jobs:
             file: './.github/workflows/.env/nightly-tests/max_versions.env'
 
     steps:
+      # Checkout the branch that initiated the action
       - uses: actions/checkout@v3
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
       # The dotenv action is used to load key-value pairs from files.
       # In this case, the file is specified in the matrix and will contain the versions of the tools to use
       - name: Dotenv Action
