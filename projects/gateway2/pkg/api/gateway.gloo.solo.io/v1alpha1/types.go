@@ -4,8 +4,9 @@
 package v1alpha1
 
 import (
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    "k8s.io/apimachinery/pkg/runtime/schema")
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -14,22 +15,22 @@ import (
 
 // GroupVersionKind for GatewayParameters
 var GatewayParametersGVK = schema.GroupVersionKind{
-    Group: "gateway.gloo.solo.io",
-    Version: "v1alpha1",
-    Kind: "GatewayParameters",
+	Group:   "gateway.gloo.solo.io",
+	Version: "v1alpha1",
+	Kind:    "GatewayParameters",
 }
 
 // GatewayParameters is the Schema for the gatewayParameters API
 type GatewayParameters struct {
-    metav1.TypeMeta   `json:",inline"`
-    metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-    Spec GatewayParametersSpec `json:"spec,omitempty"`
-    Status GatewayParametersStatus `json:"status,omitempty"`
+	Spec   GatewayParametersSpec   `json:"spec,omitempty"`
+	Status GatewayParametersStatus `json:"status,omitempty"`
 }
 
 // GVK returns the GroupVersionKind associated with the resource type.
-func (GatewayParameters)  GVK() schema.GroupVersionKind {
+func (GatewayParameters) GVK() schema.GroupVersionKind {
 	return GatewayParametersGVK
 }
 
@@ -37,11 +38,11 @@ func (GatewayParameters)  GVK() schema.GroupVersionKind {
 
 // GatewayParametersList contains a list of GatewayParameters
 type GatewayParametersList struct {
-    metav1.TypeMeta `json:",inline"`
-    metav1.ListMeta `json:"metadata,omitempty"`
-    Items           []GatewayParameters `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []GatewayParameters `json:"items"`
 }
 
 func init() {
-    SchemeBuilder.Register(&GatewayParameters{}, &GatewayParametersList{})
+	SchemeBuilder.Register(&GatewayParameters{}, &GatewayParametersList{})
 }

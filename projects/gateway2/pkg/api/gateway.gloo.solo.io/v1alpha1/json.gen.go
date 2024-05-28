@@ -5,13 +5,13 @@
 package v1alpha1
 
 import (
-    bytes "bytes"
-    fmt "fmt"
-    math "math"
+	bytes "bytes"
+	fmt "fmt"
+	math "math"
 
-    skv2jsonpb "github.com/solo-io/skv2/pkg/kube_jsonpb"
-    jsonpb "github.com/golang/protobuf/jsonpb"
-    proto "github.com/golang/protobuf/proto"
+	jsonpb "github.com/golang/protobuf/jsonpb"
+	proto "github.com/golang/protobuf/proto"
+	skv2jsonpb "github.com/solo-io/skv2/pkg/kube_jsonpb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -20,12 +20,13 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 var (
-	marshaller = &skv2jsonpb.Marshaler{}
+	marshaller   = &skv2jsonpb.Marshaler{}
 	unmarshaller = &jsonpb.Unmarshaler{
 		AllowUnknownFields: true,
 	}
 	strictUnmarshaller = &jsonpb.Unmarshaler{}
 )
+
 // MarshalJSON is a custom marshaler for GatewayParametersSpec
 func (this *GatewayParametersSpec) MarshalJSON() ([]byte, error) {
 	str, err := marshaller.MarshalToString(this)
@@ -36,6 +37,7 @@ func (this *GatewayParametersSpec) MarshalJSON() ([]byte, error) {
 func (this *GatewayParametersSpec) UnmarshalJSON(b []byte) error {
 	return unmarshaller.Unmarshal(bytes.NewReader(b), this)
 }
+
 // MarshalJSON is a custom marshaler for GatewayParametersStatus
 func (this *GatewayParametersStatus) MarshalJSON() ([]byte, error) {
 	str, err := marshaller.MarshalToString(this)

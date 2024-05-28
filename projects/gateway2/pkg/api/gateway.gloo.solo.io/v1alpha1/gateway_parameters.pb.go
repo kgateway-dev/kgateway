@@ -7,6 +7,9 @@
 package v1alpha1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
 	_ "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/apimachinery/pkg/apis/meta/v1"
@@ -14,8 +17,6 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
