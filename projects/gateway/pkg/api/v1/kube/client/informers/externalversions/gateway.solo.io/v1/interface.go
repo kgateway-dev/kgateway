@@ -26,6 +26,10 @@ import (
 type Interface interface {
 	// Gateways returns a GatewayInformer.
 	Gateways() GatewayInformer
+	// HttpListenerOptions returns a HttpListenerOptionInformer.
+	HttpListenerOptions() HttpListenerOptionInformer
+	// ListenerOptions returns a ListenerOptionInformer.
+	ListenerOptions() ListenerOptionInformer
 	// MatchableHttpGateways returns a MatchableHttpGatewayInformer.
 	MatchableHttpGateways() MatchableHttpGatewayInformer
 	// MatchableTcpGateways returns a MatchableTcpGatewayInformer.
@@ -54,6 +58,16 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Gateways returns a GatewayInformer.
 func (v *version) Gateways() GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// HttpListenerOptions returns a HttpListenerOptionInformer.
+func (v *version) HttpListenerOptions() HttpListenerOptionInformer {
+	return &httpListenerOptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ListenerOptions returns a ListenerOptionInformer.
+func (v *version) ListenerOptions() ListenerOptionInformer {
+	return &listenerOptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // MatchableHttpGateways returns a MatchableHttpGatewayInformer.

@@ -20,9 +20,12 @@ package v1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	scheme "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -47,6 +50,8 @@ type MatchableTcpGatewayInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.MatchableTcpGatewayList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MatchableTcpGateway, err error)
+	Apply(ctx context.Context, matchableTcpGateway *gatewaysoloiov1.MatchableTcpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableTcpGateway, err error)
+	ApplyStatus(ctx context.Context, matchableTcpGateway *gatewaysoloiov1.MatchableTcpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableTcpGateway, err error)
 	MatchableTcpGatewayExpansion
 }
 
@@ -188,6 +193,62 @@ func (c *matchableTcpGateways) Patch(ctx context.Context, name string, pt types.
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied matchableTcpGateway.
+func (c *matchableTcpGateways) Apply(ctx context.Context, matchableTcpGateway *gatewaysoloiov1.MatchableTcpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableTcpGateway, err error) {
+	if matchableTcpGateway == nil {
+		return nil, fmt.Errorf("matchableTcpGateway provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(matchableTcpGateway)
+	if err != nil {
+		return nil, err
+	}
+	name := matchableTcpGateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("matchableTcpGateway.Name must be provided to Apply")
+	}
+	result = &v1.MatchableTcpGateway{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("tcpgateways").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *matchableTcpGateways) ApplyStatus(ctx context.Context, matchableTcpGateway *gatewaysoloiov1.MatchableTcpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableTcpGateway, err error) {
+	if matchableTcpGateway == nil {
+		return nil, fmt.Errorf("matchableTcpGateway provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(matchableTcpGateway)
+	if err != nil {
+		return nil, err
+	}
+
+	name := matchableTcpGateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("matchableTcpGateway.Name must be provided to Apply")
+	}
+
+	result = &v1.MatchableTcpGateway{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("tcpgateways").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

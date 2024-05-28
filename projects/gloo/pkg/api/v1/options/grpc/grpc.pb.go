@@ -7,14 +7,13 @@
 package grpc
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
