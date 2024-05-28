@@ -105,7 +105,7 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
-        cluster-name: kind
+        cluster-name: kind-${{ matrix.test.cluster-id }}
         kind-node-version: ${{ matrix.test.cluster-node-version }}
         kind-version: ${{ matrix.test.kind-version }}
         kubectl-version: ${{ matrix.test.kubectl-version }}
@@ -114,8 +114,7 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
       with:
-        cluster-name: kind
-        cluster-id: ${{ matrix.test.cluster-id }}
+        cluster-name: kind-${{ matrix.test.cluster-id }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
     - name: Archive bug report directory on failure
