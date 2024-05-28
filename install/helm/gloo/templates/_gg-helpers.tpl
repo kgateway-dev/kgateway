@@ -43,19 +43,19 @@ ref struct helmImage in projects/gateway2/deployer/values.go
 */}}
 {{- define "gloo-gateway.deployerImage" -}}
 {{- $image := . -}}
-{{- if $image.registry -}}
+{{- if $image.registry }}
 registry: {{ $image.registry }}
-{{- end }}{{/* if $image.registry */}}
-{{- if $image.repository -}}
+{{- end -}}{{/* if $image.registry */}}
+{{- if $image.repository }}
 repository: {{ $image.repository }}
-{{- end }}{{/* if $image.repository */}}
-{{- if $image.tag -}}
+{{- end -}}{{/* if $image.repository */}}
+{{- if $image.tag }}
 tag: {{ $image.tag }}
-{{- end }}{{/* if $image.tag */}}
-{{- if $image.digest -}}
+{{- end -}}{{/* if $image.tag */}}
+{{- if $image.digest }}
 digest: {{ $image.digest }}
-{{- end }}{{/* if $image.digest */}}
-{{- if $image.pullPolicy -}}
+{{- end -}}{{/* if $image.digest */}}
+{{- if $image.pullPolicy }}
 pullPolicy: {{ $image.pullPolicy }}
-{{- end }}{{/* if $image.pullPolicy */}}
+{{- end -}}{{/* if $image.pullPolicy */}}
 {{- end }}
