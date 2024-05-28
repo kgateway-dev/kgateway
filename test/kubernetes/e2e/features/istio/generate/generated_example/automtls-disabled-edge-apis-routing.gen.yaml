@@ -15,7 +15,6 @@ spec:
           upstream:
             name: httpbin-upstream
             namespace: gloo-system
-status: {}
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -30,5 +29,4 @@ spec:
     serviceName: httpbin
     serviceNamespace: httpbin
     servicePort: 8000
-status: {}
 ---
