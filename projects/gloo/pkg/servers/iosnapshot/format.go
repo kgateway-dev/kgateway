@@ -3,9 +3,11 @@ package iosnapshot
 import (
 	"encoding/json"
 	"fmt"
+
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 )
 
-func getGenericMaps(snapshot map[string]json.Marshaler) (map[string]interface{}, error) {
+func getGenericMaps(snapshot map[string]*v1snap.ApiSnapshot) (map[string]interface{}, error) {
 	genericMaps := map[string]interface{}{}
 	for id, obj := range snapshot {
 		jsn, err := obj.MarshalJSON()

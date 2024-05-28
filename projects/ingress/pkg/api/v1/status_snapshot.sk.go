@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -15,9 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var _ json.Marshaler = new(StatusSnapshot)
+
 type StatusSnapshot struct {
-	Services  KubeServiceList
-	Ingresses IngressList
+	Services  KubeServiceList `json:"services"`
+	Ingresses IngressList     `json:"ingresses"`
 }
 
 func (s StatusSnapshot) Clone() StatusSnapshot {
@@ -66,6 +69,11 @@ func (s StatusSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
+}
+
+func (s StatusSnapshot) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&s)
+
 }
 
 func (s *StatusSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

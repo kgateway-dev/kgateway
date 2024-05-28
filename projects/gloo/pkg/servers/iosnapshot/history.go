@@ -1,7 +1,6 @@
 package iosnapshot
 
 import (
-	"encoding/json"
 	"sync"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -27,14 +26,14 @@ type History interface {
 // NewHistory returns an implementation of the History interface
 func NewHistory() History {
 	return &history{
-		latestInput: map[string]json.Marshaler{},
+		latestInput: map[string]*v1snap.ApiSnapshot{},
 		xdsCache:    nil,
 	}
 }
 
 type history struct {
 	sync.RWMutex
-	latestInput map[string]json.Marshaler
+	latestInput map[string]*v1snap.ApiSnapshot
 	xdsCache    cache.SnapshotCache
 }
 
@@ -43,9 +42,7 @@ func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	h.Lock()
 	defer h.Unlock()
 
-	h.latestInput["api-snapshot"] = &apiSnapshotJsonMarshaller{
-		snap: latestApiSnapshot,
-	}
+	h.latestInput["api-snapshot"] = latestApiSnapshot
 }
 
 // GetInput gets the input snapshot for all components.
@@ -97,16 +94,4 @@ func (h *history) GetXdsSnapshotCache() ([]byte, error) {
 	}
 
 	return formatMap("json_compact", cacheEntries)
-}
-
-// apiSnapshotJsonMarshaller is a temporary solution to provide a MarshalJSON interface to the History interface
-// Help Wanted: It would be preferable to support a MarshalJSON directly on the ApiSnapshot type
-type apiSnapshotJsonMarshaller struct {
-	snap *v1snap.ApiSnapshot
-}
-
-var _ json.Marshaler = new(apiSnapshotJsonMarshaller)
-
-func (a apiSnapshotJsonMarshaller) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.snap)
 }

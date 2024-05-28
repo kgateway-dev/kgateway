@@ -3,6 +3,7 @@
 package gloosnapshot
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -21,23 +22,25 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var _ json.Marshaler = new(ApiSnapshot)
+
 type ApiSnapshot struct {
-	Artifacts          gloo_solo_io.ArtifactList
-	Endpoints          gloo_solo_io.EndpointList
-	Proxies            gloo_solo_io.ProxyList
-	UpstreamGroups     gloo_solo_io.UpstreamGroupList
-	Secrets            gloo_solo_io.SecretList
-	Upstreams          gloo_solo_io.UpstreamList
-	AuthConfigs        enterprise_gloo_solo_io.AuthConfigList
-	Ratelimitconfigs   github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
-	VirtualServices    gateway_solo_io.VirtualServiceList
-	RouteTables        gateway_solo_io.RouteTableList
-	Gateways           gateway_solo_io.GatewayList
-	VirtualHostOptions gateway_solo_io.VirtualHostOptionList
-	RouteOptions       gateway_solo_io.RouteOptionList
-	HttpGateways       gateway_solo_io.MatchableHttpGatewayList
-	TcpGateways        gateway_solo_io.MatchableTcpGatewayList
-	GraphqlApis        graphql_gloo_solo_io.GraphQLApiList
+	Artifacts          gloo_solo_io.ArtifactList                                                                 `json:"artifacts"`
+	Endpoints          gloo_solo_io.EndpointList                                                                 `json:"endpoints"`
+	Proxies            gloo_solo_io.ProxyList                                                                    `json:"proxies"`
+	UpstreamGroups     gloo_solo_io.UpstreamGroupList                                                            `json:"upstreamGroups"`
+	Secrets            gloo_solo_io.SecretList                                                                   `json:"secrets"`
+	Upstreams          gloo_solo_io.UpstreamList                                                                 `json:"upstreams"`
+	AuthConfigs        enterprise_gloo_solo_io.AuthConfigList                                                    `json:"authConfigs"`
+	Ratelimitconfigs   github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList `json:"ratelimitconfigs"`
+	VirtualServices    gateway_solo_io.VirtualServiceList                                                        `json:"virtualServices"`
+	RouteTables        gateway_solo_io.RouteTableList                                                            `json:"routeTables"`
+	Gateways           gateway_solo_io.GatewayList                                                               `json:"gateways"`
+	VirtualHostOptions gateway_solo_io.VirtualHostOptionList                                                     `json:"virtualHostOptions"`
+	RouteOptions       gateway_solo_io.RouteOptionList                                                           `json:"routeOptions"`
+	HttpGateways       gateway_solo_io.MatchableHttpGatewayList                                                  `json:"httpGateways"`
+	TcpGateways        gateway_solo_io.MatchableTcpGatewayList                                                   `json:"tcpGateways"`
+	GraphqlApis        graphql_gloo_solo_io.GraphQLApiList                                                       `json:"graphqlApis"`
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
@@ -276,6 +279,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
+}
+
+func (s ApiSnapshot) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&s)
+
 }
 
 func (s *ApiSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

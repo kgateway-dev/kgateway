@@ -13,7 +13,7 @@ Name|Version|License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.5+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.7.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
-[go-logr/zapr](https://github.com/go-logr/zapr)|v1.2.4|Apache License 2.0
+[go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [go-openapi/loads](https://github.com/go-openapi/loads)|v0.19.4|Apache License 2.0
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.22.4|Apache License 2.0
@@ -46,7 +46,7 @@ Name|Version|License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [stretchr/testify](https://github.com/stretchr/testify)|v1.8.4|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
-[go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.1|MIT License
+[go.uber.org/goleak](https://go.uber.org/goleak)|v1.3.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.11.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.26.0|MIT License
 [x/crypto](https://golang.org/x/crypto)|v0.18.0|BSD 3-clause "New" or "Revised" License
@@ -69,7 +69,7 @@ Name|Version|License
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20230726121419-3b25d923346b|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.16.3|Apache License 2.0
+[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.17.3|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.0.1-0.20231102234148-3b5969669194|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.4.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
