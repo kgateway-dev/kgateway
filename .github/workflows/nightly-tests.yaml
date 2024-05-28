@@ -2,6 +2,10 @@ name: Nightly
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
+  # The istio version to use for the e2e tests
+  # TODO(npolshak): Test across multiple versions of Istio
+  # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
+  ISTIO_VERSION: "1.21.2"
 
 on:
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/crontab.html#tag_20_25_07
