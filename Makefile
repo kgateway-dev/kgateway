@@ -344,6 +344,10 @@ clean-cli-docs:
 .PHONY: generate-all
 generate-all: generated-code
 
+.PHONY: generate-all-debug
+generate-all-debug: export DEBUG = 1
+generate-all-debug: generate-all
+
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
 generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
