@@ -29,4 +29,9 @@ runs:
       TEST_PKG: ./test/kubernetes/e2e/tests
     shell: bash
     run: make go-test
-  # TODO: Emit artifacts to shared location on failure
+  - name: Archive bug report directory on failure
+    if: ${{ failure() }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: bug-report
+      path: ./_test/bug_report/${{ inputs.cluster-name }}

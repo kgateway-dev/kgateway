@@ -46,41 +46,53 @@ on:
 
 jobs:
   end_to_end_tests_main:
-    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-id }})
+    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-id }}, version=${{ matrix.version-files.label }} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       # Since we are running these on a schedule, there is no value in failing fast
       # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
       fail-fast: false
       matrix:
-        # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
-        # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
         test:
+          # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
+          # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
           - cluster-id: 'cluster-one'
-            cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
-            kind-version: 'v0.20.0'
-            kubectl-version: 'v1.28.4'
-            helm-version: 'v3.13.2'
-            go-test-args: '-v -timeout=60m'
+            go-test-args: '-v -timeout=90m'
             go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
+        # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
+        # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
+        version-files:
+          - label: 'min'
+            file: './.github/workflows/.env/nightly-tests/min_versions.env'
+          - label: 'max'
+            file: './.github/workflows/.env/nightly-tests/max_versions.env'
 
     steps:
       - uses: actions/checkout@v3
         with:
           ref: main
+      # The dotenv action is used to load key-value pairs from files.
+      # In this case, the file is specified in the matrix and will contain the versions of the tools to use
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        id: dotenv
+        with:
+          path: ${{ matrix.version-files.file }}
       - name: Prep Go Runner
         uses: ./.github/workflows/composite-actions/prep-go-runner
+      # Set up the KinD cluster that the tests will use
       - id: setup-kind-cluster
         name: Setup KinD Cluster
         uses: ./.github/workflows/composite-actions/setup-kind-cluster
         with:
           cluster-name: kind-${{ matrix.test.cluster-id }}
-          kind-node-version: ${{ matrix.test.cluster-node-version }}
-          kind-version: ${{ matrix.test.kind-version }}
-          kubectl-version: ${{ matrix.test.kubectl-version }}
-          helm-version: ${{ matrix.test.helm-version }}
+          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+          kind-version: ${{ steps.dotenv.outputs.kind_version }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          helm-version: ${{ steps.dotenv.outputs.helm_version }}
+      # Run the tests
       - id: run-tests
         name: Run Kubernetes e2e Tests
         uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
@@ -88,12 +100,6 @@ jobs:
           cluster-name: kind-${{ matrix.test.cluster-id }}
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
-      - name: Archive bug report directory on failure
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: bug-report
-          path: ./_test/bug_report/${{ matrix.test.cluster-name }}
 
   regression_tests_main:
     name: main regression tests
