@@ -84,7 +84,6 @@ jobs:
         uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
         with:
           cluster-name: kind-${{ matrix.test.cluster-id }}
-          cluster-id: ${{ matrix.test.cluster-id }}
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
       - name: Archive bug report directory on failure
@@ -92,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bug-report
-          path: ./_test/bug_report/${{ matrix.test.cluster-id }}
+          path: ./_test/bug_report/${{ matrix.test.cluster-name }}
 
   regression_tests_main:
     name: main regression tests

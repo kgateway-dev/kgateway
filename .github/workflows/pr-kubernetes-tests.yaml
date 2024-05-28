@@ -122,4 +122,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: bug-report
-        path: ./_test/bug_report/${{ matrix.test.cluster-id }}
+        path: ./_test/bug_report/${{ matrix.test.cluster-name }}
