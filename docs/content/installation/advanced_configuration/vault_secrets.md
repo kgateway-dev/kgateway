@@ -25,7 +25,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
 
 2. Make the following changes to the resource.
    * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which directs the gateway to use secret stores other than Vault.
-   * Add the `secretOptions` section and define either a Kubernetes or Vault secret source.  
+   * Add the `secretOptions` section and define a Vault secret source. Optionally, a Kubernetes and/or a Directory secret source can also be specified. 
      {{< notice note >}}
      If you specify both a Kubernetes and Vault secret source in your Settings resource, the Kubernetes secret is looked up first. Keep in mind that when you specify multiple secret sources, the name and namespace of each secret must be unique to avoid unanticipated behavior. 
      {{< /notice >}}
