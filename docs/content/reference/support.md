@@ -12,7 +12,7 @@ Gloo Edge Enterprise offers `n-3` patching support for bug and critical security
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio`†`    |
 |------|----------|---------|--------|-------------|
-| 1.17.x | 1.24 - 1.28 | v3 xDS API | >= 3.12 | 1.16 - 1.21 |
+| 1.17.x | 1.25 - 1.29 | v3 xDS API | >= 3.12 | 1.16 - 1.21 |
 | 1.16.x | 1.24 - 1.28 | v3 xDS API | >= 3.12 | 1.14 - 1.20 |
 | 1.15.x | 1.23 - 1.27 | v3 xDS API | >= 3.11 | 1.13 - 1.18 |
 | 1.14.x | 1.23 - 1.25 | v3 xDS API | >= 3.8 | 1.13 - 1.18 |
@@ -27,7 +27,7 @@ Go to the branch for the Edge version you want, like 1.11.x. In https://github.c
 
 Gloo Edge Enterprise releases are built on the OSS codebase and typically follow the equivalent Gloo Edge OSS release. The OSS version is always released as the latest build, while Enterprise version is always released as the first stable build of that version. For example, the latest build of Gloo Edge OSS is {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, while the latest stable build of Gloo Edge Enterprise is {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}.
 
-Stable builds for both Gloo Edge Enterprise and OSS are released as minor versions approximately every three months. A stable branch for a minor version, such as 1.14, is tagged from `main`, and stable builds for both Enterprise and OSS are supported from that branch. 
+Stable builds for both Gloo Edge Enterprise and OSS are released as minor versions approximately every three months. A stable branch for a minor version, such as 1.14, is tagged from `main`, and stable builds for both Enterprise and OSS are supported from that branch.
 
 ## Release development
 
@@ -47,11 +47,11 @@ Development of a quality stable release on `main` typically follows this process
 
 ## Additional support information
 
-### Kubernetes 
+### Kubernetes
 Gloo Edge Enterprise is supported and tested for the latest Kubernetes version and all Kubernetes versions released up to 1 year before the latest version.
 
 ### Envoy
-Officially, Gloo Edge Enterprise offers support for `n-1` of Envoy community releases. In specific support situations, fixes can be backported to `n-2` or more without bumping the Envoy minor version. In other words, a fix can be developed based on the code that you deployed within the `n-2` release timeframe. 
+Officially, Gloo Edge Enterprise offers support for `n-1` of Envoy community releases. In specific support situations, fixes can be backported to `n-2` or more without bumping the Envoy minor version. In other words, a fix can be developed based on the code that you deployed within the `n-2` release timeframe.
 
 ### Gloo Edge
 New features are not developed on or backported to stable branches. However, critical patches, bug fixes, and documentation fixes are backported to all actively supported branches.
