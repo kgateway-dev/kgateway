@@ -8,6 +8,10 @@ description: Explore automatic schema generation with GraphQL service discovery.
 
 Gloo Edge can automatically discover API specifications and create GraphQL schemas. The generated `GraphQLApi` includes the configuration for REST or gRPC resolvers and schema definitions for the types of data to return to GraphQL queries.
 
+{{% notice warning %}}
+Automatic schema generation is recommended for use in development environments to quickly create initial GraphQLApi custom resources from existing APIs. Once these custom resources are generated, you must manage them in the same way as other Gloo custom resources, especially when deploying them into downstream environments. It is not recommended to use autogeneration in production.
+{{% /notice %}}
+
 Gloo Edge supports two modes of discovery: allowlist and blocklist. For more information about these discovery modes, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
 {{% notice note %}}
