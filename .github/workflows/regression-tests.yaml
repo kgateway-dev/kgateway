@@ -47,9 +47,10 @@ jobs:
       fail-fast: false
       matrix:
         # upgrade tests are run on LTS but not on main branch, for main they are run nightly
+        # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
         # this is the github action version of ternary op
         kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade' ]
-        kube-version: [ { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' } ]
+        kube-version: [ { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
         image-variant:
           - distroless
         merge-to-main:
@@ -57,6 +58,8 @@ jobs:
         exclude:
           - merge-to-main: true
             kube-e2e-test-type: upgrade
+          - merge-to-main: true
+            kube-e2e-test-type: ingress
     steps:
     - uses: actions/checkout@v3
     - id: run-tests
@@ -76,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' } ]
+        kube-version: [ { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
         # use standard since other variants don't currently work with these tests
         # (see https://github.com/solo-io/solo-projects/issues/6094)
         image-variant:
