@@ -15,7 +15,6 @@ spec:
           upstream:
             name: headless-nginx-upstream
             namespace: gloo-system
-status: {}
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -29,5 +28,4 @@ spec:
     serviceName: headless-example-svc
     serviceNamespace: default
     servicePort: 8080
-status: {}
 ---
