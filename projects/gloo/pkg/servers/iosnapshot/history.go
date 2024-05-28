@@ -24,7 +24,7 @@ type History interface {
 	GetXdsSnapshotCache() ([]byte, error)
 }
 
-// NewHistory returns an implementation of the History interfacve
+// NewHistory returns an implementation of the History interface
 func NewHistory() History {
 	return &history{
 		latestInput: map[string]json.Marshaler{},

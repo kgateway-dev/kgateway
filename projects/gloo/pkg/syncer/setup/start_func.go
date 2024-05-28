@@ -95,6 +95,9 @@ func K8sGatewayControllerStartFunc(
 // AdminServerStartFunc returns the setup.StartFunc for the Admin Server
 // The Admin Server is the groundwork for an Administration Interface, similar to that of Envoy
 // https://github.com/solo-io/gloo/issues/6494
+// The endpoints that are available on this server are split between two places:
+//  1. The default endpoints are defined by our stats server: https://github.com/solo-io/go-utils/blob/8eda16b9878d71673e6a3a9756f6088160f75468/stats/stats.go#L79
+//  2. Custom endpoints are defined by our admin server handler in `gloo/pkg/servers/admin`
 func AdminServerStartFunc(history iosnapshot.History) StartFunc {
 	// serverHandlers defines the custom handlers that the Admin Server will support
 	serverHandlers := admin.ServerHandlers(history)

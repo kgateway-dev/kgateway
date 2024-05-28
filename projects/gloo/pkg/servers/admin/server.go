@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 )
 
-// ServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServerMux
+// ServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
 // These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/solo-io/gloo/issues/6494)
 func ServerHandlers(history iosnapshot.History) func(mux *http.ServeMux, profiles map[string]string) {
 	return func(m *http.ServeMux, profiles map[string]string) {

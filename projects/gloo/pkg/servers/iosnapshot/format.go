@@ -3,8 +3,6 @@ package iosnapshot
 import (
 	"encoding/json"
 	"fmt"
-
-	"gopkg.in/yaml.v2"
 )
 
 func getGenericMaps(snapshot map[string]json.Marshaler) (map[string]interface{}, error) {
@@ -30,7 +28,9 @@ func formatMap(format string, genericMaps map[string]interface{}) ([]byte, error
 	case "", "json_compact":
 		return json.Marshal(genericMaps)
 	case "yaml":
-		return yaml.Marshal(genericMaps)
+		// There may be a case in the future, where yaml formatting is necessary
+		// Since it is not required yet, we do not add support
+		return nil, fmt.Errorf("%s format is not yet supported", format)
 	default:
 		return nil, fmt.Errorf("invalid format of %s", format)
 	}
