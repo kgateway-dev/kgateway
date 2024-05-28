@@ -146,7 +146,7 @@ type hcmNetworkFilterTranslator struct {
 	report *validationapi.HttpListenerReport
 	// List of HttpFilterPlugins to process
 	httpPlugins []plugins.HttpFilterPlugin
-	// List of HttpFilterPlugins to process
+	// List of UpstreamHttpPlugins to process
 	upstreamHttpPlugins []plugins.UpstreamHttpFilterPlugin
 	// List of HttpConnectionManagerPlugins to process
 	hcmPlugins []plugins.HttpConnectionManagerPlugin
