@@ -194,7 +194,7 @@ func (m *MultiConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpL
 	return nil, extauth.ErrEnterpriseOnly
 }
 
-func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz, error), stage plugins.FilterStage) ([]plugins.StagedHttpFilter, error) {
+func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz, error), stage plugins.HTTPFilterStage) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
 	configurations, err := configurationGenerator()

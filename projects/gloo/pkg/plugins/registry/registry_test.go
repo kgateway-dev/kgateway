@@ -195,10 +195,10 @@ func TestPluginsHttpFilterUsefulness(t *testing.T) {
 				hNames := []string{}
 
 				for _, httpF := range potentiallyNonConformingFilters {
-					if _, ok := knownBaseFilters[httpF.HttpFilter.Name]; ok {
+					if _, ok := knownBaseFilters[httpF.Filter.Name]; ok {
 						continue
 					}
-					hNames = append(hNames, httpF.HttpFilter.Name)
+					hNames = append(hNames, httpF.Filter.Name)
 				}
 				t.Fatalf("Found a set of filters that were added by default %v", hNames)
 			}

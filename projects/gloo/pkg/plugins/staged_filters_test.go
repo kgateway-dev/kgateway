@@ -114,14 +114,14 @@ var _ = Describe("Staged Filters", func() {
 func ExpectListenerFilterNameOrder(filters StagedNetworkFilterList, names []string) {
 	Expect(filters).To(HaveLen(len(names)))
 	for i, filter := range filters {
-		Expect(filter.NetworkFilter.Name).To(Equal(names[i]))
+		Expect(filter.Filter.Name).To(Equal(names[i]))
 	}
 }
 
 func ExpectNameOrder(filters StagedHttpFilterList, names []string) {
 	Expect(filters).To(HaveLen(len(names)))
 	for i, filter := range filters {
-		Expect(filter.HttpFilter.Name).To(Equal(names[i]))
+		Expect(filter.Filter.Name).To(Equal(names[i]))
 	}
 }
 
@@ -129,7 +129,7 @@ func ExpectFilterConfigOrders(filters StagedHttpFilterList, typeUrls []string, v
 	Expect(filters).To(HaveLen(len(typeUrls)))
 	Expect(filters).To(HaveLen(len(values)))
 	for i, filter := range filters {
-		v := filter.HttpFilter.ConfigType.(*envoyhttp.HttpFilter_TypedConfig).TypedConfig
+		v := filter.Filter.ConfigType.(*envoyhttp.HttpFilter_TypedConfig).TypedConfig
 		Expect(v.TypeUrl).To(Equal(typeUrls[i]))
 		Expect(string(v.Value)).To(Equal(values[i]))
 	}

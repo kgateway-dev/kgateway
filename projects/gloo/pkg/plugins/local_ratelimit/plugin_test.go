@@ -110,7 +110,7 @@ var _ = Describe("Local Rate Limit Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedNetworkFilter{
 			{
-				NetworkFilter: &envoy_config_listener_v3.Filter{
+				Filter: &envoy_config_listener_v3.Filter{
 					Name: NetworkFilterName,
 					ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
 						TypedConfig: typedConfig,
@@ -128,7 +128,7 @@ var _ = Describe("Local Rate Limit Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
-				HttpFilter: &envoyhcm.HttpFilter{
+				Filter: &envoyhcm.HttpFilter{
 					Name: HTTPFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: typedConfig,

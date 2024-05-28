@@ -78,7 +78,7 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 		}
 
 		for _, nf := range stagedFilters {
-			if nf.NetworkFilter == nil {
+			if nf.Filter == nil {
 				log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
 				continue
 			}
@@ -133,7 +133,7 @@ func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config
 	sort.Sort(filters)
 	var sortedFilters []*envoy_config_listener_v3.Filter
 	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, filter.NetworkFilter)
+		sortedFilters = append(sortedFilters, filter.Filter)
 	}
 	return sortedFilters
 }
@@ -210,7 +210,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 }
 
 func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) []*envoyhttp.HttpFilter {
-	var httpFilters []plugins.StagedHttpFilter
+	var httpFilters plugins.StagedHttpFilterList
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.httpPlugins {
@@ -220,7 +220,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		}
 
 		for _, httpFilter := range stagedFilters {
-			if httpFilter.HttpFilter == nil {
+			if httpFilter.Filter == nil {
 				log.Warnf("plugin %v implements HttpFilters() but returned nil", plug.Name())
 				continue
 			}
@@ -261,7 +261,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 	}
 
-	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.HttpFilter)
+	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.Filter)
 
 	return envoyHttpFilters
 }
@@ -295,7 +295,7 @@ func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	sort.Sort(filters)
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, filter.HttpFilter)
+		sortedFilters = append(sortedFilters, filter.Filter)
 	}
 	return sortedFilters
 }

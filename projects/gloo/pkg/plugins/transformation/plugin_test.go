@@ -253,9 +253,9 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(stagedHttpFilters).To(HaveLen(1))
-				Expect(stagedHttpFilters[0].HttpFilter.Name).To(Equal("io.solo.transformation"))
+				Expect(stagedHttpFilters[0].Filter.Name).To(Equal("io.solo.transformation"))
 				// pretty print the typed config of the filter
-				typedConfig := stagedHttpFilters[0].HttpFilter.GetTypedConfig()
+				typedConfig := stagedHttpFilters[0].Filter.GetTypedConfig()
 				expectedFilter := plugins.MustNewStagedFilter(
 					FilterName,
 					&envoytransformation.FilterTransformations{
@@ -264,7 +264,7 @@ var _ = Describe("Plugin", func() {
 					plugins.AfterStage(plugins.AuthZStage),
 				)
 
-				Expect(typedConfig).To(skMatchers.MatchProto(expectedFilter.HttpFilter.GetTypedConfig()))
+				Expect(typedConfig).To(skMatchers.MatchProto(expectedFilter.Filter.GetTypedConfig()))
 
 				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 				output, err := p.(transformationPlugin).ConvertTransformation(
@@ -790,7 +790,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{Ctx: ctx}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			value := filters[0].HttpFilter.GetTypedConfig().GetValue()
+			value := filters[0].Filter.GetTypedConfig().GetValue()
 			Expect(value).To(BeEmpty())
 		})
 	})
@@ -1153,10 +1153,10 @@ var _ = Describe("Plugin", func() {
 			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{Ctx: ctx}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(2))
-			value := filters[0].HttpFilter.GetTypedConfig()
+			value := filters[0].Filter.GetTypedConfig()
 			Expect(value).To(Equal(earlyStageFilterConfig))
 			// second filter should have no stage, and thus empty config
-			value = filters[1].HttpFilter.GetTypedConfig()
+			value = filters[1].Filter.GetTypedConfig()
 			Expect(value.GetValue()).To(BeEmpty())
 		})
 		It("should upstream_http_filters when the postRouting transformation exists", func() {

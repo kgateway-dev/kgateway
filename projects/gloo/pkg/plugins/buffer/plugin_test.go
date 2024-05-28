@@ -34,7 +34,7 @@ var _ = Describe("Plugin", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
-			HttpFilter: &envoyhcm.HttpFilter{
+			Filter: &envoyhcm.HttpFilter{
 				Name: wellknown.Buffer,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: typedConfig,
@@ -43,7 +43,7 @@ var _ = Describe("Plugin", func() {
 
 			Stage: plugins.DuringStage(plugins.RouteStage),
 		}
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 

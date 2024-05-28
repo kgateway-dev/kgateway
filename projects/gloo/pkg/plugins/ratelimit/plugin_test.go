@@ -98,7 +98,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		// Should set the stage to -1 before the AuthNStage because we set RateLimitBeforeAuth = true
 		Expect(filters[0].Stage.Weight).To(Equal(-1))
 		Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage))
-		Expect(filters[0].HttpFilter.Name).To(Equal(wellknown.HTTPRateLimit))
+		Expect(filters[0].Filter.Name).To(Equal(wellknown.HTTPRateLimit))
 	})
 
 	It("should have fail mode deny off by default", func() {
@@ -108,7 +108,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
-			cfg := getTypedConfig(f.HttpFilter)
+			cfg := getTypedConfig(f.Filter)
 			Expect(cfg.FailureModeDeny).To(BeFalse())
 		}
 
@@ -129,7 +129,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			},
 		}
 
-		cfg := getTypedConfig(filters[0].HttpFilter)
+		cfg := getTypedConfig(filters[0].Filter)
 		Expect(cfg).To(matchers.MatchProto(expectedConfig))
 	})
 
@@ -160,7 +160,7 @@ var _ = Describe("RateLimit Plugin", func() {
 				}},
 			},
 		}
-		cfg := getTypedConfig(filters[0].HttpFilter)
+		cfg := getTypedConfig(filters[0].Filter)
 		Expect(cfg).To(matchers.MatchProto(expectedConfig))
 	})
 
@@ -170,7 +170,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		timeout := DefaultTimeout
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
-			cfg := getTypedConfig(f.HttpFilter)
+			cfg := getTypedConfig(f.Filter)
 			Expect(cfg.Timeout).To(matchers.MatchProto(timeout))
 		}
 	})
@@ -220,7 +220,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
-				cfg := getTypedConfig(f.HttpFilter)
+				cfg := getTypedConfig(f.Filter)
 				Expect(cfg.FailureModeDeny).To(BeTrue())
 			}
 		})
@@ -240,7 +240,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
-				cfg := getTypedConfig(f.HttpFilter)
+				cfg := getTypedConfig(f.Filter)
 				Expect(cfg.Timeout).To(matchers.MatchProto(s))
 			}
 		})

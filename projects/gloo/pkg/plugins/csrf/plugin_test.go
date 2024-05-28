@@ -87,19 +87,19 @@ var _ = Describe("plugin", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
-			HttpFilter: &envoyhcm.HttpFilter{
+			Filter: &envoyhcm.HttpFilter{
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: typedConfig,
 				},
 			},
-			Stage: plugins.FilterStage{
+			Stage: plugins.HTTPFilterStage{
 				RelativeTo: 8,
 				Weight:     0,
 			},
 		}
 
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
@@ -125,19 +125,19 @@ var _ = Describe("plugin", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
-			HttpFilter: &envoyhcm.HttpFilter{
+			Filter: &envoyhcm.HttpFilter{
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: typedConfig,
 				},
 			},
-			Stage: plugins.FilterStage{
+			Stage: plugins.HTTPFilterStage{
 				RelativeTo: 8,
 				Weight:     0,
 			},
 		}
 
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
@@ -164,13 +164,13 @@ var _ = Describe("plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
-				HttpFilter: &envoyhcm.HttpFilter{
+				Filter: &envoyhcm.HttpFilter{
 					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: typedConfig,
 					},
 				},
-				Stage: plugins.FilterStage{
+				Stage: plugins.HTTPFilterStage{
 					RelativeTo: 8,
 					Weight:     0,
 				},

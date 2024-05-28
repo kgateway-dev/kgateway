@@ -59,7 +59,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 			Expect(filters).To(HaveLen(1))
 
 			filterCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
-			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
+			goTypedConfig := filters[0].Filter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig, filterCfg)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -123,7 +123,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 			Expect(filters).To(HaveLen(1))
 
 			filterCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
-			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
+			goTypedConfig := filters[0].Filter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig, filterCfg)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -196,7 +196,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters1).To(HaveLen(1))
 			filterCfg := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
-			goTypedConfig := filters1[0].HttpFilter.GetTypedConfig()
+			goTypedConfig := filters1[0].Filter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig, filterCfg)
 			Expect(err).NotTo(HaveOccurred())
 			expectedName1 := "solo_io_generated_dfp:16275453913408509128"
@@ -206,7 +206,7 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters2).To(HaveLen(1))
 			filterCfg2 := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{}
-			goTypedConfig2 := filters2[0].HttpFilter.GetTypedConfig()
+			goTypedConfig2 := filters2[0].Filter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig2, filterCfg2)
 			Expect(err).NotTo(HaveOccurred())
 			expectedName2 := "solo_io_generated_dfp:13361132607922819491"

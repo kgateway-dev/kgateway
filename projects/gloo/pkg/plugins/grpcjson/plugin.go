@@ -161,7 +161,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				out.TypedPerFilterConfig = make(map[string]*any.Any)
 			}
 			// Assume that a single route won't have upstreams with multiple different grpc configurations
-			out.GetTypedPerFilterConfig()[wellknown.GRPCJSONTranscoder] = filter.HttpFilter.GetTypedConfig()
+			out.GetTypedPerFilterConfig()[wellknown.GRPCJSONTranscoder] = filter.Filter.GetTypedConfig()
 			p.affectedListeners[params.HttpListener] = 1
 			return nil
 		}
