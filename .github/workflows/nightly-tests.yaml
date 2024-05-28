@@ -32,11 +32,13 @@ on:
         type: boolean
         default: false
       run-kubernetes-end-to-end:
-        # /tests/kubernetes/e2e/...
+        # Runs all tests in /tests/kubernetes/e2e/...
         description: "Run Kubernetes e2e tests"
         type: boolean
         default: false
       kubernetes-end-to-end-run-regex:
+        # The regex that will be passed to the go test -run invocation
+        # This allows users to run just the subset of tests that they care about
         description: "Kubernetes e2e tests -run regex"
         type: string
         required: false
