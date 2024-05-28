@@ -1,6 +1,8 @@
 package parallel_test
 
 import (
+	"net"
+
 	"github.com/avast/retry-go"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -44,6 +46,35 @@ var _ = Describe("Ports", func() {
 			}, retry.Delay(0))
 			Expect(err).To(HaveOccurred())
 			Expect(selectedPort).To(Equal(uint32(11015)), "should have exhausted 5 retries")
+		})
+
+	})
+
+	Context("AdvancePortSafeListen", Ordered, func() {
+
+		var (
+			l net.Listener
+		)
+
+		BeforeAll(func() {
+			list, err := net.Listen("tcp", ":0")
+			Expect(err).NotTo(HaveOccurred())
+			l = list
+		})
+
+		AfterAll(func() {
+			_ = l.Close()
+		})
+
+		It("skips ports based on portInUseListen", func() {
+			tcpAddr, ok := l.Addr().(*net.TCPAddr)
+			Expect(ok).To(BeTrue())
+			inUsePort := uint32(tcpAddr.Port)
+
+			// When scanning for a free port, we first advance and then check for a port
+			startingPort := inUsePort - uint32(1+parallel.GetPortOffset())
+			selectedPort := parallel.AdvancePortSafeListen(&startingPort, retry.Attempts(2))
+			Expect(selectedPort).To(Equal(inUsePort+1), "should have skipped the in use port, and found a free port on the second attempt")
 		})
 
 	})

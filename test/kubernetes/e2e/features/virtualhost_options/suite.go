@@ -64,7 +64,11 @@ func (s *testingSuite) SetupSuite() {
 	}
 }
 
-func (s *testingSuite) TearDownSuite() {}
+func (s *testingSuite) TearDownSuite() {
+	// Check that the common setup manifest is deleted
+	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, setupManifest)
+	s.testInstallation.Assertions.ExpectObjectDeleted(setupManifest, err, output)
+}
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	if strings.Contains(testName, "ManualSetup") {
