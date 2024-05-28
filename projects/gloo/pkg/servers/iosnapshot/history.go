@@ -15,6 +15,7 @@ type History interface {
 	// SetApiSnapshot sets the latest input ApiSnapshot
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
 	// GetInputCopy gets an in-memory copy of the output snapshot for all components.
+	// Note that this may contain sensitive data and secrets.
 	GetInputCopy() (map[string]interface{}, error)
 	// GetInput gets the input snapshot for all components.
 	GetInput() ([]byte, error)
@@ -68,6 +69,7 @@ func (h *history) GetInput() ([]byte, error) {
 }
 
 // GetInputCopy gets an in-memory copy of the output snapshot for all components.
+// Note that this may contain sensitive data and secrets.
 func (h *history) GetInputCopy() (map[string]interface{}, error) {
 	h.RLock()
 	defer h.RUnlock()
