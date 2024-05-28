@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/9508
+    resolvesIssue: true
+    description: Fixes bug that prevented deleted HTTPRoutes from being fully reconciled to proxies

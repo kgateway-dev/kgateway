@@ -51,6 +51,7 @@ func (s *tsuite) SetupSuite() {
 		"TestInvalidChildValidStandalone": {commonManifest, invalidChildValidStandaloneManifest},
 		"TestUnresolvedChild":             {commonManifest, unresolvedChildManifest},
 		"TestRouteOptions":                {commonManifest, routeOptionsManifest},
+		"TestMatcherInheritance":          {commonManifest, matcherInheritanceManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
@@ -65,6 +66,7 @@ func (s *tsuite) SetupSuite() {
 		invalidChildValidStandaloneManifest: {proxyTestService, proxyTestDeployment, routeRoot, routeTeam1, routeTeam2},
 		unresolvedChildManifest:             {routeRoot},
 		routeOptionsManifest:                {routeRoot, routeTeam1, routeTeam2},
+		matcherInheritanceManifest:          {routeParent1, routeParent2, routeTeam1},
 	}
 	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.ClusterContext)
 	s.Require().NoError(err)
@@ -277,4 +279,16 @@ func (s *tsuite) TestRouteOptions() {
 			Body:       ContainSubstring("/anything/rewrite"),
 			Headers:    map[string]interface{}{"x-foo": Equal("baz")},
 		})
+}
+
+func (s *tsuite) TestMatcherInheritance() {
+	// Assert traffic on parent1's prefix
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/foo/child")},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/foo/child")})
+
+	// Assert traffic on parent2's prefix
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/baz/child")},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/baz/child")})
 }

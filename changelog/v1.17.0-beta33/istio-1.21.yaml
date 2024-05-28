@@ -1,0 +1,18 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8990
+    resolvesIssue: false
+    description: >-
+      Bump Istio supported version to 1.21 in docs/CI/tests
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/8990
+    resolvesIssue: false
+    description: >-
+      The `ErrNoSupportedSidecar` has been removed from the `projects/gloo/cli/pkg/cmd/istio/sidecars` package as we no longer support any versions that would trigger this error.
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8990
+    resolvesIssue: false
+    description: >-
+      Startup probe has been enabled by default in Istio helm charts. 
+      See [Istio 1.20.0 release notes](https://istio.io/latest/news/releases/1.20.x/announcing-1.20/upgrade-notes/#startupprobe-added-to-sidecar-by-default)
+      for more information and halm values to revert the startup probe enablement.

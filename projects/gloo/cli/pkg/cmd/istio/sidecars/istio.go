@@ -5,10 +5,10 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func generateIstio16Sidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) *corev1.Container {
+// Sidecar for Istio 1.7.x releases, also works for Istio 1.8.x, 1.9.x and 1.10.x releases
+func generateIstioSidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) *corev1.Container {
 	sidecar := &corev1.Container{
 		Name:  "istio-proxy",
 		Image: "docker.io/istio/proxyv2:" + version,
@@ -19,8 +19,6 @@ func generateIstio16Sidecar(version, jwtPolicy string, istioMetaMeshID string, i
 			"$(POD_NAMESPACE).svc.cluster.local",
 			"--configPath",
 			"/etc/istio/proxy",
-			"--binaryPath",
-			"/usr/local/bin/envoy",
 			"--serviceCluster",
 			"istio-proxy-prometheus",
 			"--drainDuration",
@@ -31,18 +29,18 @@ func generateIstio16Sidecar(version, jwtPolicy string, istioMetaMeshID string, i
 			"--proxyComponentLogLevel=misc:error",
 			"--connectTimeout",
 			"10s",
-			"--proxyAdminPort",
-			"15000",
 			"--controlPlaneAuthPolicy",
 			"NONE",
 			"--dnsRefreshRate",
 			"300s",
-			"--statusPort",
-			"15021",
 			"--trust-domain=cluster.local",
 			"--controlPlaneBootstrap=false",
 		},
 		Env: []corev1.EnvVar{
+			{
+				Name:  "DISABLE_ENVOY",
+				Value: "true",
+			},
 			{
 				Name:  "OUTPUT_CERTS",
 				Value: "/etc/istio-certs",
@@ -131,20 +129,6 @@ func generateIstio16Sidecar(version, jwtPolicy string, istioMetaMeshID string, i
 			},
 		},
 		ImagePullPolicy: corev1.PullIfNotPresent,
-		ReadinessProbe: &corev1.Probe{
-			FailureThreshold: 30,
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path:   "/healthz/ready",
-					Port:   intstr.FromInt(15021),
-					Scheme: corev1.URISchemeHTTP,
-				},
-			},
-			InitialDelaySeconds: 1,
-			PeriodSeconds:       2,
-			SuccessThreshold:    1,
-			TimeoutSeconds:      1,
-		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "istiod-ca-cert",
