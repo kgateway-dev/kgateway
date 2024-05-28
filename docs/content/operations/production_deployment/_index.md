@@ -46,9 +46,18 @@ gloo:
 ## Performance tips
 
 ### Disable Kubernetes destinations
-Gloo Edge routes to upstreams by default, but it can alternatively be configured to bypass upstreams and route directly to Kubernetes destinations. Because routing to upstreams is the recommended configuration, you can disable the option to route to the Kubernetes destinations with the `settings.disableKubernetesDestinations: true` setting. This setting saves memory because the Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations.
+When you install Gloo Edge, the Settings resource is configured with `disableKubernetesDestinations: false` by default. This setting allows you to use both a Kubernetes service (`routeAction.single.kube`) or Upstream (`routeAction.single.upstream`) as a routing destination in your VirtualService. To enable routing to a Kubernetes service destination, Gloo Edge must scan all services in the cluster to create in-memory Upstream resources to represent them. Gloo Edge uses these in-memory resources to validate that the destination is valid and returns an error if the specified Kubernetes service cannot be found. 
 
-You can set this value in the default `Settings` CR by adding the following content:   
+The in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time. 
+
+In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true` in your Gloo Edge deployment. This setting decreases the size of the API snapshot and proxy, and improves translation and reciliation time in Gloo Edge. 
+
+{{% notice note %}}
+When setting `disableKubernetesDestinations: true`, Kubernetes service destinations (`routeAction.single.kube`) cannot be used as the in-memory Upstream resources that represent the Kubernetes service do not exist in your cluster. You must use Upstream destinations in your VirtualService instead (`routeAction.single.upstream`). 
+{{% /notice %}}
+
+
+You can set `disableKubernetesDestinations: true` in the default `Settings` CR by adding the following content:   
 ```yaml
 apiVersion: gloo.solo.io/v1
 kind: Settings
@@ -61,11 +70,23 @@ spec:
     ...
 ```
 
-You can set this value in your Helm overrides file by adding the following setting:
+You can set `disableKubernetesDestinations: true` in your Helm overrides file by adding the following setting:
 ```yaml
 settings:
   disableKubernetesDestinations: true
 ```
+
+In your VirtualService make sure to use Upstreams as your routing destination: 
+{{< highlight yaml "hl_lines=4-8" >}}
+routes:
+- matchers:
+   - prefix: /petstore
+  routeAction:
+    single:
+      upstream:
+        name: petstore
+        namespace: gloo-system
+{{< /highlight >}}
 
 
 ### Configure appropriate resource usage

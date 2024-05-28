@@ -30,16 +30,14 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    ```
       
 3. Create a `value-overrides.yaml` file with the following content:
-- To configure your gateway with an Istio sidecar, add the `istioIntegration` section and set `enableIstioSidecarOnGateway` option to `true`
-- Set `disableAutoInjection` to `true` in order to ensure Gloo components are not included in the Mesh
-- Set `global.istioSDS.enabled` to `true` to allow the Gateway Proxy to consume Istio certs despite not being in the Mesh 
+- Set `istioIntegration.disableAutoinjection` to `true` so that Istio does not automatically inject a sidecar to the gateway proxy pods. This way, Gloo can configure the sidecar.
+- Set `global.istioSDS.enabled` to `true` so that the Istio proxy is added to the gateway deployment. This way, the gateway proxy can use Istio certs despite not being in the mesh. Gloo uses a default sidecar configuration, which you can review in the [`gloo` project on GitHub](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/7-gateway-proxy-deployment.yaml). You can also use the `global.istioSDS.customSidecars[]` setting to provide your own sidecar configuration.
 - Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
   - The default Istio version is 1.17.1
    ```yaml
    global:
      istioIntegration:
-       enableIstioSidecarOnGateway: true
-       disableAutoInjection: true
+       disableAutoinjection: true
      istioSDS:
        enabled: true
      glooMtls:
@@ -63,7 +61,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    Although the `istioProxy` values are defined in the `glooMtls` block, the values are also used to configure `istioMtls`.
    {{% /notice %}}
    
-4. Install or upgrade Gloo Edge. 
+1. Install or upgrade Gloo Edge. 
    {{< tabs >}} 
    {{< tab name="Install Gloo Edge">}}
 
@@ -80,9 +78,9 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    {{< /tab >}}
    {{< /tabs >}}
 
-5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
+2. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
    
-6. Verify that your `gateway-proxy` pod now has three containers.
+3. Verify that your `gateway-proxy` pod now has three containers.
    ```shell
    kubectl get pods -n gloo-system
    ```
@@ -97,7 +95,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    gloo-resource-rollout-hhvf9      0/1     Completed   0          38s
    ```
     
-7. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running.
+4. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running.
    ```shell
    kubectl describe <gateway-pod-name> -n gloo-system
    ```
