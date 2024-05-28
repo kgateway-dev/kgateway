@@ -456,6 +456,11 @@ spec:
                                       minimum: 0
                                       nullable: true
                                       type: integer
+                                    metadata:
+                                      additionalProperties:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      type: object
                                     port:
                                       maximum: 4294967295
                                       minimum: 0
@@ -1486,6 +1491,11 @@ spec:
                           minimum: 0
                           nullable: true
                           type: integer
+                        metadata:
+                          additionalProperties:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: object
                         port:
                           maximum: 4294967295
                           minimum: 0

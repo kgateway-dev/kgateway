@@ -286,7 +286,7 @@ func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFitlers(params plugins.P
 
 	if len(upstreamHttpFilters) > 0 {
 		routerV3.UpstreamHttpFilters = sortedFilters
-		routerV3.UpstreamHttpFilters = append(routerV3.UpstreamHttpFilters, &envoyhttp.HttpFilter{
+		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
 			Name: "envoy.filters.http.upstream_codec",
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 				TypedConfig: &anypb.Any{

@@ -297,6 +297,14 @@ func getMetadata(spec *v1static.UpstreamSpec, in *v1static.Host) *envoy_config_c
 	if method := in.GetHealthCheckConfig().GetMethod(); method != "" {
 		setMetadataField(meta, MethodFieldName, method)
 	}
+	for k, v := range in.GetMetadata() {
+		// These keys cannot be overriden by user config for safety
+		if k == AdvancedHttpCheckerName || k == TransportSocketMatchKey {
+			continue
+		}
+		// Set the filter meta
+		meta.GetFilterMetadata()[k] = v
+	}
 	return meta
 }
 

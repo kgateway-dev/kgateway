@@ -13,6 +13,7 @@ weight: 5
 
 - [RetryBackOff](#retrybackoff)
 - [RetryPolicy](#retrypolicy)
+- [PreviousPriorities](#previouspriorities)
   
 
 
@@ -54,6 +55,7 @@ Retry Policy applied at the Route and/or Virtual Hosts levels.
 "numRetries": int
 "perTryTimeout": .google.protobuf.Duration
 "retryBackOff": .retries.options.gloo.solo.io.RetryBackOff
+"previousPriorities": .retries.options.gloo.solo.io.RetryPolicy.PreviousPriorities
 
 ```
 
@@ -63,6 +65,24 @@ Retry Policy applied at the Route and/or Virtual Hosts levels.
 | `numRetries` | `int` | Specifies the allowed number of retries. This parameter is optional and defaults to 1. These are the same conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on). |
 | `perTryTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies a non-zero upstream timeout per retry attempt. This parameter is optional. |
 | `retryBackOff` | [.retries.options.gloo.solo.io.RetryBackOff](../retries.proto.sk/#retrybackoff) | Specifies the retry policy interval. |
+| `previousPriorities` | [.retries.options.gloo.solo.io.RetryPolicy.PreviousPriorities](../retries.proto.sk/#previouspriorities) | Specifies the previous priorities See the envoy docs for more information on how this works: https://www.envoyproxy.io/docs/envoy/v1.30.1/api-v3/extensions/retry/priority/previous_priorities/v3/previous_priorities_config.proto#envoy-v3-api-file-envoy-extensions-retry-priority-previous-priorities-v3-previous-priorities-config-proto. |
+
+
+
+
+---
+### PreviousPriorities
+
+
+
+```yaml
+"updateFrequency": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `updateFrequency` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Specifies the update frequency for the previous priorities This option will only work when priorities are enabled, currently in gloo-edge this will only be in combnination with upstream failover. |
 
 
 

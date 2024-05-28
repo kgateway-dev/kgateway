@@ -1409,6 +1409,14 @@ spec:
                             type: integer
                           perTryTimeout:
                             type: string
+                          previousPriorities:
+                            properties:
+                              updateFrequency:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                            type: object
                           retryBackOff:
                             properties:
                               baseInterval:
@@ -4121,6 +4129,14 @@ spec:
                                   type: integer
                                 perTryTimeout:
                                   type: string
+                                previousPriorities:
+                                  properties:
+                                    updateFrequency:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                  type: object
                                 retryBackOff:
                                   properties:
                                     baseInterval:
