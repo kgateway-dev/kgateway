@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -51,11 +52,25 @@ func main() {
 		panic(err)
 	}
 
-	for _, requiredJobResult := range requiredJobResults {
+	failedJobs := getFailedJobsFromResults(requiredJobResults)
+	if len(failedJobs) > 0 {
+		sendFailure(failedJobs)
+	} else {
+		sendSuccess()
+	}
+}
+
+// getFailedJobsFromResults processes a set of job results,
+// and returns a list containing the names of any jobs that failed
+// If all jobs were successful, the returned list is empty
+func getFailedJobsFromResults(requiredJobResults map[string]GithubJobResult) []string {
+	var failedJobs []string
+
+	for jobName, requiredJobResult := range requiredJobResults {
 		switch requiredJobResult.Result {
 		case "failure":
-			sendFailure()
-			return
+			failedJobs = append(failedJobs, jobName)
+			continue
 
 		case "success":
 			continue
@@ -65,14 +80,15 @@ func main() {
 		}
 	}
 
-	sendSuccess()
+	return failedJobs
 }
 
 func sendSuccess() {
 	mustSendSlackText(":large_green_circle: <$PARENT_JOB_URL|$PREAMBLE> have all passed!")
 }
-func sendFailure() {
-	mustSendSlackText(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed some jobs")
+func sendFailure(failedJobs []string) {
+	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed some jobs: %s", strings.Join(failedJobs, ","))
+	mustSendSlackText(text)
 }
 
 func mustSendSlackText(text string) {
