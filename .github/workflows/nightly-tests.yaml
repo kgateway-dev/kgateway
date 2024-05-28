@@ -58,7 +58,7 @@ jobs:
         # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
         # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
         test:
-          - cluster-id: 'cluster_one'
+          - cluster-id: 'cluster-one'
             cluster-node-version: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31'
             kind-version: 'v0.20.0'
             kubectl-version: 'v1.28.4'
