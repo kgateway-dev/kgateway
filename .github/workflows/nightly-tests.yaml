@@ -81,6 +81,7 @@ jobs:
         id: dotenv
         with:
           path: ${{ matrix.version-files.file }}
+          log-variables: true
       - name: Prep Go Runner
         uses: ./.github/workflows/composite-actions/prep-go-runner
       # Set up the KinD cluster that the tests will use
@@ -115,6 +116,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # TODO:
+        #   As part of the end_to_end_tests_main job, we added support for importing versions from a .env file
+        #   We should extend the support/usage of those .env files to these other jobs.
+        #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
+        #   to limit the scope (and potentially unnecessary work) for now
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
         kube-version: [ { node: 'v1.24.15@sha256:7db4f8bea3e14b82d12e044e25e34bd53754b7f2b0e9d56df21774e6f66a70ab', kubectl: 'v1.24.17', kind: 'v0.20.0', helm: 'v3.12.2' },
                         { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' }]
