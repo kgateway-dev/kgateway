@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Remove contents of `.trivyignore` file to avoid confusion, as only the main branch `.trivyignore` file is used in security scans.
+      skipCI-kube-tests:true
