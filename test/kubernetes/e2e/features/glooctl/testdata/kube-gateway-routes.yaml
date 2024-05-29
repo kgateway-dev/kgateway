@@ -23,7 +23,7 @@ spec:
     - "example1.com"
   rules:
     - backendRefs:
-        - name: example-svc
+        - name: nginx-svc
           port: 8080
 ---
 kind: Gateway
@@ -51,5 +51,5 @@ spec:
     - "example2.com"
   rules:
     - backendRefs:
-        - name: example-svc
+        - name: nginx-svc
           port: 8080

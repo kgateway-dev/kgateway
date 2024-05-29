@@ -1,0 +1,214 @@
+package glooctl
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/ghodss/yaml"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
+	"github.com/onsi/gomega/types"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/stretchr/testify/suite"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+var (
+	yamlSeparator = regexp.MustCompile("\n---\n")
+)
+
+// getProxySuite contains the set of tests to validate the behavior of `glooctl get proxy`
+type getProxySuite struct {
+	suite.Suite
+
+	ctx              context.Context
+	testInstallation *e2e.TestInstallation
+}
+
+func NewGetProxySuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &getProxySuite{
+		ctx:              ctx,
+		testInstallation: testInst,
+	}
+}
+
+func (s *getProxySuite) TestGetProxy() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, kubeGatewaysManifestFile)
+		s.NoError(err, "can delete kube gateways manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, kubeGateway1, kubeRoute1, kubeGateway2, kubeRoute2)
+
+		ns := s.testInstallation.Metadata.InstallNamespace
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeGatewaysManifestFile, "-n", ns)
+		s.NoError(err, "can delete edge gateways manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, getEdgeGateway1(ns), getEdgeGateway2(ns))
+
+		// we are calling delete with retries here because there is some delay between Gateways being deleted and
+		// gloo picking up the updates in its input snapshot, causing VS deletion to fail in the meantime (gloo
+		// thinks there are still Gateways referencing the VS)
+		err = s.testInstallation.Actions.Kubectl().DeleteFileWithRetries(s.ctx, edgeRoutesManifestFile)
+		s.NoError(err, "can delete edge routes manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, edgeVs1, edgeVs2)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendManifestFile)
+		s.NoError(err, "can delete backend manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendManifestFile)
+	s.Require().NoError(err, "can apply backend manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeRoutesManifestFile)
+	s.Require().NoError(err, "can apply edge routes manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, edgeVs1, edgeVs2)
+
+	// edge gateways need to be applied in the write namespace for them to be picked up
+	ns := s.testInstallation.Metadata.InstallNamespace
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeGatewaysManifestFile, "-n", ns)
+	s.Require().NoError(err, "can apply edge gateways manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, getEdgeGateway1(ns), getEdgeGateway2(ns))
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, kubeGatewaysManifestFile)
+	s.Require().NoError(err, "can apply kube gateways manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, kubeGateway1, kubeRoute1, kubeGateway2, kubeRoute2)
+
+	// TODO come up with a better way to do this
+	// wait for a bit for translation to run and for the proxies to get created
+	time.Sleep(10 * time.Second)
+
+	outputTypeArgs := []string{"-o", "kube-yaml"}
+	for _, testCase := range getTestCases(s.testInstallation.Metadata.InstallNamespace) {
+		s.Run(testCase.name, func() {
+			output, err := s.testInstallation.Actions.Glooctl().GetProxy(s.ctx, slices.Concat(testCase.args, outputTypeArgs)...)
+			Expect(err).To(testCase.errorMatcher)
+			proxies, err := parseProxyOutput(output)
+			s.NoError(err)
+			Expect(proxies).To(testCase.proxiesMatcher)
+		})
+	}
+}
+
+type getProxyTestCase struct {
+	name           string
+	args           []string
+	errorMatcher   types.GomegaMatcher
+	proxiesMatcher types.GomegaMatcher
+}
+
+func getTestCases(installNamespace string) []getProxyTestCase {
+	return []getProxyTestCase{
+		{
+			// glooctl get proxy (no args) => should return error (defaults to gloo-system ns)
+			name:           "InvalidNamespace",
+			args:           []string{},
+			errorMatcher:   MatchError(ContainSubstring("Gloo installation namespace does not exist")),
+			proxiesMatcher: gstruct.Ignore(),
+		},
+		{
+			// glooctl get proxy -n <installNs> => should get all proxies
+			name:         "AllProxiesInNamespace",
+			args:         []string{"-n", installNamespace},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy2(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxyDefault(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getKubeProxy1(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getKubeProxy2(installNamespace))),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --name proxy1 => should get proxy with name
+			name:         "ProxyName",
+			args:         []string{"-n", installNamespace, "--name", "proxy1"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --name nonexistent => should return error
+			name:           "InvalidProxyName",
+			args:           []string{"-n", installNamespace, "--name", "nonexistent"},
+			errorMatcher:   MatchError(ContainSubstring(fmt.Sprintf("%s.%s does not exist", installNamespace, "nonexistent"))),
+			proxiesMatcher: gstruct.Ignore(),
+		},
+		{
+			// glooctl get proxy -n <installNs> --name proxy1 --kube => should ignore kube flag, and return proxy with name
+			// (even though it's an edge proxy)
+			name:         "ProxyNameIgnoreSelector",
+			args:         []string{"-n", installNamespace, "--name", "proxy1", "--kube"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --edge => should return only edge proxies
+			name:         "EdgeProxies",
+			args:         []string{"-n", installNamespace, "--edge"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy2(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxyDefault(installNamespace))),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --kube => should return only kube proxies
+			name:         "KubeProxies",
+			args:         []string{"-n", installNamespace, "--kube"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.ObjectMatches(toMatcherObj(getKubeProxy1(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getKubeProxy2(installNamespace))),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --edge --kube => should return both kube and edge proxies
+			name:         "EdgeAndKubeProxies",
+			args:         []string{"-n", installNamespace, "--edge", "--kube"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxy2(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getEdgeProxyDefault(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getKubeProxy1(installNamespace))),
+				matchers.ObjectMatches(toMatcherObj(getKubeProxy2(installNamespace))),
+			),
+		},
+	}
+}
+
+func toMatcherObj(obj client.Object) matchers.ExpectedObject {
+	return matchers.ExpectedObject{Name: obj.GetName(), Namespace: obj.GetNamespace()}
+}
+
+func parseProxyOutput(output string) ([]*gloov1.Proxy, error) {
+	var proxies []*gloov1.Proxy
+
+	// strip off any glooctl output before the apiVersion
+	start := strings.Index(output, "apiVersion:")
+	if start < 0 {
+		// there are no proxies
+		return proxies, nil
+	}
+	proxiesYaml := output[start:]
+	splitProxiesYaml := yamlSeparator.Split(proxiesYaml, -1)
+	for _, proxyYaml := range splitProxiesYaml {
+		proxy := &gloov1.Proxy{}
+		err := yaml.Unmarshal([]byte(proxyYaml), &proxy)
+		if err != nil {
+			return nil, err
+		}
+		proxies = append(proxies, proxy)
+	}
+	return proxies, nil
+}

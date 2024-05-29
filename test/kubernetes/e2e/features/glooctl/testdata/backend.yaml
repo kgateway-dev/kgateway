@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: example-svc
+  name: nginx-svc
 spec:
   selector:
     app.kubernetes.io/name: nginx
@@ -32,6 +32,6 @@ spec:
   kube:
     selector:
       app.kubernetes.io/name: nginx
-    serviceName: example-svc
+    serviceName: nginx-svc
     serviceNamespace: default
     servicePort: 8080
