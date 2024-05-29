@@ -60,11 +60,11 @@ func (p *proxyEndpointServer) GetProxies(ctx context.Context, req *debug.ProxyEn
 }
 
 func (p *proxyEndpointServer) getOne(ctx context.Context, namespace, name string) (*v1.Proxy, error) {
-	reader, err := p.mustProxyReader()
-	if err != nil {
-		return nil, err
+	if p.proxyReader == nil {
+		return nil, eris.Errorf("a ProxyReader must be registered before calling the proxy endpoint")
 	}
-	proxy, err := reader.Read(namespace, name, clients.ReadOpts{Ctx: ctx})
+
+	proxy, err := p.proxyReader.Read(namespace, name, clients.ReadOpts{Ctx: ctx})
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +72,8 @@ func (p *proxyEndpointServer) getOne(ctx context.Context, namespace, name string
 }
 
 func (p *proxyEndpointServer) getMany(ctx context.Context, namespace string, selector map[string]string, expressionSelector string) (v1.ProxyList, error) {
-	reader, err := p.mustProxyReader()
-	if err != nil {
-		return nil, err
+	if p.proxyReader == nil {
+		return nil, eris.Errorf("a ProxyReader must be registered before calling the proxy endpoint")
 	}
 
 	listOpts := clients.ListOpts{
@@ -85,17 +84,10 @@ func (p *proxyEndpointServer) getMany(ctx context.Context, namespace string, sel
 	} else if len(selector) > 0 {
 		listOpts.Selector = selector
 	}
-	proxyList, err := reader.List(namespace, listOpts)
+	proxyList, err := p.proxyReader.List(namespace, listOpts)
 	if err != nil {
 		return nil, err
 	}
 
 	return proxyList, nil
-}
-
-func (p *proxyEndpointServer) mustProxyReader() (v1.ProxyReader, error) {
-	if p.proxyReader != nil {
-		return p.proxyReader, nil
-	}
-	return nil, eris.Errorf("a ProxyReader must be registered before calling the proxy endpoint")
 }
