@@ -21,14 +21,14 @@ spec:
 {{- end -}}{{/* if $gg.service */}}
     envoyContainer:
       image:
-{{- toYaml $image | nindent 8 }}
+{{- include "gloo-gateway.gatewayParametersImage" $image | nindent 8 }}
     podTemplate:
       extraLabels:
 {{- include "gloo-gateway.constLabels" . | nindent 8 }}
     sdsContainer:
       image:
-{{- merge $gg.sdsContainer.image $image | toYaml | nindent 8 }}
-{{- if $gg.sdsContainer.securityContext -}}
+{{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.sdsContainer.securityContext }}
       securityContext:
 {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
 {{- end -}}{{/* if $gg.sdsContainer.securityContext */}}
@@ -36,7 +36,7 @@ spec:
       bootstrap:
         logLevel: {{ $gg.sdsContainer.logLevel }}
 {{- end -}}{{/* if $gg.sdsContainer.logLevel */}}
-{{- if $gg.sdsContainer.sdsResources -}}
+{{- if $gg.sdsContainer.sdsResources }}
       resources:
 {{- toYaml $gg.sdsContainer.dsResources | nindent 8 }}
 {{- end -}}{{/* if $gg.sdsContainer.sdsResources */}}
@@ -44,7 +44,7 @@ spec:
       enabled: {{ $gg.istioIntegration.enabled }}
       istioContainer:
         image:
-{{- merge $gg.istioIntegration.istioContainer.image $image | toYaml | nindent 10 }}
+{{- merge $gg.istioIntegration.istioContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
 {{- if $gg.istioIntegration.customSidecars }}
 {{ toYaml $gg.istioIntegration.customSidecars | indent 6}}
 {{- end }}{{/* if $gg.istioIntegration.customSidecars */}}
