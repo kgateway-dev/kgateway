@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: "Remove status from generated test resources"
