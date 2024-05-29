@@ -1187,6 +1187,7 @@ conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 # The minimum version to scan with trivy
+# ON_LTS_UPDATE - bump version
 MIN_SCANNED_VERSION ?= v1.13.0
 
 .PHONY: run-security-scans
