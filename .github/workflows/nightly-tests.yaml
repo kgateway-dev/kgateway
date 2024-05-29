@@ -51,7 +51,7 @@ on:
 
 jobs:
   end_to_end_tests_on_demand:
-    name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-id }}, version=${{ matrix.version-files.label }} )
+    name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'workflow_initiating_branch' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90
@@ -63,7 +63,7 @@ jobs:
         test:
           # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
           # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
-          - cluster-id: 'cluster-one'
+          - cluster-name: 'cluster-one'
             go-test-args: '-v -timeout=90m'
             go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
         # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
@@ -94,7 +94,7 @@ jobs:
         name: Setup KinD Cluster
         uses: ./.github/workflows/composite-actions/setup-kind-cluster
         with:
-          cluster-name: kind-${{ matrix.test.cluster-id }}
+          cluster-name: ${{ matrix.test.cluster-name }}
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
           kind-version: ${{ steps.dotenv.outputs.kind_version }}
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
@@ -104,12 +104,12 @@ jobs:
         name: Run Kubernetes e2e Tests
         uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
         with:
-          cluster-name: kind-${{ matrix.test.cluster-id }}
+          cluster-name: ${{ matrix.test.cluster-name }}
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
 
   end_to_end_tests_main:
-    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-id }}, version=${{ matrix.version-files.label }} )
+    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90
@@ -121,9 +121,9 @@ jobs:
         test:
           # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
           # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
-          - cluster-id: 'cluster-one'
+          - cluster-name: 'cluster-one'
             go-test-args: '-v -timeout=90m'
-            go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
+            go-test-run-regex: ""
         # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
         version-files:
@@ -151,7 +151,7 @@ jobs:
         name: Setup KinD Cluster
         uses: ./.github/workflows/composite-actions/setup-kind-cluster
         with:
-          cluster-name: kind-${{ matrix.test.cluster-id }}
+          cluster-name: ${{ matrix.test.cluster-name }}
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
           kind-version: ${{ steps.dotenv.outputs.kind_version }}
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
@@ -161,7 +161,7 @@ jobs:
         name: Run Kubernetes e2e Tests
         uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
         with:
-          cluster-name: kind-${{ matrix.test.cluster-id }}
+          cluster-name: ${{ matrix.test.cluster-name }}
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
 
@@ -326,6 +326,9 @@ jobs:
       - performance_tests_15
       - performance_tests_16
       - kube_gateway_api_conformance_tests_main
+      - end_to_end_tests_on_demand
+      - regression_tests_on_demand
+      - performance_tests_on_demand
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
