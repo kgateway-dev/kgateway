@@ -73,7 +73,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetRegistry().GetValue()).To(Equal("quay.io/solo-io"))
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository().GetValue()).To(Equal("gloo-envoy-wrapper"))
-				Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag().GetValue()).To(Equal("1.0.1-dev"))
+				Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag().GetValue()).To(Equal(version))
 
 				Expect(gwpKube.GetIstio().GetEnabled().GetValue()).To(BeFalse())
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
