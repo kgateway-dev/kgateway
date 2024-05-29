@@ -2,6 +2,7 @@ package deployer
 
 import (
 	kubecorev1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 )
@@ -393,30 +394,20 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 
 	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
 
-	// Do not allow per-gateway overrides of these values if they are set in the default
-	// GatewayParameters populated by helm values
-	dstIstioDiscoveryAddress := dst.GetIstioContainer().GetIstioDiscoveryAddress()
-	srcIstioDiscoveryAddress := src.GetIstioContainer().GetIstioDiscoveryAddress()
-	if dstIstioDiscoveryAddress == nil {
-		// Doesn't matter if we're overriding empty with empty
-		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
-	}
-
-	dstIstioMetaMeshId := dst.GetIstioContainer().GetIstioMetaMeshId()
-	srcIstioMetaMeshId := src.GetIstioContainer().GetIstioMetaMeshId()
-	if dstIstioMetaMeshId == nil {
-		// Doesn't matter if we're overriding empty with empty
-		dstIstioMetaMeshId = srcIstioMetaMeshId
-	}
-
-	dstIstioMetaClusterId := dst.GetIstioContainer().GetIstioMetaClusterId()
-	srcIstioMetaClusterId := src.GetIstioContainer().GetIstioMetaClusterId()
-	if dstIstioMetaClusterId == nil {
-		// Doesn't matter if we're overriding empty with empty
-		dstIstioMetaClusterId = srcIstioMetaClusterId
-	}
+	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
 
 	return dst
+}
+
+// mergeCustomSidecars will decide whether to use dst or src custom sidecar containers
+func mergeCustomSidecars(dst, src []*v1.Container) []*v1.Container {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	// given non-nil src override, use that instead
+	return src
 }
 func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioContainer {
 	// nil src override means just use dst
@@ -434,6 +425,29 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 
 	if logLevel := src.GetLogLevel(); logLevel != nil {
 		dst.LogLevel = logLevel
+	}
+
+	// Do not allow per-gateway overrides of these values if they are set in the default
+	// GatewayParameters populated by helm values
+	dstIstioDiscoveryAddress := dst.GetIstioDiscoveryAddress()
+	srcIstioDiscoveryAddress := src.GetIstioDiscoveryAddress()
+	if dstIstioDiscoveryAddress == nil {
+		// Doesn't matter if we're overriding empty with empty
+		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
+	}
+
+	dstIstioMetaMeshId := dst.GetIstioMetaMeshId()
+	srcIstioMetaMeshId := src.GetIstioMetaMeshId()
+	if dstIstioMetaMeshId == nil {
+		// Doesn't matter if we're overriding empty with empty
+		dstIstioMetaMeshId = srcIstioMetaMeshId
+	}
+
+	dstIstioMetaClusterId := dst.GetIstioMetaClusterId()
+	srcIstioMetaClusterId := src.GetIstioMetaClusterId()
+	if dstIstioMetaClusterId == nil {
+		// Doesn't matter if we're overriding empty with empty
+		dstIstioMetaClusterId = srcIstioMetaClusterId
 	}
 
 	return dst

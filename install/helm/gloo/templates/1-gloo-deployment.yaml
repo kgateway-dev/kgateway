@@ -239,7 +239,7 @@ spec:
           - name: LOG_LEVEL
             value: {{ .Values.gloo.logLevel }}
         {{- end}}
-        {{- if .Values.global.istioSDS.enabled }}
+        {{- if or .Values.global.istioSDS.enabled .Values.kubeGateway.gatewayParameters.glooGateway.istioIntegration.enabled }}
           - name: GG_EXPERIMENTAL_ISTIO_MTLS_SDS_ENABLED
             value: "true"
         {{- end}}

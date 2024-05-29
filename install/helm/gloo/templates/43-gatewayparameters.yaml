@@ -27,7 +27,7 @@ spec:
 {{- include "gloo-gateway.constLabels" . | nindent 8 }}
     sdsContainer:
       image:
-{{- merge $gg.sdsContainer.image $global.image | toYaml | nindent 8 }}
+{{- merge $gg.sdsContainer.image $image | toYaml | nindent 8 }}
 {{- if $gg.sdsContainer.securityContext -}}
       securityContext:
 {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
@@ -44,7 +44,7 @@ spec:
       enabled: {{ $gg.istioIntegration.enabled }}
       istioContainer:
         image:
-{{- merge $gg.istioIntegration.istioContainer.image $global.image | toYaml | nindent 10 }}
+{{- merge $gg.istioIntegration.istioContainer.image $image | toYaml | nindent 10 }}
 {{- if $gg.istioIntegration.customSidecars }}
 {{ toYaml $gg.istioIntegration.customSidecars | indent 6}}
 {{- end }}{{/* if $gg.istioIntegration.customSidecars */}}
@@ -56,9 +56,9 @@ spec:
 {{- if $gg.istioIntegration.istioContainer.logLevel }}
         logLevel: {{ $gg.istioIntegration.istioContainer.logLevel }}
 {{- end -}}{{/* if $gg.istioIntegration.istioContainer.logLevel */}}
-      istioDiscoveryAddress: {{ $gg.istioIntegration.istioContainer.istioDiscoveryAddress }}
-      istioMetaMeshId: {{ $gg.istioIntegration.istioContainer.istioMetaMeshId }}
-      istioMetaClusterId: {{ $gg.istioIntegration.istioContainer.istioMetaClusterId }}
+        istioDiscoveryAddress: {{ $gg.istioIntegration.istioContainer.istioDiscoveryAddress }}
+        istioMetaMeshId: {{ $gg.istioIntegration.istioContainer.istioMetaMeshId }}
+        istioMetaClusterId: {{ $gg.istioIntegration.istioContainer.istioMetaClusterId }}
 {{- end -}}{{/* and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars)  */}}
 {{- end -}}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
 {{- end -}}{{/* if .Values.kubeGateway.gatewayParameters */}}

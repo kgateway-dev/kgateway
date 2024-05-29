@@ -27,6 +27,9 @@ kubeGateway:
             registry: docker.io/istio
             tag: 1.21.2
           logLevel: warning
+          discoveryAddress: istiod.istio-system.svc:15012
+          istioMetaMeshId: cluster.local
+          istioMetaClusterId: Kubernetes
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
