@@ -56,7 +56,7 @@ jobs:
         # /test/kubernetes/e2e/load_balancing_tests.md
         test:
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster_one'
+        - cluster-id: 'cluster-one'
           cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
           kubectl-version: 'v1.29.2'
@@ -65,7 +65,7 @@ jobs:
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster_two'
+        - cluster-id: 'cluster-two'
           cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
           kubectl-version: 'v1.29.2'
@@ -74,7 +74,7 @@ jobs:
           go-test-run-regex: '^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster_three'
+        - cluster-id: 'cluster-three'
           cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
           kubectl-version: 'v1.29.2'
@@ -83,7 +83,7 @@ jobs:
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$)'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster_four'
+        - cluster-id: 'cluster-four'
           cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
           kind-version: 'v0.20.0'
           kubectl-version: 'v1.29.2'
@@ -105,7 +105,7 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
-        cluster-name: kind
+        cluster-name: kind-${{ matrix.test.cluster-id }}
         kind-node-version: ${{ matrix.test.cluster-node-version }}
         kind-version: ${{ matrix.test.kind-version }}
         kubectl-version: ${{ matrix.test.kubectl-version }}
@@ -114,13 +114,6 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
       with:
-        cluster-name: kind
+        cluster-name: kind-${{ matrix.test.cluster-id }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
-        cluster-id: ${{ matrix.test.cluster-id }}
-    - name: Archive bug report directory on failure
-      if: ${{ failure() }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: bug-report
-        path: ./_test/bug_report/${{ matrix.test.cluster-id }}
