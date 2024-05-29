@@ -150,7 +150,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
-		contextutils.LoggerFrom(ctx).Debugf("resynced %d proxies in %v", len(proxies), time.Since(startTime))
+		contextutils.LoggerFrom(ctx).Debugf("translated and wrote %d proxies in %v", len(proxies), time.Since(startTime))
 	}
 
 	for {
