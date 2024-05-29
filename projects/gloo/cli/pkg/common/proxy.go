@@ -67,14 +67,12 @@ func computeProxyEndpointPort(settings *gloov1.Settings) (string, error) {
 
 // this is only called by GetProxies which is called by `glooctl get proxy`
 func getProxiesFromControlPlane(opts *options.Options, name string, proxyEndpointPort string, writeNamespace string) (gloov1.ProxyList, error) {
-	selector, expressionSelector := getSelectorFromOpts(opts.Get.Proxy)
 	proxyRequest := &debug.ProxyEndpointRequest{
 		Name: name,
 		// It is important that we use the writeNamespace (aka discoveryNamespace from Settings CR) here, as opposed to the opts.Metadata.Namespace.
 		// The former is where Proxies will be searched, the latter is where Gloo is installed
 		Namespace:          writeNamespace,
-		Selector:           selector,
-		ExpressionSelector: expressionSelector,
+		ExpressionSelector: getSelectorFromOpts(opts.Get.Proxy),
 	}
 
 	return requestProxiesFromControlPlane(opts, proxyRequest, proxyEndpointPort)
@@ -91,29 +89,20 @@ func listProxiesFromControlPlane(opts *options.Options, namespace, proxyEndpoint
 	return requestProxiesFromControlPlane(opts, proxyRequest, proxyEndpointPort)
 }
 
-// getSelectorFromOpts returns either an equality-based selector (map[string]string) or set-based selector (string),
-// based on the filtering specified by the GetProxy options. If no filtering is specified, then both the returned
-// selectors will be empty.
-func getSelectorFromOpts(opts options.GetProxy) (map[string]string, string) {
-	selector := map[string]string{}
-	expressionSelector := ""
-
-	edge := opts.EdgeGatewaySource
-	kube := opts.K8sGatewaySource
-	if edge && kube {
-		// edge && kube => return only edge and kube
-		// this needs to be done as an expression selector since it needs to be an OR between the 2 proxy types
-		expressionSelector = utils.GetTranslatorSelectorExpression(utils.GlooEdgeProxyValue, utils.GatewayApiProxyValue)
-	} else if edge {
-		// edge && !kube => return only edge
-		selector[utils.ProxyTypeKey] = utils.GlooEdgeProxyValue
-	} else if kube {
-		// !edge && kube => return only kube
-		selector[utils.ProxyTypeKey] = utils.GatewayApiProxyValue
-	} else {
-		// !edge && !kube => return all, including non-edge/kube (no selector)
+// getSelectorFromOpts returns a set-based selector based on the filtering specified by the GetProxy options.
+// If no filtering is specified, the selector will be empty.
+func getSelectorFromOpts(opts options.GetProxy) string {
+	var translators []string
+	if opts.EdgeGatewaySource {
+		translators = append(translators, utils.GlooEdgeProxyValue)
 	}
-	return selector, expressionSelector
+	if opts.K8sGatewaySource {
+		translators = append(translators, utils.GatewayApiProxyValue)
+	}
+	if len(translators) > 0 {
+		return utils.GetTranslatorSelectorExpression(translators...)
+	}
+	return ""
 }
 
 // requestProxiesFromControlPlane executes a gRPC request against the Control Plane (Gloo) against a given port (proxyEndpointPort).
