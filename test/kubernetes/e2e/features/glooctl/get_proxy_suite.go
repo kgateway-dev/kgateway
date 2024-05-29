@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
@@ -52,7 +53,12 @@ func (s *getProxySuite) TestGetProxy() {
 		// we are calling delete with retries here because there is some delay between Gateways being deleted and
 		// gloo picking up the updates in its input snapshot, causing VS deletion to fail in the meantime (gloo
 		// thinks there are still Gateways referencing the VS)
-		err = s.testInstallation.Actions.Kubectl().DeleteFileWithRetries(s.ctx, edgeRoutesManifestFile)
+		err = retry.Do(func() error {
+			return s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeRoutesManifestFile)
+		},
+			retry.Delay(1*time.Second),
+			retry.DelayType(retry.BackOffDelay),
+			retry.Attempts(8))
 		s.NoError(err, "can delete edge routes manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, edgeVs1, edgeVs2)
 

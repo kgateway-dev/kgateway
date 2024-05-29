@@ -125,17 +125,6 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 	return err
 }
 
-// DeleteFileWithRetries deletes the resources defined in a file, and returns an error if one occurred.
-// It will retry up to 8 times with backoff delay.
-func (c *Cli) DeleteFileWithRetries(ctx context.Context, fileName string, extraArgs ...string) error {
-	return retry.Do(func() error {
-		return c.DeleteFile(ctx, fileName, extraArgs...)
-	},
-		retry.Delay(1*time.Second),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(8))
-}
-
 // DeleteFileWithOutput deletes the resources defined in a file,
 // if an error occurred, it will be returned along with the output of the command
 func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
