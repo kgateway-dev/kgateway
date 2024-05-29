@@ -41,6 +41,19 @@ func (p *Provider) EventuallyObjectsNotExist(ctx context.Context, objects ...cli
 	}
 }
 
+func (p *Provider) ConsistentlyObjectsNotExist(ctx context.Context, objects ...client.Object) {
+	for _, o := range objects {
+		p.Gomega.Consistently(ctx, func(innerG Gomega) {
+			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
+			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object %s %s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String())
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second*10).
+			WithPolling(time.Second*1).
+			Should(Succeed(), fmt.Sprintf("object %s %s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String()))
+	}
+}
+
 func (p *Provider) ExpectNamespaceNotExist(ctx context.Context, ns string) {
 	_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
 	p.Gomega.Expect(apierrors.IsNotFound(err)).To(BeTrue(), fmt.Sprintf("namespace %s should not be found in cluster", ns))
