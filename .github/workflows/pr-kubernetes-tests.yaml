@@ -108,6 +108,7 @@ jobs:
         kind-version: ${{ steps.dotenv.outputs.kind_version }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         helm-version: ${{ steps.dotenv.outputs.helm_version }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
     - id: run-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
