@@ -54,14 +54,14 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION USE_SILENCE_REDIRECTS=true make build-test-chart
+  VERSION=$VERSION make build-test-chart
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-USE_SILENCE_REDIRECTS=true make -s build-cli-local
+make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml

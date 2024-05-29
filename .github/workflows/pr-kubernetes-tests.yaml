@@ -42,7 +42,7 @@ jobs:
         fi
 
   end_to_end_tests:
-    name: End-to-End (${{ matrix.test.cluster-id }})
+    name: End-to-End (${{ matrix.test.cluster-name }})
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -56,40 +56,29 @@ jobs:
         # /test/kubernetes/e2e/load_balancing_tests.md
         test:
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster-one'
-          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
-          kind-version: 'v0.20.0'
-          kubectl-version: 'v1.29.2'
-          helm-version: 'v3.14.4'
+        - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster-two'
-          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
-          kind-version: 'v0.20.0'
-          kubectl-version: 'v1.29.2'
-          helm-version: 'v3.14.4'
+        - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster-three'
-          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
-          kind-version: 'v0.20.0'
-          kubectl-version: 'v1.29.2'
-          helm-version: 'v3.14.4'
+        - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$)'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        - cluster-id: 'cluster-four'
-          cluster-node-version: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
-          kind-version: 'v0.20.0'
-          kubectl-version: 'v1.29.2'
-          helm-version: 'v3.14.4'
+        - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
+
+        # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
+        # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
+        version-files:
+          - file: './.github/workflows/.env/pr-tests/versions.env'
 
     steps:
     - id: auto-succeed-tests
@@ -100,20 +89,29 @@ jobs:
     - name: Prep Go Runner
       uses: ./.github/workflows/composite-actions/prep-go-runner
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+    # The dotenv action is used to load key-value pairs from files.
+    # In this case, the file is specified in the matrix and will contain the versions of the tools to use
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.2
+      if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
+      id: dotenv
+      with:
+        path: ${{ matrix.version-files.file }}
+        log-variables: true
     - id: setup-kind-cluster
       name: Setup KinD Cluster
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/setup-kind-cluster
       with:
-        cluster-name: kind-${{ matrix.test.cluster-id }}
-        kind-node-version: ${{ matrix.test.cluster-node-version }}
-        kind-version: ${{ matrix.test.kind-version }}
-        kubectl-version: ${{ matrix.test.kubectl-version }}
-        helm-version: ${{ matrix.test.helm-version }}
+        cluster-name: ${{ matrix.test.cluster-name }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        kind-version: ${{ steps.dotenv.outputs.kind_version }}
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        helm-version: ${{ steps.dotenv.outputs.helm_version }}
     - id: run-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
       with:
-        cluster-name: kind-${{ matrix.test.cluster-id }}
+        cluster-name: ${{ matrix.test.cluster-name }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
