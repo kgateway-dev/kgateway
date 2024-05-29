@@ -27,7 +27,7 @@ runs:
       with:
         install_only: true
         version: ${{ inputs.kind-version }}
-    - uses: azure/setup-kubectl@v3
+    - uses: azure/setup-kubectl@v4
       id: kubectl
       with:
         version: ${{ inputs.kubectl-version }}

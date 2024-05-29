@@ -12,7 +12,7 @@ runs:
     with:
       install_only: true
       version: ${{ matrix.kube-version.kind }}
-  - uses: azure/setup-kubectl@v3
+  - uses: azure/setup-kubectl@v4
     id: kubectl
     with:
       version: ${{ matrix.kube-version.kubectl }}
