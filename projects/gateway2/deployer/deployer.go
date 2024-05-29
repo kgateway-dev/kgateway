@@ -246,7 +246,7 @@ func (d *Deployer) getGatewayClassFromGateway(ctx context.Context, gw *api.Gatew
 	return gwc, nil
 }
 
-func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig, error) {
+func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*helmConfig, error) {
 	// construct the default values
 	vals := &helmConfig{
 		Gateway: &helmGateway{
@@ -263,20 +263,15 @@ func (d *Deployer) getValues(ctx context.Context, gw *api.Gateway) (*helmConfig,
 		},
 	}
 
-	// check if there is a GatewayParameters associated with this Gateway
-	gwp, err := d.getGatewayParametersForGateway(ctx, gw)
-	if err != nil {
-		return nil, err
-	}
 	// if there is no GatewayParameters, return the values as is
-	if gwp == nil {
+	if gwParam == nil {
 		return vals, nil
 	}
 
 	// extract all the custom values from the GatewayParameters
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
-	kubeProxyConfig := gwp.Spec.GetKube()
+	kubeProxyConfig := gwParam.Spec.GetKube()
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
@@ -350,9 +345,18 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 }
 
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
+	gwParam, err := d.getGatewayParametersForGateway(ctx, gw)
+	if err != nil {
+		return nil, err
+	}
+	// If this is a self-managed Gateway, skip gateway auto provisioning
+	if gwParam != nil && gwParam.Spec.GetSelfManaged() != nil {
+		return nil, nil
+	}
+
 	logger := log.FromContext(ctx)
 
-	vals, err := d.getValues(ctx, gw)
+	vals, err := d.getValues(gw, gwParam)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get values to render objects for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
@@ -434,7 +438,6 @@ func loadFs(filesystem fs.FS) (*chart.Chart, error) {
 		bufferedFiles = append(bufferedFiles, bufferedFile)
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

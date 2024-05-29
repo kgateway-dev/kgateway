@@ -63,6 +63,21 @@ func (m *GatewayParametersSpec) Equal(that interface{}) bool {
 			}
 		}
 
+	case *GatewayParametersSpec_SelfManaged:
+		if _, ok := target.EnvironmentType.(*GatewayParametersSpec_SelfManaged); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSelfManaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSelfManaged()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSelfManaged(), target.GetSelfManaged()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.EnvironmentType != target.EnvironmentType {
