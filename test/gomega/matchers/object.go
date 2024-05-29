@@ -1,53 +1,18 @@
 package matchers
 
 import (
-	"fmt"
-
+	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ExpectedObject is a struct that represents the expected object.
-type ExpectedObject struct {
-	// Name is the object name.
-	Name string
-
-	// Namespace is the object namespace.
-	Namespace string
-}
-
-// ObjectMatches returns a GomegaMatcher that checks whether an object matches
-// the specified fields (currently only name and namespace).
-func ObjectMatches(object ExpectedObject) types.GomegaMatcher {
-	return &objectMatcher{expectedObject: object}
-}
-
-type objectMatcher struct {
-	expectedObject ExpectedObject
-}
-
-func (m *objectMatcher) Match(actual interface{}) (bool, error) {
-	object, ok := actual.(client.Object)
-	if !ok {
-		return false, fmt.Errorf("expected a client.Object, got %T", actual)
-	}
-
-	return object.GetName() == m.expectedObject.Name &&
-		object.GetNamespace() == m.expectedObject.Namespace, nil
-}
-
-func (m *objectMatcher) FailureMessage(actual interface{}) string {
-	object := actual.(client.Object)
-
-	return fmt.Sprintf("expected: %s.%s\nto match: %s.%s",
-		m.expectedObject.Namespace, m.expectedObject.Name,
-		object.GetNamespace(), object.GetName())
-}
-
-func (m *objectMatcher) NegatedFailureMessage(actual interface{}) string {
-	object := actual.(client.Object)
-
-	return fmt.Sprintf("expected: %s.%s\nnot to match: %s.%s",
-		m.expectedObject.Namespace, m.expectedObject.Name,
-		object.GetNamespace(), object.GetName())
+// HaveNameAndNamespace returns a matcher that will match a client.Object
+// with the given name and namespace
+func HaveNameAndNamespace(name string, namespace string) types.GomegaMatcher {
+	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+		"ObjectMeta": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"Name":      gomega.Equal(name),
+			"Namespace": gomega.Equal(namespace),
+		}),
+	})
 }

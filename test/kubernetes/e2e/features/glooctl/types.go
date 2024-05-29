@@ -96,50 +96,16 @@ var (
 		},
 	}
 
-	// expected edge proxies (these should be created in Gloo Gateway's write namespace,
-	// which defaults to the install namespace)
-	getEdgeProxy1 = func(ns string) *gloov1.Proxy {
-		return &gloov1.Proxy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "proxy1",
-				Namespace: ns,
-			},
-		}
-	}
-	getEdgeProxy2 = func(ns string) *gloov1.Proxy {
-		return &gloov1.Proxy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "proxy2",
-				Namespace: ns,
-			},
-		}
-	}
-	// this is the proxy associated with the default Gateways
-	getEdgeProxyDefault = func(ns string) *gloov1.Proxy {
-		return &gloov1.Proxy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "gateway-proxy",
-				Namespace: ns,
-			},
-		}
-	}
+	// all proxies should be created in Gloo Gateway's write namespace, which
+	// defaults to the install namespace
 
-	// expected kube proxies (these should be created in Gloo Gateway's write namespace,
-	// which defaults to the install namespace)
-	getKubeProxy1 = func(ns string) *gloov1.Proxy {
-		return &gloov1.Proxy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "default-gw1",
-				Namespace: ns,
-			},
-		}
-	}
-	getKubeProxy2 = func(ns string) *gloov1.Proxy {
-		return &gloov1.Proxy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "default-gw2",
-				Namespace: ns,
-			},
-		}
-	}
+	// expected edge proxies
+	edgeProxy1Name = "proxy1"
+	edgeProxy2Name = "proxy2"
+	// this is the proxy associated with the default Gateways
+	edgeDefaultProxyName = "gateway-proxy"
+
+	// expected kube proxies
+	kubeProxy1Name = "default-gw1"
+	kubeProxy2Name = "default-gw2"
 )

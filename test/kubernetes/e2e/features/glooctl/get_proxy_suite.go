@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -56,6 +55,7 @@ func (s *getProxySuite) TestGetProxy() {
 		err = retry.Do(func() error {
 			return s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeRoutesManifestFile)
 		},
+			retry.LastErrorOnly(true),
 			retry.Delay(1*time.Second),
 			retry.DelayType(retry.BackOffDelay),
 			retry.Attempts(8))
@@ -123,11 +123,11 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 			args:         []string{"-n", installNamespace},
 			errorMatcher: BeNil(),
 			proxiesMatcher: ConsistOf(
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy2(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxyDefault(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getKubeProxy1(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getKubeProxy2(installNamespace))),
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
+				matchers.HaveNameAndNamespace(kubeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(kubeProxy2Name, installNamespace),
 			),
 		},
 		{
@@ -136,7 +136,7 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 			args:         []string{"-n", installNamespace, "--name", "proxy1"},
 			errorMatcher: BeNil(),
 			proxiesMatcher: ConsistOf(
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
 			),
 		},
 		{
@@ -153,7 +153,7 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 			args:         []string{"-n", installNamespace, "--name", "proxy1", "--kube"},
 			errorMatcher: BeNil(),
 			proxiesMatcher: ConsistOf(
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
 			),
 		},
 		{
@@ -162,9 +162,9 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 			args:         []string{"-n", installNamespace, "--edge"},
 			errorMatcher: BeNil(),
 			proxiesMatcher: ConsistOf(
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy2(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxyDefault(installNamespace))),
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
 			),
 		},
 		{
@@ -173,8 +173,8 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 			args:         []string{"-n", installNamespace, "--kube"},
 			errorMatcher: BeNil(),
 			proxiesMatcher: ConsistOf(
-				matchers.ObjectMatches(toMatcherObj(getKubeProxy1(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getKubeProxy2(installNamespace))),
+				matchers.HaveNameAndNamespace(kubeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(kubeProxy2Name, installNamespace),
 			),
 		},
 		{
@@ -183,22 +183,18 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 			args:         []string{"-n", installNamespace, "--edge", "--kube"},
 			errorMatcher: BeNil(),
 			proxiesMatcher: ConsistOf(
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy1(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxy2(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getEdgeProxyDefault(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getKubeProxy1(installNamespace))),
-				matchers.ObjectMatches(toMatcherObj(getKubeProxy2(installNamespace))),
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
+				matchers.HaveNameAndNamespace(kubeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(kubeProxy2Name, installNamespace),
 			),
 		},
 	}
 }
 
-func toMatcherObj(obj client.Object) matchers.ExpectedObject {
-	return matchers.ExpectedObject{Name: obj.GetName(), Namespace: obj.GetNamespace()}
-}
-
-func parseProxyOutput(output string) ([]*gloov1.Proxy, error) {
-	var proxies []*gloov1.Proxy
+func parseProxyOutput(output string) ([]gloov1.Proxy, error) {
+	var proxies []gloov1.Proxy
 
 	// strip off any glooctl output before the apiVersion
 	start := strings.Index(output, "apiVersion:")
@@ -214,7 +210,7 @@ func parseProxyOutput(output string) ([]*gloov1.Proxy, error) {
 		if err != nil {
 			return nil, err
 		}
-		proxies = append(proxies, proxy)
+		proxies = append(proxies, *proxy)
 	}
 	return proxies, nil
 }
