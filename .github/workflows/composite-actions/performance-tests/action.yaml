@@ -7,7 +7,7 @@ runs:
   - name: Testing - performance tests
     shell: bash
     run: make install-test-tools run-performance-tests
-  - uses: actions/upload-artifact@v3
+  - uses: actions/upload-artifact@v4
     if: ${{ failure() }}
     with:
       name: performance-dump
