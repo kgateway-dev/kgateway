@@ -15,6 +15,9 @@ inputs:
     # In the future, it would be preferable to accept this as a list of strings
     # and to then build the regex from that list
     description: The regex passed to the test invocation with the -run flag
+  istio-version:
+    required: true
+    description: The version of Istio to use
 
 runs:
   using: "composite"
@@ -27,6 +30,7 @@ runs:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       TEST_PKG: ./test/kubernetes/e2e/tests
+      ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
     run: make go-test
   - name: Archive bug report directory on failure
