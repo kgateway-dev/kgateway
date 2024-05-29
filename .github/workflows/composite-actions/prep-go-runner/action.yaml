@@ -35,7 +35,7 @@ runs:
         df -h
     - name: Set up Go
       id: setup-go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         # https://github.com/actions/setup-go/blob/main/action.yml
         go-version-file: ${{ inputs.working-directory }}/go.mod

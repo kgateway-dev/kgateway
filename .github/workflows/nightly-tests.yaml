@@ -353,7 +353,7 @@ jobs:
           preamble="$trigger ($branch)"
           echo "Setting PREAMBLE as $preamble"
           echo "preamble=$preamble" >> $GITHUB_OUTPUT
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           # Caching in setup-go is on by default
           # In our prep-go-runner we use a more configurable cache https://github.com/actions/cache
