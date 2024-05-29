@@ -3175,6 +3175,7 @@ type GlooOptions_IstioOptions struct {
 
 	// Set to false to disable adding X-Forwarded-Host header in Istio integration
 	// Defaults to true
+	// Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy.
 	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,1,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
 	// Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect.
 	// Defaults to false
