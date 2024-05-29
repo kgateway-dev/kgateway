@@ -20,7 +20,7 @@ jobs:
       should-auto-succeed-kube-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.11.0
+      uses: styfle/cancel-workflow-action@0.12.1
       with:
         access_token: ${{ github.token }}
     - id: checkout-code
