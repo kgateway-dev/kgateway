@@ -365,34 +365,21 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetIstioDiscoveryAddress()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioDiscoveryAddress()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetIstioDiscoveryAddress(), target.GetIstioDiscoveryAddress()) {
-			return false
-		}
+	if len(m.GetCustomSidecars()) != len(target.GetCustomSidecars()) {
+		return false
 	}
+	for idx, v := range m.GetCustomSidecars() {
 
-	if h, ok := interface{}(m.GetIstioMetaMeshId()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioMetaMeshId()) {
-			return false
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCustomSidecars()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetCustomSidecars()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetIstioMetaMeshId(), target.GetIstioMetaMeshId()) {
-			return false
-		}
-	}
 
-	if h, ok := interface{}(m.GetIstioMetaClusterId()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioMetaClusterId()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetIstioMetaClusterId(), target.GetIstioMetaClusterId()) {
-			return false
-		}
 	}
 
 	return true
@@ -553,6 +540,36 @@ func (m *IstioContainer) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetLogLevel(), target.GetLogLevel()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioDiscoveryAddress()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioDiscoveryAddress()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioDiscoveryAddress(), target.GetIstioDiscoveryAddress()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioMetaMeshId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioMetaMeshId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioMetaMeshId(), target.GetIstioMetaMeshId()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIstioMetaClusterId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioMetaClusterId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioMetaClusterId(), target.GetIstioMetaClusterId()) {
 			return false
 		}
 	}

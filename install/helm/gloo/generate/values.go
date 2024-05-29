@@ -28,9 +28,9 @@ type Global struct {
 	Image                *Image                `json:"image,omitempty"`
 	Extensions           interface{}           `json:"extensions,omitempty"`
 	GlooRbac             *Rbac                 `json:"glooRbac,omitempty"`
-	GlooStats            Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
-	GlooMtls             Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
-	IstioSDS             IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	GlooStats            Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments."`
+	GlooMtls             Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication. For k8s Gateway API, use kubeGateway.GlooMtls."`
+	IstioSDS             IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS. For k8s Gateway API, use kubeGateway.IstioIntegration."`
 	IstioIntegration     IstioIntegration      `json:"istioIntegration,omitempty" desc:"Configs used to manage Gloo pod visibility for Istio's automatic discovery and sidecar injection."`
 	ExtraSpecs           *bool                 `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	ExtauthCustomYaml    *bool                 `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
@@ -317,9 +317,18 @@ type GatewayParametersForGatewayClasses struct {
 }
 
 type GatewayParameters struct {
-	Image           *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
-	ProxyDeployment *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
-	Service         *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	Image            *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
+	ProxyDeployment  *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service          *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	SdsContaienr     SdsContainer           `json:"sds,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
+	IstioIntegration Istio                  `json:"istioIntegration,omitempty" desc:"Configs used to manage Istio integration."`
+	// TODO(npolshak): Add support for GlooMtls
+}
+
+type Istio struct {
+	Enabled             *bool               `json:"enabled,omitempty" desc:"Enable Istio integration in Gloo Gateway."`
+	IstioProxyContainer IstioProxyContainer `json:"istioContainer" desc:"Config used to manage the istio-proxy container."`
+	CustomSidecars      []interface{}       `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
 }
 
 type ProvisionedDeployment struct {
@@ -786,6 +795,11 @@ type IstioProxyContainer struct {
 	Image           *Image           `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
+
+	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer, or create new IstioProxyContainer?
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Defaults to \"cluster.local\""`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Defaults to \"Kubernetes\""`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Defaults to \"istiod.istio-system.svc:15012\""`
 }
 
 type IstioSDS struct {

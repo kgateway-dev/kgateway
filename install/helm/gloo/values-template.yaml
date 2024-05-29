@@ -15,6 +15,18 @@ kubeGateway:
         replicas: 1
       service:
         type: LoadBalancer
+      sdsContainer:
+        image:
+          repository: sds
+        logLevel: info
+      istioIntegration:
+        enabled: false
+        istioContainer:
+          image:
+            repository: proxyv2
+            registry: docker.io/istio
+            tag: 1.21.2
+          logLevel: warning
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
