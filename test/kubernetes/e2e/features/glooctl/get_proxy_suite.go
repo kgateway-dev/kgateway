@@ -193,8 +193,8 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 	}
 }
 
-func parseProxyOutput(output string) ([]gloov1.Proxy, error) {
-	var proxies []gloov1.Proxy
+func parseProxyOutput(output string) ([]*gloov1.Proxy, error) {
+	var proxies []*gloov1.Proxy
 
 	// strip off any glooctl output before the apiVersion
 	start := strings.Index(output, "apiVersion:")
@@ -210,7 +210,7 @@ func parseProxyOutput(output string) ([]gloov1.Proxy, error) {
 		if err != nil {
 			return nil, err
 		}
-		proxies = append(proxies, *proxy)
+		proxies = append(proxies, proxy)
 	}
 	return proxies, nil
 }
