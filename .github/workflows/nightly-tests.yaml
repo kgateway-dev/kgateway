@@ -51,7 +51,7 @@ on:
 
 jobs:
   end_to_end_tests_on_demand:
-    name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-id }}, version=${{ matrix.version-files.label }} )
+    name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'workflow_initiating_branch' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90
@@ -109,7 +109,7 @@ jobs:
           run-regex: ${{ matrix.test.go-test-run-regex }}
 
   end_to_end_tests_main:
-    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-id }}, version=${{ matrix.version-files.label }} )
+    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90

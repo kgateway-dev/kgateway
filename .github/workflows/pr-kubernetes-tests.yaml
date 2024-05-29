@@ -42,7 +42,7 @@ jobs:
         fi
 
   end_to_end_tests:
-    name: End-to-End (${{ matrix.test.cluster-id }})
+    name: End-to-End (${{ matrix.test.cluster-name }})
     needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
