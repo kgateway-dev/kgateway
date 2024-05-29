@@ -12,31 +12,32 @@ import (
 // The ControlPlane will use the Setters to update the last known state,
 // and the Getters will be used by the Admin Server
 type History interface {
-	// SetApiSnapshot sets the latest input ApiSnapshot
+	// SetApiSnapshot sets the latest ApiSnapshot
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
-	// GetInputCopy gets an in-memory copy of the output snapshot for all components.
+	// GetInputSnapshotCopy gets an in-memory copy of the output snapshot for all components.
 	// Note that this may contain sensitive data and secrets.
-	GetInputCopy() (map[string]interface{}, error)
-	// GetInput gets the input snapshot for all components.
-	GetInput() ([]byte, error)
-	// SetXdsSnapshotCache sets the cache that is used to store the xDS snapshots
-	SetXdsSnapshotCache(cache cache.SnapshotCache)
-	// GetXdsSnapshotCache returns the entire cache of xDS snapshots
-	GetXdsSnapshotCache() ([]byte, error)
+	GetInputSnapshotCopy() (map[string]interface{}, error)
+	// GetInputSnapshot gets the input snapshot for all components.
+	GetInputSnapshot() ([]byte, error)
+	// GetXdsSnapshot returns the entire cache of xDS snapshots
+	GetXdsSnapshot() ([]byte, error)
 }
 
 // NewHistory returns an implementation of the History interface
-func NewHistory() History {
+func NewHistory(cache cache.SnapshotCache) History {
 	return &history{
-		latestInput: map[string]json.Marshaler{},
-		xdsCache:    nil,
+		latestApiSnapshot: nil,
+		xdsCache:          cache,
 	}
 }
 
 type history struct {
+	// TODO:
+	// 	We rely on a mutex to prevent races reading/writing the data for this object
+	//	We should instead use channels to coordinate this
 	sync.RWMutex
-	latestInput map[string]json.Marshaler
-	xdsCache    cache.SnapshotCache
+	latestApiSnapshot *v1snap.ApiSnapshot
+	xdsCache          cache.SnapshotCache
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -53,14 +54,12 @@ func (h *history) setApiSnapshotSafe(latestApiSnapshot *v1snap.ApiSnapshot) {
 	h.Lock()
 	defer h.Unlock()
 
-	h.latestInput["api-snapshot"] = &apiSnapshotJsonMarshaller{
-		snap: latestApiSnapshot,
-	}
+	h.latestApiSnapshot = latestApiSnapshot
 }
 
-// GetInput gets the input snapshot for all components.
-func (h *history) GetInput() ([]byte, error) {
-	input, err := h.GetInputCopy()
+// GetInputSnapshot gets the input snapshot for all components.
+func (h *history) GetInputSnapshot() ([]byte, error) {
+	input, err := h.GetInputSnapshotCopy()
 	if err != nil {
 		return nil, err
 	}
@@ -68,42 +67,23 @@ func (h *history) GetInput() ([]byte, error) {
 	return formatMap("json_compact", input)
 }
 
-// GetInputCopy gets an in-memory copy of the output snapshot for all components.
+// GetInputSnapshotCopy gets an in-memory copy of the output snapshot for all components.
 // Note that this may contain sensitive data and secrets.
-func (h *history) GetInputCopy() (map[string]interface{}, error) {
+func (h *history) GetInputSnapshotCopy() (map[string]interface{}, error) {
 	h.RLock()
 	defer h.RUnlock()
-	if h.latestInput == nil {
+	if h.latestApiSnapshot == nil {
 		return map[string]interface{}{}, nil
 	}
-	genericMaps, err := getGenericMaps(h.latestInput)
+	genericMaps, err := apiSnapshotToGenericMap(h.latestApiSnapshot)
 	if err != nil {
 		return nil, err
 	}
 	return genericMaps, nil
 }
 
-// SetXdsSnapshotCache sets the cache that is used to store the xDS snapshots
-func (h *history) SetXdsSnapshotCache(cache cache.SnapshotCache) {
-	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
-	// any contention/issues, from impacting the runtime of the system
-	go func() {
-		h.setXdsSnapshotCacheSafe(cache)
-	}()
-}
-
-// setXdsSnapshotCacheSafe sets the cache that is used to store the xDS snapshots
-func (h *history) setXdsSnapshotCacheSafe(cache cache.SnapshotCache) {
-	h.Lock()
-	defer h.Unlock()
-	h.xdsCache = cache
-}
-
-// GetXdsSnapshotCache returns the entire cache of xDS snapshots
-func (h *history) GetXdsSnapshotCache() ([]byte, error) {
-	h.RLock()
-	defer h.RUnlock()
-
+// GetXdsSnapshot returns the entire cache of xDS snapshots
+func (h *history) GetXdsSnapshot() ([]byte, error) {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 

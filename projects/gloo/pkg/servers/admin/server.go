@@ -12,7 +12,7 @@ import (
 func ServerHandlers(history iosnapshot.History) func(mux *http.ServeMux, profiles map[string]string) {
 	return func(m *http.ServeMux, profiles map[string]string) {
 		m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
-			b, err := history.GetInput()
+			b, err := history.GetInputSnapshot()
 			if err != nil {
 				respondError(w, err)
 				return
@@ -21,8 +21,8 @@ func ServerHandlers(history iosnapshot.History) func(mux *http.ServeMux, profile
 			respondJson(w, b)
 		})
 
-		m.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-			xdsEntries, err := history.GetXdsSnapshotCache()
+		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
+			xdsEntries, err := history.GetXdsSnapshot()
 			if err != nil {
 				respondError(w, err)
 				return

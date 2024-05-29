@@ -3,22 +3,19 @@ package iosnapshot
 import (
 	"encoding/json"
 	"fmt"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 )
 
-func getGenericMaps(snapshot map[string]json.Marshaler) (map[string]interface{}, error) {
-	genericMaps := map[string]interface{}{}
-	for id, obj := range snapshot {
-		jsn, err := obj.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-		genericMap := map[string]interface{}{}
-		if err := json.Unmarshal(jsn, &genericMap); err != nil {
-			return nil, err
-		}
-		genericMaps[id] = genericMap
+func apiSnapshotToGenericMap(snap *v1snap.ApiSnapshot) (map[string]interface{}, error) {
+	genericMap := map[string]interface{}{}
+	jsn, err := json.Marshal(snap)
+	if err != nil {
+		return nil, err
 	}
-	return genericMaps, nil
+	if err := json.Unmarshal(jsn, &genericMap); err != nil {
+		return nil, err
+	}
+	return genericMap, nil
 }
 
 func formatMap(format string, genericMaps map[string]interface{}) ([]byte, error) {
