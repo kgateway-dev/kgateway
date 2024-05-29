@@ -108,14 +108,13 @@ func sendFailure(unsuccessfulJobs map[string][]string) {
 			continue
 		}
 		reasonBuilder := strings.Builder{}
-		reasonBuilder.Write([]byte(reason))
-		reasonBuilder.Write([]byte(":"))
-		reasonBuilder.Write([]byte(strings.Join(jobs, ",")))
+		reasonBuilder.WriteString(fmt.Sprintf("*%s*: ", strings.ToUpper(reason)))
+		reasonBuilder.WriteString(strings.Join(jobs, ","))
 
 		failureReasons = append(failureReasons, reasonBuilder.String())
 	}
 
-	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed some jobs: %s", strings.Join(failureReasons, ","))
+	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed some jobs: %s", strings.Join(failureReasons, "\n"))
 	mustSendSlackText(text)
 }
 
