@@ -326,6 +326,9 @@ jobs:
       - performance_tests_15
       - performance_tests_16
       - kube_gateway_api_conformance_tests_main
+      - end_to_end_tests_on_demand
+      - regression_tests_on_demand
+      - performance_tests_on_demand
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
