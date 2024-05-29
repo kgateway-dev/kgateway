@@ -90,7 +90,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetSdsContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
 				Expect(gwpKube.GetSdsContainer().GetImage().GetRegistry().GetValue()).To(Equal("quay.io/solo-io"))
 				Expect(gwpKube.GetSdsContainer().GetImage().GetRepository().GetValue()).To(Equal("sds"))
-				Expect(gwpKube.GetSdsContainer().GetImage().GetTag().GetValue()).To(Equal("1.0.1-dev"))
+				Expect(gwpKube.GetSdsContainer().GetImage().GetTag().GetValue()).To(Equal(version))
 				Expect(gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel().GetValue()).To(Equal("info"))
 
 				Expect(gwpKube.GetService().GetType()).To(Equal(kube.Service_LoadBalancer))
