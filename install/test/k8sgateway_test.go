@@ -68,6 +68,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				gwpKube := gwp.Spec.GetKube()
 				Expect(gwpKube).ToNot(BeNil())
 
+				// Comment
 				Expect(gwpKube.GetDeployment().GetReplicas().GetValue()).To(Equal(uint32(1)))
 
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
