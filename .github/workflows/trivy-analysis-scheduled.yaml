@@ -30,7 +30,7 @@ jobs:
         with:
           credentials_json: '${{ secrets.GLOO_VULN_REPORTER }}'
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: solo-public
       - name: Run and Push Security Scan Files to Google Cloud Bucket
