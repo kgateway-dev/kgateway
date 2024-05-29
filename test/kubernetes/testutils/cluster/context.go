@@ -12,6 +12,7 @@ import (
 // It also includes useful utilities for interacting with that cluster
 type Context struct {
 	// The name of the Kubernetes cluster
+	// The assumption is that when multiple clusters are running at once, they will each have unique names
 	Name string
 
 	// The context of the Kubernetes cluster
@@ -28,7 +29,4 @@ type Context struct {
 
 	// A set of clients for interacting with the Kubernetes Cluster
 	Clientset *kubernetes.Clientset
-
-	// Cluster id is a unique identifier for the cluster running in CI
-	ClusterId string
 }
