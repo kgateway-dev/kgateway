@@ -38,10 +38,10 @@ gloo: kube-gateway
 {{- end }}
 
 {{/*
-Images valid for the deployer
-ref struct helmImage in projects/gateway2/deployer/values.go
+Images valid for the GatewayParameters
+ref Image api in projects/gateway2/api/v1alpha1/kube/container.proto
 */}}
-{{- define "gloo-gateway.deployerImage" -}}
+{{- define "gloo-gateway.gatewayParametersImage" -}}
 {{- $image := . -}}
 {{- if $image.registry }}
 registry: {{ $image.registry }}
