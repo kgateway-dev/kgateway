@@ -209,12 +209,10 @@ spec:
                       type: object
                       x-kubernetes-validations:
                       - message: Either apr or both encryption and userSource must
-                          be set
-                        rule: has(self.apr) || (has(self.encryption) && has(self.userList))
-                      - message: If apr is set, neither encryption nor userSource
-                          may be set
+                          be set; apr may not be set alongside either encryption or
+                          userSource
                         rule: 'has(self.apr) ? !has(self.encryption) && !has(self.userList)
-                          : true'
+                          : has(self.encryption) && has(self.userList)'
                     hmacAuth:
                       properties:
                         parametersInHeaders:

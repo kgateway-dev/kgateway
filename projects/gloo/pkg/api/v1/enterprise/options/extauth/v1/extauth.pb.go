@@ -5298,8 +5298,7 @@ type isAuthConfig_Config_AuthConfig interface {
 }
 
 type AuthConfig_Config_BasicAuth struct {
-	// +kubebuilder:validation:XValidation:rule="has(self.apr) || (has(self.encryption) && has(self.userList))",message="Either apr or both encryption and userSource must be set"
-	// +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : true",message="If apr is set, neither encryption nor userSource may be set"
+	// +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : has(self.encryption) && has(self.userList)",message="Either apr or both encryption and userSource must be set; apr may not be set alongside either encryption or userSource"
 	BasicAuth *BasicAuth `protobuf:"bytes,1,opt,name=basic_auth,json=basicAuth,proto3,oneof"`
 }
 

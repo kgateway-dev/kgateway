@@ -45,8 +45,7 @@ message AuthConfig {
         google.protobuf.StringValue name = 9;
 
         oneof auth_config {
-            // +kubebuilder:validation:XValidation:rule="has(self.apr) || (has(self.encryption) && has(self.userList))",message="Either apr or both encryption and userSource must be set"
-            // +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : true",message="If apr is set, neither encryption nor userSource may be set"
+            // +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : has(self.encryption) && has(self.userList)",message="Either apr or both encryption and userSource must be set; apr may not be set alongside either encryption or userSource"
             BasicAuth basic_auth = 1;
             OAuth oauth = 2 [deprecated = true];
             OAuth2 oauth2 = 8;
