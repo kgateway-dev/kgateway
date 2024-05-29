@@ -15,6 +15,7 @@ import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/api/co
 import "github.com/solo-io/gloo/projects/gateway2/api/external/kubernetes/apimachinery/pkg/apis/meta/v1/generated.proto";
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 
 // A GatewayParameters contains configuration that is used to dynamically
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a
@@ -24,6 +25,9 @@ message GatewayParametersSpec {
   oneof environment_type {
     // The proxy will be deployed on Kubernetes.
     KubernetesProxyConfig kube = 1;
+
+    // The proxy will be self-managed and not auto-provisioned.
+    google.protobuf.Empty self_managed = 2;
   }
 }
 
@@ -39,8 +43,8 @@ message KubernetesProxyConfig {
   // Configuration for the container running Envoy.
   EnvoyContainer envoy_container = 2;
 
-  // Configuration for the container running SDS. This field is rendered with defaults by 
-  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in 
+  // Configuration for the container running SDS. This field is rendered with defaults by
+  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in
   // override GatewayParameters attached to a Gateway resource.
   // Note that if no integration requiring SDS is enabled, the SDS container will not be injected
   // into the gateway proxy deployment.
@@ -126,8 +130,8 @@ message IstioIntegration {
   // false to override the default values with disabled.
   google.protobuf.BoolValue enabled = 5;
 
-  // Configuration for the container running istio-proxy. This field is rendered with defaults by 
-  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in 
+  // Configuration for the container running istio-proxy. This field is rendered with defaults by
+  // helm in the default GatewayParameters for a GatewayClass, and may be overridden in
   // override GatewayParameters attached to a Gateway resource.
   // Note that if Istio integration is not enabled, the istio container will not be injected
   // into the gateway proxy deployment.

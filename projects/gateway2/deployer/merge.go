@@ -51,6 +51,14 @@ func deepMergeSlices[T any](dst, src []T) []T {
 }
 
 func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.GatewayParameters {
+	if src != nil && src.Spec.GetSelfManaged() != nil {
+		// The src override specifies a self-managed gateway, set this on the dst
+		// and skip merging of kube fields that are irrelevant because of using
+		// a self-managed gateway
+		dst.Spec.EnvironmentType = src.Spec.GetEnvironmentType()
+		return dst
+	}
+
 	// nil src override means just use dst
 	if src == nil || src.Spec.GetKube() == nil {
 		return dst
@@ -92,7 +100,6 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	}
 
 	return dst
-
 }
 
 func deepMergePodTemplate(dst, src *kube.Pod) *kube.Pod {
@@ -175,6 +182,7 @@ func deepMergeSELinuxOptions(dst, src *kubecorev1.SELinuxOptions) *kubecorev1.SE
 
 	return dst
 }
+
 func deepMergeWindowsSecurityContextOptions(dst, src *kubecorev1.WindowsSecurityContextOptions) *kubecorev1.WindowsSecurityContextOptions {
 	// nil src override means just use dst
 	if src == nil {
@@ -193,6 +201,7 @@ func deepMergeWindowsSecurityContextOptions(dst, src *kubecorev1.WindowsSecurity
 
 	return dst
 }
+
 func deepMergeSeccompProfile(dst, src *kubecorev1.SeccompProfile) *kubecorev1.SeccompProfile {
 	// nil src override means just use dst
 	if src == nil {
@@ -208,6 +217,7 @@ func deepMergeSeccompProfile(dst, src *kubecorev1.SeccompProfile) *kubecorev1.Se
 
 	return dst
 }
+
 func deepMergeAffinity(dst, src *kubecorev1.Affinity) *kubecorev1.Affinity {
 	// nil src override means just use dst
 	if src == nil {
@@ -243,6 +253,7 @@ func deepMergeNodeAffinity(dst, src *kubecorev1.NodeAffinity) *kubecorev1.NodeAf
 
 	return dst
 }
+
 func deepMergeNodeSelector(dst, src *kubecorev1.NodeSelector) *kubecorev1.NodeSelector {
 	// nil src override means just use dst
 	if src == nil {
@@ -257,6 +268,7 @@ func deepMergeNodeSelector(dst, src *kubecorev1.NodeSelector) *kubecorev1.NodeSe
 
 	return dst
 }
+
 func deepMergePodAffinity(dst, src *kubecorev1.PodAffinity) *kubecorev1.PodAffinity {
 	// nil src override means just use dst
 	if src == nil {
@@ -273,6 +285,7 @@ func deepMergePodAffinity(dst, src *kubecorev1.PodAffinity) *kubecorev1.PodAffin
 
 	return dst
 }
+
 func deepMergePodAntiAffinity(dst, src *kubecorev1.PodAntiAffinity) *kubecorev1.PodAntiAffinity {
 	// nil src override means just use dst
 	if src == nil {
@@ -289,6 +302,7 @@ func deepMergePodAntiAffinity(dst, src *kubecorev1.PodAntiAffinity) *kubecorev1.
 
 	return dst
 }
+
 func deepMergeService(dst, src *kube.Service) *kube.Service {
 	// nil src override means just use dst
 	if src == nil {
@@ -313,6 +327,7 @@ func deepMergeService(dst, src *kube.Service) *kube.Service {
 
 	return dst
 }
+
 func deepMergeAutoscaling(dst, src *kube.Autoscaling) *kube.Autoscaling {
 	// nil src override means just use dst
 	if src == nil {
@@ -327,6 +342,7 @@ func deepMergeAutoscaling(dst, src *kube.Autoscaling) *kube.Autoscaling {
 
 	return dst
 }
+
 func deepMergeHorizontalPodAutoscaler(dst, src *kube.HorizontalPodAutoscaler) *kube.HorizontalPodAutoscaler {
 	// nil src override means just use dst
 	if src == nil {
@@ -344,6 +360,7 @@ func deepMergeHorizontalPodAutoscaler(dst, src *kube.HorizontalPodAutoscaler) *k
 
 	return dst
 }
+
 func deepMergeSdsContainer(dst, src *v1alpha1.SdsContainer) *v1alpha1.SdsContainer {
 	// nil src override means just use dst
 	if src == nil {
@@ -361,6 +378,7 @@ func deepMergeSdsContainer(dst, src *v1alpha1.SdsContainer) *v1alpha1.SdsContain
 
 	return dst
 }
+
 func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstrap {
 	// nil src override means just use dst
 	if src == nil {
@@ -377,6 +395,7 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 
 	return dst
 }
+
 func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.IstioIntegration {
 	// nil src override means just use dst
 	if src == nil {
@@ -418,6 +437,7 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 
 	return dst
 }
+
 func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioContainer {
 	// nil src override means just use dst
 	if src == nil {
@@ -438,6 +458,7 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 
 	return dst
 }
+
 func deepMergeEnvoyContainer(dst, src *v1alpha1.EnvoyContainer) *v1alpha1.EnvoyContainer {
 	// nil src override means just use dst
 	if src == nil {
@@ -458,6 +479,7 @@ func deepMergeEnvoyContainer(dst, src *v1alpha1.EnvoyContainer) *v1alpha1.EnvoyC
 
 	return dst
 }
+
 func deepMergeImage(dst, src *kube.Image) *kube.Image {
 	// nil src override means just use dst
 	if src == nil {
@@ -509,6 +531,7 @@ func deepMergeEnvoyBootstrap(dst, src *v1alpha1.EnvoyBootstrap) *v1alpha1.EnvoyB
 
 	return dst
 }
+
 func deepMergeResourceRequirements(dst, src *kube.ResourceRequirements) *kube.ResourceRequirements {
 	// nil src override means just use dst
 	if src == nil {
@@ -525,6 +548,7 @@ func deepMergeResourceRequirements(dst, src *kube.ResourceRequirements) *kube.Re
 
 	return dst
 }
+
 func deepMergeSecurityContext(dst, src *kubecorev1.SecurityContext) *kubecorev1.SecurityContext {
 	// nil src override means just use dst
 	if src == nil {
@@ -561,6 +585,7 @@ func deepMergeSecurityContext(dst, src *kubecorev1.SecurityContext) *kubecorev1.
 
 	return dst
 }
+
 func deepMergeCapabilities(dst, src *kubecorev1.Capabilities) *kubecorev1.Capabilities {
 	// nil src override means just use dst
 	if src == nil {
@@ -576,6 +601,7 @@ func deepMergeCapabilities(dst, src *kubecorev1.Capabilities) *kubecorev1.Capabi
 
 	return dst
 }
+
 func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig_Deployment) *v1alpha1.KubernetesProxyConfig_Deployment {
 	// nil src override means just use dst
 	if src == nil {
