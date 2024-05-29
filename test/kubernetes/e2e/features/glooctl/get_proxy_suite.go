@@ -38,57 +38,80 @@ func NewGetProxySuite(ctx context.Context, testInst *e2e.TestInstallation) suite
 	}
 }
 
-func (s *getProxySuite) TestGetProxy() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, kubeGatewaysManifestFile)
-		s.NoError(err, "can delete kube gateways manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, kubeGateway1, kubeRoute1, kubeGateway2, kubeRoute2)
-
-		ns := s.testInstallation.Metadata.InstallNamespace
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeGatewaysManifestFile, "-n", ns)
-		s.NoError(err, "can delete edge gateways manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, getEdgeGateway1(ns), getEdgeGateway2(ns))
-
-		// we are calling delete with retries here because there is some delay between Gateways being deleted and
-		// gloo picking up the updates in its input snapshot, causing VS deletion to fail in the meantime (gloo
-		// thinks there are still Gateways referencing the VS)
-		err = retry.Do(func() error {
-			return s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeRoutesManifestFile)
-		},
-			retry.LastErrorOnly(true),
-			retry.Delay(1*time.Second),
-			retry.DelayType(retry.BackOffDelay),
-			retry.Attempts(8))
-		s.NoError(err, "can delete edge routes manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, edgeVs1, edgeVs2)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendManifestFile)
-		s.NoError(err, "can delete backend manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
-	})
-
+func (s *getProxySuite) SetupSuite() {
+	// apply backend resources that other manifests will depend on
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendManifestFile)
 	s.Require().NoError(err, "can apply backend manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
 
+	// apply edge virtual services
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeRoutesManifestFile)
 	s.Require().NoError(err, "can apply edge routes manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, edgeVs1, edgeVs2)
 
-	// edge gateways need to be applied in the write namespace for them to be picked up
+	// apply edge gateways; these are applied in a separate manifest because they need to be applied in
+	// the write namespace in order for gloo to process them
 	ns := s.testInstallation.Metadata.InstallNamespace
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeGatewaysManifestFile, "-n", ns)
 	s.Require().NoError(err, "can apply edge gateways manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, getEdgeGateway1(ns), getEdgeGateway2(ns))
 
+	// apply kube gateways and httproutes
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, kubeGatewaysManifestFile)
 	s.Require().NoError(err, "can apply kube gateways manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, kubeGateway1, kubeRoute1, kubeGateway2, kubeRoute2)
 
-	// TODO come up with a better way to do this
-	// wait for a bit for translation to run and for the proxies to get created
-	time.Sleep(10 * time.Second)
+	// wait for the proxies to get created
+	s.testInstallation.Assertions.Gomega.Eventually(func(g Gomega) {
+		output, err := s.testInstallation.Actions.Glooctl().GetProxy(s.ctx, "-n", ns, "-o", "kube-yaml")
+		g.Expect(err).NotTo(HaveOccurred())
+		proxies, err := parseProxyOutput(output)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(proxies).To(ConsistOf(
+			matchers.HaveNameAndNamespace(edgeProxy1Name, ns),
+			matchers.HaveNameAndNamespace(edgeProxy2Name, ns),
+			matchers.HaveNameAndNamespace(edgeDefaultProxyName, ns),
+			matchers.HaveNameAndNamespace(kubeProxy1Name, ns),
+			matchers.HaveNameAndNamespace(kubeProxy2Name, ns),
+		))
+	}).
+		WithContext(s.ctx).
+		WithTimeout(time.Second*10).
+		WithPolling(time.Second).
+		Should(Succeed(), "proxies should be available to query")
+}
 
+func (s *getProxySuite) TearDownSuite() {
+	// delete manifests in the reverse order that they were applied
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, kubeGatewaysManifestFile)
+	s.NoError(err, "can delete kube gateways manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, kubeGateway1, kubeRoute1, kubeGateway2, kubeRoute2)
+
+	ns := s.testInstallation.Metadata.InstallNamespace
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeGatewaysManifestFile, "-n", ns)
+	s.NoError(err, "can delete edge gateways manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, getEdgeGateway1(ns), getEdgeGateway2(ns))
+
+	// we are calling delete with retries here because there is some delay between Gateways being deleted and
+	// gloo picking up the updates in its input snapshot, causing VS deletion to fail in the meantime (gloo
+	// thinks there are still Gateways referencing the VS)
+	err = retry.Do(func() error {
+		return s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeRoutesManifestFile)
+	},
+		retry.LastErrorOnly(true),
+		retry.Delay(1*time.Second),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Attempts(8))
+	s.NoError(err, "can delete edge routes manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, edgeVs1, edgeVs2)
+
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendManifestFile)
+	s.NoError(err, "can delete backend manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
+}
+
+func (s *getProxySuite) TestGetProxy() {
+	// test `glooctl get proxy` with various args. set the output type to kube-yaml for each request, so that we can parse the response into Proxies
 	outputTypeArgs := []string{"-o", "kube-yaml"}
 	for _, testCase := range getTestCases(s.testInstallation.Metadata.InstallNamespace) {
 		s.Run(testCase.name, func() {
