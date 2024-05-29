@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6257
+    resolvesIssue: false
+    description: >-
+      Resolves issue where default GatewayParameters could be passed invalid fields and fail to render
