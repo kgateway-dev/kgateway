@@ -31,7 +31,7 @@ runs:
       id: kubectl
       with:
         version: ${{ inputs.kubectl-version }}
-    - uses: azure/setup-helm@v3
+    - uses: azure/setup-helm@v4
       with:
         version: ${{ inputs.helm-version }}
     - name: Setup test env
