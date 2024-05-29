@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/test/testutils"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/client-go/kubernetes"
@@ -57,7 +56,5 @@ func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Cont
 		Cli:         kubectl.NewCli().WithKubeContext(kubeCtx).WithReceiver(os.Stdout),
 		Client:      clt,
 		Clientset:   clientset,
-		// Get cluster id if it is set in the env to avoid conflicts when uploading artifacts on failed workflow runs
-		ClusterId: os.Getenv(testutils.ClusterId),
 	}
 }
