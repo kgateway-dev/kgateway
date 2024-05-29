@@ -33,11 +33,6 @@ runs:
       IMAGE_VARIANT: ${{ matrix.image-variant }}
     shell: bash
     run: make install-test-tools run-kube-e2e-tests
-  - name: save results
-    if: ${{ failure() }}
-    shell: bash
-    run: mkdir -p _output/kube2e-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-            "name":"${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}"}' > _output/kube2e-artifacts/test-out.json
   - uses: actions/upload-artifact@v3
     if: ${{ failure() }}
     with:
