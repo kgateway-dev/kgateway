@@ -3,6 +3,7 @@ package iosnapshot
 import (
 	"encoding/json"
 	"fmt"
+
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 )
 
