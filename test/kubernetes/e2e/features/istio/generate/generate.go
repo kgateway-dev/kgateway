@@ -24,7 +24,7 @@ func main() {
 
 	// use the Gloo Edge Gateway api resources with automtls enabled
 	edgeGatewayApiResources := istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{})
-	automtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-enabled-%s", istio.EdgeApisRoutingFileName))
+	automtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-enabled-%s.gen.yaml", istio.EdgeApisRoutingFileName))
 	err := resources.WriteResourcesToFile(edgeGatewayApiResources, automtlsGeneratedExample)
 	if err != nil {
 		panic(err)
@@ -32,7 +32,7 @@ func main() {
 
 	// automtls disabled
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{DisableIstioAutoMtls: true})
-	disableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-disabled-%s", istio.EdgeApisRoutingFileName))
+	disableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("automtls-disabled-%s.gen.yaml", istio.EdgeApisRoutingFileName))
 	err = resources.WriteResourcesToFile(edgeGatewayApiResources, disableAutomtlsGeneratedExample)
 	if err != nil {
 		panic(err)
@@ -40,7 +40,7 @@ func main() {
 
 	// Upstream sslConfig is set
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true})
-	upstreamSslConfigGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-%s", istio.EdgeApisRoutingFileName))
+	upstreamSslConfigGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-%s.gen.yaml", istio.EdgeApisRoutingFileName))
 	err = resources.WriteResourcesToFile(edgeGatewayApiResources, upstreamSslConfigGeneratedExample)
 	if err != nil {
 		panic(err)
@@ -48,7 +48,7 @@ func main() {
 
 	// Upstream sslConfig is set and automtls is disabled
 	edgeGatewayApiResources = istio.GetGlooGatewayEdgeResources(exampleNs, istio.UpstreamConfigOpts{SetSslConfig: true, DisableIstioAutoMtls: true})
-	sslConfigAndDisableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-and-automtls-disabled-%s", istio.EdgeApisRoutingFileName))
+	sslConfigAndDisableAutomtlsGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", fmt.Sprintf("sslconfig-and-automtls-disabled-%s.gen.yaml", istio.EdgeApisRoutingFileName))
 	err = resources.WriteResourcesToFile(edgeGatewayApiResources, sslConfigAndDisableAutomtlsGeneratedExample)
 	if err != nil {
 		panic(err)
