@@ -219,6 +219,8 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	return eps, nil
 }
 
+const enableIstioSidecarOnGatewayDeprecatedWarning = "istioIntegration.enableIstioSidecarOnGateway is deprecated. Use istioSDS.enabled instead."
+
 // isIstioInjectionEnabled returns true if Istio integration is enabled, where endpoints
 // must be defined by IP address rather than hostnames. For more details, see:
 // https://github.com/solo-io/gloo/issues/6195
@@ -226,8 +228,7 @@ func isIstioInjectionEnabled() (bool, []string) {
 	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
 	istioIsEnabled := found && strings.EqualFold(lookupResult, "true")
 	if istioIsEnabled {
-		warning := "istioIntegration.enableIstioSidecarOnGateway will soon be deprecated. Use istioSDS.enabled instead."
-		return true, []string{warning}
+		return true, []string{enableIstioSidecarOnGatewayDeprecatedWarning}
 	}
 	return false, nil
 }

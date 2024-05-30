@@ -70,13 +70,13 @@ var _ = Describe("Eds", func() {
 			istioEnabled, warnsToLog := isIstioInjectionEnabled()
 			Expect(istioEnabled).To(BeTrue())
 			Expect(warnsToLog).To(HaveLen(1), "expected to have 1 warning")
-			Expect(warnsToLog).To(ContainElements("istioIntegration.enableIstioSidecarOnGateway will soon be deprecated. Use istioSDS.enabled instead."), "expected deprecation warning for enableIstioSidecarOnGateway")
+			Expect(warnsToLog).To(ContainElements(enableIstioSidecarOnGatewayDeprecatedWarning), "expected deprecation warning for enableIstioSidecarOnGateway")
 
 			os.Setenv(constants.IstioInjectionEnabled, "TRUE")
 			istioEnabled, warnsToLog = isIstioInjectionEnabled()
 			Expect(istioEnabled).To(BeTrue())
 			Expect(warnsToLog).To(HaveLen(1), "expected to have 1 warning")
-			Expect(warnsToLog).To(ContainElements("istioIntegration.enableIstioSidecarOnGateway will soon be deprecated. Use istioSDS.enabled instead."), "expected deprecation warning for enableIstioSidecarOnGateway")
+			Expect(warnsToLog).To(ContainElements(enableIstioSidecarOnGatewayDeprecatedWarning), "expected deprecation warning for enableIstioSidecarOnGateway")
 
 			os.Unsetenv(constants.IstioInjectionEnabled)
 			istioEnabled, warnsToLog = isIstioInjectionEnabled()
