@@ -33,7 +33,7 @@ func (p *plugin) Name() string {
 
 func (p *plugin) Init(params plugins.InitParams) {
 	if xfh := params.Settings.GetGloo().GetIstioOptions().GetAppendXForwardedHost(); xfh != nil {
-		contextutils.LoggerFrom(params.Ctx).Warnf("append_x_forwarded_host will be deprecated in Gloo 1.18.0. Injecting the full Istio sidecar is not recommended for Gloo Gateway Istio integration.")
+		contextutils.LoggerFrom(params.Ctx).Warnf("append_x_forwarded_host is deprecated. Injecting the full Istio sidecar is not recommended for Gloo Gateway Istio integration.")
 		p.appendXForwardedHost = xfh.GetValue()
 	} else {
 		p.appendXForwardedHost = true

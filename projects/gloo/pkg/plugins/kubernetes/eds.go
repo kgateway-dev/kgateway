@@ -347,7 +347,7 @@ func computeGlooEndpoints(
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
 	istioInjectionEnabled, warnings := isIstioInjectionEnabled()
-	if warnings != nil {
+	if len(warnings) > 0 {
 		warnsToLog = append(warnsToLog, warnings...)
 	}
 
