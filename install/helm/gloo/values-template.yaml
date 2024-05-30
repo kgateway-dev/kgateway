@@ -254,12 +254,16 @@ global:
   istioSDS:
     enabled: false
   istioIntegration:
-    labelInstallNamespace: false
-    whitelistDiscovery: false
     disableAutoinjection: false
-    enableIstioSidecarOnGateway: false
-    appendXForwardedHost: true
     enableAutoMtls: false
+    # To be deprecated in future release
+    labelInstallNamespace: false
+    # To be deprecated in future release
+    whitelistDiscovery: false
+    # To be deprecated in future release
+    enableIstioSidecarOnGateway: false
+    # To be deprecated in future release
+    appendXForwardedHost: true
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true

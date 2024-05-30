@@ -1,0 +1,11 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/solo-projects/issues/5743
+    resolvesIssue: true
+    description: >-
+      Mark Istio integration helm values that rely on double proxy setup as deprecated. This includes:
+      - global.istioIntegration.labelInstallNamespace
+      - global.istioIntegration.whitelistDiscovery
+      - global.istioIntegration.enableIstioSidecarOnGateway
+      - global.istioIntegration.istioSidecarRevTag
+      - global.istioIntegration.appendXForwardedHost
