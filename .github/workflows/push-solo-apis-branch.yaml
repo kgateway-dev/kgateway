@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Install SSH Deploy key
-        uses: webfactory/ssh-agent@v0.4.1
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
       - name: Check out code into the Go module directory
