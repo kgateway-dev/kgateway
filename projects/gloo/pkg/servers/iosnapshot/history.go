@@ -22,6 +22,7 @@ type History interface {
 	// GetProxySnapshot returns the Proxies generated for all components.
 	GetProxySnapshot() ([]byte, error)
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
+	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
 	GetXdsSnapshot() ([]byte, error)
 }
 
@@ -88,6 +89,7 @@ func (h *historyImpl) GetProxySnapshot() ([]byte, error) {
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
+// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
 func (h *historyImpl) GetXdsSnapshot() ([]byte, error) {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
