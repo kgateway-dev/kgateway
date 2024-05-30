@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/listener_options"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
@@ -56,6 +57,10 @@ func TestK8sGateway(t *testing.T) {
 
 	t.Run("Deployer", func(t *testing.T) {
 		suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("ListenerOptions", func(t *testing.T) {
+		suite.Run(t, listener_options.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("RouteOptions", func(t *testing.T) {
