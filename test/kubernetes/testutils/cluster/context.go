@@ -12,6 +12,7 @@ import (
 // It also includes useful utilities for interacting with that cluster
 type Context struct {
 	// The name of the Kubernetes cluster
+	// The assumption is that when multiple clusters are running at once, they will each have unique names
 	Name string
 
 	// The context of the Kubernetes cluster

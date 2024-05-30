@@ -62,6 +62,7 @@ Selector labels
 {{- define "gloo-gateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "gloo-gateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
 
 {{/*

@@ -7,4 +7,9 @@ metadata:
   name: gloo-gateway
 spec:
   controllerName: solo.io/gloo-gateway
+  parametersRef:
+    group: gateway.gloo.solo.io
+    kind: GatewayParameters
+    name: gloo-gateway
+    namespace: {{ .Release.Namespace }}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

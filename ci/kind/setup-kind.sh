@@ -15,9 +15,8 @@ SKIP_DOCKER="${SKIP_DOCKER:-false}"
 JUST_KIND="${JUST_KIND:-false}"
 # Offer a default value for type of installation
 KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
-# The version of istio to install for glooctl tests
-# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"
+# The version of istio to install for glooctl tests. This should get set by the 'setup-kind-cluster' github action, where it is a required input.
+ISTIO_VERSION="${ISTIO_VERSION:-1.22.0}"
 # Set the default image variant to standard
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
@@ -54,14 +53,14 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION USE_SILENCE_REDIRECTS=true make build-test-chart
+  VERSION=$VERSION make build-test-chart
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-USE_SILENCE_REDIRECTS=true make -s build-cli-local
+make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml

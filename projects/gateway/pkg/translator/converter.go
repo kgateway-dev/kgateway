@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -208,7 +209,7 @@ func (rv *routeVisitor) visit(
 				routeClone.Options = routeOpts.GetOptions()
 				continue
 			}
-			routeClone.Options = mergeRouteOptions(routeClone.GetOptions(), routeOpts.GetOptions())
+			routeClone.Options, _ = utils.ShallowMergeRouteOptions(routeClone.GetOptions(), routeOpts.GetOptions())
 		}
 
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
@@ -470,7 +471,6 @@ func getDelegateRouteMatcher(route *gatewayv1.Route) (*matchersv1.Matcher, error
 }
 
 func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
-
 	// inherit inheritance config from parent if unset
 	if child.GetInheritablePathMatchers() == nil {
 		child.InheritablePathMatchers = &wrappers.BoolValue{
@@ -524,13 +524,12 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 
 	// Merge options from parent routes
 	// If an option is defined on a parent route, it will override the child route's option
-	child.Options = mergeRouteOptions(child.GetOptions(), parent.options)
+	child.Options, _ = utils.ShallowMergeRouteOptions(child.GetOptions(), parent.options)
 
 	return child, nil
 }
 
 func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, childRoute *gatewayv1.Route) error {
-
 	for _, childMatch := range childRoute.GetMatchers() {
 		// ensure all sub-routes in the delegated route table match the parent prefix
 		if pathString := glooutils.PathAsString(childMatch); !strings.HasPrefix(pathString, parentMatcher.GetPrefix()) {

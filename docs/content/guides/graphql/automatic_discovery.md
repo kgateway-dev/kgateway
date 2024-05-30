@@ -8,6 +8,10 @@ Gloo Edge can automatically discover API specifications and create GraphQL schem
 * gRPC and REST OpenAPI upsteams: The generated `GraphQLApi` includes the configuration for resolvers and schema definitions for the types of data to return to GraphQL queries. In this case, Gloo Edge uses _local execution_, which means the Envoy server executes GraphQL queries locally before it proxies them to the upstreams that provide the data requested in the queries.
 * GraphQL server upstreams (1.14.0 and later only): When you have a GraphQL server upstream that includes its own resolvers, the generated `GraphQLApi` includes only the schema definitions for the types of data to return to GraphQL queries. In this case, Gloo Edge uses _remote execution_, which means that Envoy proxies the requests to the GraphQL server without executing the request first, and the GraphQL upstream both executes the query and provides the requested data. Additionally, Envoy validates the schema of the GraphQL server.
 
+{{% notice warning %}}
+Automatic schema generation is recommended for use in development environments to quickly create initial GraphQLApi custom resources from existing APIs. Once these custom resources are generated, you must manage them in the same way as other Gloo custom resources, especially when deploying them into downstream environments. It is not recommended to use autogeneration in production.
+{{% /notice %}}
+
 Gloo Edge supports two modes of discovery: allowlist and blocklist. For more information about these discovery modes, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
 {{% notice note %}}

@@ -6,16 +6,15 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
@@ -58,18 +57,10 @@ func K8sGatewayControllerStartFunc(
 	authConfigClient api.AuthConfigClient,
 	routeOptionClient gateway.RouteOptionClient,
 	vhOptionClient gateway.VirtualHostOptionClient,
+	statusClient resources.StatusClient,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-		if opts.ProxyDebugServer.Server != nil {
-			// If we have a debug server running, let's register the proxy client used by
-			// the k8s gateway translation. This will enable operators to query the debug endpoint
-			// and inspect the proxies that are stored in memory
-			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, proxyClient)
-		}
-
-		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
-
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,

@@ -16,27 +16,6 @@ import (
 
 // Merges the fields of src into dst.
 // The fields in dst that have non-zero values will not be overwritten.
-func mergeRouteOptions(dst, src *v1.RouteOptions) *v1.RouteOptions {
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return proto.Clone(src).(*v1.RouteOptions)
-	}
-
-	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
-
-	for i := range dstValue.NumField() {
-		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
-		utils.ShallowMerge(dstField, srcField, false)
-	}
-
-	return dst
-}
-
-// Merges the fields of src into dst.
-// The fields in dst that have non-zero values will not be overwritten.
 func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) *v1.VirtualHostOptions {
 	if src == nil {
 		return dst

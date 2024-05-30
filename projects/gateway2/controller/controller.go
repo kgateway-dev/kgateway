@@ -12,6 +12,7 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -45,7 +46,6 @@ type GatewayConfig struct {
 	Kick           func(ctx context.Context)
 
 	ControlPlane bootstrap.ControlPlane
-	IstioValues  bootstrap.IstioValues
 
 	Extensions extensions.K8sGatewayExtensions
 }
@@ -71,6 +71,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchNamespaces,
 		controllerBuilder.watchRouteOptions,
 		controllerBuilder.watchVirtualHostOptions,
+		controllerBuilder.watchUpstreams,
 		controllerBuilder.addIndexes,
 		controllerBuilder.addRtOptIndexes,
 		controllerBuilder.addVhOptIndexes,
@@ -139,7 +140,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
-		IstioValues:    c.cfg.IstioValues,
 		ControlPlane:   c.cfg.ControlPlane,
 		Extensions:     c.cfg.Extensions,
 	})
@@ -261,6 +261,7 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 
 func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.RouteOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileRouteOptions))
 	if err != nil {
@@ -271,8 +272,20 @@ func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 
 func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.VirtualHostOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileVirtualHostOptions))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&gloov1.Upstream{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileUpstreams))
 	if err != nil {
 		return err
 	}
@@ -297,6 +310,12 @@ func (r *controllerReconciler) ReconcileVirtualHostOptions(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
+func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
 func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// reconcile all gateways with namespace selector
 	r.kick(ctx)
@@ -304,13 +323,7 @@ func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl
 }
 
 func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// find impacted gateways and queue them
-	hr := apiv1.HTTPRoute{}
-	err := r.cli.Get(ctx, req.NamespacedName, &hr)
-	if err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
+	// TODO: consider finding impacted gateways and queue them
 	// TODO: consider enabling this
 	//	// reconcile this specific route:
 	//	queries := query.NewData(r.cli, r.scheme)
@@ -330,10 +343,13 @@ func (r *controllerReconciler) ReconcileReferenceGrants(ctx context.Context, req
 func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
-	// if a gateway
 	gwclass := &apiv1.GatewayClass{}
 	err := r.cli.Get(ctx, req.NamespacedName, gwclass)
 	if err != nil {
+		// NOTE: if this reconciliation is a result of a DELETE event, this err will be a NotFound,
+		// therefore we will return a nil error here and thus skip any additional reconciliation below.
+		// At the time of writing this comment, the retrieved GWClass object is only used to update the status,
+		// so it should be fine to return here, because there's no status update needed on a deleted resource.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 

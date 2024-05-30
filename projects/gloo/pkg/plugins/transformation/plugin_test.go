@@ -1,4 +1,4 @@
-package transformation_test
+package transformation
 
 import (
 	"context"
@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	skMatchers "github.com/solo-io/solo-kit/test/matchers"
 )
@@ -1082,4 +1081,53 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
+	Context("cache validation", func() {
+		var p *Plugin
+		var processRoute func()
+		var processAnotherRoute func()
+
+		BeforeEach(func() {
+			p = NewPlugin()
+			p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+
+			processRouteWithValue := func(value bool) {
+				err := p.ProcessRoute(plugins.RouteParams{
+					VirtualHostParams: plugins.VirtualHostParams{
+						Params: plugins.Params{
+							Ctx: ctx,
+						},
+					},
+				}, &v1.Route{
+					Options: &v1.RouteOptions{
+						Transformations: &transformation.Transformations{
+							ClearRouteCache: value,
+						},
+					},
+				}, &envoy_config_route_v3.Route{})
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			processRoute = func() {
+				processRouteWithValue(true)
+			}
+			processAnotherRoute = func() {
+				processRouteWithValue(false)
+			}
+		})
+
+		It("reuses the cache", func() {
+			processRoute()
+			Expect(p.validator.CacheLength()).To(Equal(1))
+
+			// When re-initializing the plugin, the cache is not cleared
+			p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+			Expect(p.validator.CacheLength()).To(Equal(1))
+
+			// The cache is still not cleared
+			p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+			processAnotherRoute()
+			Expect(p.validator.CacheLength()).To(Equal(2))
+		})
+
+	})
 })

@@ -6,7 +6,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-role-ingress{{ include "gloo.rbacNameSuffix" . }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: rbac
 rules:
 - apiGroups: [""]

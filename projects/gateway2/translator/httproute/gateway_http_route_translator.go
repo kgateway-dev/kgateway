@@ -1,6 +1,7 @@
 package httproute
 
 import (
+	"container/list"
 	"context"
 	"net/http"
 
@@ -39,8 +40,10 @@ func TranslateGatewayHTTPRouteRules(
 	hostnames := make([]gwv1.Hostname, len(route.Spec.Hostnames))
 	copy(hostnames, route.Spec.Hostnames)
 
+	delegationChain := list.New()
+
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames)
+		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
 	return finalRoutes
 }
 
@@ -57,6 +60,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
 	hostnames []gwv1.Hostname,
+	delegationChain *list.List,
 ) {
 	for _, rule := range route.Spec.Rules {
 		rule := rule
@@ -78,6 +82,7 @@ func translateGatewayHTTPRouteRulesUtil(
 			outputs,
 			routesVisited,
 			hostnames,
+			delegationChain,
 		)
 		for _, outputRoute := range outputRoutes {
 			// The above function will return a nil route if a matcher fails to apply plugins
@@ -103,6 +108,7 @@ func translateGatewayHTTPRouteRule(
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
 	hostnames []gwv1.Hostname,
+	delegationChain *list.List,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
@@ -113,40 +119,63 @@ func translateGatewayHTTPRouteRule(
 			Options:  &v1.RouteOptions{},
 		}
 
-		hasDelegatedRoute := false
+		var delegatedRoutes []*v1.Route
+		var delegates bool
 		if len(rule.BackendRefs) > 0 {
-			hasDelegatedRoute = setRouteAction(
+			delegates = setRouteAction(
 				ctx,
 				queries,
 				gwroute,
-				rule.BackendRefs,
+				rule,
 				outputRoute,
 				reporter,
 				baseReporter,
 				pluginRegistry,
 				gwListener,
 				match,
-				outputs,
+				&delegatedRoutes,
 				routesVisited,
+				delegationChain,
 			)
 		}
 
 		rtCtx := &plugins.RouteContext{
-			Listener:  &gwListener,
-			Route:     gwroute,
-			Hostnames: hostnames,
-			Rule:      &rule,
-			Match:     &match,
-			Reporter:  reporter,
+			Listener:        &gwListener,
+			Route:           gwroute,
+			Hostnames:       hostnames,
+			DelegationChain: delegationChain,
+			Rule:            &rule,
+			Match:           &match,
+			Reporter:        reporter,
 		}
+
+		// Apply the plugins for this route
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
 			}
-		}
 
-		if outputRoute.GetAction() == nil && !hasDelegatedRoute {
+			// If this parent route has delegatee routes, override any applied policies
+			// that are on the child with the parent's policies.
+			// When a plugin is invoked on a route, it must override the existing route.
+			for _, child := range delegatedRoutes {
+				err := plugin.ApplyRoutePlugin(ctx, rtCtx, child)
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Errorf("error applying RoutePlugin to child route %s: %v", child.GetName(), err)
+				}
+			}
+		}
+		// Add the delegatee output routes to the final output list
+		*outputs = append(*outputs, delegatedRoutes...)
+
+		// It is possible for a parent route to not produce an output route action
+		// if it only delegates and does not directly route to a backend.
+		// We should only set a direct response action when there is no output action
+		// for a parent rule and when there are no delegated routes because this would
+		// otherwise result in a top level matcher with a direct response action for the
+		// path that the parent is delegating for.
+		if outputRoute.GetAction() == nil && !delegates {
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,
@@ -248,7 +277,7 @@ func setRouteAction(
 	ctx context.Context,
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
-	backendRefs []gwv1.HTTPBackendRef,
+	rule gwv1.HTTPRouteRule,
 	outputRoute *v1.Route,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -257,18 +286,20 @@ func setRouteAction(
 	match gwv1.HTTPRouteMatch,
 	outputs *[]*v1.Route,
 	routesVisited sets.Set[types.NamespacedName],
+	delegationChain *list.List,
 ) bool {
 	var weightedDestinations []*v1.WeightedDestination
-	hasDelegatedRoute := false
+	backendRefs := rule.BackendRefs
+	delegates := false
 
 	for _, backendRef := range backendRefs {
 		// If the backend is an HTTPRoute, it implies route delegation
 		// for which delegated routes are recursively flattened and translated
 		if backendref.RefIsHTTPRoute(backendRef.BackendObjectReference) {
-			hasDelegatedRoute = true
+			delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
-				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited)
+				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
 			if err != nil {
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,
@@ -369,5 +400,5 @@ func setRouteAction(
 		}
 	}
 
-	return hasDelegatedRoute
+	return delegates
 }

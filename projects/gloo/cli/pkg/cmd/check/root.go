@@ -382,6 +382,8 @@ func checkPods(ctx context.Context, printer printers.P, opts *options.Options) e
 				if conditionNotMet {
 					errorToPrint = fmt.Sprintf("Not all containers in pod %s in namespace %s are ready!%s", pod.Name, pod.Namespace, message)
 				}
+			case corev1.PodReadyToStartContainers:
+				// This condition was introduced in k8s 1.29. Skip it since completed jobs have Status=False for this condition
 			default:
 				fmt.Printf("Note: Unhandled pod condition %s", condition.Type)
 			}

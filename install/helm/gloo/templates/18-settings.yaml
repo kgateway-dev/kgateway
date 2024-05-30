@@ -5,7 +5,7 @@ apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: settings
   name: default
   namespace: {{ .Release.Namespace }}

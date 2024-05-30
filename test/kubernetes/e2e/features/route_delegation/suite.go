@@ -16,7 +16,6 @@ import (
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -51,6 +50,8 @@ func (s *tsuite) SetupSuite() {
 		"TestMultipleParents":             {commonManifest, multipleParentsManifest},
 		"TestInvalidChildValidStandalone": {commonManifest, invalidChildValidStandaloneManifest},
 		"TestUnresolvedChild":             {commonManifest, unresolvedChildManifest},
+		"TestRouteOptions":                {commonManifest, routeOptionsManifest},
+		"TestMatcherInheritance":          {commonManifest, matcherInheritanceManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
 	// but the below code demonstrates how it can be done if necessary
@@ -64,8 +65,10 @@ func (s *tsuite) SetupSuite() {
 		multipleParentsManifest:             {routeParent1, routeParent2, routeTeam1, routeTeam2},
 		invalidChildValidStandaloneManifest: {proxyTestService, proxyTestDeployment, routeRoot, routeTeam1, routeTeam2},
 		unresolvedChildManifest:             {routeRoot},
+		routeOptionsManifest:                {routeRoot, routeTeam1, routeTeam2},
+		matcherInheritanceManifest:          {routeParent1, routeParent2, routeTeam1},
 	}
-	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.TestCluster.ClusterContext)
+	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.ClusterContext)
 	s.Require().NoError(err)
 	s.ti.ResourceClients = clients
 }
@@ -122,11 +125,11 @@ func (s *tsuite) TestCyclic() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
 	cyclicRoute := &gwv1.HTTPRoute{}
-	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		cyclicRoute)
 	s.Require().NoError(err)
-	s.Require().True(utils.HTTPRouteStatusContainsMsg(cyclicRoute, "cyclic reference detected"), "missing status on cyclic route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(cyclicRoute, "cyclic reference detected")
 }
 
 func (s *tsuite) TestInvalidChild() {
@@ -139,11 +142,11 @@ func (s *tsuite) TestInvalidChild() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
 	invalidRoute := &gwv1.HTTPRoute{}
-	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.Require().True(utils.HTTPRouteStatusContainsMsg(invalidRoute, "spec.hostnames must be unset"), "missing status on invalid route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
 }
 
 func (s *tsuite) TestHeaderQueryMatch() {
@@ -234,20 +237,58 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 
 	invalidRoute := &gwv1.HTTPRoute{}
-	err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
 		invalidRoute)
 	s.Require().NoError(err)
-	s.Require().True(utils.HTTPRouteStatusContainsMsg(invalidRoute, "spec.hostnames must be unset"), "missing status on invalid route")
+	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
 }
 
 func (s *tsuite) TestUnresolvedChild() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		route := &gwv1.HTTPRoute{}
-		err := s.ti.TestCluster.ClusterContext.Client.Get(s.ctx,
+		err := s.ti.ClusterContext.Client.Get(s.ctx,
 			types.NamespacedName{Name: routeRoot.Name, Namespace: routeRoot.Namespace},
 			route)
 		assert.NoError(c, err, "route not found")
-		assert.True(c, utils.HTTPRouteStatusContainsMsg(route, "unresolved reference"), "missing status on invalid route")
+		s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(route, "unresolved reference")
 	}, 10*time.Second, 1*time.Second)
+}
+
+func (s *tsuite) TestRouteOptions() {
+	// Assert traffic to team1 route experiences the injected fault using RouteOption
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam1),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusTeapot,
+			Body:       ContainSubstring("fault filter abort"),
+		})
+
+	// Assert traffic to team2 route succeeds with path rewrite using RouteOption
+	// while also containing the response header set by the root RouteOption
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHostPort(proxyHostPort),
+			curl.WithPath(pathTeam2),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring("/anything/rewrite"),
+			Headers:    map[string]interface{}{"x-foo": Equal("baz")},
+		})
+}
+
+func (s *tsuite) TestMatcherInheritance() {
+	// Assert traffic on parent1's prefix
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/foo/child")},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/foo/child")})
+
+	// Assert traffic on parent2's prefix
+	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/baz/child")},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/baz/child")})
 }

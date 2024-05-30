@@ -3,9 +3,15 @@ title: Setup
 weight: 20
 ---
 
-# Gloo Edge Open-Source
+Review the following setup paths for the open source and enterprise editions of Gloo Edge.
 
-Gloo Edge Open-Source runs in 3 different modes to enable different use cases:
+# Open Source
+
+Gloo Edge Open Source Software (OSS) runs in `gateway` or `ingress` modes to enable different use cases.
+
+{{% notice note %}}
+Note: The installation modes are not mutually exclusive. To run both `gateway` in and `ingress` modes of Gloo Edge OSS, install separate instances of Gloo Edge in the same or different namespaces.
+{{% /notice %}}
 
 <div markdown=1>
 <table>
@@ -14,7 +20,7 @@ Gloo Edge Open-Source runs in 3 different modes to enable different use cases:
       <a href="{{% versioned_link_path fromRoot="/installation/gateway/" %}}"><img src='{{% versioned_link_path fromRoot="/img/Gloo-01.png" %}}' width="60"/></a>
     </td>
     <td>
-     Run Gloo Edge in <code>gateway</code> mode to function as an API Gateway. This is the most fully-featured and customizable installation of Gloo Edge, and is our <a href="{{% versioned_link_path fromRoot="/installation/gateway/" %}}"><b>recommended install for first-time users</b></a>. Gloo Edge can be configured via Kubernetes Custom Resources, Consul Key-Value storage, or <code>.yaml</code> files on Gloo Edge's local filesystem.
+     Run Gloo Edge in <code>gateway</code> mode to function as an API Gateway. This is the most fully-featured and customizable installation of Gloo Edge, and is the <a href="{{% versioned_link_path fromRoot="/installation/gateway/" %}}"><b>recommended install for first-time users</b></a>. Gloo Edge can be configured via Kubernetes Custom Resources, Consul Key-Value storage, or <code>.yaml</code> files on Gloo Edge's local filesystem.
     </td>
   </tr>
   <tr height="100">
@@ -27,13 +33,13 @@ Gloo Edge Open-Source runs in 3 different modes to enable different use cases:
 </table>
 </div>
 
+## Enterprise
+
+Gloo Edge Enterprise Edition (EE) has a single installation workflow.
+
 {{% notice note %}}
-Note: The installation modes are not mutually exclusive, e.g. if you wish to run `gateway` in conjunction with `ingress`, it can be done by installing both options to the same (or different) namespaces.
+{{< readfile file="static/content/license-key" markdown="true">}}
 {{% /notice %}}
-
-# Gloo Edge Enterprise
-
-Gloo Edge Enterprise has a single installation workflow:
 
 <div markdown=1>
 <table>
@@ -42,7 +48,7 @@ Gloo Edge Enterprise has a single installation workflow:
       <a href="{{% versioned_link_path fromRoot="/installation/enterprise/" %}}"><img src='{{% versioned_link_path fromRoot="/img/gloo-ee.png" %}}' width="60"/></a>
     </td>
     <td>
-    Gloo Edge Enterprise is based on open-source Gloo Edge with additional (closed source) UI and plugins. See <a href="{{% versioned_link_path fromRoot="/installation/enterprise/" %}}">the Gloo Edge Enterprise documentation</a> for more details on the additional features of the Enterprise version of Gloo Edge.
+    Gloo Edge Enterprise is based on open-source Gloo Edge with additional, closed source features. For a comparison between open source and enterprise editions, see the <a href="{{% versioned_link_path fromRoot="/introduction/faq/#oss-enterprise" %}}">FAQs</a>. For installation instructions, see the <a href="{{% versioned_link_path fromRoot="/installation/enterprise/" %}}">Enterprise setup guide</a>.
     </td>
   </tr>
 </table>

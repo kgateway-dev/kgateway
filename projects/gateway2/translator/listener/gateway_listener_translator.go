@@ -169,6 +169,7 @@ func (ml *mergedListeners) appendHttpsListener(
 		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,
+		listener:          listener,
 	})
 }
 

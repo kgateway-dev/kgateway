@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
@@ -18,15 +18,32 @@ var (
 	basicVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "basic-vho.yaml")
 	sectionNameVhOManifest = filepath.Join(util.MustGetThisDir(), "testdata", "section-name-vho.yaml")
 	extraVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho.yaml")
-	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "bad-vho.yaml")
+	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "webhook-reject-bad-vho.yaml")
 
 	// When we apply the setup file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gloo-proxy-gw",
+			Namespace: "default",
+		},
+	}
+	nginxPod = &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx",
+			Namespace: "default",
+		},
+	}
+	exampleSvc = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-svc",
+			Namespace: "default",
+		},
+	}
 
 	// VirtualHostOption resource to be created
 	basicVirtualHostOptionMeta = metav1.ObjectMeta{
@@ -51,20 +68,20 @@ var (
 
 	expectedResponseWithoutContentLength = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Custom:     Not(matchers.ContainHeaderKeys([]string{"content-length"})),
+		Custom:     gomega.Not(matchers.ContainHeaderKeys([]string{"content-length"})),
 		Body:       gstruct.Ignore(),
 	}
 
 	expectedResponseWithoutContentType = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Custom:     Not(matchers.ContainHeaderKeys([]string{"content-type"})),
+		Custom:     gomega.Not(matchers.ContainHeaderKeys([]string{"content-type"})),
 		Body:       gstruct.Ignore(),
 	}
 
 	expectedResponseWithFooHeader = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Headers: map[string]interface{}{
-			"foo": Equal("bar"),
+			"foo": gomega.Equal("bar"),
 		},
 		// Make sure the content-length isn't being removed as a function of the unwanted VHO
 		Custom: matchers.ContainHeaderKeys([]string{"content-length"}),

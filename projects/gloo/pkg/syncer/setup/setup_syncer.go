@@ -753,7 +753,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if opts.ProxyDebugServer.StartGrpcServer {
 		proxyDebugServer := opts.ProxyDebugServer
-		proxyDebugServer.Server.RegisterProxyReader(debug.EdgeGatewayTranslation, proxyClient)
+		proxyDebugServer.Server.RegisterProxyReader(proxyClient)
 		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
@@ -904,8 +904,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			authConfigClient,
 			routeOptionClient,
 			virtualHostOptionClient,
+			statusClient,
 		)
-
 	}
 
 	translationSync := syncer.NewTranslatorSyncer(
@@ -984,6 +984,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					gwOpts.Validation.AlwaysAcceptResources,
 					gwOpts.ReadGatewaysFromAllNamespaces,
 					gwOpts.GlooNamespace,
+					opts.GlooGateway.EnableK8sGatewayController, // controls validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)
 				),
 			)
 			if err != nil {

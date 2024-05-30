@@ -1,3 +1,7 @@
+global:
+  podSecurityStandards:
+    container:
+      enableRestrictedContainerDefaults: true
 settings:
   singleNamespace: true
   create: true

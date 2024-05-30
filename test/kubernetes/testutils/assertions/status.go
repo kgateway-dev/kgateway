@@ -3,15 +3,15 @@ package assertions
 import (
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e/helper"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // Checks GetNamespacedStatuses status for gloo installation namespace
@@ -66,4 +66,19 @@ func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.Name
 	}
 
 	return namespacedStatuses, nil
+}
+
+// AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
+// the given message substring.
+func (p *Provider) AssertHTTPRouteStatusContainsSubstring(route *gwv1.HTTPRoute, message string) {
+	matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
+		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Message": matchers.ContainSubstrings([]string{message}),
+				})),
+			})),
+		}),
+	})
+	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
 }

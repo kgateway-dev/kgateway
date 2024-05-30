@@ -17,7 +17,7 @@ metadata:
   name: {{ $name | kebabcase }}-envoy-config
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
 data:

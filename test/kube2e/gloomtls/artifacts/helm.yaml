@@ -6,6 +6,9 @@ global:
     nameSuffix: e2e-test-rbac-suffix
   glooMtls:
     enabled: true
+  podSecurityStandards:
+    container:
+      enableRestrictedContainerDefaults: true
 settings:
   singleNamespace: true
   create: true

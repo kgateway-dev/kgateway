@@ -32,7 +32,10 @@ type testingSuite struct {
 	manifests map[string][]string
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewTestingSuite(
+	ctx context.Context,
+	testInst *e2e.TestInstallation,
+) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
@@ -40,16 +43,32 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) SetupSuite() {
+	// Check that the common setup manifest is applied
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	s.NoError(err, "can apply "+setupManifest)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, exampleSvc, nginxPod)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+	})
+
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
 	s.manifests = map[string][]string{
-		"TestConfigureVirtualHostOptions":                           {setupManifest, basicVhOManifest},
-		"TestConfigureInvalidVirtualHostOptions":                    {setupManifest, basicVhOManifest, badVhOManifest},
-		"TestConfigureVirtualHostOptionsWithSectionNameManualSetup": {setupManifest, basicVhOManifest, extraVhOManifest, sectionNameVhOManifest},
-		"TestMultipleVirtualHostOptionsManualSetup":                 {setupManifest, basicVhOManifest, extraVhOManifest},
+		"TestConfigureVirtualHostOptions":                           {basicVhOManifest},
+		"TestConfigureInvalidVirtualHostOptions":                    {basicVhOManifest, badVhOManifest},
+		"TestConfigureVirtualHostOptionsWithSectionNameManualSetup": {basicVhOManifest, extraVhOManifest, sectionNameVhOManifest},
+		"TestMultipleVirtualHostOptionsManualSetup":                 {basicVhOManifest, extraVhOManifest},
 	}
 }
 
-func (s *testingSuite) TearDownSuite() {}
+func (s *testingSuite) TearDownSuite() {
+	// Check that the common setup manifest is deleted
+	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, setupManifest)
+	s.testInstallation.Assertions.ExpectObjectDeleted(setupManifest, err, output)
+}
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	if strings.Contains(testName, "ManualSetup") {
@@ -62,20 +81,20 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.NoError(err, "can apply "+manifest)
+		output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, manifest)
+		s.testInstallation.Assertions.ExpectObjectAdmitted(manifest, err, output, "Validating *v1.VirtualHostOption failed")
 	}
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
 	manifests, ok := s.manifests[testName]
 	if !ok {
-		s.Fail("no manifests found for " + testName)
+		s.FailNow("no manifests found for " + testName)
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
-		s.NoError(err, "can delete "+manifest)
+		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
+		s.testInstallation.Assertions.ExpectObjectDeleted(manifest, err, output)
 	}
 }
 
@@ -99,12 +118,20 @@ func (s *testingSuite) TestConfigureVirtualHostOptions() {
 }
 
 func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
-	// Check status is rejected on bad VirtualHostOption
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		s.getterForMeta(&badVirtualHostOptionMeta),
-		core.Status_Rejected,
-		defaults.KubeGatewayReporter,
-	)
+	if !s.testInstallation.Metadata.ValidationAlwaysAccept {
+		s.testInstallation.Assertions.ExpectGlooObjectNotExist(
+			s.ctx,
+			s.getterForMeta(&badVirtualHostOptionMeta),
+			&badVirtualHostOptionMeta,
+		)
+	} else {
+		// Check status is rejected on bad VirtualHostOption
+		s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+			s.getterForMeta(&badVirtualHostOptionMeta),
+			core.Status_Rejected,
+			defaults.KubeGatewayReporter,
+		)
+	}
 }
 
 // The goal here is to test the behavior when multiple VHOs target a gateway with multiple listeners and only some
