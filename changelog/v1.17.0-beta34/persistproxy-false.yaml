@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Set persistProxySpec to false in kubernetes e2e tests.
+      skipCI-docs-build:true
