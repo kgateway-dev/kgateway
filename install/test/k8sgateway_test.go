@@ -83,7 +83,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetRegistry().GetValue()).To(Equal("docker.io/istio"))
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetRepository().GetValue()).To(Equal("proxyv2"))
-				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetTag().GetValue()).To(Equal("1.21.2"))
+				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetTag().GetValue()).To(Equal("1.22.0"))
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetLogLevel().GetValue()).To(Equal("warning"))
 				Expect(gwpKube.GetIstio().GetIstioDiscoveryAddress().GetValue()).To(Equal("istiod.istio-system.svc:15012"))
 				Expect(gwpKube.GetIstio().GetIstioMetaMeshId().GetValue()).To(Equal("cluster.local"))
