@@ -34,10 +34,10 @@ type glooIstioAutoMtlsTestingSuite struct {
 }
 
 func NewGlooIstioAutoMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	enableAutomtlsFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{})))
-	disableAutomtlsFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{DisableIstioAutoMtls: true})))
-	sslConfigFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{SetSslConfig: true})))
-	sslConfigAndDisableAutomtlsFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{SetSslConfig: true, DisableIstioAutoMtls: true})))
+	enableAutomtlsFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFile(UpstreamConfigOpts{})))
+	disableAutomtlsFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFile(UpstreamConfigOpts{DisableIstioAutoMtls: true})))
+	sslConfigFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFile(UpstreamConfigOpts{SetSslConfig: true})))
+	sslConfigAndDisableAutomtlsFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioAutoMtlsTestingSuite-%s", getGlooGatewayEdgeResourceFile(UpstreamConfigOpts{SetSslConfig: true, DisableIstioAutoMtls: true})))
 
 	return &glooIstioAutoMtlsTestingSuite{
 		ctx:                             ctx,
@@ -193,7 +193,7 @@ func (s *glooIstioAutoMtlsTestingSuite) TestUpgrade() {
 	})
 
 	// Initially use sslConfig on upstream
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.disableAutomtlsFile)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.sslConfigFile)
 	s.NoError(err, "can apply generated routing manifest with sslConfig upstream")
 
 	// Apply strict peer auth Istio policy to check traffic is consistently mtls
