@@ -65,6 +65,7 @@ func NewGatewayInputChannels() *GatewayInputChannels {
 var (
 	// labels used to uniquely identify Proxies that are managed by the kube gateway controller
 	kubeGatewayProxyLabels = map[string]string{
+		// the proxy type key/value must stay in sync with the one defined in projects/gateway2/translator/gateway_translator.go
 		utils.ProxyTypeKey: utils.GatewayApiProxyValue,
 	}
 )
