@@ -16,7 +16,7 @@ settings:
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
-  persistProxySpec: true
+  persistProxySpec: false
   logLevel: info
   validation:
     # this is not relevant for k8s GW
