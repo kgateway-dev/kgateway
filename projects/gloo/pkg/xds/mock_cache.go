@@ -1,25 +1,22 @@
-package syncer
+package xds
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
-
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 var (
 	// Compile-time assertion
-	_ sanitizer.XdsSanitizer = new(MockXdsSanitizer)
-	// Compile-time assertion
 	_ envoycache.SnapshotCache = new(MockXdsCache)
 )
 
-// Deprecated: Prefer the MockXdsCache that is colocated with our xds functionality in
-// `projects/gloo/pkg/xds`
+// MockXdsCache is a custom implementation for the SnapshotCache interface
+// It was copied from `project/gloo/pkg/syncer/syncer_test_helper.MockXdsCache`
+// It is located here for 2 reasons:
+//  1. It is now co-located with the relevant xds code
+//  2. It can be imported by other tests, without introducing import cycles
 type MockXdsCache struct {
 	Called bool
 	// Snap that is set
@@ -56,17 +53,4 @@ func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 
 func (*MockXdsCache) ClearSnapshot(node string) {
 	panic("implement me")
-}
-
-type MockXdsSanitizer struct {
-	Called bool
-	Snap   envoycache.Snapshot
-}
-
-func (s *MockXdsSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) envoycache.Snapshot {
-	s.Called = true
-	if s.Snap != nil {
-		return s.Snap
-	}
-	return xdsSnapshot
 }
