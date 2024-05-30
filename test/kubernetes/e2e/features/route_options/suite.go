@@ -142,10 +142,7 @@ func (s *testingSuite) TestConfigureInvalidRouteOptionsWithTargetRef() {
 func (s *testingSuite) TestConfigureRouteOptionsWithMultipleTargetRefManualSetup() {
 	// Manually apply our manifests so we can assert that basic rto exists before applying extra rto.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1Manifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1Manifest)
 	s.NoError(err, "can apply "+httproute1Manifest)
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicRtoTargetRefManifest)
@@ -188,10 +185,7 @@ func (s *testingSuite) TestConfigureRouteOptionsWithMultipleTargetRefManualSetup
 func (s *testingSuite) TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup() {
 	// Manually apply our manifests so we can assert that basic rto exists before applying extra rto.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1MultipleExtensionsManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1MultipleExtensionsManifest)
 	s.NoError(err, "can apply "+httproute1MultipleExtensionsManifest)
 
 	// here we apply the extra manifest first so that it is older
