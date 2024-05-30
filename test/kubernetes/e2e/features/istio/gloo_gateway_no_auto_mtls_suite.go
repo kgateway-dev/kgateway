@@ -34,8 +34,8 @@ type glooIstioTestingSuite struct {
 func NewGlooTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	log := contextutils.LoggerFrom(ctx)
 
-	noMtlsGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{})))
-	sslGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFilmeName(UpstreamConfigOpts{SetSslConfig: true})))
+	noMtlsGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFile(UpstreamConfigOpts{})))
+	sslGlooResourcesFile := filepath.Join(testInst.GeneratedFiles.TempDir, fmt.Sprintf("glooIstioTestingSuite-%s", getGlooGatewayEdgeResourceFile(UpstreamConfigOpts{SetSslConfig: true})))
 
 	noMtlsResources := GetGlooGatewayEdgeResources(testInst.Metadata.InstallNamespace, UpstreamConfigOpts{})
 	err := resources.WriteResourcesToFile(noMtlsResources, noMtlsGlooResourcesFile)
