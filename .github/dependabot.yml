@@ -1,0 +1,14 @@
+# We intentionally scope our dependabot.yml to _only_ GitHub actions
+# This will allow us to bump versions of internal tools used in our pipeline more easily.
+# We do not however, want to automatically bump customer-facing dependencies.
+version: 2
+updates:
+  # https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every week
+      interval: "weekly"
+      # Check for updates on Sundays
+      # The intention here is to have updates available on Monday morning for the team to process
+      day: "sunday"

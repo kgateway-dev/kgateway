@@ -27,6 +27,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest = tm
 		}
 
+		BeforeEach(func() {
+			valuesArgs = []string{}
+		})
+
 		JustBeforeEach(func() {
 			prepareMakefile(namespace, helmValues{valuesArgs: valuesArgs})
 		})
