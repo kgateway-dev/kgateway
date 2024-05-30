@@ -9,6 +9,8 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
-      # Check for updates on Sundays
-      # The intention here is to have updates available on Monday morning for the team to process
-      day: "sunday"
+    groups:
+      # Group all updates into a single PR, rather than 1 per / dependency
+      "gha":
+        patterns:
+          - "*"
