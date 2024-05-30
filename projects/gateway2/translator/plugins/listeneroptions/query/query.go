@@ -75,7 +75,7 @@ func (r *listenerOptionQueries) GetAttachedListenerOptions(
 	attachedItems := &listenerOptionsQueryResult{}
 
 	for i := range list.Items {
-		targetRefs := list.Items[i].Spec.GetTargetRef()
+		targetRefs := list.Items[i].Spec.GetTargetRefs()
 		if len(targetRefs) > 1 {
 			//TODO: warning that multiple refs present, only using first one
 		}

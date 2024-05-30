@@ -233,7 +233,7 @@ func attachedListenerOption() *solokubev1.ListenerOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.ListenerOption{
-			TargetRef: []*corev1.PolicyTargetReferenceWithSectionName{
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				{
 					Group:     gwv1.GroupVersion.Group,
 					Kind:      wellknown.GatewayKind,
@@ -248,7 +248,7 @@ func attachedListenerOption() *solokubev1.ListenerOption {
 func attachedListenerOptionWithSectionName() *solokubev1.ListenerOption {
 	opt := attachedListenerOption()
 	opt.ObjectMeta.Name = "good-policy-with-section-name"
-	opt.Spec.TargetRef[0].SectionName = &wrapperspb.StringValue{
+	opt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "test-listener",
 	}
 	return opt
@@ -257,7 +257,7 @@ func attachedListenerOptionWithSectionName() *solokubev1.ListenerOption {
 func attachedListenerOptionWithDiffSectionName() *solokubev1.ListenerOption {
 	opt := attachedListenerOption()
 	opt.ObjectMeta.Name = "bad-policy-with-section-name"
-	opt.Spec.TargetRef[0].SectionName = &wrapperspb.StringValue{
+	opt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "not-our-listener",
 	}
 	return opt
@@ -266,7 +266,7 @@ func attachedListenerOptionWithDiffSectionName() *solokubev1.ListenerOption {
 func attachedListenerOptionOmitNamespace() *solokubev1.ListenerOption {
 	opt := attachedListenerOption()
 	opt.ObjectMeta.Name = "good-policy-no-ns"
-	opt.Spec.TargetRef[0].Namespace = nil
+	opt.Spec.TargetRefs[0].Namespace = nil
 	return opt
 }
 
@@ -281,7 +281,7 @@ func diffNamespaceListenerOptionOmitNamespace() *solokubev1.ListenerOption {
 	opt := attachedListenerOption()
 	opt.ObjectMeta.Name = "bad-policy"
 	opt.ObjectMeta.Namespace = "non-default"
-	opt.Spec.TargetRef[0].Namespace = nil
+	opt.Spec.TargetRefs[0].Namespace = nil
 	return opt
 }
 
@@ -294,7 +294,7 @@ func attachedListenerOptionMultipleTargetRefHit() *solokubev1.ListenerOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.ListenerOption{
-			TargetRef: []*corev1.PolicyTargetReferenceWithSectionName{
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				{
 					Group:     gwv1.GroupVersion.Group,
 					Kind:      wellknown.GatewayKind,
@@ -321,7 +321,7 @@ func attachedListenerOptionMultipleTargetRefMiss() *solokubev1.ListenerOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.ListenerOption{
-			TargetRef: []*corev1.PolicyTargetReferenceWithSectionName{
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				{
 					Group:     gwv1.GroupVersion.Group,
 					Kind:      wellknown.GatewayKind,

@@ -412,7 +412,7 @@ spec:
                       type: object
                     type: array
                 type: object
-              targetRef:
+              targetRefs:
                 items:
                   properties:
                     group:

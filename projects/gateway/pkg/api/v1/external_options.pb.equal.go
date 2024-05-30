@@ -194,17 +194,17 @@ func (m *ListenerOption) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetTargetRef()) != len(target.GetTargetRef()) {
+	if len(m.GetTargetRefs()) != len(target.GetTargetRefs()) {
 		return false
 	}
-	for idx, v := range m.GetTargetRef() {
+	for idx, v := range m.GetTargetRefs() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetTargetRef()[idx]) {
+			if !h.Equal(target.GetTargetRefs()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetTargetRef()[idx]) {
+			if !proto.Equal(v, target.GetTargetRefs()[idx]) {
 				return false
 			}
 		}
@@ -255,14 +255,21 @@ func (m *HttpListenerOption) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetTargetRef()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetTargetRef()) {
-			return false
+	if len(m.GetTargetRefs()) != len(target.GetTargetRefs()) {
+		return false
+	}
+	for idx, v := range m.GetTargetRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTargetRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTargetRefs()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetTargetRef(), target.GetTargetRef()) {
-			return false
-		}
+
 	}
 
 	return true

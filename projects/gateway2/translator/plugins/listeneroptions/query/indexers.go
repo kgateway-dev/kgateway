@@ -25,7 +25,7 @@ func listenerOptionTargetRefIndexer(obj client.Object) []string {
 	}
 
 	var res []string
-	targetRefs := lisOpt.Spec.GetTargetRef()
+	targetRefs := lisOpt.Spec.GetTargetRefs()
 	if len(targetRefs) == 0 {
 		return res
 	}

@@ -123,7 +123,7 @@ func attachedListenerOption() *solokubev1.ListenerOption {
 			Namespace: "default",
 		},
 		Spec: sologatewayv1.ListenerOption{
-			TargetRef: []*corev1.PolicyTargetReferenceWithSectionName{
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				&corev1.PolicyTargetReferenceWithSectionName{
 					Group:     gwv1.GroupVersion.Group,
 					Kind:      wellknown.GatewayKind,
@@ -141,7 +141,7 @@ func attachedListenerOption() *solokubev1.ListenerOption {
 }
 func attachedListenerOptionWithSectionName() *solokubev1.ListenerOption {
 	listOpt := attachedListenerOption()
-	listOpt.Spec.TargetRef[0].SectionName = &wrapperspb.StringValue{
+	listOpt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "test-listener",
 	}
 	return listOpt
@@ -149,13 +149,13 @@ func attachedListenerOptionWithSectionName() *solokubev1.ListenerOption {
 
 func attachedListenerOptionOmitNamespace() *solokubev1.ListenerOption {
 	listOpt := attachedListenerOption()
-	listOpt.Spec.TargetRef[0].Namespace = nil
+	listOpt.Spec.TargetRefs[0].Namespace = nil
 	return listOpt
 }
 
 func nonAttachedListenerOption() *solokubev1.ListenerOption {
 	listOpt := attachedListenerOption()
 	listOpt.ObjectMeta.Name = "bad-policy"
-	listOpt.Spec.TargetRef[0].Name = "bad-gw"
+	listOpt.Spec.TargetRefs[0].Name = "bad-gw"
 	return listOpt
 }
