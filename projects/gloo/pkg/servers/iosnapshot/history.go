@@ -16,7 +16,7 @@ type History interface {
 	// GetRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
 	// Any sensitive data contained in the Snapshot will either be explicitly redacted
 	// or entirely excluded
-	GetRedactedApiSnapshot() (map[string]interface{}, error)
+	GetRedactedApiSnapshot() *v1snap.ApiSnapshot
 	// GetInputSnapshot gets the input snapshot for all components.
 	GetInputSnapshot() ([]byte, error)
 	// GetProxySnapshot returns the Proxies generated for all components.
@@ -27,13 +27,13 @@ type History interface {
 
 // NewHistory returns an implementation of the History interface
 func NewHistory(cache cache.SnapshotCache) History {
-	return &history{
+	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
 	}
 }
 
-type history struct {
+type historyImpl struct {
 	// TODO:
 	// 	We rely on a mutex to prevent races reading/writing the data for this object
 	//	We should instead use channels to coordinate this
@@ -43,7 +43,7 @@ type history struct {
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
-func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
+func (h *historyImpl) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
 	// any contention/issues, from impacting the runtime of the system
 	go func() {
@@ -52,41 +52,43 @@ func (h *history) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 }
 
 // setApiSnapshotSafe sets the latest input ApiSnapshot
-func (h *history) setApiSnapshotSafe(latestApiSnapshot *v1snap.ApiSnapshot) {
+func (h *historyImpl) setApiSnapshotSafe(latestApiSnapshot *v1snap.ApiSnapshot) {
 	h.Lock()
 	defer h.Unlock()
 
-	// To ensure that any modifications we perform on the ApiSnapshot DO NOT impact the Control Plane
-	clonedSnapshot := latestApiSnapshot.Clone()
-
-	h.latestApiSnapshot = &clonedSnapshot
+	h.latestApiSnapshot = latestApiSnapshot
 }
 
 // GetInputSnapshot gets the input snapshot for all components.
-func (h *history) GetInputSnapshot() ([]byte, error) {
-	input, err := h.GetRedactedApiSnapshot()
+func (h *historyImpl) GetInputSnapshot() ([]byte, error) {
+	snap := h.GetRedactedApiSnapshot()
+
+	// Proxies are defined on the ApiSnapshot, but are not considered part of the
+	// "input snapshot" since they are the product (output) of translation
+	snap.Proxies = nil
+
+	genericMaps, err := apiSnapshotToGenericMap(snap)
 	if err != nil {
 		return nil, err
 	}
-
-	// todo: remove proxies from what is returned?
-
-	return formatMap("json_compact", input)
+	return formatMap("json_compact", genericMaps)
 }
 
-func (h *history) GetProxySnapshot() ([]byte, error) {
-	input, err := h.GetRedactedApiSnapshot()
+func (h *historyImpl) GetProxySnapshot() ([]byte, error) {
+	snap := h.GetRedactedApiSnapshot()
+
+	onlyProxies := &v1snap.ApiSnapshot{
+		Proxies: snap.Proxies,
+	}
+	genericMaps, err := apiSnapshotToGenericMap(onlyProxies)
 	if err != nil {
 		return nil, err
 	}
-
-	// todo: remove all types EXCEPT proxies
-
-	return formatMap("json_compact", input)
+	return formatMap("json_compact", genericMaps)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
-func (h *history) GetXdsSnapshot() ([]byte, error) {
+func (h *historyImpl) GetXdsSnapshot() ([]byte, error) {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 
@@ -116,17 +118,27 @@ func (h *history) GetXdsSnapshot() ([]byte, error) {
 //
 //     Given that the rate of requests for the ApiSnapshot <<< the frequency of updates of an ApiSnapshot by the Control Plane,
 //     in this first pass we opt to take approach #2.
-func (h *history) GetRedactedApiSnapshot() (map[string]interface{}, error) {
+func (h *historyImpl) GetRedactedApiSnapshot() *v1snap.ApiSnapshot {
+	snap := h.getApiSnapshotSafe()
+
+	redactApiSnapshot(snap)
+	return snap
+}
+
+// getApiSnapshotSafe gets a clone of the latest ApiSnapshot
+func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
+	h.RLock()
+	defer h.RUnlock()
 	if h.latestApiSnapshot == nil {
-		return map[string]interface{}{}, nil
+		return &v1snap.ApiSnapshot{}
 	}
 
-	redactedSnapshot := redactApiSnapshot(h.latestApiSnapshot)
-	genericMaps, err := apiSnapshotToGenericMap(redactedSnapshot)
-	if err != nil {
-		return nil, err
-	}
-	return genericMaps, nil
+	// This clone is critical!!
+	// We do this to ensure the following cases:
+	//	1. Modifications to this snapshot, by the admin server, DO NOT impact the Control Plane
+	//	2. Modifications to this snapshot by a single request, DO NOT interfere with other requests
+	clone := h.latestApiSnapshot.Clone()
+	return &clone
 }
 
 // redactApiSnapshot accepts an ApiSnapshot, and returns a cloned representation of that Snapshot,
@@ -136,14 +148,10 @@ func (h *history) GetRedactedApiSnapshot() (map[string]interface{}, error) {
 // NOTE: This is an extremely naive implementation. It is intended as a first pass to get this API
 // into the hands of the field.As we iterate on this component, we can use some of the redaction
 // utilities in `/pkg/utils/syncutil`.
-func redactApiSnapshot(original *v1snap.ApiSnapshot) *v1snap.ApiSnapshot {
-	redacted := original.Clone()
-
-	redacted.Secrets = nil
+func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
+	snap.Secrets = nil
 
 	// See `pkg/utils/syncutil/log_redactor.StringifySnapshot` for an explanation for
 	// why we redact Artifacts
-	redacted.Artifacts = nil
-
-	return &redacted
+	snap.Artifacts = nil
 }
