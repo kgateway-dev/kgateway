@@ -2,10 +2,6 @@ name: Nightly
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
-  # The istio version to use for the e2e tests
-  # TODO(npolshak): Test across multiple versions of Istio
-  # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-  ISTIO_VERSION: "1.21.2"
 
 on:
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/crontab.html#tag_20_25_07
@@ -99,6 +95,7 @@ jobs:
           kind-version: ${{ steps.dotenv.outputs.kind_version }}
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
           helm-version: ${{ steps.dotenv.outputs.helm_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
       # Run the tests
       - id: run-tests
         name: Run Kubernetes e2e Tests
@@ -107,6 +104,7 @@ jobs:
           cluster-name: ${{ matrix.test.cluster-name }}
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
 
   end_to_end_tests_main:
     name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
@@ -156,6 +154,7 @@ jobs:
           kind-version: ${{ steps.dotenv.outputs.kind_version }}
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
           helm-version: ${{ steps.dotenv.outputs.helm_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
       # Run the tests
       - id: run-tests
         name: Run Kubernetes e2e Tests
@@ -164,6 +163,7 @@ jobs:
           cluster-name: ${{ matrix.test.cluster-name }}
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
 
   regression_tests_on_demand:
     name: on demand regression tests
