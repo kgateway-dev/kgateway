@@ -283,7 +283,6 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 
 func (s ApiSnapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&s)
-
 }
 
 func (s *ApiSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

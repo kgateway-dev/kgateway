@@ -89,7 +89,6 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 
 func (s TranslatorSnapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&s)
-
 }
 
 func (s *TranslatorSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

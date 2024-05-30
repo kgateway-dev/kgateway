@@ -89,7 +89,6 @@ func (s DiscoverySnapshot) HashFields() []zap.Field {
 
 func (s DiscoverySnapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&s)
-
 }
 
 func (s *DiscoverySnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

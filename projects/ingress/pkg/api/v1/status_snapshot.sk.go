@@ -73,7 +73,6 @@ func (s StatusSnapshot) HashFields() []zap.Field {
 
 func (s StatusSnapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&s)
-
 }
 
 func (s *StatusSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

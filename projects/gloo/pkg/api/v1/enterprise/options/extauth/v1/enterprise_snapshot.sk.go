@@ -59,7 +59,6 @@ func (s EnterpriseSnapshot) HashFields() []zap.Field {
 
 func (s EnterpriseSnapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&s)
-
 }
 
 func (s *EnterpriseSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
