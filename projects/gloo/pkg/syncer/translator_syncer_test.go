@@ -113,6 +113,9 @@ var _ = Describe("Translate Proxy", func() {
 		// update rv for proxy
 		p1, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
+
+		snapClone := snap.Clone()
+		snap = &snapClone
 		snap.Proxies[0] = p1
 
 		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil, iosnapshot.NewHistory(xdsCache))
