@@ -1,0 +1,31 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs1
+spec:
+  virtualHost:
+    domains:
+    - example1.com
+    routes:
+    - matchers:
+      - prefix: /1
+      routeAction:
+        single:
+          upstream:
+            name: nginx-upstream
+---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs2
+spec:
+  virtualHost:
+    domains:
+    - example2.com
+    routes:
+    - matchers:
+      - prefix: /2
+      routeAction:
+        single:
+          upstream:
+            name: nginx-upstream
