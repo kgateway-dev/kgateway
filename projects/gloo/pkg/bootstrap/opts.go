@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/client-go/kubernetes"
@@ -18,7 +20,6 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 )
