@@ -15,9 +15,8 @@ SKIP_DOCKER="${SKIP_DOCKER:-false}"
 JUST_KIND="${JUST_KIND:-false}"
 # Offer a default value for type of installation
 KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
-# The version of istio to install for glooctl tests
-# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-ISTIO_VERSION="${ISTIO_VERSION:-1.21.2}"
+# The version of istio to install for glooctl tests. This should get set by the 'setup-kind-cluster' github action, where it is a required input.
+ISTIO_VERSION="${ISTIO_VERSION:-1.22.0}"
 # Set the default image variant to standard
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment

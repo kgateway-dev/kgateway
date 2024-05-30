@@ -18,6 +18,9 @@ inputs:
   helm-version:
     required: true
     description: The version of Helm
+  istio-version:
+    required: true
+    description: The version of Istio
 
 runs:
   using: "composite"
@@ -39,4 +42,5 @@ runs:
       env:
         CLUSTER_NAME: ${{ inputs.cluster-name }}
         CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
+        ISTIO_VERSION: ${{ inputs.istio-version }}
       run: ./ci/kind/setup-kind.sh
