@@ -50,8 +50,8 @@ var _ = Describe("History", func() {
 				ContainSubstring("proxy-east"),
 				ContainSubstring("proxy-west"),
 			), "proxies are included in redacted data")
-			Expect(redactedSnapshot.Secrets).To(HaveLen(0), "secrets are removed in redacted data")
-			Expect(redactedSnapshot.Artifacts).To(HaveLen(0), "artifacts are removed in redacted data")
+			Expect(redactedSnapshot.Secrets).To(BeEmpty(), "secrets are removed in redacted data")
+			Expect(redactedSnapshot.Artifacts).To(BeEmpty(), "artifacts are removed in redacted data")
 		})
 
 		It("returns ApiSnapshot that is clone of original", func() {
@@ -93,7 +93,7 @@ var _ = Describe("History", func() {
 			err = json.Unmarshal(inputSnapshotBytes, &returnedData)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(returnedData.Proxies).To(HaveLen(0), "proxies should not be included in input snap")
+			Expect(returnedData.Proxies).To(BeEmpty(), "proxies should not be included in input snap")
 			Expect(returnedData.Upstreams).To(ContainElements(
 				ContainSubstring("upstream-east"),
 				ContainSubstring("upstream-west"),
@@ -127,7 +127,7 @@ var _ = Describe("History", func() {
 				ContainSubstring("proxy-east"),
 				ContainSubstring("proxy-west"),
 			), "proxy resources should still be included in proxy snap")
-			Expect(returnedData.Upstreams).To(HaveLen(0), "all other resources should not be included in proxy snap")
+			Expect(returnedData.Upstreams).To(BeEmpty(), "all other resources should not be included in proxy snap")
 		})
 
 	})
