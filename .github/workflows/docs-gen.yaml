@@ -40,7 +40,7 @@ jobs:
         if: ${{ github.event.pull_request.draft }}
         run: echo "value=true" >> $GITHUB_OUTPUT
       - id: checkout-code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # We require gathering the branch and tag history since we rely on a `git diff`
           # which compares the state of two branches
@@ -93,12 +93,12 @@ jobs:
     timeout-minutes: 60
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: main
     - name: Override main checkout if deploying PR test
       if: ${{ github.event_name == 'pull_request' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - uses: ./.github/workflows/composite-actions/prep-go-runner
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v2
