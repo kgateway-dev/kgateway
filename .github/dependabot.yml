@@ -14,3 +14,8 @@ updates:
       "github-actions":
         patterns:
           - "*"
+    ignore:
+      # For setup-protoc, ignore all updates
+      # When we attempted to upgrade arduino/setup-protoc to v3, we encountered:
+      # "Error: Error: unable to get latest version"
+      - dependency-name: "arduino/setup-protoc"

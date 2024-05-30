@@ -74,10 +74,9 @@ jobs:
           go-version-file: gloo/go.mod
         id: go
       - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+        uses: arduino/setup-protoc@v1
         with:
-          # Added support only for the new protobuf tag naming convention MINOR.PATCH
-          version: "6.1"
+          version: "3.6.1"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
