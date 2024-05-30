@@ -320,7 +320,7 @@ type GatewayParameters struct {
 	Image            *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
 	ProxyDeployment  *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
 	Service          *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
-	SdsContaienr     SdsContainer           `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
+	SdsContainer     SdsContainer           `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
 	IstioIntegration Istio                  `json:"istioIntegration,omitempty" desc:"Configs used to manage Istio integration."`
 	// TODO(npolshak): Add support for GlooMtls
 }
