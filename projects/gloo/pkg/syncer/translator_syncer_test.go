@@ -201,6 +201,9 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		us.Metadata.Annotations = map[string]string{"uniqueErrPerProxy": "true"}
 		_, err = upstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
+
+		snapClone := snap.Clone()
+		snap = &snapClone
 		snap.Upstreams = upstreams
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
