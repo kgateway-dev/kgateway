@@ -20,11 +20,11 @@ jobs:
       should-auto-succeed-kube-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.11.0
+      uses: styfle/cancel-workflow-action@0.12.1
       with:
         access_token: ${{ github.token }}
     - id: checkout-code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         # We require gathering the branch and tag history since we rely on a `git diff`
         # which compares the state of two branches
@@ -85,7 +85,7 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Prep Go Runner
       uses: ./.github/workflows/composite-actions/prep-go-runner
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'

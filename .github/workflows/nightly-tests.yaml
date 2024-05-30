@@ -76,7 +76,7 @@ jobs:
 
     steps:
       # Checkout the branch that initiated the action
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
       # The dotenv action is used to load key-value pairs from files.
@@ -133,7 +133,7 @@ jobs:
             file: './.github/workflows/.env/nightly-tests/max_versions.env'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
       # The dotenv action is used to load key-value pairs from files.
@@ -179,7 +179,7 @@ jobs:
         image-variant:
           - standard
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: ${{ github.ref_name }}
     - uses: ./.github/workflows/composite-actions/regression-tests
@@ -208,7 +208,7 @@ jobs:
         image-variant:
           - standard
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: main
     - uses: ./.github/workflows/composite-actions/regression-tests
@@ -225,7 +225,7 @@ jobs:
         kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
                         { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: v1.16.x
       - uses: ./.github/workflows/composite-actions/regression-tests
@@ -242,7 +242,7 @@ jobs:
         kube-version: [ { node: 'v1.23.13@sha256:ef453bb7c79f0e3caba88d2067d4196f427794086a7d0df8df4f019d5e336b61', kubectl: 'v1.23.17', kind: 'v0.17.0', helm: 'v3.11.2' },
                         { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' } ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: v1.15.x
       - uses: ./.github/workflows/composite-actions/regression-tests
@@ -253,7 +253,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
       - uses: ./.github/workflows/composite-actions/prep-go-runner
@@ -265,7 +265,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
       - uses: ./.github/workflows/composite-actions/prep-go-runner
@@ -277,7 +277,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: v1.15.x
       - uses: ./.github/workflows/composite-actions/prep-go-runner
@@ -289,7 +289,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: v1.15.x
       - uses: ./.github/workflows/composite-actions/prep-go-runner
@@ -308,7 +308,7 @@ jobs:
         image-variant:
           - standard
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: main
     - uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
@@ -330,7 +330,7 @@ jobs:
       - regression_tests_on_demand
       - performance_tests_on_demand
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: compute-preamble
         id: compute-preamble
         shell: bash
@@ -353,7 +353,7 @@ jobs:
           preamble="$trigger ($branch)"
           echo "Setting PREAMBLE as $preamble"
           echo "preamble=$preamble" >> $GITHUB_OUTPUT
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           # Caching in setup-go is on by default
           # In our prep-go-runner we use a more configurable cache https://github.com/actions/cache
