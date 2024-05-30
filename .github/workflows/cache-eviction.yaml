@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Cleanup Cache for PR
         # In this step we will delete the cache keys for the PR that was just closed.
         # We use a GitHub CLI extension (https://github.com/actions/gh-actions-cache).

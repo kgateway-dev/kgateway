@@ -5,12 +5,18 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 )
@@ -77,7 +83,41 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 			xdsClusterAssertion(s.testInstallation),
 		)
 	}
+}
 
+func (s *testingSuite) TestSelfManagedGateway() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, selfManagedGatewayManifestFile)
+		s.NoError(err, "can delete manifest")
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, selfManagedGatewayManifestFile)
+	s.Require().NoError(err, "can apply manifest")
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		gw := &gwv1.Gateway{}
+		err := s.testInstallation.ClusterContext.Client.Get(s.ctx,
+			types.NamespacedName{Name: glooProxyObjectMeta.Name, Namespace: glooProxyObjectMeta.Namespace},
+			gw)
+		assert.NoError(c, err, "gateway not found")
+
+		accepted := false
+		for _, conditions := range gw.Status.Conditions {
+			if conditions.Type == string(gwv1.GatewayConditionAccepted) && conditions.Status == metav1.ConditionTrue {
+				accepted = true
+				break
+			}
+		}
+		assert.True(c, accepted, "gateway status not accepted")
+	}, 10*time.Second, 1*time.Second)
+
+	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+}
+
+func (s *testingSuite) getterForMeta(meta *metav1.ObjectMeta) helpers.InputResourceGetter {
+	return func() (resources.InputResource, error) {
+		return s.testInstallation.ResourceClients.RouteOptionClient().Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{})
+	}
 }
 
 func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {

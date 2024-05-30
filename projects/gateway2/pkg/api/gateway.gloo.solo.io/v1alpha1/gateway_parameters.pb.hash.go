@@ -62,6 +62,28 @@ func (m *GatewayParametersSpec) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *GatewayParametersSpec_SelfManaged:
+
+		if h, ok := interface{}(m.GetSelfManaged()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SelfManaged")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetSelfManaged(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("SelfManaged")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
