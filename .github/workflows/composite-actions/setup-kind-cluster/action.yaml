@@ -23,15 +23,15 @@ runs:
   using: "composite"
   steps:
     - name: Install kind
-      uses: helm/kind-action@v1.5.0
+      uses: helm/kind-action@v1.10.0
       with:
         install_only: true
         version: ${{ inputs.kind-version }}
-    - uses: azure/setup-kubectl@v3
+    - uses: azure/setup-kubectl@v4
       id: kubectl
       with:
         version: ${{ inputs.kubectl-version }}
-    - uses: azure/setup-helm@v3
+    - uses: azure/setup-helm@v4
       with:
         version: ${{ inputs.helm-version }}
     - name: Setup test env
