@@ -143,9 +143,9 @@ func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
 	return &clone
 }
 
-// redactApiSnapshot accepts an ApiSnapshot, and returns a cloned representation of that Snapshot,
-// but without any sensitive data. It is critical that data which is exposed by this component
-// is redacted, so that customers can feel comfortable sharing the results with us.
+// redactApiSnapshot accepts an ApiSnapshot, and mutates it to remove sensitive data.
+// It is critical that data which is exposed by this component is redacted,
+// so that customers can feel comfortable sharing the results with us.
 //
 // NOTE: This is an extremely naive implementation. It is intended as a first pass to get this API
 // into the hands of the field.As we iterate on this component, we can use some of the redaction
