@@ -3,7 +3,6 @@ package listeneroptions
 import (
 	"context"
 
-	"github.com/rotisserie/eris"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
@@ -18,13 +17,6 @@ type plugin struct {
 	gwQueries     gwquery.GatewayQueries
 	lisOptQueries lisquery.ListenerOptionQueries
 }
-
-var (
-	ErrUnexpectedListenerType = eris.New("unexpected listener type")
-	errUnexpectedListenerType = func(l *v1.Listener) error {
-		return eris.Wrapf(ErrUnexpectedListenerType, "expected AggregateListener, got %T", l.GetListenerType())
-	}
-)
 
 func NewPlugin(
 	gwQueries gwquery.GatewayQueries,

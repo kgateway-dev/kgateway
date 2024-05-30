@@ -124,7 +124,7 @@ func attachedListenerOption() *solokubev1.ListenerOption {
 		},
 		Spec: sologatewayv1.ListenerOption{
 			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
-				&corev1.PolicyTargetReferenceWithSectionName{
+				{
 					Group:     gwv1.GroupVersion.Group,
 					Kind:      wellknown.GatewayKind,
 					Name:      "gw",
