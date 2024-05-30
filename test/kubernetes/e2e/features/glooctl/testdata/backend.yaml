@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+spec:
+  selector:
+    app.kubernetes.io/name: nginx
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http-web-svc
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app.kubernetes.io/name: nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx:stable
+      ports:
+        - containerPort: 80
+          name: http-web-svc
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: nginx-upstream
+spec:
+  kube:
+    selector:
+      app.kubernetes.io/name: nginx
+    serviceName: nginx-svc
+    serviceNamespace: default
+    servicePort: 8080

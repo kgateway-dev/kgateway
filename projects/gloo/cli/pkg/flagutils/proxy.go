@@ -16,9 +16,9 @@ func AddGetProxyFlags(set *pflag.FlagSet, proxy *options.GetProxy) {
 }
 
 func addK8sGatewaySourceFlag(set *pflag.FlagSet, k8sGatewaySource *bool) {
-	set.BoolVarP(k8sGatewaySource, k8sGatewaySourceFlag, "", false, "include proxies produced from k8s gateway resources")
+	set.BoolVarP(k8sGatewaySource, k8sGatewaySourceFlag, "", false, "include proxies produced from k8s gateway resources (ignored if name is provided)")
 }
 
 func addEdgeGatewaySourceFlag(set *pflag.FlagSet, edgeGatewaySource *bool) {
-	set.BoolVarP(edgeGatewaySource, edgeGatewaySourceFlag, "", false, "include proxies produced from edge gateway resources")
+	set.BoolVarP(edgeGatewaySource, edgeGatewaySourceFlag, "", false, "include proxies produced from edge gateway resources (ignored if name is provided)")
 }
