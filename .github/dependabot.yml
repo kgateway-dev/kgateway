@@ -9,6 +9,13 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
-      # Check for updates on Sundays
-      # The intention here is to have updates available on Monday morning for the team to process
-      day: "sunday"
+    groups:
+      # Group all updates into a single PR, rather than 1 PR / dependency
+      "github-actions":
+        patterns:
+          - "*"
+    ignore:
+      # For setup-protoc, ignore all updates
+      # When we attempted to upgrade arduino/setup-protoc to v3, we encountered:
+      # "Error: Error: unable to get latest version"
+      - dependency-name: "arduino/setup-protoc"
