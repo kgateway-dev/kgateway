@@ -12,23 +12,23 @@ import (
 func ServerHandlers(history iosnapshot.History) func(mux *http.ServeMux, profiles map[string]string) {
 	return func(m *http.ServeMux, profiles map[string]string) {
 		m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
-			b, err := history.GetInputSnapshot()
+			inputSnap, err := history.GetInputSnapshot()
 			if err != nil {
 				respondError(w, err)
 				return
 			}
 
-			respondJson(w, b)
+			respondJson(w, inputSnap)
 		})
 
 		m.HandleFunc("/snapshots/proxies", func(w http.ResponseWriter, r *http.Request) {
-			xdsEntries, err := history.GetProxySnapshot()
+			proxySnap, err := history.GetProxySnapshot()
 			if err != nil {
 				respondError(w, err)
 				return
 			}
 
-			respondJson(w, xdsEntries)
+			respondJson(w, proxySnap)
 		})
 
 		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
