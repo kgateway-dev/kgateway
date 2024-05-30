@@ -81,7 +81,9 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
+	s.snapshotHistory.SetApiSnapshot(snap)
 	s.latestSnap = snap
+
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
@@ -198,7 +200,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode
-// https://github.com/solo-io/gloo/issues/6494
+// Deprecated: https://github.com/solo-io/gloo/issues/6494
+// Prefer to use the iosnapshot.History
 func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 
