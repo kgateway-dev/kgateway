@@ -19,6 +19,9 @@ jobs:
       uses: ./.github/workflows/composite-actions/prep-go-runner
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
+      env:
+        # https://github.com/arduino/setup-protoc/issues/85
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       with:
         version: '3.6.1'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
