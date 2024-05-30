@@ -219,12 +219,18 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	return eps, nil
 }
 
-// Returns true for when configured for Istio integration where endpoints must
-// be defined by IP address rather than hostnames. For details, see:
-// * https://github.com/solo-io/gloo/issues/6195
-func isIstioInjectionEnabled() bool {
+const enableIstioSidecarOnGatewayDeprecatedWarning = "istioIntegration.enableIstioSidecarOnGateway is deprecated. Use istioSDS.enabled instead."
+
+// isIstioInjectionEnabled returns true if Istio integration is enabled, where endpoints
+// must be defined by IP address rather than hostnames. For more details, see:
+// https://github.com/solo-io/gloo/issues/6195
+func isIstioInjectionEnabled() (bool, []string) {
 	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
-	return found && strings.ToLower(lookupResult) == "true"
+	istioIsEnabled := found && strings.EqualFold(lookupResult, "true")
+	if istioIsEnabled {
+		return true, []string{enableIstioSidecarOnGatewayDeprecatedWarning}
+	}
+	return false, nil
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -341,7 +347,10 @@ func computeGlooEndpoints(
 	var warnsToLog, errorsToLog []string
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
-	istioInjectionEnabled := isIstioInjectionEnabled()
+	istioInjectionEnabled, warnings := isIstioInjectionEnabled()
+	if len(warnings) > 0 {
+		warnsToLog = append(warnsToLog, warnings...)
+	}
 
 	// for each upstream
 	for usRef, spec := range upstreams {
