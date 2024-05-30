@@ -10,7 +10,7 @@ updates:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
     groups:
-      # Group all updates into a single PR, rather than 1 per / dependency
-      "gha":
+      # Group all updates into a single PR, rather than 1 PR / dependency
+      "github-actions":
         patterns:
           - "*"
