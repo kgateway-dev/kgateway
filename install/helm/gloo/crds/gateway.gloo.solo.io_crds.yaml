@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: e00922c070577be0
+    crd.solo.io/specHash: 7629e78a7113a21f
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -39,6 +39,8 @@ spec:
                         - deployment
                   required:
                   - kube
+                - required:
+                  - selfManaged
             - properties:
                 kube:
                   oneOf:
@@ -50,6 +52,8 @@ spec:
                     - deployment
               required:
               - kube
+            - required:
+              - selfManaged
             properties:
               kube:
                 properties:
@@ -1437,6 +1441,9 @@ spec:
                         - LoadBalancer
                         type: string
                     type: object
+                type: object
+              selfManaged:
+                maxProperties: 0
                 type: object
             type: object
           status:

@@ -176,6 +176,24 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
+
+		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
+			return &gw2_v1alpha1.GatewayParameters{
+				TypeMeta: metav1.TypeMeta{
+					Kind: gw2_v1alpha1.GatewayParametersGVK.Kind,
+					// The parsing expects GROUP/VERSION format in this field
+					APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.GatewayParametersGVK.Group, gw2_v1alpha1.GatewayParametersGVK.Version),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: defaultNamespace,
+					UID:       "1237",
+				},
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_SelfManaged{},
+				},
+			}
+		}
 	)
 	BeforeEach(func() {
 		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
@@ -186,9 +204,7 @@ var _ = Describe("Deployer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	Context("special cases", func() {
-		var (
-			gwc *api.GatewayClass
-		)
+		var gwc *api.GatewayClass
 		BeforeEach(func() {
 			gwc = &api.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
@@ -553,7 +569,6 @@ var _ = Describe("Deployer", func() {
 					argsMatchers...,
 				))
 				return nil
-
 			}
 		)
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
@@ -798,6 +813,27 @@ var _ = Describe("Deployer", func() {
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
 				newDeployerErr: deployer.NilK8sExtensionsErr,
+			}),
+			Entry("No GatewayParameters override but default is self-managed; should not deploy gateway", &input{
+				dInputs:    defaultDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: selfManagedGatewayParam(wellknown.DefaultGatewayParametersName),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					Expect(objs).To(BeEmpty())
+					return nil
+				},
+			}),
+			Entry("Self-managed GatewayParameters override; should not deploy gateway", &input{
+				dInputs:     defaultDeployerInputs(),
+				gw:          defaultGatewayWithGatewayParams("self-managed"),
+				defaultGwp:  defaultGatewayParams(),
+				overrideGwp: selfManagedGatewayParam("self-managed"),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					Expect(objs).To(BeEmpty())
+					return nil
+				},
 			}),
 		)
 	})

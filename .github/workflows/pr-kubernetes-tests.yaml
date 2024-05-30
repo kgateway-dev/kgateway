@@ -6,10 +6,6 @@ on:
 env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
-# The istio version to use for the e2e tests
-# TODO(npolshak): Test across multiple versions of Istio
-# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-  ISTIO_VERSION: "1.21.2"
 
 jobs:
   prepare_env:
@@ -20,11 +16,11 @@ jobs:
       should-auto-succeed-kube-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.11.0
+      uses: styfle/cancel-workflow-action@0.12.1
       with:
         access_token: ${{ github.token }}
     - id: checkout-code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         # We require gathering the branch and tag history since we rely on a `git diff`
         # which compares the state of two branches
@@ -85,7 +81,7 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Prep Go Runner
       uses: ./.github/workflows/composite-actions/prep-go-runner
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
@@ -108,6 +104,7 @@ jobs:
         kind-version: ${{ steps.dotenv.outputs.kind_version }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         helm-version: ${{ steps.dotenv.outputs.helm_version }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
     - id: run-tests
       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
       uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
@@ -115,3 +112,4 @@ jobs:
         cluster-name: ${{ matrix.test.cluster-name }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
