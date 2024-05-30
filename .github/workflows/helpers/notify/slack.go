@@ -31,6 +31,11 @@ import (
 
 const (
 	postMessageEndpoint = "https://slack.com/api/chat.postMessage"
+
+	resultCancelled = "cancelled"
+	resultFailure   = "failure"
+	resultSkipped   = "skipped"
+	resultSuccess   = "success"
 )
 
 type GithubJobResult struct {
@@ -52,42 +57,64 @@ func main() {
 		panic(err)
 	}
 
-	failedJobs := getFailedJobsFromResults(requiredJobResults)
-	if len(failedJobs) > 0 {
-		sendFailure(failedJobs)
+	unsuccessfulJobs := getUnsuccessfulJobsFromResults(requiredJobResults)
+	if len(unsuccessfulJobs) > 0 {
+		sendFailure(unsuccessfulJobs)
 	} else {
 		sendSuccess()
 	}
 }
 
-// getFailedJobsFromResults processes a set of job results,
-// and returns a list containing the names of any jobs that failed
-// If all jobs were successful, the returned list is empty
-func getFailedJobsFromResults(requiredJobResults map[string]GithubJobResult) []string {
-	var failedJobs []string
+// getUnsuccessfulJobsFromResults processes a set of job results,
+// and returns a map containing the names of any jobs that did not succeed, keyed by the failure state
+// If all jobs were successful, the returned map is empty
+func getUnsuccessfulJobsFromResults(requiredJobResults map[string]GithubJobResult) map[string][]string {
+	unsuccessfulJobsByType := make(map[string][]string)
 
 	for jobName, requiredJobResult := range requiredJobResults {
 		switch requiredJobResult.Result {
-		case "failure":
-			failedJobs = append(failedJobs, jobName)
+		case resultFailure:
+			fallthrough
+		case resultCancelled:
+			jobsForType := unsuccessfulJobsByType[requiredJobResult.Result]
+			unsuccessfulJobsByType[requiredJobResult.Result] = append(jobsForType, jobName)
 			continue
 
-		case "success":
+		case resultSuccess:
+			// We don't report on individuals jobs that were successful
 			continue
+
+		case resultSkipped:
+			// We don't report on individuals jobs that were skipped
+			fallthrough
 
 		default:
 			continue
 		}
 	}
 
-	return failedJobs
+	return unsuccessfulJobsByType
 }
 
 func sendSuccess() {
 	mustSendSlackText(":large_green_circle: <$PARENT_JOB_URL|$PREAMBLE> have all passed!")
 }
-func sendFailure(failedJobs []string) {
-	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed some jobs: %s", strings.Join(failedJobs, ","))
+
+func sendFailure(unsuccessfulJobs map[string][]string) {
+	var failureReasons []string
+
+	for reason, jobs := range unsuccessfulJobs {
+		if len(jobs) == 0 {
+			continue
+		}
+		reasonBuilder := strings.Builder{}
+		reasonBuilder.WriteString(fmt.Sprintf("*%s*: ", strings.ToUpper(reason)))
+		reasonBuilder.WriteString(strings.Join(jobs, ","))
+
+		failureReasons = append(failureReasons, reasonBuilder.String())
+	}
+
+	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed some jobs: %s", strings.Join(failureReasons, "\n"))
 	mustSendSlackText(text)
 }
 

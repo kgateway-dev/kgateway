@@ -1,0 +1,24 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6196
+    resolvesIssue: false
+    description: |
+      gateway2: enable self-managed Gateways
+
+      Adds capability to integrate self-managed gateways
+      that are not meant to be auto-provisioned by the
+      controller. This is required to support use cases
+      where gateways are statically provisioned, such
+      as when running the gateways external to k8s on
+      VMs.
+
+      It adds a selfManaged field to the GatewayParameters
+      CRD which is used to skip the deployment of Gateway
+      related objects (deployment, service, etc.). When
+      a gateway is self-managed, it is expected to be
+      correctly bootstrapped with an envoy config that
+      matches the Gateway resource's name and namespace,
+      specifically the `node` field must be configured
+      correctly to link a self-managed gateway to the
+      Gateway resource.
+
