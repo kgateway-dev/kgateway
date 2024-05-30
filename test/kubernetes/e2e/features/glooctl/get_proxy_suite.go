@@ -96,7 +96,9 @@ func (s *getProxySuite) TearDownSuite() {
 	// gloo picking up the updates in its input snapshot, causing VS deletion to fail in the meantime (gloo
 	// thinks there are still Gateways referencing the VS)
 	err = retry.Do(func() error {
-		return s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeRoutesManifestFile)
+		// use DeleteFileSafe to ignore 'not found' errors, which can happen when 1 VS gets successfully deleted and one fails,
+		// and then we retry the operation (which tries deleting both VS again)
+		return s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, edgeRoutesManifestFile)
 	},
 		retry.LastErrorOnly(true),
 		retry.Delay(1*time.Second),
@@ -108,6 +110,19 @@ func (s *getProxySuite) TearDownSuite() {
 	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendManifestFile)
 	s.NoError(err, "can delete backend manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
+
+	// make sure the proxies get cleaned up
+	s.testInstallation.Assertions.Gomega.Eventually(func(g Gomega) {
+		output, err := s.testInstallation.Actions.Glooctl().GetProxy(s.ctx, "-n", ns, "-o", "kube-yaml")
+		g.Expect(err).NotTo(HaveOccurred())
+		proxies, err := parseProxyOutput(output)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(proxies).To(BeEmpty())
+	}).
+		WithContext(s.ctx).
+		WithTimeout(time.Second*10).
+		WithPolling(time.Second).
+		Should(Succeed(), "proxies should be deleted")
 }
 
 func (s *getProxySuite) TestGetProxy() {

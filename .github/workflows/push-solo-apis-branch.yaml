@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Install SSH Deploy key
-        uses: webfactory/ssh-agent@v0.4.1
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
       - name: Check out code into the Go module directory
@@ -76,7 +76,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
-          version: '3.6.1'
+          version: "3.6.1"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
