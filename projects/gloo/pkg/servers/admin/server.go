@@ -21,6 +21,16 @@ func ServerHandlers(history iosnapshot.History) func(mux *http.ServeMux, profile
 			respondJson(w, b)
 		})
 
+		m.HandleFunc("/snapshots/proxies", func(w http.ResponseWriter, r *http.Request) {
+			xdsEntries, err := history.GetProxySnapshot()
+			if err != nil {
+				respondError(w, err)
+				return
+			}
+
+			respondJson(w, xdsEntries)
+		})
+
 		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
 			xdsEntries, err := history.GetXdsSnapshot()
 			if err != nil {

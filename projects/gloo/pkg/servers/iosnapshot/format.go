@@ -8,6 +8,11 @@ import (
 
 func apiSnapshotToGenericMap(snap *v1snap.ApiSnapshot) (map[string]interface{}, error) {
 	genericMap := map[string]interface{}{}
+
+	if snap == nil {
+		return genericMap, nil
+	}
+
 	jsn, err := json.Marshal(snap)
 	if err != nil {
 		return nil, err
