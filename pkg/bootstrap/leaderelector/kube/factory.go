@@ -3,6 +3,7 @@ package kube
 import (
 	"context"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
@@ -55,39 +56,58 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 		return identity, err
 	}
 
-	l, err := k8sleaderelection.NewLeaderElector(
-		k8sleaderelection.LeaderElectionConfig{
-			Lock:          resourceLock,
-			LeaseDuration: getLeaseDuration(),
-			RenewDeadline: getRenewPeriod(),
-			RetryPeriod:   getRetryPeriod(),
-			Callbacks: k8sleaderelection.LeaderCallbacks{
-				OnStartedLeading: func(callbackCtx context.Context) {
-					contextutils.LoggerFrom(callbackCtx).Debug("Started Leading")
-					close(elected)
-					config.OnStartedLeading(callbackCtx)
+	var counter atomic.Uint32
+
+	newLeaderElector := func() (*k8sleaderelection.LeaderElector, error) {
+		return k8sleaderelection.NewLeaderElector(
+			k8sleaderelection.LeaderElectionConfig{
+				Lock:          resourceLock,
+				LeaseDuration: getLeaseDuration(),
+				RenewDeadline: getRenewPeriod(),
+				RetryPeriod:   getRetryPeriod(),
+				Callbacks: k8sleaderelection.LeaderCallbacks{
+					OnStartedLeading: func(callbackCtx context.Context) {
+						contextutils.LoggerFrom(callbackCtx).Debug("Started Leading")
+						close(elected)
+						config.OnStartedLeading(callbackCtx)
+					},
+					OnStoppedLeading: func() {
+						contextutils.LoggerFrom(ctx).Error("Stopped Leading")
+						config.OnStoppedLeading()
+						// Recreate the elected channel and reset the identity to a follower
+						// Ref: https://github.com/solo-io/gloo/issues/7346
+						elected = make(chan struct{})
+						identity.Reset(elected)
+					},
+					OnNewLeader: func(identity string) {
+						contextutils.LoggerFrom(ctx).Debugf("New Leader Elected with Identity: %s", identity)
+						config.OnNewLeader(identity)
+					},
 				},
-				OnStoppedLeading: func() {
-					contextutils.LoggerFrom(ctx).Error("Stopped Leading")
-					config.OnStoppedLeading()
-				},
-				OnNewLeader: func(identity string) {
-					contextutils.LoggerFrom(ctx).Debugf("New Leader Elected with Identity: %s", identity)
-					config.OnNewLeader(identity)
-				},
+				Name:            config.Id,
+				ReleaseOnCancel: true,
 			},
-			Name:            config.Id,
-			ReleaseOnCancel: true,
-		},
-	)
+		)
+	}
+
+	// The error returned is just validating the config passed. If it passes validation once, it will again
+	_, err = newLeaderElector()
 	if err != nil {
 		return identity, err
 	}
 
-	// Start the leader elector process in a goroutine
-	contextutils.LoggerFrom(ctx).Debug("Starting Kube Leader Election")
-	go l.Run(ctx)
-
+	go func() {
+		for {
+			l, _ := newLeaderElector()
+			// Start the leader elector process
+			contextutils.LoggerFrom(ctx).Debug("Starting Kube Leader Election")
+			l.Run(ctx)
+			contextutils.LoggerFrom(ctx).Errorf("Leader election cycle %v lost. Trying again", counter.Load())
+			counter.Add(1)
+			// Sleep for a while as this might be a transient issue
+			time.Sleep(5 * time.Second)
+		}
+	}()
 	return identity, nil
 }
 
