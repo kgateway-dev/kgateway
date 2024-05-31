@@ -1,7 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/5941
-    resolvesIssue: false
-    description: |
-      Add ListenerOption policy resource for use with Kube Gateway API objects
-
