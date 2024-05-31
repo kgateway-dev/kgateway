@@ -95,14 +95,15 @@ func (s *testingSuite) TestConfigureListenerOptions() {
 		},
 		expectedHealthyResponse)
 
+	// Check the buffer limit is set on the Listener via Envoy config dump
 	s.testInstallation.Assertions.AssertEnvoyAdminApi(
 		s.ctx,
 		proxyDeployment.ObjectMeta,
-		serverInfoLogLevelAssertion(s.testInstallation),
+		listenerBufferLimitAssertion(s.testInstallation),
 	)
 }
 
-func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+func listenerBufferLimitAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
 		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 			queryParams := map[string]string{
@@ -111,14 +112,16 @@ func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation) func(ct
 			}
 			cfgDump, err := adminClient.GetConfigDump(ctx, queryParams)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "could not get envoy config_dump from adminClient")
-			g.Expect(cfgDump.Configs).To(gomega.HaveLen(1))
+			g.Expect(cfgDump.GetConfigs()).To(gomega.HaveLen(1))
+
 			listenerDump := adminv3.ListenersConfigDump_DynamicListener{}
-			err = cfgDump.Configs[0].UnmarshalTo(&listenerDump)
+			err = cfgDump.GetConfigs()[0].UnmarshalTo(&listenerDump)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "could not unmarshal envoy config_dump")
+
 			listener := listenerv3.Listener{}
-			err = listenerDump.GetActiveState().Listener.UnmarshalTo(&listener)
+			err = listenerDump.GetActiveState().GetListener().UnmarshalTo(&listener)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "could not unmarshal listener from listener dump")
-			g.Expect(listener.PerConnectionBufferLimitBytes.GetValue()).To(gomega.BeEquivalentTo(42000))
+			g.Expect(listener.GetPerConnectionBufferLimitBytes().GetValue()).To(gomega.BeEquivalentTo(42000))
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).

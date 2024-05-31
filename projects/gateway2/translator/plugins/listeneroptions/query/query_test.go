@@ -20,7 +20,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ = Describe("Query Get VirtualHostOptions", func() {
+var _ = Describe("Query Get ListenerOptions", func() {
 
 	var (
 		ctx      context.Context
