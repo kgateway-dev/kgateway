@@ -7,6 +7,7 @@ import (
 
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -77,7 +78,11 @@ func (r *listenerOptionQueries) GetAttachedListenerOptions(
 	for i := range list.Items {
 		targetRefs := list.Items[i].Spec.GetTargetRefs()
 		if len(targetRefs) > 1 {
-			//TODO: warning that multiple refs present, only using first one
+			contextutils.LoggerFrom(ctx).Warnf(
+				"found multiple targetRefs of ListenerOption %s/%s, and only one is supported; only using the first in the list",
+				list.Items[i].Namespace,
+				list.Items[i].Name,
+			)
 		}
 		if sectionName := targetRefs[0].GetSectionName(); sectionName != nil && sectionName.GetValue() != "" {
 			// We have a section name, now check if it matches the specific listener provided
