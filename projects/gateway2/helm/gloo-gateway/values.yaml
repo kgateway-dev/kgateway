@@ -27,15 +27,6 @@ gateway:
     targetPort: 80
     protocol: TCP
     name: http
-  image:
-    registry: quay.io/solo-io
-    repository: gloo-envoy-wrapper
-    pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
-  # TODO(npolshak) Remove this once default GatewayParameters are supported: https://github.com/solo-io/solo-projects/issues/6107
-  istioSDS:
-    enabled: false
   securityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true

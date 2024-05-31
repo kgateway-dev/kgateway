@@ -735,7 +735,8 @@ message GlooOptions {
     message IstioOptions {
         // Set to false to disable adding X-Forwarded-Host header in Istio integration
         // Defaults to true
-        google.protobuf.BoolValue append_x_forwarded_host = 1;
+        // Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy.
+        google.protobuf.BoolValue append_x_forwarded_host = 1 [deprecated = true];
 
         // Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect.
         // Defaults to false

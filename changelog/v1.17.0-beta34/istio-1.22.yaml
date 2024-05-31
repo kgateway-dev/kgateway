@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8990
+    resolvesIssue: false
+    description: >-
+      Bump Istio supported version to 1.22 in docs/CI/tests.
+      Update nightly e2e tests to pull Istio versions from the min/max env files defined in test matrix.
+      Update pr-kubernetes-test workflow to pull Istio version from env file.
+      Update setup-kind-cluster composite action to have `istio-version` input, and set it as an ENV variable when calling setup-kind.sh

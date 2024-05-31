@@ -13,6 +13,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -28,7 +29,7 @@ func TestSingleMirror(t *testing.T) {
 		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
 			BackendRef: gwv1.BackendObjectReference{
 				Name: "foo",
-				Port: ptr(gwv1.PortNumber(8080)),
+				Port: ptr.To(gwv1.PortNumber(8080)),
 			},
 		},
 	}
@@ -77,7 +78,7 @@ func TestUpstreamMirror(t *testing.T) {
 		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
 			BackendRef: gwv1.BackendObjectReference{
 				Name:  "foo",
-				Port:  ptr(gwv1.PortNumber(8080)),
+				Port:  ptr.To(gwv1.PortNumber(8080)),
 				Kind:  &backendKind,
 				Group: &backendGroup,
 			},
@@ -175,7 +176,3 @@ func TestUpstreamMirror(t *testing.T) {
 // 	g.Expect(outputRoute.GetRoute().RequestMirrorPolicies[0].Cluster).To(gomega.Equal("bar-foo-8080"))
 // 	g.Expect(outputRoute.GetRoute().RequestMirrorPolicies[1].Cluster).To(gomega.Equal("foo-bar-8080"))
 // }
-
-func ptr[T any](i T) *T {
-	return &i
-}

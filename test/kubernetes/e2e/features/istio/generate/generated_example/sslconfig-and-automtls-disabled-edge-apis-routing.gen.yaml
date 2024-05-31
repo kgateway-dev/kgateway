@@ -13,14 +13,13 @@ spec:
       routeAction:
         single:
           upstream:
-            name: httpbin-upstream
+            name: httpbin-upstream-sslconfig-and-disable-automtls-edge-apis-routing
             namespace: gloo-system
-status: {}
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
-  name: httpbin-upstream
+  name: httpbin-upstream-sslconfig-and-disable-automtls-edge-apis-routing
   namespace: gloo-system
 spec:
   disableIstioAutoMtls: true
@@ -38,5 +37,4 @@ spec:
       clusterName: gateway_proxy_sds
       targetUri: 127.0.0.1:8234
       validationContextName: istio_validation_context
-status: {}
 ---

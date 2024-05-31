@@ -22,10 +22,10 @@ spec:
   kube:
     deployment:
       replicas: 1
-    sds:
-      istioIntegration:
-        istioContainer:
-          image:
-            registry: docker.io/istio
-            repository: proxyv2
-            tag: 1.20.6 # Override default istio-proxy image tag
+    istio:
+      enabled: true
+      istioContainer:
+        image:
+          registry: docker.io/istio
+          repository: proxyv2
+          tag: 1.20.6 # Override default istio-proxy image tag

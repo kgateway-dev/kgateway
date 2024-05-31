@@ -13,14 +13,13 @@ spec:
       routeAction:
         single:
           upstream:
-            name: httpbin-upstream
+            name: httpbin-upstream-disable-automtls-edge-apis-routing
             namespace: gloo-system
-status: {}
 ---
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
-  name: httpbin-upstream
+  name: httpbin-upstream-disable-automtls-edge-apis-routing
   namespace: gloo-system
 spec:
   disableIstioAutoMtls: true
@@ -30,5 +29,4 @@ spec:
     serviceName: httpbin
     serviceNamespace: httpbin
     servicePort: 8000
-status: {}
 ---

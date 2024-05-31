@@ -14,10 +14,15 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -119,6 +124,32 @@ var _ = BeforeSuite(func() {
 		},
 		Spec: api.GatewayClassSpec{
 			ControllerName: api.GatewayController(gatewayControllerName),
+			ParametersRef: &api.ParametersReference{
+				Group:     api.Group(v1alpha1.GatewayParametersGVK.Group),
+				Kind:      api.Kind(v1alpha1.GatewayParametersGVK.Kind),
+				Name:      wellknown.DefaultGatewayParametersName,
+				Namespace: ptr.To(api.Namespace("default")),
+			},
+		},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	err = k8sClient.Create(ctx, &v1alpha1.GatewayParameters{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      wellknown.DefaultGatewayParametersName,
+			Namespace: "default",
+		},
+		Spec: v1alpha1.GatewayParametersSpec{
+			EnvironmentType: &v1alpha1.GatewayParametersSpec_Kube{
+				Kube: &v1alpha1.KubernetesProxyConfig{
+					Service: &kube.Service{
+						Type: kube.Service_LoadBalancer,
+					},
+					Istio: &v1alpha1.IstioIntegration{
+						Enabled: &wrapperspb.BoolValue{Value: false},
+					},
+				},
+			},
 		},
 	})
 	Expect(err).NotTo(HaveOccurred())

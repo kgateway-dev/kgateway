@@ -13,6 +13,7 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -46,7 +47,6 @@ type GatewayConfig struct {
 	Kick           func(ctx context.Context)
 
 	ControlPlane bootstrap.ControlPlane
-	IstioValues  bootstrap.IstioValues
 
 	Extensions extensions.K8sGatewayExtensions
 }
@@ -73,6 +73,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchListenerOptions,
 		controllerBuilder.watchRouteOptions,
 		controllerBuilder.watchVirtualHostOptions,
+		controllerBuilder.watchUpstreams,
 		controllerBuilder.addIndexes,
 		controllerBuilder.addLisOptIndexes,
 		controllerBuilder.addRtOptIndexes,
@@ -149,7 +150,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName: c.cfg.ControllerName,
 		Dev:            c.cfg.Dev,
-		IstioValues:    c.cfg.IstioValues,
 		ControlPlane:   c.cfg.ControlPlane,
 		Extensions:     c.cfg.Extensions,
 	})
@@ -302,6 +302,17 @@ func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
 	return nil
 }
 
+func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&gloov1.Upstream{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileUpstreams))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
@@ -321,6 +332,12 @@ func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ct
 }
 
 func (r *controllerReconciler) ReconcileVirtualHostOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
 	r.kick(ctx)
 	return ctrl.Result{}, nil
