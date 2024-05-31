@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Use kube builder instead of skv2 for faster and easier codegen for GGv2 CRDs.
