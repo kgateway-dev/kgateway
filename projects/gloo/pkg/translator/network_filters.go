@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"fmt"
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -216,7 +217,9 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.httpPlugins {
+		log.Debugf("processing http filter plugin %s", plug.Name())
 		stagedFilters, err := plug.HttpFilters(params, h.listener)
+		fmt.Printf("%d filters returned by %s\n", len(stagedFilters), plug.Name())
 		if err != nil {
 			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
