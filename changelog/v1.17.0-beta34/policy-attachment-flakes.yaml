@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9494
+    resolvesIssue: true
+    description: >-
+      Addressed some noisy flakes in the new Kubernetes E2E tests for Policy Attachment

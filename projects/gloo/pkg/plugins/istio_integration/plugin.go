@@ -7,6 +7,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 var (
@@ -32,6 +33,7 @@ func (p *plugin) Name() string {
 
 func (p *plugin) Init(params plugins.InitParams) {
 	if xfh := params.Settings.GetGloo().GetIstioOptions().GetAppendXForwardedHost(); xfh != nil {
+		contextutils.LoggerFrom(params.Ctx).Warnf("append_x_forwarded_host is deprecated. Injecting the full Istio sidecar is not recommended for Gloo Gateway Istio integration.")
 		p.appendXForwardedHost = xfh.GetValue()
 	} else {
 		p.appendXForwardedHost = true
