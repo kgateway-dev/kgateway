@@ -320,15 +320,15 @@ type GatewayParameters struct {
 	Image            *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
 	ProxyDeployment  *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
 	Service          *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
-	SdsContainer     SdsContainer           `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
-	IstioIntegration Istio                  `json:"istioIntegration,omitempty" desc:"Configs used to manage Istio integration."`
+	SdsContainer     *SdsContainer          `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
+	IstioIntegration *Istio                 `json:"istioIntegration,omitempty" desc:"Configs used to manage Istio integration."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 
 type Istio struct {
-	Enabled             *bool               `json:"enabled,omitempty" desc:"Enable Istio integration in Gloo Gateway."`
-	IstioProxyContainer IstioProxyContainer `json:"istioContainer" desc:"Config used to manage the istio-proxy container."`
-	CustomSidecars      []interface{}       `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
+	Enabled             *bool                `json:"enabled,omitempty" desc:"Enable Istio integration in Gloo Gateway."`
+	IstioProxyContainer *IstioProxyContainer `json:"istioContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
+	CustomSidecars      []interface{}        `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
 }
 
 type ProvisionedDeployment struct {
@@ -365,14 +365,14 @@ type GlooDeployment struct {
 	ExtraGlooAnnotations  map[string]string   `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
 	LivenessProbeEnabled  *bool               `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
 	OssImageTag           *string             `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
-	PodSecurityContext    *PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See [pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core) for details."`
+	PodSecurityContext    *PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See [pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core) for details."`
 	*DeploymentSpec
 	*GlooDeploymentContainer
 }
 
 type GlooDeploymentContainer struct {
 	Image                        *Image           `json:"image,omitempty"`
-	GlooContainerSecurityContext *SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
+	GlooContainerSecurityContext *SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type Discovery struct {
@@ -781,9 +781,10 @@ type Mtls struct {
 }
 
 type SdsContainer struct {
-	Image           *Image           `json:"image,omitempty"`
-	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
-	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for sds.  Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info."`
+	Image           *Image                `json:"image,omitempty"`
+	SecurityContext *SecurityContext      `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	LogLevel        *string               `json:"logLevel,omitempty" desc:"Log level for sds.  Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info."`
+	Resources       *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
 type EnvoySidecarContainer struct {

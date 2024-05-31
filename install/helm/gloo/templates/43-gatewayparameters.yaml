@@ -18,48 +18,51 @@ spec:
 {{- if $gg.service }}
     service:
       type: {{ $gg.service.type }}
-{{- end -}}{{/* if $gg.service */}}
+{{- end }}{{/* if $gg.service */}}
     envoyContainer:
       image:
-{{- include "gloo-gateway.gatewayParametersImage" $image | nindent 8 }}
+        {{- include "gloo-gateway.gatewayParametersImage" $image | nindent 8 }}
     podTemplate:
       extraLabels:
-{{- include "gloo-gateway.constLabels" . | nindent 8 }}
+        {{- include "gloo-gateway.constLabels" . | nindent 8 }}
+{{- if $gg.sdsContainer }}
     sdsContainer:
       image:
-{{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+        {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
 {{- if $gg.sdsContainer.securityContext }}
       securityContext:
-{{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
-{{- end -}}{{/* if $gg.sdsContainer.securityContext */}}
+        {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.securityContext */}}
 {{- if $gg.sdsContainer.logLevel }}
       bootstrap:
         logLevel: {{ $gg.sdsContainer.logLevel }}
-{{- end -}}{{/* if $gg.sdsContainer.logLevel */}}
+{{- end }}{{/* if $gg.sdsContainer.logLevel */}}
 {{- if $gg.sdsContainer.sdsResources }}
       resources:
-{{- toYaml $gg.sdsContainer.dsResources | nindent 8 }}
-{{- end -}}{{/* if $gg.sdsContainer.sdsResources */}}
+        {{- toYaml $gg.sdsContainer.sdsResources | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.sdsResources */}}
     istio:
       enabled: {{ $gg.istioIntegration.enabled }}
+{{- if $gg.istioIntegration.customSidecars }}
+      customSidecars:
+        {{- toYaml $gg.istioIntegration.customSidecars | nindent 6 }}
+{{- end }}{{/* if $gg.istioIntegration.customSidecars */}}
+{{- if and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars) }}
       istioContainer:
         image:
-{{- merge $gg.istioIntegration.istioContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
-{{- if $gg.istioIntegration.customSidecars }}
-{{ toYaml $gg.istioIntegration.customSidecars | indent 6}}
-{{- end }}{{/* if $gg.istioIntegration.customSidecars */}}
-{{- if and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars) -}}
+          {{- merge $gg.istioIntegration.istioContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
 {{- if $gg.istioIntegration.istioContainer.securityContext }}
         securityContext:
-{{- toYaml $gg.istioIntegration.istioContainer.securityContext | nindent 10 }}
-{{- end -}}{{/* if $gg.istioIntegration.istioContainer.securityContext */}}
+          {{- toYaml $gg.istioIntegration.istioContainer.securityContext | nindent 10 }}
+{{- end }}{{/* if $gg.istioIntegration.istioContainer.securityContext */}}
 {{- if $gg.istioIntegration.istioContainer.logLevel }}
         logLevel: {{ $gg.istioIntegration.istioContainer.logLevel }}
-{{- end -}}{{/* if $gg.istioIntegration.istioContainer.logLevel */}}
+{{- end }}{{/* if $gg.istioIntegration.istioContainer.logLevel */}}
         istioDiscoveryAddress: {{ $gg.istioIntegration.istioContainer.istioDiscoveryAddress }}
         istioMetaMeshId: {{ $gg.istioIntegration.istioContainer.istioMetaMeshId }}
         istioMetaClusterId: {{ $gg.istioIntegration.istioContainer.istioMetaClusterId }}
-{{- end -}}{{/* and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars)  */}}
-{{- end -}}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
-{{- end -}}{{/* if .Values.kubeGateway.gatewayParameters */}}
+{{- end }}{{/* if and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars) */}}
+{{- end }}{{/* if $gg.sdsContainer */}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}
