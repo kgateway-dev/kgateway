@@ -90,5 +90,9 @@ func TestK8sGateway(t *testing.T) {
 		t.Run("Debug", func(t *testing.T) {
 			suite.Run(t, glooctl.NewDebugSuite(ctx, testInstallation))
 		})
+
+		t.Run("GetProxy", func(t *testing.T) {
+			suite.Run(t, glooctl.NewGetProxySuite(ctx, testInstallation))
+		})
 	})
 }

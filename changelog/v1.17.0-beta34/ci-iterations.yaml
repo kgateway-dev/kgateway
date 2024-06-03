@@ -1,0 +1,16 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5191
+    resolvesIssue: false
+    description: >-
+      Ensure that we report cancelled as well as failed jobs.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6185
+    resolvesIssue: false
+    description: >-
+      Remove code that suppresses logging in CI.
+      This made it more challenging to investigate failures.
+      
+      
+      
+     

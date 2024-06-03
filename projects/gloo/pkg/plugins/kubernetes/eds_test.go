@@ -67,16 +67,27 @@ var _ = Describe("Eds", func() {
 		It("isIstioInjectionEnabled should respond correctly to ENABLE_ISTIO_SIDECAR_ON_GATEWAY env var", func() {
 
 			os.Setenv(constants.IstioInjectionEnabled, "true")
-			Expect(isIstioInjectionEnabled()).To(BeTrue())
+			istioEnabled, warnsToLog := isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeTrue())
+			Expect(warnsToLog).To(HaveLen(1), "expected to have 1 warning")
+			Expect(warnsToLog).To(ContainElements(enableIstioSidecarOnGatewayDeprecatedWarning), "expected deprecation warning for enableIstioSidecarOnGateway")
 
 			os.Setenv(constants.IstioInjectionEnabled, "TRUE")
-			Expect(isIstioInjectionEnabled()).To(BeTrue())
+			istioEnabled, warnsToLog = isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeTrue())
+			Expect(warnsToLog).To(HaveLen(1), "expected to have 1 warning")
+			Expect(warnsToLog).To(ContainElements(enableIstioSidecarOnGatewayDeprecatedWarning), "expected deprecation warning for enableIstioSidecarOnGateway")
 
 			os.Unsetenv(constants.IstioInjectionEnabled)
-			Expect(isIstioInjectionEnabled()).To(BeFalse())
+			istioEnabled, warnsToLog = isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeFalse())
+			Expect(warnsToLog).To(BeEmpty(), "expected to have no warning")
 
 			os.Setenv(constants.IstioInjectionEnabled, "false")
-			Expect(isIstioInjectionEnabled()).To(BeFalse())
+			istioEnabled, warnsToLog = isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeFalse())
+			Expect(warnsToLog).To(BeEmpty(), "expected to have no warning")
+
 		})
 
 		It("should translate EDS metadata", func() {

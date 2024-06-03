@@ -18,6 +18,8 @@ var (
 	_ envoycache.SnapshotCache = new(MockXdsCache)
 )
 
+// Deprecated: Prefer the MockXdsCache that is colocated with our xds functionality in
+// `projects/gloo/pkg/xds`
 type MockXdsCache struct {
 	Called bool
 	// Snap that is set
