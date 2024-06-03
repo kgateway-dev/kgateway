@@ -266,7 +266,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	return envoyHttpFilters
 }
 
-func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFitlers(params plugins.Params, routerV3 *routerv3.Router) {
+func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(params plugins.Params, routerV3 *routerv3.Router) {
 
 	upstreamHttpFilters := plugins.StagedUpstreamHttpFilterList{}
 	for _, plug := range h.upstreamHttpPlugins {
