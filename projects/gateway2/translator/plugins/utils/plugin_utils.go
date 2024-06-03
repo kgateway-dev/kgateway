@@ -121,9 +121,9 @@ func GetExtensionRefObjFrom(
 
 // PolicyWithSectionedTargetRefs is a wrapper type to represent policy objects
 // that attach via TargetRefWtihSectionName
-type PolicyWithSectionedTargetRefs interface {
+type PolicyWithSectionedTargetRefs[T client.Object] interface {
 	GetTargetRefs() []*skv2corev1.PolicyTargetReferenceWithSectionName
-	GetObject() client.Object
+	GetObject() T
 }
 
 // GetPrioritizedListenerPolicies accepts a slice of Gateway-attached policies (that may explicitly
@@ -138,7 +138,7 @@ type PolicyWithSectionedTargetRefs interface {
 //
 // 4. newer without section name
 func GetPrioritizedListenerPolicies[T client.Object](
-	items []PolicyWithSectionedTargetRefs,
+	items []PolicyWithSectionedTargetRefs[T],
 	listener *gwv1.Listener,
 ) []T {
 	var optsWithSectionName, optsWithoutSectionName []T
@@ -149,11 +149,11 @@ func GetPrioritizedListenerPolicies[T client.Object](
 		if sectionName := targetRef.GetSectionName(); sectionName != nil && sectionName.GetValue() != "" {
 			// we have a section name, now check if it matches the specific listener provided
 			if sectionName.GetValue() == string(listener.Name) {
-				optsWithSectionName = append(optsWithSectionName, item.GetObject().(T))
+				optsWithSectionName = append(optsWithSectionName, item.GetObject())
 			}
 		} else {
 			// attach all matched items that do not have a section name and let the caller be discerning
-			optsWithoutSectionName = append(optsWithoutSectionName, item.GetObject().(T))
+			optsWithoutSectionName = append(optsWithoutSectionName, item.GetObject())
 		}
 	}
 

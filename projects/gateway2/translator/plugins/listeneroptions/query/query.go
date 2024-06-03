@@ -47,7 +47,7 @@ func (o listenerOptionPolicy) GetTargetRefs() []*skv2corev1.PolicyTargetReferenc
 	return o.obj.Spec.GetTargetRefs()
 }
 
-func (o listenerOptionPolicy) GetObject() client.Object {
+func (o listenerOptionPolicy) GetObject() *solokubev1.ListenerOption {
 	return o.obj
 }
 
@@ -85,15 +85,15 @@ func (r *listenerOptionQueries) GetAttachedListenerOptions(
 	}
 
 	policies := buildWrapperType(ctx, list)
-	orderedPolicies := utils.GetPrioritizedListenerPolicies[*solokubev1.ListenerOption](policies, listener)
+	orderedPolicies := utils.GetPrioritizedListenerPolicies(policies, listener)
 	return orderedPolicies, nil
 }
 
 func buildWrapperType(
 	ctx context.Context,
 	list *solokubev1.ListenerOptionList,
-) []utils.PolicyWithSectionedTargetRefs {
-	policies := []utils.PolicyWithSectionedTargetRefs{}
+) []utils.PolicyWithSectionedTargetRefs[*solokubev1.ListenerOption] {
+	policies := []utils.PolicyWithSectionedTargetRefs[*solokubev1.ListenerOption]{}
 	for i := range list.Items {
 		item := &list.Items[i]
 

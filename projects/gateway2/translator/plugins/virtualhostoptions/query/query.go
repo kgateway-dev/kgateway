@@ -46,7 +46,7 @@ func (o vhostOptionPolicy) GetTargetRefs() []*skv2corev1.PolicyTargetReferenceWi
 	return policies
 }
 
-func (o vhostOptionPolicy) GetObject() client.Object {
+func (o vhostOptionPolicy) GetObject() *solokubev1.VirtualHostOption {
 	return o.obj
 }
 
@@ -84,14 +84,14 @@ func (r *virtualHostOptionQueries) GetVirtualHostOptionsForListener(
 	}
 
 	policies := buildWrapperType(list)
-	orderedPolicies := utils.GetPrioritizedListenerPolicies[*solokubev1.VirtualHostOption](policies, listener)
+	orderedPolicies := utils.GetPrioritizedListenerPolicies(policies, listener)
 	return orderedPolicies, nil
 }
 
 func buildWrapperType(
 	list *solokubev1.VirtualHostOptionList,
-) []utils.PolicyWithSectionedTargetRefs {
-	policies := []utils.PolicyWithSectionedTargetRefs{}
+) []utils.PolicyWithSectionedTargetRefs[*solokubev1.VirtualHostOption] {
+	policies := []utils.PolicyWithSectionedTargetRefs[*solokubev1.VirtualHostOption]{}
 	for i := range list.Items {
 		item := &list.Items[i]
 
