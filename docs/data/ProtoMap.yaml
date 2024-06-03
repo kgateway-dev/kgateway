@@ -533,6 +533,9 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.upstream_wait.v2.UpstreamWaitFilterConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/upstream_wait/upstream_wait_filter.proto.sk/#UpstreamWaitFilterConfig
+    package: envoy.config.filter.http.upstream_wait.v2
   envoy.config.filter.listener.tls_cipher_inspector.v3.TlsCipherInspector:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/listener/tls_cipher_inspector/v3/tls_cipher_inspector.proto.sk/#TlsCipherInspector
     package: envoy.config.filter.listener.tls_cipher_inspector.v3
