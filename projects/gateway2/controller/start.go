@@ -69,7 +69,8 @@ type StartConfig struct {
 	// TODO(ilackarms) refactor to enable the status syncer to be started in the same start func
 	QueueStatusForProxies proxy_syncer.QueueStatusForProxiesFn
 
-	// SnapshotHistory
+	// SnapshotHistory is used for debugging purposes
+	// The controller updates the History with the Kubernetes Client is used, and the History is then used by the Admin Server
 	SnapshotHistory iosnapshot.History
 }
 
