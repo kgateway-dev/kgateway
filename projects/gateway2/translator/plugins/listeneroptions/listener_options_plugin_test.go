@@ -67,7 +67,8 @@ var _ = Describe("ListenerOptions Plugin", func() {
 				deps = []client.Object{attachedListenerOption()}
 			})
 			It("correctly adds buffer limit", func() {
-				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				err := plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(proto.Equal(outputListener.GetOptions(), expectedOptions)).To(BeTrue())
 			})
 		})
@@ -77,7 +78,8 @@ var _ = Describe("ListenerOptions Plugin", func() {
 				deps = []client.Object{attachedListenerOptionWithSectionName()}
 			})
 			It("correctly adds buffer limit", func() {
-				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				err := plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(proto.Equal(outputListener.GetOptions(), expectedOptions)).To(BeTrue())
 			})
 		})
@@ -87,7 +89,8 @@ var _ = Describe("ListenerOptions Plugin", func() {
 				deps = []client.Object{attachedListenerOptionOmitNamespace()}
 			})
 			It("correctly adds buffer limit", func() {
-				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				err := plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(proto.Equal(outputListener.GetOptions(), expectedOptions)).To(BeTrue())
 			})
 		})
@@ -97,7 +100,8 @@ var _ = Describe("ListenerOptions Plugin", func() {
 				deps = []client.Object{nonAttachedListenerOption()}
 			})
 			It("does not add buffer limit", func() {
-				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				err := plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(outputListener.GetOptions()).To(BeNil())
 			})
 		})
@@ -108,7 +112,8 @@ var _ = Describe("ListenerOptions Plugin", func() {
 				listenerCtx.Gateway.SetNamespace("bad-namespace")
 			})
 			It("does not add buffer limit", func() {
-				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				err := plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(outputListener.GetOptions()).To(BeNil())
 			})
 		})
