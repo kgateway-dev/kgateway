@@ -30,8 +30,8 @@ func listenerOptionTargetRefIndexer(obj client.Object) []string {
 		return res
 	}
 
-	// only consider the first targetRef in the list as we only support one ref
-	// we only support a single ref but have multiple in API for future-compatbility
+	// use the first targetRef in the list as we only support one ref but have multiple in API for future-compatbility
+	// TODO: fix this as part of https://github.com/solo-io/solo-projects/issues/6286
 	targetRef := targetRefs[0]
 
 	if targetRef == nil {
