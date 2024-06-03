@@ -35,27 +35,13 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm repo update
    ```
       
-3. Create a `value-overrides.yaml` file with the following content:
-- Set `istioIntegration.disableAutoinjection` to `true` so that Istio does not automatically inject a sidecar to the gateway proxy pods. This way, Gloo can configure the sidecar.
-- Set `global.istioSDS.enabled` to `true` so that the Istio proxy is added to the gateway deployment. This way, the gateway proxy can use Istio certs despite not being in the mesh. Gloo uses a default sidecar configuration, which you can review in the [`gloo` project on GitHub](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/7-gateway-proxy-deployment.yaml). You can also use the `global.istioSDS.customSidecars[]` setting to provide your own sidecar configuration.
-- Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
-  - The default Istio version is 1.18.2
+3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`.
    ```yaml
    global:
      istioIntegration:
-       disableAutoinjection: true
-     istioSDS:
-       enabled: true
-     glooMtls:
-       istioProxy:
-         image:
-           registry: docker.io/istio
-           repository: proxyv2
-           tag: 1.18.2
-       sds:
-         image:
-           repository: sds
-           tag: 1.15.7
+       labelInstallNamespace: true
+       whitelistDiscovery: true
+       enableIstioSidecarOnGateway: true
    gatewayProxies:
      gatewayProxy:
        podTemplate: 
