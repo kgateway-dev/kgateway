@@ -44,6 +44,10 @@ func GetHttpEchoImage() string {
 	return httpEchoImage
 }
 
+func GetStatefulSessionImage() string {
+	return "soloio/session-affinity-app:0.0.3"
+}
+
 // GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
 func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
 	EventuallyWithOffset(offset, func() error {
