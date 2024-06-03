@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -60,9 +59,6 @@ func (r *listenerOptionQueries) GetAttachedListenerOptions(
 	listener *gwv1.Listener,
 	parentGw *gwv1.Gateway,
 ) ([]*solokubev1.ListenerOption, error) {
-	if parentGw == nil {
-		return nil, errors.New("nil parent gateway")
-	}
 	if parentGw.GetName() == "" || parentGw.GetNamespace() == "" {
 		return nil, fmt.Errorf("parent gateway must have name and namespace; received name: %s, namespace: %s", parentGw.GetName(), parentGw.GetNamespace())
 	}

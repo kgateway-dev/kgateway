@@ -59,9 +59,6 @@ func (r *virtualHostOptionQueries) GetVirtualHostOptionsForListener(
 	listener *gwv1.Listener,
 	parentGw *gwv1.Gateway,
 ) ([]*solokubev1.VirtualHostOption, error) {
-	if parentGw == nil {
-		return nil, eris.New("nil parent gateway")
-	}
 	if parentGw.GetName() == "" || parentGw.GetNamespace() == "" {
 		return nil, eris.Errorf("parent gateway must have name and namespace; received name: %s, namespace: %s", parentGw.GetName(), parentGw.GetNamespace())
 	}
