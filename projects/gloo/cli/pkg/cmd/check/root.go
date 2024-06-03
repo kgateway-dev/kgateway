@@ -73,12 +73,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			printer := printers.P{OutputType: opts.Top.Output}
 			printer.CheckResult = printer.NewCheckResult()
 
-			// TODO add back the v2 check (probably better to pass in as a flag rather than try to infer it)
+			// TODO add back the kubegateway check (probably better to pass in as a flag rather than try to infer it)
 			// var err error
-			// call v2 check if k8s gateway crds are detected, otherwise call v1 check
-			// isV2 := detectCrdsV2(opts.Top.KubeContext)
-			// if isV2 {
-			// 	err = v2.Check(ctx, printer, opts)
+			// call kubegateway check if k8s gateway crds are detected, otherwise call classic check
+			// isKubeGateway := detectKubeGatewayCrds(opts.Top.KubeContext)
+			// if isKubeGateway {
+			// 	err = kubegateway.Check(ctx, printer, opts)
 			// } else {
 			err := CheckResources(ctx, printer, opts)
 			// }
@@ -92,8 +92,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				printer.AppendMessage("No problems detected.")
 			}
 
-			// TODO add back the v2 check
-			// if !isV2 {
+			// TODO add back the kubegateway check
+			// if !isKubeGateway {
 			CheckMulticlusterResources(ctx, printer, opts)
 			// }
 
@@ -1007,8 +1007,8 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 	}
 }
 
-// copied from projects/gloo/cli/pkg/cmd/install/v2/install.go (TODO: dedupe/clean up)
-func detectCrdsV2(kubeContext string) bool {
+// copied from projects/gloo/cli/pkg/cmd/install/kubegateway/install.go (TODO: dedupe/clean up)
+func detectKubeGatewayCrds(kubeContext string) bool {
 	cfg, err := kubeutils.GetRestConfigWithKubeContext(kubeContext)
 	if err != nil {
 		return false
