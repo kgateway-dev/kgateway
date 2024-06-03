@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
@@ -106,21 +104,8 @@ func (s *testingSuite) TestConfigureListenerOptions() {
 func listenerBufferLimitAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
 		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-			queryParams := map[string]string{
-				"resource":   "dynamic_listeners",
-				"name_regex": "http",
-			}
-			cfgDump, err := adminClient.GetConfigDump(ctx, queryParams)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "could not get envoy config_dump from adminClient")
-			g.Expect(cfgDump.GetConfigs()).To(gomega.HaveLen(1))
-
-			listenerDump := adminv3.ListenersConfigDump_DynamicListener{}
-			err = cfgDump.GetConfigs()[0].UnmarshalTo(&listenerDump)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "could not unmarshal envoy config_dump")
-
-			listener := listenerv3.Listener{}
-			err = listenerDump.GetActiveState().GetListener().UnmarshalTo(&listener)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "could not unmarshal listener from listener dump")
+			listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "http")
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "error getting listener")
 			g.Expect(listener.GetPerConnectionBufferLimitBytes().GetValue()).To(gomega.BeEquivalentTo(42000))
 		}).
 			WithContext(ctx).
