@@ -8,12 +8,15 @@ import (
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	skv2corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
+
+const multipleTargetRefErrStr = "found ListenerOption %s/%s that contains multiple targetRefs which is not currently supported, only the first targetRef will be used"
 
 type ListenerOptionQueries interface {
 	// GetAttachedListenerOptions returns a slice of ListenerOption resources attached to a gateway on which
@@ -36,9 +39,16 @@ type listenerOptionQueries struct {
 	c client.Client
 }
 
-type listenerOptionsQueryResult struct {
-	optsWithSectionName    []*solokubev1.ListenerOption
-	optsWithoutSectionName []*solokubev1.ListenerOption
+type listenerOptionPolicy struct {
+	obj *solokubev1.ListenerOption
+}
+
+func (o listenerOptionPolicy) GetTargetRefs() []*skv2corev1.PolicyTargetReferenceWithSectionName {
+	return o.obj.Spec.GetTargetRefs()
+}
+
+func (o listenerOptionPolicy) GetObject() client.Object {
+	return o.obj
 }
 
 func NewQuery(c client.Client) ListenerOptionQueries {
@@ -48,7 +58,8 @@ func NewQuery(c client.Client) ListenerOptionQueries {
 func (r *listenerOptionQueries) GetAttachedListenerOptions(
 	ctx context.Context,
 	listener *gwv1.Listener,
-	parentGw *gwv1.Gateway) ([]*solokubev1.ListenerOption, error) {
+	parentGw *gwv1.Gateway,
+) ([]*solokubev1.ListenerOption, error) {
 	if parentGw == nil {
 		return nil, errors.New("nil parent gateway")
 	}
@@ -73,34 +84,28 @@ func (r *listenerOptionQueries) GetAttachedListenerOptions(
 		return nil, nil
 	}
 
-	attachedItems := &listenerOptionsQueryResult{}
+	policies := buildWrapperType(ctx, list)
+	orderedPolicies := utils.GetPrioritizedListenerPolicies[*solokubev1.ListenerOption](policies, listener)
+	return orderedPolicies, nil
+}
 
+func buildWrapperType(
+	ctx context.Context,
+	list *solokubev1.ListenerOptionList,
+) []utils.PolicyWithSectionedTargetRefs {
+	policies := []utils.PolicyWithSectionedTargetRefs{}
 	for i := range list.Items {
-		targetRefs := list.Items[i].Spec.GetTargetRefs()
-		if len(targetRefs) > 1 {
-			contextutils.LoggerFrom(ctx).Warnf(
-				"found multiple targetRefs of ListenerOption %s/%s, and only one is supported; only using the first in the list",
-				list.Items[i].Namespace,
-				list.Items[i].Name,
-			)
-		}
-		if sectionName := targetRefs[0].GetSectionName(); sectionName != nil && sectionName.GetValue() != "" {
-			// We have a section name, now check if it matches the specific listener provided
-			if sectionName.GetValue() == string(listener.Name) {
-				attachedItems.optsWithSectionName = append(attachedItems.optsWithSectionName, &list.Items[i])
-			}
-		} else {
-			// Attach all matched items that do not have a section name and let the caller be discerning
-			attachedItems.optsWithoutSectionName = append(attachedItems.optsWithoutSectionName, &list.Items[i])
-		}
-	}
+		item := &list.Items[i]
 
-	// This can happen if the only ListenerOption resources returned by List target other Listeners by section name
-	if len(attachedItems.optsWithoutSectionName)+len(attachedItems.optsWithSectionName) == 0 {
-		return nil, nil
-	}
+		// warn for multiple targetRefs until we actually support this
+		if len(item.Spec.GetTargetRefs()) > 1 {
+			contextutils.LoggerFrom(ctx).Warnf(multipleTargetRefErrStr, item.GetNamespace(), item.GetName())
+		}
 
-	utils.SortByCreationTime(attachedItems.optsWithSectionName)
-	utils.SortByCreationTime(attachedItems.optsWithoutSectionName)
-	return append(attachedItems.optsWithSectionName, attachedItems.optsWithoutSectionName...), nil
+		policy := listenerOptionPolicy{
+			obj: item,
+		}
+		policies = append(policies, policy)
+	}
+	return policies
 }
