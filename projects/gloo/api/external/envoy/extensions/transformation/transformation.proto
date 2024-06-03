@@ -322,6 +322,10 @@ message TransformationTemplate {
 
     // A template that determines the metadata value.
     InjaTemplate value = 3;
+
+    // Instruct the filter to parse the rendered value as a proto Struct message
+    // before setting it as the metadata value.
+    bool json_to_proto = 4;
   }
   // Use this field to set Dynamic Metadata.
   repeated DynamicMetadataValue dynamic_metadata_values = 9;

@@ -369,6 +369,7 @@ entry.
 "metadataNamespace": string
 "key": string
 "value": .envoy.api.v2.filter.http.InjaTemplate
+"jsonToProto": bool
 
 ```
 
@@ -377,6 +378,7 @@ entry.
 | `metadataNamespace` | `string` | The metadata namespace. Defaults to the filter namespace. |
 | `key` | `string` | The metadata key. |
 | `value` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that determines the metadata value. |
+| `jsonToProto` | `bool` | Instruct the filter to parse the rendered value as a proto Struct message before setting it as the metadata value. |
 
 
 
