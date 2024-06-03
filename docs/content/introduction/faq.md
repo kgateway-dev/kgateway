@@ -8,7 +8,7 @@ This page covers some of the high-level questions commonly asked in community me
 
 ## Questions about Gloo Edge as a product {#product}
 
-Gloo Edge is an API Gateway built on top of [Envoy Proxy](https://envoyproxy.io) that comes with a simple yet powerful control plane for managing Envoy as an edge ingress, API Gateway, or service proxy. Gloo Edge's control plane is built on a plugin model that enables extension and customization depending on your environment and comes with an out of the box Discovery plugin that can discover services running VMs, registered in Consul, running in Kubernetes, or deployed on a public cloud including Functions running in a Cloud Functions environment.  The Envoy community moves fast and no two operational environments are identical, so we built Gloo Edge with this flexibility in mind.
+Gloo Edge is an API Gateway built on top of [Envoy Proxy](https://envoyproxy.io) that comes with a simple yet powerful control plane for managing Envoy as an edge ingress, API Gateway, or service proxy. Gloo Edge's control plane is built on a plugin model that enables extension and customization depending on your environment and comes with an out-of-the-box Discovery plugin that automatically discovers various types of services. These services include Kubernetes or Consul services, external services on VMs, or services that are deployed as serverless functions on a public cloud, such as Cloud Functions. This flexibility lets Gloo Edge adapt both to the fast pace of development in the open source Envoy community, as well as to the unique needs of differing operational environments.
 
 ### What are Gloo Edge's primary use cases?
 
