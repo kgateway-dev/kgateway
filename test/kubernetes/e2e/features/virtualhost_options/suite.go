@@ -140,10 +140,7 @@ func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
 func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionNameManualSetup() {
 	// Manually apply our manifests so we can assert that basic vho exists before applying extra vho.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicVhOManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicVhOManifest)
 	s.NoError(err, "can apply "+basicVhOManifest)
 	// Check status is accepted before moving on to apply conflicting vho
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
@@ -207,10 +204,7 @@ func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionNameManualSetup
 func (s *testingSuite) TestMultipleVirtualHostOptionsManualSetup() {
 	// Manually apply our manifests so we can assert that basic vho exists before applying extra vho.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicVhOManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicVhOManifest)
 	s.NoError(err, "can apply "+basicVhOManifest)
 	// Check status is accepted before moving on to apply conflicting vho
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
