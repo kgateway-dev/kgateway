@@ -1,4 +1,4 @@
-package v2
+package kubegateway
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -34,7 +34,6 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 		Short: constants.INSTALL_COMMAND.Short,
 		Long:  constants.INSTALL_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Default to Gloo Gateway V2
 			return install(opts, installOpts)
 		},
 	}

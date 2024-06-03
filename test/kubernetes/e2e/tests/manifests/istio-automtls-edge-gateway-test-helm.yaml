@@ -19,6 +19,10 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
+    # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+    webhook:
+      skipDeleteValidationResources:
+        - upstreams
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: false

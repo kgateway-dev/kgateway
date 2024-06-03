@@ -130,8 +130,8 @@ func CommandWithContext(ctx context.Context) *cobra.Command {
 			istio.RootCmd(opts),
 			initpluginmanager.Command(context.Background()),
 			// TODO: re-enable this when it's working again
-			// v2.InstallCmd(opts),
-			// v2.UninstallCmd(opts),
+			// kubegateway.InstallCmd(opts),
+			// kubegateway.UninstallCmd(opts),
 			completionCmd(),
 		)
 	}
