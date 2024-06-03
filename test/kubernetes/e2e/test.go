@@ -177,9 +177,14 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	// This is a work in progress
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
-	logFile := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.txt")
-	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo", ">", logFile)
-	_ = logsCmd.Run()
+
+	glooLogFilePath := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.log")
+	glooLogFile, err := os.Create(glooLogFilePath)
+	i.Assertions.Require.NoError(err)
+	defer glooLogFile.Close()
+
+	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
+	_ = logsCmd.WithStdout(glooLogFile).WithStderr(glooLogFile).Run()
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
