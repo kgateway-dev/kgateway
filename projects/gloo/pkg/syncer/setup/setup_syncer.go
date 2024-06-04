@@ -1342,7 +1342,7 @@ func constructGlooGatewayBootstrapOpts(settings *v1.Settings) bootstrap.GlooGate
 
 func constructIstioBootstrapOpts(settings *v1.Settings) bootstrap.IstioValues {
 	istioValues := bootstrap.IstioValues{
-		Enabled: settings.GetGloo().GetIstioOptions().GetIntegrationEnabled().GetValue(),
+		IntegrationEnabled: settings.GetGloo().GetIstioOptions().GetIntegrationEnabled().GetValue(),
 
 		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),

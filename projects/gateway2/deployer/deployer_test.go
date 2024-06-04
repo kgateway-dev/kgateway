@@ -369,7 +369,7 @@ var _ = Describe("Deployer", func() {
 					ControllerName: wellknown.GatewayControllerName,
 					Dev:            false,
 					IstioValues: bootstrap.IstioValues{
-						Enabled: true,
+						IntegrationEnabled: true,
 					},
 					ControlPlane: bootstrap.ControlPlane{
 						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},

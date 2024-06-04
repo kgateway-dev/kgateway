@@ -796,7 +796,7 @@ type IstioProxyContainer struct {
 	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
 
-	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer, or create new IstioProxyContainer?
+	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer
 	// Note: these are only supported for k8s Gateway API.
 	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Warning: this value is not supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
 	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is not supported with Kubernetes Gateway API proxy. Defaults to \"Kubernetes\""`

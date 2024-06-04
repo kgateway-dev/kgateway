@@ -147,12 +147,12 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig == nil {
 		return &helmIstio{
-			Enabled: ptr.To(istioValues.Enabled),
+			Enabled: ptr.To(istioValues.IntegrationEnabled),
 		}
 	}
 
 	return &helmIstio{
-		Enabled:               ptr.To(istioValues.Enabled),
+		Enabled:               ptr.To(istioValues.IntegrationEnabled),
 		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioContainer().GetIstioDiscoveryAddress().GetValue()),
 		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioContainer().GetIstioMetaMeshId().GetValue()),
 		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioContainer().GetIstioMetaClusterId().GetValue()),

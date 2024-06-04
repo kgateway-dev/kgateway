@@ -28,7 +28,7 @@ const (
 type plugin struct {
 	settings *v1.Settings
 
-	// enableIstioIntegration is a flag that indicates if the gateway proxy has istio integration enabled via istioSds.Enabled.
+	// enableIstioIntegration is a flag that indicates if the gateway proxy has istio integration enabled via istioSds.IntegrationEnabled.
 	// If this is not set, the auto mtls transport socket match will not be translated as it indicated the sds cluster is not present.
 	enableIstioIntegration bool
 

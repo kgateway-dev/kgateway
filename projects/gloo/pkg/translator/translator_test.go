@@ -3053,7 +3053,7 @@ var _ = Describe("Translator", func() {
 						},
 						GlooGateway: bootstrap.GlooGateway{
 							IstioValues: bootstrap.IstioValues{
-								Enabled: true,
+								IntegrationEnabled: true,
 							},
 						},
 					}
@@ -3088,7 +3088,7 @@ var _ = Describe("Translator", func() {
 						},
 						GlooGateway: bootstrap.GlooGateway{
 							IstioValues: bootstrap.IstioValues{
-								Enabled: false,
+								IntegrationEnabled: false,
 							},
 						},
 					}
@@ -3122,7 +3122,7 @@ var _ = Describe("Translator", func() {
 						},
 						GlooGateway: bootstrap.GlooGateway{
 							IstioValues: bootstrap.IstioValues{
-								Enabled: true,
+								IntegrationEnabled: true,
 							},
 						},
 					}
