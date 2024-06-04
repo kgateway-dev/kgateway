@@ -843,5 +843,9 @@ func (m *TransformationTemplate_DynamicMetadataValue) Equal(that interface{}) bo
 		}
 	}
 
+	if m.GetJsonToProto() != target.GetJsonToProto() {
+		return false
+	}
+
 	return true
 }

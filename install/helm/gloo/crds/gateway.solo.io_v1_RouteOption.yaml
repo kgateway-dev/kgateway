@@ -1310,6 +1310,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -1410,6 +1412,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -1530,6 +1534,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -1690,6 +1696,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -1790,6 +1798,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -1910,6 +1920,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -2062,6 +2074,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -2162,6 +2176,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -2282,6 +2298,8 @@ spec:
                                         dynamicMetadataValues:
                                           items:
                                             properties:
+                                              jsonToProto:
+                                                type: boolean
                                               key:
                                                 type: string
                                               metadataNamespace:
@@ -2412,6 +2430,8 @@ spec:
                               dynamicMetadataValues:
                                 items:
                                   properties:
+                                    jsonToProto:
+                                      type: boolean
                                     key:
                                       type: string
                                     metadataNamespace:
@@ -2512,6 +2532,8 @@ spec:
                               dynamicMetadataValues:
                                 items:
                                   properties:
+                                    jsonToProto:
+                                      type: boolean
                                     key:
                                       type: string
                                     metadataNamespace:

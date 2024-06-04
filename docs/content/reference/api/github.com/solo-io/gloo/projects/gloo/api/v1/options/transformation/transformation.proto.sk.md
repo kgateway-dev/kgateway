@@ -288,6 +288,7 @@ entry.
 "metadataNamespace": string
 "key": string
 "value": .transformation.options.gloo.solo.io.InjaTemplate
+"jsonToProto": bool
 
 ```
 
@@ -296,6 +297,7 @@ entry.
 | `metadataNamespace` | `string` | The metadata namespace. Defaults to the filter namespace. |
 | `key` | `string` | The metadata key. |
 | `value` | [.transformation.options.gloo.solo.io.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that determines the metadata value. |
+| `jsonToProto` | `bool` | Instruct the filter to parse the rendered value as a proto Struct message before setting it as the metadata value. |
 
 
 
