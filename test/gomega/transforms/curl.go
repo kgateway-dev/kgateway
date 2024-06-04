@@ -29,24 +29,21 @@ func WithCurlHttpResponse(curlResponse string) *http.Response {
 	statusCode := 0
 	var bodyBuf bytes.Buffer
 
-	found_non_body_line := false
 	for _, line := range strings.Split(curlResponse, "\n") {
 		k, v := processResponseHeader(line)
 		if k != "" {
-			found_non_body_line = true
 			headers.Add(k, v)
 			continue
 		}
 
 		code := processResponseCode(line)
 		if code != 0 {
-			found_non_body_line = true
 			statusCode = code
 			continue
 		}
 
 		// Once we've found a line that is a header or status code, we can assume we are done with the body
-		if isResponseBody(line) && !found_non_body_line {
+		if isResponseBody(line) {
 			if bodyBuf.Len() > 0 {
 				bodyBuf.WriteString("\n")
 			}
