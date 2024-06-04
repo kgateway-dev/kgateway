@@ -59,6 +59,12 @@ message HttpProtocolOptions {
   // If this setting is not specified, the value defaults to ALLOW.
   // Note: upstream responses are not affected by this setting.
   HeadersWithUnderscoresAction headers_with_underscores_action = 4;
+
+  // Whether custom HTTP methods should be allowed. Defaults to false (custom
+  // HTTP methods are not allowed. The list of default-allowed HTTP methods can
+  // be found here:
+  // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+  bool allow_custom_http_methods = 5;
 }
 
 message Http1ProtocolOptions {

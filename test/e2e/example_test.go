@@ -54,6 +54,18 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 		// This means that a Proxy object is dynamically generated, and from there an xDS snapshot is computed
 		// and sent to Envoy to handle traffic
 
+		It("defaults to returning HTTP 400 on requests with custom HTTP methods", func() {
+			// Do a GET request to make sure the proxy is running
+			Eventually(func(g Gomega) {
+				req := testContext.GetHttpRequestBuilder().Build()
+				g.Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveOkResponse())
+			}, "5s", ".5s").Should(Succeed(), "GET with valid host returns a 200")
+
+			req := testContext.GetHttpRequestBuilder().
+				WithMethod("CUSTOMMETHOD").
+				Build()
+			Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusBadRequest))
+		})
 		It("can route traffic", func() {
 			Eventually(func(g Gomega) {
 				req := testContext.GetHttpRequestBuilder().Build()
