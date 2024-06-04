@@ -47,6 +47,8 @@ func init() {
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
 		"ratelimitconfigs.ratelimit.solo.io",
+		"listeneroptions.gateway.solo.io",
+		"httplisteneroptions.gateway.solo.io",
 		"virtualhostoptions.gateway.solo.io",
 		"routeoptions.gateway.solo.io",
 		"graphqlapis.graphql.gloo.solo.io",
