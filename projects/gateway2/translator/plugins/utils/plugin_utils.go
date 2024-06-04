@@ -7,6 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	skv2corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -116,4 +117,52 @@ func GetExtensionRefObjFrom(
 	}
 	elem.Set(reflect.ValueOf(localObj).Elem())
 	return nil
+}
+
+// PolicyWithSectionedTargetRefs is a wrapper type to represent policy objects
+// that attach via TargetRefWtihSectionName
+type PolicyWithSectionedTargetRefs[T client.Object] interface {
+	GetTargetRefs() []*skv2corev1.PolicyTargetReferenceWithSectionName
+	GetObject() T
+}
+
+// GetPrioritizedListenerPolicies accepts a slice of Gateway-attached policies (that may explicitly
+// target a specific Listener and returns a slice of these policies (or a subset) resources.
+// The returned policy list is sorted by specificity in the order of
+//
+// 1. older with section name
+//
+// 2. newer with section name
+//
+// 3. older without section name
+//
+// 4. newer without section name
+func GetPrioritizedListenerPolicies[T client.Object](
+	items []PolicyWithSectionedTargetRefs[T],
+	listener *gwv1.Listener,
+) []T {
+	var optsWithSectionName, optsWithoutSectionName []T
+	for i := range items {
+		item := items[i]
+		// only use the first targetRef in the list for now; user should be warned by caller of this function
+		targetRef := item.GetTargetRefs()[0]
+		if sectionName := targetRef.GetSectionName(); sectionName != nil && sectionName.GetValue() != "" {
+			// we have a section name, now check if it matches the specific listener provided
+			if sectionName.GetValue() == string(listener.Name) {
+				optsWithSectionName = append(optsWithSectionName, item.GetObject())
+			}
+		} else {
+			// attach all matched items that do not have a section name and let the caller be discerning
+			optsWithoutSectionName = append(optsWithoutSectionName, item.GetObject())
+		}
+	}
+
+	// this can happen if the policy list only contains items targeting other Listeners by section name
+	if len(optsWithoutSectionName)+len(optsWithSectionName) == 0 {
+		return nil
+	}
+
+	SortByCreationTime(optsWithSectionName)
+	SortByCreationTime(optsWithoutSectionName)
+	return append(optsWithSectionName, optsWithoutSectionName...)
 }
