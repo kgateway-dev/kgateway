@@ -20,11 +20,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,25 +38,25 @@ type FakeMatchableHttpGateways struct {
 	ns   string
 }
 
-var matchablehttpgatewaysResource = schema.GroupVersionResource{Group: "gateway.solo.io", Version: "v1", Resource: "httpgateways"}
+var matchablehttpgatewaysResource = v1.SchemeGroupVersion.WithResource("httpgateways")
 
-var matchablehttpgatewaysKind = schema.GroupVersionKind{Group: "gateway.solo.io", Version: "v1", Kind: "MatchableHttpGateway"}
+var matchablehttpgatewaysKind = v1.SchemeGroupVersion.WithKind("MatchableHttpGateway")
 
 // Get takes name of the matchableHttpGateway, and returns the corresponding matchableHttpGateway object, and an error if there is any.
-func (c *FakeMatchableHttpGateways) Get(ctx context.Context, name string, options v1.GetOptions) (result *gatewaysoloiov1.MatchableHttpGateway, err error) {
+func (c *FakeMatchableHttpGateways) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.MatchableHttpGateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(matchablehttpgatewaysResource, c.ns, name), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewGetAction(matchablehttpgatewaysResource, c.ns, name), &v1.MatchableHttpGateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.MatchableHttpGateway), err
+	return obj.(*v1.MatchableHttpGateway), err
 }
 
 // List takes label and field selectors, and returns the list of MatchableHttpGateways that match those selectors.
-func (c *FakeMatchableHttpGateways) List(ctx context.Context, opts v1.ListOptions) (result *gatewaysoloiov1.MatchableHttpGatewayList, err error) {
+func (c *FakeMatchableHttpGateways) List(ctx context.Context, opts metav1.ListOptions) (result *v1.MatchableHttpGatewayList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(matchablehttpgatewaysResource, matchablehttpgatewaysKind, c.ns, opts), &gatewaysoloiov1.MatchableHttpGatewayList{})
+		Invokes(testing.NewListAction(matchablehttpgatewaysResource, matchablehttpgatewaysKind, c.ns, opts), &v1.MatchableHttpGatewayList{})
 
 	if obj == nil {
 		return nil, err
@@ -64,8 +66,8 @@ func (c *FakeMatchableHttpGateways) List(ctx context.Context, opts v1.ListOption
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &gatewaysoloiov1.MatchableHttpGatewayList{ListMeta: obj.(*gatewaysoloiov1.MatchableHttpGatewayList).ListMeta}
-	for _, item := range obj.(*gatewaysoloiov1.MatchableHttpGatewayList).Items {
+	list := &v1.MatchableHttpGatewayList{ListMeta: obj.(*v1.MatchableHttpGatewayList).ListMeta}
+	for _, item := range obj.(*v1.MatchableHttpGatewayList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,69 +76,114 @@ func (c *FakeMatchableHttpGateways) List(ctx context.Context, opts v1.ListOption
 }
 
 // Watch returns a watch.Interface that watches the requested matchableHttpGateways.
-func (c *FakeMatchableHttpGateways) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeMatchableHttpGateways) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(matchablehttpgatewaysResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a matchableHttpGateway and creates it.  Returns the server's representation of the matchableHttpGateway, and an error, if there is any.
-func (c *FakeMatchableHttpGateways) Create(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGateway, opts v1.CreateOptions) (result *gatewaysoloiov1.MatchableHttpGateway, err error) {
+func (c *FakeMatchableHttpGateways) Create(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.CreateOptions) (result *v1.MatchableHttpGateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(matchablehttpgatewaysResource, c.ns, matchableHttpGateway), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewCreateAction(matchablehttpgatewaysResource, c.ns, matchableHttpGateway), &v1.MatchableHttpGateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.MatchableHttpGateway), err
+	return obj.(*v1.MatchableHttpGateway), err
 }
 
 // Update takes the representation of a matchableHttpGateway and updates it. Returns the server's representation of the matchableHttpGateway, and an error, if there is any.
-func (c *FakeMatchableHttpGateways) Update(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGateway, opts v1.UpdateOptions) (result *gatewaysoloiov1.MatchableHttpGateway, err error) {
+func (c *FakeMatchableHttpGateways) Update(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.UpdateOptions) (result *v1.MatchableHttpGateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(matchablehttpgatewaysResource, c.ns, matchableHttpGateway), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewUpdateAction(matchablehttpgatewaysResource, c.ns, matchableHttpGateway), &v1.MatchableHttpGateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.MatchableHttpGateway), err
+	return obj.(*v1.MatchableHttpGateway), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeMatchableHttpGateways) UpdateStatus(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGateway, opts v1.UpdateOptions) (*gatewaysoloiov1.MatchableHttpGateway, error) {
+func (c *FakeMatchableHttpGateways) UpdateStatus(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.UpdateOptions) (*v1.MatchableHttpGateway, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(matchablehttpgatewaysResource, "status", c.ns, matchableHttpGateway), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewUpdateSubresourceAction(matchablehttpgatewaysResource, "status", c.ns, matchableHttpGateway), &v1.MatchableHttpGateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.MatchableHttpGateway), err
+	return obj.(*v1.MatchableHttpGateway), err
 }
 
 // Delete takes name of the matchableHttpGateway and deletes it. Returns an error if one occurs.
-func (c *FakeMatchableHttpGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeMatchableHttpGateways) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(matchablehttpgatewaysResource, c.ns, name, opts), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewDeleteActionWithOptions(matchablehttpgatewaysResource, c.ns, name, opts), &v1.MatchableHttpGateway{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeMatchableHttpGateways) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeMatchableHttpGateways) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(matchablehttpgatewaysResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &gatewaysoloiov1.MatchableHttpGatewayList{})
+	_, err := c.Fake.Invokes(action, &v1.MatchableHttpGatewayList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched matchableHttpGateway.
-func (c *FakeMatchableHttpGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gatewaysoloiov1.MatchableHttpGateway, err error) {
+func (c *FakeMatchableHttpGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MatchableHttpGateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(matchablehttpgatewaysResource, c.ns, name, pt, data, subresources...), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewPatchSubresourceAction(matchablehttpgatewaysResource, c.ns, name, pt, data, subresources...), &v1.MatchableHttpGateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.MatchableHttpGateway), err
+	return obj.(*v1.MatchableHttpGateway), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied matchableHttpGateway.
+func (c *FakeMatchableHttpGateways) Apply(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableHttpGateway, err error) {
+	if matchableHttpGateway == nil {
+		return nil, fmt.Errorf("matchableHttpGateway provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(matchableHttpGateway)
+	if err != nil {
+		return nil, err
+	}
+	name := matchableHttpGateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("matchableHttpGateway.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(matchablehttpgatewaysResource, c.ns, *name, types.ApplyPatchType, data), &v1.MatchableHttpGateway{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.MatchableHttpGateway), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeMatchableHttpGateways) ApplyStatus(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableHttpGateway, err error) {
+	if matchableHttpGateway == nil {
+		return nil, fmt.Errorf("matchableHttpGateway provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(matchableHttpGateway)
+	if err != nil {
+		return nil, err
+	}
+	name := matchableHttpGateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("matchableHttpGateway.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(matchablehttpgatewaysResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.MatchableHttpGateway{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.MatchableHttpGateway), err
 }

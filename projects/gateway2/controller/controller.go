@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
+	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -69,10 +70,12 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchHttpRoute,
 		controllerBuilder.watchReferenceGrant,
 		controllerBuilder.watchNamespaces,
+		controllerBuilder.watchListenerOptions,
 		controllerBuilder.watchRouteOptions,
 		controllerBuilder.watchVirtualHostOptions,
 		controllerBuilder.watchUpstreams,
 		controllerBuilder.addIndexes,
+		controllerBuilder.addLisOptIndexes,
 		controllerBuilder.addRtOptIndexes,
 		controllerBuilder.addVhOptIndexes,
 		controllerBuilder.addGwParamsIndexes,
@@ -128,6 +131,13 @@ func (c *controllerBuilder) addRtOptIndexes(ctx context.Context) error {
 // TODO: move to VhOpt plugin when breaking the logic to VirtualHostOption-specific controller
 func (c *controllerBuilder) addVhOptIndexes(ctx context.Context) error {
 	return vhoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
+		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
+	})
+}
+
+// TODO: move to LisOpt plugin when breaking the logic to VirtualHostOption-specific controller
+func (c *controllerBuilder) addLisOptIndexes(ctx context.Context) error {
+	return lisoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
 		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
 	})
 }
@@ -259,6 +269,17 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
+func (c *controllerBuilder) watchListenerOptions(ctx context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&sologatewayv1.ListenerOption{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileListenerOptions))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
@@ -296,6 +317,12 @@ type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
 	kick   func(ctx context.Context)
+}
+
+func (r *controllerReconciler) ReconcileListenerOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected routes/listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
