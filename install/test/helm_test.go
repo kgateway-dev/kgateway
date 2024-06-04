@@ -4130,6 +4130,7 @@ spec:
     istioOptions:
       appendXForwardedHost: true
       enableAutoMtls: false
+      integrationEnabled: false
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}

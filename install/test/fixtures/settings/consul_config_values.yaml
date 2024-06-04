@@ -36,6 +36,7 @@ spec:
    istioOptions:
      appendXForwardedHost: true
      enableAutoMtls: false
+     integrationEnabled: false
  consul:
    datacenter: datacenter
    username: user
