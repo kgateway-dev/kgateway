@@ -2121,6 +2121,16 @@ func (m *GlooOptions_IstioOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetIntegrationEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIntegrationEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIntegrationEnabled(), target.GetIntegrationEnabled()) {
+			return false
+		}
+	}
+
 	return true
 }
 

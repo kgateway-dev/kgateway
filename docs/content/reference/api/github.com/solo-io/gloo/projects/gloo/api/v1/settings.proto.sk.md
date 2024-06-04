@@ -793,6 +793,7 @@ Policy for how Gloo should handle invalid config
 ```yaml
 "appendXForwardedHost": .google.protobuf.BoolValue
 "enableAutoMtls": .google.protobuf.BoolValue
+"integrationEnabled": .google.protobuf.BoolValue
 
 ```
 
@@ -800,6 +801,7 @@ Policy for how Gloo should handle invalid config
 | ----- | ---- | ----------- | 
 | `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. |
 | `enableAutoMtls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect. Defaults to false. |
+| `integrationEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Istio integration is enabled via istioSDS.enabled on the helm chart. If enabled, an istio-proxy container is assumed to exist alongside the gateway proxy. Defaults to false. |
 
 
 

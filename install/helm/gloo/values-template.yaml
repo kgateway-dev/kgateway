@@ -20,7 +20,6 @@ kubeGateway:
           repository: sds
         logLevel: info
       istioIntegration:
-        enabled: false
         istioContainer:
           image:
             repository: proxyv2

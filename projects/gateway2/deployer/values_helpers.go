@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -142,16 +143,16 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 }
 
 // Convert istio values from GatewayParameters into helm values to be used by the deployer.
-func getIstioValues(istioConfig *v1alpha1.IstioIntegration) *helmIstio {
+func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.IstioIntegration) *helmIstio {
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
-	if istioConfig == nil || !istioConfig.GetEnabled().GetValue() {
+	if istioConfig == nil {
 		return &helmIstio{
-			Enabled: ptr.To(false),
+			Enabled: ptr.To(istioValues.Enabled),
 		}
 	}
 
 	return &helmIstio{
-		Enabled:               ptr.To(istioConfig.GetEnabled().GetValue()),
+		Enabled:               ptr.To(istioValues.Enabled),
 		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioContainer().GetIstioDiscoveryAddress().GetValue()),
 		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioContainer().GetIstioMetaMeshId().GetValue()),
 		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioContainer().GetIstioMetaClusterId().GetValue()),

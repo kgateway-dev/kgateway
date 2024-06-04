@@ -1,3 +1,6 @@
+global:
+  istioSDS:
+    enabled: true
 gloo:
   logLevel: info
   disableLeaderElection: true
@@ -37,7 +40,6 @@ kubeGateway:
   gatewayParameters:
     glooGateway:
       istioIntegration:
-        enabled: true
         istioContainer:
           image:
             repository: proxyv2

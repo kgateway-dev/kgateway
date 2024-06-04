@@ -79,7 +79,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository().GetValue()).To(Equal("gloo-envoy-wrapper"))
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag().GetValue()).To(Equal(version))
 
-				Expect(gwpKube.GetIstio().GetEnabled().GetValue()).To(BeFalse())
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetRegistry().GetValue()).To(Equal("docker.io/istio"))
 				Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetRepository().GetValue()).To(Equal("proxyv2"))
@@ -115,7 +114,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.image.pullPolicy=Always",
 						"kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas=5",
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.enabled=true",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag=sds-override-tag",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.registry=sds-override-registry",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.repository=sds-override-repository",
@@ -132,6 +130,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.pullPolicy=Never",
 						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.logLevel=debug",
 						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.securityContext.runAsUser=888",
+						"global.istioSDS.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
@@ -156,7 +155,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository().GetValue()).To(Equal("envoy-override-repository"))
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag().GetValue()).To(Equal("envoy-override-tag"))
 
-					Expect(gwpKube.GetIstio().GetEnabled().GetValue()).To(BeTrue())
 					Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetPullPolicy()).To(Equal(kube.Image_Never))
 					Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetRegistry().GetValue()).To(Equal("istio-override-registry"))
 					Expect(gwpKube.GetIstio().GetIstioContainer().GetImage().GetRepository().GetValue()).To(Equal("istio-override-repository"))
@@ -196,7 +194,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.image.pullPolicy=Always",
 						"kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas=5",
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.enabled=true",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag=sds-override-tag",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.registry=sds-override-registry",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.repository=sds-override-repository",
@@ -208,6 +205,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory=%s", sdsVals[2]),
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu=%s", sdsVals[3]),
 						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.customSidecars[0].name=custom-sidecar",
+						"global.istioSDS.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
@@ -232,7 +230,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository().GetValue()).To(Equal("envoy-override-repository"))
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag().GetValue()).To(Equal("envoy-override-tag"))
 
-					Expect(gwpKube.GetIstio().GetEnabled().GetValue()).To(BeTrue())
 					Expect(gwpKube.GetIstio().GetCustomSidecars()[0].GetName()).To(Equal("custom-sidecar"))
 					Expect(gwpKube.GetPodTemplate().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"gloo": "kube-gateway"}))
 

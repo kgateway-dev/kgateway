@@ -25,7 +25,6 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -359,6 +358,25 @@ var _ = Describe("Deployer", func() {
 					Extensions: k8sGatewayExt,
 				}
 			}
+			istioEnabledDeployerInputs = func() *deployer.Inputs {
+				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
+				Expect(err).NotTo(HaveOccurred())
+				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.Background(), extensions.K8sGatewayExtensionsFactoryParameters{
+					Mgr: mgr,
+				})
+				Expect(err).NotTo(HaveOccurred())
+				return &deployer.Inputs{
+					ControllerName: wellknown.GatewayControllerName,
+					Dev:            false,
+					IstioValues: bootstrap.IstioValues{
+						Enabled: true,
+					},
+					ControlPlane: bootstrap.ControlPlane{
+						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+					},
+					Extensions: k8sGatewayExt,
+				}
+			}
 			defaultGateway = func() *api.Gateway {
 				return &api.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
@@ -477,7 +495,6 @@ var _ = Describe("Deployer", func() {
 									},
 								},
 								Istio: &gw2_v1alpha1.IstioIntegration{
-									Enabled: &wrapperspb.BoolValue{Value: true},
 									IstioContainer: &gw2_v1alpha1.IstioContainer{
 										Image: &kube.Image{
 											Registry:   &wrappers.StringValue{Value: "scooby"},
@@ -636,7 +653,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}),
 			Entry("correct deployment with sds enabled", &input{
-				dInputs:     defaultDeployerInputs(),
+				dInputs:     istioEnabledDeployerInputs(),
 				gw:          defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: gatewayParamsOverrideWithSds(),

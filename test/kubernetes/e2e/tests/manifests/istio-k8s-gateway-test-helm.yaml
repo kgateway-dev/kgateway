@@ -1,4 +1,7 @@
 global:
+  # Set up gloo with istio integration enabled
+  istioSDS:
+    enabled: true
   istioIntegration:
     enableAutoMtls: false # Automtls is disabled in this test setup
   image:
@@ -30,10 +33,6 @@ gateway:
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true
-  gatewayParameters:
-    glooGateway:
-      istioIntegration:
-        enabled: true
 gloo:
   logLevel: info
   disableLeaderElection: true

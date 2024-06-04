@@ -398,6 +398,7 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 }
 
 func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.IstioIntegration {
+
 	// nil src override means just use dst
 	if src == nil {
 		return dst
@@ -406,10 +407,6 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 	if dst == nil {
 		return src
 	}
-
-	// if the user has defined the enabled value on an override GatewayParameters,
-	// we always want to use that
-	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
 
 	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
 

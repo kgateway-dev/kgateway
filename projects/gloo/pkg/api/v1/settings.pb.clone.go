@@ -1225,6 +1225,12 @@ func (m *GlooOptions_IstioOptions) Clone() proto.Message {
 		target.EnableAutoMtls = proto.Clone(m.GetEnableAutoMtls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetIntegrationEnabled()).(clone.Cloner); ok {
+		target.IntegrationEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.IntegrationEnabled = proto.Clone(m.GetIntegrationEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

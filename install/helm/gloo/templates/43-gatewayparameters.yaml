@@ -42,7 +42,6 @@ spec:
         {{- toYaml $gg.sdsContainer.sdsResources | nindent 8 }}
 {{- end }}{{/* if $gg.sdsContainer.sdsResources */}}
     istio:
-      enabled: {{ $gg.istioIntegration.enabled }}
 {{- if $gg.istioIntegration.customSidecars }}
       customSidecars:
         {{- toYaml $gg.istioIntegration.customSidecars | nindent 6 }}

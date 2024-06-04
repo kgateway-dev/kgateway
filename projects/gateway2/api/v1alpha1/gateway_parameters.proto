@@ -125,21 +125,16 @@ message EnvoyBootstrap {
 
 // Configuration for the Istio integration settings used by a Gloo Gateway's data plane (Envoy proxy instance)
 message IstioIntegration {
-  // If true, the Istio integration is enabled for this Gateway. Defaults to nil, which indicates the value should be inherited
-  // from the default GatewayParameters rendered from the helm chart. Set to true to override the default values with enabled; set to
-  // false to override the default values with disabled.
-  google.protobuf.BoolValue enabled = 1;
-
   // Configuration for the container running istio-proxy. This field is rendered with defaults by
   // helm in the default GatewayParameters for a GatewayClass, and may be overridden in
   // override GatewayParameters attached to a Gateway resource.
   // Note that if Istio integration is not enabled, the istio container will not be injected
   // into the gateway proxy deployment.
-  IstioContainer istio_container = 2;
+  IstioContainer istio_container = 1;
 
   // Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if enabled is false.
   // +optional
-  repeated k8s.io.api.core.v1.Container custom_sidecars = 3;
+  repeated k8s.io.api.core.v1.Container custom_sidecars = 2;
 }
 
 // Configuration for the container running Gloo sds.

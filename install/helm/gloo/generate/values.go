@@ -326,7 +326,6 @@ type GatewayParameters struct {
 }
 
 type Istio struct {
-	Enabled             *bool                `json:"enabled,omitempty" desc:"Enable Istio integration in Gloo Gateway."`
 	IstioProxyContainer *IstioProxyContainer `json:"istioContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
 	CustomSidecars      []interface{}        `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
 }

@@ -47,7 +47,6 @@
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.cpu|string||amount of CPUs|
-|kubeGateway.gatewayParameters.glooGateway.istioIntegration.enabled|bool|false|Enable Istio integration in Gloo Gateway.|
 |kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.tag|string|1.22.0|The image tag for the container.|
 |kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.repository|string|proxyv2|The image repository (name) for the container.|
 |kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
