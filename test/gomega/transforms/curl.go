@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 )
 
 const (
@@ -23,6 +25,72 @@ const (
 // The curl must be executed with verbose=true to include both the response headers/status
 // and response body.
 func WithCurlHttpResponse(curlResponse string) *http.Response {
+	headers := make(http.Header)
+	statusCode := 0
+	var bodyBuf bytes.Buffer
+
+	found_non_body_line := false
+	for _, line := range strings.Split(curlResponse, "\n") {
+		k, v := processResponseHeader(line)
+		if k != "" {
+			found_non_body_line = true
+			headers.Add(k, v)
+			continue
+		}
+
+		code := processResponseCode(line)
+		if code != 0 {
+			found_non_body_line = true
+			statusCode = code
+			continue
+		}
+
+		// Once we've found a line that is a header or status code, we can assume we are done with the body
+		if isResponseBody(line) && !found_non_body_line {
+			if bodyBuf.Len() > 0 {
+				bodyBuf.WriteString("\n")
+			}
+			bodyBuf.WriteString(line)
+		}
+	}
+
+	return &http.Response{
+		StatusCode: statusCode,
+		Header:     headers,
+		Body:       bytesBody(bodyBuf.Bytes()),
+	}
+}
+
+func WithCurlResponse(curlResponse *kubectl.CurlResponse) *http.Response {
+	headers := make(http.Header)
+	statusCode := 0
+	var bodyBuf bytes.Buffer
+
+	// Headers/response code
+	for _, line := range strings.Split(curlResponse.Headers, "\n") {
+		k, v := processResponseHeader(line)
+		if k != "" {
+			headers.Add(k, v)
+			continue
+		}
+
+		code := processResponseCode(line)
+		if code != 0 {
+			statusCode = code
+		}
+	}
+
+	// Body
+	bodyBuf.WriteString(curlResponse.Body)
+
+	return &http.Response{
+		StatusCode: statusCode,
+		Header:     headers,
+		Body:       bytesBody(bodyBuf.Bytes()),
+	}
+}
+
+func WithCurlHttpResponseFixHeaders(curlResponse string) *http.Response {
 	headers := make(http.Header)
 	statusCode := 0
 	var bodyBuf bytes.Buffer

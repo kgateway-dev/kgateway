@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/session_affinity"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
@@ -47,5 +48,9 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
 		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation))
+	})
+
+	t.Run("SessionAffinity", func(t *testing.T) {
+		suite.Run(t, session_affinity.NewTestingSuite(ctx, testInstallation))
 	})
 }

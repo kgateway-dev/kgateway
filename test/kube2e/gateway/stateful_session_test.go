@@ -2,6 +2,8 @@ package gateway_test
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,6 +12,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
@@ -98,8 +101,10 @@ var _ = Describe("Stateful Session Tests", func() {
 	})
 
 	FIt("should route to the same pod for the same session", func() {
-		time.Sleep(10 * time.Second)
+		numRequests := 100
+
 		By("Ensure we can route to the service")
+		// Wait until we can get a response
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 			Protocol:          "http",
 			Path:              "/count",
@@ -110,10 +115,32 @@ var _ = Describe("Stateful Session Tests", func() {
 			ConnectionTimeout: 1,
 			WithoutStats:      true,
 			LogResponses:      true,
-		}, expectedResponse("Not in the response"), 1, 5*time.Second, 1*time.Second)
+			Cookie:            "cookie.txt",
+			CookieJar:         "cookie.txt",
+			Verbose:           true,
+		}, &matchers.HttpResponse{StatusCode: http.StatusOK, Body: "1"}, 1, 60*time.Second, 1*time.Second)
 
-		fmt.Printf("Past Curl\n")
-		Expect(1).To(Equal(2))
+		// Once responses are coming, they should keep incrementing
+		// Since we are usign a round-robin algorithm, and have one successful curl, we should hit the
+		// other server and get respsonses from 2 ... numRequests
+		for i := 2; i <= numRequests; i++ {
+			fmt.Printf("*****\n	Curling for %d\n", i)
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/count",
+				Method:            "GET",
+				Host:              "app",
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1,
+				WithoutStats:      true,
+				LogResponses:      true,
+				Cookie:            "cookie.txt",
+				CookieJar:         "cookie.txt",
+				Verbose:           true,
+			}, &matchers.HttpResponse{StatusCode: http.StatusOK, Body: strconv.Itoa(i)}, 1, 0*time.Second)
+			fmt.Printf("Success for %d!!!\n", i)
+		}
 	})
 
 })

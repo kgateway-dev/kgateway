@@ -33,18 +33,39 @@ func (p *Provider) AssertEventualCurlResponse(
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
 	p.Gomega.Eventually(func(g Gomega) {
-		res, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 		g.Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, res)
 
-		expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
-		g.Expect(res).To(expectedResponseMatcher)
-		fmt.Printf("success: %v", res)
+		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
+		g.Expect(curlResponse).To(expectedResponseMatcher)
+		fmt.Printf("success: %v", curlResponse)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
 		WithContext(ctx).
 		Should(Succeed(), "failed to get expected response")
+}
+
+func (p *Provider) AssertCurlResponse(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	curlOptions []curl.Option,
+	expectedResponse *matchers.HttpResponse,
+) {
+	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
+	p.EventuallyObjectsExist(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podOpts.Name, Namespace: podOpts.Namespace,
+		},
+	})
+
+	// Todo: throw a timeout here? Leave it to the caller? Set it in the defaults?
+	curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+	Expect(err).NotTo(HaveOccurred())
+
+	expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
+	Expect(curlResponse).To(expectedResponseMatcher)
+
 }
 
 // AssertEventuallyConsistentCurlResponse asserts that the response from a curl command
