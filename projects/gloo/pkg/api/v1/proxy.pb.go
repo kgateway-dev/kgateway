@@ -846,13 +846,16 @@ type Matcher struct {
 	// The other ssl_config properties will be applied to the outputFilterChain's transport socket
 	// SslConfig from VirtualServices will be ignored in a MatchedGateway
 	SslConfig *ssl.SslConfig `protobuf:"bytes,1,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
-	// Source addresses to match. This is either the actual address used to connect
-	// or overridden using PROXY protocol or original_src.
+	// Source addresses to match. This value is either the actual addresses used to connect,
+	// or addresses that are overridden by using PROXY protocol or original_src.
 	SourcePrefixRanges []*v3.CidrRange `protobuf:"bytes,2,rep,name=source_prefix_ranges,json=sourcePrefixRanges,proto3" json:"source_prefix_ranges,omitempty"`
-	// Destination addresses to match. This is either the actual address used to connect
-	// or overridden using PROXY protocol or original_dst.
+	// Destination addresses to match. This value is either the actual addresses used to connect,
+	// or addresses that are overridden by using PROXY protocol or original_dst.
 	PrefixRanges []*v3.CidrRange `protobuf:"bytes,4,rep,name=prefix_ranges,json=prefixRanges,proto3" json:"prefix_ranges,omitempty"`
 	// Optional destination port to consider in determining a filter chain match.
+	// Filter chains that specify the destination port of incoming traffic are the most specific match.
+	// If no filter chain specifies the exact destination port,
+	// the filter chains which do not specify ports are the most specific match.
 	DestinationPort         *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=destination_port,json=destinationPort,proto3" json:"destination_port,omitempty"`
 	PassthroughCipherSuites []string              `protobuf:"bytes,3,rep,name=passthrough_cipher_suites,json=passthroughCipherSuites,proto3" json:"passthrough_cipher_suites,omitempty"`
 }
