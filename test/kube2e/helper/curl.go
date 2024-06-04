@@ -91,21 +91,15 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput
 
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
+	Expect(t.CanCurl()).To(BeTrue())
 
 	EventuallyWithOffset(ginkgoOffset+1, func(g Gomega) {
-		g.Expect(t.CanCurl()).To(BeTrue())
 
 		var res string
 
 		bufChan, done, err := t.CurlAsyncChan(opts)
-		if err != nil {
-			// trigger an early exit if the pod has been deleted
-			// if we return an error here, the Eventually will continue. By making an
-			// assertion with the outer context's Gomega, we can trigger a failure at
-			// that outer scope.
-			g.Expect(err).NotTo(MatchError(ContainSubstring(`pods "testserver" not found`)))
-			return
-		}
+		g.Expect(err).NotTo(HaveOccurred())
+
 		defer close(done)
 		var buf io.Reader
 		select {
