@@ -32,6 +32,14 @@ func (c *FakeGatewayV1) Gateways(namespace string) v1.GatewayInterface {
 	return &FakeGateways{c, namespace}
 }
 
+func (c *FakeGatewayV1) HttpListenerOptions(namespace string) v1.HttpListenerOptionInterface {
+	return &FakeHttpListenerOptions{c, namespace}
+}
+
+func (c *FakeGatewayV1) ListenerOptions(namespace string) v1.ListenerOptionInterface {
+	return &FakeListenerOptions{c, namespace}
+}
+
 func (c *FakeGatewayV1) MatchableHttpGateways(namespace string) v1.MatchableHttpGatewayInterface {
 	return &FakeMatchableHttpGateways{c, namespace}
 }

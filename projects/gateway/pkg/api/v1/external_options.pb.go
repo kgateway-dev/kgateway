@@ -405,6 +405,146 @@ func (x *RouteOption) GetTargetRef() *v11.PolicyTargetReference {
 	return nil
 }
 
+type ListenerOption struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Metadata contains the object metadata for this resource
+	Metadata *core.Metadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// Listener options
+	Options *v1.ListenerOptions `protobuf:"bytes,2,opt,name=options,proto3" json:"options,omitempty"`
+	// When using Kubernetes Gateway API mode, targetRefs can be used to attach this ListenerOption
+	// to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used
+	// for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified.
+	// NOTE: This is a repeated field but currently ONLY supports a single targetRef.
+	// If multiple targetRefs are provided, only the first in the list will be used.
+	TargetRefs []*v11.PolicyTargetReferenceWithSectionName `protobuf:"bytes,3,rep,name=target_refs,json=targetRefs,proto3" json:"target_refs,omitempty"`
+}
+
+func (x *ListenerOption) Reset() {
+	*x = ListenerOption{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListenerOption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListenerOption) ProtoMessage() {}
+
+func (x *ListenerOption) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListenerOption.ProtoReflect.Descriptor instead.
+func (*ListenerOption) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ListenerOption) GetMetadata() *core.Metadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *ListenerOption) GetOptions() *v1.ListenerOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ListenerOption) GetTargetRefs() []*v11.PolicyTargetReferenceWithSectionName {
+	if x != nil {
+		return x.TargetRefs
+	}
+	return nil
+}
+
+type HttpListenerOption struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Metadata contains the object metadata for this resource
+	Metadata *core.Metadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// HttpListener options
+	Options *v1.HttpListenerOptions `protobuf:"bytes,2,opt,name=options,proto3" json:"options,omitempty"`
+	// When using Kubernetes Gateway API mode, targetRef can be used to attach this VirtualHostOption
+	// to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used
+	// for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified.
+	// NOTE: This is a repeated field but currently ONLY supports a single targetRef.
+	// If multiple targetRefs are provided, only the first in the list will be used.
+	TargetRefs []*v11.PolicyTargetReferenceWithSectionName `protobuf:"bytes,3,rep,name=target_refs,json=targetRefs,proto3" json:"target_refs,omitempty"`
+}
+
+func (x *HttpListenerOption) Reset() {
+	*x = HttpListenerOption{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *HttpListenerOption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpListenerOption) ProtoMessage() {}
+
+func (x *HttpListenerOption) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpListenerOption.ProtoReflect.Descriptor instead.
+func (*HttpListenerOption) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *HttpListenerOption) GetMetadata() *core.Metadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *HttpListenerOption) GetOptions() *v1.HttpListenerOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *HttpListenerOption) GetTargetRefs() []*v11.PolicyTargetReferenceWithSectionName {
+	if x != nil {
+		return x.TargetRefs
+	}
+	return nil
+}
+
 var File_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto protoreflect.FileDescriptor
 
 var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_rawDesc = []byte{
@@ -477,12 +617,44 @@ var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_
 	0x79, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65,
 	0x52, 0x09, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x52, 0x65, 0x66, 0x3a, 0x1b, 0x82, 0xf1, 0x04,
 	0x17, 0x0a, 0x06, 0x72, 0x74, 0x6f, 0x70, 0x74, 0x73, 0x12, 0x0d, 0x72, 0x6f, 0x75, 0x74, 0x65,
-	0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x4a, 0x04, 0x08, 0x01, 0x10, 0x02, 0x42, 0x41,
-	0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x5a, 0x33, 0x67, 0x69,
-	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f,
-	0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67,
-	0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76,
-	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x4a, 0x04, 0x08, 0x01, 0x10, 0x02, 0x22, 0xf8,
+	0x01, 0x0a, 0x0e, 0x4c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x12, 0x32, 0x0a, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e,
+	0x69, 0x6f, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x08, 0x6d, 0x65, 0x74,
+	0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x37, 0x0a, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x4f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x58,
+	0x0a, 0x0b, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x5f, 0x72, 0x65, 0x66, 0x73, 0x18, 0x03, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6b, 0x76, 0x32, 0x2e,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x54, 0x61,
+	0x72, 0x67, 0x65, 0x74, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x57, 0x69, 0x74,
+	0x68, 0x53, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x52, 0x0a, 0x74, 0x61,
+	0x72, 0x67, 0x65, 0x74, 0x52, 0x65, 0x66, 0x73, 0x3a, 0x1f, 0x82, 0xf1, 0x04, 0x1b, 0x0a, 0x07,
+	0x6c, 0x69, 0x73, 0x6f, 0x70, 0x74, 0x73, 0x12, 0x10, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65,
+	0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x86, 0x02, 0x0a, 0x12, 0x48, 0x74,
+	0x74, 0x70, 0x4c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x32, 0x0a, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
+	0x6f, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x08, 0x6d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x12, 0x3b, 0x0a, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x48, 0x74, 0x74, 0x70, 0x4c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65,
+	0x72, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x12, 0x58, 0x0a, 0x0b, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x5f, 0x72, 0x65, 0x66, 0x73,
+	0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73, 0x6b,
+	0x76, 0x32, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x50, 0x6f, 0x6c, 0x69, 0x63,
+	0x79, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65,
+	0x57, 0x69, 0x74, 0x68, 0x53, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x52,
+	0x0a, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x52, 0x65, 0x66, 0x73, 0x3a, 0x25, 0x82, 0xf1, 0x04,
+	0x21, 0x0a, 0x08, 0x68, 0x6c, 0x69, 0x73, 0x6f, 0x70, 0x74, 0x73, 0x12, 0x15, 0x68, 0x74, 0x74,
+	0x70, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x42, 0x41, 0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01,
+	0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
+	0x74, 0x73, 0x2f, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61,
+	0x70, 0x69, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -497,31 +669,41 @@ func file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto
 	return file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_goTypes = []interface{}{
 	(*VirtualHostOption)(nil),                        // 0: gateway.solo.io.VirtualHostOption
 	(*RouteOption)(nil),                              // 1: gateway.solo.io.RouteOption
-	(*core.NamespacedStatuses)(nil),                  // 2: core.solo.io.NamespacedStatuses
-	(*core.Metadata)(nil),                            // 3: core.solo.io.Metadata
-	(*v1.VirtualHostOptions)(nil),                    // 4: gloo.solo.io.VirtualHostOptions
-	(*v11.PolicyTargetReferenceWithSectionName)(nil), // 5: core.skv2.solo.io.PolicyTargetReferenceWithSectionName
-	(*v1.RouteOptions)(nil),                          // 6: gloo.solo.io.RouteOptions
-	(*v11.PolicyTargetReference)(nil),                // 7: core.skv2.solo.io.PolicyTargetReference
+	(*ListenerOption)(nil),                           // 2: gateway.solo.io.ListenerOption
+	(*HttpListenerOption)(nil),                       // 3: gateway.solo.io.HttpListenerOption
+	(*core.NamespacedStatuses)(nil),                  // 4: core.solo.io.NamespacedStatuses
+	(*core.Metadata)(nil),                            // 5: core.solo.io.Metadata
+	(*v1.VirtualHostOptions)(nil),                    // 6: gloo.solo.io.VirtualHostOptions
+	(*v11.PolicyTargetReferenceWithSectionName)(nil), // 7: core.skv2.solo.io.PolicyTargetReferenceWithSectionName
+	(*v1.RouteOptions)(nil),                          // 8: gloo.solo.io.RouteOptions
+	(*v11.PolicyTargetReference)(nil),                // 9: core.skv2.solo.io.PolicyTargetReference
+	(*v1.ListenerOptions)(nil),                       // 10: gloo.solo.io.ListenerOptions
+	(*v1.HttpListenerOptions)(nil),                   // 11: gloo.solo.io.HttpListenerOptions
 }
 var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_depIdxs = []int32{
-	2, // 0: gateway.solo.io.VirtualHostOption.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
-	3, // 1: gateway.solo.io.VirtualHostOption.metadata:type_name -> core.solo.io.Metadata
-	4, // 2: gateway.solo.io.VirtualHostOption.options:type_name -> gloo.solo.io.VirtualHostOptions
-	5, // 3: gateway.solo.io.VirtualHostOption.target_ref:type_name -> core.skv2.solo.io.PolicyTargetReferenceWithSectionName
-	2, // 4: gateway.solo.io.RouteOption.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
-	3, // 5: gateway.solo.io.RouteOption.metadata:type_name -> core.solo.io.Metadata
-	6, // 6: gateway.solo.io.RouteOption.options:type_name -> gloo.solo.io.RouteOptions
-	7, // 7: gateway.solo.io.RouteOption.target_ref:type_name -> core.skv2.solo.io.PolicyTargetReference
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	4,  // 0: gateway.solo.io.VirtualHostOption.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
+	5,  // 1: gateway.solo.io.VirtualHostOption.metadata:type_name -> core.solo.io.Metadata
+	6,  // 2: gateway.solo.io.VirtualHostOption.options:type_name -> gloo.solo.io.VirtualHostOptions
+	7,  // 3: gateway.solo.io.VirtualHostOption.target_ref:type_name -> core.skv2.solo.io.PolicyTargetReferenceWithSectionName
+	4,  // 4: gateway.solo.io.RouteOption.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
+	5,  // 5: gateway.solo.io.RouteOption.metadata:type_name -> core.solo.io.Metadata
+	8,  // 6: gateway.solo.io.RouteOption.options:type_name -> gloo.solo.io.RouteOptions
+	9,  // 7: gateway.solo.io.RouteOption.target_ref:type_name -> core.skv2.solo.io.PolicyTargetReference
+	5,  // 8: gateway.solo.io.ListenerOption.metadata:type_name -> core.solo.io.Metadata
+	10, // 9: gateway.solo.io.ListenerOption.options:type_name -> gloo.solo.io.ListenerOptions
+	7,  // 10: gateway.solo.io.ListenerOption.target_refs:type_name -> core.skv2.solo.io.PolicyTargetReferenceWithSectionName
+	5,  // 11: gateway.solo.io.HttpListenerOption.metadata:type_name -> core.solo.io.Metadata
+	11, // 12: gateway.solo.io.HttpListenerOption.options:type_name -> gloo.solo.io.HttpListenerOptions
+	7,  // 13: gateway.solo.io.HttpListenerOption.target_refs:type_name -> core.skv2.solo.io.PolicyTargetReferenceWithSectionName
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_init() }
@@ -554,6 +736,30 @@ func file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto
 				return nil
 			}
 		}
+		file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ListenerOption); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HttpListenerOption); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -561,7 +767,7 @@ func file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
