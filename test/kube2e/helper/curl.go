@@ -98,7 +98,7 @@ func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput
 		var res string
 
 		bufChan, done, err := t.CurlAsyncChan(opts)
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		defer close(done)
 		var buf io.Reader
