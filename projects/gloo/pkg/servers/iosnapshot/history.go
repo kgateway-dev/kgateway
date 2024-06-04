@@ -20,7 +20,7 @@ type History interface {
 	// SetApiSnapshot sets the latest ApiSnapshot
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
 	// SetKubeGatewayClient sets the client to use for Kubernetes CRUD operations
-	SetKubeGatewayClient(latestInput client.Client)
+	SetKubeGatewayClient(client client.Client)
 	// GetRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
 	// Any sensitive data contained in the Snapshot will either be explicitly redacted
 	// or entirely excluded
@@ -162,7 +162,8 @@ func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
 	return &clone
 }
 
-// getApiSnapshotSafe gets a clone of the latest ApiSnapshot
+// appendKubeGatewayResources searches for routes and gateways
+// setting the returned list onto the current resource map at a given key or replacing the contents with an error
 func (h *historyImpl) appendKubeGatewayResources(ctx context.Context, resources map[string]interface{}) {
 	cli := h.getKubeGatewayClientSafe()
 
@@ -190,7 +191,7 @@ func (h *historyImpl) appendKubeGatewayResources(ctx context.Context, resources 
 	}
 }
 
-// getApiSnapshotSafe gets a clone of the latest ApiSnapshot
+// getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
 func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 	h.RLock()
 	defer h.RUnlock()
