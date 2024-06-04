@@ -339,6 +339,14 @@ clean-cli-docs:
 .PHONY: generate-all
 generate-all: generated-code
 
+# Run codegen with debug logs
+# DEBUG=1 controls the debug level in the logger used by solo-kit
+# ref: https://github.com/solo-io/solo-kit/blob/main/pkg/code-generator/codegen/generator.go#L14
+# ref: https://github.com/solo-io/go-utils/blob/main/log/log.go#L14
+.PHONY: generate-all-debug
+generate-all-debug: export DEBUG = 1
+generate-all-debug: generate-all
+
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
 generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI

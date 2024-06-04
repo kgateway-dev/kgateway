@@ -259,3 +259,39 @@ message RouteOption {
   // for all `Rules` in the `HTTPRoute`.
   core.skv2.solo.io.PolicyTargetReference target_ref = 5;
 }
+
+message ListenerOption {
+  option (core.solo.io.resource).short_name = "lisopts";
+  option (core.solo.io.resource).plural_name = "listener_options";
+
+  // Metadata contains the object metadata for this resource
+  core.solo.io.Metadata metadata = 1;
+
+  // Listener options
+  gloo.solo.io.ListenerOptions options = 2;
+
+  // When using Kubernetes Gateway API mode, targetRefs can be used to attach this ListenerOption
+  // to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used
+  // for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified.
+  // NOTE: This is a repeated field but currently ONLY supports a single targetRef.
+  // If multiple targetRefs are provided, only the first in the list will be used.
+  repeated core.skv2.solo.io.PolicyTargetReferenceWithSectionName target_refs = 3;
+}
+
+message HttpListenerOption {
+  option (core.solo.io.resource).short_name = "hlisopts";
+  option (core.solo.io.resource).plural_name = "http_listener_options";
+
+  // Metadata contains the object metadata for this resource
+  core.solo.io.Metadata metadata = 1;
+
+  // HttpListener options
+  gloo.solo.io.HttpListenerOptions options = 2;
+
+  // When using Kubernetes Gateway API mode, targetRef can be used to attach this VirtualHostOption
+  // to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used
+  // for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified.
+  // NOTE: This is a repeated field but currently ONLY supports a single targetRef.
+  // If multiple targetRefs are provided, only the first in the list will be used.
+  repeated core.skv2.solo.io.PolicyTargetReferenceWithSectionName target_refs = 3;
+}
