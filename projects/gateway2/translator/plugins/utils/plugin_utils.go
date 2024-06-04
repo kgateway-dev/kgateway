@@ -166,3 +166,6 @@ func GetPrioritizedListenerPolicies[T client.Object](
 	SortByCreationTime(optsWithoutSectionName)
 	return append(optsWithSectionName, optsWithoutSectionName...)
 }
+
+// TODO: remove this as part of https://github.com/solo-io/solo-projects/issues/6286
+const MultipleTargetRefErrStr = "found ListenerOption %s/%s that contains multiple targetRefs which is not currently supported, only the first targetRef will be used"
