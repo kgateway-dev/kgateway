@@ -34,6 +34,7 @@ rules:
   resources:
   - routeoptions
   - virtualhostoptions
+  - listeneroptions
   verbs: ["get", "list", "watch"]
 - apiGroups:
   - "gateway.networking.k8s.io"

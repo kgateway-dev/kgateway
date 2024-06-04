@@ -659,8 +659,14 @@ apis:
   gateway.solo.io.HttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#HttpGateway
     package: gateway.solo.io
+  gateway.solo.io.HttpListenerOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#HttpListenerOption
+    package: gateway.solo.io
   gateway.solo.io.HybridGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
+    package: gateway.solo.io
+  gateway.solo.io.ListenerOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#ListenerOption
     package: gateway.solo.io
   gateway.solo.io.MatchableHttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto.sk/#MatchableHttpGateway

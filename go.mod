@@ -100,6 +100,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d
 	sigs.k8s.io/gateway-api v1.0.1-0.20231102234148-3b5969669194
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
 
 require (
@@ -326,7 +327,6 @@ require (
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/kustomize/kustomize/v5 v5.0.4-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.3-0.20230601165947-6ce0bf390ce3 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
 replace (
