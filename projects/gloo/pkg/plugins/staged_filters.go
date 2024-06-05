@@ -38,7 +38,7 @@ const (
 
 type WellKnownUpstreamHTTPFilterStage int
 
-// The set of WellKnownUpstreamHTTPOFilterStages, whose order corresponds to the order used to sort filters
+// The set of WellKnownUpstreamHTTPFilterStages, whose order corresponds to the order used to sort filters
 // If new well known filter stages are added, they should be inserted in a position corresponding to their order
 const (
 	TransformationStage WellKnownUpstreamHTTPFilterStage = iota // Transformation stage
