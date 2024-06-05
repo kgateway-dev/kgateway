@@ -167,7 +167,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			// Check if the error is a ValidationError with a ConfigurationWarning
 			if verr, ok := err.(plugins.ValidationError); ok {
 				if verr.ConfigurationWarning() {
-					// TODO(npolshak): Create a VirtualHostReport_Warning report
+					// TODO(npolshak): Create a VirtualHostReport_Warning report to add a warning: https://github.com/solo-io/gloo/issues/7357
 					contextutils.LoggerFrom(params.Ctx).Warnf("virtual host plugin %s produced a warning: %v", plugin.Name(), err)
 					continue
 				}
@@ -452,7 +452,7 @@ func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
 		}
 		if err := plugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
 			// same as above
-			// TODO(npolshak): Change this to a ValidationError type
+			// TODO(npolshak): Change this to a ValidationError type: https://github.com/solo-io/gloo/issues/7357
 			if isWarningErr(err) {
 				continue
 			}
@@ -544,7 +544,7 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
 			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
-				// TODO(npolshak): Add check for ValidationError type
+				// TODO(npolshak): Add check for ValidationError type: https://github.com/solo-io/gloo/issues/7357
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
