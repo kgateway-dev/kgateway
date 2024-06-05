@@ -239,10 +239,6 @@ spec:
           - name: LOG_LEVEL
             value: {{ .Values.gloo.logLevel }}
         {{- end}}
-        {{- if .Values.global.istioSDS.enabled }}
-          - name: GG_EXPERIMENTAL_ISTIO_MTLS_SDS_ENABLED
-            value: "true"
-        {{- end}}
         {{- if .Values.global.istioIntegration.enableIstioSidecarOnGateway }}
           - name: ENABLE_ISTIO_SIDECAR_ON_GATEWAY
             value: "true"
