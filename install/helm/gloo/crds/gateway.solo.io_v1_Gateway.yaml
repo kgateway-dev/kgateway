@@ -1265,6 +1265,23 @@ spec:
                       sanitizeClusterHeader:
                         nullable: true
                         type: boolean
+                      statefulSession:
+                        properties:
+                          cookieBased:
+                            properties:
+                              cookie:
+                                properties:
+                                  name:
+                                    type: string
+                                  path:
+                                    type: string
+                                  ttl:
+                                    type: string
+                                type: object
+                            type: object
+                          strict:
+                            type: boolean
+                        type: object
                       tap:
                         properties:
                           sinks:
@@ -3162,6 +3179,23 @@ spec:
                                 sanitizeClusterHeader:
                                   nullable: true
                                   type: boolean
+                                statefulSession:
+                                  properties:
+                                    cookieBased:
+                                      properties:
+                                        cookie:
+                                          properties:
+                                            name:
+                                              type: string
+                                            path:
+                                              type: string
+                                            ttl:
+                                              type: string
+                                          type: object
+                                      type: object
+                                    strict:
+                                      type: boolean
+                                  type: object
                                 tap:
                                   properties:
                                     sinks:

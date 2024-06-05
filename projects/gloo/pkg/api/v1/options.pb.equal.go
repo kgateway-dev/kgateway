@@ -455,6 +455,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetStatefulSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStatefulSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStatefulSession(), target.GetStatefulSession()) {
+			return false
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:

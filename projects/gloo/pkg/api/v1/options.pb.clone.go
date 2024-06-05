@@ -87,6 +87,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_shadowing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_statefulsession "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/statefulsession"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tap"
@@ -357,6 +359,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.Tap = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap.Tap)
 	} else {
 		target.Tap = proto.Clone(m.GetTap()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap.Tap)
+	}
+
+	if h, ok := interface{}(m.GetStatefulSession()).(clone.Cloner); ok {
+		target.StatefulSession = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_statefulsession.StatefulSession)
+	} else {
+		target.StatefulSession = proto.Clone(m.GetStatefulSession()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_statefulsession.StatefulSession)
 	}
 
 	switch m.ExtProcConfig.(type) {

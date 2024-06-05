@@ -7,8 +7,10 @@ import (
 	statefulsessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	cookiev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
-	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/proto"
+	"github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/statefulsession"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
@@ -39,15 +41,22 @@ func (p *plugin) Init(params plugins.InitParams) {
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	fmt.Printf("\n*************\nstateful session HttpFilters\n")
-	//fmt.Printf("\n*************\nparams.Snapshot: %v\n", params.Snapshot)
-	config := &cookiev3.CookieBasedSessionState{
-		Cookie: &httpv3.Cookie{
-			Name: "stateful_session_cookie",
-			// Path: "/not_the_default_path",
-			Ttl: &duration.Duration{
-				Seconds: 3600,
-			},
-		},
+
+	sessionConf := listener.GetOptions().GetStatefulSession()
+
+	if sessionConf == nil {
+		return []plugins.StagedHttpFilter{}, nil
+	}
+
+	var config proto.Message
+	var err error
+	switch conf := sessionConf.GetSessionState().(type) {
+	case *statefulsession.StatefulSession_CookieBased:
+		config, err = translateCookieBased(conf)
+		if err != nil {
+			return nil, err
+
+		}
 	}
 
 	marshalledConf, err := utils.MessageToAny(config)
@@ -63,11 +72,37 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 				Name:        "envoy.http.stateful_session.cookie",
 				TypedConfig: marshalledConf,
 			},
+			Strict: sessionConf.Strict,
 		},
 		pluginStage,
 	)}, nil
 
-	//return []plugins.StagedHttpFilter{}, nil
+}
+
+func translateCookieBased(conf *statefulsession.StatefulSession_CookieBased) (*cookiev3.CookieBasedSessionState, error) {
+	//defaultTtl := 3600 * time.Second
+
+	if conf.CookieBased == nil {
+		return nil, eris.Errorf("cookie must be provided")
+	}
+
+	if conf.CookieBased.GetCookie().GetName() == "" {
+		return nil, eris.Errorf("cookie name must be provided")
+
+	}
+
+	cookieName := conf.CookieBased.GetCookie().GetName()
+
+	cookiePath := conf.CookieBased.GetCookie().GetPath() // (for now) pass through empty string to use Envoy default
+	ttl := conf.CookieBased.GetCookie().GetTtl()
+
+	return &cookiev3.CookieBasedSessionState{
+		Cookie: &httpv3.Cookie{
+			Name: cookieName,
+			Path: cookiePath,
+			Ttl:  ttl,
+		},
+	}, nil
 }
 
 func NewPlugin() *plugin {
