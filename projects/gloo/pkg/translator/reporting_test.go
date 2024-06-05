@@ -14,7 +14,7 @@ import (
 
 // Reporting is a critical aspect of our translation engine that has minimal test coverage
 // We split off this functionality into a standalone file to make it easier to make changes and test
-var _ = FDescribe("Reporting", func() {
+var _ = Describe("Reporting", func() {
 
 	DescribeTable("reportPluginProcessingErrorOrWarning",
 		func(err error, reportWarning bool) {
