@@ -197,9 +197,9 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 			httpFilterPlugins = append(httpFilterPlugins, httpFilterPlugin)
 		}
 
-		upstrteamHttpFilterPlugin, ok := plugin.(plugins.UpstreamHttpFilterPlugin)
+		upstreamHttpFilterPlugin, ok := plugin.(plugins.UpstreamHttpFilterPlugin)
 		if ok {
-			upstreamHttpFilterPlugins = append(upstreamHttpFilterPlugins, upstrteamHttpFilterPlugin)
+			upstreamHttpFilterPlugins = append(upstreamHttpFilterPlugins, upstreamHttpFilterPlugin)
 		}
 
 		networkFilterPlugin, ok := plugin.(plugins.NetworkFilterPlugin)
