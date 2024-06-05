@@ -291,7 +291,7 @@ func (p *pluginRegistry) GetHttpFilterPlugins() []plugins.HttpFilterPlugin {
 	return p.httpFilterPlugins
 }
 
-// GetHttpFilterPlugins returns the plugins that were registered which act on HttpFilter.
+// GetUpstreamHttpFilterPlugins returns the plugins that were registered which act on HttpFilter.
 func (p *pluginRegistry) GetUpstreamHttpFilterPlugins() []plugins.UpstreamHttpFilterPlugin {
 	return p.upstreamHttpFilterPlugins
 }
