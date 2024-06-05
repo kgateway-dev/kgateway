@@ -861,17 +861,6 @@ func DataSourceFromString(str string) *envoy_config_core_v3.DataSource {
 	}
 }
 
-func isWarningErr(err error) bool {
-	switch {
-	case err == SubsetsMisconfiguredErr:
-		fallthrough
-	case pluginutils.IsDestinationNotFoundErr(err):
-		return true
-	default:
-		return false
-	}
-}
-
 func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidateRoutePath(path); err != nil {
 		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, eris.Wrapf(err, "the path is invalid: %s", path).Error(), name)

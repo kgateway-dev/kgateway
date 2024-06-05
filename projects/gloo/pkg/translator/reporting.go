@@ -1,8 +1,8 @@
 package translator
 
 import (
-	"errors"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -155,12 +155,17 @@ func reportPluginProcessingErrorOrWarning(
 	doReportErr func(),
 	doReportWarning func(),
 ) {
-	var configurationError plugins.ConfigurationError
-	isConfigurationError := errors.As(err, &configurationError)
+	if configurationError, ok := err.(plugins.ConfigurationError); ok {
+		if configurationError.IsWarning() {
+			doReportWarning()
+			return
+		}
+	}
 
 	// TODO: We should remove the legacy `isWarningErr` is update the code to rely on the new ConfigurationError
-	if (isConfigurationError && configurationError.IsWarning()) || isWarningErr(err) {
+	if isWarningErr(err) {
 		doReportWarning()
+		return
 	}
 
 	// This handles the following cases:
@@ -168,4 +173,15 @@ func reportPluginProcessingErrorOrWarning(
 	//		fallback to the legacy behavior, to always report an error
 	//	- A plugin returns a ConfigurationError, but explicitly defines it to NOT be a warning.
 	doReportErr()
+}
+
+func isWarningErr(err error) bool {
+	switch {
+	case err == SubsetsMisconfiguredErr:
+		fallthrough
+	case pluginutils.IsDestinationNotFoundErr(err):
+		return true
+	default:
+		return false
+	}
 }
