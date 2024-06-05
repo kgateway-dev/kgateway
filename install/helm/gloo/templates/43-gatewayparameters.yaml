@@ -42,25 +42,25 @@ spec:
         {{- toYaml $gg.sdsContainer.sdsResources | nindent 8 }}
 {{- end }}{{/* if $gg.sdsContainer.sdsResources */}}
     istio:
-{{- if $gg.istioIntegration.customSidecars }}
+{{- if $gg.istio.customSidecars }}
       customSidecars:
-        {{- toYaml $gg.istioIntegration.customSidecars | nindent 6 }}
-{{- end }}{{/* if $gg.istioIntegration.customSidecars */}}
-{{- if and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars) }}
-      istioContainer:
+        {{- toYaml $gg.istio.customSidecars | nindent 6 }}
+{{- end }}{{/* if $gg.istio.customSidecars */}}
+{{- if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) }}
+      istioProxyContainer:
         image:
-          {{- merge $gg.istioIntegration.istioContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
-{{- if $gg.istioIntegration.istioContainer.securityContext }}
+          {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
+{{- if $gg.istio.istioProxyContainer.securityContext }}
         securityContext:
-          {{- toYaml $gg.istioIntegration.istioContainer.securityContext | nindent 10 }}
-{{- end }}{{/* if $gg.istioIntegration.istioContainer.securityContext */}}
-{{- if $gg.istioIntegration.istioContainer.logLevel }}
-        logLevel: {{ $gg.istioIntegration.istioContainer.logLevel }}
-{{- end }}{{/* if $gg.istioIntegration.istioContainer.logLevel */}}
-        istioDiscoveryAddress: {{ $gg.istioIntegration.istioContainer.istioDiscoveryAddress }}
-        istioMetaMeshId: {{ $gg.istioIntegration.istioContainer.istioMetaMeshId }}
-        istioMetaClusterId: {{ $gg.istioIntegration.istioContainer.istioMetaClusterId }}
-{{- end }}{{/* if and $gg.istioIntegration.istioContainer (not $gg.istioIntegration.customSidecars) */}}
+          {{- toYaml $gg.istio.istioProxyContainer.securityContext | nindent 10 }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.securityContext */}}
+{{- if $gg.istio.istioProxyContainer.logLevel }}
+        logLevel: {{ $gg.istio.istioProxyContainer.logLevel }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.logLevel */}}
+        istioDiscoveryAddress: {{ $gg.istio.istioProxyContainer.istioDiscoveryAddress }}
+        istioMetaMeshId: {{ $gg.istio.istioProxyContainer.istioMetaMeshId }}
+        istioMetaClusterId: {{ $gg.istio.istioProxyContainer.istioMetaClusterId }}
+{{- end }}{{/* if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) */}}
 {{- end }}{{/* if $gg.sdsContainer */}}
 {{- end }}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
 {{- end }}{{/* if .Values.kubeGateway.gatewayParameters */}}

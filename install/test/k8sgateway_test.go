@@ -124,12 +124,12 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.cpu=%s", sdsVals[1]),
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory=%s", sdsVals[2]),
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu=%s", sdsVals[3]),
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.tag=istio-override-tag",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.registry=istio-override-registry",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.repository=istio-override-repository",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.image.pullPolicy=Never",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.logLevel=debug",
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.istioContainer.securityContext.runAsUser=888",
+						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.tag=istio-override-tag",
+						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.registry=istio-override-registry",
+						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.repository=istio-override-repository",
+						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.pullPolicy=Never",
+						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.logLevel=debug",
+						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.runAsUser=888",
 						"global.istioSDS.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
@@ -201,7 +201,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.cpu=%s", sdsVals[1]),
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory=%s", sdsVals[2]),
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu=%s", sdsVals[3]),
-						"kubeGateway.gatewayParameters.glooGateway.istioIntegration.customSidecars[0].name=custom-sidecar",
+						"kubeGateway.gatewayParameters.glooGateway.istio.customSidecars[0].name=custom-sidecar",
 						"global.istioSDS.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
