@@ -642,7 +642,7 @@ spec:
                       enableAutoMtls:
                         nullable: true
                         type: boolean
-                      integrationEnabled:
+                      enableIntegration:
                         nullable: true
                         type: boolean
                     type: object

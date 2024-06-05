@@ -36,7 +36,7 @@ spec:
    istioOptions:
      appendXForwardedHost: true
      enableAutoMtls: false
-     integrationEnabled: false
+     enableIntegration: false
  consulDiscovery:
    useTlsTagging: true
    tlsTagName: tag

@@ -31,8 +31,8 @@ var _ = Describe("Istio Automtls Plugin", func() {
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						IstioOptions: &gloov1.GlooOptions_IstioOptions{
-							EnableAutoMtls:     &wrappers.BoolValue{Value: true},
-							IntegrationEnabled: &wrappers.BoolValue{Value: true},
+							EnableAutoMtls:    &wrappers.BoolValue{Value: true},
+							EnableIntegration: &wrappers.BoolValue{Value: true},
 						},
 					},
 				},
@@ -106,8 +106,8 @@ var _ = Describe("Istio Automtls Plugin", func() {
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
 					IstioOptions: &gloov1.GlooOptions_IstioOptions{
-						EnableAutoMtls:     &wrappers.BoolValue{Value: true},
-						IntegrationEnabled: &wrappers.BoolValue{Value: false},
+						EnableAutoMtls:    &wrappers.BoolValue{Value: true},
+						EnableIntegration: &wrappers.BoolValue{Value: false},
 					},
 				},
 			},
@@ -144,8 +144,8 @@ var _ = Describe("Istio Automtls Plugin", func() {
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
 					IstioOptions: &gloov1.GlooOptions_IstioOptions{
-						EnableAutoMtls:     &wrappers.BoolValue{Value: false},
-						IntegrationEnabled: &wrappers.BoolValue{Value: true},
+						EnableAutoMtls:    &wrappers.BoolValue{Value: false},
+						EnableIntegration: &wrappers.BoolValue{Value: true},
 					},
 				},
 			},
@@ -182,8 +182,8 @@ var _ = Describe("Istio Automtls Plugin", func() {
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
 					IstioOptions: &gloov1.GlooOptions_IstioOptions{
-						EnableAutoMtls:     &wrappers.BoolValue{Value: false},
-						IntegrationEnabled: &wrappers.BoolValue{Value: true},
+						EnableAutoMtls:    &wrappers.BoolValue{Value: false},
+						EnableIntegration: &wrappers.BoolValue{Value: true},
 					},
 				},
 			},

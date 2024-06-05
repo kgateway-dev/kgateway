@@ -29,7 +29,7 @@ spec:
    istioOptions:
      appendXForwardedHost: true
      enableAutoMtls: false
-     integrationEnabled: false
+     enableIntegration: false
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}

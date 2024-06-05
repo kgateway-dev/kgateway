@@ -2681,18 +2681,18 @@ func (m *GlooOptions_IstioOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetIntegrationEnabled()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("IntegrationEnabled")); err != nil {
+	if h, ok := interface{}(m.GetEnableIntegration()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EnableIntegration")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetIntegrationEnabled(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetEnableIntegration(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("IntegrationEnabled")); err != nil {
+			if _, err = hasher.Write([]byte("EnableIntegration")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

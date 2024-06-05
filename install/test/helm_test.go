@@ -4130,7 +4130,7 @@ spec:
     istioOptions:
       appendXForwardedHost: true
       enableAutoMtls: false
-      integrationEnabled: false
+      enableIntegration: false
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
@@ -6902,7 +6902,7 @@ metadata:
 						"global.additionalLabels.this=that",
 						"global.additionalLabels.the=other",
 
-						// IntegrationEnabled components that have their own manifests
+						// Enabled components that have their own manifests
 						"settings.integrations.knative.enabled=true",
 						"accessLogger.enabled=true",
 						"ingress.enabled=true",

@@ -27,7 +27,7 @@ import (
 
 // We need to test three possible input values for the ext auth config (the value of the `*Plugins` attributes):
 // - Undefined: no config is provided
-// - IntegrationEnabled: a valid custom auth config
+// - Enabled: a valid custom auth config
 // - Disabled: config explicitly disables auth
 type ConfigState int
 
@@ -38,7 +38,7 @@ const (
 )
 
 func (c ConfigState) String() string {
-	return [...]string{"Undefined", "IntegrationEnabled", "Disabled"}[c]
+	return [...]string{"Undefined", "Enabled", "Disabled"}[c]
 }
 
 // Maps an expected TypedPerFilterConfig value to a function that can be used to assert it.

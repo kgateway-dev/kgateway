@@ -746,7 +746,7 @@ message GlooOptions {
         // If enabled, an istio-proxy container and sds container are assumed to exist alongside the
         // gateway proxy. These containers are created by enabling the istioSDS.enabled option in the helm chart.
         // Defaults to false
-        google.protobuf.BoolValue integration_enabled = 3;
+        google.protobuf.BoolValue enable_integration = 3;
     }
 
     IstioOptions istio_options = 18;

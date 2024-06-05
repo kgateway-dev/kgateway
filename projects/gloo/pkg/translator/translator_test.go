@@ -3026,8 +3026,8 @@ var _ = Describe("Translator", func() {
 					settings = &v1.Settings{
 						Gloo: &v1.GlooOptions{
 							IstioOptions: &v1.GlooOptions_IstioOptions{
-								EnableAutoMtls:     &wrappers.BoolValue{Value: true},
-								IntegrationEnabled: &wrappers.BoolValue{Value: true},
+								EnableAutoMtls:    &wrappers.BoolValue{Value: true},
+								EnableIntegration: &wrappers.BoolValue{Value: true},
 							},
 						},
 					}
@@ -3037,8 +3037,8 @@ var _ = Describe("Translator", func() {
 					settings = &v1.Settings{
 						Gloo: &v1.GlooOptions{
 							IstioOptions: &v1.GlooOptions_IstioOptions{
-								EnableAutoMtls:     &wrappers.BoolValue{Value: false},
-								IntegrationEnabled: &wrappers.BoolValue{Value: false},
+								EnableAutoMtls:    &wrappers.BoolValue{Value: false},
+								EnableIntegration: &wrappers.BoolValue{Value: false},
 							},
 						},
 					}
@@ -3080,7 +3080,7 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should not translate automtls is istio integration is disabled", func() {
-					settings.Gloo.IstioOptions.IntegrationEnabled.Value = false
+					settings.Gloo.IstioOptions.EnableIntegration.Value = false
 
 					// Create a translator where istio is disabled
 					opts := bootstrap.Opts{

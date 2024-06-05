@@ -58,7 +58,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if p.settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue() && !in.GetDisableIstioAutoMtls().GetValue() && sslConfig == nil {
 		// Istio automtls config is not applied if istio integration is disabled on the helm chart.
 		// When istio integration is disabled via istioSds.enabled=false, there is no sds or istio-proxy sidecar present
-		if !p.settings.GetGloo().GetIstioOptions().GetIntegrationEnabled().GetValue() {
+		if !p.settings.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
 			contextutils.LoggerFrom(params.Ctx).Error("Istio integration must be enabled to use auto mTLS. Enable integration with istioSds.enabled=true")
 		} else {
 			// Note: If enableIstioSidecarOnGateway is enabled, Istio automtls will not be able to generate the endpoint
