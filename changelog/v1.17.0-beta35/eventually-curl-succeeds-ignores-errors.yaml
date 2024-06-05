@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9570
+    resolvesIssue: true
+    description: >-
+      Fix regression in `CurlEventuallyShouldOutput` that caused it to succeed on curl errors.
+      Regression has not been released, so no user facing documentation needed
