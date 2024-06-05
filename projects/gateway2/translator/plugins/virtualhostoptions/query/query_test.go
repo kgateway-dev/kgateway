@@ -200,11 +200,13 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.GatewayKind,
-				Name:      "test",
-				Namespace: wrapperspb.String("default"),
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.GatewayKind,
+					Name:      "test",
+					Namespace: wrapperspb.String("default"),
+				},
 			},
 			Options: &v1.VirtualHostOptions{},
 		},
@@ -213,7 +215,7 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
 	vhOpt.ObjectMeta.Name = "good-policy-with-section-name"
-	vhOpt.Spec.TargetRef.SectionName = &wrapperspb.StringValue{
+	vhOpt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "test-listener",
 	}
 	return vhOpt
@@ -222,7 +224,7 @@ func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
 func attachedVirtualHostOptionWithDiffSectionName() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
 	vhOpt.ObjectMeta.Name = "bad-policy-with-section-name"
-	vhOpt.Spec.TargetRef.SectionName = &wrapperspb.StringValue{
+	vhOpt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "not-our-listener",
 	}
 	return vhOpt
@@ -231,7 +233,7 @@ func attachedVirtualHostOptionWithDiffSectionName() *solokubev1.VirtualHostOptio
 func attachedVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
 	vhOpt.ObjectMeta.Name = "good-policy-no-ns"
-	vhOpt.Spec.TargetRef.Namespace = nil
+	vhOpt.Spec.TargetRefs[0].Namespace = nil
 	return vhOpt
 }
 
@@ -246,6 +248,6 @@ func diffNamespaceVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption
 	vhOpt := attachedVirtualHostOption()
 	vhOpt.ObjectMeta.Name = "bad-policy"
 	vhOpt.ObjectMeta.Namespace = "non-default"
-	vhOpt.Spec.TargetRef.Namespace = nil
+	vhOpt.Spec.TargetRefs[0].Namespace = nil
 	return vhOpt
 }
