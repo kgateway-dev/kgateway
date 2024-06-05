@@ -23,7 +23,7 @@ spec:
     deployment:
       replicas: 1
     istio:
-      istioContainer:
+      istioProxyContainer:
         image:
           registry: docker.io/istio
           repository: proxyv2
