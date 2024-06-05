@@ -804,11 +804,13 @@ type IstioProxyContainer struct {
 }
 
 type IstioSDS struct {
-	Enabled        *bool         `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation"`
+	// NOTE: IstioSDS.Enabled is deprecated. Use IstioIntegration.Enabled instead.
+	Enabled        *bool         `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation. Warning: this value is deprecated and will be removed in a future release. Use global.istioIntegration.enabled instead."`
 	CustomSidecars []interface{} `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false"`
 }
 
 type IstioIntegration struct {
+	Enabled              *bool `json:"enable,omitempty" desc:"Enables Istio integration for Gloo Edge, adding the sds and istio-proxy containers to gateways for Istio mTLS cert rotation."`
 	EnableAutoMtls       *bool `json:"enableAutoMtls,omitempty" desc:"Enables Istio auto mtls configuration for Gloo Edge upstreams."`
 	DisableAutoinjection *bool `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true, as some pods do not immediately work with an Istio sidecar without extra manual configuration. Warning: this value is not supported with Kubernetes Gateway API proxy. "`
 

@@ -130,7 +130,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.pullPolicy=Never",
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.logLevel=debug",
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.runAsUser=888",
-						"global.istioSDS.enabled=true",
+						"global.istioIntegration.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
@@ -202,7 +202,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory=%s", sdsVals[2]),
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu=%s", sdsVals[3]),
 						"kubeGateway.gatewayParameters.glooGateway.istio.customSidecars[0].name=custom-sidecar",
-						"global.istioSDS.enabled=true",
+						"global.istioIntegration.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
