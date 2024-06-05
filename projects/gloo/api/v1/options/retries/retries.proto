@@ -47,7 +47,7 @@ message RetryPolicy {
     message PreviousPriorities {
         // Specifies the update frequency for the previous priorities
         // This option will only work when priorities are enabled, currently 
-        // in gloo-edge this will only be in combnination with upstream failover.
+        // in gloo-edge this will only be in combination with upstream failover.
         google.protobuf.UInt32Value update_frequency = 1;
     }
 
