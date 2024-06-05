@@ -173,6 +173,8 @@ func reportPluginProcessingErrorOrWarning(
 	doReportErr()
 }
 
+// Deprecated: We introduced the concept of a plugins.ConfigurationError which allows plugins to identify
+// the errors that they are returning as resulting in a warning.
 func isWarningErr(err error) bool {
 	switch {
 	case err == SubsetsMisconfiguredErr:
