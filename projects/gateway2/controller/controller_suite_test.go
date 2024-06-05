@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -145,9 +144,7 @@ var _ = BeforeSuite(func() {
 					Service: &kube.Service{
 						Type: kube.Service_LoadBalancer,
 					},
-					Istio: &v1alpha1.IstioIntegration{
-						Enabled: &wrapperspb.BoolValue{Value: false},
-					},
+					Istio: &v1alpha1.IstioIntegration{},
 				},
 			},
 		},

@@ -57,10 +57,17 @@ func (m *VirtualHostOption) Clone() proto.Message {
 		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.VirtualHostOptions)
 	}
 
-	if h, ok := interface{}(m.GetTargetRef()).(clone.Cloner); ok {
-		target.TargetRef = h.Clone().(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName)
-	} else {
-		target.TargetRef = proto.Clone(m.GetTargetRef()).(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName)
+	if m.GetTargetRefs() != nil {
+		target.TargetRefs = make([]*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName, len(m.GetTargetRefs()))
+		for idx, v := range m.GetTargetRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.TargetRefs[idx] = h.Clone().(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName)
+			} else {
+				target.TargetRefs[idx] = proto.Clone(v).(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReferenceWithSectionName)
+			}
+
+		}
 	}
 
 	return target
@@ -92,10 +99,17 @@ func (m *RouteOption) Clone() proto.Message {
 		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
 	}
 
-	if h, ok := interface{}(m.GetTargetRef()).(clone.Cloner); ok {
-		target.TargetRef = h.Clone().(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference)
-	} else {
-		target.TargetRef = proto.Clone(m.GetTargetRef()).(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference)
+	if m.GetTargetRefs() != nil {
+		target.TargetRefs = make([]*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference, len(m.GetTargetRefs()))
+		for idx, v := range m.GetTargetRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.TargetRefs[idx] = h.Clone().(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference)
+			} else {
+				target.TargetRefs[idx] = proto.Clone(v).(*github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1.PolicyTargetReference)
+			}
+
+		}
 	}
 
 	return target

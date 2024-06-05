@@ -15,8 +15,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-const multipleTargetRefErrStr = "found ListenerOption %s/%s that contains multiple targetRefs which is not currently supported, only the first targetRef will be used"
-
 type ListenerOptionQueries interface {
 	// GetAttachedListenerOptions returns a slice of ListenerOption resources attached to a gateway on which
 	// the listener resides and have either targeted the listener with section name or omitted section name.
@@ -94,8 +92,9 @@ func buildWrapperType(
 		item := &list.Items[i]
 
 		// warn for multiple targetRefs until we actually support this
+		// TODO: remove this as part of https://github.com/solo-io/solo-projects/issues/6286
 		if len(item.Spec.GetTargetRefs()) > 1 {
-			contextutils.LoggerFrom(ctx).Warnf(multipleTargetRefErrStr, item.GetNamespace(), item.GetName())
+			contextutils.LoggerFrom(ctx).Warnf(utils.MultipleTargetRefErrStr, item.GetNamespace(), item.GetName())
 		}
 
 		policy := listenerOptionPolicy{
