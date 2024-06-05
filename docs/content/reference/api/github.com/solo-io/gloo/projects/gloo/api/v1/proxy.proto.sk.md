@@ -284,14 +284,18 @@ Some traffic policies can be configured to work both on the listener and virtual
 ```yaml
 "sslConfig": .gloo.solo.io.SslConfig
 "sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"prefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"destinationPort": .google.protobuf.UInt32Value
 "passthroughCipherSuites": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) |  |
-| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) | Source addresses to match. This value is either the actual addresses used to connect, or addresses that are overridden by using PROXY protocol or original_src. |
+| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) | Destination addresses to match. This value is either the actual addresses used to connect, or addresses that are overridden by using PROXY protocol or original_dst. |
+| `destinationPort` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional destination port to consider in determining a filter chain match. Filter chains that specify the destination port of incoming traffic are the most specific match. If no filter chain specifies the exact destination port, the filter chains which do not specify ports are the most specific match. |
 | `passthroughCipherSuites` | `[]string` |  |
 
 
