@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"errors"
 	"fmt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
@@ -155,15 +156,11 @@ func reportPluginProcessingErrorOrWarning(
 	doReportErr func(),
 	doReportWarning func(),
 ) {
-	if configurationError, ok := err.(plugins.ConfigurationError); ok {
-		if configurationError.IsWarning() {
-			doReportWarning()
-			return
-		}
-	}
+	var configurationError plugins.ConfigurationError
+	isConfigurationError := errors.As(err, &configurationError)
 
 	// TODO: We should remove the legacy `isWarningErr` is update the code to rely on the new ConfigurationError
-	if isWarningErr(err) {
+	if (isConfigurationError && configurationError.IsWarning()) || isWarningErr(err) {
 		doReportWarning()
 		return
 	}
