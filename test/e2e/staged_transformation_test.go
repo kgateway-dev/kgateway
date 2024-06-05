@@ -281,7 +281,7 @@ var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
 			}, "15s", ".5s").Should(Succeed())
 		})
 
-		FIt("Can add endpoint metadata to headers using postRouting transformation", func() {
+		It("Can add endpoint metadata to headers using postRouting transformation", func() {
 			testContext.PatchDefaultUpstream(func(u *gloov1.Upstream) *gloov1.Upstream {
 				static := u.GetStatic()
 				if static == nil {
@@ -330,7 +330,9 @@ var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
 				return vsBuilder.Build()
 			})
 
-			// send a request, expect that the response body contains only the first 4 characters
+			// send a request, expect that:
+			// 1. The body will contain the metadata value
+			// 2. The header `x-custom-header` will contain the metadata value
 
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody("123456789")
 			Eventually(func(g Gomega) {

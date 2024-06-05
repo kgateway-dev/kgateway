@@ -73,13 +73,11 @@ func FindExtensionRefFilter(
 
 var (
 	ErrTypesNotEqual = fmt.Errorf("types not equal")
-	ErrNotSettable   = fmt.Errorf("can't set value")
 )
 
 // GetExtensionRefObj uses the provided query engine to retrieve an ExtensionRef object
-// and set the value of `obj` to point to it.
-// The type of `obj` must match the type referenced in the extensionRef and must be a pointer.
-// An error will be returned if the Get was unsuccessful or if the type passed is not valid.
+// and return the object of the same type as the type parameter.
+// An error will be returned if the Get was unsuccessful or if the type parameter was not correct.
 // A nil error indicates success and `obj` should be usable as normal.
 func GetExtensionRefObj[T client.Object](
 	ctx context.Context,

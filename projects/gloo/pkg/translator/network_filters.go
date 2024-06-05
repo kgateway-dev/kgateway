@@ -5,19 +5,20 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
+	codecv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	proto_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 )
 
@@ -28,7 +29,8 @@ type NetworkFilterTranslator interface {
 var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
 
 const (
-	DefaultHttpStatPrefix = "http"
+	DefaultHttpStatPrefix  = "http"
+	upstreamCodeFilterName = "envoy.filters.http.upstream_codec"
 )
 
 type httpNetworkFilterTranslator struct {
@@ -284,14 +286,18 @@ func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(params plugins.P
 		sortedFilters[i] = filter.Filter
 	}
 
+	msg, err := proto_utils.MessageToAny(&codecv3.UpstreamCodec{})
+	if err != nil {
+		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+		return
+	}
+
 	if len(upstreamHttpFilters) > 0 {
 		routerV3.UpstreamHttpFilters = sortedFilters
 		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
-			Name: "envoy.filters.http.upstream_codec",
+			Name: upstreamCodeFilterName,
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-				TypedConfig: &anypb.Any{
-					TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec",
-				},
+				TypedConfig: msg,
 			},
 		})
 	}

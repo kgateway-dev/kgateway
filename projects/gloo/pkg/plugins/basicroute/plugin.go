@@ -23,7 +23,8 @@ var (
 )
 
 const (
-	ExtensionName = "basic_route"
+	ExtensionName                   = "basic_route"
+	PreviousPrioritiesExtensionName = "envoy.retry_priorities.previous_priorities"
 )
 
 // Handles a RoutePlugin APIs which map directly to basic Envoy config
@@ -310,6 +311,9 @@ func convertPolicy(policy *retries.RetryPolicy) (*envoy_config_route_v3.RetryPol
 		previous := envoy_retry_priorities_v3.PreviousPrioritiesConfig{}
 		if policy.GetPreviousPriorities().GetUpdateFrequency() != nil {
 			previous.UpdateFrequency = int32(policy.GetPreviousPriorities().GetUpdateFrequency().GetValue())
+		} else {
+			// It's not happy with zero
+			previous.UpdateFrequency = 1
 		}
 
 		marshalled, err := utils.MessageToAny(&previous)
@@ -317,7 +321,7 @@ func convertPolicy(policy *retries.RetryPolicy) (*envoy_config_route_v3.RetryPol
 			return nil, err
 		}
 		retryPriority = &envoy_config_route_v3.RetryPolicy_RetryPriority{
-			Name: "envoy.retry_priorities.previous_priorities",
+			Name: PreviousPrioritiesExtensionName,
 			ConfigType: &envoy_config_route_v3.RetryPolicy_RetryPriority_TypedConfig{
 				TypedConfig: marshalled,
 			},

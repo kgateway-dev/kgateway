@@ -199,7 +199,7 @@ type RetryPolicy_PreviousPriorities struct {
 
 	// Specifies the update frequency for the previous priorities
 	// This option will only work when priorities are enabled, currently
-	// in gloo-edge this will only be in combnination with upstream failover.
+	// in gloo-edge this will only be in combination with upstream failover.
 	UpdateFrequency *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=update_frequency,json=updateFrequency,proto3" json:"update_frequency,omitempty"`
 }
 

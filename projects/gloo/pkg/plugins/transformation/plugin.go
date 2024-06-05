@@ -239,7 +239,6 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 		return nil, nil
 	}
 
-	// var filters := []*envoyhttp.HttpFilter{}
 	transformationMsg, err := proto_utils.MessageToAny(&envoytransformation.FilterTransformations{
 		LogRequestResponseInfo: p.logRequestResponseInfo,
 		Stage:                  PostRoutingNumber,

@@ -82,7 +82,7 @@ Retry Policy applied at the Route and/or Virtual Hosts levels.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `updateFrequency` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Specifies the update frequency for the previous priorities This option will only work when priorities are enabled, currently in gloo-edge this will only be in combnination with upstream failover. |
+| `updateFrequency` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Specifies the update frequency for the previous priorities This option will only work when priorities are enabled, currently in gloo-edge this will only be in combination with upstream failover. |
 
 
 
