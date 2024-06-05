@@ -187,34 +187,44 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 				)
 			}
 
-			doReportWarning := func() {
-				// Ideally we would append this err on the report as a Warning
-				// To do so requires modifying an internal Proto API:
-				// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/gloo/api/grpc/validation/gloo_validation.proto#L4
-				// This API is a legacy of having separate Gloo and Gateway pods and is cumbersome to update
-				// We take a short-cut, defined below
-				if params.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue() {
-					// If warnings are allowed in our Webhook, this means that warnings on resources should be accepted
-					// Since there is no mechanism to report a warning, we swallow it and log
-					contextutils.LoggerFrom(params.Ctx).Warnf(fmt.Sprintf("%s. allowWarnings=true so resource will be accepted", message))
-				} else {
-					// If warnings are not allowed, this means that warnings on resources should be rejected
-					// Since there is no mechanism to report a warning, we report it as an error so it is rejected
-					doReportErr()
-				}
-			}
-
-			reportPluginProcessingError(err, doReportErr, doReportWarning)
+			reportPluginProcessingError(params.Params, err, message, doReportErr)
 		}
 	}
 	return out
 }
 
-// reportPluginProcessingError captures the error that is returned by a plugin, and executes an action with that error
+// reportPluginProcessingError should only be used by components that do not support appending warnings on reports
+// Ideally we would append this err on the report as a Warning
+// To do so requires modifying an internal Proto API:
+// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/gloo/api/grpc/validation/gloo_validation.proto#L4
+// This API is a legacy of having separate Gloo and Gateway pods and is cumbersome to update
+// We take a short-cut, defined below
+func reportPluginProcessingError(
+	params plugins.Params,
+	err error,
+	message string,
+	doReportErr func(),
+) {
+	doReportWarning := func() {
+		if params.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue() {
+			// If warnings are allowed in our Webhook, this means that warnings on resources should be accepted
+			// Since there is no mechanism to report a warning, we swallow it and log
+			contextutils.LoggerFrom(params.Ctx).Warnf(fmt.Sprintf("%s. allowWarnings=true so resource will be accepted", message))
+		} else {
+			// If warnings are not allowed, this means that warnings on resources should be rejected
+			// Since there is no mechanism to report a warning, we report it as an error so it is rejected
+			doReportErr()
+		}
+	}
+
+	reportPluginProcessingErrorOrWarning(err, doReportErr, doReportWarning)
+}
+
+// reportPluginProcessingErrorOrWarning captures the error that is returned by a plugin, and executes an action with that error
 // Most often it will place that error on a report, which is consumed by other components to make validation and status reporting decisions.
 // This function has some complex logic, with some technical debt, so we intentionally split it off from other
 // code to more easily isolate and test changes to it
-func reportPluginProcessingError(
+func reportPluginProcessingErrorOrWarning(
 	err error,
 	doReportErr func(),
 	doReportWarning func(),
@@ -371,7 +381,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 				)
 			}
 
-			reportPluginProcessingError(err, doReportErr, doReportWarning)
+			reportPluginProcessingErrorOrWarning(err, doReportErr, doReportWarning)
 		}
 		h.runRoutePlugins(params, routeReport, in, out)
 		h.runRouteActionPlugins(params, routeReport, in, out)
@@ -470,27 +480,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 				)
 			}
 
-			doReportWarning := func() {
-				// plugins can return errors on missing upstream/upstream group
-				// we only want to report errors that are plugin-specific
-				// missing upstream(group) should produce a warning above
-				// Ideally we would append this err on the report as a Warning
-				// To do so requires modifying an internal Proto API:
-				// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/gloo/api/grpc/validation/gloo_validation.proto#L4
-				// This API is a legacy of having separate Gloo and Gateway pods and is cumbersome to update
-				// We take a short-cut, defined below
-				if params.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue() {
-					// If warnings are allowed in our Webhook, this means that warnings on resources should be accepted
-					// Since there is no mechanism to report a warning, we swallow it and log
-					contextutils.LoggerFrom(params.Ctx).Warnf(fmt.Sprintf("%s. allowWarnings=true so resource will be accepted", message))
-				} else {
-					// If warnings are not allowed, this means that warnings on resources should be rejected
-					// Since there is no mechanism to report a warning, we report it as an error so it is rejected
-					doReportErr()
-				}
-			}
-
-			reportPluginProcessingError(err, doReportErr, doReportWarning)
+			reportPluginProcessingError(params.Params, err, message, doReportErr)
 		}
 	}
 }
@@ -520,24 +510,7 @@ func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
 				)
 			}
 
-			doReportWarning := func() {
-				// Ideally we would append this err on the report as a Warning
-				// To do so requires modifying an internal Proto API:
-				// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/gloo/api/grpc/validation/gloo_validation.proto#L4
-				// This API is a legacy of having separate Gloo and Gateway pods and is cumbersome to update
-				// We take a short-cut, defined below
-				if params.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue() {
-					// If warnings are allowed in our Webhook, this means that warnings on resources should be accepted
-					// Since there is no mechanism to report a warning, we swallow it and log
-					contextutils.LoggerFrom(params.Ctx).Warnf(fmt.Sprintf("%s. allowWarnings=true so resource will be accepted", message))
-				} else {
-					// If warnings are not allowed, this means that warnings on resources should be rejected
-					// Since there is no mechanism to report a warning, we report it as an error so it is rejected
-					doReportErr()
-				}
-			}
-
-			reportPluginProcessingError(err, doReportErr, doReportWarning)
+			reportPluginProcessingError(params.Params, err, message, doReportErr)
 		}
 	}
 }
