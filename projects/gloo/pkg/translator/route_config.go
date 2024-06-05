@@ -505,7 +505,7 @@ func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
 		}
 		if err := plugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
 			// same as above
-			// TODO(npolshak): Change this to a ValidationError type: https://github.com/solo-io/gloo/issues/7357
+			// TODO(npolshak): Change this to a ConfigurationError type: https://github.com/solo-io/gloo/issues/7357
 			if isWarningErr(err) {
 				continue
 			}
@@ -597,7 +597,7 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
 			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
-				// TODO(npolshak): Add check for ValidationError type: https://github.com/solo-io/gloo/issues/7357
+				// TODO(npolshak): Add check for ConfigurationError type: https://github.com/solo-io/gloo/issues/7357
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
