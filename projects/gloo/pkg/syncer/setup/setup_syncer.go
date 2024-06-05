@@ -886,17 +886,23 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
-	var (
-		gwv2StatusSyncer       status.GatewayStatusSyncer
-		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
-	)
 	// startFuncs represents the set of StartFunc that should be executed at startup
 	// At the moment, the functionality is used minimally.
 	// Overtime, we should break up this large function into smaller StartFunc
 	startFuncs := map[string]StartFunc{}
 
-	if opts.GlooGateway.EnableK8sGatewayController {
+	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
+	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
+	snapshotHistory := iosnapshot.NewHistory(opts.ControlPlane.SnapshotCache)
 
+	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
+
+	var (
+		gwv2StatusSyncer       status.GatewayStatusSyncer
+		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
+	)
+
+	if opts.GlooGateway.EnableK8sGatewayController {
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
 
@@ -908,14 +914,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			routeOptionClient,
 			virtualHostOptionClient,
 			statusClient,
+			snapshotHistory,
 		)
 	}
-
-	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
-	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
-	snapshotHistory := iosnapshot.NewHistory(opts.ControlPlane.SnapshotCache)
-
-	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,

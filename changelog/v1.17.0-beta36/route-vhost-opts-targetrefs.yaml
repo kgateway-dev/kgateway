@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6074
+    resolvesIssue: false
+    description: >-
+      Update RouteOption and VirtualHostOption policy API to have repeated targetRefs.
+      Note that multiple targetRefs are not actually supported for this policies, only the API.

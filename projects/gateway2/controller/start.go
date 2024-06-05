@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -66,6 +68,10 @@ type StartConfig struct {
 	// as the gateway controller (in another start func)
 	// TODO(ilackarms) refactor to enable the status syncer to be started in the same start func
 	QueueStatusForProxies proxy_syncer.QueueStatusForProxiesFn
+
+	// SnapshotHistory is used for debugging purposes
+	// The controller updates the History with the Kubernetes Client is used, and the History is then used by the Admin Server
+	SnapshotHistory iosnapshot.History
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -96,6 +102,8 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
+
+	cfg.SnapshotHistory.SetKubeGatewayClient(mgr.GetClient())
 
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 

@@ -131,10 +131,12 @@ message VirtualHostOption {
   // VirtualHost options. See VirtualHost for delegation behavior.
   gloo.solo.io.VirtualHostOptions options = 3;
 
-  // When using Kubernetes Gateway API mode, targetRef can be used to attach this VirtualHostOption
+  // When using Kubernetes Gateway API mode, targetRefs can be used to attach this VirtualHostOption
   // to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used
   // for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified.
-  core.skv2.solo.io.PolicyTargetReferenceWithSectionName target_ref = 5;
+  // NOTE: This is a repeated field but currently ONLY supports a single targetRef.
+  // If multiple targetRefs are provided, only the first in the list will be used.
+  repeated core.skv2.solo.io.PolicyTargetReferenceWithSectionName target_refs = 5;
 }
 
 /*
@@ -254,10 +256,12 @@ message RouteOption {
   // Route options. See Route for delegation behavior.
   gloo.solo.io.RouteOptions options = 3;
   
-  // When using Kubernetes Gateway API mode, targetRef can be used to attach this RouteOption
+  // When using Kubernetes Gateway API mode, targetRefs can be used to attach this RouteOption
   // to a gateway.networking.k8s.io/HTTPRoute object. The `options` specified will then be used
   // for all `Rules` in the `HTTPRoute`.
-  core.skv2.solo.io.PolicyTargetReference target_ref = 5;
+  // NOTE: This is a repeated field but currently ONLY supports a single targetRef.
+  // If multiple targetRefs are provided, only the first in the list will be used.
+  repeated core.skv2.solo.io.PolicyTargetReference target_refs = 5;
 }
 
 message ListenerOption {
