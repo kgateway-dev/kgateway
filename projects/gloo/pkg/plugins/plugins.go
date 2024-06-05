@@ -39,6 +39,7 @@ type InitParams struct {
 
 type Params struct {
 	Ctx      context.Context
+	Settings *v1.Settings
 	Snapshot *v1snap.ApiSnapshot
 	Messages map[*core.ResourceRef][]string
 }
