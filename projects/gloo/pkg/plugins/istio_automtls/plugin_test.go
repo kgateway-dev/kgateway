@@ -25,13 +25,14 @@ var _ = Describe("Istio Automtls Plugin", func() {
 		)
 
 		BeforeEach(func() {
-			plugin = istio_automtls.NewPlugin(true, false)
+			plugin = istio_automtls.NewPlugin(false)
 			plugin.Init(plugins.InitParams{
 				Ctx: context.TODO(),
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						IstioOptions: &gloov1.GlooOptions_IstioOptions{
-							EnableAutoMtls: &wrappers.BoolValue{Value: true},
+							EnableAutoMtls:    &wrappers.BoolValue{Value: true},
+							EnableIntegration: &wrappers.BoolValue{Value: true},
 						},
 					},
 				},
@@ -99,13 +100,14 @@ var _ = Describe("Istio Automtls Plugin", func() {
 	})
 
 	It("automtls enabled, istio integration is disabled, no transport socket matches are translated by plugin", func() {
-		plugin := istio_automtls.NewPlugin(false, false)
+		plugin := istio_automtls.NewPlugin(false)
 		plugin.Init(plugins.InitParams{
 			Ctx: context.TODO(),
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
 					IstioOptions: &gloov1.GlooOptions_IstioOptions{
-						EnableAutoMtls: &wrappers.BoolValue{Value: true},
+						EnableAutoMtls:    &wrappers.BoolValue{Value: true},
+						EnableIntegration: &wrappers.BoolValue{Value: false},
 					},
 				},
 			},
@@ -136,13 +138,14 @@ var _ = Describe("Istio Automtls Plugin", func() {
 	})
 
 	It("automtls disabled, istio integration is enabled, no transport socket matches are translated by plugin", func() {
-		plugin := istio_automtls.NewPlugin(true, false)
+		plugin := istio_automtls.NewPlugin(false)
 		plugin.Init(plugins.InitParams{
 			Ctx: context.TODO(),
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
 					IstioOptions: &gloov1.GlooOptions_IstioOptions{
-						EnableAutoMtls: &wrappers.BoolValue{Value: false},
+						EnableAutoMtls:    &wrappers.BoolValue{Value: false},
+						EnableIntegration: &wrappers.BoolValue{Value: true},
 					},
 				},
 			},
@@ -173,13 +176,14 @@ var _ = Describe("Istio Automtls Plugin", func() {
 	})
 
 	It("automtls disabled, istio integration is disabled, no transport socket matches are translated by plugin", func() {
-		plugin := istio_automtls.NewPlugin(false, false)
+		plugin := istio_automtls.NewPlugin(false)
 		plugin.Init(plugins.InitParams{
 			Ctx: context.TODO(),
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
 					IstioOptions: &gloov1.GlooOptions_IstioOptions{
-						EnableAutoMtls: &wrappers.BoolValue{Value: false},
+						EnableAutoMtls:    &wrappers.BoolValue{Value: false},
+						EnableIntegration: &wrappers.BoolValue{Value: true},
 					},
 				},
 			},
