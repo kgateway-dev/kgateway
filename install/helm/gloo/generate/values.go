@@ -317,16 +317,16 @@ type GatewayParametersForGatewayClasses struct {
 }
 
 type GatewayParameters struct {
-	Image            *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
-	ProxyDeployment  *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
-	Service          *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
-	SdsContainer     *SdsContainer          `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
-	IstioIntegration *Istio                 `json:"istioIntegration,omitempty" desc:"Configs used to manage Istio integration."`
+	Image           *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
+	ProxyDeployment *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service         *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	SdsContainer    *SdsContainer          `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
+	Istio           *Istio                 `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 
 type Istio struct {
-	IstioProxyContainer *IstioProxyContainer `json:"istioContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
+	IstioProxyContainer *IstioProxyContainer `json:"istioProxyContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
 	CustomSidecars      []interface{}        `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
 }
 

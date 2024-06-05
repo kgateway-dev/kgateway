@@ -39,8 +39,8 @@ kubeGateway:
   enabled: true # Create the gateway resource as part of the test
   gatewayParameters:
     glooGateway:
-      istioIntegration:
-        istioContainer:
+      istio:
+        istioProxyContainer:
           image:
             repository: proxyv2
             registry: docker.io/istio

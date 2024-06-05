@@ -19,8 +19,8 @@ kubeGateway:
         image:
           repository: sds
         logLevel: info
-      istioIntegration:
-        istioContainer:
+      istio:
+        istioProxyContainer:
           image:
             repository: proxyv2
             registry: docker.io/istio

@@ -360,12 +360,12 @@ func (m *IstioIntegration) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetIstioContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIstioContainer()) {
+	if h, ok := interface{}(m.GetIstioProxyContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioProxyContainer()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetIstioContainer(), target.GetIstioContainer()) {
+		if !proto.Equal(m.GetIstioProxyContainer(), target.GetIstioProxyContainer()) {
 			return false
 		}
 	}

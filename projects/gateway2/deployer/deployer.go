@@ -279,7 +279,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	svcConfig := kubeProxyConfig.GetService()
 	istioConfig := kubeProxyConfig.GetIstio()
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
-	istioContainerConfig := istioConfig.GetIstioContainer()
+	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())

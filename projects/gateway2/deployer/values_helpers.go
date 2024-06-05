@@ -153,9 +153,9 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 
 	return &helmIstio{
 		Enabled:               ptr.To(istioValues.IntegrationEnabled),
-		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioContainer().GetIstioDiscoveryAddress().GetValue()),
-		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioContainer().GetIstioMetaMeshId().GetValue()),
-		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioContainer().GetIstioMetaClusterId().GetValue()),
+		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioProxyContainer().GetIstioDiscoveryAddress().GetValue()),
+		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioProxyContainer().GetIstioMetaMeshId().GetValue()),
+		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioProxyContainer().GetIstioMetaClusterId().GetValue()),
 	}
 }
 

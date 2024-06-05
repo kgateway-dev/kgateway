@@ -130,7 +130,7 @@ message IstioIntegration {
   // override GatewayParameters attached to a Gateway resource.
   // Note that if Istio integration is not enabled, the istio container will not be injected
   // into the gateway proxy deployment.
-  IstioContainer istio_container = 1;
+  IstioContainer istio_proxy_container = 1;
 
   // Override the default Istio sidecar in gateway-proxy with a custom container.
   // +optional

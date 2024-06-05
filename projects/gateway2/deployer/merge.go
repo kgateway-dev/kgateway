@@ -408,7 +408,7 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 		return src
 	}
 
-	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
+	dst.IstioProxyContainer = deepMergeIstioContainer(dst.GetIstioProxyContainer(), src.GetIstioProxyContainer())
 
 	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
 
