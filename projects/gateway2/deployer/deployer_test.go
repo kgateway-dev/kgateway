@@ -483,7 +483,7 @@ var _ = Describe("Deployer", func() {
 									},
 								},
 								Istio: &gw2_v1alpha1.IstioIntegration{
-									IstioContainer: &gw2_v1alpha1.IstioContainer{
+									IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
 										Image: &kube.Image{
 											Registry:   &wrappers.StringValue{Value: "scooby"},
 											Repository: &wrappers.StringValue{Value: "dooby"},
