@@ -215,24 +215,3 @@ type ExtendedFilterChain struct {
 	PassthroughCipherSuites []string
 	TerminatingCipherSuites []string
 }
-
-// ConfigurationError is an interface for errors that can be returned by plugins.
-// In Gloo Gateway, an invalid state of translation (which results in a Go error, returned by our plugins)
-// can be interpreted as either:
-//   - Error (this requires user intervention)
-//   - Warning (this _may_ not require user intervention)
-//
-// ref: https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/
-// Historically, this distinction of warnings and errors wasn't possible in plugins, and everything
-// was treated as an error.
-// This interface is used to distinguish errors and validation warnings.
-// It is the responsibility of plugins to return errors that implement this interface if they need to
-// distinguish Go errors that should be treated as warnings
-type ConfigurationError interface {
-	error
-
-	// IsWarning returns true if the error is a warning.
-	// Warnings can occur due to eventual consistency in resources selected by config which should not result
-	// in the validation webhook rejecting the configuration.
-	IsWarning() bool
-}

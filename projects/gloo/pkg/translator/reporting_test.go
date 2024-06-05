@@ -40,37 +40,16 @@ var _ = Describe("Reporting", func() {
 			false,
 		),
 		Entry("isWarningErr",
-			&pluginutils.DestinationNotFoundError{
-				Ref:          core.ResourceRef{},
-				ResourceType: nil,
-			},
+			pluginutils.NewUpstreamNotFoundErr(core.ResourceRef{}),
 			true,
 		),
 		Entry("ConfigurationError with a warning",
-			&exampleConfigurationError{
-				isWarning: true,
-			},
+			plugins.NewWarningConfigurationError("configuration-error"),
 			true,
 		),
 		Entry("ConfigurationError with a warning",
-			&exampleConfigurationError{
-				isWarning: false,
-			},
+			plugins.NewConfigurationError("configuration-error"),
 			false,
 		),
 	)
 })
-
-var _ plugins.ConfigurationError = new(exampleConfigurationError)
-
-type exampleConfigurationError struct {
-	isWarning bool
-}
-
-func (e *exampleConfigurationError) Error() string {
-	return "example-error"
-}
-
-func (e *exampleConfigurationError) IsWarning() bool {
-	return e.isWarning
-}
