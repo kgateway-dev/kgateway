@@ -53,8 +53,8 @@ metadata:
   name: root-add-response-header
   namespace: infra
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: root
   options:
@@ -85,8 +85,8 @@ metadata:
   name: svc1-fault
   namespace: team1
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: svc1
   options:
@@ -123,8 +123,8 @@ metadata:
   name: team2-root-path-rewrite
   namespace: team2-root
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: team2-root
   options:
