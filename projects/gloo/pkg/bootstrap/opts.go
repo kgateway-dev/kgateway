@@ -65,7 +65,7 @@ type Opts struct {
 
 type IstioValues struct {
 	// Based on istioSDS helm values. Config used for installing Gloo Edge with Istio SDS cert rotation features for Istio mTLS
-	SDSEnabled bool
+	IntegrationEnabled bool
 	// Based on enableIstioSidecarOnGateway helm value. If true, the gateway will have the istio sidecar injected.
 	SidecarOnGatewayEnabled bool
 }
