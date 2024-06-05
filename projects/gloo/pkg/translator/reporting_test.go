@@ -47,7 +47,7 @@ var _ = Describe("Reporting", func() {
 			plugins.NewWarningConfigurationError("configuration-error"),
 			true,
 		),
-		Entry("ConfigurationError with a warning",
+		Entry("ConfigurationError without a warning",
 			plugins.NewConfigurationError("configuration-error"),
 			false,
 		),
