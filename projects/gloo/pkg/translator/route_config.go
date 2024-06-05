@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -164,35 +165,88 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run the plugins
 	for _, plugin := range h.pluginRegistry.GetVirtualHostPlugins() {
 		if err := plugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
-			// Check if the error is a ValidationError with a ConfigurationWarning
-			if verr, ok := err.(plugins.ValidationError); ok {
-				if verr.ConfigurationWarning() {
-					// TODO(npolshak): Create a VirtualHostReport_Warning report to add a warning: https://github.com/solo-io/gloo/issues/7357
-					contextutils.LoggerFrom(params.Ctx).Warnf("virtual host plugin %s produced a warning: %v", plugin.Name(), err)
-					continue
-				}
-			}
 
-			// Check if the incoming v1.VirtualHost has metadata to track the 'source' object
-			// that created it. If we do have this metadata, include it with
-			// the virtual host error, so that other components can easily find it
-			if staticMetadata := virtualHost.GetMetadataStatic(); staticMetadata != nil {
-				validation.AppendVirtualHostErrorWithMetadata(vhostReport,
-					validationapi.VirtualHostReport_Error_ProcessingError,
-					fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
-					staticMetadata,
-				)
-				continue
-			}
-
-			// Otherwise with no metadata, report the error without any source info
-			validation.AppendVirtualHostError(vhostReport,
-				validationapi.VirtualHostReport_Error_ProcessingError,
-				fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
-			)
+			reportVirtualHostPluginError(
+				params.Ctx,
+				false, // todo: inherit from settings
+				virtualHost,
+				vhostReport,
+				plugin,
+				err)
 		}
 	}
 	return out
+}
+
+// reportVirtualHostPluginError captures the error that is returned by a VirtualHostPlugin, and places it on the
+// VirtualHostReport. That report is consumed by other components to make validation and status reporting decisions
+// This function has some complex logic, with some technical debt, so we intentionally split it off from other
+// code to more easily isolate and test changes to it
+func reportVirtualHostPluginError(
+	ctx context.Context,
+	allowWarnings bool,
+	virtualHost *v1.VirtualHost,
+	vhostReport *validationapi.VirtualHostReport,
+	plugin plugins.VirtualHostPlugin,
+	err error,
+) {
+	message := fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error())
+
+	doReportErr := func() {
+		// Check if the incoming v1.VirtualHost has metadata to track the 'source' object
+		// that created it. If we do have this metadata, include it with
+		// the virtual host error, so that other components can easily find it
+		if staticMetadata := virtualHost.GetMetadataStatic(); staticMetadata != nil {
+			validation.AppendVirtualHostErrorWithMetadata(
+				vhostReport,
+				validationapi.VirtualHostReport_Error_ProcessingError,
+				message,
+				staticMetadata,
+			)
+		}
+
+		// Otherwise with no metadata, report the error without any source info
+		validation.AppendVirtualHostError(
+			vhostReport,
+			validationapi.VirtualHostReport_Error_ProcessingError,
+			message,
+		)
+	}
+
+	var configurationError plugins.ConfigurationError
+	isConfigurationError := errors.As(err, &configurationError)
+
+	// ConfigurationError is a new mechanism to distinguish a returned error
+	// Most plugins will not return this type of error, and so we fallback to the legacy behavior, to always report an error
+	if !isConfigurationError {
+		doReportErr()
+		return
+	}
+
+	// If a ConfigurationError is not a warning, it should also be reported as an error
+	if !configurationError.IsWarning() {
+		doReportErr()
+		return
+	}
+
+	if configurationError.IsWarning() {
+		// Ideally we would append this err on the report as a Warning
+		// To do so requires modifying an internal Proto API:
+		// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/gloo/api/grpc/validation/gloo_validation.proto#L4
+		// This API is a legacy of having separate Gloo and Gateway pods and is cumbersome to update
+		// We take a short-cut, defined below
+
+		if allowWarnings {
+			// If warnings are allowed in our Webhook, this means that warnings on resources should be accepted
+			// Since there is no mechanism to report a warning, we swallow it and log
+			contextutils.LoggerFrom(ctx).Warn(message)
+		} else {
+			// If warnings are not allowed, this means that warnings on resources should be rejected
+			// Since there is no mechanism to report a warning, we report it as an error so it is rejected
+			doReportErr()
+		}
+
+	}
 }
 
 func (h *httpRouteConfigurationTranslator) envoyRoutes(
