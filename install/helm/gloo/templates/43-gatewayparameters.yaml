@@ -18,45 +18,50 @@ spec:
 {{- if $gg.service }}
     service:
       type: {{ $gg.service.type }}
-{{- end -}}{{/* if $gg.service */}}
+{{- end }}{{/* if $gg.service */}}
     envoyContainer:
       image:
-{{- include "gloo-gateway.gatewayParametersImage" $image | nindent 8 }}
+        {{- include "gloo-gateway.gatewayParametersImage" $image | nindent 8 }}
     podTemplate:
       extraLabels:
-{{- include "gloo-gateway.constLabels" . | nindent 8 }}
+        {{- include "gloo-gateway.constLabels" . | nindent 8 }}
+{{- if $gg.sdsContainer }}
     sdsContainer:
       image:
-{{- merge $global.glooMtls.sds.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- if $global.glooMtls.sds.securityContext }}
+        {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.sdsContainer.securityContext }}
       securityContext:
-{{- toYaml $global.glooMtls.sds.securityContext | nindent 8 }}
-{{- end -}}{{/* if $global.glooMtls.sds.securityContext */}}
-{{- if $global.glooMtls.sds.logLevel }}
+        {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.securityContext */}}
+{{- if $gg.sdsContainer.logLevel }}
       bootstrap:
-        logLevel: {{ $global.glooMtls.sds.logLevel }}
-{{- end -}}{{/* if $global.glooMtls.sds.logLevel */}}
-{{- if $global.glooMtls.sdsResources }}
+        logLevel: {{ $gg.sdsContainer.logLevel }}
+{{- end }}{{/* if $gg.sdsContainer.logLevel */}}
+{{- if $gg.sdsContainer.sdsResources }}
       resources:
-{{- toYaml $global.glooMtls.sdsResources | nindent 8 }}
-{{- end -}}{{/* if $global.glooMtls.sdsResources */}}
+        {{- toYaml $gg.sdsContainer.sdsResources | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.sdsResources */}}
     istio:
-      enabled: {{ or $global.istioSDS.enabled $global.glooMtls.enabled }} 
-      istioContainer:
+{{- if $gg.istio.customSidecars }}
+      customSidecars:
+        {{- toYaml $gg.istio.customSidecars | nindent 6 }}
+{{- end }}{{/* if $gg.istio.customSidecars */}}
+{{- if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) }}
+      istioProxyContainer:
         image:
-{{- merge $global.glooMtls.istioProxy.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
-{{- if $global.glooMtls.istioProxy -}}
-{{- if $global.glooMtls.istioProxy.securityContext }}
+          {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
+{{- if $gg.istio.istioProxyContainer.securityContext }}
         securityContext:
-{{- toYaml $global.glooMtls.istioProxy.securityContext | nindent 10 }}
-{{- end -}}{{/* if $global.glooMtls.istioProxy.securityContext */}}
-{{- if $global.glooMtls.istioProxy.logLevel }}
-        logLevel: {{ $global.glooMtls.istioProxy.logLevel }}
-{{- end -}}{{/* if $global.glooMtls.istioProxy.logLevel */}}
-{{- end -}}{{/* if $global.glooMtls.istioProxy */}}
-      istioDiscoveryAddress: istiod.istio-system.svc:15012
-      istioMetaMeshId: cluster.local
-      istioMetaClusterId: Kubernetes
-{{- end -}}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
-{{- end -}}{{/* if .Values.kubeGateway.gatewayParameters */}}
+          {{- toYaml $gg.istio.istioProxyContainer.securityContext | nindent 10 }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.securityContext */}}
+{{- if $gg.istio.istioProxyContainer.logLevel }}
+        logLevel: {{ $gg.istio.istioProxyContainer.logLevel }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.logLevel */}}
+        istioDiscoveryAddress: {{ $gg.istio.istioProxyContainer.istioDiscoveryAddress }}
+        istioMetaMeshId: {{ $gg.istio.istioProxyContainer.istioMetaMeshId }}
+        istioMetaClusterId: {{ $gg.istio.istioProxyContainer.istioMetaClusterId }}
+{{- end }}{{/* if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) */}}
+{{- end }}{{/* if $gg.sdsContainer */}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

@@ -626,11 +626,13 @@ func attachedInternal() *sologatewayv1.RouteOption {
 			Name:      "policy",
 			Namespace: "default",
 		},
-		TargetRef: &corev1.PolicyTargetReference{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.HTTPRouteKind,
-			Name:      "route",
-			Namespace: wrapperspb.String("default"),
+		TargetRefs: []*corev1.PolicyTargetReference{
+			&corev1.PolicyTargetReference{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.HTTPRouteKind,
+				Name:      "route",
+				Namespace: wrapperspb.String("default"),
+			},
 		},
 		Options: &v1.RouteOptions{
 			Faults: &faultinjection.RouteFaults{
@@ -664,11 +666,13 @@ func attachedBeforeInternal() *sologatewayv1.RouteOption {
 			Name:      "policy-older",
 			Namespace: "default",
 		},
-		TargetRef: &corev1.PolicyTargetReference{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.HTTPRouteKind,
-			Name:      "route",
-			Namespace: wrapperspb.String("default"),
+		TargetRefs: []*corev1.PolicyTargetReference{
+			&corev1.PolicyTargetReference{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.HTTPRouteKind,
+				Name:      "route",
+				Namespace: wrapperspb.String("default"),
+			},
 		},
 		Options: &v1.RouteOptions{
 			Faults: &faultinjection.RouteFaults{
@@ -702,10 +706,12 @@ func attachedOmitNamespaceInternal() *sologatewayv1.RouteOption {
 			Name:      "policy",
 			Namespace: "default",
 		},
-		TargetRef: &corev1.PolicyTargetReference{
-			Group: gwv1.GroupVersion.Group,
-			Kind:  wellknown.HTTPRouteKind,
-			Name:  "route",
+		TargetRefs: []*corev1.PolicyTargetReference{
+			&corev1.PolicyTargetReference{
+				Group: gwv1.GroupVersion.Group,
+				Kind:  wellknown.HTTPRouteKind,
+				Name:  "route",
+			},
 		},
 		Options: &v1.RouteOptions{
 			Faults: &faultinjection.RouteFaults{
@@ -737,11 +743,13 @@ func nonAttachedInternal() *sologatewayv1.RouteOption {
 			Name:      "bad-policy",
 			Namespace: "default",
 		},
-		TargetRef: &corev1.PolicyTargetReference{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.HTTPRouteKind,
-			Name:      "bad-route",
-			Namespace: wrapperspb.String("default"),
+		TargetRefs: []*corev1.PolicyTargetReference{
+			&corev1.PolicyTargetReference{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.HTTPRouteKind,
+				Name:      "bad-route",
+				Namespace: wrapperspb.String("default"),
+			},
 		},
 		Options: &v1.RouteOptions{
 			Faults: &faultinjection.RouteFaults{
@@ -773,11 +781,13 @@ func attachedInvalidInternal() *sologatewayv1.RouteOption {
 			Name:      "invalid-policy",
 			Namespace: "default",
 		},
-		TargetRef: &corev1.PolicyTargetReference{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.HTTPRouteKind,
-			Name:      "route",
-			Namespace: wrapperspb.String("default"),
+		TargetRefs: []*corev1.PolicyTargetReference{
+			&corev1.PolicyTargetReference{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.HTTPRouteKind,
+				Name:      "route",
+				Namespace: wrapperspb.String("default"),
+			},
 		},
 		Options: &v1.RouteOptions{
 			Faults: &faultinjection.RouteFaults{

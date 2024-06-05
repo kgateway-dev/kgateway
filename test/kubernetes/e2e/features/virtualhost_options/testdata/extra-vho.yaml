@@ -3,8 +3,8 @@ kind: VirtualHostOption
 metadata:
   name: remove-content-type
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
   options:

@@ -175,11 +175,13 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 			Namespace: "default",
 		},
 		Spec: sologatewayv1.VirtualHostOption{
-			TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.GatewayKind,
-				Name:      "gw",
-				Namespace: wrapperspb.String("default"),
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.GatewayKind,
+					Name:      "gw",
+					Namespace: wrapperspb.String("default"),
+				},
 			},
 			Options: &v1.VirtualHostOptions{
 				Retries: &retries.RetryPolicy{
@@ -192,7 +194,7 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 }
 func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
-	vhOpt.Spec.TargetRef.SectionName = &wrapperspb.StringValue{
+	vhOpt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "test-listener",
 	}
 	return vhOpt
@@ -200,13 +202,13 @@ func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
 
 func attachedVirtualHostOptionOmitNamespace() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
-	vhOpt.Spec.TargetRef.Namespace = nil
+	vhOpt.Spec.TargetRefs[0].Namespace = nil
 	return vhOpt
 }
 
 func nonAttachedVirtualHostOption() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
 	vhOpt.ObjectMeta.Name = "bad-policy"
-	vhOpt.Spec.TargetRef.Name = "bad-gw"
+	vhOpt.Spec.TargetRefs[0].Name = "bad-gw"
 	return vhOpt
 }
