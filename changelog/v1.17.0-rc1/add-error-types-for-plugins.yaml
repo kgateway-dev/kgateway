@@ -1,0 +1,19 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6251
+    resolvesIssue: false
+    description: >-
+      Adds error types for plugins errors to differentiate between validation errors and validation warnings in order 
+      to support preventing the validation webhook rejecting config due to eventual consistency issues 
+      with the RateLimitConfig resource.
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5307
+    resolvesIssue: false
+    description: >-
+      Changing error type to warning will deflake the validation webhook rejecting config due to eventual consistency
+      issues with the RateLimitConfig resource.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7357
+    resolvesIssue: false
+    description: >-
+      Adds initial error types for plugins errors to differentiate between validation errors and validation warnings.

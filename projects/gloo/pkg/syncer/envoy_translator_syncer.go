@@ -135,6 +135,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		params := plugins.Params{
 			Ctx:      proxyCtx,
+			Settings: s.settings,
 			Snapshot: snap,
 			Messages: map[*core.ResourceRef][]string{},
 		}
