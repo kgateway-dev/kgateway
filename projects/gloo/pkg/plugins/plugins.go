@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -226,30 +225,4 @@ type ValidationError interface {
 	// Warnings can occur due to eventual consistency in resources selected by config which should not result
 	// in the validation webhook rejecting the configuration.
 	ConfigurationWarning() bool
-}
-
-// TODO: move this to ratelimit plugin
-
-// ConfigNotFoundErr is a type that implements the ValidationError interface.
-type ConfigNotFoundErr string
-
-// Error method to implement the error interface.
-func (e ConfigNotFoundErr) Error() string {
-	return string(e)
-}
-
-// ConfigurationWarning method to implement the ValidationError interface.
-func (e ConfigNotFoundErr) ConfigurationWarning() bool {
-	return false
-}
-
-// Is method to check if the error matches the target ValidationError.
-func (e ConfigNotFoundErr) Is(target error) bool {
-	_, ok := target.(ValidationError)
-	return ok
-}
-
-// NewConfigNotFoundErr function to create a new ConfigNotFoundErr.
-func NewConfigNotFoundErr(ns, name string) error {
-	return ConfigNotFoundErr(fmt.Sprintf("could not find RateLimitConfig resource with name [%s] in namespace [%s]", name, ns))
 }

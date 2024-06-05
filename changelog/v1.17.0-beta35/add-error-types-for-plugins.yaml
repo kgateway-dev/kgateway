@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6251
+    resolvesIssue: false
+    description: >-
+      Adds error types for plugins errors to differentiate between validation errors and validation warnings. 
