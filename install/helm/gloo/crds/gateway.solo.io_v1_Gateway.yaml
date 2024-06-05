@@ -818,6 +818,11 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      headerValidationSettings:
+                        properties:
+                          allowCustomHeaderMethods:
+                            type: boolean
+                        type: object
                       healthCheck:
                         properties:
                           path:
@@ -2714,6 +2719,11 @@ spec:
                                       minimum: 0
                                       nullable: true
                                       type: integer
+                                  type: object
+                                headerValidationSettings:
+                                  properties:
+                                    allowCustomHeaderMethods:
+                                      type: boolean
                                   type: object
                                 healthCheck:
                                   properties:

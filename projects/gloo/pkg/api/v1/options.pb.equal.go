@@ -455,6 +455,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeaderValidationSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeaderValidationSettings(), target.GetHeaderValidationSettings()) {
+			return false
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
@@ -738,6 +748,16 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetExtProc(), target.GetExtProc()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeaderValidationSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeaderValidationSettings(), target.GetHeaderValidationSettings()) {
 			return false
 		}
 	}
@@ -1192,6 +1212,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetExtProc(), target.GetExtProc()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeaderValidationSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeaderValidationSettings(), target.GetHeaderValidationSettings()) {
 			return false
 		}
 	}

@@ -356,6 +356,11 @@ spec:
                           type: string
                         type: array
                     type: object
+                  headerValidationSettings:
+                    properties:
+                      allowCustomHeaderMethods:
+                        type: boolean
+                    type: object
                   includeAttemptCountInResponse:
                     nullable: true
                     type: boolean

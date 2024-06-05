@@ -67,6 +67,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_healthcheck "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
@@ -359,6 +361,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.Tap = proto.Clone(m.GetTap()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap.Tap)
 	}
 
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(clone.Cloner); ok {
+		target.HeaderValidationSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	} else {
+		target.HeaderValidationSettings = proto.Clone(m.GetHeaderValidationSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
@@ -527,6 +535,12 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	} else {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(clone.Cloner); ok {
+		target.HeaderValidationSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	} else {
+		target.HeaderValidationSettings = proto.Clone(m.GetHeaderValidationSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
 	}
 
 	switch m.RateLimitEarlyConfigType.(type) {
@@ -820,6 +834,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	} else {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(clone.Cloner); ok {
+		target.HeaderValidationSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	} else {
+		target.HeaderValidationSettings = proto.Clone(m.GetHeaderValidationSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
 	}
 
 	switch m.HostRewriteType.(type) {

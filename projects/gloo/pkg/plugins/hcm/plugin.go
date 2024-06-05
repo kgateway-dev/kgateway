@@ -77,6 +77,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: in.GetDefaultHostForHttp_10().GetValue(),
+			AllowCustomMethods:    listener.GetOptions().GetHeaderValidationSettings().GetAllowCustomHeaderMethods(),
 		}
 	}
 

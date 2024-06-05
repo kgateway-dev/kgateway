@@ -155,6 +155,7 @@ Optional, feature-specific configuration that lives on http listeners
 "httpLocalRatelimit": .local_ratelimit.options.gloo.solo.io.Settings
 "router": .gloo.solo.io.Router
 "tap": .tap.options.gloo.solo.io.Tap
+"headerValidationSettings": .header_validation.options.gloo.solo.io.HeaderValidationSettings
 
 ```
 
@@ -185,6 +186,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `httpLocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.Settings](../options/local_ratelimit/local_ratelimit.proto.sk/#settings) | HttpLocalRatelimit can be used to rate limit the number of requests per gateway and works pre-auth. Unlike the NetworkLocalRatelimit, this works as part of the HCM (ie: L7 layer). All virtual host and routes that are part of this gateway will share this rate limit unless explicity configured with another limit. It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up. |
 | `router` | [.gloo.solo.io.Router](../options/router/router.proto.sk/#router) | Router is an extension of the envoy http filters Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto. |
 | `tap` | [.tap.options.gloo.solo.io.Tap](../enterprise/options/tap/tap.proto.sk/#tap) | Enterprise only: Tap filter settings (experimental). |
+| `headerValidationSettings` | [.header_validation.options.gloo.solo.io.HeaderValidationSettings](../options/header_validation/header_validation.proto.sk/#headervalidationsettings) | Whether custom HTTP methods should be allowed. Defaults to false (custom HTTP methods are not allowed). The list of default-allowed HTTP methods can be found here: https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54. |
 
 
 
@@ -246,6 +248,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "includeAttemptCountInResponse": .google.protobuf.BoolValue
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 "extProc": .extproc.options.gloo.solo.io.RouteSettings
+"headerValidationSettings": .header_validation.options.gloo.solo.io.HeaderValidationSettings
 
 ```
 
@@ -276,6 +279,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `includeAttemptCountInResponse` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count header should be included in the downstream response. Setting this option will cause the router to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the downstream will see the attempt count as perceived by the Envoy closest upstream from itself. Defaults to false. |
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |
 | `extProc` | [.extproc.options.gloo.solo.io.RouteSettings](../enterprise/options/extproc/extproc.proto.sk/#routesettings) | Enterprise-only: External Processing filter settings for the virtual host. This can be used to override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings. |
+| `headerValidationSettings` | [.header_validation.options.gloo.solo.io.HeaderValidationSettings](../options/header_validation/header_validation.proto.sk/#headervalidationsettings) | Whether custom HTTP methods should be allowed. Defaults to false (custom HTTP methods are not allowed). The list of default-allowed HTTP methods can be found here: https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54. |
 
 
 
@@ -327,6 +331,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "maxStreamDuration": .gloo.solo.io.RouteOptions.MaxStreamDuration
 "idleTimeout": .google.protobuf.Duration
 "extProc": .extproc.options.gloo.solo.io.RouteSettings
+"headerValidationSettings": .header_validation.options.gloo.solo.io.HeaderValidationSettings
 
 ```
 
@@ -369,6 +374,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `maxStreamDuration` | [.gloo.solo.io.RouteOptions.MaxStreamDuration](../options.proto.sk/#maxstreamduration) | Settings for maximum durations and timeouts for streams on the route. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration). |
 | `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout, although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings) wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout). |
 | `extProc` | [.extproc.options.gloo.solo.io.RouteSettings](../enterprise/options/extproc/extproc.proto.sk/#routesettings) | Enterprise-only: External Processing filter settings for the route. This can be used to override certain HttpListenerOptions or VirtualHostOptions settings. |
+| `headerValidationSettings` | [.header_validation.options.gloo.solo.io.HeaderValidationSettings](../options/header_validation/header_validation.proto.sk/#headervalidationsettings) | Whether custom HTTP methods should be allowed. Defaults to false (custom HTTP methods are not allowed). The list of default-allowed HTTP methods can be found here: https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54. |
 
 
 

@@ -812,6 +812,11 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      headerValidationSettings:
+                        properties:
+                          allowCustomHeaderMethods:
+                            type: boolean
+                        type: object
                       healthCheck:
                         properties:
                           path:

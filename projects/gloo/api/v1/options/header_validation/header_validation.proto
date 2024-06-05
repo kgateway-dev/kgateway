@@ -1,0 +1,15 @@
+syntax = "proto3";
+package header_validation.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation";
+
+message HeaderValidationSettings {
+    // TODO: let's think a bit more carefully about how we want to design this
+    // for future-proofing purposes. I think we may want to consider having an
+    // oneof here instead that could be something like (allow default
+    // values/allow all/custom allow-list).
+    // we can use the (as of yet undocumented) Envoy universal header
+    // validation options as inspirations for how we want to write this API
+    bool allow_custom_header_methods = 1;
+}
+
