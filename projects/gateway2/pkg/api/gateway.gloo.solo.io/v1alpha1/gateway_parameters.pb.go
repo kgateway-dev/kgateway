@@ -473,7 +473,7 @@ type IstioIntegration struct {
 	// Note that if Istio integration is not enabled, the istio container will not be injected
 	// into the gateway proxy deployment.
 	IstioContainer *IstioContainer `protobuf:"bytes,1,opt,name=istio_container,json=istioContainer,proto3" json:"istio_container,omitempty"`
-	// Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if enabled is false.
+	// Override the default Istio sidecar in gateway-proxy with a custom container.
 	// +optional
 	CustomSidecars []*v1.Container `protobuf:"bytes,2,rep,name=custom_sidecars,json=customSidecars,proto3" json:"custom_sidecars,omitempty"`
 }
@@ -687,11 +687,11 @@ type IstioContainer struct {
 	// Log level for istio-proxy. Options include "info", "debug", "warning", and "error".
 	// Default level is info Default is "warning".
 	LogLevel *wrappers.StringValue `protobuf:"bytes,4,opt,name=log_level,json=logLevel,proto3" json:"log_level,omitempty"`
-	// The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012". Ignored if enabled is false.
+	// The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
 	IstioDiscoveryAddress *wrappers.StringValue `protobuf:"bytes,5,opt,name=istio_discovery_address,json=istioDiscoveryAddress,proto3" json:"istio_discovery_address,omitempty"`
-	// The mesh id of the istio mesh. Defaults to "cluster.local". Ignored if enabled is false.
+	// The mesh id of the istio mesh. Defaults to "cluster.local".
 	IstioMetaMeshId *wrappers.StringValue `protobuf:"bytes,6,opt,name=istio_meta_mesh_id,json=istioMetaMeshId,proto3" json:"istio_meta_mesh_id,omitempty"`
-	// The cluster id of the istio cluster. Defaults to "Kubernetes". Ignored if enabled is false.
+	// The cluster id of the istio cluster. Defaults to "Kubernetes".
 	IstioMetaClusterId *wrappers.StringValue `protobuf:"bytes,7,opt,name=istio_meta_cluster_id,json=istioMetaClusterId,proto3" json:"istio_meta_cluster_id,omitempty"`
 }
 

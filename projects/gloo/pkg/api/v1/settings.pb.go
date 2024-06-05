@@ -3183,7 +3183,8 @@ type GlooOptions_IstioOptions struct {
 	// Defaults to false
 	EnableAutoMtls *wrappers.BoolValue `protobuf:"bytes,2,opt,name=enable_auto_mtls,json=enableAutoMtls,proto3" json:"enable_auto_mtls,omitempty"`
 	// Istio integration is enabled via istioSDS.enabled on the helm chart.
-	// If enabled, an istio-proxy container is assumed to exist alongside the gateway proxy.
+	// If enabled, an istio-proxy container and sds container are assumed to exist alongside the
+	// gateway proxy. These containers are created by enabling the istioSDS.enabled option in the helm chart.
 	// Defaults to false
 	IntegrationEnabled *wrappers.BoolValue `protobuf:"bytes,3,opt,name=integration_enabled,json=integrationEnabled,proto3" json:"integration_enabled,omitempty"`
 }

@@ -132,7 +132,7 @@ message IstioIntegration {
   // into the gateway proxy deployment.
   IstioContainer istio_container = 1;
 
-  // Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if enabled is false.
+  // Override the default Istio sidecar in gateway-proxy with a custom container.
   // +optional
   repeated k8s.io.api.core.v1.Container custom_sidecars = 2;
 }
@@ -195,13 +195,13 @@ message IstioContainer {
   // Default level is info Default is "warning".
   google.protobuf.StringValue log_level = 4;
 
-  // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012". Ignored if enabled is false.
+  // The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
   google.protobuf.StringValue istio_discovery_address = 5;
 
-  // The mesh id of the istio mesh. Defaults to "cluster.local". Ignored if enabled is false.
+  // The mesh id of the istio mesh. Defaults to "cluster.local".
   google.protobuf.StringValue istio_meta_mesh_id = 6;
 
-  // The cluster id of the istio cluster. Defaults to "Kubernetes". Ignored if enabled is false.
+  // The cluster id of the istio cluster. Defaults to "Kubernetes".
   google.protobuf.StringValue istio_meta_cluster_id = 7;
 }
 

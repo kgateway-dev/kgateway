@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/5743
     resolvesIssue: true
     description: >-
-      Add k8s Gateway Istio integration values to the Gloo Mesh Enterprise Helm chart under kubeGateway.gatewayParameters.gatewayParameters.
+      Add k8s Gateway Istio integration values to the Gloo Gateway Helm chart under kubeGateway.gatewayParameters.glooGateway.

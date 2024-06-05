@@ -359,23 +359,11 @@ var _ = Describe("Deployer", func() {
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
-				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-				Expect(err).NotTo(HaveOccurred())
-				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.Background(), extensions.K8sGatewayExtensionsFactoryParameters{
-					Mgr: mgr,
-				})
-				Expect(err).NotTo(HaveOccurred())
-				return &deployer.Inputs{
-					ControllerName: wellknown.GatewayControllerName,
-					Dev:            false,
-					IstioValues: bootstrap.IstioValues{
-						IntegrationEnabled: true,
-					},
-					ControlPlane: bootstrap.ControlPlane{
-						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
-					},
-					Extensions: k8sGatewayExt,
+				inp := defaultDeployerInputs()
+				inp.IstioValues = bootstrap.IstioValues{
+					IntegrationEnabled: true,
 				}
+				return inp
 			}
 			defaultGateway = func() *api.Gateway {
 				return &api.Gateway{

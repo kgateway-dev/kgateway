@@ -174,9 +174,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 					Expect(gwpKube.GetService().GetType()).To(Equal(kube.Service_ClusterIP))
 				})
-				// set overrides for all fields that get translated into gwp and make sure they make it in
-				//
-				// this should include image fields that are not valid in gwp (e.g. variant)
 			})
 
 			When("custom sidecars overrides are set", func() {
@@ -241,9 +238,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 					Expect(gwpKube.GetService().GetType()).To(Equal(kube.Service_ClusterIP))
 				})
-				// set overrides for all fields that get translated into gwp and make sure they make it in
-				//
-				// this should include image fields that are not valid in gwp (e.g. variant)
 			})
 		})
 
