@@ -15,6 +15,20 @@ kubeGateway:
         replicas: 1
       service:
         type: LoadBalancer
+      sdsContainer:
+        image:
+          repository: sds
+        logLevel: info
+      istio:
+        istioProxyContainer:
+          image:
+            repository: proxyv2
+            registry: docker.io/istio
+            tag: 1.22.0
+          logLevel: warning
+          istioDiscoveryAddress: istiod.istio-system.svc:15012
+          istioMetaMeshId: cluster.local
+          istioMetaClusterId: Kubernetes
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
@@ -254,6 +268,7 @@ global:
   istioSDS:
     enabled: false
   istioIntegration:
+    enabled: false
     disableAutoinjection: false
     enableAutoMtls: false
     # To be deprecated in future release

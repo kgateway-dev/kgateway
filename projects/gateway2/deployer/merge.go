@@ -2,6 +2,7 @@ package deployer
 
 import (
 	kubecorev1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 )
@@ -397,6 +398,7 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 }
 
 func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.IstioIntegration {
+
 	// nil src override means just use dst
 	if src == nil {
 		return dst
@@ -406,11 +408,40 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 		return src
 	}
 
-	// if the user has defined the enabled value on an override GatewayParameters,
-	// we always want to use that
-	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
+	dst.IstioProxyContainer = deepMergeIstioContainer(dst.GetIstioProxyContainer(), src.GetIstioProxyContainer())
 
-	dst.IstioContainer = deepMergeIstioContainer(dst.GetIstioContainer(), src.GetIstioContainer())
+	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
+
+	return dst
+}
+
+// mergeCustomSidecars will decide whether to use dst or src custom sidecar containers
+func mergeCustomSidecars(dst, src []*v1.Container) []*v1.Container {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	// given non-nil src override, use that instead
+	return src
+}
+func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioContainer {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+
+	if logLevel := src.GetLogLevel(); logLevel != nil {
+		dst.LogLevel = logLevel
+	}
 
 	// Do not allow per-gateway overrides of these values if they are set in the default
 	// GatewayParameters populated by helm values
@@ -433,27 +464,6 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 	if dstIstioMetaClusterId == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaClusterId = srcIstioMetaClusterId
-	}
-
-	return dst
-}
-
-func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioContainer {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return src
-	}
-
-	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
-	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
-	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
-
-	if logLevel := src.GetLogLevel(); logLevel != nil {
-		dst.LogLevel = logLevel
 	}
 
 	return dst
