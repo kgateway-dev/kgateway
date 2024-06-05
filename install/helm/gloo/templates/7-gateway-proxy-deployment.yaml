@@ -296,7 +296,7 @@ spec:
           name: shared-data
 {{- include $spec.extraContainersHelper . | nindent 6 }}
 {{- end }} {{- /* $spec.extraContainersHelper */}}
-{{- if or $global.glooMtls.enabled (or $global.istioSDS.enabled $global.istioIntegration.enabled ) }}
+{{- if or $global.glooMtls.enabled (or $global.istioSDS.enabled $global.istioIntegration.enabled) }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
@@ -337,7 +337,7 @@ spec:
           name: gloo-mtls-certs
           readOnly: true
 {{- end }}
-{{- if $global.istioSDS.enabled $global.istioIntegration.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
         - mountPath: /etc/istio-certs/
           name: istio-certs
         - mountPath: /etc/envoy
