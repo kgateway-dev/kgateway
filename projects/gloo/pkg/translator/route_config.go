@@ -165,10 +165,9 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run the plugins
 	for _, plugin := range h.pluginRegistry.GetVirtualHostPlugins() {
 		if err := plugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
-
 			reportVirtualHostPluginError(
 				params.Ctx,
-				false, // todo: inherit from settings
+				params.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue(),
 				virtualHost,
 				vhostReport,
 				plugin,
@@ -239,7 +238,7 @@ func reportVirtualHostPluginError(
 		if allowWarnings {
 			// If warnings are allowed in our Webhook, this means that warnings on resources should be accepted
 			// Since there is no mechanism to report a warning, we swallow it and log
-			contextutils.LoggerFrom(ctx).Warn(message)
+			contextutils.LoggerFrom(ctx).Warnf(fmt.Sprintf("%s. allowWarnings=true so resource will be accepted", message))
 		} else {
 			// If warnings are not allowed, this means that warnings on resources should be rejected
 			// Since there is no mechanism to report a warning, we report it as an error so it is rejected
