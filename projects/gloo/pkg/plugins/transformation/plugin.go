@@ -6,9 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/validator"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -19,6 +17,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	upstream_wait "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/upstream_wait"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -241,10 +240,15 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 	}
 
 	// var filters := []*envoyhttp.HttpFilter{}
-	msg, err := proto_utils.MessageToAny(&envoytransformation.FilterTransformations{
+	transformationMsg, err := proto_utils.MessageToAny(&envoytransformation.FilterTransformations{
 		LogRequestResponseInfo: p.logRequestResponseInfo,
 		Stage:                  PostRoutingNumber,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	upstreamWaitMsg, err := proto_utils.MessageToAny(&upstream_wait.UpstreamWaitFilterConfig{})
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +258,7 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 			Filter: &envoyhttp.HttpFilter{
 				Name: FilterName,
 				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-					TypedConfig: msg,
+					TypedConfig: transformationMsg,
 				},
 			},
 			Stage: plugins.UpstreamHTTPFilterStage{
@@ -266,9 +270,7 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 			Filter: &envoyhttp.HttpFilter{
 				Name: WaitFilterName,
 				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-					TypedConfig: &anypb.Any{
-						TypeUrl: "type.googleapis.com/envoy.config.filter.http.wait.v2.WaitFilterConfig",
-					},
+					TypedConfig: upstreamWaitMsg,
 				},
 			},
 			Stage: plugins.UpstreamHTTPFilterStage{
@@ -367,16 +369,6 @@ func (p *Plugin) ConvertTransformation(
 	}
 
 	return ret, nil
-}
-
-func (p *Plugin) translateOSSTransformations(
-	glooTransform *transformation.Transformation,
-) (*envoytransformation.Transformation, error) {
-	transform, err := p.TranslateTransformation(glooTransform, p.escapeCharacters, nil)
-	if err != nil {
-		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
-	}
-	return transform, nil
 }
 
 func TranslateTransformation(glooTransform *transformation.Transformation,
