@@ -265,6 +265,10 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 				Weight:     0,
 			},
 		},
+		// The wait filter essentially blocks filter iteration until a host has been selected.
+		// This is important because running as an upstream filter allows access to host
+		// metadata iff the host has already been selected, and that's a
+		// major benefit of running the filter at this stage.
 		{
 			Filter: &envoyhttp.HttpFilter{
 				Name: WaitFilterName,
