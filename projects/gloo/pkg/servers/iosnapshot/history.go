@@ -1,7 +1,13 @@
 package iosnapshot
 
 import (
+	"context"
+	"fmt"
 	"sync"
+
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -13,17 +19,19 @@ import (
 type History interface {
 	// SetApiSnapshot sets the latest ApiSnapshot
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
+	// SetKubeGatewayClient sets the client to use for Kubernetes CRUD operations
+	SetKubeGatewayClient(client client.Client)
 	// GetRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
 	// Any sensitive data contained in the Snapshot will either be explicitly redacted
 	// or entirely excluded
-	GetRedactedApiSnapshot() *v1snap.ApiSnapshot
+	GetRedactedApiSnapshot(ctx context.Context) *v1snap.ApiSnapshot
 	// GetInputSnapshot gets the input snapshot for all components.
-	GetInputSnapshot() ([]byte, error)
+	GetInputSnapshot(ctx context.Context) ([]byte, error)
 	// GetProxySnapshot returns the Proxies generated for all components.
-	GetProxySnapshot() ([]byte, error)
+	GetProxySnapshot(ctx context.Context) ([]byte, error)
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
 	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-	GetXdsSnapshot() ([]byte, error)
+	GetXdsSnapshot(ctx context.Context) ([]byte, error)
 }
 
 // NewHistory returns an implementation of the History interface
@@ -31,6 +39,7 @@ func NewHistory(cache cache.SnapshotCache) History {
 	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
+		client:            nil,
 	}
 }
 
@@ -41,6 +50,7 @@ type historyImpl struct {
 	sync.RWMutex
 	latestApiSnapshot *v1snap.ApiSnapshot
 	xdsCache          cache.SnapshotCache
+	client            client.Client
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -48,21 +58,27 @@ func (h *historyImpl) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
 	// any contention/issues, from impacting the runtime of the system
 	go func() {
-		h.setApiSnapshotSafe(latestApiSnapshot)
+		h.Lock()
+		defer h.Unlock()
+
+		h.latestApiSnapshot = latestApiSnapshot
 	}()
 }
 
-// setApiSnapshotSafe sets the latest input ApiSnapshot
-func (h *historyImpl) setApiSnapshotSafe(latestApiSnapshot *v1snap.ApiSnapshot) {
-	h.Lock()
-	defer h.Unlock()
+func (h *historyImpl) SetKubeGatewayClient(client client.Client) {
+	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
+	// any contention/issues, from impacting the runtime of the system
+	go func() {
+		h.Lock()
+		defer h.Unlock()
 
-	h.latestApiSnapshot = latestApiSnapshot
+		h.client = client
+	}()
 }
 
 // GetInputSnapshot gets the input snapshot for all components.
-func (h *historyImpl) GetInputSnapshot() ([]byte, error) {
-	snap := h.GetRedactedApiSnapshot()
+func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
+	snap := h.GetRedactedApiSnapshot(ctx)
 
 	// Proxies are defined on the ApiSnapshot, but are not considered part of the
 	// "input snapshot" since they are the product (output) of translation
@@ -72,11 +88,14 @@ func (h *historyImpl) GetInputSnapshot() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	h.appendKubeGatewayResources(ctx, genericMaps)
+
 	return formatMap("json_compact", genericMaps)
 }
 
-func (h *historyImpl) GetProxySnapshot() ([]byte, error) {
-	snap := h.GetRedactedApiSnapshot()
+func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
+	snap := h.GetRedactedApiSnapshot(ctx)
 
 	onlyProxies := &v1snap.ApiSnapshot{
 		Proxies: snap.Proxies,
@@ -90,7 +109,7 @@ func (h *historyImpl) GetProxySnapshot() ([]byte, error) {
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
 // NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-func (h *historyImpl) GetXdsSnapshot() ([]byte, error) {
+func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 
@@ -120,7 +139,7 @@ func (h *historyImpl) GetXdsSnapshot() ([]byte, error) {
 //
 //     Given that the rate of requests for the ApiSnapshot <<< the frequency of updates of an ApiSnapshot by the Control Plane,
 //     in this first pass we opt to take approach #2.
-func (h *historyImpl) GetRedactedApiSnapshot() *v1snap.ApiSnapshot {
+func (h *historyImpl) GetRedactedApiSnapshot(ctx context.Context) *v1snap.ApiSnapshot {
 	snap := h.getApiSnapshotSafe()
 
 	redactApiSnapshot(snap)
@@ -141,6 +160,42 @@ func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
 	//	2. Modifications to this snapshot by a single request, DO NOT interfere with other requests
 	clone := h.latestApiSnapshot.Clone()
 	return &clone
+}
+
+// appendKubeGatewayResources searches for routes and gateways
+// setting the returned list onto the current resource map at a given key or replacing the contents with an error
+func (h *historyImpl) appendKubeGatewayResources(ctx context.Context, resources map[string]interface{}) {
+	cli := h.getKubeGatewayClientSafe()
+
+	if cli == nil {
+		// No client has been set, so the Kubernetes Gateway integration has not been enabled
+		return
+	}
+
+	var routeList apiv1.HTTPRouteList
+	err := cli.List(ctx, &routeList)
+	httpRoutesKey := fmt.Sprintf("%s.%s", wellknown.GatewayGroup, wellknown.HTTPRouteKind)
+	if err != nil {
+		resources[httpRoutesKey] = err
+	} else {
+		resources[httpRoutesKey] = routeList
+	}
+
+	var gwList apiv1.GatewayList
+	err = cli.List(ctx, &gwList)
+	gwKey := fmt.Sprintf("%s.%s", wellknown.GatewayGroup, wellknown.GatewayKind)
+	if err != nil {
+		resources[gwKey] = err
+	} else {
+		resources[gwKey] = gwList
+	}
+}
+
+// getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
+func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
+	h.RLock()
+	defer h.RUnlock()
+	return h.client
 }
 
 // redactApiSnapshot accepts an ApiSnapshot, and mutates it to remove sensitive data.
