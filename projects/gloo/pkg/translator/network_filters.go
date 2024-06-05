@@ -30,7 +30,7 @@ var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
 
 const (
 	DefaultHttpStatPrefix  = "http"
-	upstreamCodeFilterName = "envoy.filters.http.upstream_codec"
+	UpstreamCodeFilterName = "envoy.filters.http.upstream_codec"
 )
 
 type httpNetworkFilterTranslator struct {
@@ -295,7 +295,7 @@ func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(params plugins.P
 	if len(upstreamHttpFilters) > 0 {
 		routerV3.UpstreamHttpFilters = sortedFilters
 		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
-			Name: upstreamCodeFilterName,
+			Name: UpstreamCodeFilterName,
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 				TypedConfig: msg,
 			},
