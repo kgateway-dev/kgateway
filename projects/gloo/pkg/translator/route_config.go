@@ -490,16 +490,13 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
 			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
-				message := fmt.Sprintf("invalid weighted cluster [%s] while processing plugin %s: %s", weightedCluster.GetName(), plugin.Name(), err.Error())
-				doReportErr := func() {
-					validation.AppendRouteError(routeReport,
-						validationapi.RouteReport_Error_ProcessingError,
-						err.Error(),
-						routeName,
-					)
-				}
-
-				reportPluginProcessingError(params.Params, err, message, doReportErr)
+				reportWeightedDestinationPluginProcessingError(
+					params,
+					routeReport,
+					routeName,
+					weightedCluster.GetName(),
+					plugin,
+					err)
 			}
 		}
 

@@ -1,6 +1,6 @@
 package translator
 
-// The tests in this file are private to our translator package, but warrant their own tests
+// The functions in this file are private to our translator package, but warrant their own tests.
 // To avoid exporting methods unnecessarily, just for testing, we define these tests in the same package
 
 import (
@@ -14,6 +14,7 @@ import (
 
 // Reporting is a critical aspect of our translation engine that has minimal test coverage
 // We split off this functionality into a standalone file to make it easier to make changes and test
+// TODO: We should expand these tests
 var _ = Describe("Reporting", func() {
 
 	DescribeTable("reportPluginProcessingErrorOrWarning",

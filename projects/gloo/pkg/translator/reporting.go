@@ -14,6 +14,26 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
+func reportWeightedDestinationPluginProcessingError(
+	params plugins.RouteParams,
+	routeReport *validationapi.RouteReport,
+	routeName string,
+	weightedClusterName string,
+	plugin plugins.WeightedDestinationPlugin,
+	err error,
+) {
+	message := fmt.Sprintf("invalid weighted cluster [%s] while processing plugin %s: %s", weightedClusterName, plugin.Name(), err.Error())
+	doReportErr := func() {
+		validation.AppendRouteError(routeReport,
+			validationapi.RouteReport_Error_ProcessingError,
+			err.Error(),
+			routeName,
+		)
+	}
+
+	reportPluginProcessingError(params.Params, err, message, doReportErr)
+}
+
 func reportRoutePluginProcessingError(
 	params plugins.RouteParams,
 	routeReport *validationapi.RouteReport,
