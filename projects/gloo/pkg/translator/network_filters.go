@@ -5,6 +5,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
+	codecv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -17,6 +18,7 @@ import (
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	proto_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 )
 
@@ -27,7 +29,8 @@ type NetworkFilterTranslator interface {
 var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
 
 const (
-	DefaultHttpStatPrefix = "http"
+	DefaultHttpStatPrefix  = "http"
+	UpstreamCodeFilterName = "envoy.filters.http.upstream_codec"
 )
 
 type httpNetworkFilterTranslator struct {
@@ -47,6 +50,7 @@ func NewHttpListenerNetworkFilterTranslator(
 	report *validationapi.HttpListenerReport,
 	networkPlugins []plugins.NetworkFilterPlugin,
 	httpPlugins []plugins.HttpFilterPlugin,
+	upstreamHttpPlugins []plugins.UpstreamHttpFilterPlugin,
 	hcmPlugins []plugins.HttpConnectionManagerPlugin,
 	routeConfigName string,
 ) *httpNetworkFilterTranslator {
@@ -55,12 +59,13 @@ func NewHttpListenerNetworkFilterTranslator(
 		report:         report,
 		networkPlugins: networkPlugins,
 		hcmNetworkFilterTranslator: &hcmNetworkFilterTranslator{
-			parentListener:  parentListener,
-			listener:        listener,
-			report:          report,
-			httpPlugins:     httpPlugins,
-			hcmPlugins:      hcmPlugins,
-			routeConfigName: routeConfigName,
+			parentListener:      parentListener,
+			listener:            listener,
+			report:              report,
+			httpPlugins:         httpPlugins,
+			upstreamHttpPlugins: upstreamHttpPlugins,
+			hcmPlugins:          hcmPlugins,
+			routeConfigName:     routeConfigName,
 		},
 	}
 }
@@ -75,7 +80,7 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 		}
 
 		for _, nf := range stagedFilters {
-			if nf.NetworkFilter == nil {
+			if nf.Filter == nil {
 				log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
 				continue
 			}
@@ -130,7 +135,7 @@ func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config
 	sort.Sort(filters)
 	var sortedFilters []*envoy_config_listener_v3.Filter
 	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, filter.NetworkFilter)
+		sortedFilters = append(sortedFilters, filter.Filter)
 	}
 	return sortedFilters
 }
@@ -143,6 +148,8 @@ type hcmNetworkFilterTranslator struct {
 	report *validationapi.HttpListenerReport
 	// List of HttpFilterPlugins to process
 	httpPlugins []plugins.HttpFilterPlugin
+	// List of UpstreamHttpPlugins to process
+	upstreamHttpPlugins []plugins.UpstreamHttpFilterPlugin
 	// List of HttpConnectionManagerPlugins to process
 	hcmPlugins []plugins.HttpConnectionManagerPlugin
 	// The name of the RouteConfiguration for the HttpConnectionManager
@@ -205,7 +212,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 }
 
 func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) []*envoyhttp.HttpFilter {
-	var httpFilters []plugins.StagedHttpFilter
+	var httpFilters plugins.StagedHttpFilterList
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.httpPlugins {
@@ -215,7 +222,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		}
 
 		for _, httpFilter := range stagedFilters {
-			if httpFilter.HttpFilter == nil {
+			if httpFilter.Filter == nil {
 				log.Warnf("plugin %v implements HttpFilters() but returned nil", plug.Name())
 				continue
 			}
@@ -236,6 +243,8 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// as the terminal filter in Gloo Edge.
 	routerV3 := routerv3.Router{}
 
+	h.computeUpstreamHTTPFilters(params, &routerV3)
+
 	// TODO it would be ideal of SuppressEnvoyHeaders and DynamicStats could be moved out of here set
 	// in a separate router plugin
 	if h.listener.GetOptions().GetRouter().GetSuppressEnvoyHeaders().GetValue() {
@@ -254,16 +263,52 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 	}
 
-	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.HttpFilter)
+	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.Filter)
 
 	return envoyHttpFilters
+}
+
+func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(params plugins.Params, routerV3 *routerv3.Router) {
+
+	upstreamHttpFilters := plugins.StagedUpstreamHttpFilterList{}
+	for _, plug := range h.upstreamHttpPlugins {
+		stagedFilters, err := plug.UpstreamHttpFilters(params, h.listener)
+		if err != nil {
+			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+		}
+		upstreamHttpFilters = append(upstreamHttpFilters, stagedFilters...)
+	}
+
+	sort.Sort(upstreamHttpFilters)
+
+	sortedFilters := make([]*envoyhttp.HttpFilter, len(upstreamHttpFilters))
+	for i, filter := range upstreamHttpFilters {
+		sortedFilters[i] = filter.Filter
+	}
+
+	msg, err := proto_utils.MessageToAny(&codecv3.UpstreamCodec{})
+	if err != nil {
+		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+		return
+	}
+
+	if len(upstreamHttpFilters) > 0 {
+		routerV3.UpstreamHttpFilters = sortedFilters
+		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
+			Name: UpstreamCodeFilterName,
+			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+				TypedConfig: msg,
+			},
+		})
+	}
+
 }
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
 	sort.Sort(filters)
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, filter.HttpFilter)
+		sortedFilters = append(sortedFilters, filter.Filter)
 	}
 	return sortedFilters
 }

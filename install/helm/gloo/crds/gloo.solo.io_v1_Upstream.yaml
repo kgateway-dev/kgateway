@@ -325,6 +325,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -456,6 +458,11 @@ spec:
                                       minimum: 0
                                       nullable: true
                                       type: integer
+                                    metadata:
+                                      additionalProperties:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      type: object
                                     port:
                                       maximum: 4294967295
                                       minimum: 0
@@ -955,6 +962,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -1302,6 +1311,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -1486,6 +1497,11 @@ spec:
                           minimum: 0
                           nullable: true
                           type: integer
+                        metadata:
+                          additionalProperties:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: object
                         port:
                           maximum: 4294967295
                           minimum: 0
@@ -1592,6 +1608,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:

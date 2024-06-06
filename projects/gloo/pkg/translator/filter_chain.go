@@ -190,7 +190,7 @@ func (t *tcpFilterChainTranslator) computeNetworkFilters(params plugins.Params) 
 		}
 
 		for _, nf := range stagedFilters {
-			if nf.NetworkFilter == nil {
+			if nf.Filter == nil {
 				log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
 				continue
 			}

@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -74,49 +73,41 @@ func FindExtensionRefFilter(
 
 var (
 	ErrTypesNotEqual = fmt.Errorf("types not equal")
-	ErrNotSettable   = fmt.Errorf("can't set value")
 )
 
 // GetExtensionRefObj uses the provided query engine to retrieve an ExtensionRef object
-// and set the value of `obj` to point to it.
-// The type of `obj` must match the type referenced in the extensionRef and must be a pointer.
-// An error will be returned if the Get was unsuccessful or if the type passed is not valid.
+// and return the object of the same type as the type parameter.
+// An error will be returned if the Get was unsuccessful or if the type parameter was not correct.
 // A nil error indicates success and `obj` should be usable as normal.
-func GetExtensionRefObj(
+func GetExtensionRefObj[T client.Object](
 	ctx context.Context,
 	route *gwv1.HTTPRoute,
 	queries query.GatewayQueries,
 	extensionRef *gwv1.LocalObjectReference,
-	obj client.Object,
-) error {
-	return GetExtensionRefObjFrom(ctx, queries.ObjToFrom(route), queries, extensionRef, obj)
+) (T, error) {
+	return GetExtensionRefObjFrom[T](ctx, queries.ObjToFrom(route), queries, extensionRef)
 }
 
-func GetExtensionRefObjFrom(
+func GetExtensionRefObjFrom[T client.Object](
 	ctx context.Context,
 	from query.From,
 	queries query.GatewayQueries,
 	extensionRef *gwv1.LocalObjectReference,
-	obj client.Object,
-) error {
+) (T, error) {
+	var t T
 	localObj, err := queries.GetLocalObjRef(ctx, from, *extensionRef)
 	if err != nil {
-		return err
+		return t, err
 	}
-	if reflect.TypeOf(obj) != reflect.TypeOf(localObj) {
-		return fmt.Errorf(
-			"%w: passed Obj typeOf: '%v' localObj typeOf: '%v'",
-			ErrTypesNotEqual,
-			reflect.TypeOf(obj),
-			reflect.TypeOf(localObj),
+
+	typed, ok := localObj.(T)
+	if !ok {
+		return t, fmt.Errorf(
+			"%w: generic object typeOf: '%T' localObj typeOf: '%T'",
+			ErrTypesNotEqual, t, localObj,
 		)
 	}
-	elem := reflect.ValueOf(obj).Elem()
-	if !elem.CanSet() {
-		return ErrNotSettable
-	}
-	elem.Set(reflect.ValueOf(localObj).Elem())
-	return nil
+	return typed, nil
 }
 
 // PolicyWithSectionedTargetRefs is a wrapper type to represent policy objects

@@ -130,8 +130,7 @@ func lookupFilterOverride(
 	}
 
 	extLookup := extensionRefLookup{namespace: route.Namespace}
-	routeOption := &solokubev1.RouteOption{}
-	err := utils.GetExtensionRefObjFrom(ctx, extLookup, gwQueries, filter.ExtensionRef, routeOption)
+	routeOption, err := utils.GetExtensionRefObjFrom[*solokubev1.RouteOption](ctx, extLookup, gwQueries, filter.ExtensionRef)
 
 	// If the filter is not found, report a specific error so that it can reflect more
 	// clearly on the status of the HTTPRoute.
