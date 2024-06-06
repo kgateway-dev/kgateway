@@ -59,9 +59,9 @@ message TransformationStages {
     // Regular transformations happen after Auth and Rate limit decisions has been made.
     RequestResponseTransformations regular = 2;
     // Post routing transformations happen during the router filter chain. This is important for a number of reasons
-    // 1. Retries will re-trigger this filter, which may impact performance
+    // 1. Retries re-trigger this filter, which might impact performance.
     // 2. It is the only point where endpoint metadata is available.
-    // 3. `clear_route_cache` will NOT work in this stage as routing has already been decided
+    // 3. `clear_route_cache` does NOT work in this stage as the routing decision is already made. 
     // Enterprise only
     RequestResponseTransformations post_routing = 6;
     // Inherit transformation config from parent. This has no affect on VirtualHost level transformations.
