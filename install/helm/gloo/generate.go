@@ -182,7 +182,7 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 
 	// set the image for the default GatewayParameters for gloo-gateway GatewayClass.
 	// If additional GatewayClasses are added, they will need to be included here.
-	cfg.KubeGateway.GatewayParameters.GlooGateway.Image.Tag = &version
+	cfg.KubeGateway.GatewayParameters.GlooGateway.EnvoyContainer.Image.Tag = &version
 	cfg.KubeGateway.GatewayParameters.GlooGateway.SdsContainer.Image.Tag = &version
 
 	if repositoryPrefix != "" {
