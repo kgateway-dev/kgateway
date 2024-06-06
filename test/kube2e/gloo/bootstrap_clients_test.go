@@ -567,20 +567,18 @@ spec:
 			_, err = testutils.KubectlOut("apply", "-f", tmpFile.Name())
 			Expect(err).ToNot(HaveOccurred())
 
-			// Cleanup the network policy
-			defer func() {
-				_, err := testutils.KubectlOut("delete", "-f", tmpFile.Name())
-				Expect(err).ToNot(HaveOccurred())
-			}()
-
 			// Verify that the leader has stopped leading
 			Eventually(func(g Gomega) {
 				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "pod/"+name)
 				g.Expect(logs).To(ContainSubstring("lost leadership"))
 			}, "60s", "1s").Should(Succeed())
 
-			// Ensure that we can still operate
+			// Ensure that we can still operate. This also validates that the second pod has become the leader
 			verifyTranslation()
+
+			// Cleanup the network policy. With connectivity restored, the old leader can become a follower
+			_, err = testutils.KubectlOut("delete", "-f", tmpFile.Name())
+			Expect(err).ToNot(HaveOccurred())
 
 			// Verify that the old leader has become a follower
 			Eventually(func(g Gomega) {
