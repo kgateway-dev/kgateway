@@ -196,9 +196,9 @@ type LbEndpoint struct {
 	// LocalityLbEndpoints. If unspecified, each host is presumed to have equal
 	// weight in a locality.
 	LoadBalancingWeight *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
-	// Additional metadata to put on this endpoint, This metadata can be used in upstream HTTP filters
-	// or other specific envoy configurations.
-	// 2 of these keys are spceified by gloo and will be ignored if set:
+	// Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
+	// or other specific Envoy configurations.
+	// The following keys are added by Gloo Gateway and are ignored if set:
 	// - "envoy.transport_socket_match"
 	// - "io.solo.health_checkers.advanced_http"
 	Metadata map[string]*_struct.Struct `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`

@@ -184,9 +184,8 @@ type isRetryPolicy_PriorityPredicate interface {
 }
 
 type RetryPolicy_PreviousPriorities_ struct {
-	// Specifies the previous priorities
-	// See the envoy docs for more information on how this works:
-	// https://www.envoyproxy.io/docs/envoy/v1.30.1/api-v3/extensions/retry/priority/previous_priorities/v3/previous_priorities_config.proto#envoy-v3-api-file-envoy-extensions-retry-priority-previous-priorities-v3-previous-priorities-config-proto
+	// Specify the previous priorities.
+	// For more information about previous priorities, see the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.30.1/api-v3/extensions/retry/priority/previous_priorities/v3/previous_priorities_config.proto#envoy-v3-api-file-envoy-extensions-retry-priority-previous-priorities-v3-previous-priorities-config-proto).
 	PreviousPriorities *RetryPolicy_PreviousPriorities `protobuf:"bytes,5,opt,name=previous_priorities,json=previousPriorities,proto3,oneof"`
 }
 
@@ -197,9 +196,8 @@ type RetryPolicy_PreviousPriorities struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Specifies the update frequency for the previous priorities
-	// This option will only work when priorities are enabled, currently
-	// in gloo-edge this will only be in combination with upstream failover.
+	// Specify the update frequency for the previous priorities. For more information about previous priorities, see the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.30.1/api-v3/extensions/retry/priority/previous_priorities/v3/previous_priorities_config.proto#envoy-v3-api-file-envoy-extensions-retry-priority-previous-priorities-v3-previous-priorities-config-proto).
+	// This option only works in combination with an Upstream failover policy that enables priorities.
 	UpdateFrequency *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=update_frequency,json=updateFrequency,proto3" json:"update_frequency,omitempty"`
 }
 

@@ -414,9 +414,9 @@ type TransformationStages struct {
 	// Regular transformations happen after Auth and Rate limit decisions has been made.
 	Regular *RequestResponseTransformations `protobuf:"bytes,2,opt,name=regular,proto3" json:"regular,omitempty"`
 	// Post routing transformations happen during the router filter chain. This is important for a number of reasons
-	// 1. Retries will re-trigger this filter, which may impact performance
-	// 2. It is the only point where endpoint metadata is available
-	// 3. `clear_route_cache` will NOT work in this stage as routing has already been decided
+	// 1. Retries re-trigger this filter, which might impact performance.
+	// 2. It is the only point where endpoint metadata is available.
+	// 3. `clear_route_cache` does NOT work in this stage as the routing decision is already made.
 	// Enterprise only
 	PostRouting *RequestResponseTransformations `protobuf:"bytes,6,opt,name=post_routing,json=postRouting,proto3" json:"post_routing,omitempty"`
 	// Inherit transformation config from parent. This has no affect on VirtualHost level transformations.
