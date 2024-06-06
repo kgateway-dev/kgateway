@@ -493,7 +493,7 @@ var _ = Describe("retries with both intervals", func() {
 	})
 })
 
-var _ = FDescribe("retries priority predicate", func() {
+var _ = Describe("retries priority predicate", func() {
 	var (
 		retryPolicy         *retries.RetryPolicy
 		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
