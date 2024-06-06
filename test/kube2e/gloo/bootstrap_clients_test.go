@@ -426,7 +426,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		})
 	})
 
-	FContext("Retry leader election failure", func() {
+	Context("Retry leader election failure", func() {
 
 		var deploymentClient clientsv1.DeploymentInterface
 		var verifyTranslation func()
@@ -480,7 +480,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		})
 
 		It("does not recover by default", func() {
-			waitUntilLeaseAcquired()
+			waitUntilStartsLeading()
 			simulateKubeAPIServerUnavailability()
 
 			Eventually(func(g Gomega) {
@@ -499,7 +499,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			// Since a new deployment has been rolled out by changing the RECOVER_FROM_LEADER_ELECTION_FAILURE env var,
 			// we can be sure that the logs fetched were generated only after this test had begun
-			waitUntilLeaseAcquired()
+			waitUntilStartsLeading()
 			simulateKubeAPIServerUnavailability()
 
 			Eventually(func(g Gomega) {
@@ -524,7 +524,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			// Since a new deployment has been rolled out by changing the RECOVER_FROM_LEADER_ELECTION_FAILURE env var,
 			// we can be sure that the logs fetched were generated only after this test had begun
-			waitUntilLeaseAcquired()
+			waitUntilStartsLeading()
 
 			// Get the leader pod
 			name, err := testutils.KubectlOut("get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[0].metadata.name}'")
@@ -534,6 +534,10 @@ var _ = Describe("Bootstrap Clients", func() {
 			// Scale the deployment to 2 replicas so the other can take over when the leader is unable to communicate with the Kube API server
 			err = testutils.Kubectl("scale", "-n", testHelper.InstallNamespace, "--replicas=2", "deploy/gloo", "--timeout=300s")
 			Expect(err).ToNot(HaveOccurred())
+			defer func() {
+				err = testutils.Kubectl("scale", "-n", testHelper.InstallNamespace, "--replicas=1", "deploy/gloo", "--timeout=300s")
+				Expect(err).ToNot(HaveOccurred())
+			}()
 
 			// Label the leader so the network policy can block communication to the Kube API server
 			pod, err := resourceClientset.KubeClients().CoreV1().Pods(testHelper.InstallNamespace).Get(ctx, name, metav1.GetOptions{})
@@ -599,11 +603,11 @@ func simulateKubeAPIServerUnavailability() {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func waitUntilLeaseAcquired() {
+func waitUntilStartsLeading() {
+	// Initially sleep as the new deployment might be rolling out
+	time.Sleep(10 * time.Second)
 	Eventually(func(g Gomega) {
 		out := helper.GetContainerLogs(testHelper.InstallNamespace, "deploy/gloo")
-		g.Expect(out).To(ContainSubstring("successfully acquired lease gloo-system/gloo"))
-	}, "30s", "10s").Should(Succeed())
-	// Sleep a little longer
-	time.Sleep(30 * time.Second)
+		g.Expect(out).To(ContainSubstring("starting leadership"))
+	}, "120s", "10s").Should(Succeed())
 }
