@@ -36,6 +36,11 @@ function create_kind_cluster_or_skip() {
     --name "$CLUSTER_NAME" \
     --image "kindest/node:$CLUSTER_NODE_VERSION" \
     --config="$SCRIPT_DIR/cluster.yaml"
+  helm repo add cilium https://helm.cilium.io/
+  helm install cilium cilium/cilium --version 1.15.5 \
+   --namespace kube-system \
+   --set image.pullPolicy=IfNotPresent \
+   --set ipam.mode=kubernetes
   echo "Finished setting up cluster $CLUSTER_NAME"
 
   # so that you can just build the kind image alone if needed

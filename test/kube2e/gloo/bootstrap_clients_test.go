@@ -3,9 +3,12 @@ package gloo_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	"github.com/solo-io/go-utils/testutils"
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -418,4 +421,105 @@ var _ = Describe("Bootstrap Clients", func() {
 			})
 		})
 	})
+
+	FContext("Retry leader election failure", func() {
+		AfterEach(func() {
+			ModifyDeploymentEnv(resourceClientset, "gloo", 0, corev1.EnvVar{
+				Name:  "RECOVER_FROM_LEADER_ELECTION_FAILURE",
+				Value: "false",
+			})
+		})
+
+		It("does not recover by default", func() {
+			waitUntilLeaseAcquired()
+			simulateKubeAPIServerUnavailability()
+
+			Eventually(func(g Gomega) {
+				logs := getGlooDeploymentLogs()
+				g.Expect(logs).To(ContainSubstring("lost leadership, quitting app"))
+			}, "30s", "1s")
+		})
+
+		It("recovers when RECOVER_FROM_LEADER_ELECTION_FAILURE=true", func() {
+			ModifyDeploymentEnv(resourceClientset, "gloo", 0, corev1.EnvVar{
+				Name:  "RECOVER_FROM_LEADER_ELECTION_FAILURE",
+				Value: "true",
+			})
+
+			waitUntilLeaseAcquired()
+			simulateKubeAPIServerUnavailability()
+
+			Eventually(func(g Gomega) {
+				logs := getGlooDeploymentLogs()
+				g.Expect(logs).To(ContainSubstring("Leader election cycle 0 lost. Trying again"))
+				g.Expect(logs).NotTo(ContainSubstring("lost leadership, quitting app"))
+			}, "30s", "1s")
+		})
+	})
 })
+
+func ModifyDeploymentEnv(resourceClientset *kube2e.KubeResourceClientSet, deploymentName string, containerIndex int, envVar corev1.EnvVar) {
+	deploymentClient := resourceClientset.KubeClients().AppsV1().Deployments(namespace)
+
+	d, err := deploymentClient.Get(ctx, deploymentName, metav1.GetOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	// make sure we are referencing a valid container
+	ExpectWithOffset(1, len(d.Spec.Template.Spec.Containers)).To(BeNumerically(">", containerIndex))
+
+	// if an env var with the given name already exists, modify it
+	exists := false
+	for i, env := range d.Spec.Template.Spec.Containers[containerIndex].Env {
+		if env.Name == envVar.Name {
+			d.Spec.Template.Spec.Containers[containerIndex].Env[i].Value = envVar.Value
+			exists = true
+			break
+		}
+	}
+	// otherwise add a new env var
+	if !exists {
+		d.Spec.Template.Spec.Containers[containerIndex].Env = append(d.Spec.Template.Spec.Containers[containerIndex].Env, envVar)
+	}
+	_, err = deploymentClient.Update(ctx, d, metav1.UpdateOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	WaitForRolloutWithOffset(1, deploymentName, namespace, "60s", "1s")
+}
+
+// WaitForRollout waits for the specified deployment to be rolled out successfully.
+func WaitForRollout(deploymentName string, deploymentNamespace string, intervals ...interface{}) {
+	WaitForRolloutWithOffset(1, deploymentName, deploymentNamespace, intervals...)
+}
+
+func WaitForRolloutWithOffset(offset int, deploymentName string, deploymentNamespace string, intervals ...interface{}) {
+	EventuallyWithOffset(offset+1, func() (bool, error) {
+		out, err := testutils.KubectlOut("rollout", "status", "-n", deploymentNamespace, fmt.Sprintf("deployment/%s", deploymentName))
+		fmt.Println(out)
+		return strings.Contains(out, "successfully rolled out"), err
+	}, "30s", "1s").Should(BeTrue())
+}
+
+func simulateKubeAPIServerUnavailability() {
+	out, err := testutils.KubectlOut("apply", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
+	Expect(err).ToNot(HaveOccurred())
+	fmt.Println(out)
+	time.Sleep(15 * time.Second)
+	out, err = testutils.KubectlOut("delete", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
+	fmt.Println(out)
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func getGlooDeploymentLogs() string {
+	out, err := testutils.KubectlOut("-n", "gloo-system", "logs", "deploy/gloo")
+	Expect(err).ToNot(HaveOccurred())
+	fmt.Println(out)
+	return out
+}
+
+func waitUntilLeaseAcquired() {
+	Eventually(func(g Gomega) {
+		out := getGlooDeploymentLogs()
+		g.Expect(out).To(ContainSubstring("successfully acquired lease gloo-system/gloo"))
+	}, "30s", "2s")
+	time.Sleep(30 * time.Second)
+}
