@@ -21,10 +21,16 @@ var (
 )
 
 const (
-	ExtensionName = "envoy.filters.http.stateful_session"
+	ExtensionName       = "envoy.filters.http.stateful_session"
+	ExtensionTypeCookie = "envoy.http.stateful_session.cookie"
 )
 
-var pluginStage = plugins.DuringStage(plugins.RouteStage)
+var (
+	pluginStage            = plugins.DuringStage(plugins.RouteStage)
+	ErrNoCookie            = eris.Errorf("cookie must be provided")
+	ErrNoCookieName        = eris.Errorf("cookie name must be provided")
+	ErrNoCookieBasedConfig = eris.Errorf("cookiesBasedConfig must be provided")
+)
 
 type plugin struct {
 	removeUnused bool
@@ -35,13 +41,10 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) {
-	fmt.Printf("\n*************\nstateful session Init settings: %v\n", params.Settings)
 	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	fmt.Printf("\n*************\nstateful session HttpFilters\n")
-
 	sessionConf := listener.GetOptions().GetStatefulSession()
 
 	if sessionConf == nil {
@@ -64,12 +67,11 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 		return nil, err
 	}
 
-	fmt.Printf("\n*************\nmarshalledConf: %v\n", marshalledConf)
 	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(
 		ExtensionName,
 		&statefulsessionv3.StatefulSession{
 			SessionState: &envoyv3.TypedExtensionConfig{
-				Name:        "envoy.http.stateful_session.cookie",
+				Name:        ExtensionTypeCookie,
 				TypedConfig: marshalledConf,
 			},
 			Strict: sessionConf.Strict,
@@ -80,15 +82,17 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 }
 
 func translateCookieBased(conf *statefulsession.StatefulSession_CookieBased) (*cookiev3.CookieBasedSessionState, error) {
-	//defaultTtl := 3600 * time.Second
-
 	if conf.CookieBased == nil {
-		return nil, eris.Errorf("cookie must be provided")
+		return nil, ErrNoCookieBasedConfig
+	}
+
+	fmt.Printf("cookie: %v\n", conf.CookieBased.GetCookie())
+	if conf.CookieBased.GetCookie() == nil {
+		return nil, ErrNoCookie
 	}
 
 	if conf.CookieBased.GetCookie().GetName() == "" {
-		return nil, eris.Errorf("cookie name must be provided")
-
+		return nil, ErrNoCookieName
 	}
 
 	cookieName := conf.CookieBased.GetCookie().GetName()
