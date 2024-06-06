@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	upstream_wait "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/upstream_wait"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
@@ -1176,11 +1177,12 @@ var _ = Describe("Plugin", func() {
 			Expect(filters).To(HaveLen(2))
 			// First filter should be wait filter
 			value := filters[0].Filter.GetTypedConfig()
-			Expect(value.GetValue()).To(BeEmpty())
-			Expect(value.GetTypeUrl()).To(Equal("type.googleapis.com/envoy.config.filter.http.wait.v2.WaitFilterConfig"))
+			filterConfig, err := utils.MessageToAny(&upstream_wait.UpstreamWaitFilterConfig{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(value).To(Equal(filterConfig))
 			// Second filter will be the tranformation filter
 			value = filters[1].Filter.GetTypedConfig()
-			filterConfig, err := utils.MessageToAny(&envoytransformation.FilterTransformations{
+			filterConfig, err = utils.MessageToAny(&envoytransformation.FilterTransformations{
 				Stage: PostRoutingNumber,
 			})
 			Expect(err).NotTo(HaveOccurred())

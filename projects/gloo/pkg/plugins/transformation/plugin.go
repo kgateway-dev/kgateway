@@ -253,18 +253,6 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 	}
 
 	filters := []plugins.StagedUpstreamHttpFilter{
-		{
-			Filter: &envoyhttp.HttpFilter{
-				Name: FilterName,
-				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-					TypedConfig: transformationMsg,
-				},
-			},
-			Stage: plugins.UpstreamHTTPFilterStage{
-				RelativeTo: plugins.TransformationStage,
-				Weight:     0,
-			},
-		},
 		// The wait filter essentially blocks filter iteration until a host has been selected.
 		// This is important because running as an upstream filter allows access to host
 		// metadata iff the host has already been selected, and that's a
@@ -279,6 +267,18 @@ func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpLis
 			Stage: plugins.UpstreamHTTPFilterStage{
 				RelativeTo: plugins.TransformationStage,
 				Weight:     -1,
+			},
+		},
+		{
+			Filter: &envoyhttp.HttpFilter{
+				Name: FilterName,
+				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+					TypedConfig: transformationMsg,
+				},
+			},
+			Stage: plugins.UpstreamHTTPFilterStage{
+				RelativeTo: plugins.TransformationStage,
+				Weight:     0,
 			},
 		},
 	}
