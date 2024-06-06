@@ -317,7 +317,7 @@ type GatewayParametersForGatewayClasses struct {
 }
 
 type GatewayParameters struct {
-	Image           *Image                 `json:"image,omitempty" desc:"Image options for the dynamically provisioned gateway proxy"`
+	EnvoyContainer  *EnvoyContainer        `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
 	ProxyDeployment *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
 	Service         *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
 	SdsContainer    *SdsContainer          `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
@@ -777,6 +777,10 @@ type Mtls struct {
 	IstioProxy            IstioProxyContainer   `json:"istioProxy,omitempty" desc:"Istio-proxy container"`
 	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all Envoy sidecar containers."`
 	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
+}
+
+type EnvoyContainer struct {
+	Image *Image `json:"image,omitempty"`
 }
 
 type SdsContainer struct {
