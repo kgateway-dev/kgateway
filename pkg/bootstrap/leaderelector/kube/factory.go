@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/client-go/rest"
 	k8sleaderelection "k8s.io/client-go/tools/leaderelection"
@@ -24,9 +25,10 @@ const (
 
 	recoveryTimeout = 60 * time.Second
 
-	leaseDurationEnvName = "LEADER_ELECTION_LEASE_DURATION"
-	retryPeriodEnvName   = "LEADER_ELECTION_RETRY_PERIOD"
-	renewPeriodEnvName   = "LEADER_ELECTION_RENEW_PERIOD"
+	leaseDurationEnvName                    = "LEADER_ELECTION_LEASE_DURATION"
+	retryPeriodEnvName                      = "LEADER_ELECTION_RETRY_PERIOD"
+	renewPeriodEnvName                      = "LEADER_ELECTION_RENEW_PERIOD"
+	recoverFromLeaderElectionFailureEnvName = "RECOVER_FROM_LEADER_ELECTION_FAILURE"
 )
 
 // kubeElectionFactory is the implementation for coordinating leader election using
@@ -42,7 +44,7 @@ func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 }
 
 func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	recoverFromLeaderElectionFailure := true
+	recoverFromLeaderElectionFailure := envutils.IsEnvTruthy(recoverFromLeaderElectionFailureEnvName)
 	elected := make(chan struct{})
 	identity := leaderelector.NewIdentity(elected)
 
