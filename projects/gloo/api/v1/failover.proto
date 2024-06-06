@@ -129,7 +129,7 @@ message LbEndpoint {
     google.protobuf.UInt32Value load_balancing_weight = 5 [(validate.rules).uint32.gte = 1];
 
     // Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
-    // or other specific envoy configurations.
+    // or other specific Envoy configurations.
     // The following keys are added by Gloo Gateway and are ignored if set:
     // - "envoy.transport_socket_match"
     // - "io.solo.health_checkers.advanced_http"
