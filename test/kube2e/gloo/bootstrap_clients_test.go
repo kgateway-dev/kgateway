@@ -452,6 +452,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			Eventually(func(g Gomega) {
 				logs := getGlooDeploymentLogs()
 				g.Expect(logs).To(ContainSubstring("Leader election cycle 0 lost. Trying again"))
+				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
 				g.Expect(logs).NotTo(ContainSubstring("lost leadership, quitting app"))
 			}, "30s", "1s")
 		})

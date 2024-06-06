@@ -63,7 +63,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 
 	var counter atomic.Uint32
 	var justFailed = false
-	var recover func()
+	var dontDie func()
 
 	newLeaderElector := func() (*k8sleaderelection.LeaderElector, error) {
 
@@ -73,6 +73,8 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			case <-timer.C:
 				contextutils.LoggerFrom(ctx).Fatalf("unable to recover from failed leader election, quitting app")
 			case <-ctx.Done():
+				contextutils.LoggerFrom(ctx).Infof("recovered from lease renewal failure")
+
 			}
 		}
 		recoveryCtx, cancel := context.WithCancel(ctx)
@@ -100,7 +102,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 							// Die if we are unable to recover from this within the recoveryTimeout
 							go dieIfUnrecoverable(recoveryCtx)
 							// Set recover to cancel the context to be used the next time `OnNewLeader` is called
-							recover = cancel
+							dontDie = cancel
 							justFailed = true
 						}
 					},
@@ -110,7 +112,8 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 						// Recover since we were able to re-negotiate leader election
 						// Do this only when we just failed and not when someone becomes a leader
 						if recoverFromLeaderElectionFailure && justFailed {
-							recover()
+							dontDie()
+							justFailed = false
 						}
 					},
 				},
