@@ -65,18 +65,21 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	var justFailed = false
 	var dontDie func()
 
-	newLeaderElector := func() (*k8sleaderelection.LeaderElector, error) {
+	// dieIfUnrecoverable causes gloo to exit after the recoveryTimeout (default 60s) if the context is not cancelled.
+	// This function is called when this container is a leader but unable to renew the leader lease (caused by an unreachable kube api server).
+	// The context is cancelled if it is able to participate in leader election again, irrespective if it becomes a leader or follower.
+	dieIfUnrecoverable := func(ctx context.Context) {
+		timer := time.NewTimer(recoveryTimeout)
+		select {
+		case <-timer.C:
+			contextutils.LoggerFrom(ctx).Fatalf("unable to recover from failed leader election, quitting app")
+		case <-ctx.Done():
+			contextutils.LoggerFrom(ctx).Infof("recovered from lease renewal failure")
 
-		dieIfUnrecoverable := func(ctx context.Context) {
-			timer := time.NewTimer(recoveryTimeout)
-			select {
-			case <-timer.C:
-				contextutils.LoggerFrom(ctx).Fatalf("unable to recover from failed leader election, quitting app")
-			case <-ctx.Done():
-				contextutils.LoggerFrom(ctx).Infof("recovered from lease renewal failure")
-
-			}
 		}
+	}
+
+	newLeaderElector := func() (*k8sleaderelection.LeaderElector, error) {
 		recoveryCtx, cancel := context.WithCancel(ctx)
 
 		return k8sleaderelection.NewLeaderElector(
@@ -129,6 +132,10 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 		return identity, err
 	}
 
+	// leaderElector.Run() is a blocking method but we need to return the identity of this container to sub-components so they can
+	// perform their respective tasks, hence it runs within a go routine.
+	// It runs within an infinite loop so that we can recover if this container is a leader but fails to renew the lease and renegotiate leader election if possible.
+	// This can be caused when there is a failure to connect to the kube api server
 	go func() {
 		for {
 			l, _ := newLeaderElector()
@@ -142,8 +149,9 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 
 			contextutils.LoggerFrom(ctx).Errorf("Leader election cycle %v lost. Trying again", counter.Load())
 			counter.Add(1)
-			// Sleep for a while as this might be a transient issue
-			time.Sleep(5 * time.Second)
+			// Sleep for the lease duration so another container has a chance to become the leader rather than try to renew
+			// in when the kube api server is unreachable by this container
+			time.Sleep(getLeaseDuration())
 		}
 	}()
 	return identity, nil
