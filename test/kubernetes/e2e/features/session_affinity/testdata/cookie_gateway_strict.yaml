@@ -1,0 +1,24 @@
+---
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-gateway-edge-test
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway:
+    options:
+      statefulSession:
+        cookieBased:
+          cookie:
+            name: sessionaffinitycookie2
+            path: /session_path
+            ttl: 10s
+        strict: true
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false

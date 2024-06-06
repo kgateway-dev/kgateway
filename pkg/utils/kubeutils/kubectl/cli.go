@@ -45,8 +45,8 @@ func NewCli() *Cli {
 }
 
 type CurlResponse struct {
-	Headers string
-	Body    string
+	StdErr string
+	StdOut string
 }
 
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
@@ -248,7 +248,7 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 	}, curlArgs...)
 
 	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, nil, args...)
-	return &CurlResponse{Body: stdout, Headers: stderr}, err
+	return &CurlResponse{StdOut: stdout, StdErr: stderr}, err
 }
 
 func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (string, string, error) {
@@ -267,4 +267,8 @@ func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) 
 		WithStderr(stderr).Run().Cause()
 
 	return stdout.String(), stderr.String(), err
+}
+
+func (c *Cli) ScaleDeploymentTo(ctx context.Context, deployment string, replicas int) error {
+	return c.RunCommand(ctx, "scale", "deployment", deployment, "--replicas", fmt.Sprintf("%d", replicas))
 }

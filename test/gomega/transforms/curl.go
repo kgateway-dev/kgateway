@@ -24,47 +24,15 @@ const (
 // For now, we handle HTTP/1.1 response headers, status, and body.
 // The curl must be executed with verbose=true to include both the response headers/status
 // and response body.
-func WithCurlHttpResponse(curlResponse string) *http.Response {
+
+func WithCurlHttpResponse(curlResponse *kubectl.CurlResponse) *http.Response {
 	headers := make(http.Header)
 	statusCode := 0
 	var bodyBuf bytes.Buffer
 
-	for _, line := range strings.Split(curlResponse, "\n") {
-		k, v := processResponseHeader(line)
-		if k != "" {
-			headers.Add(k, v)
-			continue
-		}
-
-		code := processResponseCode(line)
-		if code != 0 {
-			statusCode = code
-			continue
-		}
-
-		// Once we've found a line that is a header or status code, we can assume we are done with the body
-		if isResponseBody(line) {
-			if bodyBuf.Len() > 0 {
-				bodyBuf.WriteString("\n")
-			}
-			bodyBuf.WriteString(line)
-		}
-	}
-
-	return &http.Response{
-		StatusCode: statusCode,
-		Header:     headers,
-		Body:       bytesBody(bodyBuf.Bytes()),
-	}
-}
-
-func WithCurlResponse(curlResponse *kubectl.CurlResponse) *http.Response {
-	headers := make(http.Header)
-	statusCode := 0
-	var bodyBuf bytes.Buffer
-
+	// Curl writes the body to stdout and the headers/status to stderr
 	// Headers/response code
-	for _, line := range strings.Split(curlResponse.Headers, "\n") {
+	for _, line := range strings.Split(curlResponse.StdErr, "\n") {
 		k, v := processResponseHeader(line)
 		if k != "" {
 			headers.Add(k, v)
@@ -78,7 +46,7 @@ func WithCurlResponse(curlResponse *kubectl.CurlResponse) *http.Response {
 	}
 
 	// Body
-	bodyBuf.WriteString(curlResponse.Body)
+	bodyBuf.WriteString(curlResponse.StdOut)
 
 	return &http.Response{
 		StatusCode: statusCode,

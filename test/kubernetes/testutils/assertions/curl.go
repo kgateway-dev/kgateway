@@ -34,11 +34,15 @@ func (p *Provider) AssertEventualCurlResponse(
 
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 		g.Expect(err).NotTo(HaveOccurred())
 
-		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
+		fmt.Printf("Response body:\n\n%v\n\n", curlResponse.StdOut)
+		fmt.Printf("Response headers: %v\n", curlResponse.StdErr)
+
+		expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(curlResponse).To(expectedResponseMatcher)
-		fmt.Printf("success: %v", curlResponse)
+		//fmt.Printf("success: %v", curlResponse)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
@@ -59,11 +63,13 @@ func (p *Provider) AssertCurlResponse(
 		},
 	})
 
-	// Todo: throw a timeout here? Leave it to the caller? Set it in the defaults?
+	// Rely on default timeouts set in CurlFromPod to avoid hanging forever
 	curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+	fmt.Printf("Response body:\n\n%v\n\n", curlResponse.StdOut)
+	fmt.Printf("Response headers: %v\n", curlResponse.StdErr)
 	Expect(err).NotTo(HaveOccurred())
 
-	expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
+	expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
 	Expect(curlResponse).To(expectedResponseMatcher)
 
 }

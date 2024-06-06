@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: session-affinity
-  replicas: 2
+  replicas: 4
   template:
     metadata:
       labels:
@@ -50,8 +50,8 @@ spec:
     - app
     routes:
     - matchers:
-      - exact: /count
-      name: count
+      - exact: /session_path/count
+      name: count-affinity
       routeAction:
         single:
           kube:
@@ -59,6 +59,20 @@ spec:
             ref:
               name: session-affinity
               namespace: default
+      options:
+        prefixRewrite: /count
+    - matchers:
+      - exact: /non_session_path/count
+      name: count-no-affinity
+      routeAction:
+        single:
+          kube:
+            port: 8080
+            ref:
+              name: session-affinity
+              namespace: default
+      options:
+        prefixRewrite: /count
 ---
 apiVersion: v1
 kind: Namespace
