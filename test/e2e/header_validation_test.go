@@ -16,21 +16,13 @@ import (
 	"github.com/solo-io/gloo/test/e2e"
 )
 
-var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
-
-	// The TestContext is a framework for writing e2e tests
-	// This test provides some basic use cases to demonstrate how to leverage the framework
+var _ = Describe("Header Validation", Label(), func() {
 
 	var (
 		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		// For an individual test, we can define the environmental requirements necessary for it to succeed.
-		// Ideally our tests are environment agnostic. However, if there are certain conditions that must
-		// be met, you can define those here. By explicitly defining these requirements, we can error loudly
-		// when they are not met. See `testutils.ValidateRequirementsAndNotifyGinkgo` for a more detailed
-		// overview of this feature
 		var testRequirements []testutils.Requirement
 
 		testContext = testContextFactory.NewTestContext(testRequirements...)
@@ -71,7 +63,7 @@ var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
 		// This means that a Proxy object is dynamically generated, and from there an xDS snapshot is computed
 		// and sent to Envoy to handle traffic
 
-		FIt("defaults to returning HTTP 400 on requests with custom HTTP methods", func() {
+		It("defaults to returning HTTP 400 on requests with custom HTTP methods", func() {
 			waitUntilProxyIsRunning()
 			req := buildRequest()
 			Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusBadRequest))

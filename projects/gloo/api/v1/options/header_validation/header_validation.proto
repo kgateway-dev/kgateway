@@ -4,12 +4,20 @@ package header_validation.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation";
 
 message HeaderValidationSettings {
+    // Whether custom HTTP methods should be allowed. Defaults to false (custom
+    // HTTP methods are not allowed). The list of default-allowed HTTP methods
+    // can be found here:
+    // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+    // As of right now, this field is only supported on HTTP/1 connections.
+    // When Universal Header Validation is available in upstream Envoy, this
+    // field can be applied to all protocols.
     // TODO: let's think a bit more carefully about how we want to design this
     // for future-proofing purposes. I think we may want to consider having an
     // oneof here instead that could be something like (allow default
-    // values/allow all/custom allow-list).
-    // we can use the (as of yet undocumented) Envoy universal header
-    // validation options as inspirations for how we want to write this API
+    // methods/allow all methods/custom allow-list).
+    // we may also want to model our API similarly to upstream Envoy's UHV API
+    // TODO consider including a warning mentioning that future changes to this
+    // field may not be backwards compatible
     bool allow_custom_header_methods = 1;
 }
 
