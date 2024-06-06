@@ -22,6 +22,8 @@ const (
 	defaultRetryPeriod   = 2 * time.Second
 	defaultRenewPeriod   = 10 * time.Second
 
+	recoveryTimeout = 60 * time.Second
+
 	leaseDurationEnvName = "LEADER_ELECTION_LEASE_DURATION"
 	retryPeriodEnvName   = "LEADER_ELECTION_RETRY_PERIOD"
 	renewPeriodEnvName   = "LEADER_ELECTION_RENEW_PERIOD"
@@ -40,6 +42,7 @@ func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 }
 
 func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
+	recoverFromLeaderElectionFailure := true
 	elected := make(chan struct{})
 	identity := leaderelector.NewIdentity(elected)
 
@@ -57,8 +60,21 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	}
 
 	var counter atomic.Uint32
+	var justFailed = false
+	var recover func()
 
 	newLeaderElector := func() (*k8sleaderelection.LeaderElector, error) {
+
+		dieIfUnrecoverable := func(ctx context.Context) {
+			timer := time.NewTimer(recoveryTimeout)
+			select {
+			case <-timer.C:
+				contextutils.LoggerFrom(ctx).Fatalf("unable to recover from failed leader election, quitting app")
+			case <-ctx.Done():
+			}
+		}
+		recoveryCtx, cancel := context.WithCancel(ctx)
+
 		return k8sleaderelection.NewLeaderElector(
 			k8sleaderelection.LeaderElectionConfig{
 				Lock:          resourceLock,
@@ -74,14 +90,26 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 					OnStoppedLeading: func() {
 						contextutils.LoggerFrom(ctx).Error("Stopped Leading")
 						config.OnStoppedLeading()
-						// Recreate the elected channel and reset the identity to a follower
-						// Ref: https://github.com/solo-io/gloo/issues/7346
-						elected = make(chan struct{})
-						identity.Reset(elected)
+						if recoverFromLeaderElectionFailure {
+							// Recreate the elected channel and reset the identity to a follower
+							// Ref: https://github.com/solo-io/gloo/issues/7346
+							elected = make(chan struct{})
+							identity.Reset(elected)
+							// Die if we are unable to recover from this within the recoveryTimeout
+							go dieIfUnrecoverable(recoveryCtx)
+							// Set recover to cancel the context to be used the next time `OnNewLeader` is called
+							recover = cancel
+							justFailed = true
+						}
 					},
 					OnNewLeader: func(identity string) {
 						contextutils.LoggerFrom(ctx).Debugf("New Leader Elected with Identity: %s", identity)
 						config.OnNewLeader(identity)
+						// Recover since we were able to re-negotiate leader election
+						// Do this only when we just failed and not when someone becomes a leader
+						if recoverFromLeaderElectionFailure && justFailed {
+							recover()
+						}
 					},
 				},
 				Name:            config.Id,
@@ -102,6 +130,11 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			// Start the leader elector process
 			contextutils.LoggerFrom(ctx).Debug("Starting Kube Leader Election")
 			l.Run(ctx)
+
+			if !recoverFromLeaderElectionFailure {
+				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
+			}
+
 			contextutils.LoggerFrom(ctx).Errorf("Leader election cycle %v lost. Trying again", counter.Load())
 			counter.Add(1)
 			// Sleep for a while as this might be a transient issue
