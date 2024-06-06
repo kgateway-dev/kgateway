@@ -1,6 +1,7 @@
 package static
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -17,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	upstream_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upstreamproxyprotocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -125,7 +127,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		out.GetLoadAssignment().GetEndpoints()[0].LbEndpoints = append(out.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints(),
 			&envoy_config_endpoint_v3.LbEndpoint{
-				Metadata: getMetadata(spec, host),
+				Metadata: getMetadata(params.Ctx, spec, host),
 				HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 					Endpoint: &envoy_config_endpoint_v3.Endpoint{
 						Hostname: host.GetAddr(),
@@ -278,7 +280,7 @@ func sniAddr(spec *v1static.UpstreamSpec, in *v1static.Host) string {
 	return ""
 }
 
-func getMetadata(spec *v1static.UpstreamSpec, in *v1static.Host) *envoy_config_core_v3.Metadata {
+func getMetadata(ctx context.Context, spec *v1static.UpstreamSpec, in *v1static.Host) *envoy_config_core_v3.Metadata {
 	if in == nil {
 		return nil
 	}
@@ -296,6 +298,15 @@ func getMetadata(spec *v1static.UpstreamSpec, in *v1static.Host) *envoy_config_c
 	}
 	if method := in.GetHealthCheckConfig().GetMethod(); method != "" {
 		setMetadataField(meta, MethodFieldName, method)
+	}
+	for k, v := range in.GetMetadata() {
+		// These keys cannot be overriden by user config for safety
+		if k == AdvancedHttpCheckerName || k == TransportSocketMatchKey {
+			contextutils.LoggerFrom(ctx).Warnf("metadata key %s is reserved and cannot be overridden", k)
+			continue
+		}
+		// Set the filter meta
+		meta.GetFilterMetadata()[k] = v
 	}
 	return meta
 }

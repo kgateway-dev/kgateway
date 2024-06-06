@@ -32,7 +32,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedNetworkFilter{
 			{
-				NetworkFilter: &envoy_config_listener_v3.Filter{
+				Filter: &envoy_config_listener_v3.Filter{
 					Name: ExtensionName,
 					ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
 						TypedConfig: typedConfig,

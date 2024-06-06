@@ -2,15 +2,15 @@
 |------|----|-----------|-------------|
 |namespace.create|bool|false|create the installation namespace|
 |kubeGateway.enabled|bool|false|Enable the Gloo Gateway Kubernetes Gateway API controller.|
-|kubeGateway.gatewayParameters.glooGateway.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|kubeGateway.gatewayParameters.glooGateway.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
-|kubeGateway.gatewayParameters.glooGateway.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|kubeGateway.gatewayParameters.glooGateway.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|kubeGateway.gatewayParameters.glooGateway.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|kubeGateway.gatewayParameters.glooGateway.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|kubeGateway.gatewayParameters.glooGateway.image.variant|string||Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)|
-|kubeGateway.gatewayParameters.glooGateway.image.fipsDigest|string||[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|kubeGateway.gatewayParameters.glooGateway.image.fips|bool||[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.variant|string||Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.fipsDigest|string||[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.fips|bool||[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)|
 |kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas|int32|1|number of instances to deploy.|
 |kubeGateway.gatewayParameters.glooGateway.service.type|string|LoadBalancer|K8s service type|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|

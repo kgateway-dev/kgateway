@@ -348,6 +348,26 @@ func (m *TransformationStages) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPostRouting()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("PostRouting")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPostRouting(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("PostRouting")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	err = binary.Write(hasher, binary.LittleEndian, m.GetInheritTransformation())
 	if err != nil {
 		return 0, err
@@ -976,6 +996,11 @@ func (m *TransformationTemplate_DynamicMetadataValue) Hash(hasher hash.Hash64) (
 				return 0, err
 			}
 		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetJsonToProto())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

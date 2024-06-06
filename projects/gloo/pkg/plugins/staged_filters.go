@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/filters"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -35,15 +36,18 @@ const (
 	RouteStage                                 // Request is going to upstream // Last Filter Stage
 )
 
-type FilterStage struct {
-	RelativeTo WellKnownFilterStage
-	Weight     int
-}
+type WellKnownUpstreamHTTPFilterStage int
+
+// The set of WellKnownUpstreamHTTPFilterStages, whose order corresponds to the order used to sort filters
+// If new well known filter stages are added, they should be inserted in a position corresponding to their order
+const (
+	TransformationStage WellKnownUpstreamHTTPFilterStage = iota // Transformation stage
+)
 
 // FilterStageComparison helps implement the sort.Interface Less function for use in other implementations of sort.Interface
 // returns -1 if less than, 0 if equal, 1 if greater than
 // It is not sufficient to return a Less bool because calling functions need to know if equal or greater when Less is false
-func FilterStageComparison(a, b FilterStage) int {
+func FilterStageComparison[WellKnown ~int](a, b FilterStage[WellKnown]) int {
 	if a.RelativeTo < b.RelativeTo {
 		return -1
 	} else if a.RelativeTo > b.RelativeTo {
@@ -57,50 +61,65 @@ func FilterStageComparison(a, b FilterStage) int {
 	return 0
 }
 
-func BeforeStage(wellKnown WellKnownFilterStage) FilterStage {
+func BeforeStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, -1)
 }
-func DuringStage(wellKnown WellKnownFilterStage) FilterStage {
+func DuringStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 0)
 }
-func AfterStage(wellKnown WellKnownFilterStage) FilterStage {
+func AfterStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 1)
 }
-func RelativeToStage(wellKnown WellKnownFilterStage, weight int) FilterStage {
-	return FilterStage{
+func RelativeToStage[WellKnown ~int](wellKnown WellKnown, weight int) FilterStage[WellKnown] {
+	return FilterStage[WellKnown]{
 		RelativeTo: wellKnown,
 		Weight:     weight,
 	}
 }
 
-type StagedHttpFilter struct {
-	HttpFilter *envoyhttp.HttpFilter
-	Stage      FilterStage
+type FilterStage[WellKnown ~int] struct {
+	RelativeTo WellKnown
+	Weight     int
 }
 
-type StagedHttpFilterList []StagedHttpFilter
+type HTTPFilterStage = FilterStage[WellKnownFilterStage]
+type NetworkFilterStage = FilterStage[WellKnownFilterStage]
+type UpstreamHTTPFilterStage = FilterStage[WellKnownUpstreamHTTPFilterStage]
 
-func (s StagedHttpFilterList) Len() int {
+type Filter interface {
+	proto.Message
+	GetName() string
+	GetTypedConfig() *anypb.Any
+}
+
+type StagedFilter[WellKnown ~int, FilterType Filter] struct {
+	Filter FilterType
+	Stage  FilterStage[WellKnown]
+}
+
+type StagedFilterList[WellKnown ~int, FilterType Filter] []StagedFilter[WellKnown, FilterType]
+
+func (s StagedFilterList[WellKnown, FilterType]) Len() int {
 	return len(s)
 }
 
 // filters by Relative Stage, Weighting, Name, Config Type-Url, Config Value, and (to ensure stability) index.
 // The assumption is that if two filters are in the same stage, their order doesn't matter, and we
 // just need to make sure it is stable.
-func (s StagedHttpFilterList) Less(i, j int) bool {
+func (s StagedFilterList[WellKnown, FilterType]) Less(i, j int) bool {
 	if compare := FilterStageComparison(s[i].Stage, s[j].Stage); compare != 0 {
 		return compare < 0
 	}
 
-	if compare := strings.Compare(s[i].HttpFilter.GetName(), s[j].HttpFilter.GetName()); compare != 0 {
+	if compare := strings.Compare(s[i].Filter.GetName(), s[j].Filter.GetName()); compare != 0 {
 		return compare < 0
 	}
 
-	if compare := strings.Compare(s[i].HttpFilter.GetTypedConfig().GetTypeUrl(), s[j].HttpFilter.GetTypedConfig().GetTypeUrl()); compare != 0 {
+	if compare := strings.Compare(s[i].Filter.GetTypedConfig().GetTypeUrl(), s[j].Filter.GetTypedConfig().GetTypeUrl()); compare != 0 {
 		return compare < 0
 	}
 
-	if compare := bytes.Compare(s[i].HttpFilter.GetTypedConfig().GetValue(), s[j].HttpFilter.GetTypedConfig().GetValue()); compare != 0 {
+	if compare := bytes.Compare(s[i].Filter.GetTypedConfig().GetValue(), s[j].Filter.GetTypedConfig().GetValue()); compare != 0 {
 		return compare < 0
 	}
 
@@ -108,61 +127,24 @@ func (s StagedHttpFilterList) Less(i, j int) bool {
 	return i < j
 }
 
-func (s StagedHttpFilterList) Swap(i, j int) {
+func (s StagedFilterList[WellKnown, FilterType]) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-type StagedNetworkFilter struct {
-	NetworkFilter *envoy_config_listener_v3.Filter
-	Stage         FilterStage
-}
+type StagedHttpFilter = StagedFilter[WellKnownFilterStage, *envoyhttp.HttpFilter]
+type StagedNetworkFilter = StagedFilter[WellKnownFilterStage, *envoy_config_listener_v3.Filter]
+type StagedUpstreamHttpFilter = StagedFilter[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
 
-type StagedNetworkFilterList []StagedNetworkFilter
-
-func (s StagedNetworkFilterList) Len() int {
-	return len(s)
-}
-
-// filters by Relative Stage, Weighting, Name, and (to ensure stability) index
-func (s StagedNetworkFilterList) Less(i, j int) bool {
-	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
-	case -1:
-		return true
-	case 1:
-		return false
-	}
-	if s[i].NetworkFilter.GetName() < s[j].NetworkFilter.GetName() {
-		return true
-	}
-	if s[i].NetworkFilter.GetName() > s[j].NetworkFilter.GetName() {
-		return false
-	}
-	if s[i].NetworkFilter.String() < s[j].NetworkFilter.String() {
-		return true
-	}
-	if s[i].NetworkFilter.String() > s[j].NetworkFilter.String() {
-		return false
-	}
-	// ensure stability
-	return i < j
-}
-
-func (s StagedNetworkFilterList) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// NewStagedFilterWithConfig creates an instance of the named filter with the desired stage.
-// Deprecated: config is now always needed and so NewStagedFilter should always be used.
-func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterStage) (StagedHttpFilter, error) {
-	return NewStagedFilter(name, config, stage)
-}
+type StagedHttpFilterList = StagedFilterList[WellKnownFilterStage, *envoyhttp.HttpFilter]
+type StagedNetworkFilterList = StagedFilterList[WellKnownFilterStage, *envoy_config_listener_v3.Filter]
+type StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
 
 // MustNewStagedFilter creates an instance of the named filter with the desired stage.
 // Returns a filter even if an error occurred.
 // Should rarely be used as disregarding an error is bad practice but does make
 // appending easier.
 // If not directly appending consider using NewStagedFilter instead of this function.
-func MustNewStagedFilter(name string, config proto.Message, stage FilterStage) StagedHttpFilter {
+func MustNewStagedFilter(name string, config proto.Message, stage FilterStage[WellKnownFilterStage]) StagedHttpFilter {
 	s, _ := NewStagedFilter(name, config, stage)
 	return s
 }
@@ -170,10 +152,10 @@ func MustNewStagedFilter(name string, config proto.Message, stage FilterStage) S
 // NewStagedFilter creates an instance of the named filter with the desired stage.
 // Errors if the config is nil or we cannot determine the type of the config.
 // Config type determination may fail if the config is both  unknown and has no fields.
-func NewStagedFilter(name string, config proto.Message, stage FilterStage) (StagedHttpFilter, error) {
+func NewStagedFilter(name string, config proto.Message, stage FilterStage[WellKnownFilterStage]) (StagedHttpFilter, error) {
 
 	s := StagedHttpFilter{
-		HttpFilter: &envoyhttp.HttpFilter{
+		Filter: &envoyhttp.HttpFilter{
 			Name: name,
 		},
 		Stage: stage,
@@ -190,7 +172,7 @@ func NewStagedFilter(name string, config proto.Message, stage FilterStage) (Stag
 		return StagedHttpFilter{}, err
 	}
 
-	s.HttpFilter.ConfigType = &envoyhttp.HttpFilter_TypedConfig{
+	s.Filter.ConfigType = &envoyhttp.HttpFilter_TypedConfig{
 		TypedConfig: marshalledConf,
 	}
 
@@ -201,7 +183,7 @@ func NewStagedFilter(name string, config proto.Message, stage FilterStage) (Stag
 // This is not a check of the type url but rather the now mostly unused name
 func StagedFilterListContainsName(filters StagedHttpFilterList, filterName string) bool {
 	for _, filter := range filters {
-		if filter.HttpFilter.GetName() == filterName {
+		if filter.Filter.GetName() == filterName {
 			return true
 		}
 	}
@@ -210,7 +192,7 @@ func StagedFilterListContainsName(filters StagedHttpFilterList, filterName strin
 }
 
 // ConvertFilterStage converts user-specified FilterStage options to the FilterStage representation used for translation.
-func ConvertFilterStage(in *filters.FilterStage) *FilterStage {
+func ConvertFilterStage(in *filters.FilterStage) *FilterStage[WellKnownFilterStage] {
 	if in == nil {
 		return nil
 	}
@@ -240,7 +222,7 @@ func ConvertFilterStage(in *filters.FilterStage) *FilterStage {
 		outStage = FaultStage
 	}
 
-	var out FilterStage
+	var out FilterStage[WellKnownFilterStage]
 	switch in.GetPredicate() {
 	case filters.FilterStage_Before:
 		out = BeforeStage(outStage)

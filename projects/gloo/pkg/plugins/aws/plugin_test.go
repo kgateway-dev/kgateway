@@ -683,7 +683,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
+			goTypedConfig := filters[0].Filter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig, cfg)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -767,7 +767,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
+			goTypedConfig := filters[0].Filter.GetTypedConfig()
 			err = ptypes.UnmarshalAny(goTypedConfig, cfg)
 			Expect(err).NotTo(HaveOccurred())
 		}

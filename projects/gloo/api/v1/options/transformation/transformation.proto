@@ -58,6 +58,12 @@ message TransformationStages {
     RequestResponseTransformations early = 1;
     // Regular transformations happen after Auth and Rate limit decisions has been made.
     RequestResponseTransformations regular = 2;
+    // Post routing transformations happen during the router filter chain. This is important for a number of reasons
+    // 1. Retries re-trigger this filter, which might impact performance.
+    // 2. It is the only point where endpoint metadata is available.
+    // 3. `clear_route_cache` does NOT work in this stage as the routing decision is already made. 
+    // Enterprise only
+    RequestResponseTransformations post_routing = 6;
     // Inherit transformation config from parent. This has no affect on VirtualHost level transformations.
     // If a RouteTable or Route wants to inherit transformations from it's parent RouteTable or VirtualHost,
     // this should be set to true, else transformations from parents will not be inherited.
@@ -273,6 +279,10 @@ message TransformationTemplate {
 
     // A template that determines the metadata value.
     InjaTemplate value = 3;
+    
+    // Instruct the filter to parse the rendered value as a proto Struct message
+    // before setting it as the metadata value.
+    bool json_to_proto = 4;
   }
   // Use this field to set Dynamic Metadata.
   repeated DynamicMetadataValue dynamic_metadata_values = 9;

@@ -145,6 +145,7 @@ type pluginRegistry struct {
 	tcpFilterChainPlugins        []plugins.TcpFilterChainPlugin
 	networkFilterPlugins         []plugins.NetworkFilterPlugin
 	httpFilterPlugins            []plugins.HttpFilterPlugin
+	upstreamHttpFilterPlugins    []plugins.UpstreamHttpFilterPlugin
 	httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
 	virtualHostPlugins           []plugins.VirtualHostPlugin
 	resourceGeneratorPlugins     []plugins.ResourceGeneratorPlugin
@@ -163,6 +164,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin
+	var upstreamHttpFilterPlugins []plugins.UpstreamHttpFilterPlugin
 	var networkFilterPlugins []plugins.NetworkFilterPlugin
 	var httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
 	var virtualHostPlugins []plugins.VirtualHostPlugin
@@ -193,6 +195,11 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		httpFilterPlugin, ok := plugin.(plugins.HttpFilterPlugin)
 		if ok {
 			httpFilterPlugins = append(httpFilterPlugins, httpFilterPlugin)
+		}
+
+		upstreamHttpFilterPlugin, ok := plugin.(plugins.UpstreamHttpFilterPlugin)
+		if ok {
+			upstreamHttpFilterPlugins = append(upstreamHttpFilterPlugins, upstreamHttpFilterPlugin)
 		}
 
 		networkFilterPlugin, ok := plugin.(plugins.NetworkFilterPlugin)
@@ -247,6 +254,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		tcpFilterChainPlugins:        tcpFilterChainPlugins,
 		networkFilterPlugins:         networkFilterPlugins,
 		httpFilterPlugins:            httpFilterPlugins,
+		upstreamHttpFilterPlugins:    upstreamHttpFilterPlugins,
 		httpConnectionManagerPlugins: httpConnectionManagerPlugins,
 		virtualHostPlugins:           virtualHostPlugins,
 		resourceGeneratorPlugins:     resourceGeneratorPlugins,
@@ -281,6 +289,11 @@ func (p *pluginRegistry) GetNetworkFilterPlugins() []plugins.NetworkFilterPlugin
 // GetHttpFilterPlugins returns the plugins that were registered which act on HttpFilter.
 func (p *pluginRegistry) GetHttpFilterPlugins() []plugins.HttpFilterPlugin {
 	return p.httpFilterPlugins
+}
+
+// GetUpstreamHttpFilterPlugins returns the plugins that were registered which act on HttpFilter.
+func (p *pluginRegistry) GetUpstreamHttpFilterPlugins() []plugins.UpstreamHttpFilterPlugin {
+	return p.upstreamHttpFilterPlugins
 }
 
 // GetHttpConnectionManagerPlugins returns the plugins that were registered which act on HttpConnectionManager.

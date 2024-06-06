@@ -6,23 +6,25 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/validator"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	upstream_wait "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/upstream_wait"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	proto_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var (
@@ -31,13 +33,17 @@ var (
 	_ plugins.WeightedDestinationPlugin = new(Plugin)
 	_ plugins.RoutePlugin               = new(Plugin)
 	_ plugins.HttpFilterPlugin          = new(Plugin)
+	_ plugins.UpstreamHttpFilterPlugin  = new(Plugin)
 )
 
 const (
-	ExtensionName    = "transformation"
-	FilterName       = "io.solo.transformation"
-	EarlyStageNumber = 1
-	AwsStageNumber   = 2
+	ExtensionName      = "transformation"
+	FilterName         = "io.solo.transformation"
+	WaitFilterName     = "io.solo.wait"
+	RegularStageNumber = 0
+	EarlyStageNumber   = 1
+	AwsStageNumber     = 2
+	PostRoutingNumber  = 3
 )
 
 var (
@@ -55,8 +61,9 @@ type TranslateTransformationFn func(*transformation.Transformation, *wrapperspb.
 // We would prefer if the plugin were not exported and instead the required translation
 // methods were exported.
 type Plugin struct {
-	removeUnused              bool
-	filterRequiredForListener map[*v1.HttpListener]struct{}
+	removeUnused                      bool
+	filterRequiredForListener         map[*v1.HttpListener]struct{}
+	upstreamFilterRequiredForListener map[*v1.HttpListener]struct{}
 
 	RequireEarlyTransformation bool
 	TranslateTransformation    TranslateTransformationFn
@@ -85,6 +92,7 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.RequireEarlyTransformation = false
 	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
+	p.upstreamFilterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
 	p.escapeCharacters = params.Settings.GetGloo().GetTransformationEscapeCharacters()
@@ -129,6 +137,7 @@ func (p *Plugin) ProcessVirtualHost(
 	}
 
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
+	p.requiresUpstreamFilter(params.HttpListener, in.GetOptions().GetStagedTransformations())
 
 	return pluginutils.ModifyVhostPerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
@@ -151,6 +160,8 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
+	p.requiresUpstreamFilter(params.HttpListener, in.GetOptions().GetStagedTransformations())
+
 	return pluginutils.ModifyRoutePerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
@@ -175,7 +186,10 @@ func (p *Plugin) ProcessWeightedDestination(
 	if err != nil {
 		return err
 	}
+
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
+	p.requiresUpstreamFilter(params.HttpListener, in.GetOptions().GetStagedTransformations())
+
 	return pluginutils.ModifyWeightedClusterPerFilterConfig(out, FilterName, mergeFunc(envoyTransformation))
 }
 
@@ -212,6 +226,65 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	)
 
 	return filters, nil
+}
+
+func (p *Plugin) requiresUpstreamFilter(listener *v1.HttpListener, stagedTransformations *transformation.TransformationStages) {
+	if stagedTransformations.GetPostRouting() != nil {
+		p.upstreamFilterRequiredForListener[listener] = struct{}{}
+	}
+}
+
+func (p *Plugin) UpstreamHttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedUpstreamHttpFilter, error) {
+	if _, ok := p.upstreamFilterRequiredForListener[listener]; !ok {
+		return nil, nil
+	}
+
+	transformationMsg, err := proto_utils.MessageToAny(&envoytransformation.FilterTransformations{
+		LogRequestResponseInfo: p.logRequestResponseInfo,
+		Stage:                  PostRoutingNumber,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	upstreamWaitMsg, err := proto_utils.MessageToAny(&upstream_wait.UpstreamWaitFilterConfig{})
+	if err != nil {
+		return nil, err
+	}
+
+	filters := []plugins.StagedUpstreamHttpFilter{
+		// The wait filter essentially blocks filter iteration until a host has been selected.
+		// This is important because running as an upstream filter allows access to host
+		// metadata iff the host has already been selected, and that's a
+		// major benefit of running the filter at this stage.
+		{
+			Filter: &envoyhttp.HttpFilter{
+				Name: WaitFilterName,
+				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+					TypedConfig: upstreamWaitMsg,
+				},
+			},
+			Stage: plugins.UpstreamHTTPFilterStage{
+				RelativeTo: plugins.TransformationStage,
+				Weight:     -1,
+			},
+		},
+		{
+			Filter: &envoyhttp.HttpFilter{
+				Name: FilterName,
+				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+					TypedConfig: transformationMsg,
+				},
+			},
+			Stage: plugins.UpstreamHTTPFilterStage{
+				RelativeTo: plugins.TransformationStage,
+				Weight:     0,
+			},
+		},
+	}
+
+	return filters, nil
+
 }
 
 func (p *Plugin) ConvertTransformation(
@@ -263,7 +336,14 @@ func (p *Plugin) ConvertTransformation(
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 	if regular := stagedTransformations.GetRegular(); regular != nil {
-		transformations, err := p.getTransformations(ctx, 0, regular, stagedEscapeCharacters)
+		transformations, err := p.getTransformations(ctx, RegularStageNumber, regular, stagedEscapeCharacters)
+		if err != nil {
+			return nil, err
+		}
+		ret.Transformations = append(ret.GetTransformations(), transformations...)
+	}
+	if postRouting := stagedTransformations.GetPostRouting(); postRouting != nil {
+		transformations, err := p.getTransformations(ctx, PostRoutingNumber, postRouting, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
@@ -292,16 +372,6 @@ func (p *Plugin) ConvertTransformation(
 	}
 
 	return ret, nil
-}
-
-func (p *Plugin) translateOSSTransformations(
-	glooTransform *transformation.Transformation,
-) (*envoytransformation.Transformation, error) {
-	transform, err := p.TranslateTransformation(glooTransform, p.escapeCharacters, nil)
-	if err != nil {
-		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
-	}
-	return transform, nil
 }
 
 func TranslateTransformation(glooTransform *transformation.Transformation,
