@@ -9,8 +9,9 @@ kubeGateway:
   enabled: false
   gatewayParameters:
     glooGateway:
-      image:
-        repository: gloo-envoy-wrapper
+      envoyContainer:
+        image:
+          repository: gloo-envoy-wrapper
       proxyDeployment:
         replicas: 1
       service:

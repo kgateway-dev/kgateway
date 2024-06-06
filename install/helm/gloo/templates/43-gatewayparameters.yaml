@@ -11,8 +11,7 @@ spec:
 {{- if .Values.kubeGateway.gatewayParameters }}
 {{- if .Values.kubeGateway.gatewayParameters.glooGateway }}
 {{- $gg := .Values.kubeGateway.gatewayParameters.glooGateway -}}
-{{- $global := .Values.global -}}
-{{- $image := merge $gg.image $global.image }}
+{{- $global := .Values.global }}
     deployment:
       replicas: {{ $gg.proxyDeployment.replicas }}
 {{- if $gg.service }}
@@ -21,7 +20,7 @@ spec:
 {{- end }}{{/* if $gg.service */}}
     envoyContainer:
       image:
-        {{- include "gloo-gateway.gatewayParametersImage" $image | nindent 8 }}
+        {{- merge $gg.envoyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
     podTemplate:
       extraLabels:
         {{- include "gloo-gateway.constLabels" . | nindent 8 }}
