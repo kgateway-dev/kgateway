@@ -33,7 +33,7 @@ func (*MockXdsCache) CreateWatch(envoycache.Request) (value chan envoycache.Resp
 }
 
 func (*MockXdsCache) Fetch(context.Context, envoycache.Request) (*envoycache.Response, error) {
-	panic("implement me")
+	panic("implement me!")
 }
 
 func (*MockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
