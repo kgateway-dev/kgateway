@@ -74,7 +74,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 				Name:        ExtensionTypeCookie,
 				TypedConfig: marshalledConf,
 			},
-			Strict: sessionConf.Strict,
+			Strict: sessionConf.GetStrict(),
 		},
 		pluginStage,
 	)}, nil

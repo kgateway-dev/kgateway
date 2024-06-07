@@ -38,7 +38,7 @@ var _ = Describe("stateful session", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		expectedStageFilter := expectedCookieFilter(name, "", nil, false)
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 	})
 
 	It("works with all fields defined", func() {
@@ -68,7 +68,7 @@ var _ = Describe("stateful session", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		expectedStageFilter := expectedCookieFilter(name, path, d, strict)
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 	})
 
 	DescribeTable("Bad configuration", func(statefulSession *statefulsession.StatefulSession, expectedErr error) {
@@ -149,14 +149,17 @@ func expectedCookieFilter(name, path string, d *durationpb.Duration, strict bool
 
 	// Wrap it all up in a staged filter
 	expectedStageFilter := plugins.StagedHttpFilter{
-		HttpFilter: &envoyhcm.HttpFilter{
+		Filter: &envoyhcm.HttpFilter{
 			Name: ExtensionName,
 			ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 				TypedConfig: statefulSessionMarshalled,
 			},
 		},
 
-		Stage: plugins.DuringStage(plugins.RouteStage),
+		Stage: plugins.HTTPFilterStage{
+			RelativeTo: plugins.RouteStage,
+			Weight:     0,
+		},
 	}
 
 	return expectedStageFilter
