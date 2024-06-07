@@ -476,7 +476,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 		AfterEach(func() {
 			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  "RECOVER_FROM_LEADER_ELECTION_FAILURE",
+				Name:  "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE",
 				Value: "false",
 			})
 		})
@@ -494,13 +494,13 @@ var _ = Describe("Bootstrap Clients", func() {
 			verifyTranslation()
 		})
 
-		It("recovers when RECOVER_FROM_LEADER_ELECTION_FAILURE=true", func() {
+		It("recovers when RECOVER_IF_KUBE_API_SERVER_UNREACHABLE=true", func() {
 			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  "RECOVER_FROM_LEADER_ELECTION_FAILURE",
+				Name:  "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE",
 				Value: "true",
 			})
 
-			// Since a new deployment has been rolled out by changing the RECOVER_FROM_LEADER_ELECTION_FAILURE env var,
+			// Since a new deployment has been rolled out by changing the RECOVER_IF_KUBE_API_SERVER_UNREACHABLE env var,
 			// we can be sure that the logs fetched were generated only after this test has begun
 			waitUntilStartsLeading()
 
@@ -542,11 +542,11 @@ var _ = Describe("Bootstrap Clients", func() {
 		// - Create a resource and verify it has been translated : This verifies that the other pod has become a leader
 		It("concedes leadership to another pod", func() {
 			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  "RECOVER_FROM_LEADER_ELECTION_FAILURE",
+				Name:  "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE",
 				Value: "true",
 			})
 
-			// Since a new deployment has been rolled out by changing the RECOVER_FROM_LEADER_ELECTION_FAILURE env var,
+			// Since a new deployment has been rolled out by changing the RECOVER_IF_KUBE_API_SERVER_UNREACHABLE env var,
 			// we can be sure that the logs fetched were generated only after this test had begun
 			waitUntilStartsLeading()
 

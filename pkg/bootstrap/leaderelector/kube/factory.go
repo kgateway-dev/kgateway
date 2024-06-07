@@ -25,10 +25,10 @@ const (
 
 	recoveryTimeout = 60 * time.Second
 
-	leaseDurationEnvName                    = "LEADER_ELECTION_LEASE_DURATION"
-	retryPeriodEnvName                      = "LEADER_ELECTION_RETRY_PERIOD"
-	renewPeriodEnvName                      = "LEADER_ELECTION_RENEW_PERIOD"
-	recoverFromLeaderElectionFailureEnvName = "RECOVER_FROM_LEADER_ELECTION_FAILURE"
+	leaseDurationEnvName                       = "LEADER_ELECTION_LEASE_DURATION"
+	retryPeriodEnvName                         = "LEADER_ELECTION_RETRY_PERIOD"
+	renewPeriodEnvName                         = "LEADER_ELECTION_RENEW_PERIOD"
+	recoverIfKubeAPIServerIsUnreachableEnvName = "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE"
 )
 
 // kubeElectionFactory is the implementation for coordinating leader election using
@@ -44,7 +44,7 @@ func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 }
 
 func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	recoverFromLeaderElectionFailure := envutils.IsEnvTruthy(recoverFromLeaderElectionFailureEnvName)
+	recoverIfKubeAPIServerIsUnreachable := envutils.IsEnvTruthy(recoverIfKubeAPIServerIsUnreachableEnvName)
 	elected := make(chan struct{})
 	identity := leaderelector.NewIdentity(elected)
 
@@ -97,7 +97,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 					OnStoppedLeading: func() {
 						contextutils.LoggerFrom(ctx).Error("Stopped Leading")
 						config.OnStoppedLeading()
-						if recoverFromLeaderElectionFailure {
+						if recoverIfKubeAPIServerIsUnreachable {
 							// Recreate the elected channel and reset the identity to a follower
 							// Ref: https://github.com/solo-io/gloo/issues/7346
 							elected = make(chan struct{})
@@ -114,7 +114,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 						config.OnNewLeader(identity)
 						// Recover since we were able to re-negotiate leader election
 						// Do this only when we just failed and not when someone becomes a leader
-						if recoverFromLeaderElectionFailure && justFailed {
+						if recoverIfKubeAPIServerIsUnreachable && justFailed {
 							dontDie()
 							justFailed = false
 						}
@@ -143,7 +143,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			contextutils.LoggerFrom(ctx).Debug("Starting Kube Leader Election")
 			l.Run(ctx)
 
-			if !recoverFromLeaderElectionFailure {
+			if !recoverIfKubeAPIServerIsUnreachable {
 				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
 			}
 
