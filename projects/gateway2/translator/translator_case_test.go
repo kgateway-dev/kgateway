@@ -22,6 +22,7 @@ import (
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
+	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
@@ -91,7 +92,14 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		}
 	}
 
-	fakeClient := testutils.BuildIndexedFakeClient(dependencies, gwquery.IterateIndices, rtoptquery.IterateIndices, vhoptquery.IterateIndices)
+	// TODO(Law): consolidate this with iterators in gateway2/controller.go
+	fakeClient := testutils.BuildIndexedFakeClient(
+		dependencies,
+		gwquery.IterateIndices,
+		rtoptquery.IterateIndices,
+		vhoptquery.IterateIndices,
+		lisquery.IterateIndices,
+	)
 	queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
 	resourceClientFactory := &factory.MemoryResourceClientFactory{

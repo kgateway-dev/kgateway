@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.30.1-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.30.1-patch2
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS ?=
 
@@ -338,6 +338,14 @@ clean-cli-docs:
 
 .PHONY: generate-all
 generate-all: generated-code
+
+# Run codegen with debug logs
+# DEBUG=1 controls the debug level in the logger used by solo-kit
+# ref: https://github.com/solo-io/solo-kit/blob/main/pkg/code-generator/codegen/generator.go#L14
+# ref: https://github.com/solo-io/go-utils/blob/main/log/log.go#L14
+.PHONY: generate-all-debug
+generate-all-debug: export DEBUG = 1
+generate-all-debug: generate-all
 
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code

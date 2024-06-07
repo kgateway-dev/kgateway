@@ -20,7 +20,7 @@ var _ = Describe("Grpcweb", func() {
 		initParams     plugins.InitParams
 		expectedFilter = []plugins.StagedHttpFilter{
 			{
-				HttpFilter: &envoyhttp.HttpFilter{
+				Filter: &envoyhttp.HttpFilter{
 					Name: wellknown.GRPCWeb,
 					ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 						TypedConfig: anyPb,

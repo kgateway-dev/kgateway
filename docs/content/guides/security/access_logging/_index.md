@@ -174,7 +174,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy
 [2020-03-17T18:49:55.191Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "4a0013d3-f0e6-44b8-ad5f-fa181852e6cd" "35.196.131.38" "10.52.0.54:8080"
 ```
 
-For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-format-strings). 
+For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.30.2/configuration/observability/access_log/usage#format-strings). 
 
 ### Outputting structured json
 

@@ -886,17 +886,23 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
-	var (
-		gwv2StatusSyncer       status.GatewayStatusSyncer
-		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
-	)
 	// startFuncs represents the set of StartFunc that should be executed at startup
 	// At the moment, the functionality is used minimally.
 	// Overtime, we should break up this large function into smaller StartFunc
 	startFuncs := map[string]StartFunc{}
 
-	if opts.GlooGateway.EnableK8sGatewayController {
+	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
+	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
+	snapshotHistory := iosnapshot.NewHistory(opts.ControlPlane.SnapshotCache)
 
+	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
+
+	var (
+		gwv2StatusSyncer       status.GatewayStatusSyncer
+		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
+	)
+
+	if opts.GlooGateway.EnableK8sGatewayController {
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
 
@@ -908,14 +914,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			routeOptionClient,
 			virtualHostOptionClient,
 			statusClient,
+			snapshotHistory,
 		)
 	}
-
-	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
-	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
-	snapshotHistory := iosnapshot.NewHistory(opts.ControlPlane.SnapshotCache)
-
-	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
@@ -1327,24 +1328,22 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
-		GlooGateway:                  constructGlooGatewayBootstrapOpts(),
+		GlooGateway:                  constructGlooGatewayBootstrapOpts(params.settings),
 	}, nil
 }
 
-func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
+func constructGlooGatewayBootstrapOpts(settings *v1.Settings) bootstrap.GlooGateway {
 	return bootstrap.GlooGateway{
 		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
 		// In the interim, we use an env variable to control the value
 		EnableK8sGatewayController: envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
-		IstioValues:                constructIstioBootstrapOpts(),
+		IstioValues:                constructIstioBootstrapOpts(settings),
 	}
 }
 
-func constructIstioBootstrapOpts() bootstrap.IstioValues {
+func constructIstioBootstrapOpts(settings *v1.Settings) bootstrap.IstioValues {
 	istioValues := bootstrap.IstioValues{
-		// TODO: This value should be inherited at installation time, to determine if the istio integration is enabled
-		// In the interim, we use an env variable to control the value
-		SDSEnabled: envutils.IsEnvTruthy(constants.IstioMtlsEnabled),
+		IntegrationEnabled: settings.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue(),
 
 		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),

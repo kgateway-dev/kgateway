@@ -20,11 +20,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,25 +38,25 @@ type FakeGateways struct {
 	ns   string
 }
 
-var gatewaysResource = schema.GroupVersionResource{Group: "gateway.solo.io", Version: "v1", Resource: "gateways"}
+var gatewaysResource = v1.SchemeGroupVersion.WithResource("gateways")
 
-var gatewaysKind = schema.GroupVersionKind{Group: "gateway.solo.io", Version: "v1", Kind: "Gateway"}
+var gatewaysKind = v1.SchemeGroupVersion.WithKind("Gateway")
 
 // Get takes name of the gateway, and returns the corresponding gateway object, and an error if there is any.
-func (c *FakeGateways) Get(ctx context.Context, name string, options v1.GetOptions) (result *gatewaysoloiov1.Gateway, err error) {
+func (c *FakeGateways) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Gateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(gatewaysResource, c.ns, name), &gatewaysoloiov1.Gateway{})
+		Invokes(testing.NewGetAction(gatewaysResource, c.ns, name), &v1.Gateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.Gateway), err
+	return obj.(*v1.Gateway), err
 }
 
 // List takes label and field selectors, and returns the list of Gateways that match those selectors.
-func (c *FakeGateways) List(ctx context.Context, opts v1.ListOptions) (result *gatewaysoloiov1.GatewayList, err error) {
+func (c *FakeGateways) List(ctx context.Context, opts metav1.ListOptions) (result *v1.GatewayList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(gatewaysResource, gatewaysKind, c.ns, opts), &gatewaysoloiov1.GatewayList{})
+		Invokes(testing.NewListAction(gatewaysResource, gatewaysKind, c.ns, opts), &v1.GatewayList{})
 
 	if obj == nil {
 		return nil, err
@@ -64,8 +66,8 @@ func (c *FakeGateways) List(ctx context.Context, opts v1.ListOptions) (result *g
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &gatewaysoloiov1.GatewayList{ListMeta: obj.(*gatewaysoloiov1.GatewayList).ListMeta}
-	for _, item := range obj.(*gatewaysoloiov1.GatewayList).Items {
+	list := &v1.GatewayList{ListMeta: obj.(*v1.GatewayList).ListMeta}
+	for _, item := range obj.(*v1.GatewayList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,69 +76,114 @@ func (c *FakeGateways) List(ctx context.Context, opts v1.ListOptions) (result *g
 }
 
 // Watch returns a watch.Interface that watches the requested gateways.
-func (c *FakeGateways) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeGateways) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(gatewaysResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a gateway and creates it.  Returns the server's representation of the gateway, and an error, if there is any.
-func (c *FakeGateways) Create(ctx context.Context, gateway *gatewaysoloiov1.Gateway, opts v1.CreateOptions) (result *gatewaysoloiov1.Gateway, err error) {
+func (c *FakeGateways) Create(ctx context.Context, gateway *v1.Gateway, opts metav1.CreateOptions) (result *v1.Gateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(gatewaysResource, c.ns, gateway), &gatewaysoloiov1.Gateway{})
+		Invokes(testing.NewCreateAction(gatewaysResource, c.ns, gateway), &v1.Gateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.Gateway), err
+	return obj.(*v1.Gateway), err
 }
 
 // Update takes the representation of a gateway and updates it. Returns the server's representation of the gateway, and an error, if there is any.
-func (c *FakeGateways) Update(ctx context.Context, gateway *gatewaysoloiov1.Gateway, opts v1.UpdateOptions) (result *gatewaysoloiov1.Gateway, err error) {
+func (c *FakeGateways) Update(ctx context.Context, gateway *v1.Gateway, opts metav1.UpdateOptions) (result *v1.Gateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(gatewaysResource, c.ns, gateway), &gatewaysoloiov1.Gateway{})
+		Invokes(testing.NewUpdateAction(gatewaysResource, c.ns, gateway), &v1.Gateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.Gateway), err
+	return obj.(*v1.Gateway), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeGateways) UpdateStatus(ctx context.Context, gateway *gatewaysoloiov1.Gateway, opts v1.UpdateOptions) (*gatewaysoloiov1.Gateway, error) {
+func (c *FakeGateways) UpdateStatus(ctx context.Context, gateway *v1.Gateway, opts metav1.UpdateOptions) (*v1.Gateway, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(gatewaysResource, "status", c.ns, gateway), &gatewaysoloiov1.Gateway{})
+		Invokes(testing.NewUpdateSubresourceAction(gatewaysResource, "status", c.ns, gateway), &v1.Gateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.Gateway), err
+	return obj.(*v1.Gateway), err
 }
 
 // Delete takes name of the gateway and deletes it. Returns an error if one occurs.
-func (c *FakeGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeGateways) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(gatewaysResource, c.ns, name, opts), &gatewaysoloiov1.Gateway{})
+		Invokes(testing.NewDeleteActionWithOptions(gatewaysResource, c.ns, name, opts), &v1.Gateway{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeGateways) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeGateways) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(gatewaysResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &gatewaysoloiov1.GatewayList{})
+	_, err := c.Fake.Invokes(action, &v1.GatewayList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched gateway.
-func (c *FakeGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gatewaysoloiov1.Gateway, err error) {
+func (c *FakeGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Gateway, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, name, pt, data, subresources...), &gatewaysoloiov1.Gateway{})
+		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, name, pt, data, subresources...), &v1.Gateway{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gatewaysoloiov1.Gateway), err
+	return obj.(*v1.Gateway), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied gateway.
+func (c *FakeGateways) Apply(ctx context.Context, gateway *gatewaysoloiov1.GatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Gateway, err error) {
+	if gateway == nil {
+		return nil, fmt.Errorf("gateway provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(gateway)
+	if err != nil {
+		return nil, err
+	}
+	name := gateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("gateway.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, *name, types.ApplyPatchType, data), &v1.Gateway{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Gateway), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeGateways) ApplyStatus(ctx context.Context, gateway *gatewaysoloiov1.GatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Gateway, err error) {
+	if gateway == nil {
+		return nil, fmt.Errorf("gateway provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(gateway)
+	if err != nil {
+		return nil, err
+	}
+	name := gateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("gateway.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.Gateway{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Gateway), err
 }

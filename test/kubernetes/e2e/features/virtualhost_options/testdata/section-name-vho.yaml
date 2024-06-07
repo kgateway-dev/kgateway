@@ -3,8 +3,8 @@ kind: VirtualHostOption
 metadata:
   name: add-foo-header
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
     sectionName: http

@@ -39,6 +39,7 @@ type InitParams struct {
 
 type Params struct {
 	Ctx      context.Context
+	Settings *v1.Settings
 	Snapshot *v1snap.ApiSnapshot
 	Messages map[*core.ResourceRef][]string
 }
@@ -155,6 +156,11 @@ type HttpFilterPlugin interface {
 	HttpFilters(params Params, listener *v1.HttpListener) ([]StagedHttpFilter, error)
 }
 
+type UpstreamHttpFilterPlugin interface {
+	Plugin
+	UpstreamHttpFilters(params Params, listener *v1.HttpListener) ([]StagedUpstreamHttpFilter, error)
+}
+
 type NetworkFilterPlugin interface {
 	Plugin
 	NetworkFiltersHTTP(params Params, listener *v1.HttpListener) ([]StagedNetworkFilter, error)
@@ -190,6 +196,7 @@ type PluginRegistry interface {
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
+	GetUpstreamHttpFilterPlugins() []UpstreamHttpFilterPlugin
 	GetNetworkFilterPlugins() []NetworkFilterPlugin
 	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
 	GetVirtualHostPlugins() []VirtualHostPlugin

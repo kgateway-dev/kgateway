@@ -8,6 +8,7 @@ import (
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -220,4 +221,34 @@ func (c *Client) GetServerInfo(ctx context.Context) (*adminv3.ServerInfo, error)
 	}
 
 	return &serverInfo, nil
+}
+
+// GetSingleListenerFromDynamicListeners queries for a single, active dynamic listener in the envoy config dump
+// and returns it as an envoy v3.Listener. This helper will only work if the provided name_regex matches a single dynamic_listener
+// but will always use the first set of configs returned regardless
+func (c *Client) GetSingleListenerFromDynamicListeners(
+	ctx context.Context,
+	listenerNameRegex string,
+) (*listenerv3.Listener, error) {
+	queryParams := map[string]string{
+		"resource":   "dynamic_listeners",
+		"name_regex": listenerNameRegex,
+	}
+	cfgDump, err := c.GetConfigDump(ctx, queryParams)
+	if err != nil {
+		return nil, fmt.Errorf("could not get envoy config_dump from adminClient: %w", err)
+	}
+
+	listenerDump := adminv3.ListenersConfigDump_DynamicListener{}
+	err = cfgDump.GetConfigs()[0].UnmarshalTo(&listenerDump)
+	if err != nil {
+		return nil, fmt.Errorf("could not unmarshal envoy config_dump: %w", err)
+	}
+
+	listener := listenerv3.Listener{}
+	err = listenerDump.GetActiveState().GetListener().UnmarshalTo(&listener)
+	if err != nil {
+		return nil, fmt.Errorf("could not unmarshal listener from listener dump: %w", err)
+	}
+	return &listener, nil
 }
