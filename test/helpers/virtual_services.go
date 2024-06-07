@@ -195,16 +195,6 @@ func (b *VirtualServiceBuilder) WithRoutePrefixMatcher(routeName string, prefixM
 	})
 }
 
-func (b *VirtualServiceBuilder) WithRouteExactMatcher(routeName string, exactMatch string) *VirtualServiceBuilder {
-	return b.WithRouteMutation(routeName, func(route *v1.Route) {
-		route.Matchers = []*matchers.Matcher{{
-			PathSpecifier: &matchers.Matcher_Exact{
-				Exact: exactMatch,
-			},
-		}}
-	})
-}
-
 func (b *VirtualServiceBuilder) WithRouteMatcher(routeName string, matcher *matchers.Matcher) *VirtualServiceBuilder {
 	return b.WithRouteMutation(routeName, func(route *v1.Route) {
 		route.Matchers = []*matchers.Matcher{matcher}

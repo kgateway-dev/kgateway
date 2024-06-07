@@ -216,7 +216,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.httpPlugins {
-		log.Debugf("processing http filter plugin %s", plug.Name())
 		stagedFilters, err := plug.HttpFilters(params, h.listener)
 		if err != nil {
 			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())

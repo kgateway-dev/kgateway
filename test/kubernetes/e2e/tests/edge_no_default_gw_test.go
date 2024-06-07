@@ -28,10 +28,6 @@ func TestGlooNoDefaultGateway(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-	helmValuesFiles := []string{
-		testInstallation.Metadata.ValuesManifestFile,
-		//filepath.Join(util.MustGetThisDir(), "manifests", "disable-gateways.yaml"),
-	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
@@ -47,7 +43,7 @@ func TestGlooNoDefaultGateway(t *testing.T) {
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs(helper.FilesToValueArgs(helmValuesFiles)...))
+		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	t.Run("SessionAffinity", func(t *testing.T) {

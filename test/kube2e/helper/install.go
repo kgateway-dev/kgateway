@@ -349,11 +349,3 @@ func GenerateVariantValuesFile(variant string) (string, error) {
 
 	return tmpFile.Name(), nil
 }
-
-func FilesToValueArgs(files []string) []string {
-	args := make([]string, 0)
-	for _, file := range files {
-		args = append(args, "--values", file)
-	}
-	return args
-}

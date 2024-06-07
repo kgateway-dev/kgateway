@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/stretchr/testify/suite"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,6 +39,10 @@ type testingSuite struct {
 	manifestObjects map[string][]client.Object
 }
 
+const (
+	cookieName = "sessionaffinitycookie"
+)
+
 var (
 	CurlPodExecOpt = kubectl.PodExecOptions{
 		Name:      "curl",
@@ -63,9 +68,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestStatefulSessionCookieBased": {sessionAffinityManifest, statefulSessionCookieGatewayManifest},
-		"TestStatefulSessionNoAffinity":  {sessionAffinityManifest, statefulSessionCookieGatewayManifest},
-		"TestStatefulSessionStrict":      {sessionAffinityManifest, statefulSessionCookieGatewayStrictManifest},
+		"TestStatefulSessionCookieBased":     {sessionAffinityManifest, statefulSessionCookieGatewayManifest},
+		"TestStatefulSessionCookieNotInPath": {sessionAffinityManifest, statefulSessionCookieGatewayManifest},
+		"TestStatefulSessionCookieStrict":    {sessionAffinityManifest, statefulSessionCookieGatewayStrictManifest},
 	}
 
 	curlOptsCommon = []curl.Option{
@@ -105,13 +110,6 @@ var (
 	statefulSessionCookieGatewayStrictManifest = filepath.Join(util.MustGetThisDir(), "testdata", "cookie_gateway_strict.yaml")
 )
 
-// DO_NOT_SUBMIT: helper function to use with "WithTransform" in gomega matchers - move to somewhere reusable
-func BytesToInt(b []byte) int {
-	i, err := strconv.Atoi(string(b))
-	Expect(err).NotTo(HaveOccurred())
-	return i
-}
-
 func (s *testingSuite) TestStatefulSessionCookieBased() {
 	numRequests := 20
 
@@ -129,7 +127,7 @@ func (s *testingSuite) TestStatefulSessionCookieBased() {
 			StatusCode: http.StatusOK,
 			Body:       "1",
 			Headers: map[string]interface{}{
-				"Set-Cookie": ContainSubstring("; Max-Age=10;"),
+				"Set-Cookie": And(ContainSubstring("; Max-Age=10;"), ContainSubstring(cookieName)),
 			},
 		},
 		10*time.Second,
@@ -147,7 +145,7 @@ func (s *testingSuite) TestStatefulSessionCookieBased() {
 
 }
 
-func (s *testingSuite) TestStatefulSessionNoAffinity() {
+func (s *testingSuite) TestStatefulSessionCookieNotInPath() {
 	numRequests := 99
 
 	curlOpts := append(curlOptsCommon, curlOptsCookies...)
@@ -184,13 +182,13 @@ func (s *testingSuite) TestStatefulSessionNoAffinity() {
 			curlOpts,
 			&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Body:       WithTransform(BytesToInt, BeNumerically("<=", 35)),
+				Body:       WithTransform(transforms.BytesToInt, BeNumerically("<=", 35)),
 			},
 		)
 	}
 }
 
-func (s *testingSuite) TestStatefulSessionStrict() {
+func (s *testingSuite) TestStatefulSessionCookieStrict() {
 	curlOpts := append(curlOptsCommon, curlOptsCookies...)
 	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
 
@@ -228,7 +226,7 @@ func (s *testingSuite) TestStatefulSessionStrict() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers: map[string]interface{}{
-				"Set-Cookie": ContainSubstring("; Max-Age=10;"),
+				"Set-Cookie": ContainSubstring(cookieName),
 			},
 		},
 		10*time.Second,
@@ -241,5 +239,40 @@ func (s *testingSuite) TestStatefulSessionStrict() {
 		curlOpts,
 		&matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable},
 	)
+
+}
+
+func (s *testingSuite) TestStatefulSessionHeaderBased() {
+	numRequests := 20
+
+	curlOpts := append(curlOptsCommon, curlOptsCookies...)
+	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
+
+	// Get the first response - this one we may have to wait for
+	// This is also the only response with a cookie and TTL
+	// TTL is handled client side, so we only test that the header is returned
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		CurlPodExecOpt,
+		curlOpts,
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       "1",
+			Headers: map[string]interface{}{
+				"Set-Cookie": And(ContainSubstring("; Max-Age=10;"), ContainSubstring(cookieName)),
+			},
+		},
+		10*time.Second,
+	)
+
+	// Once responses are coming, they should keep incrementing
+	for i := 2; i <= numRequests; i++ {
+		s.ti.Assertions.AssertCurlResponse(
+			s.ctx,
+			CurlPodExecOpt,
+			curlOpts,
+			&matchers.HttpResponse{StatusCode: http.StatusOK, Body: strconv.Itoa(i)},
+		)
+	}
 
 }

@@ -12,11 +12,8 @@ spec:
   httpGateway:
     options:
       statefulSession:
-        cookieBased:
-          cookie:
-            name: sessionaffinitycookie
-            path: /session_path
-            ttl: 10s
+        headerBased:
+          headerName: sessionaffinityheader
         strict: true
   proxyNames:
   - gateway-proxy
