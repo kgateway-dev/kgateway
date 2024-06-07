@@ -1,6 +1,6 @@
 changelog:
   - type: FIX
-    issueLink:
+    issueLink: https://github.com/solo-io/gloo/issues/9104
     resolvesIssue: false
     description: >-
       ""
