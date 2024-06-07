@@ -34,15 +34,12 @@ func (p *Provider) AssertEventualCurlResponse(
 
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
-		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 		g.Expect(err).NotTo(HaveOccurred())
-
-		fmt.Printf("Response body:\n\n%v\n\n", curlResponse.StdOut)
-		fmt.Printf("Response headers: %v\n", curlResponse.StdErr)
+		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
 		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(curlResponse).To(expectedResponseMatcher)
-		//fmt.Printf("success: %v", curlResponse)
+		fmt.Printf("success: %v", curlResponse)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
@@ -65,12 +62,12 @@ func (p *Provider) AssertCurlResponse(
 
 	// Rely on default timeouts set in CurlFromPod
 	curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
-	fmt.Printf("Response body:\n\n%v\n\n", curlResponse.StdOut)
-	fmt.Printf("Response headers: %v\n", curlResponse.StdErr)
 	Expect(err).NotTo(HaveOccurred())
+	fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
 	expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 	Expect(curlResponse).To(expectedResponseMatcher)
+	fmt.Printf("success: %v", curlResponse)
 
 }
 

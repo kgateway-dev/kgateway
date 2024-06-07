@@ -143,7 +143,6 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 				ginkgo.Fail(err.Error())
 			}
 
-			fmt.Printf("Error in curl: %v\n", err)
 			g.Expect(err).NotTo(HaveOccurred())
 			return
 		}

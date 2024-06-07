@@ -2,7 +2,6 @@ package session_affinity
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -197,7 +196,6 @@ func (s *testingSuite) TestStatefulSessionStrict() {
 
 	curlOptsWithoutCookies := append(curlOptsCommon, curl.WithPath("/session_path/count"))
 
-	fmt.Printf("First curl with cookies\n")
 	// Get the first response - this one we may have to wait for
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -210,9 +208,7 @@ func (s *testingSuite) TestStatefulSessionStrict() {
 	// Scale down the deployment to 0
 	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 0)
 
-	fmt.Printf("Scaled Deployment to 0\n")
 	// Wait until we get a 503 - don't use the cookies to avoid any side effects
-	fmt.Printf("Curling without cookies\n")
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		CurlPodExecOpt,
@@ -224,8 +220,6 @@ func (s *testingSuite) TestStatefulSessionStrict() {
 	// Scale back up to 4
 	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 4)
 
-	fmt.Printf("Scaled Deployment to 4\n")
-	fmt.Printf("Curling without cookies\n")
 	// Should get a 200 when not using the cookie
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -240,7 +234,6 @@ func (s *testingSuite) TestStatefulSessionStrict() {
 		10*time.Second,
 	)
 
-	fmt.Printf("Curling with cookies\n")
 	// Should get a 503 when using the cookie
 	s.ti.Assertions.AssertCurlResponse(
 		s.ctx,
