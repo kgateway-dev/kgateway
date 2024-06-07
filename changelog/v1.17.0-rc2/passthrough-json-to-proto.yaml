@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Properly pass through the `json_to_proto` value from the gloo API to the envoy API for 
+      dynamic metadata transformations.
