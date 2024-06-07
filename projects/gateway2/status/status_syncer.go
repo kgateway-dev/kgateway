@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"sync"
 
@@ -101,6 +102,7 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	}
 
 	for syncCount, proxies := range proxiesToReport {
+		log.Printf("applying status plugins for sync count %d", syncCount)
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
 		} else {
@@ -111,6 +113,7 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 
 	// reinitialize the registry if there are no more proxies for the sync iteration
 	if len(f.resyncsPerProxy) == 0 {
+		log.Printf("reinitializing registry")
 		f.registryPerSync = make(map[int]*registry.PluginRegistry)
 	}
 }

@@ -5,6 +5,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/solo-io/gloo/projects/gateway2/parameters"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -359,6 +364,13 @@ func setRouteAction(
 			})
 
 		case backendref.RefIsUpstream(backendRef.BackendObjectReference):
+			upstream, ok := obj.(*gloov1.Upstream)
+			if !ok {
+				// should never happen
+				contextutils.LoggerFrom(ctx).Errorf("expected upstream, got %T", obj)
+				continue
+			}
+			spec := makeDestinationSpec(ctx, upstream, backendRef.Filters)
 			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
@@ -367,6 +379,7 @@ func setRouteAction(
 							Namespace: ns,
 						},
 					},
+					DestinationSpec: spec,
 				},
 				Weight:  weight,
 				Options: nil,
@@ -401,4 +414,44 @@ func setRouteAction(
 	}
 
 	return delegates
+}
+
+// makeDestinationSpec computes the destination spec for a given upstream based on the type of upstream and the Filters from the backend reference
+func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters []gwv1.HTTPRouteFilter) *v1.DestinationSpec {
+	for _, filter := range filters {
+		// only look for 'parameters' extensionref filters
+		if filter.Type != gwv1.HTTPRouteFilterExtensionRef {
+			continue
+		}
+		if filter.ExtensionRef == nil {
+			continue
+		}
+		if filter.ExtensionRef.Group != parameters.ParameterGroup {
+			continue
+		}
+		if filter.ExtensionRef.Kind != parameters.ParameterKind {
+			continue
+		}
+		sectionName := string(filter.ExtensionRef.Name)
+		switch upstream.Spec.GetUpstreamType().(type) {
+		case *v1.Upstream_Aws:
+			return &v1.DestinationSpec{
+				DestinationType: &v1.DestinationSpec_Aws{
+					Aws: &aws.DestinationSpec{
+						LogicalName: sectionName,
+					},
+				},
+			}
+		case *v1.Upstream_Azure:
+			return &v1.DestinationSpec{
+				DestinationType: &v1.DestinationSpec_Azure{
+					Azure: &azure.DestinationSpec{
+						FunctionName: sectionName,
+					},
+				},
+			}
+		}
+	}
+
+	return nil
 }
