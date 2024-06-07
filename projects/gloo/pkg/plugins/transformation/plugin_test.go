@@ -1160,7 +1160,7 @@ var _ = Describe("Plugin", func() {
 			value = filters[1].Filter.GetTypedConfig()
 			Expect(value.GetValue()).To(BeEmpty())
 		})
-		It("should upstream_http_filters when the postRouting transformation exists", func() {
+		It("should add upstream_http_filters when the postRouting transformation exists", func() {
 			out := &envoy_config_route_v3.Route{}
 			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{
 				Params: plugins.Params{

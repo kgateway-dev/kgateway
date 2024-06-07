@@ -492,6 +492,7 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 			outTemplate.GetDynamicMetadataValues()[i] = &envoytransformation.TransformationTemplate_DynamicMetadataValue{
 				MetadataNamespace: values[i].GetMetadataNamespace(),
 				Key:               values[i].GetKey(),
+				JsonToProto:       values[i].GetJsonToProto(),
 				Value: &envoytransformation.InjaTemplate{
 					Text: values[i].GetValue().GetText(),
 				},
