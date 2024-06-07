@@ -40,7 +40,7 @@ func (p *Provider) AssertEventualCurlResponse(
 		fmt.Printf("Response body:\n\n%v\n\n", curlResponse.StdOut)
 		fmt.Printf("Response headers: %v\n", curlResponse.StdErr)
 
-		expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
+		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(curlResponse).To(expectedResponseMatcher)
 		//fmt.Printf("success: %v", curlResponse)
 	}).
@@ -63,13 +63,13 @@ func (p *Provider) AssertCurlResponse(
 		},
 	})
 
-	// Rely on default timeouts set in CurlFromPod to avoid hanging forever
+	// Rely on default timeouts set in CurlFromPod
 	curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 	fmt.Printf("Response body:\n\n%v\n\n", curlResponse.StdOut)
 	fmt.Printf("Response headers: %v\n", curlResponse.StdErr)
 	Expect(err).NotTo(HaveOccurred())
 
-	expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
+	expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 	Expect(curlResponse).To(expectedResponseMatcher)
 
 }
@@ -96,7 +96,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 		g.Expect(err).NotTo(HaveOccurred())
 		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, res)
 
-		expectedResponseMatcher := WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(expectedResponse))
+		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(res).To(expectedResponseMatcher)
 		fmt.Printf("success: %v", res)
 	}).

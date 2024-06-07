@@ -3,7 +3,6 @@ package registry
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -197,7 +196,6 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 
 		httpFilterPlugin, ok := plugin.(plugins.HttpFilterPlugin)
 		if ok {
-			fmt.Printf("httpFilterPlugin %s: %v\n", httpFilterPlugin.Name(), httpFilterPlugin)
 			httpFilterPlugins = append(httpFilterPlugins, httpFilterPlugin)
 		}
 

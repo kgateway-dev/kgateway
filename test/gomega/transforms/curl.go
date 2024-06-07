@@ -25,7 +25,7 @@ const (
 // The curl must be executed with verbose=true to include both the response headers/status
 // and response body.
 
-func WithCurlHttpResponse(curlResponse *kubectl.CurlResponse) *http.Response {
+func WithCurlResponse(curlResponse *kubectl.CurlResponse) *http.Response {
 	headers := make(http.Header)
 	statusCode := 0
 	var bodyBuf bytes.Buffer
@@ -55,7 +55,7 @@ func WithCurlHttpResponse(curlResponse *kubectl.CurlResponse) *http.Response {
 	}
 }
 
-func WithCurlHttpResponseFixHeaders(curlResponse string) *http.Response {
+func WithCurlHttpResponse(curlResponse string) *http.Response {
 	headers := make(http.Header)
 	statusCode := 0
 	var bodyBuf bytes.Buffer

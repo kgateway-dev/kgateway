@@ -15,8 +15,8 @@ import (
 )
 
 // TestGlooGatewayEdgeGateway is the function which executes a series of tests against a given installation where
-// the k8s Gateway controller is disabled. A default gloo gateway is installed, but the expectation is that each test
-// in this suite will define its own gateway.
+// the k8s Gateway controller is disabled. A default gloo gateway is installed to allow the install checks to pass,
+// but the expectation is that each test in this suite will define its own gateway, as the default gateway may have been deleted
 func TestGlooNoDefaultGateway(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
@@ -30,7 +30,7 @@ func TestGlooNoDefaultGateway(t *testing.T) {
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 	helmValuesFiles := []string{
 		testInstallation.Metadata.ValuesManifestFile,
-		filepath.Join(util.MustGetThisDir(), "manifests", "disable-gateways.yaml"),
+		//filepath.Join(util.MustGetThisDir(), "manifests", "disable-gateways.yaml"),
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.

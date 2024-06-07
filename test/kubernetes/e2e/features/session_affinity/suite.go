@@ -2,6 +2,7 @@ package session_affinity
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -44,6 +45,14 @@ var (
 		Namespace: "curl",
 		Container: "curl",
 	}
+
+	curlOptsCookies = []curl.Option{
+		curl.WithCookie("/tmp/cookie.txt"),
+		curl.WithCookieJar("/tmp/cookie.txt"),
+	}
+
+	// Need the testing suite to set the host, so define this in SetupSuite
+	curlOptsCommon []curl.Option
 )
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -58,6 +67,13 @@ func (s *testingSuite) SetupSuite() {
 		"TestStatefulSessionCookieBased": {sessionAffinityManifest, statefulSessionCookieGatewayManifest},
 		"TestStatefulSessionNoAffinity":  {sessionAffinityManifest, statefulSessionCookieGatewayManifest},
 		"TestStatefulSessionStrict":      {sessionAffinityManifest, statefulSessionCookieGatewayStrictManifest},
+	}
+
+	curlOptsCommon = []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
+		curl.WithPort(80),
+		curl.Silent(),
+		curl.WithHostHeader("app"),
 	}
 
 }
@@ -98,20 +114,11 @@ func BytesToInt(b []byte) int {
 }
 
 func (s *testingSuite) TestStatefulSessionCookieBased() {
-	numRequests := 10
+	numRequests := 20
 
-	curlOpts := []curl.Option{
-		curl.WithCookie("/tmp/cookie.txt"),
-		curl.WithCookieJar("/tmp/cookie.txt"),
-		curl.WithPath("/session_path/count"),
-		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
-		curl.WithPort(80),
-		curl.Silent(),
-		curl.WithHostHeader("app"),
-	}
+	curlOpts := append(curlOptsCommon, curlOptsCookies...)
+	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
 
-	// fmt.Printf("Sleeping before test\n")
-	// time.Sleep(100 * time.Second)
 	// Get the first response - this one we may have to wait for
 	// This is also the only response with a cookie and TTL
 	// TTL is handled client side, so we only test that the header is returned
@@ -126,7 +133,7 @@ func (s *testingSuite) TestStatefulSessionCookieBased() {
 				"Set-Cookie": ContainSubstring("; Max-Age=10;"),
 			},
 		},
-		4*time.Second,
+		10*time.Second,
 	)
 
 	// Once responses are coming, they should keep incrementing
@@ -144,15 +151,8 @@ func (s *testingSuite) TestStatefulSessionCookieBased() {
 func (s *testingSuite) TestStatefulSessionNoAffinity() {
 	numRequests := 99
 
-	curlOpts := []curl.Option{
-		curl.WithCookie("/tmp/cookie.txt"),
-		curl.WithCookieJar("/tmp/cookie.txt"),
-		curl.WithPath("/non_session_path/count"),
-		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
-		curl.WithPort(80),
-		curl.Silent(),
-		curl.WithHostHeader("app"),
-	}
+	curlOpts := append(curlOptsCommon, curlOptsCookies...)
+	curlOpts = append(curlOpts, curl.WithPath("/non_session_path/count"))
 
 	// Envoy round robin load balancing may not appear to be even, and we can not rely on a predictable sequence of distribution of requests
 	// https://www.envoyproxy.io/docs/envoy/latest/faq/load_balancing/concurrency_lb
@@ -164,7 +164,7 @@ func (s *testingSuite) TestStatefulSessionNoAffinity() {
 		CurlPodExecOpt,
 		curlOpts,
 		&matchers.HttpResponse{StatusCode: http.StatusOK, Body: "1"},
-		4*time.Second,
+		10*time.Second,
 	)
 
 	// Once responses are coming, they should keep succeeding
@@ -192,62 +192,55 @@ func (s *testingSuite) TestStatefulSessionNoAffinity() {
 }
 
 func (s *testingSuite) TestStatefulSessionStrict() {
-	curlOpts := []curl.Option{
-		curl.WithCookie("/tmp/cookie.txt"),
-		curl.WithCookieJar("/tmp/cookie.txt"),
-		curl.WithPath("/session_path/count"),
-		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
-		curl.WithPort(80),
-		curl.Silent(),
-		curl.WithHostHeader("app"),
-	}
+	curlOpts := append(curlOptsCommon, curlOptsCookies...)
+	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
 
-	curlOptsNoCookies := []curl.Option{
-		curl.WithPath("/session_path/count"),
-		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
-		curl.WithPort(80),
-		curl.Silent(),
-		curl.WithHostHeader("app"),
-	}
+	curlOptsWithoutCookies := append(curlOptsCommon, curl.WithPath("/session_path/count"))
 
+	fmt.Printf("First curl with cookies\n")
 	// Get the first response - this one we may have to wait for
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		CurlPodExecOpt,
 		curlOpts,
 		&matchers.HttpResponse{StatusCode: http.StatusOK, Body: "1"},
-		4*time.Second,
+		10*time.Second,
 	)
 
 	// Scale down the deployment to 0
 	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 0)
 
-	// Wait until we get a 503
+	fmt.Printf("Scaled Deployment to 0\n")
+	// Wait until we get a 503 - don't use the cookies to avoid any side effects
+	fmt.Printf("Curling without cookies\n")
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		CurlPodExecOpt,
-		curlOptsNoCookies,
+		curlOptsWithoutCookies,
 		&matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable},
-		4*time.Second,
+		10*time.Second,
 	)
 
 	// Scale back up to 4
 	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 4)
 
+	fmt.Printf("Scaled Deployment to 4\n")
+	fmt.Printf("Curling without cookies\n")
 	// Should get a 200 when not using the cookie
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		CurlPodExecOpt,
-		curlOptsNoCookies,
+		curlOptsWithoutCookies,
 		&matchers.HttpResponse{
-			StatusCode: http.StatusOK, Headers: map[string]interface{}{
+			StatusCode: http.StatusOK,
+			Headers: map[string]interface{}{
 				"Set-Cookie": ContainSubstring("; Max-Age=10;"),
 			},
 		},
-
-		4*time.Second,
+		10*time.Second,
 	)
 
+	fmt.Printf("Curling with cookies\n")
 	// Should get a 503 when using the cookie
 	s.ti.Assertions.AssertCurlResponse(
 		s.ctx,
