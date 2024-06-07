@@ -454,9 +454,11 @@ var _ = Describe("Bootstrap Clients", func() {
 					Build()
 
 				resourceClientset.VirtualServiceClient().Write(testVS, skclients.WriteOpts{})
+				// Since the kube api server can be down when the VS is written,
+				// specify a long enough interval for it to be accepted when the kube api server comes back up
 				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testVS.Metadata.Name, skclients.ReadOpts{})
-				})
+				}, "120s", "10s")
 				defer resourceClientset.VirtualServiceClient().Delete(testHelper.InstallNamespace, testVS.Metadata.Name, skclients.DeleteOpts{})
 
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -483,6 +485,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			waitUntilStartsLeading()
 			simulateKubeAPIServerUnavailability()
 
+			// By default it should crash
 			Eventually(func(g Gomega) {
 				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "deploy/gloo")
 				g.Expect(logs).To(ContainSubstring("lost leadership, quitting app"))
@@ -498,20 +501,41 @@ var _ = Describe("Bootstrap Clients", func() {
 			})
 
 			// Since a new deployment has been rolled out by changing the RECOVER_FROM_LEADER_ELECTION_FAILURE env var,
-			// we can be sure that the logs fetched were generated only after this test had begun
+			// we can be sure that the logs fetched were generated only after this test has begun
 			waitUntilStartsLeading()
-			simulateKubeAPIServerUnavailability()
+
+			// Simulate the kube api server is down and bring it up after 15 seconds. While it is down :
+			// - The leader should lose the lease
+			// - Create a VS
+			// When the kube api server is back up :
+			// - The VS should be accepted
+			// - It should be translated into an envoy config
+			restoreKubeAPIServer := simulateKubeAPIServerDown()
+			go func() {
+				time.Sleep(15 * time.Second)
+				restoreKubeAPIServer()
+			}()
+
+			// This creates a VS and ensures that it is accepted and translated. Run this while the kube api server is down to verify that
+			// reports are written once the pod recovers and becomes a leader
+			verified := make(chan struct{})
+			go func() {
+				verifyTranslation()
+				verified <- struct{}{}
+			}()
 
 			Eventually(func(g Gomega) {
 				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "deploy/gloo")
 				g.Expect(logs).To(ContainSubstring("Leader election cycle 0 lost. Trying again"))
 				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
 				g.Expect(logs).NotTo(ContainSubstring("lost leadership, quitting app"))
-			}, "30s", "1s").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 
-			verifyTranslation()
+			// Wait for the goroutine to finish
+			<-verified
 		})
 
+		// During this test :
 		// - Scale up the deployment to 2 pods
 		// - Block kube api access to the leader pod
 		// - Ensure the leader pod loses leadership
@@ -526,7 +550,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			// we can be sure that the logs fetched were generated only after this test had begun
 			waitUntilStartsLeading()
 
-			// Get the leader pod
+			// Get the leader pod. Since there is only one pod it is the leader
 			name, err := testutils.KubectlOut("get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[0].metadata.name}'")
 			Expect(err).ToNot(HaveOccurred())
 			name = strings.ReplaceAll(name, "'", "")
@@ -589,18 +613,27 @@ spec:
 				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "pod/"+name)
 				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
 			}, "60s", "1s").Should(Succeed())
-
 		})
 	})
 })
 
-// simulateKubeAPIServerUnavailability temporarily blocks network connectivity between the gloo pod and the kube api server
-func simulateKubeAPIServerUnavailability() {
+// simulateKubeAPIServerDown blocks network connectivity between the gloo pod and the kube api server.
+// It returns a function that restores network connectivity.
+func simulateKubeAPIServerDown() func() {
 	_, err := testutils.KubectlOut("apply", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
 	Expect(err).ToNot(HaveOccurred())
+
+	return func() {
+		_, err = testutils.KubectlOut("delete", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
+		Expect(err).ToNot(HaveOccurred())
+	}
+}
+
+// simulateKubeAPIServerUnavailability temporarily blocks network connectivity between the gloo pod and the kube api server
+func simulateKubeAPIServerUnavailability() {
+	restoreKubeAPIServer := simulateKubeAPIServerDown()
 	time.Sleep(15 * time.Second)
-	_, err = testutils.KubectlOut("delete", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
-	Expect(err).ToNot(HaveOccurred())
+	restoreKubeAPIServer()
 }
 
 func waitUntilStartsLeading() {
