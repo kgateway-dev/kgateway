@@ -1,11 +1,10 @@
 package stateful_session
 
 import (
-	"fmt"
-
 	envoyv3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	statefulsessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	cookiev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
+	headerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
@@ -23,6 +22,7 @@ var (
 const (
 	ExtensionName       = "envoy.filters.http.stateful_session"
 	ExtensionTypeCookie = "envoy.http.stateful_session.cookie"
+	ExtensionTypeHeader = "envoy.http.stateful_session.header"
 )
 
 var (
@@ -30,6 +30,8 @@ var (
 	ErrNoCookie            = eris.Errorf("cookie must be provided")
 	ErrNoCookieName        = eris.Errorf("cookie name must be provided")
 	ErrNoCookieBasedConfig = eris.Errorf("cookiesBasedConfig must be provided")
+	ErrNoHeaderName        = eris.Errorf("header name must be provided")
+	ErrNoHeaderBasedConfig = eris.Errorf("headerBasedConfig must be provided")
 )
 
 type plugin struct {
@@ -53,6 +55,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 
 	var config proto.Message
 	var err error
+	var statefulSessionType string
 	switch conf := sessionConf.GetSessionState().(type) {
 	case *statefulsession.StatefulSession_CookieBased:
 		config, err = translateCookieBased(conf)
@@ -60,6 +63,15 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 			return nil, err
 
 		}
+		statefulSessionType = ExtensionTypeCookie
+	case *statefulsession.StatefulSession_HeaderBased:
+		config, err = translateHeaderBased(conf)
+		if err != nil {
+			return nil, err
+		}
+		statefulSessionType = ExtensionTypeHeader
+	default:
+		return nil, eris.Errorf("unknown stateful session type: %T", conf)
 	}
 
 	marshalledConf, err := utils.MessageToAny(config)
@@ -71,7 +83,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 		ExtensionName,
 		&statefulsessionv3.StatefulSession{
 			SessionState: &envoyv3.TypedExtensionConfig{
-				Name:        ExtensionTypeCookie,
+				Name:        statefulSessionType,
 				TypedConfig: marshalledConf,
 			},
 			Strict: sessionConf.GetStrict(),
@@ -86,7 +98,6 @@ func translateCookieBased(conf *statefulsession.StatefulSession_CookieBased) (*c
 		return nil, ErrNoCookieBasedConfig
 	}
 
-	fmt.Printf("cookie: %v\n", conf.CookieBased.GetCookie())
 	if conf.CookieBased.GetCookie() == nil {
 		return nil, ErrNoCookie
 	}
@@ -106,6 +117,21 @@ func translateCookieBased(conf *statefulsession.StatefulSession_CookieBased) (*c
 			Path: cookiePath,
 			Ttl:  ttl,
 		},
+	}, nil
+}
+
+func translateHeaderBased(conf *statefulsession.StatefulSession_HeaderBased) (*headerv3.HeaderBasedSessionState, error) {
+	if conf.HeaderBased == nil {
+		return nil, ErrNoHeaderBasedConfig
+	}
+
+	headerName := conf.HeaderBased.GetHeaderName()
+	if headerName == "" {
+		return nil, ErrNoHeaderName
+	}
+
+	return &headerv3.HeaderBasedSessionState{
+		Name: headerName,
 	}, nil
 }
 

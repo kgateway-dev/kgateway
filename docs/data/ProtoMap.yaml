@@ -1907,6 +1907,9 @@ apis:
   statefulsession.options.gloo.solo.io.CookieBasedSessionState:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/statefulsession/statefulsession.proto.sk/#CookieBasedSessionState
     package: statefulsession.options.gloo.solo.io
+  statefulsession.options.gloo.solo.io.HeaderBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/statefulsession/statefulsession.proto.sk/#HeaderBasedSessionState
+    package: statefulsession.options.gloo.solo.io
   statefulsession.options.gloo.solo.io.StatefulSession:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/statefulsession/statefulsession.proto.sk/#StatefulSession
     package: statefulsession.options.gloo.solo.io

@@ -1273,6 +1273,11 @@ spec:
                                     type: string
                                 type: object
                             type: object
+                          headerBased:
+                            properties:
+                              headerName:
+                                type: string
+                            type: object
                           strict:
                             type: boolean
                         type: object

@@ -14,6 +14,7 @@ weight: 5
 - [StatefulSession](#statefulsession)
 - [CookieBasedSessionState](#cookiebasedsessionstate)
 - [Cookie](#cookie)
+- [HeaderBasedSessionState](#headerbasedsessionstate)
   
 
 
@@ -32,13 +33,15 @@ This configures the Envoy [Stateful Session](https://www.envoyproxy.io/docs/envo
 
 ```yaml
 "cookieBased": .statefulsession.options.gloo.solo.io.CookieBasedSessionState
+"headerBased": .statefulsession.options.gloo.solo.io.HeaderBasedSessionState
 "strict": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `cookieBased` | [.statefulsession.options.gloo.solo.io.CookieBasedSessionState](../statefulsession.proto.sk/#cookiebasedsessionstate) | Required, configure a cookie based session state - https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate. |
+| `cookieBased` | [.statefulsession.options.gloo.solo.io.CookieBasedSessionState](../statefulsession.proto.sk/#cookiebasedsessionstate) | Configure a cookie based session state - https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate Exactly one of `cookie_based` or `header_based` must be set. Only one of `cookieBased` or `headerBased` can be set. |
+| `headerBased` | [.statefulsession.options.gloo.solo.io.HeaderBasedSessionState](../statefulsession.proto.sk/#headerbasedsessionstate) | Configure a header based session state - https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate Exactly one of `cookie_based` or `header_based` must be set. Only one of `headerBased` or `cookieBased` can be set. |
 | `strict` | `bool` | If set to True, the HTTP request must be routed to the requested destination. If the requested destination is not available, Envoy returns 503. Defaults to False. |
 
 
@@ -79,6 +82,24 @@ Configuration for the [cookie-based session state](https://www.envoyproxy.io/doc
 | `name` | `string` | Required, the name that will be used to obtain cookie value from downstream HTTP request or generate new cookie for downstream. |
 | `path` | `string` | Path of cookie. This will be used to set the path of a new cookie when it is generated. If no path is specified here, no path will be set for the cookie. |
 | `ttl` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Duration of cookie. This will be used to set the expiry time of a new cookie when it is generated. Set this to 0s to use a session cookie and disable cookie expiration. |
+
+
+
+
+---
+### HeaderBasedSessionState
+
+ 
+Configuration for the [header-based session state](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/header/v3/header.proto#extension-envoy-http-stateful-session-header) filter
+
+```yaml
+"headerName": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `headerName` | `string` | Required, the cookie configuration used to track session state. |
 
 
 

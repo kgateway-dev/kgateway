@@ -12,12 +12,16 @@ message StatefulSession {
 
     oneof SessionState {
         option (validate.required) = true;
-        // Required, configure a cookie based session state - https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate
+        // Configure a cookie based session state - https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate
+        // Exactly one of `cookie_based` or `header_based` must be set.
         CookieBasedSessionState cookie_based = 1;
+        // Configure a header based session state - https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate
+       // Exactly one of `cookie_based` or `header_based` must be set.
+        HeaderBasedSessionState header_based = 2;
     }
 
     // If set to True, the HTTP request must be routed to the requested destination. If the requested destination is not available, Envoy returns 503. Defaults to False.
-    bool strict = 2;
+    bool strict = 3;
 }
 
 // Configuration for the [cookie-based session state](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/cookie/v3/cookie.proto#envoy-v3-api-msg-extensions-http-stateful-session-cookie-v3-cookiebasedsessionstate) filter
@@ -38,4 +42,11 @@ message CookieBasedSessionState {
 
     // Required, the cookie configuration used to track session state.
     Cookie cookie = 1 [(validate.rules).message.required = true];
+}
+
+
+// Configuration for the [header-based session state](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/stateful_session/header/v3/header.proto#extension-envoy-http-stateful-session-header) filter
+message HeaderBasedSessionState {
+    // Required, the header used to track session state.
+    string header_name = 1 [(validate.rules).message.required = true];
 }
