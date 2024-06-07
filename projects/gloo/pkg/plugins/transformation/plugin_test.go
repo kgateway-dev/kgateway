@@ -855,6 +855,14 @@ var _ = Describe("Plugin", func() {
 				TransformationType: &transformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &transformation.TransformationTemplate{
 						AdvancedTemplates: true,
+						DynamicMetadataValues: []*transformation.TransformationTemplate_DynamicMetadataValue{
+							{
+								MetadataNamespace: "namespace",
+								Key:               "key",
+								Value:             &transformation.InjaTemplate{Text: "hello"},
+								JsonToProto:       true,
+							},
+						},
 						BodyTransformation: &transformation.TransformationTemplate_Body{
 							Body: &transformation.InjaTemplate{Text: "13"},
 						},
@@ -865,6 +873,14 @@ var _ = Describe("Plugin", func() {
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoytransformation.TransformationTemplate{
 						AdvancedTemplates: true,
+						DynamicMetadataValues: []*envoytransformation.TransformationTemplate_DynamicMetadataValue{
+							{
+								MetadataNamespace: "namespace",
+								Key:               "key",
+								Value:             &envoytransformation.InjaTemplate{Text: "hello"},
+								JsonToProto:       true,
+							},
+						},
 						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
 							Body: &envoytransformation.InjaTemplate{Text: "13"},
 						},
