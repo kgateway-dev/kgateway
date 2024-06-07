@@ -3,6 +3,7 @@ package assertions
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -22,7 +23,7 @@ func (p *Provider) AssertEventualCurlResponse(
 	curlOptions []curl.Option,
 	expectedResponse *matchers.HttpResponse,
 	timeout ...time.Duration,
-) {
+) *http.Response {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -32,19 +33,23 @@ func (p *Provider) AssertEventualCurlResponse(
 
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
 
+	var curlHttpResponse *http.Response
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 		g.Expect(err).NotTo(HaveOccurred())
 		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
-		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
-		g.Expect(curlResponse).To(expectedResponseMatcher)
+		// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
+		curlHttpResponse = transforms.WithCurlResponse(curlResponse)
+		g.Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
 		fmt.Printf("success: %v", curlResponse)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
 		WithContext(ctx).
 		Should(Succeed(), "failed to get expected response")
+
+	return curlHttpResponse
 }
 
 func (p *Provider) AssertCurlResponse(
@@ -52,7 +57,7 @@ func (p *Provider) AssertCurlResponse(
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
 	expectedResponse *matchers.HttpResponse,
-) {
+) *http.Response {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -65,10 +70,12 @@ func (p *Provider) AssertCurlResponse(
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
-	expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
-	Expect(curlResponse).To(expectedResponseMatcher)
+	// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
+	curlHttpResponse := transforms.WithCurlResponse(curlResponse)
+	Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
 	fmt.Printf("success: %v", curlResponse)
 
+	return curlHttpResponse
 }
 
 // AssertEventuallyConsistentCurlResponse asserts that the response from a curl command

@@ -8,7 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/session_affinity"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/stateful_session"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
@@ -47,6 +47,6 @@ func TestGlooNoDefaultGateway(t *testing.T) {
 	})
 
 	t.Run("SessionAffinity", func(t *testing.T) {
-		suite.Run(t, session_affinity.NewTestingSuite(ctx, testInstallation))
+		suite.Run(t, stateful_session.NewTestingSuite(ctx, testInstallation))
 	})
 }
