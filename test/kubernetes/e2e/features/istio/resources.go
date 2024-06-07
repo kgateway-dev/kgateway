@@ -24,14 +24,18 @@ type UpstreamConfigOpts struct {
 }
 
 var (
-	EdgeApisRoutingFileName                     = "edge-apis-routing.gen.yaml"
-	DisableAutomtlsEdgeApisFileName             = "disable-automtls-edge-apis-routing.gen.yaml"
-	UpstreamSslConfigEdgeApisFileName           = "upstream-ssl-config-edge-apis.gen.yaml"
-	UpstreamSslConfigAndDisableAutomtlsFileName = "sslconfig-and-disable-automtls-edge-apis-routing.gen.yaml"
+	EdgeApisRoutingFileName                     = "edge-apis-routing"
+	DisableAutomtlsEdgeApisFileName             = "disable-automtls-edge-apis-routing"
+	UpstreamSslConfigEdgeApisFileName           = "upstream-ssl-config-edge-apis"
+	UpstreamSslConfigAndDisableAutomtlsFileName = "sslconfig-and-disable-automtls-edge-apis-routing"
 
 	httpbinSvc = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "httpbin", Namespace: "httpbin"}}
 
-	getGlooGatewayEdgeResourceFilmeName = func(config UpstreamConfigOpts) string {
+	getGlooGatewayEdgeResourceFile = func(config UpstreamConfigOpts) string {
+		return fmt.Sprintf("%s.%s", getGlooGatewayEdgeResourceName(config), "gen.yaml")
+	}
+
+	getGlooGatewayEdgeResourceName = func(config UpstreamConfigOpts) string {
 		if config.SetSslConfig && config.DisableIstioAutoMtls {
 			return UpstreamSslConfigAndDisableAutomtlsFileName
 		} else if config.SetSslConfig {
@@ -73,13 +77,14 @@ var (
 			}
 		}
 
+		upstreamName := fmt.Sprintf("httpbin-upstream-%s", getGlooGatewayEdgeResourceName(config))
 		httpbinUpstream := &soloapis_gloov1.Upstream{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       gloov1.UpstreamGVK.Kind,
 				APIVersion: fmt.Sprintf("%s/%s", gloov1.UpstreamGVK.Group, gloov1.UpstreamGVK.Version),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "httpbin-upstream",
+				Name:      upstreamName,
 				Namespace: installNamespace,
 			},
 			Spec: soloapis_gloov1.UpstreamSpec{

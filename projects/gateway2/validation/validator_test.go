@@ -178,11 +178,13 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 
 func vHostOptWithBadConfig() *sologatewayv1.VirtualHostOption {
 	return &sologatewayv1.VirtualHostOption{
-		TargetRef: &corev1.PolicyTargetReferenceWithSectionName{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.GatewayKind,
-			Name:      "gw",
-			Namespace: wrapperspb.String("default"),
+		TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
+			{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.GatewayKind,
+				Name:      "gw",
+				Namespace: wrapperspb.String("default"),
+			},
 		},
 		Options: &v1.VirtualHostOptions{
 			BufferPerRoute: &envoybuffer.BufferPerRoute{
@@ -208,11 +210,13 @@ func routeOptWithBadConfig() *sologatewayv1.RouteOption {
 			Name:      "policy",
 			Namespace: "default",
 		},
-		TargetRef: &corev1.PolicyTargetReference{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.HTTPRouteKind,
-			Name:      "my-route",
-			Namespace: wrapperspb.String("default"),
+		TargetRefs: []*corev1.PolicyTargetReference{
+			{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.HTTPRouteKind,
+				Name:      "my-route",
+				Namespace: wrapperspb.String("default"),
+			},
 		},
 		Options: &v1.RouteOptions{
 			Faults: &faultinjection.RouteFaults{

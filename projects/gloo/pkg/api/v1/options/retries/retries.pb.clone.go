@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 )
 
 // ensure the imports are used
@@ -72,6 +74,39 @@ func (m *RetryPolicy) Clone() proto.Message {
 		target.RetryBackOff = h.Clone().(*RetryBackOff)
 	} else {
 		target.RetryBackOff = proto.Clone(m.GetRetryBackOff()).(*RetryBackOff)
+	}
+
+	switch m.PriorityPredicate.(type) {
+
+	case *RetryPolicy_PreviousPriorities_:
+
+		if h, ok := interface{}(m.GetPreviousPriorities()).(clone.Cloner); ok {
+			target.PriorityPredicate = &RetryPolicy_PreviousPriorities_{
+				PreviousPriorities: h.Clone().(*RetryPolicy_PreviousPriorities),
+			}
+		} else {
+			target.PriorityPredicate = &RetryPolicy_PreviousPriorities_{
+				PreviousPriorities: proto.Clone(m.GetPreviousPriorities()).(*RetryPolicy_PreviousPriorities),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *RetryPolicy_PreviousPriorities) Clone() proto.Message {
+	var target *RetryPolicy_PreviousPriorities
+	if m == nil {
+		return target
+	}
+	target = &RetryPolicy_PreviousPriorities{}
+
+	if h, ok := interface{}(m.GetUpdateFrequency()).(clone.Cloner); ok {
+		target.UpdateFrequency = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.UpdateFrequency = proto.Clone(m.GetUpdateFrequency()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	return target

@@ -3,14 +3,17 @@ package translator_test
 import (
 	"context"
 
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -24,8 +27,10 @@ import (
 	corsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	hcmplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	mock_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils/mocks"
 	gloovalidation "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -41,7 +46,6 @@ type ReportAssertionHandler func(
 	proxyReport *validation.ProxyReport)
 
 var _ = Describe("Listener Subsystem", func() {
-
 	// These tests validate that the ListenerSubsystemTranslatorFactory produces Translators
 	// which in turn create Envoy Listeners and RouteConfigurations with expected values
 	// The tests are non-exhaustive, as we expect each translator to more rigorously test the
@@ -52,9 +56,16 @@ var _ = Describe("Listener Subsystem", func() {
 		cancel context.CancelFunc
 
 		translatorFactory *translator.ListenerSubsystemTranslatorFactory
+
+		ctrl          *gomock.Controller
+		sslTranslator *mock_utils.MockSslConfigTranslator
 	)
 
 	BeforeEach(func() {
+		// To cover TCP cases we must include the plugin
+		ctrl = gomock.NewController(GinkgoT())
+		sslTranslator = mock_utils.NewMockSslConfigTranslator(ctrl)
+
 		ctx, cancel = context.WithCancel(context.Background())
 
 		// Create a pluginRegistry with a minimal number of plugins
@@ -62,6 +73,7 @@ var _ = Describe("Listener Subsystem", func() {
 		pluginRegistry := registry.NewPluginRegistry([]plugins.Plugin{
 			hcmplugin.NewPlugin(),
 			corsplugin.NewPlugin(),
+			tcp.NewPlugin(sslTranslator),
 		})
 
 		// The translatorFactory expects each of the plugins to be initialized
@@ -77,6 +89,7 @@ var _ = Describe("Listener Subsystem", func() {
 	})
 
 	AfterEach(func() {
+		ctrl.Finish()
 		cancel()
 	})
 
@@ -112,6 +125,12 @@ var _ = Describe("Listener Subsystem", func() {
 				Snapshot: &gloov1snap.ApiSnapshot{
 					// To support ssl filter chain
 					Secrets: v1.SecretList{createTLSSecret()},
+					Upstreams: v1.UpstreamList{{
+						Metadata: &core.Metadata{
+							Name:      "test",
+							Namespace: "gloo-system",
+						},
+					}},
 				},
 			}
 			envoyListener := listenerTranslator.ComputeListener(params)
@@ -265,7 +284,8 @@ var _ = Describe("Listener Subsystem", func() {
 						},
 						HttpOptionsRef:  "http-options-ref",
 						VirtualHostRefs: []string{"vhost-ref"},
-					}},
+					},
+				},
 			},
 			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
 				By("2 secure filter chains and route configurations")
@@ -305,6 +325,109 @@ var _ = Describe("Listener Subsystem", func() {
 				By("route config name matches HCM")
 				routeConfig = routeConfigs[1]
 				ExpectWithOffset(1, routeConfig.GetName()).To(Equal(hcmRouteConfigName))
+			},
+		),
+		Entry(
+			"http filter chain matchers",
+			&v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher: &v1.Matcher{
+						SourcePrefixRanges: []*v3.CidrRange{{
+							AddressPrefix: "1.2.3.4",
+							PrefixLen:     &wrappers.UInt32Value{Value: 32},
+						}},
+						PrefixRanges: []*v3.CidrRange{{
+							AddressPrefix: "5.6.7.8",
+							PrefixLen:     &wrappers.UInt32Value{Value: 32},
+						}},
+						DestinationPort: &wrappers.UInt32Value{Value: 1234},
+					},
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
+				By("http filter chain matchers")
+				ExpectWithOffset(1, listener.GetFilterChains()).To(HaveLen(1))
+				filterChain := listener.GetFilterChains()[0]
+				ExpectWithOffset(1, filterChain.GetFilterChainMatch()).To(Equal(&envoy_config_listener_v3.FilterChainMatch{
+					SourcePrefixRanges: []*corev3.CidrRange{{
+						AddressPrefix: "1.2.3.4",
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
+					}},
+					PrefixRanges: []*corev3.CidrRange{{
+						AddressPrefix: "5.6.7.8",
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
+					}},
+					DestinationPort: &wrappers.UInt32Value{Value: 1234},
+				}))
+			},
+		),
+		Entry(
+			"tcp filter chain matchers",
+			&v1.AggregateListener{
+				TcpListeners: []*v1.MatchedTcpListener{{
+					Matcher: &v1.Matcher{
+						SourcePrefixRanges: []*v3.CidrRange{{
+							AddressPrefix: "1.2.3.4",
+							PrefixLen:     &wrappers.UInt32Value{Value: 32},
+						}},
+						PrefixRanges: []*v3.CidrRange{{
+							AddressPrefix: "5.6.7.8",
+							PrefixLen:     &wrappers.UInt32Value{Value: 32},
+						}},
+						DestinationPort: &wrappers.UInt32Value{Value: 1234},
+					},
+					TcpListener: &v1.TcpListener{
+						TcpHosts: []*v1.TcpHost{{
+							Name: "foobar",
+							Destination: &v1.TcpHost_TcpAction{
+								Destination: &v1.TcpHost_TcpAction_Single{
+									Single: &v1.Destination{
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "test",
+												Namespace: "gloo-system",
+											},
+										},
+									},
+								},
+							},
+						}},
+					},
+				}},
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions:  map[string]*v1.HttpListenerOptions{},
+					VirtualHosts: map[string]*v1.VirtualHost{},
+				},
+			},
+			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
+				By("tcp filter chain matchers")
+				ExpectWithOffset(1, listener.GetFilterChains()).To(HaveLen(1))
+				filterChain := listener.GetFilterChains()[0]
+				ExpectWithOffset(1, filterChain.GetFilterChainMatch()).To(Equal(&envoy_config_listener_v3.FilterChainMatch{
+					SourcePrefixRanges: []*corev3.CidrRange{{
+						AddressPrefix: "1.2.3.4",
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
+					}},
+					PrefixRanges: []*corev3.CidrRange{{
+						AddressPrefix: "5.6.7.8",
+						PrefixLen:     &wrappers.UInt32Value{Value: 32},
+					}},
+					DestinationPort: &wrappers.UInt32Value{Value: 1234},
+				}))
 			},
 		),
 	)
@@ -505,9 +628,7 @@ var _ = Describe("Listener Subsystem", func() {
 	)
 
 	Describe("hybrid listener chains", func() {
-
 		It("doesnt crash with unknown types", func() {
-
 			listener := &v1.Listener{
 				Name:        "aggregate-listener",
 				BindAddress: gatewaydefaults.GatewayBindAddress,
@@ -515,7 +636,7 @@ var _ = Describe("Listener Subsystem", func() {
 				ListenerType: &v1.Listener_HybridListener{
 					HybridListener: &v1.HybridListener{
 						MatchedListeners: []*v1.MatchedListener{
-							&v1.MatchedListener{},
+							{},
 						},
 					},
 				},
@@ -547,10 +668,8 @@ var _ = Describe("Listener Subsystem", func() {
 			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
 			Expect(li.GetFilterChains()).To(BeEmpty())
-
 		})
 	})
-
 })
 
 func createTLSSecret() *v1.Secret {

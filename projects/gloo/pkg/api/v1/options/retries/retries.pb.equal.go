@@ -118,5 +118,63 @@ func (m *RetryPolicy) Equal(that interface{}) bool {
 		}
 	}
 
+	switch m.PriorityPredicate.(type) {
+
+	case *RetryPolicy_PreviousPriorities_:
+		if _, ok := target.PriorityPredicate.(*RetryPolicy_PreviousPriorities_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetPreviousPriorities()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPreviousPriorities()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPreviousPriorities(), target.GetPreviousPriorities()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.PriorityPredicate != target.PriorityPredicate {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RetryPolicy_PreviousPriorities) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RetryPolicy_PreviousPriorities)
+	if !ok {
+		that2, ok := that.(RetryPolicy_PreviousPriorities)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetUpdateFrequency()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUpdateFrequency()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUpdateFrequency(), target.GetUpdateFrequency()) {
+			return false
+		}
+	}
+
 	return true
 }

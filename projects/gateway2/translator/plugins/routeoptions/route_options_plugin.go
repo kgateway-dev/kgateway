@@ -186,9 +186,6 @@ func (p *plugin) handleAttachment(
 		contextutils.LoggerFrom(ctx).Errorf("error getting RouteOptions for Route: %v", err)
 		switch {
 		case errors.Is(err, utils.ErrTypesNotEqual):
-		case errors.Is(err, utils.ErrNotSettable):
-			devErr := fmt.Errorf("developer error while getting RouteOptions as ExtensionRef: %w", err)
-			contextutils.LoggerFrom(ctx).DPanic(devErr)
 		default:
 			routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,

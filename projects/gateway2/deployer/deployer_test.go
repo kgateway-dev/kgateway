@@ -25,7 +25,6 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -176,6 +175,24 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
+
+		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
+			return &gw2_v1alpha1.GatewayParameters{
+				TypeMeta: metav1.TypeMeta{
+					Kind: gw2_v1alpha1.GatewayParametersGVK.Kind,
+					// The parsing expects GROUP/VERSION format in this field
+					APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.GatewayParametersGVK.Group, gw2_v1alpha1.GatewayParametersGVK.Version),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: defaultNamespace,
+					UID:       "1237",
+				},
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_SelfManaged{},
+				},
+			}
+		}
 	)
 	BeforeEach(func() {
 		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
@@ -186,9 +203,7 @@ var _ = Describe("Deployer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	Context("special cases", func() {
-		var (
-			gwc *api.GatewayClass
-		)
+		var gwc *api.GatewayClass
 		BeforeEach(func() {
 			gwc = &api.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
@@ -343,6 +358,13 @@ var _ = Describe("Deployer", func() {
 					Extensions: k8sGatewayExt,
 				}
 			}
+			istioEnabledDeployerInputs = func() *deployer.Inputs {
+				inp := defaultDeployerInputs()
+				inp.IstioValues = bootstrap.IstioValues{
+					IntegrationEnabled: true,
+				}
+				return inp
+			}
 			defaultGateway = func() *api.Gateway {
 				return &api.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
@@ -461,17 +483,16 @@ var _ = Describe("Deployer", func() {
 									},
 								},
 								Istio: &gw2_v1alpha1.IstioIntegration{
-									Enabled: &wrapperspb.BoolValue{Value: true},
-									IstioContainer: &gw2_v1alpha1.IstioContainer{
+									IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
 										Image: &kube.Image{
 											Registry:   &wrappers.StringValue{Value: "scooby"},
 											Repository: &wrappers.StringValue{Value: "dooby"},
 											Tag:        &wrappers.StringValue{Value: "doo"},
 										},
+										IstioDiscoveryAddress: &wrappers.StringValue{Value: "can't"},
+										IstioMetaMeshId:       &wrappers.StringValue{Value: "be"},
+										IstioMetaClusterId:    &wrappers.StringValue{Value: "overridden"},
 									},
-									IstioDiscoveryAddress: &wrappers.StringValue{Value: "can't"},
-									IstioMetaMeshId:       &wrappers.StringValue{Value: "be"},
-									IstioMetaClusterId:    &wrappers.StringValue{Value: "overridden"},
 								},
 							},
 						},
@@ -553,7 +574,6 @@ var _ = Describe("Deployer", func() {
 					argsMatchers...,
 				))
 				return nil
-
 			}
 		)
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
@@ -621,7 +641,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}),
 			Entry("correct deployment with sds enabled", &input{
-				dInputs:     defaultDeployerInputs(),
+				dInputs:     istioEnabledDeployerInputs(),
 				gw:          defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: gatewayParamsOverrideWithSds(),
@@ -656,7 +676,7 @@ var _ = Describe("Deployer", func() {
 
 					sdsImg := inp.overrideGwp.Spec.GetKube().GetSdsContainer().GetImage()
 					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.GetRegistry().GetValue(), sdsImg.GetRepository().GetValue(), sdsImg.GetTag().GetValue())))
-					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstio().GetIstioContainer().GetImage()
+					istioProxyImg := inp.overrideGwp.Spec.GetKube().GetIstio().GetIstioProxyContainer().GetImage()
 					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.GetRegistry().GetValue(), istioProxyImg.GetRepository().GetValue(), istioProxyImg.GetTag().GetValue())))
 
 					return nil
@@ -798,6 +818,27 @@ var _ = Describe("Deployer", func() {
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
 				newDeployerErr: deployer.NilK8sExtensionsErr,
+			}),
+			Entry("No GatewayParameters override but default is self-managed; should not deploy gateway", &input{
+				dInputs:    defaultDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: selfManagedGatewayParam(wellknown.DefaultGatewayParametersName),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					Expect(objs).To(BeEmpty())
+					return nil
+				},
+			}),
+			Entry("Self-managed GatewayParameters override; should not deploy gateway", &input{
+				dInputs:     defaultDeployerInputs(),
+				gw:          defaultGatewayWithGatewayParams("self-managed"),
+				defaultGwp:  defaultGatewayParams(),
+				overrideGwp: selfManagedGatewayParam("self-managed"),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					Expect(objs).To(BeEmpty())
+					return nil
+				},
 			}),
 		)
 	})
