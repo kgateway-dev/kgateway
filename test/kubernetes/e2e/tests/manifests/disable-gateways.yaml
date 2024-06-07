@@ -1,5 +1,0 @@
-gateway:
-  enabled: false
-kubeGateway:
-  enabled: false
-
