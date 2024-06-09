@@ -14,9 +14,9 @@ spec:
       statefulSession:
         cookieBased:
           cookie:
-            name: sessionaffinitycookie
+            name: statefulsessioncookie
             path: /session_path
-            ttl: 10s
+            ttl: 60s
   proxyNames:
   - gateway-proxy
   ssl: false

@@ -13,7 +13,7 @@ spec:
     options:
       statefulSession:
         headerBased:
-          headerName: sessionaffinityheader
+          headerName: statefulsessionheader
         strict: true
   proxyNames:
   - gateway-proxy

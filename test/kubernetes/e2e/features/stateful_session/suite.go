@@ -2,6 +2,7 @@ package stateful_session
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -40,8 +41,9 @@ type testingSuite struct {
 }
 
 const (
-	cookieName = "sessionaffinitycookie"
-	headerName = "sessionaffinityheader"
+	cookieName = "statefulsessioncookie"
+	headerName = "statefulsessionheader"
+	cookieFile = "/tmp/cookie.txt"
 )
 
 var (
@@ -50,14 +52,6 @@ var (
 		Namespace: "curl",
 		Container: "curl",
 	}
-
-	curlOptsCookies = []curl.Option{
-		curl.WithCookie("/tmp/cookie.txt"),
-		curl.WithCookieJar("/tmp/cookie.txt"),
-	}
-
-	// Need the testing suite to set the host, so define this in SetupSuite
-	curlOptsCommon []curl.Option
 )
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -75,14 +69,6 @@ func (s *testingSuite) SetupSuite() {
 		"TestStatefulSessionHeaderBased":     {sessionAffinityManifest, statefulSessionHeaderGatewayManifest},
 		"TestStatefulSessionHeaderStrict":    {sessionAffinityManifest, statefulSessionHeaderGatewayStrictManifest},
 	}
-
-	curlOptsCommon = []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
-		curl.WithPort(80),
-		curl.Silent(),
-		curl.WithHostHeader("app"),
-	}
-
 }
 
 func (s *testingSuite) TearDownSuite() {
@@ -115,48 +101,101 @@ var (
 	statefulSessionHeaderGatewayStrictManifest = filepath.Join(util.MustGetThisDir(), "testdata", "header_gateway_strict.yaml")
 )
 
+func (s *testingSuite) curlOptsCommon(path string) []curl.Option {
+	return []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.ti.Metadata.InstallNamespace})),
+		curl.WithPort(80),
+		curl.Silent(),
+		curl.WithHostHeader("app"),
+		curl.WithPath(path),
+	}
+}
+
+func (s *testingSuite) curlOptsCookies() []curl.Option {
+	return []curl.Option{
+		curl.WithCookieJar(cookieFile),
+		curl.WithCookie(cookieFile),
+	}
+}
+
 // These tests all use the "counter" application described here: https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#overview-of-the-counter-application
 // It basically returns a count of the number of requests it has received and can help us determine if requests are being routed to the same pod
 func (s *testingSuite) TestStatefulSessionCookieBased() {
+	s.testStatefulSessionCookie(false)
+}
+
+func (s *testingSuite) TestStatefulSessionCookieStrict() {
+	s.testStatefulSessionCookie(true)
+}
+
+func (s *testingSuite) testStatefulSessionCookie(strict bool) {
 	numRequests := 20
 
-	curlOpts := append(curlOptsCommon, curlOptsCookies...)
-	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
+	curlOptsNoCookies := s.curlOptsCommon("/session_path/count")
+	curlOptsWithCookies := s.curlOptsCommon("/session_path/count")
+	curlOptsWithCookies = append(curlOptsWithCookies, s.curlOptsCookies()...)
 
 	// Get the first response - this one we may have to wait for
 	// This is also the only response with a cookie and TTL
 	// TTL is handled client side, so we only test that the header is returned
+	// Go with no cookies at first because the cookie returned from a 404 is no good.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		CurlPodExecOpt,
-		curlOpts,
+		curlOptsNoCookies,
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       "1",
 			Headers: map[string]interface{}{
-				"Set-Cookie": And(ContainSubstring("; Max-Age=10;"), ContainSubstring(cookieName)),
+				"Set-Cookie": And(ContainSubstring("; Max-Age=60;"), ContainSubstring(cookieName)),
 			},
 		},
 		10*time.Second,
 	)
 
+	resp := s.ti.Assertions.AssertCurlResponse(
+		s.ctx,
+		CurlPodExecOpt,
+		curlOptsWithCookies,
+		&matchers.HttpResponse{StatusCode: http.StatusOK},
+	)
+
+	body, err := io.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	cnt := transforms.BytesToInt(body) + 1
+
 	// Once responses are coming, they should keep incrementing
-	for i := 2; i <= numRequests; i++ {
+	for i := cnt; i <= numRequests; i++ {
 		s.ti.Assertions.AssertCurlResponse(
 			s.ctx,
 			CurlPodExecOpt,
-			curlOpts,
+			curlOptsWithCookies,
 			&matchers.HttpResponse{StatusCode: http.StatusOK, Body: strconv.Itoa(i)},
 		)
 	}
 
+	// 255.255.255.255:1010
+	CurlOptsCookiesInHeader := append(curlOptsNoCookies, curl.WithHeader("Cookie", cookieName+"=\"MjU1LjI1NS4yNTUuMjU1OjEwMTA=\""))
+
+	// Use an invalid cookie and ensure we get a 200 with strict: false, 503 with strict: true
+	expectedResponseCode := http.StatusOK
+	if strict {
+		expectedResponseCode = http.StatusServiceUnavailable
+	}
+
+	s.ti.Assertions.AssertCurlResponse(
+		s.ctx,
+		CurlPodExecOpt,
+		CurlOptsCookiesInHeader,
+		&matchers.HttpResponse{StatusCode: expectedResponseCode},
+	)
 }
 
 func (s *testingSuite) TestStatefulSessionCookieNotInPath() {
 	numRequests := 99
 
-	curlOpts := append(curlOptsCommon, curlOptsCookies...)
-	curlOpts = append(curlOpts, curl.WithPath("/non_session_path/count"))
+	curlOpts := s.curlOptsCommon("/non_session_path/count")
+	curlOpts = append(curlOpts, s.curlOptsCookies()...)
 
 	// Envoy round robin load balancing may not appear to be even, and we can not rely on a predictable sequence of distribution of requests
 	// https://www.envoyproxy.io/docs/envoy/latest/faq/load_balancing/concurrency_lb
@@ -195,65 +234,18 @@ func (s *testingSuite) TestStatefulSessionCookieNotInPath() {
 	}
 }
 
-func (s *testingSuite) TestStatefulSessionCookieStrict() {
-	curlOpts := append(curlOptsCommon, curlOptsCookies...)
-	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
-
-	curlOptsWithoutCookies := append(curlOptsCommon, curl.WithPath("/session_path/count"))
-
-	// Get the first response - this one we may have to wait for
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		CurlPodExecOpt,
-		curlOpts,
-		&matchers.HttpResponse{StatusCode: http.StatusOK, Body: "1"},
-		10*time.Second,
-	)
-
-	// Scale down the deployment to 0
-	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 0)
-
-	// Wait until we get a 503 - don't use the cookies to avoid any side effects
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		CurlPodExecOpt,
-		curlOptsWithoutCookies,
-		&matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable},
-		10*time.Second,
-	)
-
-	// Scale back up to 4
-	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 4)
-
-	// Should get a 200 when not using the cookie
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		CurlPodExecOpt,
-		curlOptsWithoutCookies,
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Headers: map[string]interface{}{
-				"Set-Cookie": ContainSubstring(cookieName),
-			},
-		},
-		10*time.Second,
-	)
-
-	// Should get a 503 when using the cookie
-	s.ti.Assertions.AssertCurlResponse(
-		s.ctx,
-		CurlPodExecOpt,
-		curlOpts,
-		&matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable},
-	)
-
+func (s *testingSuite) TestStatefulSessionHeaderBased() {
+	s.testStatefulSessionHeader(false)
 }
 
-func (s *testingSuite) TestStatefulSessionHeaderBased() {
+func (s *testingSuite) TestStatefulSessionHeaderStrict() {
+	s.testStatefulSessionHeader(true)
+}
+
+func (s *testingSuite) testStatefulSessionHeader(strict bool) {
 	numRequests := 20
 
-	curlOpts := append(curlOptsCommon, curlOptsCookies...)
-	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
+	curlOpts := s.curlOptsCommon("/session_path/count")
 
 	// Get the first response - this one we may have to wait for
 	response := s.ti.Assertions.AssertEventualCurlResponse(
@@ -271,77 +263,30 @@ func (s *testingSuite) TestStatefulSessionHeaderBased() {
 	)
 
 	sessionHeaderVal := response.Header.Get(headerName)
-	curlOpts = append(curlOpts, curl.WithHeader(headerName, sessionHeaderVal))
+	curlOptsHeader := append(curlOpts, curl.WithHeader(headerName, sessionHeaderVal))
 
 	// Once responses are coming, they should keep incrementing
 	for i := 2; i <= numRequests; i++ {
 		s.ti.Assertions.AssertCurlResponse(
 			s.ctx,
 			CurlPodExecOpt,
-			curlOpts,
+			curlOptsHeader,
 			&matchers.HttpResponse{StatusCode: http.StatusOK, Body: strconv.Itoa(i)},
 		)
 	}
 
+	// Validate that a wrong header value will return a 200 with strict: false and 503 with strict: true
+	curlOptsWrongHeader := append(s.curlOptsCommon("/session_path/count"), curl.WithHeader(headerName, "MjU1LjI1NS4yNTUuMjU1OjEwMTA="))
+
+	expectedResponseCode := http.StatusOK
+	if strict {
+		expectedResponseCode = http.StatusServiceUnavailable
+	}
+
+	s.ti.Assertions.AssertCurlResponse(
+		s.ctx,
+		CurlPodExecOpt,
+		curlOptsWrongHeader,
+		&matchers.HttpResponse{StatusCode: expectedResponseCode},
+	)
 }
-
-// func (s *testingSuite) TestStatefulSessionHeaderStrict() {
-// 	curlOpts := append(curlOptsCommon, curlOptsCookies...)
-// 	curlOpts = append(curlOpts, curl.WithPath("/session_path/count"))
-
-// 	// Get the first response - this one we may have to wait for
-// 	response := s.ti.Assertions.AssertEventualCurlResponse(
-// 		s.ctx,
-// 		CurlPodExecOpt,
-// 		curlOpts,
-// 		&matchers.HttpResponse{
-// 			StatusCode: http.StatusOK,
-// 			Body:       "1",
-// 			Headers: map[string]interface{}{
-// 				headerName: Not(BeEmpty()),
-// 			},
-// 		},
-// 		10*time.Second,
-// 	)
-
-// 	sessionHeaderVal := response.Header.Get(headerName)
-// 	curlOptsWithHeader := append(curlOpts, curl.WithHeader(headerName, sessionHeaderVal))
-
-// 	// Scale down the deployment to 0
-// 	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 0)
-
-// 	// Wait until we get a 503 - don't use the header to avoid any side effects
-// 	s.ti.Assertions.AssertEventualCurlResponse(
-// 		s.ctx,
-// 		CurlPodExecOpt,
-// 		curlOpts,
-// 		&matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable},
-// 		10*time.Second,
-// 	)
-
-// 	// Scale back up to 4
-// 	s.ti.Actions.Kubectl().ScaleDeploymentTo(s.ctx, "session-affinity", 4)
-
-// 	// Should get a 200 when not using the header
-// 	s.ti.Assertions.AssertEventualCurlResponse(
-// 		s.ctx,
-// 		CurlPodExecOpt,
-// 		curlOpts,
-// 		&matchers.HttpResponse{
-// 			StatusCode: http.StatusOK,
-// 			Headers: map[string]interface{}{
-// 				headerName: Not(BeEmpty()),
-// 			},
-// 		},
-// 		10*time.Second,
-// 	)
-
-// 	// Should get a 503 when using the header
-// 	s.ti.Assertions.AssertCurlResponse(
-// 		s.ctx,
-// 		CurlPodExecOpt,
-// 		curlOptsWithHeader,
-// 		&matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable},
-// 	)
-
-// }

@@ -268,7 +268,3 @@ func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) 
 
 	return stdout.String(), stderr.String(), err
 }
-
-func (c *Cli) ScaleDeploymentTo(ctx context.Context, deployment string, replicas int) error {
-	return c.RunCommand(ctx, "scale", "deployment", deployment, "--replicas", fmt.Sprintf("%d", replicas))
-}
