@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package statefulsession.options.gloo.solo.io;
+package stateful_session.options.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/statefulsession";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session";
 
 import "google/protobuf/duration.proto";
 import "validate/validate.proto";

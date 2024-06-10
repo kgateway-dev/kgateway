@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/statefulsession"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
@@ -57,14 +57,14 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 	var err error
 	var statefulSessionType string
 	switch conf := sessionConf.GetSessionState().(type) {
-	case *statefulsession.StatefulSession_CookieBased:
+	case *stateful_session.StatefulSession_CookieBased:
 		config, err = translateCookieBased(conf)
 		if err != nil {
 			return nil, err
 
 		}
 		statefulSessionType = ExtensionTypeCookie
-	case *statefulsession.StatefulSession_HeaderBased:
+	case *stateful_session.StatefulSession_HeaderBased:
 		config, err = translateHeaderBased(conf)
 		if err != nil {
 			return nil, err
@@ -93,7 +93,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListene
 
 }
 
-func translateCookieBased(conf *statefulsession.StatefulSession_CookieBased) (*cookiev3.CookieBasedSessionState, error) {
+func translateCookieBased(conf *stateful_session.StatefulSession_CookieBased) (*cookiev3.CookieBasedSessionState, error) {
 	if conf.CookieBased == nil {
 		return nil, ErrNoCookieBasedConfig
 	}
@@ -120,7 +120,7 @@ func translateCookieBased(conf *statefulsession.StatefulSession_CookieBased) (*c
 	}, nil
 }
 
-func translateHeaderBased(conf *statefulsession.StatefulSession_HeaderBased) (*headerv3.HeaderBasedSessionState, error) {
+func translateHeaderBased(conf *stateful_session.StatefulSession_HeaderBased) (*headerv3.HeaderBasedSessionState, error) {
 	if conf.HeaderBased == nil {
 		return nil, ErrNoHeaderBasedConfig
 	}

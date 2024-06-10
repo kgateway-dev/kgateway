@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/statefulsession"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -26,10 +26,10 @@ var _ = Describe("stateful session", func() {
 
 			filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
-					StatefulSession: &statefulsession.StatefulSession{
-						SessionState: &statefulsession.StatefulSession_CookieBased{
-							CookieBased: &statefulsession.CookieBasedSessionState{
-								Cookie: &statefulsession.CookieBasedSessionState_Cookie{
+					StatefulSession: &stateful_session.StatefulSession{
+						SessionState: &stateful_session.StatefulSession_CookieBased{
+							CookieBased: &stateful_session.CookieBasedSessionState{
+								Cookie: &stateful_session.CookieBasedSessionState_Cookie{
 									Name: name,
 								},
 							},
@@ -53,10 +53,10 @@ var _ = Describe("stateful session", func() {
 
 			filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
-					StatefulSession: &statefulsession.StatefulSession{
-						SessionState: &statefulsession.StatefulSession_CookieBased{
-							CookieBased: &statefulsession.CookieBasedSessionState{
-								Cookie: &statefulsession.CookieBasedSessionState_Cookie{
+					StatefulSession: &stateful_session.StatefulSession{
+						SessionState: &stateful_session.StatefulSession_CookieBased{
+							CookieBased: &stateful_session.CookieBasedSessionState{
+								Cookie: &stateful_session.CookieBasedSessionState_Cookie{
 									Name: name,
 									Path: path,
 									Ttl:  d,
@@ -73,7 +73,7 @@ var _ = Describe("stateful session", func() {
 			Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 		})
 
-		DescribeTable("Bad configuration", func(statefulSession *statefulsession.StatefulSession, expectedErr error) {
+		DescribeTable("Bad configuration", func(statefulSession *stateful_session.StatefulSession, expectedErr error) {
 			_, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
 					StatefulSession: statefulSession,
@@ -84,24 +84,24 @@ var _ = Describe("stateful session", func() {
 
 			Expect(err).To(MatchError(expectedErr))
 		},
-			Entry("missing cookie name", &statefulsession.StatefulSession{
-				SessionState: &statefulsession.StatefulSession_CookieBased{
-					CookieBased: &statefulsession.CookieBasedSessionState{
-						Cookie: &statefulsession.CookieBasedSessionState_Cookie{},
+			Entry("missing cookie name", &stateful_session.StatefulSession{
+				SessionState: &stateful_session.StatefulSession_CookieBased{
+					CookieBased: &stateful_session.CookieBasedSessionState{
+						Cookie: &stateful_session.CookieBasedSessionState_Cookie{},
 					},
 				},
 			},
 				ErrNoCookieName,
 			),
-			Entry("missing cookie", &statefulsession.StatefulSession{
-				SessionState: &statefulsession.StatefulSession_CookieBased{
-					CookieBased: &statefulsession.CookieBasedSessionState{},
+			Entry("missing cookie", &stateful_session.StatefulSession{
+				SessionState: &stateful_session.StatefulSession_CookieBased{
+					CookieBased: &stateful_session.CookieBasedSessionState{},
 				},
 			},
 				ErrNoCookie,
 			),
-			Entry("missing cookie based Config", &statefulsession.StatefulSession{
-				SessionState: &statefulsession.StatefulSession_CookieBased{},
+			Entry("missing cookie based Config", &stateful_session.StatefulSession{
+				SessionState: &stateful_session.StatefulSession_CookieBased{},
 			},
 				ErrNoCookieBasedConfig,
 			),
@@ -114,9 +114,9 @@ var _ = Describe("stateful session", func() {
 
 			filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
-					StatefulSession: &statefulsession.StatefulSession{
-						SessionState: &statefulsession.StatefulSession_HeaderBased{
-							HeaderBased: &statefulsession.HeaderBasedSessionState{
+					StatefulSession: &stateful_session.StatefulSession{
+						SessionState: &stateful_session.StatefulSession_HeaderBased{
+							HeaderBased: &stateful_session.HeaderBasedSessionState{
 								HeaderName: name,
 							},
 						},
@@ -135,9 +135,9 @@ var _ = Describe("stateful session", func() {
 
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				StatefulSession: &statefulsession.StatefulSession{
-					SessionState: &statefulsession.StatefulSession_HeaderBased{
-						HeaderBased: &statefulsession.HeaderBasedSessionState{
+				StatefulSession: &stateful_session.StatefulSession{
+					SessionState: &stateful_session.StatefulSession_HeaderBased{
+						HeaderBased: &stateful_session.HeaderBasedSessionState{
 							HeaderName: name,
 						},
 					},
@@ -151,7 +151,7 @@ var _ = Describe("stateful session", func() {
 		Expect(filters[0].Filter).To(matchers.MatchProto(expectedStageFilter.Filter))
 	})
 
-	DescribeTable("Bad configuration", func(statefulSession *statefulsession.StatefulSession, expectedErr error) {
+	DescribeTable("Bad configuration", func(statefulSession *stateful_session.StatefulSession, expectedErr error) {
 		_, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				StatefulSession: statefulSession,
@@ -162,15 +162,15 @@ var _ = Describe("stateful session", func() {
 
 		Expect(err).To(MatchError(expectedErr))
 	},
-		Entry("missing header name", &statefulsession.StatefulSession{
-			SessionState: &statefulsession.StatefulSession_HeaderBased{
-				HeaderBased: &statefulsession.HeaderBasedSessionState{},
+		Entry("missing header name", &stateful_session.StatefulSession{
+			SessionState: &stateful_session.StatefulSession_HeaderBased{
+				HeaderBased: &stateful_session.HeaderBasedSessionState{},
 			},
 		},
 			ErrNoHeaderName,
 		),
-		Entry("missing cookie based Config", &statefulsession.StatefulSession{
-			SessionState: &statefulsession.StatefulSession_HeaderBased{},
+		Entry("missing cookie based Config", &stateful_session.StatefulSession{
+			SessionState: &stateful_session.StatefulSession_HeaderBased{},
 		},
 			ErrNoHeaderBasedConfig,
 		),

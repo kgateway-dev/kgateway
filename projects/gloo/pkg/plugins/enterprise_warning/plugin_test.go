@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/statefulsession"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/advanced_http"
 	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
@@ -576,7 +576,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 			p := NewPlugin()
 			hl := &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
-					StatefulSession: &statefulsession.StatefulSession{},
+					StatefulSession: &stateful_session.StatefulSession{},
 				},
 			}
 
