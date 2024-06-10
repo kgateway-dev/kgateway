@@ -52,7 +52,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/statefulsession/statefulsession.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/statefulsession/statefulsession.proto";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";

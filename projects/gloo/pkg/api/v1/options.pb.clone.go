@@ -43,6 +43,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_rbac "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_statefulsession "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/statefulsession"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
@@ -86,8 +88,6 @@ import (
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_shadowing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
-
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_statefulsession "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/statefulsession"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 
@@ -362,9 +362,9 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetStatefulSession()).(clone.Cloner); ok {
-		target.StatefulSession = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_statefulsession.StatefulSession)
+		target.StatefulSession = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_statefulsession.StatefulSession)
 	} else {
-		target.StatefulSession = proto.Clone(m.GetStatefulSession()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_statefulsession.StatefulSession)
+		target.StatefulSession = proto.Clone(m.GetStatefulSession()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_statefulsession.StatefulSession)
 	}
 
 	switch m.ExtProcConfig.(type) {
