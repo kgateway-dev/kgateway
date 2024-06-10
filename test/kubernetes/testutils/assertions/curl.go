@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 )
 
-func (p *Provider) AssertEventualCurlResponse(
+func (p *Provider) AssertEventualCurlResponseReturnResponse(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
@@ -40,6 +40,7 @@ func (p *Provider) AssertEventualCurlResponse(
 		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
 		// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
+		//nolint:bodyclose // The caller of this assertion should be responsible for ensuring the body close - if the response is not needed for the test, AssertEventualCurlResponse should be used instead
 		curlHttpResponse = transforms.WithCurlResponse(curlResponse)
 		g.Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
 		fmt.Printf("success: %v", curlResponse)
@@ -52,7 +53,19 @@ func (p *Provider) AssertEventualCurlResponse(
 	return curlHttpResponse
 }
 
-func (p *Provider) AssertCurlResponse(
+// We can't use one function and ignore the response because the response body must be closed
+func (p *Provider) AssertEventualCurlResponse(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	curlOptions []curl.Option,
+	expectedResponse *matchers.HttpResponse,
+	timeout ...time.Duration,
+) {
+	resp := p.AssertEventualCurlResponseReturnResponse(ctx, podOpts, curlOptions, expectedResponse, timeout...)
+	resp.Body.Close()
+}
+
+func (p *Provider) AssertCurlResponseReturnResponse(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
@@ -76,6 +89,16 @@ func (p *Provider) AssertCurlResponse(
 	fmt.Printf("success: %v", curlResponse)
 
 	return curlHttpResponse
+}
+
+func (p *Provider) AssertCurlResponse(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	curlOptions []curl.Option,
+	expectedResponse *matchers.HttpResponse,
+) {
+	resp := p.AssertCurlResponseReturnResponse(ctx, podOpts, curlOptions, expectedResponse)
+	resp.Body.Close()
 }
 
 // AssertEventuallyConsistentCurlResponse asserts that the response from a curl command

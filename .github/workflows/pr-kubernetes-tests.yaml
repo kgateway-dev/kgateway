@@ -52,7 +52,6 @@ jobs:
         # /test/kubernetes/e2e/load_balancing_tests.md
         test:
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
-        # DO_NOT_SUBMIT - TestGlooNoDefaultGateway only for EE?
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$'
