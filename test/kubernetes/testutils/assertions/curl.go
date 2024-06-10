@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/gloo/test/kube2e/helper"
 )
 
-func (p *Provider) AssertEventualCurlResponseReturnResponse(
+func (p *Provider) AssertEventualCurlReturnResponse(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
@@ -61,11 +61,11 @@ func (p *Provider) AssertEventualCurlResponse(
 	expectedResponse *matchers.HttpResponse,
 	timeout ...time.Duration,
 ) {
-	resp := p.AssertEventualCurlResponseReturnResponse(ctx, podOpts, curlOptions, expectedResponse, timeout...)
+	resp := p.AssertEventualCurlReturnResponse(ctx, podOpts, curlOptions, expectedResponse, timeout...)
 	resp.Body.Close()
 }
 
-func (p *Provider) AssertCurlResponseReturnResponse(
+func (p *Provider) AssertCurlReturnResponse(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
@@ -97,7 +97,7 @@ func (p *Provider) AssertCurlResponse(
 	curlOptions []curl.Option,
 	expectedResponse *matchers.HttpResponse,
 ) {
-	resp := p.AssertCurlResponseReturnResponse(ctx, podOpts, curlOptions, expectedResponse)
+	resp := p.AssertCurlReturnResponse(ctx, podOpts, curlOptions, expectedResponse)
 	resp.Body.Close()
 }
 
