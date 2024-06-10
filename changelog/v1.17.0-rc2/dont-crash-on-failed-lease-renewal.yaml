@@ -1,4 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/gloo/issues/8107
-  description: Adds the ability to recover if the Kubernetes API server is unreachable once the gloo pod comes up. To enable this feature, set the `RECOVER_IF_KUBE_API_SERVER_UNREACHABLE` environment variable in the gloo container. This can be done either by modifying the gloo deployment or by specifying the `gloo.deployment.customEnv[0].Name=RECOVER_IF_KUBE_API_SERVER_UNREACHABLE` and `gloo.deployment.customEnv[0].Value=true` helm values.
