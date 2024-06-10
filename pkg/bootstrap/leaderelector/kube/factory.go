@@ -28,7 +28,7 @@ const (
 	leaseDurationEnvName                       = "LEADER_ELECTION_LEASE_DURATION"
 	retryPeriodEnvName                         = "LEADER_ELECTION_RETRY_PERIOD"
 	renewPeriodEnvName                         = "LEADER_ELECTION_RENEW_PERIOD"
-	recoverIfKubeAPIServerIsUnreachableEnvName = "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE"
+	RecoverIfKubeAPIServerIsUnreachableEnvName = "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE"
 )
 
 // kubeElectionFactory is the implementation for coordinating leader election using
@@ -44,7 +44,7 @@ func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 }
 
 func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	recoverIfKubeAPIServerIsUnreachable := envutils.IsEnvTruthy(recoverIfKubeAPIServerIsUnreachableEnvName)
+	recoverIfKubeAPIServerIsUnreachable := envutils.IsEnvTruthy(RecoverIfKubeAPIServerIsUnreachableEnvName) // Defaults to false
 	elected := make(chan struct{})
 	identity := leaderelector.NewIdentity(elected)
 

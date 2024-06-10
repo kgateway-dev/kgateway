@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 	"github.com/solo-io/go-utils/testutils"
@@ -476,7 +477,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 		AfterEach(func() {
 			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE",
+				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
 				Value: "false",
 			})
 		})
@@ -496,7 +497,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 		It("recovers when RECOVER_IF_KUBE_API_SERVER_UNREACHABLE=true", func() {
 			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE",
+				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
 				Value: "true",
 			})
 
@@ -542,7 +543,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		// - Create a resource and verify it has been translated : This verifies that the other pod has become a leader
 		It("concedes leadership to another pod", func() {
 			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE",
+				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
 				Value: "true",
 			})
 

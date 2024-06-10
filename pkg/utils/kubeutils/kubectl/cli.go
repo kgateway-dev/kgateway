@@ -242,17 +242,17 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 		"5",
 	}, curlArgs...)
 
-	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, nil, args...)
+	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, args...)
 
 	return stdout + stderr, err
 }
 
-func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (string, string, error) {
+func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, args ...string) (string, string, error) {
 	args = append([]string{"--context", kubeContext}, args...)
-	return c.Execute(ctx, stdin, args...)
+	return c.Execute(ctx, args...)
 }
 
-func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) (string, string, error) {
+func (c *Cli) Execute(ctx context.Context, args ...string) (string, string, error) {
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 
@@ -263,4 +263,14 @@ func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) 
 		WithStderr(stderr).Run().Cause()
 
 	return stdout.String(), stderr.String(), err
+}
+
+func (c *Cli) Scale(ctx context.Context, namespace string, resource string, replicas uint) error {
+	return c.RunCommand(ctx, "scale", "-n", namespace, fmt.Sprintf("--replicas=%d", replicas), resource, "--timeout=300s")
+}
+
+// GetContainerLogs retrieves the logs for the specified container
+func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string) (string, error) {
+	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "logs", name)
+	return stdout + stderr, err
 }
