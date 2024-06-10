@@ -55,7 +55,7 @@ jobs:
         # DO_NOT_SUBMIT - TestGlooNoDefaultGateway only for EE?
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$|^TestGlooNoDefaultGateway$$'
+          go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-two'

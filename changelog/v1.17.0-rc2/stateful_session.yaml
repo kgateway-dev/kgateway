@@ -1,9 +1,13 @@
 changelog:
-  - type: FIX
+  - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/9104
     resolvesIssue: false
     description: >-
-      ""
+      Add support for the [envoy.http.stateful_session.header filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/stateful_session_filter)
+      This support has been added via a new HTTPListern option, `stateful_session` which can be used to configure the filter.
+      Envoy notes about this filter:
+      - This extension is functional but has not had substantial production burn time, use only with this caveat.
+      - This extension has an unknown security posture and should only be used in deployments where both the downstream and upstream are trusted.
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: envoy-gloo
