@@ -62,7 +62,7 @@ While the component itself has a single responsibility, implement the SDS API, i
 - Serve certificates to establish mTLS communication between Gloo components (Gloo mTLS)
 - Serve certificates to establish mLTS communication between Gateway-Proxy and Application running in Service Mesh (Istio mTLS)
 
-_As a result, we have `glooMtls.enabled` to enable the former, and `istioSDS.enabled` to enable the latter._
+_As a result, we have `glooMtls.enabled` to enable the former, and `istioIntegration.enabled` to enable the latter._
 
 Note, the current Gloo SDS does not reach out to Istiod. The istio-agent is responsible for sending the CSR to Istiod. 
 The SDS server then reads the certs from a file written by the istio-agent and then SDS serves the certificates to the Gloo Envoy proxy.
@@ -108,9 +108,9 @@ EOF
 
 3. Install Gloo
 
-helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set global.istioSDS.enabled=true
+helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set global.istioIntegration.enabled=true
 
-4. Show "Classic" Mode
+4. Show Gloo Edge Gateway Mode
 
 Apply resources:
 

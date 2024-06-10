@@ -1056,7 +1056,7 @@ spec:
 				It("should add an sds sidecar AND an istio-proxy sidecar in the Gateway-Proxy Deployment", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							"global.istioSDS.enabled=true",
+							"global.istioIntegration.enabled=true",
 							"gloo.logLevel=debug",
 							"global.glooMtls.sds.logLevel=error",
 							"global.glooMtls.istioProxy.logLevel=warning",
@@ -2994,6 +2994,43 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
+								"global.istioIntegration.enabled=true",
+							},
+						})
+
+						// Containers we expect to have
+						expectedContainers := map[string]struct{}{
+							"gateway-proxy": {},
+							"istio-proxy":   {},
+							"sds":           {},
+						}
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								if _, ok := expectedContainers[container.Name]; ok {
+									// delete found containers from our expectedContainers list
+									delete(expectedContainers, container.Name)
+								} else {
+									Fail(fmt.Sprintf("Unexpected container found: %+v", container.Name))
+								}
+							}
+						})
+
+						// An expected container was not correctly set
+						Expect(expectedContainers).To(BeEmpty(), "all enabled containers must have been found")
+					})
+
+					It("doesn't break containers when enabling multiple containers with deprecated IstioSDS.enabled", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
 								"global.istioSDS.enabled=true",
 							},
 						})
@@ -3375,7 +3412,44 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("can overwrite sds and istioProxy images from istioSDS", func() {
+					It("can overwrite sds and istioProxy images", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioIntegration.enabled=true",
+								"global.glooMtls.sds.image.tag=my-sds-tag",
+								"global.glooMtls.sds.image.repository=my-sds-repo",
+								"global.glooMtls.sds.image.registry=my-sds-reg",
+								"global.glooMtls.istioProxy.image.tag=my-istio-tag",
+								"global.glooMtls.istioProxy.image.repository=my-istio-repo",
+								"global.glooMtls.istioProxy.image.registry=my-istio-reg",
+								"global.glooMtls.istioProxy.image.pullPolicy=Always",
+							},
+						})
+
+						gwpDepl := getDeployment(testManifest, namespace, "gateway-proxy")
+						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
+
+						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
+						Expect(sdsContainer.Name).To(Equal("sds"))
+						Expect(sdsContainer.Image).To(Equal("my-sds-reg/my-sds-repo:my-sds-tag"))
+						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
+
+						istioProxyContainer := gwpDepl.Spec.Template.Spec.Containers[2]
+						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
+						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
+						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(corev1.PullAlways))
+
+						// Volumes env added to support more recent istio versions as of https://github.com/solo-io/gloo/pull/8666
+						Expect(istioProxyContainer.VolumeMounts[4]).To(Equal(corev1.VolumeMount{Name: "credential-socket", MountPath: "/var/run/secrets/credential-uds"}))
+						Expect(istioProxyContainer.VolumeMounts[5]).To(Equal(corev1.VolumeMount{Name: "workload-socket", MountPath: "/var/run/secrets/workload-spiffe-uds"}))
+						Expect(istioProxyContainer.VolumeMounts[6]).To(Equal(corev1.VolumeMount{Name: "workload-certs", MountPath: "/var/run/secrets/workload-spiffe-credentials"}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[5]).To(Equal(corev1.Volume{Name: "credential-socket", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[6]).To(Equal(corev1.Volume{Name: "workload-socket", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(corev1.Volume{Name: "workload-certs", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
+					})
+
+					It("can overwrite sds and istioProxy images using deprecated istioSDS.enabled", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
@@ -3491,8 +3565,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"global.glooMtls.enabled=true",         // adds gloo/gateway proxy side containers
+								"global.istioIntegration.enabled=true", // add default istio sds sidecar
 							},
 						})
 
@@ -3525,8 +3599,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"global.glooMtls.enabled=true",         // adds gloo/gateway proxy side containers
+								"global.istioIntegration.enabled=true", // add default istio sds sidecar
 								"gatewayProxies.gatewayProxy.istioMetaMeshId=" + value,
 							},
 						})
@@ -3562,8 +3636,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"global.glooMtls.enabled=true",         // adds gloo/gateway proxy side containers
+								"global.istioIntegration.enabled=true", // add default istio sds sidecar
 							},
 						})
 
@@ -3598,8 +3672,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"global.glooMtls.enabled=true",         // adds gloo/gateway proxy side containers
+								"global.istioIntegration.enabled=true", // add default istio sds sidecar
 								"gatewayProxies.gatewayProxy.istioMetaClusterId=" + value,
 							},
 						})
@@ -3635,7 +3709,7 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
-								"global.istioSDS.enabled=true",
+								"global.istioIntegration.enabled=true",
 								"gatewayProxies.gatewayProxy.istioDiscoveryAddress=" + val,
 							},
 						})
@@ -3649,7 +3723,7 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
-								"global.istioSDS.enabled=true",
+								"global.istioIntegration.enabled=true",
 							},
 						})
 
@@ -4173,8 +4247,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"global.glooMtls.enabled=true",         // adds gloo/gateway proxy side containers
+								"global.istioIntegration.enabled=true", // add default istio sds sidecar
 								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.memory=%s", envoySidecarVals[0]),
 								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.cpu=%s", envoySidecarVals[1]),
 								fmt.Sprintf("global.glooMtls.envoySidecarResources.limits.memory=%s", envoySidecarVals[2]),
@@ -6205,7 +6279,7 @@ metadata:
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", "global.glooMtls.istioProxy.securityContext", "global.istioIntegration.enabled=true"),
 					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
@@ -6312,7 +6386,7 @@ metadata:
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", "global.glooMtls.istioProxy.securityContext", "global.istioIntegration.enabled=true"),
 					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
@@ -6408,7 +6482,7 @@ metadata:
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", applyDiscovery),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", applyNil, "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", applyNil, "global.istioSDS.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", applyNil, "global.istioIntegration.enabled=true"),
 					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", applyDiscovery, "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", applyRunAsUser, "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", applyRunAsUser, "global.glooMtls.enabled=true"),

@@ -3182,9 +3182,9 @@ type GlooOptions_IstioOptions struct {
 	// Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect.
 	// Defaults to false
 	EnableAutoMtls *wrappers.BoolValue `protobuf:"bytes,2,opt,name=enable_auto_mtls,json=enableAutoMtls,proto3" json:"enable_auto_mtls,omitempty"`
-	// Istio integration is enabled via istioSDS.enabled on the helm chart.
+	// Istio integration is enabled via global.istioIntegration.enabled on the helm chart.
 	// If enabled, an istio-proxy container and sds container are assumed to exist alongside the
-	// gateway proxy. These containers are created by enabling the istioSDS.enabled option in the helm chart.
+	// gateway proxy. These containers are created by enabling the istioIntegration.enabled option in the helm chart.
 	// Defaults to false
 	EnableIntegration *wrappers.BoolValue `protobuf:"bytes,3,opt,name=enable_integration,json=enableIntegration,proto3" json:"enable_integration,omitempty"`
 }
