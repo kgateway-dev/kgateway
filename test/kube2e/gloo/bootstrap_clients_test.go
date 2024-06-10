@@ -3,14 +3,12 @@ package gloo_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
-	"github.com/solo-io/go-utils/testutils"
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -476,7 +474,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		})
 
 		AfterEach(func() {
-			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
+			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
 				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
 				Value: "false",
 			})
@@ -488,7 +486,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			// By default it should crash
 			Eventually(func(g Gomega) {
-				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "deploy/gloo")
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "deploy/gloo")
 				g.Expect(logs).To(ContainSubstring("lost leadership, quitting app"))
 			}, "30s", "1s").Should(Succeed())
 
@@ -496,7 +494,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		})
 
 		It("recovers when RECOVER_IF_KUBE_API_SERVER_UNREACHABLE=true", func() {
-			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
+			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
 				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
 				Value: "true",
 			})
@@ -526,7 +524,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			}()
 
 			Eventually(func(g Gomega) {
-				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "deploy/gloo")
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "deploy/gloo")
 				g.Expect(logs).To(ContainSubstring("Leader election cycle 0 lost. Trying again"))
 				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
 				g.Expect(logs).NotTo(ContainSubstring("lost leadership, quitting app"))
@@ -542,7 +540,7 @@ var _ = Describe("Bootstrap Clients", func() {
 		// - Ensure the leader pod loses leadership
 		// - Create a resource and verify it has been translated : This verifies that the other pod has become a leader
 		It("concedes leadership to another pod", func() {
-			helper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
+			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
 				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
 				Value: "true",
 			})
@@ -552,15 +550,15 @@ var _ = Describe("Bootstrap Clients", func() {
 			waitUntilStartsLeading()
 
 			// Get the leader pod. Since there is only one pod it is the leader
-			name, err := testutils.KubectlOut("get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[0].metadata.name}'")
+			name, _, err := testHelper.Execute(ctx, "get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[0].metadata.name}'")
 			Expect(err).ToNot(HaveOccurred())
 			name = strings.ReplaceAll(name, "'", "")
 
 			// Scale the deployment to 2 replicas so the other can take over when the leader is unable to communicate with the Kube API server
-			err = testutils.Kubectl("scale", "-n", testHelper.InstallNamespace, "--replicas=2", "deploy/gloo", "--timeout=300s")
+			err = testHelper.Scale(ctx, testHelper.InstallNamespace, "deploy/gloo", 2)
 			Expect(err).ToNot(HaveOccurred())
 			defer func() {
-				err = testutils.Kubectl("scale", "-n", testHelper.InstallNamespace, "--replicas=1", "deploy/gloo", "--timeout=300s")
+				err = testHelper.Scale(ctx, testHelper.InstallNamespace, "deploy/gloo", 1)
 				Expect(err).ToNot(HaveOccurred())
 			}()
 
@@ -572,33 +570,12 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// Block the leader's communication to the Kube API server
-			blockPodYAML := `apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: deny-gloo-to-kube-apiserver
-  namespace: gloo-system
-spec:
-  endpointSelector:
-    matchLabels:
-      block: this
-  egressDeny:
-  - toEntities:
-    - kube-apiserver`
-
-			tmpFile, err := os.CreateTemp("/tmp", "")
-			Expect(err).NotTo(HaveOccurred())
-			defer tmpFile.Close()
-			defer os.Remove(tmpFile.Name())
-
-			_, err = tmpFile.Write([]byte(blockPodYAML))
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = testutils.KubectlOut("apply", "-f", tmpFile.Name())
+			err = testHelper.ApplyFile(ctx, testHelper.RootDir+"/test/kube2e/gloo/artifacts/block-labels.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
 			// Verify that the leader has stopped leading
 			Eventually(func(g Gomega) {
-				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "pod/"+name)
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+name)
 				g.Expect(logs).To(ContainSubstring("lost leadership"))
 			}, "60s", "1s").Should(Succeed())
 
@@ -606,12 +583,12 @@ spec:
 			verifyTranslation()
 
 			// Cleanup the network policy. With connectivity restored, the old leader can become a follower
-			_, err = testutils.KubectlOut("delete", "-f", tmpFile.Name())
+			err = testHelper.DeleteFile(ctx, testHelper.RootDir+"/test/kube2e/gloo/artifacts/block-labels.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
 			// Verify that the old leader has become a follower
 			Eventually(func(g Gomega) {
-				logs := helper.GetContainerLogs(testHelper.InstallNamespace, "pod/"+name)
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+name)
 				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
 			}, "60s", "1s").Should(Succeed())
 		})
@@ -621,11 +598,11 @@ spec:
 // simulateKubeAPIServerDown blocks network connectivity between the gloo pod and the kube api server.
 // It returns a function that restores network connectivity.
 func simulateKubeAPIServerDown() func() {
-	_, err := testutils.KubectlOut("apply", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
+	err := testHelper.ApplyFile(ctx, testHelper.RootDir+"/test/kube2e/gloo/artifacts/block-gloo-apiserver.yaml")
 	Expect(err).ToNot(HaveOccurred())
 
 	return func() {
-		_, err = testutils.KubectlOut("delete", "-f", testHelper.RootDir+"/test/kube2e/gloo/artifacts/block.yaml")
+		err := testHelper.DeleteFile(ctx, testHelper.RootDir+"/test/kube2e/gloo/artifacts/block-gloo-apiserver.yaml")
 		Expect(err).ToNot(HaveOccurred())
 	}
 }
@@ -641,7 +618,7 @@ func waitUntilStartsLeading() {
 	// Initially sleep as the new deployment might be rolling out
 	time.Sleep(10 * time.Second)
 	Eventually(func(g Gomega) {
-		out := helper.GetContainerLogs(testHelper.InstallNamespace, "deploy/gloo")
+		out := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "deploy/gloo")
 		g.Expect(out).To(ContainSubstring("starting leadership"))
 	}, "120s", "10s").Should(Succeed())
 }

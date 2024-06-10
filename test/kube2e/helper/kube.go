@@ -10,10 +10,9 @@ import (
 	clientsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/testutils"
 )
 
-func ModifyDeploymentEnv(ctx context.Context, deploymentClient clientsv1.DeploymentInterface, namespace string, deploymentName string, containerIndex int, envVar corev1.EnvVar) {
+func (h *SoloTestHelper) ModifyDeploymentEnv(ctx context.Context, deploymentClient clientsv1.DeploymentInterface, namespace string, deploymentName string, containerIndex int, envVar corev1.EnvVar) {
 	d, err := deploymentClient.Get(ctx, deploymentName, metav1.GetOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
@@ -36,25 +35,24 @@ func ModifyDeploymentEnv(ctx context.Context, deploymentClient clientsv1.Deploym
 	_, err = deploymentClient.Update(ctx, d, metav1.UpdateOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	WaitForRolloutWithOffset(1, deploymentName, namespace, "60s", "1s")
+	h.WaitForRolloutWithOffset(ctx, 1, deploymentName, namespace, "60s", "1s")
 }
 
 // WaitForRollout waits for the specified deployment to be rolled out successfully.
-func WaitForRollout(deploymentName string, deploymentNamespace string, intervals ...interface{}) {
-	WaitForRolloutWithOffset(1, deploymentName, deploymentNamespace, intervals...)
+func (h *SoloTestHelper) WaitForRollout(ctx context.Context, deploymentName string, deploymentNamespace string, intervals ...interface{}) {
+	h.WaitForRolloutWithOffset(ctx, 1, deploymentName, deploymentNamespace, intervals...)
 }
 
 // WaitForRolloutWithOffset waits for the specified deployment to be rolled out successfully with an offset.
-func WaitForRolloutWithOffset(offset int, deploymentName string, deploymentNamespace string, intervals ...interface{}) {
+func (h *SoloTestHelper) WaitForRolloutWithOffset(ctx context.Context, offset int, deploymentName string, deploymentNamespace string, intervals ...interface{}) {
 	EventuallyWithOffset(offset+1, func() (bool, error) {
-		out, err := testutils.KubectlOut("rollout", "status", "-n", deploymentNamespace, fmt.Sprintf("deployment/%s", deploymentName))
+		out, _, err := h.Cli.Execute(ctx, "rollout", "status", "-n", deploymentNamespace, fmt.Sprintf("deployment/%s", deploymentName))
 		return strings.Contains(out, "successfully rolled out"), err
 	}, "30s", "1s").Should(BeTrue())
 }
 
-// GetContainerLogs retrieves the logs for the specified container
-func GetContainerLogs(namespace string, name string) string {
-	out, err := testutils.KubectlOut("-n", namespace, "logs", name)
+func (h *SoloTestHelper) GetContainerLogs(ctx context.Context, namespace string, name string) string {
+	out, _, err := h.Cli.Execute(ctx, "-n", namespace, "logs", name)
 	Expect(err).ToNot(HaveOccurred())
 	return out
 }
