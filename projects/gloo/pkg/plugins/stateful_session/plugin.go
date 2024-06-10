@@ -34,17 +34,13 @@ var (
 	ErrNoHeaderBasedConfig = eris.Errorf("headerBasedConfig must be provided")
 )
 
-type plugin struct {
-	removeUnused bool
-}
+type plugin struct{}
 
 func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) {
-	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
-}
+func (p *plugin) Init(params plugins.InitParams) {}
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *gloov1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	sessionConf := listener.GetOptions().GetStatefulSession()
