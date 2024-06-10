@@ -1,5 +1,5 @@
 global:
-  istioSDS:
+  istioIntegration:
     enabled: true
   glooMtls:
     istioProxy:
