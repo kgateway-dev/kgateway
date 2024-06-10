@@ -245,7 +245,7 @@ func uninstallGloo() {
 func expectIstioInjected() {
 	// Check for istio-proxy sidecar
 	istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
-	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on gateway-proxy due to IstioSDS being enabled")
+	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on gateway-proxy due to IstioIntegration.enabled=true")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestServerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
@@ -258,6 +258,6 @@ func expectIstioInjected() {
 
 	// Check for sds container
 	sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "sds")].name}'`)
-	ExpectWithOffset(1, sdsContainer).To(Equal("'sds'"), "sds container should be present on gateway-proxy due to IstioSDS being enabled")
+	ExpectWithOffset(1, sdsContainer).To(Equal("'sds'"), "sds container should be present on gateway-proxy due to IstioIntegration.enabled=true")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
