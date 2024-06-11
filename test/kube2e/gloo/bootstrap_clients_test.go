@@ -475,8 +475,8 @@ var _ = Describe("Bootstrap Clients", func() {
 
 		AfterEach(func() {
 			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
-				Value: "false",
+				Name:  kube.MaxRecoveryDurationWithoutKubeAPIServer,
+				Value: "",
 			})
 		})
 
@@ -493,13 +493,14 @@ var _ = Describe("Bootstrap Clients", func() {
 			verifyTranslation()
 		})
 
-		It("recovers when RECOVER_IF_KUBE_API_SERVER_UNREACHABLE=true", func() {
+		It("recovers when MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER is set", func() {
 			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
-				Value: "true",
+				Name: kube.MaxRecoveryDurationWithoutKubeAPIServer,
+				// This invalid value will test whether it falls back to the default value of 60s
+				Value: "abcd",
 			})
 
-			// Since a new deployment has been rolled out by changing the RECOVER_IF_KUBE_API_SERVER_UNREACHABLE env var,
+			// Since a new deployment has been rolled out by changing the MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER env var,
 			// we can be sure that the logs fetched were generated only after this test has begun
 			waitUntilStartsLeading()
 
@@ -525,6 +526,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			Eventually(func(g Gomega) {
 				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "deploy/gloo")
+				g.Expect(logs).To(ContainSubstring(fmt.Sprintf("%s is not a valid duration. Defaulting to 60s", kube.MaxRecoveryDurationWithoutKubeAPIServer)))
 				g.Expect(logs).To(ContainSubstring("Leader election cycle 0 lost. Trying again"))
 				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
 				g.Expect(logs).NotTo(ContainSubstring("lost leadership, quitting app"))
@@ -541,11 +543,11 @@ var _ = Describe("Bootstrap Clients", func() {
 		// - Create a resource and verify it has been translated : This verifies that the other pod has become a leader
 		It("concedes leadership to another pod", func() {
 			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
-				Name:  kube.RecoverIfKubeAPIServerIsUnreachableEnvName,
-				Value: "true",
+				Name:  kube.MaxRecoveryDurationWithoutKubeAPIServer,
+				Value: "75s",
 			})
 
-			// Since a new deployment has been rolled out by changing the RECOVER_IF_KUBE_API_SERVER_UNREACHABLE env var,
+			// Since a new deployment has been rolled out by changing the MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER env var,
 			// we can be sure that the logs fetched were generated only after this test had begun
 			waitUntilStartsLeading()
 
@@ -576,6 +578,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			// Verify that the leader has stopped leading
 			Eventually(func(g Gomega) {
 				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+name)
+				g.Expect(logs).To(ContainSubstring("max recovery from kube apiserver unavailability set to 1m15s"))
 				g.Expect(logs).To(ContainSubstring("lost leadership"))
 			}, "60s", "1s").Should(Succeed())
 

@@ -23,12 +23,12 @@ const (
 	defaultRetryPeriod   = 2 * time.Second
 	defaultRenewPeriod   = 10 * time.Second
 
-	recoveryTimeout = 60 * time.Second
+	defaultRecoveryTimeout = 60 * time.Second
 
-	leaseDurationEnvName                       = "LEADER_ELECTION_LEASE_DURATION"
-	retryPeriodEnvName                         = "LEADER_ELECTION_RETRY_PERIOD"
-	renewPeriodEnvName                         = "LEADER_ELECTION_RENEW_PERIOD"
-	RecoverIfKubeAPIServerIsUnreachableEnvName = "RECOVER_IF_KUBE_API_SERVER_UNREACHABLE"
+	leaseDurationEnvName                    = "LEADER_ELECTION_LEASE_DURATION"
+	retryPeriodEnvName                      = "LEADER_ELECTION_RETRY_PERIOD"
+	renewPeriodEnvName                      = "LEADER_ELECTION_RENEW_PERIOD"
+	MaxRecoveryDurationWithoutKubeAPIServer = "MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER"
 )
 
 // kubeElectionFactory is the implementation for coordinating leader election using
@@ -44,7 +44,21 @@ func NewElectionFactory(config *rest.Config) *kubeElectionFactory {
 }
 
 func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	recoverIfKubeAPIServerIsUnreachable := envutils.IsEnvTruthy(RecoverIfKubeAPIServerIsUnreachableEnvName) // Defaults to false
+	var recoveryTimeoutIfKubeAPIServerIsUnreachable time.Duration
+	var recoverIfKubeAPIServerIsUnreachable bool
+	var err error
+	if envutils.IsEnvDefined(MaxRecoveryDurationWithoutKubeAPIServer) {
+		recoveryTimeoutIfKubeAPIServerIsUnreachable, err = time.ParseDuration(os.Getenv(MaxRecoveryDurationWithoutKubeAPIServer))
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Errorf("%s is not a valid duration. Defaulting to 60s", MaxRecoveryDurationWithoutKubeAPIServer)
+			recoveryTimeoutIfKubeAPIServerIsUnreachable = defaultRecoveryTimeout
+		} else {
+			contextutils.LoggerFrom(ctx).Infof("max recovery from kube apiserver unavailability set to %s", recoveryTimeoutIfKubeAPIServerIsUnreachable)
+		}
+		recoveryTimeoutIfKubeAPIServerIsUnreachable = defaultRecoveryTimeout
+		recoverIfKubeAPIServerIsUnreachable = true
+	}
+
 	elected := make(chan struct{})
 	identity := leaderelector.NewIdentity(elected)
 
@@ -69,7 +83,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	// This function is called when this container is a leader but unable to renew the leader lease (caused by an unreachable kube api server).
 	// The context is cancelled if it is able to participate in leader election again, irrespective if it becomes a leader or follower.
 	dieIfUnrecoverable := func(ctx context.Context) {
-		timer := time.NewTimer(recoveryTimeout)
+		timer := time.NewTimer(recoveryTimeoutIfKubeAPIServerIsUnreachable)
 		select {
 		case <-timer.C:
 			contextutils.LoggerFrom(ctx).Fatalf("unable to recover from failed leader election, quitting app")
