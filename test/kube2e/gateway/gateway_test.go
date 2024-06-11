@@ -2637,7 +2637,7 @@ spec:
 						ConnectionTimeout: 1,
 						WithoutStats:      true,
 						Verbose:           true,
-					}, testmatchers.HttpResponse{StatusCode: http.StatusNotFound}, 1, 60*time.Second, 1*time.Second)
+					}, &testmatchers.HttpResponse{StatusCode: http.StatusNotFound}, 1, 60*time.Second, 1*time.Second)
 				})
 
 				It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
