@@ -114,6 +114,7 @@ func (p *plugin) ApplyListenerPlugin(
 	}
 
 	// use the first option (highest in priority)
+	// see for more context: https://github.com/solo-io/solo-projects/issues/6313
 	optToUse := attachedOptions[0]
 
 	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {

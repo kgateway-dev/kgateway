@@ -2,8 +2,8 @@ package httplisteneroptions
 
 import (
 	"context"
-	"strconv"
 
+	edgegwutils "github.com/solo-io/gloo/projects/gateway/pkg/translator/utils"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
@@ -54,14 +54,13 @@ func (p *plugin) ApplyListenerPlugin(
 	}
 
 	// use the first option (highest in priority)
+	// see for more context: https://github.com/solo-io/solo-projects/issues/6313
 	optToUse := attachedOptions[0]
 	httpOptions := optToUse.Spec.GetOptions()
 
 	// store HttpListenerOptions, indexed by a hash of the httpOptions
 	httpOptionsByName := map[string]*gloov1.HttpListenerOptions{}
-	httpOptionsHash, _ := httpOptions.Hash(nil)
-	httpOptionsRef := strconv.Itoa(int(httpOptionsHash))
-	httpOptionsByName[httpOptionsRef] = httpOptions
+	httpOptionsRef := edgegwutils.HashAndStoreHttpOptions(httpOptions, httpOptionsByName)
 
 	aggListener.GetHttpResources().HttpOptions = httpOptionsByName
 
