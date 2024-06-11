@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	requestHeaderPrefix  = "> "
-	responseHeaderPrefix = "< "
-	infoPrefix           = "* "
-	bytesDataSuffix      = " bytes data]"
-	responseStatusPrefix = "< HTTP/1.1 "
+	requestHeaderPrefix       = "> "
+	responseHeaderPrefix      = "< "
+	infoPrefix                = "* "
+	bytesDataSuffix           = " bytes data]"
+	responseStatusPrefix1dot1 = "< HTTP/1.1 "
+	responseStatusPrefix2     = "< HTTP/2 "
 )
 
 // WithCurlHttpResponse is a Gomega Transform that converts the string returned by an exec.Curl
@@ -105,9 +106,19 @@ func processResponseHeader(line string) (string, string) {
 // Returns the status code if the line was processed, otherwise returns 0.
 func processResponseCode(line string) int {
 	// check for response status. the line with the response code will be in the format
-	// `< HTTP/1.1 <code> <message>`
-	if strings.HasPrefix(line, responseStatusPrefix) {
-		restOfLine := line[len(responseStatusPrefix):]
+	// `< HTTP/1.1 <code> <message>` or `< HTTP/2 <code> <message>`
+	if strings.HasPrefix(line, responseStatusPrefix1dot1) {
+		restOfLine := line[len(responseStatusPrefix1dot1):]
+		statusParts := strings.Split(restOfLine, " ")
+		if len(statusParts) > 0 {
+			statusCode, err := strconv.Atoi(statusParts[0])
+			if err == nil {
+				return statusCode
+			}
+		}
+	}
+	if strings.HasPrefix(line, responseStatusPrefix2) {
+		restOfLine := line[len(responseStatusPrefix2):]
 		statusParts := strings.Split(restOfLine, " ")
 		if len(statusParts) > 0 {
 			statusCode, err := strconv.Atoi(statusParts[0])
