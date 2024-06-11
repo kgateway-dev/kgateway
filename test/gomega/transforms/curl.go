@@ -2,6 +2,7 @@ package transforms
 
 import (
 	"bytes"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"io"
 	"net/http"
 	"strconv"
@@ -16,7 +17,7 @@ const (
 	responseStatusPrefix = "< HTTP/1.1 "
 )
 
-// WithCurlHttpResponse is a Gomega Transform that converts the string return by an exec.Curl
+// WithCurlHttpResponse is a Gomega Transform that converts the string returned by an exec.Curl
 // and transforms it into an http.Response. This is useful to be used in tandem with matchers.HaveHttpResponse
 // NOTE: This is not feature complete, as we do not convert the entire response.
 // For now, we handle HTTP/1.1 response headers, status, and body.
@@ -47,6 +48,36 @@ func WithCurlHttpResponse(curlResponse string) *http.Response {
 			bodyBuf.WriteString(line)
 		}
 	}
+
+	return &http.Response{
+		StatusCode: statusCode,
+		Header:     headers,
+		Body:       bytesBody(bodyBuf.Bytes()),
+	}
+}
+
+func WithCurlResponse(curlResponse *kubectl.CurlResponse) *http.Response {
+	headers := make(http.Header)
+	statusCode := 0
+	var bodyBuf bytes.Buffer
+
+	// Curl writes the body to stdout and the headers/status to stderr
+	// Headers/response code
+	for _, line := range strings.Split(curlResponse.StdErr, "\n") {
+		k, v := processResponseHeader(line)
+		if k != "" {
+			headers.Add(k, v)
+			continue
+		}
+
+		code := processResponseCode(line)
+		if code != 0 {
+			statusCode = code
+		}
+	}
+
+	// Body
+	bodyBuf.WriteString(curlResponse.StdOut)
 
 	return &http.Response{
 		StatusCode: statusCode,
