@@ -2,11 +2,12 @@ package transforms
 
 import (
 	"bytes"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 )
 
 const (
