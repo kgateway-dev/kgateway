@@ -103,6 +103,7 @@ var _ = Describe("Validation Server", func() {
 			GlooValidatorConfig: GlooValidatorConfig{
 				XdsSanitizer: xdsSanitizer,
 				Translator:   translator,
+				Settings:     settings,
 			},
 		}
 	})
@@ -726,6 +727,7 @@ var _ = Describe("Validation Server", func() {
 				GlooValidatorConfig: GlooValidatorConfig{
 					XdsSanitizer: xdsSanitizer,
 					Translator:   translator,
+					Settings:     settings,
 				},
 			}
 		})
