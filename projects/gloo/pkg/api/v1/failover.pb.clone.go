@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
+
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -123,6 +125,19 @@ func (m *LbEndpoint) Clone() proto.Message {
 		target.LoadBalancingWeight = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	} else {
 		target.LoadBalancingWeight = proto.Clone(m.GetLoadBalancingWeight()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
+	if m.GetMetadata() != nil {
+		target.Metadata = make(map[string]*github_com_golang_protobuf_ptypes_struct.Struct, len(m.GetMetadata()))
+		for k, v := range m.GetMetadata() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Metadata[k] = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+			} else {
+				target.Metadata[k] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_struct.Struct)
+			}
+
+		}
 	}
 
 	return target

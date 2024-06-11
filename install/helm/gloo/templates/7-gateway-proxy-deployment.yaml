@@ -296,7 +296,7 @@ spec:
           name: shared-data
 {{- include $spec.extraContainersHelper . | nindent 6 }}
 {{- end }} {{- /* $spec.extraContainersHelper */}}
-{{- if or $global.glooMtls.enabled $global.istioSDS.enabled }}
+{{- if or $global.glooMtls.enabled (or $global.istioSDS.enabled $global.istioIntegration.enabled) }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
@@ -319,7 +319,7 @@ spec:
           - name: GLOO_MTLS_SDS_ENABLED
             value: "true"
 {{- end }}
-{{- if $global.istioSDS.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
 {{- end }}
@@ -337,7 +337,7 @@ spec:
           name: gloo-mtls-certs
           readOnly: true
 {{- end }}
-{{- if $global.istioSDS.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
         - mountPath: /etc/istio-certs/
           name: istio-certs
         - mountPath: /etc/envoy
@@ -357,8 +357,8 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-{{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
-{{- if $global.istioSDS.enabled }}
+{{- end }} {{- /* or $global.glooMtls.enabled (or $.Values.istioSDS.enabled $global.istioIntegration.enabled) */}}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
 {{- if $global.istioSDS.customSidecars }}
 {{ toYaml $global.istioSDS.customSidecars | indent 6}}
 {{- end }}
@@ -459,12 +459,12 @@ spec:
         - mountPath: /var/run/secrets/workload-spiffe-credentials
           name: workload-certs
 {{- end }} {{/* if not $global.istioSDS.customSidecars */}}
-{{- end }}{{/* if $global.istioSDS.enabled */}}
+{{- end }}{{/* if or $global.istioSDS.enabled $global.istioIntegration.enabled */}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
-{{- if $global.istioSDS.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
       - name: istio-certs
         emptyDir:
           medium: Memory

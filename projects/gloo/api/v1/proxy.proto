@@ -220,9 +220,23 @@ message MatchedTcpListener {
 }
 
 message Matcher {
+    // Gloo use SNI domains as matching criteria for Gateway selection
+    // The other ssl_config properties will be applied to the outputFilterChain's transport socket
+    // SslConfig from VirtualServices will be ignored in a MatchedGateway
     gloo.solo.io.SslConfig ssl_config = 1;
 
+    // Source addresses to match. This value is either the actual addresses used to connect,
+    // or addresses that are overridden by using PROXY protocol or original_src.
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+    // Destination addresses to match. This value is either the actual addresses used to connect,
+    // or addresses that are overridden by using PROXY protocol or original_dst.
+    repeated .solo.io.envoy.config.core.v3.CidrRange prefix_ranges = 4;
+
+    // Optional destination port to consider in determining a filter chain match.
+    // Filter chains that specify the destination port of incoming traffic are the most specific match.
+    // If no filter chain specifies the exact destination port,
+    // the filter chains which do not specify ports are the most specific match.
+    google.protobuf.UInt32Value destination_port = 5;
 
     repeated string passthrough_cipher_suites = 3;
 }

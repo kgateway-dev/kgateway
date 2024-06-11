@@ -14,7 +14,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	errors "github.com/rotisserie/eris"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -39,15 +39,15 @@ var (
 	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
-	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
-	SubsetsMisconfiguredErr           = errors.New("route has a subset config, but the upstream does not")
-	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
-	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	NoDestinationSpecifiedError       = eris.New("must specify at least one weighted destination for multi destination routes")
+	SubsetsMisconfiguredErr           = eris.New("route has a subset config, but the upstream does not")
+	CompilingRoutePathRegexError      = eris.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
+	ValidRoutePatternError            = eris.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
-		return errors.Errorf("path [%s] cannot contain [%s]", s, invalid)
+		return eris.Errorf("path [%s] cannot contain [%s]", s, invalid)
 	}
 	PathEndsWithInvalidCharactersError = func(s, invalid string) error {
-		return errors.Errorf("path [%s] cannot end with [%s]", s, invalid)
+		return eris.Errorf("path [%s] cannot end with [%s]", s, invalid)
 	}
 )
 
@@ -164,23 +164,12 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run the plugins
 	for _, plugin := range h.pluginRegistry.GetVirtualHostPlugins() {
 		if err := plugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
-			// Check if the incoming v1.VirtualHost has metadata to track the 'source' object
-			// that created it. If we do have this metadata, include it with
-			// the virtual host error, so that other components can easily find it
-			if staticMetadata := virtualHost.GetMetadataStatic(); staticMetadata != nil {
-				validation.AppendVirtualHostErrorWithMetadata(vhostReport,
-					validationapi.VirtualHostReport_Error_ProcessingError,
-					fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
-					staticMetadata,
-				)
-				continue
-			}
-
-			// Otherwise with no metadata, report the error without any source info
-			validation.AppendVirtualHostError(vhostReport,
-				validationapi.VirtualHostReport_Error_ProcessingError,
-				fmt.Sprintf("invalid virtual host [%s] while processing plugin %s: %s", virtualHost.GetName(), plugin.Name(), err.Error()),
-			)
+			reportVirtualHostPluginProcessingError(
+				params,
+				virtualHost,
+				vhostReport,
+				plugin,
+				err)
 		}
 	}
 	return out
@@ -308,18 +297,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
-			if isWarningErr(err) {
-				validation.AppendRouteWarning(routeReport,
-					validationapi.RouteReport_Warning_InvalidDestinationWarning,
-					err.Error(),
-				)
-			} else {
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
-					out.GetName(),
-				)
-			}
+			reportRouteActionProcessingError(routeReport, out, err)
 		}
 		h.runRoutePlugins(params, routeReport, in, out)
 		h.runRouteActionPlugins(params, routeReport, in, out)
@@ -396,32 +374,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	// run the plugins for RoutePlugin
 	for _, plugin := range h.pluginRegistry.GetRoutePlugins() {
 		if err := plugin.ProcessRoute(params, in, out); err != nil {
-			// plugins can return errors on missing upstream/upstream group
-			// we only want to report errors that are plugin-specific
-			// missing upstream(group) should produce a warning above
-			if isWarningErr(err) {
-				continue
-			}
-
-			// Let's check if the incoming v1.Route has metadata to track the 'source' object
-			// that created it. If we do have this metadata, include it with
-			// the route error, so that other components can easily find it
-			if staticMetadata := in.GetMetadataStatic(); staticMetadata != nil {
-				validation.AppendRouteErrorWithMetadata(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", plugin, err.Error()),
-					out.GetName(),
-					staticMetadata,
-				)
-				continue
-			}
-
-			// Otherwise with no metadata, report the error without any source info
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_ProcessingError,
-				fmt.Sprintf("%T: %v", plugin, err.Error()),
-				out.GetName(),
-			)
+			reportRoutePluginProcessingError(
+				params,
+				routeReport,
+				in,
+				out,
+				plugin,
+				err)
 		}
 	}
 }
@@ -442,15 +401,12 @@ func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
 			Route:       in,
 		}
 		if err := plugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
-			// same as above
-			if isWarningErr(err) {
-				continue
-			}
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_ProcessingError,
-				err.Error(),
-				out.GetName(),
-			)
+			reportRouteActionPluginProcessingError(
+				raParams,
+				routeReport,
+				out,
+				plugin,
+				err)
 		}
 	}
 }
@@ -496,7 +452,7 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 		}
 		return nil
 	}
-	return errors.Errorf("unknown upstream destination type")
+	return eris.Errorf("unknown upstream destination type")
 }
 
 func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
@@ -534,11 +490,13 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
 			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
+				reportWeightedDestinationPluginProcessingError(
+					params,
+					routeReport,
 					routeName,
-				)
+					weightedCluster.GetName(),
+					plugin,
+					err)
 			}
 		}
 
@@ -638,7 +596,7 @@ Outerloop:
 	}
 
 	if !found {
-		return errors.Errorf("route has a subset config, but none of the subsets in the upstream match it")
+		return eris.Errorf("route has a subset config, but none of the subsets in the upstream match it")
 
 	}
 	return nil
@@ -827,7 +785,7 @@ func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction)
 		// no need to validate dynamic forward proxy cluster as it's generated by the control plane
 		return nil
 	}
-	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup', 'clusterHeader', or 'dynamicForwardProxy' for action")
+	return eris.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup', 'clusterHeader', or 'dynamicForwardProxy' for action")
 }
 
 func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
@@ -843,7 +801,7 @@ func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_T
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
 		return nil
 	}
-	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
+	return eris.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
 }
 
 func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) error {
@@ -864,7 +822,7 @@ func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) erro
 func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.WeightedDestination) error {
 	for _, dest := range destinations {
 		if err := validateSingleDestination(upstreams, dest.GetDestination()); err != nil {
-			return errors.Wrap(err, "invalid destination in weighted destination list")
+			return eris.Wrap(err, "invalid destination in weighted destination list")
 		}
 	}
 	return nil
@@ -900,26 +858,15 @@ func DataSourceFromString(str string) *envoy_config_core_v3.DataSource {
 	}
 }
 
-func isWarningErr(err error) bool {
-	switch {
-	case err == SubsetsMisconfiguredErr:
-		fallthrough
-	case pluginutils.IsDestinationNotFoundErr(err):
-		return true
-	default:
-		return false
-	}
-}
-
 func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidateRoutePath(path); err != nil {
-		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the path is invalid: %s", path).Error(), name)
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, eris.Wrapf(err, "the path is invalid: %s", path).Error(), name)
 	}
 }
 
 func validatePrefixRewrite(rewrite, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidatePrefixRewrite(rewrite); err != nil {
-		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, eris.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
 	}
 }
 

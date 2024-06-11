@@ -1328,24 +1328,22 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
-		GlooGateway:                  constructGlooGatewayBootstrapOpts(),
+		GlooGateway:                  constructGlooGatewayBootstrapOpts(params.settings),
 	}, nil
 }
 
-func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
+func constructGlooGatewayBootstrapOpts(settings *v1.Settings) bootstrap.GlooGateway {
 	return bootstrap.GlooGateway{
 		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
 		// In the interim, we use an env variable to control the value
 		EnableK8sGatewayController: envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
-		IstioValues:                constructIstioBootstrapOpts(),
+		IstioValues:                constructIstioBootstrapOpts(settings),
 	}
 }
 
-func constructIstioBootstrapOpts() bootstrap.IstioValues {
+func constructIstioBootstrapOpts(settings *v1.Settings) bootstrap.IstioValues {
 	istioValues := bootstrap.IstioValues{
-		// TODO: This value should be inherited at installation time, to determine if the istio integration is enabled
-		// In the interim, we use an env variable to control the value
-		SDSEnabled: envutils.IsEnvTruthy(constants.IstioMtlsEnabled),
+		IntegrationEnabled: settings.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue(),
 
 		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),

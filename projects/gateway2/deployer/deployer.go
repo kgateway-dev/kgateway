@@ -56,6 +56,7 @@ type Deployer struct {
 type Inputs struct {
 	ControllerName string
 	Dev            bool
+	IstioValues    bootstrap.IstioValues
 	ControlPlane   bootstrap.ControlPlane
 	Extensions     extensions.K8sGatewayExtensions
 }
@@ -278,7 +279,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	svcConfig := kubeProxyConfig.GetService()
 	istioConfig := kubeProxyConfig.GetIstio()
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
-	istioContainerConfig := istioConfig.GetIstioContainer()
+	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
@@ -311,7 +312,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	vals.Gateway.ComponentLogLevel = &compLogLevelStr
 
 	// istio values
-	vals.Gateway.Istio = getIstioValues(istioConfig)
+	vals.Gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)
 	vals.Gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
 	vals.Gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 
