@@ -35,8 +35,8 @@ func (p *plugin) ApplyListenerPlugin(
 	listenerCtx *plugins.ListenerContext,
 	outListener *gloov1.Listener,
 ) error {
-	// attachedOption represents the ListenerOptions targeting the Gateway on which this listener resides, and/or
-	// the ListenerOptions which specifies this listener in section name
+	// attachedOption represents the HttpListenerOptions targeting the Gateway on which this listener resides, and/or
+	// the HttpListenerOptions which specifies this listener in section name
 	attachedOptions, err := p.httpLisOptQueries.GetAttachedHttpListenerOptions(ctx, listenerCtx.GwListener, listenerCtx.Gateway)
 	if err != nil {
 		return err

@@ -10,7 +10,7 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
@@ -20,14 +20,14 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ = Describe("Query Get VirtualHostOptions", func() {
+var _ = Describe("Query Get HttpListenerOptions", func() {
 
 	var (
 		ctx      context.Context
 		deps     []client.Object
 		gw       *gwv1.Gateway
 		listener *gwv1.Listener
-		qry      query.ListenerOptionQueries
+		qry      query.HttpListenerOptionQueries
 	)
 
 	BeforeEach(func() {
@@ -57,17 +57,17 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 		BeforeEach(func() {
 			deps = []client.Object{
 				gw,
-				attachedListenerOption(),
-				diffNamespaceListenerOption(),
+				attachedHttpListenerOption(),
+				diffNamespaceHttpListenerOption(),
 			}
 		})
 		It("should find the only attached option", func() {
-			listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+			httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(listenerOptions).NotTo(BeNil())
-			Expect(listenerOptions).To(HaveLen(1))
-			Expect(listenerOptions[0].GetName()).To(Equal("good-policy"))
-			Expect(listenerOptions[0].GetNamespace()).To(Equal("default"))
+			Expect(httpListenerOptions).NotTo(BeNil())
+			Expect(httpListenerOptions).To(HaveLen(1))
+			Expect(httpListenerOptions[0].GetName()).To(Equal("good-policy"))
+			Expect(httpListenerOptions[0].GetNamespace()).To(Equal("default"))
 		})
 	})
 
@@ -75,13 +75,13 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 		BeforeEach(func() {
 			deps = []client.Object{
 				gw,
-				diffNamespaceListenerOption(),
+				diffNamespaceHttpListenerOption(),
 			}
 		})
 		It("should not find an attached option", func() {
-			listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+			httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(listenerOptions).To(BeNil())
+			Expect(httpListenerOptions).To(BeNil())
 		})
 	})
 
@@ -89,18 +89,18 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 		BeforeEach(func() {
 			deps = []client.Object{
 				gw,
-				attachedListenerOptionOmitNamespace(),
-				diffNamespaceListenerOption(),
+				attachedHttpListenerOptionOmitNamespace(),
+				diffNamespaceHttpListenerOption(),
 			}
 		})
 		It("should find the attached option", func() {
-			listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+			httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(listenerOptions).NotTo(BeNil())
-			Expect(listenerOptions).To(HaveLen(1))
+			Expect(httpListenerOptions).NotTo(BeNil())
+			Expect(httpListenerOptions).To(HaveLen(1))
 
-			Expect(listenerOptions[0].GetName()).To(Equal("good-policy-no-ns"))
-			Expect(listenerOptions[0].GetNamespace()).To(Equal("default"))
+			Expect(httpListenerOptions[0].GetName()).To(Equal("good-policy-no-ns"))
+			Expect(httpListenerOptions[0].GetNamespace()).To(Equal("default"))
 		})
 	})
 
@@ -108,13 +108,13 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 		BeforeEach(func() {
 			deps = []client.Object{
 				gw,
-				diffNamespaceListenerOptionOmitNamespace(),
+				diffNamespaceHttpListenerOptionOmitNamespace(),
 			}
 		})
 		It("should not find an attached option", func() {
-			listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+			httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(listenerOptions).To(BeNil())
+			Expect(httpListenerOptions).To(BeNil())
 		})
 	})
 
@@ -123,29 +123,29 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			BeforeEach(func() {
 				deps = []client.Object{
 					gw,
-					attachedListenerOptionMultipleTargetRefHit(),
+					attachedHttpListenerOptionMultipleTargetRefHit(),
 				}
 			})
 			It("should find the only attached option", func() {
-				listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+				httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(listenerOptions).NotTo(BeNil())
-				Expect(listenerOptions).To(HaveLen(1))
-				Expect(listenerOptions[0].GetName()).To(Equal("good-policy"))
-				Expect(listenerOptions[0].GetNamespace()).To(Equal("default"))
+				Expect(httpListenerOptions).NotTo(BeNil())
+				Expect(httpListenerOptions).To(HaveLen(1))
+				Expect(httpListenerOptions[0].GetName()).To(Equal("good-policy"))
+				Expect(httpListenerOptions[0].GetNamespace()).To(Equal("default"))
 			})
 		})
 		When("first targetRef in list does not match", func() {
 			BeforeEach(func() {
 				deps = []client.Object{
 					gw,
-					attachedListenerOptionMultipleTargetRefMiss(),
+					attachedHttpListenerOptionMultipleTargetRefMiss(),
 				}
 			})
 			It("should not find an attached option", func() {
-				listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+				httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(listenerOptions).To(BeNil())
+				Expect(httpListenerOptions).To(BeNil())
 			})
 		})
 	})
@@ -155,38 +155,38 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 			BeforeEach(func() {
 				deps = []client.Object{
 					gw,
-					attachedListenerOptionWithSectionName(),
+					attachedHttpListenerOptionWithSectionName(),
 				}
 			})
 			It("should find the attached option specified by section name", func() {
-				listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+				httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(listenerOptions).NotTo(BeNil())
-				Expect(listenerOptions).To(HaveLen(1))
+				Expect(httpListenerOptions).NotTo(BeNil())
+				Expect(httpListenerOptions).To(HaveLen(1))
 
-				Expect(listenerOptions[0].GetName()).To(Equal("good-policy-with-section-name"))
-				Expect(listenerOptions[0].GetNamespace()).To(Equal("default"))
+				Expect(httpListenerOptions[0].GetName()).To(Equal("good-policy-with-section-name"))
+				Expect(httpListenerOptions[0].GetNamespace()).To(Equal("default"))
 			})
 		})
 		When("no other options with section name", func() {
 			BeforeEach(func() {
 				deps = []client.Object{
 					gw,
-					attachedListenerOptionWithSectionName(),
-					attachedListenerOption(),
+					attachedHttpListenerOptionWithSectionName(),
+					attachedHttpListenerOption(),
 				}
 			})
 			It("should find the attached option with and without section name", func() {
-				listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+				httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(listenerOptions).NotTo(BeNil())
+				Expect(httpListenerOptions).NotTo(BeNil())
 
-				Expect(listenerOptions).To(HaveLen(2))
-				Expect(listenerOptions[0].GetName()).To(Equal("good-policy-with-section-name"))
-				Expect(listenerOptions[0].GetNamespace()).To(Equal("default"))
+				Expect(httpListenerOptions).To(HaveLen(2))
+				Expect(httpListenerOptions[0].GetName()).To(Equal("good-policy-with-section-name"))
+				Expect(httpListenerOptions[0].GetNamespace()).To(Equal("default"))
 
-				Expect(listenerOptions[1].GetName()).To(Equal("good-policy"))
-				Expect(listenerOptions[1].GetNamespace()).To(Equal("default"))
+				Expect(httpListenerOptions[1].GetName()).To(Equal("good-policy"))
+				Expect(httpListenerOptions[1].GetNamespace()).To(Equal("default"))
 			})
 		})
 		When("targetRef has non-matching section name", func() {
@@ -194,45 +194,45 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 				BeforeEach(func() {
 					deps = []client.Object{
 						gw,
-						attachedListenerOptionWithDiffSectionName(),
+						attachedHttpListenerOptionWithDiffSectionName(),
 					}
 				})
 				It("should not find any attached options", func() {
-					listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+					httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(listenerOptions).To(BeNil())
+					Expect(httpListenerOptions).To(BeNil())
 				})
 			})
 			When("gateway-targeted options exist", func() {
 				BeforeEach(func() {
 					deps = []client.Object{
 						gw,
-						attachedListenerOption(),
-						attachedListenerOptionWithDiffSectionName(),
+						attachedHttpListenerOption(),
+						attachedHttpListenerOptionWithDiffSectionName(),
 					}
 				})
 				It("should find the gateway-level attached options", func() {
-					listenerOptions, err := qry.GetAttachedListenerOptions(ctx, listener, gw)
+					httpListenerOptions, err := qry.GetAttachedHttpListenerOptions(ctx, listener, gw)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(listenerOptions).NotTo(BeNil())
-					Expect(listenerOptions).To(HaveLen(1))
-					Expect(listenerOptions[0].GetName()).To(Equal("good-policy"))
-					Expect(listenerOptions[0].GetNamespace()).To(Equal("default"))
+					Expect(httpListenerOptions).NotTo(BeNil())
+					Expect(httpListenerOptions).To(HaveLen(1))
+					Expect(httpListenerOptions[0].GetName()).To(Equal("good-policy"))
+					Expect(httpListenerOptions[0].GetNamespace()).To(Equal("default"))
 				})
 			})
 		})
 	})
 })
 
-func attachedListenerOption() *solokubev1.ListenerOption {
+func attachedHttpListenerOption() *solokubev1.HttpListenerOption {
 	now := metav1.Now()
-	return &solokubev1.ListenerOption{
+	return &solokubev1.HttpListenerOption{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "good-policy",
 			Namespace:         "default",
 			CreationTimestamp: now,
 		},
-		Spec: sologatewayv1.ListenerOption{
+		Spec: sologatewayv1.HttpListenerOption{
 			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				{
 					Group:     gwv1.GroupVersion.Group,
@@ -241,12 +241,12 @@ func attachedListenerOption() *solokubev1.ListenerOption {
 					Namespace: wrapperspb.String("default"),
 				},
 			},
-			Options: &v1.ListenerOptions{},
+			Options: &v1.HttpListenerOptions{},
 		},
 	}
 }
-func attachedListenerOptionWithSectionName() *solokubev1.ListenerOption {
-	opt := attachedListenerOption()
+func attachedHttpListenerOptionWithSectionName() *solokubev1.HttpListenerOption {
+	opt := attachedHttpListenerOption()
 	opt.ObjectMeta.Name = "good-policy-with-section-name"
 	opt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "test-listener",
@@ -254,8 +254,8 @@ func attachedListenerOptionWithSectionName() *solokubev1.ListenerOption {
 	return opt
 }
 
-func attachedListenerOptionWithDiffSectionName() *solokubev1.ListenerOption {
-	opt := attachedListenerOption()
+func attachedHttpListenerOptionWithDiffSectionName() *solokubev1.HttpListenerOption {
+	opt := attachedHttpListenerOption()
 	opt.ObjectMeta.Name = "bad-policy-with-section-name"
 	opt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
 		Value: "not-our-listener",
@@ -263,37 +263,37 @@ func attachedListenerOptionWithDiffSectionName() *solokubev1.ListenerOption {
 	return opt
 }
 
-func attachedListenerOptionOmitNamespace() *solokubev1.ListenerOption {
-	opt := attachedListenerOption()
+func attachedHttpListenerOptionOmitNamespace() *solokubev1.HttpListenerOption {
+	opt := attachedHttpListenerOption()
 	opt.ObjectMeta.Name = "good-policy-no-ns"
 	opt.Spec.TargetRefs[0].Namespace = nil
 	return opt
 }
 
-func diffNamespaceListenerOption() *solokubev1.ListenerOption {
-	opt := attachedListenerOption()
+func diffNamespaceHttpListenerOption() *solokubev1.HttpListenerOption {
+	opt := attachedHttpListenerOption()
 	opt.ObjectMeta.Name = "bad-policy"
 	opt.ObjectMeta.Namespace = "non-default"
 	return opt
 }
 
-func diffNamespaceListenerOptionOmitNamespace() *solokubev1.ListenerOption {
-	opt := attachedListenerOption()
+func diffNamespaceHttpListenerOptionOmitNamespace() *solokubev1.HttpListenerOption {
+	opt := attachedHttpListenerOption()
 	opt.ObjectMeta.Name = "bad-policy"
 	opt.ObjectMeta.Namespace = "non-default"
 	opt.Spec.TargetRefs[0].Namespace = nil
 	return opt
 }
 
-func attachedListenerOptionMultipleTargetRefHit() *solokubev1.ListenerOption {
+func attachedHttpListenerOptionMultipleTargetRefHit() *solokubev1.HttpListenerOption {
 	now := metav1.Now()
-	return &solokubev1.ListenerOption{
+	return &solokubev1.HttpListenerOption{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "good-policy",
 			Namespace:         "default",
 			CreationTimestamp: now,
 		},
-		Spec: sologatewayv1.ListenerOption{
+		Spec: sologatewayv1.HttpListenerOption{
 			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				{
 					Group:     gwv1.GroupVersion.Group,
@@ -308,19 +308,19 @@ func attachedListenerOptionMultipleTargetRefHit() *solokubev1.ListenerOption {
 					Namespace: wrapperspb.String("default"),
 				},
 			},
-			Options: &v1.ListenerOptions{},
+			Options: &v1.HttpListenerOptions{},
 		},
 	}
 }
-func attachedListenerOptionMultipleTargetRefMiss() *solokubev1.ListenerOption {
+func attachedHttpListenerOptionMultipleTargetRefMiss() *solokubev1.HttpListenerOption {
 	now := metav1.Now()
-	return &solokubev1.ListenerOption{
+	return &solokubev1.HttpListenerOption{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "good-policy",
 			Namespace:         "default",
 			CreationTimestamp: now,
 		},
-		Spec: sologatewayv1.ListenerOption{
+		Spec: sologatewayv1.HttpListenerOption{
 			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
 				{
 					Group:     gwv1.GroupVersion.Group,
@@ -335,7 +335,7 @@ func attachedListenerOptionMultipleTargetRefMiss() *solokubev1.ListenerOption {
 					Namespace: wrapperspb.String("default"),
 				},
 			},
-			Options: &v1.ListenerOptions{},
+			Options: &v1.HttpListenerOptions{},
 		},
 	}
 }

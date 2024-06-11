@@ -70,7 +70,7 @@ var _ = Describe("HttpListenerOptions Plugin", func() {
 			plugin = NewPlugin(gwQueries, fakeClient)
 		})
 
-		When("ListenerOptions exist in the same namespace and are attached correctly", func() {
+		When("HttpListenerOptions exist in the same namespace and are attached correctly", func() {
 			BeforeEach(func() {
 				deps = []client.Object{attachedHttpListenerOption()}
 			})
@@ -88,7 +88,7 @@ var _ = Describe("HttpListenerOptions Plugin", func() {
 			})
 		})
 
-		When("ListenerOptions exist in the same namespace and are attached correctly with section name", func() {
+		When("HttpListenerOptions exist in the same namespace and are attached correctly with section name", func() {
 			BeforeEach(func() {
 				deps = []client.Object{attachedHttpListenerOptionWithSectionName()}
 			})
@@ -106,7 +106,7 @@ var _ = Describe("HttpListenerOptions Plugin", func() {
 			})
 		})
 
-		When("ListenerOptions exist in the same namespace and are attached correctly but omit the namespace in targetRef", func() {
+		When("HttpListenerOptions exist in the same namespace and are attached correctly but omit the namespace in targetRef", func() {
 			BeforeEach(func() {
 				deps = []client.Object{attachedHttpListenerOptionOmitNamespace()}
 			})
@@ -124,7 +124,7 @@ var _ = Describe("HttpListenerOptions Plugin", func() {
 			})
 		})
 
-		When("ListenerOptions exist in the same namespace but are not attached correctly", func() {
+		When("HttpListenerOptions exist in the same namespace but are not attached correctly", func() {
 			BeforeEach(func() {
 				deps = []client.Object{nonAttachedHttpListenerOption()}
 			})
@@ -142,7 +142,7 @@ var _ = Describe("HttpListenerOptions Plugin", func() {
 			})
 		})
 
-		When("ListenerOptions exist in a different namespace than the provided listenerCtx", func() {
+		When("HttpListenerOptions exist in a different namespace than the provided listenerCtx", func() {
 			BeforeEach(func() {
 				deps = []client.Object{attachedHttpListenerOption()}
 				listenerCtx.Gateway.SetNamespace("bad-namespace")

@@ -9,5 +9,5 @@ import (
 
 func TestQuery(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ListenerOption Query Suite")
+	RunSpecs(t, "HttpListenerOption Query Suite")
 }
