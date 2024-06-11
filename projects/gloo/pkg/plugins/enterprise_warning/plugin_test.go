@@ -565,14 +565,14 @@ var _ = Describe("enterprise_warning plugin", func() {
 
 	Context("statefulSession", func() {
 
-		It("should not add filter if extproc config is nil", func() {
+		It("should not add filter if statefulsession config is nil", func() {
 			p := NewPlugin()
 			f, err := p.HttpFilters(plugins.Params{}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(f).To(BeNil())
 		})
 
-		It("should error if extproc is configured on listener", func() {
+		It("should error if statefulsession is configured on listener", func() {
 			p := NewPlugin()
 			hl := &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
