@@ -44,11 +44,6 @@ func NewCli() *Cli {
 	}
 }
 
-type CurlResponse struct {
-	StdErr string
-	StdOut string
-}
-
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
 // of cmdutils.Cmd created by the Cli
 func (c *Cli) WithReceiver(receiver io.Writer) *Cli {
@@ -216,7 +211,7 @@ func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.Namespaced
 
 // CurlFromPod executes a Curl request from the given pod for the given options.
 // It differs from CurlFromEphemeralPod in that it does not uses an ephemeral container to execute the Curl command
-func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options ...curl.Option) (*CurlResponse, error) {
+func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options ...curl.Option) (string, error) {
 	appendOption := func(option curl.Option) {
 		options = append(options, option)
 	}
@@ -248,7 +243,8 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 	}, curlArgs...)
 
 	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, nil, args...)
-	return &CurlResponse{StdOut: stdout, StdErr: stderr}, err
+
+	return stdout + stderr, err
 }
 
 func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (string, string, error) {

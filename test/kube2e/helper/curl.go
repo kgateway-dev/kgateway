@@ -43,8 +43,6 @@ type CurlOpts struct {
 	// Optional SNI name to resolve domain to when sending request
 	Sni        string
 	SelfSigned bool
-	Cookie     string
-	CookieJar  string
 
 	// Retries on Curl requests are disabled by default because they historically were not configurable
 	// Curls to a remote container may be subject to network flakes and therefore using retries
@@ -136,14 +134,12 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 		g.Expect(t.CanCurl()).To(BeTrue())
 
 		res, err := t.Curl(opts)
-
 		if err != nil {
 			// trigger an early exit if the pod has been deleted.
-			if strings.Contains(err.Error(), `pods "testserver" not found`) {
-				ginkgo.Fail(err.Error())
-			}
-
-			g.Expect(err).NotTo(HaveOccurred())
+			// if we return an error here, the Eventually will continue. By making an
+			// assertion with the outer context's Gomega, we can trigger a failure at
+			// that outer scope.
+			g.Expect(err).NotTo(MatchError(ContainSubstring(`pods "testserver" not found`)))
 			return
 		}
 		select {
@@ -238,14 +234,6 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	}
 	if opts.AllowInsecure {
 		appendOption(curl.IgnoreServerCert())
-	}
-
-	if opts.Cookie != "" {
-		appendOption(curl.WithCookie(opts.Cookie))
-	}
-
-	if opts.CookieJar != "" {
-		appendOption(curl.WithCookieJar(opts.CookieJar))
 	}
 
 	port := opts.Port
