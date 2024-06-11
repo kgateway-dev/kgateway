@@ -13,6 +13,7 @@ spec:
     plural: listeneroptions
     shortNames:
     - lisopts
+    - gisopts
   scope: Namespaced
   versions:
   - name: v1
