@@ -43,7 +43,7 @@ var _ = Describe("Reporting", func() {
 			eris.New("generic error"),
 			false,
 		),
-		Entry("isWarningErr",
+		Entry("Upstream not found",
 			pluginutils.NewUpstreamNotFoundErr(core.ResourceRef{}),
 			true,
 		),

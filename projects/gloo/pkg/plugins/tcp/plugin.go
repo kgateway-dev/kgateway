@@ -82,7 +82,8 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 
 		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, tcpListenerOptions, statPrefix, alsSettings)
 		if err != nil {
-			if _, ok := err.(*pluginutils.DestinationNotFoundError); ok {
+			var configErr *plugins.BaseConfigurationError
+			if errors.As(err, &configErr) && configErr.IsWarning() {
 				hostNumDurable := hostNum
 				// this error will be treated as just a warning; wrap in a
 				// special error object, and the caller will handle conversion
@@ -95,8 +96,6 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 						HostNum: &hostNumDurable,
 					},
 				})
-			} else {
-				multiErr.Errors = append(multiErr.Errors, err)
 			}
 			continue
 		}

@@ -40,7 +40,7 @@ var (
 	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
 	NoDestinationSpecifiedError       = eris.New("must specify at least one weighted destination for multi destination routes")
-	SubsetsMisconfiguredErr           = eris.New("route has a subset config, but the upstream does not")
+	SubsetsMisconfiguredErr           = plugins.NewWarningConfigurationError("route has a subset config, but the upstream does not")
 	CompilingRoutePathRegexError      = eris.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
 	ValidRoutePatternError            = eris.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
 	PathContainsInvalidCharacterError = func(s, invalid string) error {

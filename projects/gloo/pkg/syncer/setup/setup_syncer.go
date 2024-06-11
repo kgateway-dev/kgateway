@@ -830,6 +830,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		GlooValidatorConfig: validation.GlooValidatorConfig{
 			XdsSanitizer: xdsSanitizers,
 			Translator:   sharedTranslator,
+			Settings:     opts.Settings,
 		},
 	}
 	validator := validation.NewValidator(vc)
@@ -996,7 +997,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					gwOpts.Validation.ValidatingWebhookCertPath,
 					gwOpts.Validation.ValidatingWebhookKeyPath,
 					gwOpts.Validation.AlwaysAcceptResources,
-					gwOpts.Validation.AllowWarnings,
 					gwOpts.ReadGatewaysFromAllNamespaces,
 					gwOpts.GlooNamespace,
 					opts.GlooGateway.EnableK8sGatewayController, // controls validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)

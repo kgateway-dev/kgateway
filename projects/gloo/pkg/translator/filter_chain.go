@@ -2,22 +2,22 @@ package translator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/golang/protobuf/proto"
@@ -64,13 +64,12 @@ type tcpFilterChainTranslator struct {
 // itself. nothing currently reports errors on a TcpHost instance or warnings
 // on a TcpListener instance, so these two branches are not currently supported
 func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
-	getWarningType := func(errType error) validationapi.TcpHostReport_Warning_Type {
-		switch errType.(type) {
+	getWarningType := func(err error) validationapi.TcpHostReport_Warning_Type {
+		switch err.(type) {
 		case *pluginutils.DestinationNotFoundError:
 			return validationapi.TcpHostReport_Warning_InvalidDestinationWarning
-		default:
-			return validationapi.TcpHostReport_Warning_UnknownWarning
 		}
+		return validationapi.TcpHostReport_Warning_UnknownWarning
 	}
 
 	reportTcpListenerError := func(errType error) {
@@ -82,8 +81,9 @@ func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
 	}
 
 	reportError := func(errReport error) {
-		switch errType := errReport.(type) {
-		case validation.ErrorWithKnownLevel:
+		var errType validation.ErrorWithKnownLevel
+		switch {
+		case errors.As(errReport, &errType):
 			switch errType.ErrorLevel() {
 			case validation.ErrorLevels_WARNING:
 				if tcpHostNum := errType.GetContext().HostNum; tcpHostNum != nil {
@@ -98,7 +98,7 @@ func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
 			case validation.ErrorLevels_ERROR:
 				reportTcpListenerError(errType)
 			}
-		// if the error is not of ErrorWithKnownLevel type, report it
+			// if the error is not of ErrorWithKnownLevel type, report it
 		// as an error on the TcpListener
 		default:
 			reportTcpListenerError(errType)

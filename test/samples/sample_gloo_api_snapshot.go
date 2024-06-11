@@ -4,6 +4,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -33,10 +34,10 @@ func SimpleUpstream() *v1.Upstream {
 	}
 }
 
-func UpstreamWithSecret(secret *v1.Secret) *v1.Upstream {
+func UpstreamWithSecret(name string, secret *v1.Secret) *v1.Upstream {
 	return &v1.Upstream{
 		Metadata: &core.Metadata{
-			Name:      "test",
+			Name:      name,
 			Namespace: "gloo-system",
 		},
 		UpstreamType: &v1.Upstream_Static{
@@ -76,22 +77,8 @@ func SimpleSecret() *v1.Secret {
 	}
 }
 
-func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
-	secret := SimpleSecret()
-	us := UpstreamWithSecret(secret)
-	routes := []*v1.Route{{
-		Action: &v1.Route_RouteAction{
-			RouteAction: &v1.RouteAction{
-				Destination: &v1.RouteAction_Single{
-					Single: &v1.Destination{
-						DestinationType: &v1.Destination_Upstream{
-							Upstream: us.GetMetadata().Ref(),
-						},
-					},
-				},
-			},
-		},
-	}}
+func CustomGlooSnapshot(route *v1.Route, us *v1.Upstream, secret *v1.Secret, namespace string) *v1snap.ApiSnapshot {
+	routes := []*v1.Route{route}
 
 	httpListener := &v1.Listener{
 		Name:        "http-listener",
@@ -237,6 +224,32 @@ func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 			SimpleVS(namespace, "virtualservice", "*", us.GetMetadata().Ref()),
 		},
 	}
+}
+
+func SimpleGlooSnapshotWithRouteOptions(routeOpts *gloov1.RouteOptions, namespace string) *v1snap.ApiSnapshot {
+	secret := SimpleSecret()
+	us := UpstreamWithSecret("test", secret)
+
+	route := &v1.Route{
+		Options: routeOpts,
+		Action: &v1.Route_RouteAction{
+			RouteAction: &v1.RouteAction{
+				Destination: &v1.RouteAction_Single{
+					Single: &v1.Destination{
+						DestinationType: &v1.Destination_Upstream{
+							Upstream: us.GetMetadata().Ref(),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return CustomGlooSnapshot(route, us, secret, namespace)
+}
+
+func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
+	return SimpleGlooSnapshotWithRouteOptions(nil, namespace)
 }
 
 func SimpleVS(namespace, name, domain string, upstreamRef *core.ResourceRef) *gwv1.VirtualService {

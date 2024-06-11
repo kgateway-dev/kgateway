@@ -11,9 +11,10 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
+	"github.com/ghodss/yaml"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -95,7 +96,6 @@ type WebhookConfig struct {
 	watchNamespaces               []string
 	port                          int
 	serverCertPath, serverKeyPath string
-	allowWarnings                 bool // allow warnings to be accepted
 	alwaysAccept                  bool // accept all resources
 	readGatewaysFromAllNamespaces bool
 	webhookNamespace              string
@@ -108,7 +108,7 @@ func NewWebhookConfig(
 	watchNamespaces []string,
 	port int,
 	serverCertPath, serverKeyPath string,
-	alwaysAccept, allowWarnings, readGatewaysFromAllNamespaces bool,
+	alwaysAccept, readGatewaysFromAllNamespaces bool,
 	webhookNamespace string,
 	kubeGatewayEnabled bool,
 ) WebhookConfig {
@@ -120,7 +120,6 @@ func NewWebhookConfig(
 		serverCertPath:                serverCertPath,
 		serverKeyPath:                 serverKeyPath,
 		alwaysAccept:                  alwaysAccept,
-		allowWarnings:                 allowWarnings,
 		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		webhookNamespace:              webhookNamespace,
 		kubeGatewayEnabled:            kubeGatewayEnabled,
@@ -135,7 +134,6 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 	serverCertPath := cfg.serverCertPath
 	serverKeyPath := cfg.serverKeyPath
 	alwaysAccept := cfg.alwaysAccept
-	allowWarnings := cfg.allowWarnings
 	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
 	webhookNamespace := cfg.webhookNamespace
 	kubeGatewayEnabled := cfg.kubeGatewayEnabled
@@ -150,7 +148,6 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 		validator,
 		watchNamespaces,
 		alwaysAccept,
-		allowWarnings,
 		readGatewaysFromAllNamespaces,
 		webhookNamespace,
 		kubeGatewayEnabled,
@@ -180,7 +177,6 @@ type gatewayValidationWebhook struct {
 	validator                     validation.Validator // the function calls are synchronized
 	watchNamespaces               []string             // we make a deep copy when we read this; original is read only so no races
 	alwaysAccept                  bool                 // read only so no races
-	allowWarnings                 bool                 // allow warnings to be accepted
 	readGatewaysFromAllNamespaces bool                 // read only so no races
 	webhookNamespace              string               // read only so no races
 	kubeGatewayEnabled            bool                 // read only so no races
@@ -206,7 +202,7 @@ func NewGatewayValidationHandler(
 	ctx context.Context,
 	validator validation.Validator,
 	watchNamespaces []string,
-	alwaysAccept, allowWarnings bool,
+	alwaysAccept bool,
 	readGatewaysFromAllNamespaces bool,
 	webhookNamespace string,
 	kubeGatewayEnabled bool,
@@ -215,7 +211,6 @@ func NewGatewayValidationHandler(
 		ctx:                           ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,
-		allowWarnings:                 allowWarnings,
 		alwaysAccept:                  alwaysAccept,
 		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		webhookNamespace:              webhookNamespace,
@@ -371,31 +366,9 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		}
 	}
 
-	// even if validation is set to always accept, we want to fail on unmarshal errors, but not on validation warnings
+	// even if validation is set to always accept, we want to fail on unmarshal errors
 	if validationErrs.ErrorOrNil() == nil || (wh.alwaysAccept && !hasUnmarshalErr) {
 		logger.Debugf("Succeeded, alwaysAccept: %v validationErrs: %v", wh.alwaysAccept, validationErrs)
-		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
-		return &AdmissionResponseWithProxies{
-			AdmissionResponse: &v1beta1.AdmissionResponse{
-				Allowed: true,
-			},
-			Proxies: reports.GetProxies(),
-		}
-	}
-
-	// TODO(npolshak): check no IsError() types instead of checking all errors are warnings
-	// check all validationErr are warnings
-	onlyWarnings := true
-	for _, validationErr := range validationErrs.Errors {
-		var configurationError plugins.ConfigurationError
-		isConfigurationError := errors.As(validationErr, &configurationError)
-		if !isConfigurationError {
-			onlyWarnings = false
-			break
-		}
-	}
-
-	if onlyWarnings && wh.allowWarnings {
 		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
 		return &AdmissionResponseWithProxies{
 			AdmissionResponse: &v1beta1.AdmissionResponse{

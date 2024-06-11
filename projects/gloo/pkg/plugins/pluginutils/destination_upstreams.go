@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -52,16 +53,19 @@ type DestinationNotFoundError struct {
 	ResourceType resources.Resource
 }
 
-func NewUpstreamNotFoundErr(ref core.ResourceRef) *DestinationNotFoundError {
-	return &DestinationNotFoundError{Ref: ref, ResourceType: &v1.Upstream{}}
+func NewUpstreamNotFoundErr(ref core.ResourceRef) *plugins.BaseConfigurationError {
+	message := fmt.Sprintf("%T { %s.%s } not found", &v1.Upstream{}, ref.GetNamespace(), ref.GetName())
+	return plugins.NewWarningConfigurationError(message)
 }
 
-func NewUpstreamGroupNotFoundErr(ref core.ResourceRef) *DestinationNotFoundError {
-	return &DestinationNotFoundError{Ref: ref, ResourceType: &v1.UpstreamGroup{}}
+func NewUpstreamGroupNotFoundErr(ref core.ResourceRef) *plugins.BaseConfigurationError {
+	message := fmt.Sprintf("%T { %s.%s } not found", &v1.UpstreamGroup{}, ref.GetNamespace(), ref.GetName())
+	return plugins.NewWarningConfigurationError(message)
 }
 
-func NewDestinationNotFoundErr(ref core.ResourceRef, resourceType resources.Resource) *DestinationNotFoundError {
-	return &DestinationNotFoundError{Ref: ref, ResourceType: resourceType}
+func NewDestinationNotFoundErr(ref core.ResourceRef, resourceType resources.Resource) *plugins.BaseConfigurationError {
+	message := fmt.Sprintf("%T { %s.%s } not found", resourceType, ref.GetNamespace(), ref.GetName())
+	return plugins.NewWarningConfigurationError(message)
 }
 
 func (e *DestinationNotFoundError) Error() string {
@@ -72,6 +76,7 @@ func IsDestinationNotFoundErr(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*DestinationNotFoundError)
+	var destinationNotFoundError *DestinationNotFoundError
+	ok := errors.As(err, &destinationNotFoundError)
 	return ok
 }
