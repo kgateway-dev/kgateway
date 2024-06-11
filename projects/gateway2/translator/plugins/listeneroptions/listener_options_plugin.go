@@ -44,13 +44,8 @@ func (p *plugin) ApplyListenerPlugin(
 		return nil
 	}
 
+	// use the first option (highest in priority)
 	optToUse := attachedOptions[0]
-
-	if optToUse == nil {
-		// unsure if this should be an error case
-		return nil
-	}
-
 	outListener.Options = optToUse.Spec.GetOptions()
 
 	return nil

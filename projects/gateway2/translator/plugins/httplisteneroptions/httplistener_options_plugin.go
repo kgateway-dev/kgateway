@@ -7,6 +7,7 @@ import (
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,20 +46,15 @@ func (p *plugin) ApplyListenerPlugin(
 		return nil
 	}
 
-	optToUse := attachedOptions[0]
-
-	if optToUse == nil {
-		// unsure if this should be an error case
-		return nil
-	}
-
 	// Currently we only create AggregateListeners in k8s gateway translation.
 	// If that ever changes, we will need to handle other listener types more gracefully here.
 	aggListener := outListener.GetAggregateListener()
 	if aggListener == nil {
-		return nil //TODO
+		return utils.ErrUnexpectedListener(outListener)
 	}
 
+	// use the first option (highest in priority)
+	optToUse := attachedOptions[0]
 	httpOptions := optToUse.Spec.GetOptions()
 
 	// store HttpListenerOptions, indexed by a hash of the httpOptions
