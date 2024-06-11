@@ -341,3 +341,80 @@ Return to the app in your browser and refresh the page a few times. You should s
 ```
 
 Now that you have configured cookie-based sticky sessions, web requests from your browser will be served by the same instance of the counter app (unless you delete the cookie).
+
+
+## Stateful Session Plugin (Enterprise Only)
+Envoy provides another method of implementing sticky sessions using the [Stateful Session](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/stateful_session_filter) filter, which implements "strong" stickiness.
+
+This example uses the Counter reources as created in the [Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) section, with no additional modifications to the upstream or virtualservice needed.
+
+### Cookie based stateful session plugin
+With Gloo Edge Enterprise installed with the counter app resources applied, edit the gateway:
+```
+kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
+```
+and add the following config:
+{{< highlight yaml "hl_lines=4-11" >}}
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway:
+     options:
+      statefulSession:
+        cookieBased:
+          cookie:
+            name: statefulsessioncookie
+            path: /route1
+            ttl: 60s
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false
+{{< /highlight >}}
+
+Now when you navigate to `route1` you should get an increasing count when you refresh.
+
+### Header based stateful session plugin
+With Gloo Edge Enterprise installed with the counter app resources applied, edit the gateway:
+```
+kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
+```
+and add the following config:
+{{< highlight yaml "hl_lines=4-11" >}}
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway:
+    options:
+      statefulSession:
+        headerBased:
+          headerName: statefulsessionheader
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false
+{{< /highlight >}}
+
+Requests to the `route1` will now return a header that can be sent with subsequent requests to enable the session stickiness.
+Unlike cookies, the header won't be automatically applied by the browser, so it is easier to validate the behavior with a curl:
+```
+curl -v $(glooctl proxy url)/route1
+```
+will return results like:
+```
+< HTTP/1.1 200 OK
+< date: Tue, 11 Jun 2024 15:11:23 GMT
+< content-length: 1
+< content-type: text/plain; charset=utf-8
+< x-envoy-upstream-service-time: 10
+< statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==
+< server: envoy
+< 
+* Connection #0 to host 127.0.0.1 left intact
+3%  
+```
+
+We can then take the `statefulsessionheader` header from the request and add it to our curl request:
+```
+curl -v -H "statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==" $(glooctl proxy url)/route1
+```
