@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9096
+    resolvesIssue: false
+    description: >-
+      Update GHA definitions to rely on Node20.

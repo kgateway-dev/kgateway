@@ -159,7 +159,7 @@ func GetRateLimitStageForServerSettings(serverSettings *ratelimit.Settings) uint
 	return rateLimitStage
 }
 
-func GetFilterStageForRateLimitStage(rateLimitStage uint32) plugins.FilterStage {
+func GetFilterStageForRateLimitStage(rateLimitStage uint32) plugins.FilterStage[plugins.WellKnownFilterStage] {
 	if rateLimitStage == CustomStageBeforeAuth {
 		return BeforeAuthStage
 	}

@@ -9,12 +9,27 @@ kubeGateway:
   enabled: false
   gatewayParameters:
     glooGateway:
-      image:
-        repository: gloo-envoy-wrapper
+      envoyContainer:
+        image:
+          repository: gloo-envoy-wrapper
       proxyDeployment:
         replicas: 1
       service:
         type: LoadBalancer
+      sdsContainer:
+        image:
+          repository: sds
+        logLevel: info
+      istio:
+        istioProxyContainer:
+          image:
+            repository: proxyv2
+            registry: docker.io/istio
+            tag: 1.22.0
+          logLevel: warning
+          istioDiscoveryAddress: istiod.istio-system.svc:15012
+          istioMetaMeshId: cluster.local
+          istioMetaClusterId: Kubernetes
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
@@ -246,7 +261,7 @@ global:
       image:
         repository: proxyv2
         registry: docker.io/istio
-        tag: 1.21.2
+        tag: 1.22.0
       logLevel: warning
     envoy:
       image:
@@ -254,12 +269,17 @@ global:
   istioSDS:
     enabled: false
   istioIntegration:
-    labelInstallNamespace: false
-    whitelistDiscovery: false
+    enabled: false
     disableAutoinjection: false
-    enableIstioSidecarOnGateway: false
-    appendXForwardedHost: true
     enableAutoMtls: false
+    # To be deprecated in future release
+    labelInstallNamespace: false
+    # To be deprecated in future release
+    whitelistDiscovery: false
+    # To be deprecated in future release
+    enableIstioSidecarOnGateway: false
+    # To be deprecated in future release
+    appendXForwardedHost: true
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true

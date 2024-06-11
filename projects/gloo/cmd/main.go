@@ -6,13 +6,14 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/probes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/go-utils/stats"
 )
 
 func main() {
 	ctx := context.Background()
+
+	// Start a server which is responsible for responding to liveness probes
 	probes.StartLivenessProbeServer(ctx)
-	stats.ConditionallyStartStatsServer()
+
 	if err := setup.Main(ctx); err != nil {
 		log.Fatalf("err in main: %v", err.Error())
 	}

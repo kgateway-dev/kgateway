@@ -642,6 +642,9 @@ spec:
                       enableAutoMtls:
                         nullable: true
                         type: boolean
+                      enableIntegration:
+                        nullable: true
+                        type: boolean
                     type: object
                   logTransformationRequestResponseInfo:
                     nullable: true

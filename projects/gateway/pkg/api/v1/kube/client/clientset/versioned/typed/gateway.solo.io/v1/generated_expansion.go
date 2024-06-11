@@ -20,6 +20,10 @@ package v1
 
 type GatewayExpansion interface{}
 
+type HttpListenerOptionExpansion interface{}
+
+type ListenerOptionExpansion interface{}
+
 type MatchableHttpGatewayExpansion interface{}
 
 type MatchableTcpGatewayExpansion interface{}

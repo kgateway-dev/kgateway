@@ -735,11 +735,18 @@ message GlooOptions {
     message IstioOptions {
         // Set to false to disable adding X-Forwarded-Host header in Istio integration
         // Defaults to true
-        google.protobuf.BoolValue append_x_forwarded_host = 1;
+        // Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy.
+        google.protobuf.BoolValue append_x_forwarded_host = 1 [deprecated = true];
 
         // Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect.
         // Defaults to false
         google.protobuf.BoolValue enable_auto_mtls = 2;
+
+        // Istio integration is enabled via global.istioIntegration.enabled on the helm chart.
+        // If enabled, an istio-proxy container and sds container are assumed to exist alongside the
+        // gateway proxy. These containers are created by enabling the istioIntegration.enabled option in the helm chart.
+        // Defaults to false
+        google.protobuf.BoolValue enable_integration = 3;
     }
 
     IstioOptions istio_options = 18;

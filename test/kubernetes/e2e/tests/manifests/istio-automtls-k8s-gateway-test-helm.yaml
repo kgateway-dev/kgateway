@@ -1,8 +1,7 @@
 global:
   # Set up gloo with istio integration enabled
-  istioSDS:
-    enabled: true
   istioIntegration:
+    enabled: true
     enableAutoMtls: true # Automtls is enabled in this test setup
   image:
     pullPolicy: IfNotPresent
@@ -21,11 +20,15 @@ settings:
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
-  persistProxySpec: true
+  persistProxySpec: false
   logLevel: info
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
+    # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+    webhook:
+      skipDeleteValidationResources:
+        - upstreams
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -78,7 +80,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil, iosnapshot.NewHistory(xdsCache))
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -111,9 +113,12 @@ var _ = Describe("Translate Proxy", func() {
 		// update rv for proxy
 		p1, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
+
+		snapClone := snap.Clone()
+		snap = &snapClone
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil, iosnapshot.NewHistory(xdsCache))
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -196,6 +201,9 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		us.Metadata.Annotations = map[string]string{"uniqueErrPerProxy": "true"}
 		_, err = upstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
+
+		snapClone := snap.Clone()
+		snap = &snapClone
 		snap.Upstreams = upstreams
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -244,7 +252,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), nil, iosnapshot.NewHistory(xdsCache))
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,

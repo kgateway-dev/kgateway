@@ -25,7 +25,15 @@ func routeOptionTargetRefIndexer(obj client.Object) []string {
 	}
 
 	var res []string
-	targetRef := rtOpt.Spec.GetTargetRef()
+	targetRefs := rtOpt.Spec.GetTargetRefs()
+	if len(targetRefs) == 0 {
+		return res
+	}
+
+	// use the first targetRef in the list as we only support one ref but have multiple in API for future-compatbility
+	// TODO: fix this as part of https://github.com/solo-io/solo-projects/issues/6286
+	targetRef := targetRefs[0]
+
 	if targetRef == nil {
 		return res
 	}

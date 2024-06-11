@@ -16,11 +16,11 @@ jobs:
       should-auto-succeed-istio-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
       - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
       - id: checkout-code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # We require gathering the branch and tag history since we rely on a `git diff`
           # which compares the state of two branches
@@ -55,7 +55,7 @@ jobs:
           - merge-to-main: true
             kube-e2e-test-type: upgrade
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: run-tests
         if: needs.prepare_env.outputs.should-auto-succeed-istio-tests != 'true'
         uses: ./.github/workflows/composite-actions/istio-tests

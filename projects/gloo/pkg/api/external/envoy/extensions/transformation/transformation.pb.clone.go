@@ -610,5 +610,7 @@ func (m *TransformationTemplate_DynamicMetadataValue) Clone() proto.Message {
 		target.Value = proto.Clone(m.GetValue()).(*InjaTemplate)
 	}
 
+	target.JsonToProto = m.GetJsonToProto()
+
 	return target
 }

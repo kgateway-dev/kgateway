@@ -81,6 +81,120 @@ type GatewayList struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resourceName=httplisteneroptions
+// +genclient
+// +genclient:noStatus
+type HttpListenerOption struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Spec defines the implementation of this definition.
+	// +optional
+	Spec api.HttpListenerOption `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+}
+
+func (o *HttpListenerOption) MarshalJSON() ([]byte, error) {
+	spec, err := protoutils.MarshalMap(&o.Spec)
+	if err != nil {
+		return nil, err
+	}
+	delete(spec, "metadata")
+	asMap := map[string]interface{}{
+		"metadata":   o.ObjectMeta,
+		"apiVersion": o.TypeMeta.APIVersion,
+		"kind":       o.TypeMeta.Kind,
+		"spec":       spec,
+	}
+	return json.Marshal(asMap)
+}
+
+func (o *HttpListenerOption) UnmarshalJSON(data []byte) error {
+	var metaOnly metaOnly
+	if err := json.Unmarshal(data, &metaOnly); err != nil {
+		return err
+	}
+	var spec api.HttpListenerOption
+	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
+		return err
+	}
+	spec.Metadata = nil
+	*o = HttpListenerOption{
+		ObjectMeta: metaOnly.ObjectMeta,
+		TypeMeta:   metaOnly.TypeMeta,
+		Spec:       spec,
+	}
+
+	return nil
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// HttpListenerOptionList is a collection of HttpListenerOptions.
+type HttpListenerOptionList struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Items       []HttpListenerOption `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resourceName=listeneroptions
+// +genclient
+// +genclient:noStatus
+type ListenerOption struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Spec defines the implementation of this definition.
+	// +optional
+	Spec api.ListenerOption `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+}
+
+func (o *ListenerOption) MarshalJSON() ([]byte, error) {
+	spec, err := protoutils.MarshalMap(&o.Spec)
+	if err != nil {
+		return nil, err
+	}
+	delete(spec, "metadata")
+	asMap := map[string]interface{}{
+		"metadata":   o.ObjectMeta,
+		"apiVersion": o.TypeMeta.APIVersion,
+		"kind":       o.TypeMeta.Kind,
+		"spec":       spec,
+	}
+	return json.Marshal(asMap)
+}
+
+func (o *ListenerOption) UnmarshalJSON(data []byte) error {
+	var metaOnly metaOnly
+	if err := json.Unmarshal(data, &metaOnly); err != nil {
+		return err
+	}
+	var spec api.ListenerOption
+	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
+		return err
+	}
+	spec.Metadata = nil
+	*o = ListenerOption{
+		ObjectMeta: metaOnly.ObjectMeta,
+		TypeMeta:   metaOnly.TypeMeta,
+		Spec:       spec,
+	}
+
+	return nil
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// ListenerOptionList is a collection of ListenerOptions.
+type ListenerOptionList struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Items       []ListenerOption `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resourceName=httpgateways
 // +genclient
 type MatchableHttpGateway struct {

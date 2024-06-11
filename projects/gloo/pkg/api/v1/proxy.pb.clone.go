@@ -430,6 +430,25 @@ func (m *Matcher) Clone() proto.Message {
 		}
 	}
 
+	if m.GetPrefixRanges() != nil {
+		target.PrefixRanges = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange, len(m.GetPrefixRanges()))
+		for idx, v := range m.GetPrefixRanges() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.PrefixRanges[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			} else {
+				target.PrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+			}
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetDestinationPort()).(clone.Cloner); ok {
+		target.DestinationPort = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	} else {
+		target.DestinationPort = proto.Clone(m.GetDestinationPort()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+	}
+
 	if m.GetPassthroughCipherSuites() != nil {
 		target.PassthroughCipherSuites = make([]string, len(m.GetPassthroughCipherSuites()))
 		for idx, v := range m.GetPassthroughCipherSuites() {
