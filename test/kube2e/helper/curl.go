@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 
