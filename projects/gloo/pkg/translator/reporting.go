@@ -178,7 +178,6 @@ func reportPluginProcessingErrorOrWarning(
 	var configurationError plugins.ConfigurationError
 	isConfigurationError := errors.As(err, &configurationError)
 
-	// TODO: We should remove the legacy `isWarningErr` is update the code to rely on the new ConfigurationError
 	if isConfigurationError && configurationError.IsWarning() {
 		doReportWarning()
 		return
