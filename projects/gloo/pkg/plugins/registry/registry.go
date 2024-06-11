@@ -45,7 +45,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/shadowing"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
@@ -113,7 +112,6 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		deprecated_cipher_passthrough.NewPlugin(),
 		local_ratelimit.NewPlugin(),
 		istio_automtls.NewPlugin(opts.GlooGateway.IstioValues.SidecarOnGatewayEnabled),
-		stateful_session.NewPlugin(),
 	)
 
 	if opts.KubeClient != nil {
