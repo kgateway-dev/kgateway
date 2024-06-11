@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 
@@ -103,11 +104,12 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 		curlResp, err := cli.CurlFromPod(context.Background(), kubectl.PodExecOptions{Name: t.echoName, Namespace: t.namespace, Container: t.echoName}, t.buildCurlOptions(opts)...)
 		if err != nil {
 			// trigger an early exit if the pod has been deleted.
-			// if we return an error here, the Eventually will continue. By making an
-			// assertion with the outer context's Gomega, we can trigger a failure at
-			// that outer scope.
-			g.Expect(err).NotTo(MatchError(ContainSubstring(`pods "testserver" not found`)))
-			return
+			if strings.Contains(err.Error(), `pods "testserver" not found`) {
+				ginkgo.Fail(err.Error())
+			}
+
+			// Will always fail
+			g.Expect(err).NotTo(HaveOccurred())
 		}
 		select {
 		default:
