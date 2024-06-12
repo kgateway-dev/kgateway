@@ -3,11 +3,11 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/6251
     resolvesIssue: false
     description: >-
-      Adds error types checks for warnings in the validation webhook to prevent the webhook from rejecting
-      config due to eventual consistency.
+      Fix error types checks for warnings in the validation to prevent the webhook from rejecting
+      config due to eventual consistency. Adds warning error types for IsDestinationNotFoundErr and SubsetsMisconfiguredErr.
   - type: FIX
     issueLink: https://github.com/solo-io/solo-projects/issues/5307
     resolvesIssue: false
     description: >-
-      Changing error type to warning will deflake the validation webhook rejecting config due to eventual consistency
-      issues with the RateLimitConfig resource.
+      Checking error type is a warning in the reporting when allowWarnings=true will deflake the validation webhook 
+      rejecting config due to eventual consistency issues with the RateLimitConfig resource.
