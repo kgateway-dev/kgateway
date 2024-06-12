@@ -354,12 +354,13 @@ With Gloo Edge Enterprise installed with the counter app resources applied, edit
 kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
 ```
 and add the following config:
+
 {{< highlight yaml "hl_lines=4-11" >}}
 spec:
   bindAddress: '::'
   bindPort: 8080
   httpGateway:
-     options:
+    options:
       statefulSession:
         cookieBased:
           cookie:
@@ -380,6 +381,7 @@ With Gloo Edge Enterprise installed with the counter app resources applied, edit
 kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
 ```
 and add the following config:
+
 {{< highlight yaml "hl_lines=4-11" >}}
 spec:
   bindAddress: '::'
