@@ -45,6 +45,7 @@ const (
 	Aws                                = "aws"
 	ExtProcExtensionName               = "extproc"
 	TapFilterExtensionName             = "tap"
+	StatefulSessionName                = "stateful_session"
 )
 
 type plugin struct{}
@@ -176,6 +177,10 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		enterpriseExtensions = append(enterpriseExtensions, TapFilterExtensionName)
 	}
 
+	if isStatefulSessionConfiguredOnListener(listener) {
+		enterpriseExtensions = append(enterpriseExtensions, StatefulSessionName)
+	}
+
 	return nil, GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
@@ -255,6 +260,11 @@ func isSanitizeClusterHeaderConfiguredOnListener(in *v1.HttpListener) bool {
 // tap
 func isTapConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetTap() != nil
+}
+
+// stateful session
+func isStatefulSessionConfiguredOnListener(in *v1.HttpListener) bool {
+	return in.GetOptions().GetStatefulSession() != nil
 }
 
 // waf
