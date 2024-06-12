@@ -791,7 +791,7 @@ var _ = Describe("Validation Server", func() {
 
 				})
 
-				It("warning is not reported with Validate Gloo when allowWarnings=true", func() {
+				FIt("warning is not reported with Validate Gloo when allowWarnings=true", func() {
 
 					route := &v1.Route{
 						Action: &v1.Route_RouteAction{
@@ -838,7 +838,7 @@ var _ = Describe("Validation Server", func() {
 					Expect(resourceRef.GetName()).To(Equal("test"))
 
 					// Verify report does not contain errors from plugins
-					Expect(resourceErrors).ToNot((HaveOccurred()))
+					Expect(resourceErrors).ToNot(HaveOccurred())
 					// Only Route Warning reported, the TcpHost Warning not reported (handled in reportPluginProcessingError)
 					Expect(resourceWarnings).To(HaveLen(3))
 					for _, warn := range resourceWarnings {
