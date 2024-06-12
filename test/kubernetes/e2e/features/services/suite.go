@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-// testingSuite is the entire Suite of tests for the "Upstream" feature
+// testingSuite is the entire Suite of tests for testing K8s Service-specific features/fixes
 type testingSuite struct {
 	suite.Suite
 
