@@ -786,7 +786,7 @@ var _ = Describe("Validation Server", func() {
 					Expect(resourceRef.GetName()).To(Equal("test"))
 
 					// Verify report contains a warning for the secret we removed
-					Expect(resourceErrors).To(Not(HaveOccurred()))
+					Expect(resourceErrors).ToNot(HaveOccurred())
 					Expect(resourceErrors.Error()).To(ContainSubstring("shadow percentage must be between 0 and 100"))
 
 				})
@@ -838,7 +838,7 @@ var _ = Describe("Validation Server", func() {
 					Expect(resourceRef.GetName()).To(Equal("test"))
 
 					// Verify report does not contain errors from plugins
-					Expect(resourceErrors).To(BeNil())
+					Expect(resourceErrors).ToNot((HaveOccurred()))
 					// Only Route Warning reported, the TcpHost Warning not reported (handled in reportPluginProcessingError)
 					Expect(resourceWarnings).To(HaveLen(3))
 					for _, warn := range resourceWarnings {
