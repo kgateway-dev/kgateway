@@ -791,7 +791,7 @@ var _ = Describe("Validation Server", func() {
 
 				})
 
-				FIt("warning is not reported with Validate Gloo when allowWarnings=true", func() {
+				It("warning is not reported with Validate Gloo when allowWarnings=true", func() {
 
 					route := &v1.Route{
 						Action: &v1.Route_RouteAction{

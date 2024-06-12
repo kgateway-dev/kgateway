@@ -39,8 +39,11 @@ var (
 	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
+	// SubsetsMisconfiguredErr is a configuration warning error that should be reported
+	// as a resource validation warning, not error
+	SubsetsMisconfiguredErr = plugins.NewWarningConfigurationError("route has a subset config, but the upstream does not")
+
 	NoDestinationSpecifiedError       = eris.New("must specify at least one weighted destination for multi destination routes")
-	SubsetsMisconfiguredErr           = plugins.NewWarningConfigurationError("route has a subset config, but the upstream does not")
 	CompilingRoutePathRegexError      = eris.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
 	ValidRoutePatternError            = eris.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
