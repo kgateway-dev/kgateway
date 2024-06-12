@@ -35,7 +35,7 @@ message CookieBasedSessionState {
         google.protobuf.Duration ttl = 3 [
             (validate.rules).duration = {
               required: true,
-              gt: {seconds: 0}
+              gte: {seconds: 0}
             }
         ];
     }
