@@ -29,9 +29,9 @@ import (
 )
 
 var (
-	awsMissingFuncRefError                = eris.Errorf(" upstreams must have a logical name specified in the backend ref via the parameters extensionref")
-	azureMissingFuncRefError              = eris.Errorf(" upstreams must have a function name specified in the backend ref via the parameters extensionref")
-	nonFunctionUpstreamWithParameterError = eris.Errorf("parameters extensionref is only supported for aws and azure upstreams")
+	awsMissingFuncRefError                = eris.New("upstreams must have a logical name specified in the backend ref via the parameters extensionref")
+	azureMissingFuncRefError              = eris.New("upstreams must have a function name specified in the backend ref via the parameters extensionref")
+	nonFunctionUpstreamWithParameterError = eris.New("parameters extensionref is only supported for aws and azure upstreams")
 )
 
 func TranslateGatewayHTTPRouteRules(
