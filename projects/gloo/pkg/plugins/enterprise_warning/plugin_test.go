@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/advanced_http"
 	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
@@ -558,6 +559,30 @@ var _ = Describe("enterprise_warning plugin", func() {
 
 			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
 			ExpectEnterpriseOnlyErr(err)
+		})
+
+	})
+
+	Context("statefulSession", func() {
+
+		It("should not add filter if statefulsession config is nil", func() {
+			p := NewPlugin()
+			f, err := p.HttpFilters(plugins.Params{}, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(f).To(BeNil())
+		})
+
+		It("should error if statefulsession is configured on listener", func() {
+			p := NewPlugin()
+			hl := &v1.HttpListener{
+				Options: &v1.HttpListenerOptions{
+					StatefulSession: &stateful_session.StatefulSession{},
+				},
+			}
+
+			f, err := p.HttpFilters(plugins.Params{}, hl)
+			ExpectEnterpriseOnlyErr(err)
+			Expect(f).To(BeNil())
 		})
 
 	})
