@@ -28,6 +28,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 )
 
+var (
+	awsMissingFuncRefError                = eris.Errorf(" upstreams must have a logical name specified in the backend ref via the parameters extensionref")
+	azureMissingFuncRefError              = eris.Errorf(" upstreams must have a function name specified in the backend ref via the parameters extensionref")
+	nonFunctionUpstreamWithParameterError = eris.Errorf("parameters extensionref is only supported for aws and azure upstreams")
+)
+
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
@@ -371,7 +377,7 @@ func setRouteAction(
 				contextutils.LoggerFrom(ctx).Errorf("expected upstream, got %T", obj)
 				continue
 			}
-			spec, err := makeDestinationSpec(ctx, upstream, backendRef.Filters)
+			spec, err := makeDestinationSpec(upstream, backendRef.Filters)
 			if err != nil {
 				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,
@@ -427,7 +433,7 @@ func setRouteAction(
 }
 
 // makeDestinationSpec computes the destination spec for a given upstream based on the type of upstream and the Filters from the backend reference
-func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters []gwv1.HTTPRouteFilter) (*v1.DestinationSpec, error) {
+func makeDestinationSpec(upstream *gloov1.Upstream, filters []gwv1.HTTPRouteFilter) (*v1.DestinationSpec, error) {
 	var sectionName string
 	for _, filter := range filters {
 		// only look for 'parameters' extensionref filters
@@ -444,7 +450,7 @@ func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters
 	switch upstream.Spec.GetUpstreamType().(type) {
 	case *v1.Upstream_Aws:
 		if sectionName == "" {
-			return nil, eris.Errorf("aws upstreams must have a logical name specified in the backend ref via the parameters extensionref")
+			return nil, awsMissingFuncRefError
 		}
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Aws{
@@ -455,7 +461,7 @@ func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters
 		}, nil
 	case *v1.Upstream_Azure:
 		if sectionName == "" {
-			return nil, eris.Errorf("azure upstreams must have a function name specified in the backend ref via the parameters extensionref")
+			return nil, azureMissingFuncRefError
 		}
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Azure{
@@ -468,7 +474,7 @@ func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters
 
 	// not a supported upstream type
 	if sectionName != "" {
-		return nil, eris.Errorf("parameters extensionref is only supported for aws and azure upstreams")
+		return nil, nonFunctionUpstreamWithParameterError
 	}
 	return nil, nil
 }
