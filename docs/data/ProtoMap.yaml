@@ -1904,6 +1904,15 @@ apis:
   solo.io.udpa.annotations.VersioningAnnotation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
     package: solo.io.udpa.annotations
+  stateful_session.options.gloo.solo.io.CookieBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#CookieBasedSessionState
+    package: stateful_session.options.gloo.solo.io
+  stateful_session.options.gloo.solo.io.HeaderBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#HeaderBasedSessionState
+    package: stateful_session.options.gloo.solo.io
+  stateful_session.options.gloo.solo.io.StatefulSession:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#StatefulSession
+    package: stateful_session.options.gloo.solo.io
   static.options.gloo.solo.io.Host:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/static/static.proto.sk/#Host
     package: static.options.gloo.solo.io
