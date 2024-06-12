@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6160
-    description: |
-      Enables routing to AWS Lambda and Azure Function upstreams via the GGv2 API.
