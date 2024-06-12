@@ -742,9 +742,9 @@ message GlooOptions {
         // Defaults to false
         google.protobuf.BoolValue enable_auto_mtls = 2;
 
-        // Istio integration is enabled via istioSDS.enabled on the helm chart.
+        // Istio integration is enabled via global.istioIntegration.enabled on the helm chart.
         // If enabled, an istio-proxy container and sds container are assumed to exist alongside the
-        // gateway proxy. These containers are created by enabling the istioSDS.enabled option in the helm chart.
+        // gateway proxy. These containers are created by enabling the istioIntegration.enabled option in the helm chart.
         // Defaults to false
         google.protobuf.BoolValue enable_integration = 3;
     }

@@ -204,7 +204,7 @@ data:
                     - envoy_grpc:
                         cluster_name: gateway_proxy_sds
 {{- end }}
-{{- if or $global.istioSDS.enabled $global.glooMtls.enabled }}
+{{- if or (or $global.istioSDS.enabled $global.istioIntegration.enabled) $global.glooMtls.enabled }}
       - name: gateway_proxy_sds
         connect_timeout: 0.25s
         http2_protocol_options: {}
