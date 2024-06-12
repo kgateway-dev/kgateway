@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"net/http"
 	"path/filepath"
 
@@ -9,8 +10,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 )
@@ -28,11 +27,7 @@ var (
 	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
 
 	// curlPod is the Pod that will be used to execute curl requests, and is defined in the upstream manifest files
-	curlPodExecOpt = kubectl.PodExecOptions{
-		Name:      "curl",
-		Namespace: "curl",
-		Container: "curl",
-	}
+	curlPodExecOpt = defaults.CurlPodExecOpt
 
 	expectedSvcResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
