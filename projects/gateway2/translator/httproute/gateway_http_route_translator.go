@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/parameters"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
@@ -370,7 +371,17 @@ func setRouteAction(
 				contextutils.LoggerFrom(ctx).Errorf("expected upstream, got %T", obj)
 				continue
 			}
-			spec := makeDestinationSpec(ctx, upstream, backendRef.Filters)
+			spec, err := makeDestinationSpec(ctx, upstream, backendRef.Filters)
+			if err != nil {
+				reporter.SetCondition(reports.HTTPRouteCondition{
+					Type:    gwv1.RouteConditionResolvedRefs,
+					Status:  metav1.ConditionFalse,
+					Reason:  gwv1.RouteReasonBackendNotFound,
+					Message: err.Error(),
+				})
+				contextutils.LoggerFrom(ctx).Errorf("failed to make destination spec for backend upstream %s: %v", upstream.Name, err)
+				continue
+			}
 			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
@@ -386,7 +397,6 @@ func setRouteAction(
 			})
 
 		default:
-			// TODO(npolshak): Add support for other types of destinations (upstreams, etc.)
 			contextutils.LoggerFrom(ctx).Errorf("unsupported backend type for kind: %v and type: %v", *backendRef.BackendObjectReference.Kind, *backendRef.BackendObjectReference.Group)
 		}
 	}
@@ -417,41 +427,48 @@ func setRouteAction(
 }
 
 // makeDestinationSpec computes the destination spec for a given upstream based on the type of upstream and the Filters from the backend reference
-func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters []gwv1.HTTPRouteFilter) *v1.DestinationSpec {
+func makeDestinationSpec(ctx context.Context, upstream *gloov1.Upstream, filters []gwv1.HTTPRouteFilter) (*v1.DestinationSpec, error) {
+	var sectionName string
 	for _, filter := range filters {
 		// only look for 'parameters' extensionref filters
-		if filter.Type != gwv1.HTTPRouteFilterExtensionRef {
+		if filter.Type != gwv1.HTTPRouteFilterExtensionRef ||
+			filter.ExtensionRef == nil ||
+			filter.ExtensionRef.Group != parameters.ParameterGroup ||
+			filter.ExtensionRef.Kind != parameters.ParameterKind {
 			continue
 		}
-		if filter.ExtensionRef == nil {
-			continue
-		}
-		if filter.ExtensionRef.Group != parameters.ParameterGroup {
-			continue
-		}
-		if filter.ExtensionRef.Kind != parameters.ParameterKind {
-			continue
-		}
-		sectionName := string(filter.ExtensionRef.Name)
-		switch upstream.Spec.GetUpstreamType().(type) {
-		case *v1.Upstream_Aws:
-			return &v1.DestinationSpec{
-				DestinationType: &v1.DestinationSpec_Aws{
-					Aws: &aws.DestinationSpec{
-						LogicalName: sectionName,
-					},
-				},
-			}
-		case *v1.Upstream_Azure:
-			return &v1.DestinationSpec{
-				DestinationType: &v1.DestinationSpec_Azure{
-					Azure: &azure.DestinationSpec{
-						FunctionName: sectionName,
-					},
-				},
-			}
-		}
+		sectionName = string(filter.ExtensionRef.Name)
+		break
 	}
 
-	return nil
+	switch upstream.Spec.GetUpstreamType().(type) {
+	case *v1.Upstream_Aws:
+		if sectionName == "" {
+			return nil, eris.Errorf("aws upstreams must have a logical name specified in the backend ref via the parameters extensionref")
+		}
+		return &v1.DestinationSpec{
+			DestinationType: &v1.DestinationSpec_Aws{
+				Aws: &aws.DestinationSpec{
+					LogicalName: sectionName,
+				},
+			},
+		}, nil
+	case *v1.Upstream_Azure:
+		if sectionName == "" {
+			return nil, eris.Errorf("azure upstreams must have a function name specified in the backend ref via the parameters extensionref")
+		}
+		return &v1.DestinationSpec{
+			DestinationType: &v1.DestinationSpec_Azure{
+				Azure: &azure.DestinationSpec{
+					FunctionName: sectionName,
+				},
+			},
+		}, nil
+	}
+
+	// not a supported upstream type
+	if sectionName != "" {
+		return nil, eris.Errorf("parameters extensionref is only supported for aws and azure upstreams")
+	}
+	return nil, nil
 }
