@@ -275,6 +275,12 @@ In a browser, navigate to this route, `/route1`, on your gateway's URL (you can 
 
 ### Apply the session affinity configuration
 
+### Requirements
+
+- Kubernetes cluster with Gloo Edge Enterprise installed
+- At least two nodes in the cluster.
+- Permission to deploy a DaemonSet and edit Gloo Edge resources.
+
 #### Configure the upstream
 
 Use `kubectl edit upstream -n gloo-system default-session-affinity-app-80` and apply the changes shown below to set a hashing load balancer on the app's upstream.
