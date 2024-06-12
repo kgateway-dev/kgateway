@@ -27,7 +27,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
+func (s *testingSuite) TestConfigureBackingDestinationsWithService() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, routeWithServiceManifest)
 		s.NoError(err, "can delete manifest")
