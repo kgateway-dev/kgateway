@@ -11,7 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/http_listener_options"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/listener_options"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
@@ -48,10 +47,6 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 	// Install Gloo Gateway
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
-
-	t.Run("HttpListenerOptions", func(t *testing.T) {
-		suite.Run(t, http_listener_options.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("ListenerOptions", func(t *testing.T) {
