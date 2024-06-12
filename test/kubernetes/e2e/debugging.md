@@ -103,5 +103,5 @@ go-test-args: '-v -timeout=25m'
 ```
 3. Combine these arguments when invoking go test:
 ```bash
-TEST_PKG=./test/kubernetes/e2e/... GO_TEST_USER_ARGS= -v -timeout=25m -run '(^TestK8sGateway$)' make go-test
+TEST_PKG=./test/kubernetes/e2e/... GO_TEST_USER_ARGS='-v -timeout=25m -run \(^TestK8sGateway$$/\)' make go-test
 ```
