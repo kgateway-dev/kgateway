@@ -96,6 +96,8 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 						HostNum: &hostNumDurable,
 					},
 				})
+			} else {
+				multiErr.Errors = append(multiErr.Errors, err)
 			}
 			continue
 		}

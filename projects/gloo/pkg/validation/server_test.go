@@ -786,7 +786,7 @@ var _ = Describe("Validation Server", func() {
 					Expect(resourceRef.GetName()).To(Equal("test"))
 
 					// Verify report contains a warning for the secret we removed
-					Expect(resourceErrors).To(Not(BeNil()))
+					Expect(resourceErrors).To(Not(HaveOccurred()))
 					Expect(resourceErrors.Error()).To(ContainSubstring("shadow percentage must be between 0 and 100"))
 
 				})
