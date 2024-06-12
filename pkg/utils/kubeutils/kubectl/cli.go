@@ -44,6 +44,8 @@ func NewCli() *Cli {
 	}
 }
 
+// CurlResponse stores the output from a curl, with separate fields for StdErr, which typically contains headers and
+// connection information, and SteOut, which typically contains the response body
 type CurlResponse struct {
 	StdErr string
 	StdOut string
