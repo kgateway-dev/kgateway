@@ -230,7 +230,10 @@ func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route
 		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: rewriteType.AutoHostRewrite,
 		}
-
+	case *v1.RouteOptions_HostRewriteHeader:
+		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_HostRewriteHeader{
+			HostRewriteHeader: rewriteType.HostRewriteHeader.GetValue(),
+		}
 	case *v1.RouteOptions_HostRewritePathRegex:
 		regex, err := ConvertRegexMatchAndSubstitute(ctx, rewriteType.HostRewritePathRegex)
 		if err != nil {
