@@ -1,10 +1,11 @@
 package services
 
 import (
-	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"net/http"
 	"path/filepath"
+
+	"github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
