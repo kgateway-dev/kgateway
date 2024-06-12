@@ -204,3 +204,15 @@ func WithArgs(args []string) Option {
 		config.additionalArgs = args
 	}
 }
+
+func WithCookie(cookie string) Option {
+	return func(config *requestConfig) {
+		config.cookie = cookie
+	}
+}
+
+func WithCookieJar(cookieJar string) Option {
+	return func(config *requestConfig) {
+		config.cookieJar = cookieJar
+	}
+}
