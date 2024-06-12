@@ -437,7 +437,7 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 			out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 				Cluster: "",
 			}
-			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
+			return pluginutils.NewUpstreamGroupNotFoundErr(upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.GetDestinations(),
@@ -571,7 +571,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 
 	upstream, err := params.Snapshot.Upstreams.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
-		return pluginutils.NewUpstreamNotFoundErr(*ref)
+		return pluginutils.NewUpstreamNotFoundErr(ref)
 	}
 
 	subsetConfig := getSubsets(upstream)
@@ -811,7 +811,7 @@ func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) erro
 
 	upstreamGroup, err := snap.UpstreamGroups.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
-		return pluginutils.NewUpstreamGroupNotFoundErr(*ref)
+		return pluginutils.NewUpstreamGroupNotFoundErr(ref)
 	}
 	upstreams := snap.Upstreams
 
@@ -838,7 +838,7 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 	}
 	_, err = upstreams.Find(upstreamRef.Strings())
 	if err != nil {
-		return pluginutils.NewUpstreamNotFoundErr(*upstreamRef)
+		return pluginutils.NewUpstreamNotFoundErr(upstreamRef)
 	}
 	return nil
 }

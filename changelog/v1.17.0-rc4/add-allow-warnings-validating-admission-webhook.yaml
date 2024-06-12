@@ -1,11 +1,11 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6251
     resolvesIssue: false
     description: >-
       Fix error types checks for warnings in the validation to prevent the webhook from rejecting
       config due to eventual consistency. Adds warning error types for IsDestinationNotFoundErr and SubsetsMisconfiguredErr.
-  - type: FIX
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/5307
     resolvesIssue: false
     description: >-

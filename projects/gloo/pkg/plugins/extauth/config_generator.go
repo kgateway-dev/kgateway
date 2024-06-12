@@ -29,7 +29,7 @@ var (
 	DefaultTimeout = prototime.DurationToProto(200 * time.Millisecond)
 	NoServerRefErr = eris.New("no extauth server reference configured")
 	ServerNotFound = func(usRef *core.ResourceRef) error {
-		return pluginutils.NewUpstreamNotFoundErr(*usRef)
+		return pluginutils.NewUpstreamNotFoundErr(usRef)
 	}
 	InvalidStatusOnErrorErr = func(code uint32) error {
 		return eris.Errorf("invalid statusOnError code: %d", code)

@@ -44,7 +44,7 @@ var _ = Describe("Reporting", func() {
 			false,
 		),
 		Entry("Upstream not found",
-			pluginutils.NewUpstreamNotFoundErr(core.ResourceRef{}),
+			pluginutils.NewUpstreamNotFoundErr(&core.ResourceRef{}),
 			true,
 		),
 		Entry("ConfigurationError with a warning",

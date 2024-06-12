@@ -308,7 +308,7 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collector
 	// Make sure the upstream exists
 	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
 	if err != nil {
-		return "", pluginutils.NewUpstreamNotFoundErr(*collectorUpstreamRef)
+		return "", pluginutils.NewUpstreamNotFoundErr(collectorUpstreamRef)
 	}
 
 	return translatorutil.UpstreamToClusterName(collectorUpstreamRef), nil

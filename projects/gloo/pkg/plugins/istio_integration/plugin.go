@@ -86,7 +86,7 @@ func GetHostFromDestination(dest *v1.RouteAction_Single, upstreams v1.UpstreamLi
 	if single, ok := dest.Single.GetDestinationType().(*v1.Destination_Upstream); ok {
 		us, err := upstreams.Find(single.Upstream.GetNamespace(), single.Upstream.GetName())
 		if err != nil {
-			return "", pluginutils.NewUpstreamNotFoundErr(*single.Upstream)
+			return "", pluginutils.NewUpstreamNotFoundErr(single.Upstream)
 		}
 		kubeUs, ok := us.GetUpstreamType().(*v1.Upstream_Kube)
 		if !ok {

@@ -44,7 +44,7 @@ var (
 	DefaultTimeout = prototime.DurationToProto(100 * time.Millisecond)
 
 	ServerNotFound = func(usRef *core.ResourceRef) error {
-		return pluginutils.NewUpstreamNotFoundErr(*usRef)
+		return pluginutils.NewUpstreamNotFoundErr(usRef)
 	}
 )
 

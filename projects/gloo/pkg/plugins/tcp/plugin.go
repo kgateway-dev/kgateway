@@ -165,7 +165,7 @@ func (p *plugin) tcpProxyFilters(
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
 		if err != nil {
-			return nil, pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
+			return nil, pluginutils.NewUpstreamGroupNotFoundErr(upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.GetDestinations(),
