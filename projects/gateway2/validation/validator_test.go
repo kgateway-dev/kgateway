@@ -87,6 +87,7 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 			GlooValidatorConfig: gloovalidation.GlooValidatorConfig{
 				XdsSanitizer: xdsSanitizer,
 				Translator:   translator,
+				Settings:     settings,
 			},
 		}
 	})

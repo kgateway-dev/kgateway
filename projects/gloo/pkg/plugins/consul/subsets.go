@@ -41,7 +41,7 @@ func (p *plugin) ProcessRouteAction(
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
 		if err != nil {
-			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
+			return pluginutils.NewUpstreamGroupNotFoundErr(upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.GetDestinations(),
@@ -74,7 +74,7 @@ func getMetadataMatch(
 
 	upstream, err := allUpstreams.Find(usRef.GetNamespace(), usRef.GetName())
 	if err != nil {
-		return nil, nil, pluginutils.NewUpstreamNotFoundErr(*usRef) // should never happen, as we already validated the destination
+		return nil, nil, pluginutils.NewUpstreamNotFoundErr(usRef) // should never happen, as we already validated the destination
 	}
 
 	return getSubsetMatch(dest, upstream), usRef, nil

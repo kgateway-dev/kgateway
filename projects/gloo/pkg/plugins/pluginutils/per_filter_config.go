@@ -98,7 +98,7 @@ func ModifyPerFilterConfig(
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
 		if err != nil {
-			return NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
+			return NewUpstreamGroupNotFoundErr(dest.UpstreamGroup)
 		}
 		return configureMultiDest(upstreamGroup.GetDestinations(), outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Multi:
