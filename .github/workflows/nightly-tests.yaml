@@ -114,7 +114,7 @@ jobs:
 
   end_to_end_tests_main:
     name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     strategy:
@@ -251,7 +251,7 @@ jobs:
 
   regression_tests_main:
     name: main regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
@@ -343,7 +343,7 @@ jobs:
 
   performance_tests_main:
     name: main performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
@@ -391,7 +391,7 @@ jobs:
 
   kube_gateway_api_conformance_tests_main:
     name: Conformance (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
@@ -457,7 +457,7 @@ jobs:
             trigger="Gloo OSS Manual run"
             branch=${{ inputs.branch }}
             echo "SLACK_CHANNEL=C0314KESVNV" >> $GITHUB_ENV   #slack-integration-testing if manually run
-          elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
+          elif [[ ${{github.event.schedule == '0 5 * * *'}} = true ]]; then
             trigger="Gloo OSS nightlies"
             branch="main"
           elif [[ ${{github.event.schedule == '0 6 * * 1'}} = true ]]; then
