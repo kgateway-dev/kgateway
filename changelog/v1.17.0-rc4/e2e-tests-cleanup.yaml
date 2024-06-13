@@ -5,4 +5,4 @@ changelog:
     description: >-
       Make Kubernetes E2E tests easily importable and runnable from enterprise suites
 
-      skipCI-kube-tests:true
+      skipCI-docs-build:true
