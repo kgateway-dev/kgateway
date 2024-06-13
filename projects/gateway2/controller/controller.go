@@ -77,6 +77,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchRouteOptions,
 		controllerBuilder.watchVirtualHostOptions,
 		controllerBuilder.watchUpstreams,
+		controllerBuilder.watchServices,
 		controllerBuilder.addIndexes,
 		controllerBuilder.addHttpLisOptIndexes,
 		controllerBuilder.addLisOptIndexes,
@@ -336,6 +337,17 @@ func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
 	return nil
 }
 
+func (c *controllerBuilder) watchServices(ctx context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&corev1.Service{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileServices))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
@@ -367,6 +379,12 @@ func (r *controllerReconciler) ReconcileVirtualHostOptions(ctx context.Context, 
 }
 
 func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileServices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
 	r.kick(ctx)
 	return ctrl.Result{}, nil
