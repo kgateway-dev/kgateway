@@ -9,20 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/env"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-<<<<<<< HEAD
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
-=======
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/http_listener_options"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/listener_options"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
->>>>>>> main
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
