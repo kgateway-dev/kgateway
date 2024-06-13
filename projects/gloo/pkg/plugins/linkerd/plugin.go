@@ -87,7 +87,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	case *v1.RouteAction_UpstreamGroup:
 		usg, err := upstreamGroups.Find(destType.UpstreamGroup.GetNamespace(), destType.UpstreamGroup.GetName())
 		if err != nil {
-			return pluginutils.NewUpstreamGroupNotFoundErr(*destType.UpstreamGroup)
+			return pluginutils.NewUpstreamGroupNotFoundErr(destType.UpstreamGroup)
 		}
 		err = configForMultiDestination(usg.GetDestinations(), upstreams, out)
 		if err != nil {

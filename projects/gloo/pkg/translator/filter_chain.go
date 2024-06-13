@@ -2,6 +2,7 @@ package translator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
@@ -82,8 +83,9 @@ func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
 	}
 
 	reportError := func(errReport error) {
-		switch errType := errReport.(type) {
-		case validation.ErrorWithKnownLevel:
+		var errType validation.ErrorWithKnownLevel
+		switch {
+		case errors.As(errReport, &errType):
 			switch errType.ErrorLevel() {
 			case validation.ErrorLevels_WARNING:
 				if tcpHostNum := errType.GetContext().HostNum; tcpHostNum != nil {
@@ -98,7 +100,7 @@ func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
 			case validation.ErrorLevels_ERROR:
 				reportTcpListenerError(errType)
 			}
-		// if the error is not of ErrorWithKnownLevel type, report it
+			// if the error is not of ErrorWithKnownLevel type, report it
 		// as an error on the TcpListener
 		default:
 			reportTcpListenerError(errType)
