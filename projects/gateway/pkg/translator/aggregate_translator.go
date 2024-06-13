@@ -2,9 +2,9 @@ package translator
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/go-utils/contextutils"
@@ -403,10 +403,8 @@ func newBuilder() *aggregateListenerBuilder {
 }
 
 func (b *aggregateListenerBuilder) addHttpFilterChain(virtualHosts []*gloov1.VirtualHost, httpOptions *gloov1.HttpListenerOptions, matcher *gloov1.Matcher) {
-	// store HttpListenerOptions, indexed by a hash of the httpOptions
-	httpOptionsHash, _ := httpOptions.Hash(nil)
-	httpOptionsRef := strconv.Itoa(int(httpOptionsHash))
-	b.httpOptionsByName[httpOptionsRef] = httpOptions
+	// Hash and store the httpOptions and keep the ref as we need it to build the HFC later
+	httpOptionsRef := utils.HashAndStoreHttpOptions(httpOptions, b.httpOptionsByName)
 
 	// store VirtualHosts, indexed by the name of the VirtualHost
 	var virtualHostRefs []string

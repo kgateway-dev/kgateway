@@ -20,20 +20,17 @@ spec:
       port: 8080
 ---
 apiVersion: gateway.solo.io/v1
-kind: ListenerOption
+kind: HttpListenerOption
 metadata:
-  name: access-logs
+  name: server-name
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
   options:
-    accessLoggingService:
-      accessLog:
-      - fileSink:
-          path: /dev/stdout
-          stringFormat: ""
+    httpConnectionManagerSettings:
+      serverName: "unit-test v4.19"
 ---
 apiVersion: v1
 kind: Service

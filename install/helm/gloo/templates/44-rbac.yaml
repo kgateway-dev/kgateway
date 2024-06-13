@@ -35,6 +35,7 @@ rules:
   - routeoptions
   - virtualhostoptions
   - listeneroptions
+  - httplisteneroptions
   verbs: ["get", "list", "watch"]
 - apiGroups:
   - "gateway.networking.k8s.io"
