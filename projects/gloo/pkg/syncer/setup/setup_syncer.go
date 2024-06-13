@@ -830,6 +830,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		GlooValidatorConfig: validation.GlooValidatorConfig{
 			XdsSanitizer: xdsSanitizers,
 			Translator:   sharedTranslator,
+			Settings:     opts.Settings,
 		},
 	}
 	validator := validation.NewValidator(vc)

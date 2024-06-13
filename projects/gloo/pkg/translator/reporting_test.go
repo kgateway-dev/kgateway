@@ -4,6 +4,9 @@ package translator
 // To avoid exporting methods unnecessarily, just for testing, we define these tests in the same package
 
 import (
+	"errors"
+
+	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
@@ -40,8 +43,8 @@ var _ = Describe("Reporting", func() {
 			eris.New("generic error"),
 			false,
 		),
-		Entry("isWarningErr",
-			pluginutils.NewUpstreamNotFoundErr(core.ResourceRef{}),
+		Entry("Upstream not found",
+			pluginutils.NewUpstreamNotFoundErr(&core.ResourceRef{}),
 			true,
 		),
 		Entry("ConfigurationError with a warning",
@@ -50,6 +53,14 @@ var _ = Describe("Reporting", func() {
 		),
 		Entry("ConfigurationError without a warning",
 			plugins.NewConfigurationError("configuration-error"),
+			false,
+		),
+		Entry("Multierr with a warning",
+			multierror.Append(errors.New("fake error"), plugins.NewWarningConfigurationError("configuration-error"), errors.New("generic error")),
+			true,
+		),
+		Entry("Multierr without a warning",
+			multierror.Append(errors.New("fake error"), plugins.NewConfigurationError("configuration-error"), errors.New("generic error")),
 			false,
 		),
 	)
