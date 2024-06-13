@@ -5,27 +5,21 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/stretchr/testify/suite"
 )
 
 type (
-	TestGenerator func(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) func(t *testing.T)
-	TestFunc      func(t *testing.T)
-	RunFunc       func(name string, test TestFunc)
-	NewSuiteFunc  func(ctx context.Context, testInstallation *e2e.TestInstallation) suite.TestingSuite
-
 	NamedTest struct {
 		Name string
-		Test NewSuiteFunc
+		Test e2e.NewSuiteFunc
 	}
 
 	OrderedTests []NamedTest
 
-	UnorderedTests map[string]NewSuiteFunc
+	UnorderedTests map[string]e2e.NewSuiteFunc
 
 	TestRunner interface {
 		Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation)
-		Register(name string, newSuite NewSuiteFunc)
+		Register(name string, newSuite e2e.NewSuiteFunc)
 	}
 )
 
@@ -40,7 +34,7 @@ func (o OrderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e
 	}
 }
 
-func (o OrderedTests) Register(name string, newSuite NewSuiteFunc) {
+func (o OrderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
 	o = append(o, NamedTest{
 		Name: name,
 		Test: newSuite,
@@ -56,6 +50,6 @@ func (u UnorderedTests) Run(ctx context.Context, t *testing.T, testInstallation 
 	}
 }
 
-func (u UnorderedTests) Register(name string, newSuite NewSuiteFunc) {
+func (u UnorderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
 	u[name] = newSuite
 }

@@ -19,6 +19,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
 type tsuite struct {
 	suite.Suite
 
