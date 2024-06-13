@@ -28,7 +28,6 @@ Each `*_test.go` file contains a specific test installation and exists within th
 In order to add a feature suite to be run in a given test installation, it must be added to the exported function in the corresponding `*_tests.go` file.
 e.g. In order to add a feature suite to be run with the test installation defined in `istio_test.go`, we have to register it by adding it to `IstioTests()` in `istio_tests.go` following the existing paradigm.
 
-
 ## Environment Variables
 
 Some tests may require environment variables to be set. Some required env vars are:
