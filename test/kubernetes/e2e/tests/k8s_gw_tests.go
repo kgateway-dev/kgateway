@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/services"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/stretchr/testify/suite"
@@ -27,6 +28,7 @@ func KubeGatewayTests() TestRunner {
 	kubeGatewayTests.Register("RouteOptions", route_options.NewTestingSuite)
 	kubeGatewayTests.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
 	kubeGatewayTests.Register("Upstreams", upstreams.NewTestingSuite)
+	kubeGatewayTests.Register("Services", services.NewTestingSuite)
 	kubeGatewayTests.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	kubeGatewayTests.Register("PortRouting", port_routing.NewTestingSuite)
 	kubeGatewayTests.Register("RouteDelegation", route_delegation.NewTestingSuite)
