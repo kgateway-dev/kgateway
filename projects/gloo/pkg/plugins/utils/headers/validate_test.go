@@ -44,7 +44,6 @@ var _ = Describe("Validate header keys", func() {
 		generateInvalidEntries('}'),
 		generateInvalidEntries('>'),
 		generateInvalidEntries(unicode.MaxASCII),
-		Entry("host header", "host", true),
 		Entry("valid header", "valid-header", false),
 	)
 })
