@@ -27,6 +27,7 @@ func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNames
 	gatewayProxyDeploymentsFound := 0
 	var multiWarn *multierror.Error
 	var readOnlyErr error
+	var noGwProxyErr error
 	for _, deployment := range deployments.Items {
 		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
 			gatewayProxyDeploymentsFound++
@@ -41,10 +42,14 @@ func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNames
 			}
 		}
 	}
-	if gatewayProxyDeploymentsFound == 0 || (multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors)) {
+	if gatewayProxyDeploymentsFound == 0 {
+		// no gw proxy deployments were found; treat this as a warning (in case default gw proxy was intentionally disabled)
+		noGwProxyErr = eris.New("No active gateway-proxy pods exist in cluster")
+	} else if multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors) {
+		// every gw proxy deployment has 0 replicas
 		return eris.New("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"), multierror.Append(multiWarn, readOnlyErr)
 	}
-	return nil, multierror.Append(multiWarn, readOnlyErr)
+	return nil, multierror.Append(multiWarn, readOnlyErr, noGwProxyErr)
 }
 
 func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {
