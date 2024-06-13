@@ -17,8 +17,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+func KubeGatewayTests() TestRunner { return kubeGatewayTestsToRun }
+
 var (
-	TestsToRun = map[string]func(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) func(t *testing.T){
+	kubeGatewayTestsToRun = UnorderedTests{
 		"Deployer": func(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) func(t *testing.T) {
 			return func(t *testing.T) {
 				suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
