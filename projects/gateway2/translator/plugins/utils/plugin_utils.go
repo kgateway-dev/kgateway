@@ -2,10 +2,12 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	skv2corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -160,3 +162,10 @@ func GetPrioritizedListenerPolicies[T client.Object](
 
 // TODO: remove this as part of https://github.com/solo-io/solo-projects/issues/6286
 const MultipleTargetRefErrStr = "found ListenerOption %s/%s that contains multiple targetRefs which is not currently supported, only the first targetRef will be used"
+
+var (
+	ErrUnexpectedListenerType = errors.New("unexpected listener type")
+	ErrUnexpectedListener     = func(l *gloov1.Listener) error {
+		return fmt.Errorf("%w: expected AggregateListener, got %T", ErrUnexpectedListenerType, l.GetListenerType())
+	}
+)
