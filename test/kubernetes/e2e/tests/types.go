@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/stretchr/testify/suite"
 )
 
 type (
 	NamedTest struct {
-		Name string
-		Test e2e.NewSuiteFunc
+		Name     string
+		NewSuite e2e.NewSuiteFunc
 	}
 
 	OrderedTests []NamedTest
@@ -30,14 +31,16 @@ var (
 
 func (o OrderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
 	for _, namedTest := range o {
-		t.Run(namedTest.Name, func(t *testing.T) { namedTest.Test(ctx, testInstallation) })
+		t.Run(namedTest.Name, func(t *testing.T) {
+			suite.Run(t, namedTest.NewSuite(ctx, testInstallation))
+		})
 	}
 }
 
 func (o OrderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
 	o = append(o, NamedTest{
-		Name: name,
-		Test: newSuite,
+		Name:     name,
+		NewSuite: newSuite,
 	})
 
 }
@@ -45,8 +48,10 @@ func (o OrderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
 func (u UnorderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
 	// TODO(jbohanon) does some randomness need to be injected here to ensure they aren't run in the same order every time?
 	// from https://goplay.tools/snippet/A-qqQCWkFaZ it looks like maps are not stable, but tend toward stability.
-	for testName, test := range u {
-		t.Run(testName, func(t *testing.T) { test(ctx, testInstallation) })
+	for testName, newSuite := range u {
+		t.Run(testName, func(t *testing.T) {
+			suite.Run(t, newSuite(ctx, testInstallation))
+		})
 	}
 }
 
