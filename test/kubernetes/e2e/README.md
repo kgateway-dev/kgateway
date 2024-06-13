@@ -23,6 +23,12 @@ This package holds the entry point for each of our `TestInstallation`.
 
 See [Load balancing tests](./load_balancing_tests.md) for more information about how these tests are run in CI.
 
+Each `*_test.go` file contains a specific test installation and exists within the `tests_test` package. In order for tests to be imported and run from other repos, each `*_test.go` file has a corresponding `*_test.go` file which exists in the `tests` package. This is done because `_test` packages cannot be imported.
+
+In order to add a feature suite to be run in a given test installation, it must be added to the exported function in the corresponding `*_tests.go` file.
+e.g. In order to add a feature suite to be run with the test installation defined in `istio_test.go`, we have to register it by adding it to `IstioTests()` in `istio_tests.go` following the existing paradigm.
+
+
 ## Environment Variables
 
 Some tests may require environment variables to be set. Some required env vars are:
