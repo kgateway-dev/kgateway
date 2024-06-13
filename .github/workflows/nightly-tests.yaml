@@ -466,7 +466,7 @@ jobs:
           elif [[ ${{github.event.schedule == '0 7 * * 1'}} = true ]]; then
             trigger="Gloo OSS weeklies"
             branch="v1.16.x"
-          elif [[ ${{github.event.schedule == '0 8 * * 1-5'}} = true ]]; then
+          elif [[ ${{github.event.schedule == '0 8 * * 1'}} = true ]]; then
             trigger="Gloo OSS nightlies"
             branch="v1.15.x"
           fi
