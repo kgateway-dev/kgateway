@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/http_listener_options"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/listener_options"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
@@ -24,6 +25,11 @@ var (
 		"Deployer": func(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) func(t *testing.T) {
 			return func(t *testing.T) {
 				suite.Run(t, deployer.NewTestingSuite(ctx, testInstallation))
+			}
+		},
+		"HttpListenerOptions": func(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) func(t *testing.T) {
+			return func(t *testing.T) {
+				suite.Run(t, http_listener_options.NewTestingSuite(ctx, testInstallation))
 			}
 		},
 		"ListenerOptions": func(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) func(t *testing.T) {
