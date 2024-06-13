@@ -94,7 +94,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 				It("returns an error", func() {
 					_, err := extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(nil, nil)
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(HaveInErrorChain(ServerNotFound(invalidUs)))
+					Expect(err).To(Equal(ServerNotFound(invalidUs)))
 				})
 			})
 
