@@ -17,6 +17,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/services"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -78,6 +79,10 @@ func TestK8sGateway(t *testing.T) {
 
 	t.Run("Upstreams", func(t *testing.T) {
 		suite.Run(t, upstreams.NewTestingSuite(ctx, testInstallation))
+	})
+
+	t.Run("Services", func(t *testing.T) {
+		suite.Run(t, services.NewTestingSuite(ctx, testInstallation))
 	})
 
 	t.Run("HeadlessSvc", func(t *testing.T) {
