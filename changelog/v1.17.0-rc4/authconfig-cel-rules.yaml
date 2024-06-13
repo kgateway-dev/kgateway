@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/16010
-    description: |
-      Adds pre-admission [validation rules](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#validation-rules) to the `AuthConfig` CRD.
-    resolvesIssue: false
