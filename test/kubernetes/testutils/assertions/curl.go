@@ -36,14 +36,14 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 	var curlHttpResponse *http.Response
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+		fmt.Printf("want:\n%+v\nstdout:\n%s\nstderr:%s\n\n", expectedResponse, curlResponse.StdOut, curlResponse.StdErr)
 		g.Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
 		// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
 		//nolint:bodyclose // The caller of this assertion should be responsible for ensuring the body close - if the response is not needed for the test, AssertEventualCurlResponse should be used instead
 		curlHttpResponse = transforms.WithCurlResponse(curlResponse)
 		g.Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
-		fmt.Printf("success: %v", curlResponse)
+		fmt.Printf("success: %+v", curlResponse)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
@@ -80,13 +80,13 @@ func (p *Provider) AssertCurlReturnResponse(
 
 	// Rely on default timeouts set in CurlFromPod
 	curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+	fmt.Printf("want:\n%+v\nstdout:\n%s\nstderr:%s\n\n", expectedResponse, curlResponse.StdOut, curlResponse.StdErr)
 	Expect(err).NotTo(HaveOccurred())
-	fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, curlResponse)
 
 	// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
 	curlHttpResponse := transforms.WithCurlResponse(curlResponse)
 	Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
-	fmt.Printf("success: %v", curlResponse)
+	fmt.Printf("success: %+v", curlResponse)
 
 	return curlHttpResponse
 }
@@ -120,12 +120,12 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 
 	p.Gomega.Consistently(func(g Gomega) {
 		res, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+		fmt.Printf("want:\n%+v\nstdout:\n%s\nstderr:%s\n\n", expectedResponse, res.StdOut, res.StdErr)
 		g.Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("want:\n%+v\nhave:\n%s\n\n", expectedResponse, res)
 
 		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(res).To(expectedResponseMatcher)
-		fmt.Printf("success: %v", res)
+		fmt.Printf("success: %+v", res)
 	}).
 		WithTimeout(pollTimeout).
 		WithPolling(pollInterval).
