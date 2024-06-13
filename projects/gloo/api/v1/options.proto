@@ -52,6 +52,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";
@@ -227,6 +228,9 @@ message HttpListenerOptions {
 
     // Enterprise only: Tap filter settings (experimental).
     tap.options.gloo.solo.io.Tap tap = 34;
+
+    // Enterprise only: Listener-level stateful session settings
+    stateful_session.options.gloo.solo.io.StatefulSession stateful_session = 35;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

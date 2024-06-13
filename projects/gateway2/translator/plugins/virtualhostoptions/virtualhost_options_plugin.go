@@ -9,6 +9,7 @@ import (
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listenerutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/vhostutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -65,13 +66,6 @@ func (c *classicStatusCache) getOrCreateEntry(key types.NamespacedName) *classic
 	return cacheEntry
 }
 
-var (
-	ErrUnexpectedListenerType = eris.New("unexpected listener type")
-	errUnexpectedListenerType = func(l *v1.Listener) error {
-		return eris.Wrapf(ErrUnexpectedListenerType, "expected AggregateListener, got %T", l.GetListenerType())
-	}
-)
-
 func NewPlugin(
 	gwQueries gwquery.GatewayQueries,
 	client client.Client,
@@ -96,7 +90,7 @@ func (p *plugin) ApplyListenerPlugin(
 	// If that ever changes, we will need to handle other listener types more gracefully here.
 	aggListener := outListener.GetAggregateListener()
 	if aggListener == nil {
-		return errUnexpectedListenerType(outListener)
+		return utils.ErrUnexpectedListener(outListener)
 	}
 
 	// attachedOption represents the VirtualHostOptions targeting the Gateway on which this listener resides, and/or
@@ -106,12 +100,11 @@ func (p *plugin) ApplyListenerPlugin(
 		return err
 	}
 
-	if attachedOptions == nil || len(attachedOptions) == 0 {
+	if len(attachedOptions) == 0 {
 		return nil
 	}
 
 	if len(attachedOptions) > 1 {
-
 		for _, unusedVhO := range attachedOptions[1:] {
 			nn := client.ObjectKeyFromObject(unusedVhO)
 			cacheEntry := p.classicStatusCache.getOrCreateEntry(nn)
@@ -120,12 +113,9 @@ func (p *plugin) ApplyListenerPlugin(
 		}
 	}
 
+	// use the first option (highest in priority)
+	// see for more context: https://github.com/solo-io/solo-projects/issues/6313
 	optToUse := attachedOptions[0]
-
-	if optToUse == nil {
-		// unsure if this should be an error case
-		return nil
-	}
 
 	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
 		v.Options = optToUse.Spec.GetOptions()

@@ -155,6 +155,7 @@ Optional, feature-specific configuration that lives on http listeners
 "httpLocalRatelimit": .local_ratelimit.options.gloo.solo.io.Settings
 "router": .gloo.solo.io.Router
 "tap": .tap.options.gloo.solo.io.Tap
+"statefulSession": .stateful_session.options.gloo.solo.io.StatefulSession
 
 ```
 
@@ -185,6 +186,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `httpLocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.Settings](../options/local_ratelimit/local_ratelimit.proto.sk/#settings) | HttpLocalRatelimit can be used to rate limit the number of requests per gateway and works pre-auth. Unlike the NetworkLocalRatelimit, this works as part of the HCM (ie: L7 layer). All virtual host and routes that are part of this gateway will share this rate limit unless explicity configured with another limit. It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up. |
 | `router` | [.gloo.solo.io.Router](../options/router/router.proto.sk/#router) | Router is an extension of the envoy http filters Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto. |
 | `tap` | [.tap.options.gloo.solo.io.Tap](../enterprise/options/tap/tap.proto.sk/#tap) | Enterprise only: Tap filter settings (experimental). |
+| `statefulSession` | [.stateful_session.options.gloo.solo.io.StatefulSession](../enterprise/options/stateful_session/stateful_session.proto.sk/#statefulsession) | Enterprise only: Listener-level stateful session settings. |
 
 
 
