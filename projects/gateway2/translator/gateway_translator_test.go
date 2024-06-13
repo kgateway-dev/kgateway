@@ -91,6 +91,52 @@ var _ = Describe("GatewayTranslator", func() {
 		}]).To(BeTrue())
 	})
 
+	It("should translate an http gateway with a lambda destination", func() {
+		results, err := TestCase{
+			Name:       "http-routing-with-lambda-destination",
+			InputFiles: []string{dir + "/testutils/inputs/http-with-lambda-destination"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Name:      "gw",
+					Namespace: "default",
+				}: {
+					Proxy: dir + "/testutils/outputs/http-with-lambda-destination-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results[types.NamespacedName{
+			Namespace: "default",
+			Name:      "gw",
+		}]).To(BeTrue())
+	})
+
+	It("should translate an http gateway with a azure destination", func() {
+		results, err := TestCase{
+			Name:       "http-routing-with-azure-destination",
+			InputFiles: []string{dir + "/testutils/inputs/http-with-azure-destination"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Name:      "gw",
+					Namespace: "default",
+				}: {
+					Proxy: dir + "/testutils/outputs/http-with-azure-destination-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results[types.NamespacedName{
+			Namespace: "default",
+			Name:      "gw",
+		}]).To(BeTrue())
+	})
+
 	It("should correctly sort routes", func() {
 		results, err := TestCase{
 			Name:       "delegation-basic",
