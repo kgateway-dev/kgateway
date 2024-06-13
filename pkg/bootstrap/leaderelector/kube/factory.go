@@ -55,7 +55,6 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 		} else {
 			contextutils.LoggerFrom(ctx).Infof("max recovery from kube apiserver unavailability set to %s", recoveryTimeoutIfKubeAPIServerIsUnreachable)
 		}
-		recoveryTimeoutIfKubeAPIServerIsUnreachable = defaultRecoveryTimeout
 		recoverIfKubeAPIServerIsUnreachable = true
 	}
 
@@ -89,7 +88,6 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 			contextutils.LoggerFrom(ctx).Fatalf("unable to recover from failed leader election, quitting app")
 		case <-ctx.Done():
 			contextutils.LoggerFrom(ctx).Infof("recovered from lease renewal failure")
-
 		}
 	}
 
