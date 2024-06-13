@@ -7,7 +7,7 @@ import (
 )
 
 func AutomtlsIstioTests() TestRunner {
-	automtlsIstioTests := make(UnorderedTests)
+	automtlsIstioTests := new(UnorderedTests)
 
 	automtlsIstioTests.Register("PortRouting", port_routing.NewTestingSuite)
 	automtlsIstioTests.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)

@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
@@ -20,7 +19,7 @@ import (
 )
 
 func KubeGatewayTests() TestRunner {
-	kubeGatewayTests := make(UnorderedTests)
+	kubeGatewayTests := new(UnorderedTests)
 
 	kubeGatewayTests.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewayTests.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
@@ -51,14 +50,14 @@ func newGlooctlTestingSuite(ctx context.Context, testInstallation *e2e.TestInsta
 	}
 }
 
-func (s *glooctlSuite) TestCheck(t *testing.T) {
-	suite.Run(t, glooctl.NewCheckSuite(s.ctx, s.testInstallation))
+func (s *glooctlSuite) TestCheck() {
+	suite.Run(s.T(), glooctl.NewCheckSuite(s.ctx, s.testInstallation))
 }
 
-func (s *glooctlSuite) TestDebug(t *testing.T) {
-	suite.Run(t, glooctl.NewDebugSuite(s.ctx, s.testInstallation))
+func (s *glooctlSuite) TestDebug() {
+	suite.Run(s.T(), glooctl.NewDebugSuite(s.ctx, s.testInstallation))
 }
 
-func (s *glooctlSuite) TestGetProxy(t *testing.T) {
-	suite.Run(t, glooctl.NewGetProxySuite(s.ctx, s.testInstallation))
+func (s *glooctlSuite) TestGetProxy() {
+	suite.Run(s.T(), glooctl.NewGetProxySuite(s.ctx, s.testInstallation))
 }

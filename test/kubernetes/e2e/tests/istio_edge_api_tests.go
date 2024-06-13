@@ -6,7 +6,7 @@ import (
 )
 
 func IstioEdgeApiTests() TestRunner {
-	istioEdgeApiTests := make(UnorderedTests)
+	istioEdgeApiTests := new(UnorderedTests)
 
 	istioEdgeApiTests.Register("HeadlessSvc", headless_svc.NewEdgeGatewayHeadlessSvcSuite)
 	istioEdgeApiTests.Register("IstioIntegration", istio.NewGlooTestingSuite)
