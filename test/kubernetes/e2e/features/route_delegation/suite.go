@@ -33,7 +33,7 @@ type tsuite struct {
 	manifestObjects map[string][]client.Object
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) *tsuite {
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &tsuite{
 		ctx: ctx,
 		ti:  testInst,
