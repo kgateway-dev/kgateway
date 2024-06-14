@@ -7,6 +7,10 @@ const (
 	GlooReleaseName         = "gloo"
 	GlooFedReleaseName      = "gloo-fed"
 	KnativeServingNamespace = "knative-serving"
+
+	GlooFedDeploymentName = "gloo-fed"
+
+	GlooContainerName = "gloo"
 )
 
 var (

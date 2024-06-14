@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
@@ -27,7 +28,7 @@ import (
 func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *options.Options) {
 	// check if the gloo fed deployment exists
 	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
-	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, "gloo-fed", metav1.GetOptions{})
+	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, constants.GlooFedDeploymentName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")

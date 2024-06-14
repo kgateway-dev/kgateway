@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/hashicorp/go-multierror"
@@ -32,15 +30,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/discovery"
 )
 
 var (
 	CrdNotFoundErr = func(crdName string) error {
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
-
-	// printer printers.P
 )
 
 // contains method
@@ -73,30 +68,37 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			printer := printers.P{OutputType: opts.Top.Output}
 			printer.CheckResult = printer.NewCheckResult()
 
-			// TODO add back the kubegateway check (probably better to pass in as a flag rather than try to infer it)
-			// var err error
-			// call kubegateway check if k8s gateway crds are detected, otherwise call classic check
-			// isKubeGateway := detectKubeGatewayCrds(opts.Top.KubeContext)
-			// if isKubeGateway {
-			// 	err = kubegateway.Check(ctx, printer, opts)
-			// } else {
-			err := CheckResources(ctx, printer, opts)
-			// }
+			var multiErr *multierror.Error
 
+			// check edge gateway resources
+			err := CheckResources(ctx, printer, opts)
 			if err != nil {
-				// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
+				multiErr = multierror.Append(multiErr, err)
+			}
+
+			// check kube gateway resources
+			err = CheckKubeGatewayResources(ctx, printer, opts)
+			if err != nil {
+				multiErr = multierror.Append(multiErr, err)
+			}
+
+			// check gloo fed resources (TODO this should return errors too)
+			CheckMulticlusterResources(ctx, printer, opts)
+
+			if multiErr.ErrorOrNil() != nil {
+				for _, err := range multiErr.Errors {
+					printer.AppendError(fmt.Sprint(err))
+				}
+
+				// when output type is table, the returned errors get printed directly as cli output.
 				if opts.Top.Output.IsTable() {
-					return err
+					return multiErr.ErrorOrNil()
 				}
 			} else {
 				printer.AppendMessage("No problems detected.")
 			}
 
-			// TODO add back the kubegateway check
-			// if !isKubeGateway {
-			CheckMulticlusterResources(ctx, printer, opts)
-			// }
-
+			// when output type is json, any errors added via printer.AppendError will show up in the output here.
 			if opts.Top.Output.IsJSON() {
 				printer.PrintChecks(new(bytes.Buffer))
 			}
@@ -249,12 +251,6 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 		}
 	}
 
-	if multiErr.ErrorOrNil() != nil {
-		for _, err := range multiErr.Errors {
-			printer.AppendError(fmt.Sprint(err))
-		}
-	}
-
 	return multiErr.ErrorOrNil()
 }
 
@@ -385,7 +381,7 @@ func checkPods(ctx context.Context, printer printers.P, opts *options.Options) e
 			case corev1.PodReadyToStartContainers:
 				// This condition was introduced in k8s 1.29. Skip it since completed jobs have Status=False for this condition
 			default:
-				fmt.Printf("Note: Unhandled pod condition %s", condition.Type)
+				fmt.Printf("Note: Unhandled pod condition %s\n", condition.Type)
 			}
 
 			if errorToPrint != "" {
@@ -589,7 +585,7 @@ func checkRateLimitConfigs(ctx context.Context, printer printers.P, _ *options.O
 }
 
 func checkVirtualHostOptions(ctx context.Context, printer printers.P, _ *options.Options, namespaces []string) ([]string, error) {
-	printer.AppendCheck("Checking VirtualHostOptions... ")
+	printer.AppendCheck("Checking virtualhostoptions... ")
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -629,15 +625,15 @@ func checkVirtualHostOptions(ctx context.Context, printer printers.P, _ *options
 		}
 	}
 	if multiErr != nil {
-		printer.AppendStatus("VirtualHostOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
+		printer.AppendStatus("virtualhostoptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return knownVhOpts, multiErr
 	}
-	printer.AppendStatus("VirtualHostOptions", "OK")
+	printer.AppendStatus("virtualhostoptions", "OK")
 	return knownVhOpts, nil
 }
 
 func checkRouteOptions(ctx context.Context, printer printers.P, _ *options.Options, namespaces []string) ([]string, error) {
-	printer.AppendCheck("Checking RouteOptions... ")
+	printer.AppendCheck("Checking routeoptions... ")
 	var knownRouteOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -677,10 +673,10 @@ func checkRouteOptions(ctx context.Context, printer printers.P, _ *options.Optio
 		}
 	}
 	if multiErr != nil {
-		printer.AppendStatus("RouteOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
+		printer.AppendStatus("routeoptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return knownRouteOpts, multiErr
 	}
-	printer.AppendStatus("RouteOptions", "OK")
+	printer.AppendStatus("routeoptions", "OK")
 	return knownRouteOpts, nil
 }
 
@@ -1005,30 +1001,4 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 		}
 		return false
 	}
-}
-
-// copied from projects/gloo/cli/pkg/cmd/install/kubegateway/install.go (TODO: dedupe/clean up)
-func detectKubeGatewayCrds(kubeContext string) bool {
-	cfg, err := kubeutils.GetRestConfigWithKubeContext(kubeContext)
-	if err != nil {
-		return false
-	}
-	discClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return false
-	}
-
-	groups, err := discClient.ServerGroups()
-	if err != nil {
-		return false
-	}
-
-	// Check if gateway group exists
-	for _, group := range groups.Groups {
-		if group.Name == "gateway.networking.k8s.io" {
-			return true
-		}
-	}
-
-	return false
 }
