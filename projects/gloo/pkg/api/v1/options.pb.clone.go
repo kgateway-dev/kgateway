@@ -862,6 +862,18 @@ func (m *RouteOptions) Clone() proto.Message {
 			}
 		}
 
+	case *RouteOptions_HostRewriteHeader:
+
+		if h, ok := interface{}(m.GetHostRewriteHeader()).(clone.Cloner); ok {
+			target.HostRewriteType = &RouteOptions_HostRewriteHeader{
+				HostRewriteHeader: h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue),
+			}
+		} else {
+			target.HostRewriteType = &RouteOptions_HostRewriteHeader{
+				HostRewriteHeader: proto.Clone(m.GetHostRewriteHeader()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue),
+			}
+		}
+
 	}
 
 	switch m.RateLimitEarlyConfigType.(type) {
