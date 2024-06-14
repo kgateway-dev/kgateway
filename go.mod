@@ -63,9 +63,9 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
 	go.opencensus.io v0.24.0
-	go.uber.org/goleak v1.2.1
+	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.17.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/tools v0.10.0
