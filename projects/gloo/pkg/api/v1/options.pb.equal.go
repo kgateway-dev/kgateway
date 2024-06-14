@@ -1247,6 +1247,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	case *RouteOptions_HostRewriteHeader:
+		if _, ok := target.HostRewriteType.(*RouteOptions_HostRewriteHeader); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHostRewriteHeader()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHostRewriteHeader()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHostRewriteHeader(), target.GetHostRewriteHeader()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.HostRewriteType != target.HostRewriteType {
