@@ -7,7 +7,6 @@ description: Configure Gloo Edge session affinity (sticky sessions)
 For certain applications deployed across multiple replicas, it may be desirable to route all traffic from a single client session to the same instance of the application. This can help reduce latency through better use of caches. This load balancer behavior is referred to as Session Affinity or Sticky Sessions. Gloo Edge exposes Envoy's full session affinity capabilities, as described below.
 
 ---
-# TODO - add stateful session
 ## Configuration overview
 
 There are two steps to configuring session affinity:
@@ -349,13 +348,13 @@ Return to the app in your browser and refresh the page a few times. You should s
 Now that you have configured cookie-based sticky sessions, web requests from your browser will be served by the same instance of the counter app (unless you delete the cookie).
 
 
-## Stateful Session Plugin (Enterprise Only)
+## Stateful Session Filter (Enterprise Only)
 Envoy provides another method of implementing sticky sessions using the [Stateful Session](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/stateful_session_filter) filter, which implements "strong" stickiness.
 
 This example uses the Counter reources as created in the [Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) section, with no additional modifications to the upstream or virtualservice needed.
 
-### Cookie based stateful session plugin
-With Gloo Edge Enterprise installed with the counter app resources applied, edit the gateway:
+### Cookie based stateful session filter
+With Gloo Edge Enterprise installed on a cluster with multiple nodes and the Counter app resources applied, edit the gateway:
 ```
 kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
 ```
@@ -381,14 +380,14 @@ spec:
 
 Now when you navigate to `route1` you should get an increasing count when you refresh.
 
-### Header based stateful session plugin
+### Header based stateful session filter
 With Gloo Edge Enterprise installed with the counter app resources applied, edit the gateway:
 ```
 kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
 ```
 and add the following config:
 
-{{< highlight yaml "hl_lines=4-11" >}}
+{{< highlight yaml "hl_lines=4-8" >}}
 spec:
   bindAddress: '::'
   bindPort: 8080
@@ -426,3 +425,5 @@ We can then take the `statefulsessionheader` header from the request and add it 
 ```
 curl -v -H "statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==" $(glooctl proxy url)/route1
 ```
+
+Running the curl command with the header should result in an increasing count in the reply as the requests are all directed to the same upstream.
