@@ -8,4 +8,4 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/9622
   resolvesIssue: true
   description: >-
-    Header names are now validated according to RFC 9110, https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1. If a header name that consists of invalid characters is passed via the healthCheck or headerManipulation `requestHeadersToAdd`, it is rejected.
+    Previously, header names consisting of invalid characters such as '()[]:;,<=>' were accepted when passed via the healthCheck or headerManipulation `requestHeadersToAdd` parameter. This resulted in envoy throwing an `invalid header name` error. Now, header names are validated according to RFC 9110, which is the same validation used by envoy. If a header name consisting of invalid characters is passed via the aforementioned parameters, it is caught and rejected in edge and does not propagate to envoy.
