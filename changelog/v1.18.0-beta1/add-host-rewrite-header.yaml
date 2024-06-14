@@ -2,5 +2,10 @@ changelog:
 - type: NEW_FEATURE
   issueLink: https://github.com/solo-io/gloo/issues/9579
   resolvesIssue: false
-  description: >|
+  description: >-
     Adds the `host_rewrite_header` to the route options to allow envoy to swapped the host header with the content of given downstream or custom header. Pay attention to the potential security implications of using this option. Provided header must come from trusted source.
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9622
+  resolvesIssue: true
+  description: >-
+    Header names are now validated according to RFC 9110, https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1. If an invalid header name is passed, it is rejected
