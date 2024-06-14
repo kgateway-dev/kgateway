@@ -9,3 +9,6 @@ changelog:
   resolvesIssue: true
   description: >-
     Previously, header names consisting of invalid characters such as '()[]:;,<=>' were accepted when passed via the healthCheck or headerManipulation `requestHeadersToAdd` parameter. This resulted in envoy throwing an `invalid header name` error. Now, header names are validated according to RFC 9110, which is the same validation used by envoy. If a header name consisting of invalid characters is passed via the aforementioned parameters, it is caught and rejected in edge and does not propagate to envoy.
+- type: NON_USER_FACING
+  description: >-
+    Disable ingress regression tests as it is deprecated in 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
