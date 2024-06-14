@@ -3,6 +3,7 @@ package translator
 import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
@@ -59,7 +60,7 @@ var _ = Describe("Merge", func() {
 			},
 		}
 
-		actual := mergeVirtualHostOptions(dst, src)
+		actual, _ := utils.ShallowMergeVirtualHostOptions(dst, src)
 		Expect(actual).To(Equal(expected))
 	})
 })
