@@ -1,0 +1,17 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.27.6-patch1
+    issueLink: https://github.com/solo-io/solo-projects/issues/6290
+    resolvesIssue: false
+    description: >
+      Bump to upstream envoy v1.27.6
+      - [CVE-2024-34362: Crash (use-after-free) in EnvoyQuicServerStream](GHSA-hww5-43gv-35jv)
+      - [CVE-2024-34363: Crash due to uncaught nlohmann JSON exception](GHSA-g979-ph9j-5gg4)
+      - [CVE-2024-34364: Envoy OOM vector from HTTP async client with unbounded response buffer for mirror response, and other components](GHSA-xcj3-h7vf-fw26)
+      - [CVE-2024-32974: Crash in EnvoyQuicServerStream::OnInitialHeadersComplete()](GHSA-mgxp-7hhp-8299)
+      - [CVE-2024-32975: Crash in QuicheDataReader::PeekVarInt62Length()](GHSA-g9mq-6v96-cpqc)
+      - [CVE-2024-32976: Endless loop while decompressing Brotli data with extra input](GHSA-7wp5-c2vq-4f8m)
+      - [CVE-2024-23326: Envoy incorrectly accepts HTTP 200 response for entering upgrade mode](GHSA-vcf8-7238-v74c)
+    

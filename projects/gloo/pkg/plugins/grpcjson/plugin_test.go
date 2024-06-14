@@ -335,6 +335,20 @@ var _ = Describe("GrpcJson", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(grpcjson.DecodingError(hl.GetOptions().GetGrpcJsonTranscoder().GetProtoDescriptorConfigMap(), "protoDesc").Error()))
 		})
+
+		It("should have no effect if the action is not a routeAction", func() {
+			p := grpcjson.NewPlugin()
+			p.Init(initParams)
+
+			in := &v1.Route{
+				Action: &v1.Route_RedirectAction{},
+			}
+			out := &envoy_config_route_v3.Route{}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(BeEquivalentTo(&envoy_config_route_v3.Route{}))
+		})
 	})
 
 })

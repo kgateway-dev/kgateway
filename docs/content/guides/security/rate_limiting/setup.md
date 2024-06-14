@@ -166,6 +166,8 @@ You can configure descriptors in the Gloo Edge Settings for the entire cluster. 
 {{% tab name="All routes in the virtual host" %}}
 ```yaml
 cat > vs-host-patch.yaml - <<EOF
+spec:
+  virtualHost:
     options:
       ratelimit:
         rateLimits:
@@ -192,12 +194,12 @@ EOF
       {{< tabs >}} 
 {{% tab name="All routes in the virtual host" %}}
 ```sh
-kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-host-patch.yaml)"
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat vs-host-patch.yaml)"
 ```
 {{% /tab %}} 
 {{% tab name="Per route" %}}  
 ```sh
-kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-patch.yaml)"
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat vs-route-patch.yaml)"
 ```
 {{% /tab %}} 
       {{< /tabs >}} 

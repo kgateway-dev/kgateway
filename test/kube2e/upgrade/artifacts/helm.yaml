@@ -4,6 +4,9 @@ global:
   glooRbac:
     namespaced: true
     nameSuffix: e2e-test-rbac-suffix
+  podSecurityStandards:
+    container:
+      enableRestrictedContainerDefaults: true
 settings:
   singleNamespace: true
   create: true

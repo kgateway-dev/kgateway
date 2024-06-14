@@ -6171,7 +6171,7 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
 
-				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, resourceType string, securityRoot string, extraArgs ...string) {
 					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
 					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
 
@@ -6184,7 +6184,7 @@ metadata:
 					// First Group of fields to test
 					prepareMakefile(namespace, helmValuesA)
 
-					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					container := getContainer(testManifest, resourceType, resourceName, containerName)
 					Expect(container.SecurityContext).To(Equal(
 						&v1.SecurityContext{
 							RunAsUser:                pointer.Int64(int64(1234)),
@@ -6202,7 +6202,7 @@ metadata:
 
 					prepareMakefile(namespace, helmValuesB)
 
-					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					container = getContainer(testManifest, resourceType, resourceName, containerName)
 					Expect(container.SecurityContext).To(Equal(
 						&v1.SecurityContext{
 							Capabilities: &v1.Capabilities{
@@ -6222,15 +6222,31 @@ metadata:
 						},
 					))
 				},
-					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
-					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
-					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("19-gloo-mtls-certgen-job.yaml", "gloo-mtls-certgen", "certgen", "Job", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("3-discovery-deployment.yaml", "discovery", "discovery", "Deployment", "discovery.deployment.discoveryContainerSecurityContext"),
+					Entry("5-resource-cleanup-job.yaml", "gloo-resource-cleanup", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-migration-job.yaml", "gloo-resource-migration", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-rollout-check-job.yaml", "gloo-resource-rollout-check", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-rollout-cleanup-job.yaml", "gloo-resource-rollout-cleanup", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-rollout-job.yaml", "gloo-resource-rollout", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("6.5-gateway-certgen-job.yaml", "gateway-certgen", "certgen", "Job", "gateway.certGenJob.containerSecurityContext"),
+					Entry("6.5-gateway-certgen-cronjob.yaml", "gateway-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("6-access-logger-deployment.yaml", "gateway-proxy-access-logger", "access-logger", "Deployment", "accessLogger.accessLoggerContainerSecurityContext", "accessLogger.enabled=true"),
+					Entry("10-ingress-deployment.yaml", "ingress", "ingress", "Deployment", "ingress.deployment.ingressContainerSecurityContext", "ingress.enabled=true"),
+					Entry("11-ingress-proxy-deployment.yaml", "ingress-proxy", "ingress-proxy", "Deployment", "ingressProxy.deployment.ingressProxyContainerSecurityContext", "ingress.enabled=true"),
+					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", "settings.integrations.knative.proxy.containerSecurityContext", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+					Entry("26-knative-external-proxy-deployment.yaml", "knative-external-proxy", "knative-external-proxy", "Deployment", "settings.integrations.knative.proxy.containerSecurityContext", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("29-knative-internal-proxy-deployment.yaml", "knative-internal-proxy", "knative-internal-proxy", "Deployment", "settings.integrations.knative.proxy.containerSecurityContext", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
-				DescribeTable("merges resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+				DescribeTable("merges resources for container security contexts", func(resourceName string, containerName string, resourceType string, securityRoot string, extraArgs ...string) {
 					// First helm template generates the baseline
 					// Run once "plain" to get the baseline as generated with no helm values passed
 					prepareMakefile(namespace, helmValues{
@@ -6238,7 +6254,7 @@ metadata:
 					})
 
 					// Strip out the revelant security context
-					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					container := getContainer(testManifest, resourceType, resourceName, containerName)
 					initialSecurityContext := container.SecurityContext
 					if initialSecurityContext == nil {
 						initialSecurityContext = &v1.SecurityContext{}
@@ -6259,7 +6275,7 @@ metadata:
 					//
 					// Run again with security context A helm values applied
 					prepareMakefile(namespace, helmValuesA)
-					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					container = getContainer(testManifest, resourceType, resourceName, containerName)
 
 					// Test that all the values are set
 					Expect(container.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
@@ -6287,7 +6303,7 @@ metadata:
 					prepareMakefile(namespace, helmValuesB)
 					initialSecurityContext = &v1.SecurityContext{}
 					deepCopy(&initialSecurityContextClean, &initialSecurityContext)
-					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					container = getContainer(testManifest, resourceType, resourceName, containerName)
 
 					// Test that all the values are set
 					expectedCapabilities := &v1.Capabilities{
@@ -6313,12 +6329,123 @@ metadata:
 
 					Expect(container.SecurityContext).To(Equal(initialSecurityContext))
 				},
-					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
-					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
-					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("19-gloo-mtls-certgen-job.yaml", "gloo-mtls-certgen", "certgen", "Job", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("3-discovery-deployment.yaml", "discovery", "discovery", "Deployment", "discovery.deployment.discoveryContainerSecurityContext"),
+					Entry("5-resource-cleanup-job.yaml", "gloo-resource-cleanup", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-migration-job.yaml", "gloo-resource-migration", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-rollout-check-job.yaml", "gloo-resource-rollout-check", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-rollout-cleanup-job.yaml", "gloo-resource-rollout-cleanup", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("5-resource-rollout-job.yaml", "gloo-resource-rollout", "kubectl", "Job", "gateway.rolloutJob.containerSecurityContext"),
+					Entry("6.5-gateway-certgen-job.yaml", "gateway-certgen", "certgen", "Job", "gateway.certGenJob.containerSecurityContext"),
+					Entry("6.5-gateway-certgen-cronjob.yaml", "gateway-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("6-access-logger-deployment.yaml", "gateway-proxy-access-logger", "access-logger", "Deployment", "accessLogger.accessLoggerContainerSecurityContext", "accessLogger.enabled=true"),
+					Entry("10-ingress-deployment.yaml", "ingress", "ingress", "Deployment", "ingress.deployment.ingressContainerSecurityContext", "ingress.enabled=true"),
+					Entry("11-ingress-proxy-deployment.yaml", "ingress-proxy", "ingress-proxy", "Deployment", "ingressProxy.deployment.ingressProxyContainerSecurityContext", "ingress.enabled=true"),
+					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", "settings.integrations.knative.proxy.containerSecurityContext", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+					Entry("26-knative-external-proxy-deployment.yaml", "knative-external-proxy", "knative-external-proxy", "Deployment", "settings.integrations.knative.proxy.containerSecurityContext", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("29-knative-internal-proxy-deployment.yaml", "knative-internal-proxy", "knative-internal-proxy", "Deployment", "settings.integrations.knative.proxy.containerSecurityContext", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+				)
+
+				// Helper function to apply the default restricted container security context
+				type applyContainerSecurityDefaults func(*v1.SecurityContext)
+
+				applyDiscovery := applyContainerSecurityDefaults(func(securityContext *v1.SecurityContext) {
+					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
+					securityContext.RunAsUser = pointer.Int64(int64(10101))
+				})
+				applyNil := applyContainerSecurityDefaults(func(securityContext *v1.SecurityContext) {})
+				applyRunAsUser := applyContainerSecurityDefaults(func(securityContext *v1.SecurityContext) {
+					securityContext.RunAsUser = pointer.Int64(int64(10101))
+				})
+				applyKnative := applyContainerSecurityDefaults(func(securityContext *v1.SecurityContext) {
+					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
+					securityContext.Capabilities = &v1.Capabilities{
+						Drop: []v1.Capability{"ALL"},
+						Add:  []v1.Capability{"NET_BIND_SERVICE"},
+					}
+				})
+				applyClusterIngress := applyContainerSecurityDefaults(func(securityContext *v1.SecurityContext) {
+					securityContext.Capabilities = &v1.Capabilities{
+						Drop: []v1.Capability{"ALL"},
+						Add:  []v1.Capability{"NET_BIND_SERVICE"},
+					}
+					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
+				})
+
+				getDefaultRestrictedContainerSecurityContext := func(seccompType string, applyContainerDefaults applyContainerSecurityDefaults) *v1.SecurityContext {
+					// Use default value if not set
+					if seccompType == "" {
+						seccompType = "RuntimeDefault"
+					}
+
+					defaultRestrictedContainerSecurityContext := &v1.SecurityContext{
+						RunAsNonRoot:             pointer.Bool(true),
+						AllowPrivilegeEscalation: pointer.Bool(false),
+						Capabilities: &v1.Capabilities{
+							Drop: []v1.Capability{"ALL"},
+						},
+						SeccompProfile: &v1.SeccompProfile{
+							Type: v1.SeccompProfileType(seccompType),
+						},
+					}
+					applyContainerDefaults(defaultRestrictedContainerSecurityContext)
+					return defaultRestrictedContainerSecurityContext
+				}
+
+				DescribeTable("applies default restricted container security contexts", func(resourceName string, containerName string, resourceType string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
+
+					for _, seccompTypeValue := range []string{"RuntimeDefault", "Localhost", ""} {
+						helmArgs := extraArgs
+						if seccompTypeValue != "" {
+							helmArgs = append([]string{
+								"global.podSecurityStandards.container.defaultSeccompProfileType=" + seccompTypeValue,
+							}, helmArgs...)
+						}
+						expectedDefaults := getDefaultRestrictedContainerSecurityContext(seccompTypeValue, applyDefaults)
+
+						helmArgs = append([]string{
+							"global.podSecurityStandards.container.enableRestrictedContainerDefaults=true",
+						}, helmArgs...)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: helmArgs,
+						})
+
+						container := getContainer(testManifest, resourceType, resourceName, containerName)
+						securityContext := container.SecurityContext
+						Expect(securityContext).To(Equal(expectedDefaults), "seccompTypeValue: %s", seccompTypeValue)
+					}
+
+				},
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", applyDiscovery),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", applyNil, "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", applyNil, "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", applyDiscovery, "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", applyRunAsUser, "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", applyRunAsUser, "global.glooMtls.enabled=true"),
+					Entry("19-gloo-mtls-certgen-job.yaml", "gloo-mtls-certgen", "certgen", "Job", applyRunAsUser, "global.glooMtls.enabled=true"),
+					Entry("3-discovery-deployment.yaml", "discovery", "discovery", "Deployment", applyDiscovery),
+					Entry("5-resource-cleanup-job.yaml", "gloo-resource-cleanup", "kubectl", "Job", applyRunAsUser),
+					Entry("5-resource-migration-job.yaml", "gloo-resource-migration", "kubectl", "Job", applyRunAsUser),
+					Entry("5-resource-rollout-check-job.yaml", "gloo-resource-rollout-check", "kubectl", "Job", applyRunAsUser),
+					Entry("5-resource-rollout-cleanup-job.yaml", "gloo-resource-rollout-cleanup", "kubectl", "Job", applyRunAsUser),
+					Entry("5-resource-rollout-job.yaml", "gloo-resource-rollout", "kubectl", "Job", applyRunAsUser),
+					Entry("6.5-gateway-certgen-job.yaml", "gateway-certgen", "certgen", "Job", applyRunAsUser),
+					Entry("6.5-gateway-certgen-cronjob.yaml", "gateway-certgen-cronjob", "certgen", "CronJob", applyRunAsUser, "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("6-access-logger-deployment.yaml", "gateway-proxy-access-logger", "access-logger", "Deployment", applyNil, "accessLogger.enabled=true"),
+					Entry("10-ingress-deployment.yaml", "ingress", "ingress", "Deployment", applyNil, "ingress.enabled=true"),
+					Entry("11-ingress-proxy-deployment.yaml", "ingress-proxy", "ingress-proxy", "Deployment", applyKnative, "ingress.enabled=true"),
+					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", applyClusterIngress, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+					Entry("26-knative-external-proxy-deployment.yaml", "knative-external-proxy", "knative-external-proxy", "Deployment", applyKnative, "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("29-knative-internal-proxy-deployment.yaml", "knative-internal-proxy", "knative-internal-proxy", "Deployment", applyKnative, "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", applyRunAsUser, "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
@@ -7035,16 +7162,34 @@ func getContainer(t TestManifest, kind string, resourceName string, containerNam
 		}
 		return false
 	})
+
 	Expect(resources.NumResources()).To(Equal(1))
 	var foundContainer v1.Container
 	resources.ExpectAll(func(deployment *unstructured.Unstructured) {
 		foundExpected := false
 		deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-		structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-		Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-		for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+		var containers []v1.Container
+
+		switch kind {
+		case "Deployment":
+			structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", structuredDeployment))
+			containers = structuredDeployment.Spec.Template.Spec.Containers
+		case "Job":
+			structuredJob, ok := deploymentObject.(*jobsv1.Job)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured job", structuredJob))
+			containers = structuredJob.Spec.Template.Spec.Containers
+		case "CronJob":
+			structuredCronJob, ok := deploymentObject.(*jobsv1.CronJob)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured cronjob", structuredCronJob))
+			containers = structuredCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers
+		default:
+			Fail("Unsupported kind:" + kind)
+		}
+
+		for _, container := range containers {
 			if container.Name == containerName {
 				foundExpected = true
 				foundContainer = container
@@ -7055,6 +7200,7 @@ func getContainer(t TestManifest, kind string, resourceName string, containerNam
 	})
 
 	return &foundContainer
+
 }
 
 func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deployment {
