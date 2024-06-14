@@ -3,9 +3,18 @@ package virtualhostoptions
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listenerutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -14,18 +23,14 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/vhostutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"k8s.io/apimachinery/pkg/types"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ plugins.ListenerPlugin = &plugin{}
-var _ plugins.StatusPlugin = &plugin{}
+var (
+	_ plugins.ListenerPlugin = &plugin{}
+	_ plugins.StatusPlugin   = &plugin{}
+)
 
 type plugin struct {
 	gwQueries          gwquery.GatewayQueries
@@ -104,32 +109,55 @@ func (p *plugin) ApplyListenerPlugin(
 		return nil
 	}
 
-	if len(attachedOptions) > 1 {
-		for _, unusedVhO := range attachedOptions[1:] {
-			nn := client.ObjectKeyFromObject(unusedVhO)
-			cacheEntry := p.classicStatusCache.getOrCreateEntry(nn)
-			cacheEntry.warnings = append(cacheEntry.warnings, fmt.Sprintf("VirtualHostOption %s not attached to Gateway %s due to conflict with more-specific or older VirtualHostOption %s", nn, listenerCtx.Gateway.Name, client.ObjectKeyFromObject(attachedOptions[0])))
-			p.classicStatusCache[nn] = cacheEntry
+	// the first option is highest priority, so we will merge all options into this one,
+	// see for more context: https://github.com/solo-io/solo-projects/issues/6313
+	merged := attachedOptions[0]
+	optionsUsed := []*solokubev1.VirtualHostOption{attachedOptions[0]}
+	optionsIgnored := []*solokubev1.VirtualHostOption{}
+
+	for _, opt := range attachedOptions[1:] {
+		optionUsed := false
+		merged.Spec.Options, optionUsed = glooutils.ShallowMergeVirtualHostOptions(merged.Spec.GetOptions(), opt.Spec.GetOptions())
+		if optionUsed {
+			optionsUsed = append(optionsUsed, opt)
+		} else {
+			optionsIgnored = append(optionsIgnored, opt)
 		}
 	}
 
-	// use the first option (highest in priority)
-	// see for more context: https://github.com/solo-io/solo-projects/issues/6313
-	optToUse := attachedOptions[0]
+	// The merged option should be applied to the VirtualHosts, and the sources should be tracked
+	// per VirtualHostOption that affected the merged result
+	for _, opt := range optionsUsed {
+		for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
+			v.Options = merged.Spec.GetOptions()
+			vhostutils.AppendSourceToVirtualHost(v, opt)
+		}
+		listenerutils.AppendSourceToListener(outListener, opt)
 
-	for _, v := range aggListener.GetHttpResources().GetVirtualHosts() {
-		v.Options = optToUse.Spec.GetOptions()
-		vhostutils.AppendSourceToVirtualHost(v, optToUse)
+		// track that we used this VirtualHostOption in our status cache
+		// we do this so we can persist status later for all attached VirtualHostOptions
+		// since we don't have any additional details to append, we just need to make sure the
+		// cache entry exists
+		p.classicStatusCache.getOrCreateEntry(client.ObjectKeyFromObject(opt))
 	}
-	listenerutils.AppendSourceToListener(outListener, optToUse)
 
-	// track that we used this VirtualHostOption in our status cache
-	// we do this so we can persist status later for all attached VirtualHostOptions
-	// since we don't have any additional details to append, we just need to make sure the
-	// cache entry exists
-	p.classicStatusCache.getOrCreateEntry(client.ObjectKeyFromObject(optToUse))
+	for _, opt := range optionsIgnored {
+		nn := client.ObjectKeyFromObject(opt)
+		cacheEntry := p.classicStatusCache.getOrCreateEntry(nn)
+		cacheEntry.warnings = append(cacheEntry.warnings, fmt.Sprintf("VirtualHostOption '%s' not attached to listener '%s' on Gateway '%s/%s' due to conflict with more specific or older VirtualHostOptions '%s'",
+			nn, listenerCtx.GwListener.Name, listenerCtx.Gateway.Namespace, listenerCtx.Gateway.Name, optionsToStr(optionsUsed)))
+		p.classicStatusCache[nn] = cacheEntry
+	}
 
 	return nil
+}
+
+func optionsToStr(opts []*solokubev1.VirtualHostOption) string {
+	resourceNames := make([]string, len(opts))
+	for i, opt := range opts {
+		resourceNames[i] = client.ObjectKeyFromObject(opt).String()
+	}
+	return strings.Join(resourceNames, ", ")
 }
 
 // Add all statuses for processed VirtualHostOptions. These could come from the VHO itself or
@@ -193,7 +221,6 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 
 	}
 	return nil
-
 }
 
 // given a ProxyReport, extract and aggregate all VirtualHost errors that have VirtualHostOption source metadata

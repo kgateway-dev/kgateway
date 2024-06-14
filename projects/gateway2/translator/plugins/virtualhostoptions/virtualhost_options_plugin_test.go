@@ -2,6 +2,7 @@ package virtualhostoptions
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
@@ -103,11 +105,39 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 				deps = []client.Object{attachedVirtualHostOption()}
 			})
 			It("correctly adds retry", func() {
-
 				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
 
 				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
 					Expect(proto.Equal(vh.GetOptions(), expectedOptions)).To(BeTrue())
+				}
+			})
+		})
+
+		When("Multiple VirtualHostOptions attaching to the same listener", func() {
+			BeforeEach(func() {
+				first := attachedVirtualHostOptionAfterT("first", 0)
+
+				second := attachedVirtualHostOptionAfterT("second", 1*time.Hour)
+				second.Spec.Options.Retries.NumRetries = 10
+				second.Spec.Options.IncludeRequestAttemptCount = wrapperspb.Bool(true)
+
+				third := attachedVirtualHostOptionAfterT("third", 2*time.Hour)
+				third.Spec.Options.HeaderManipulation = &headers.HeaderManipulation{
+					RequestHeadersToRemove: []string{"third"},
+				}
+
+				deps = []client.Object{first, second, third}
+			})
+			It("correctly use merged options in priority order from oldest to newest", func() {
+				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+
+				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
+					// From first
+					Expect(vh.GetOptions().GetRetries().GetNumRetries()).To(BeNumerically("==", 5))
+					// From second
+					Expect(vh.GetOptions().GetIncludeRequestAttemptCount().GetValue()).To(BeTrue())
+					// From third
+					Expect(vh.GetOptions().GetHeaderManipulation().GetRequestHeadersToRemove()).To(ConsistOf("third"))
 				}
 			})
 		})
@@ -117,7 +147,6 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 				deps = []client.Object{attachedVirtualHostOptionWithSectionName()}
 			})
 			It("correctly adds retry", func() {
-
 				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
 
 				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
@@ -166,7 +195,6 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 			})
 		})
 	})
-
 })
 
 func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
@@ -193,6 +221,33 @@ func attachedVirtualHostOption() *solokubev1.VirtualHostOption {
 		},
 	}
 }
+
+func attachedVirtualHostOptionAfterT(name string, d time.Duration) *solokubev1.VirtualHostOption {
+	return &solokubev1.VirtualHostOption{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              name,
+			Namespace:         "default",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(d)),
+		},
+		Spec: sologatewayv1.VirtualHostOption{
+			TargetRefs: []*corev1.PolicyTargetReferenceWithSectionName{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.GatewayKind,
+					Name:      "gw",
+					Namespace: wrapperspb.String("default"),
+				},
+			},
+			Options: &v1.VirtualHostOptions{
+				Retries: &retries.RetryPolicy{
+					RetryOn:    "5xx",
+					NumRetries: 5,
+				},
+			},
+		},
+	}
+}
+
 func attachedVirtualHostOptionWithSectionName() *solokubev1.VirtualHostOption {
 	vhOpt := attachedVirtualHostOption()
 	vhOpt.Spec.TargetRefs[0].SectionName = &wrapperspb.StringValue{
