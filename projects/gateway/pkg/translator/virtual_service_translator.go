@@ -10,15 +10,17 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
+
+	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 )
 
 var (
@@ -106,7 +108,6 @@ func applyGlobalVirtualServiceSettings(ctx context.Context, virtualServices v1.V
 
 // Errors will be added to the report object.
 func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
-
 	// Index the virtual services for this gateway by the domain
 	vsByDomain := map[string]v1.VirtualServiceList{}
 	for _, vs := range virtualServices {
@@ -213,8 +214,8 @@ func virtualServiceMatchesLabels(virtualService *v1.VirtualService, validLabels 
 	labelSelector = labels.SelectorFromSet(validLabels)
 	return labelSelector.Matches(vsLabels) && virtualServiceNamespaceValidForGateway(virtualServiceNamespaces, virtualService)
 }
-func virtualServiceValidForSelectorExpressions(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelectorExpressions, virtualServiceNamespaces []string) (bool, error) {
 
+func virtualServiceValidForSelectorExpressions(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelectorExpressions, virtualServiceNamespaces []string) (bool, error) {
 	vsLabels := labels.Set(virtualService.GetMetadata().GetLabels())
 	// Check whether labels match (expression requirements)
 	if len(selector.GetExpressions()) > 0 {
@@ -237,6 +238,7 @@ func virtualServiceValidForSelectorExpressions(virtualService *v1.VirtualService
 	nsMatches := virtualServiceNamespaceValidForGateway(virtualServiceNamespaces, virtualService)
 	return nsMatches, nil
 }
+
 func virtualServiceNamespaceValidForGateway(virtualServiceNamespaces []string, virtualService *v1.VirtualService) bool {
 	if len(virtualServiceNamespaces) > 0 {
 		for _, ns := range virtualServiceNamespaces {
@@ -260,6 +262,7 @@ func virtualServiceLabelsMatchesExpressionRequirements(requirements labels.Requi
 	}
 	return true
 }
+
 func hasSsl(vs *v1.VirtualService) bool {
 	return vs.GetSslConfig() != nil
 }
@@ -322,7 +325,8 @@ func (v *VirtualServiceTranslator) mergeDelegatedVirtualHostOptions(vs *v1.Virtu
 			vs.GetVirtualHost().Options = vhOption.GetOptions()
 			continue
 		}
-		vs.GetVirtualHost().Options = mergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
+		merged, _ := utils.ShallowMergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
+		vs.GetVirtualHost().Options = merged
 	}
 }
 
@@ -447,7 +451,6 @@ func regexShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
 // As future matcher APIs get added, this validation will need to be updated as well.
 // If it gets too complex, consider modeling as a constraint satisfaction problem.
 func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *matchers.Matcher) bool {
-
 	// we play a trick here to validate the methods by writing them as header
 	// matchers and just reusing the header matcher logic
 	earlyMatcher := *earlierMatcher
@@ -606,7 +609,6 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 //     routeAction:
 //     ....
 func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
-
 	// regex matches simple OR regex, e.g. (GET|POST|...)
 	re, err := regexp.Compile("^\\([\\w]+([|[\\w]+)+\\)$")
 	if err != nil {

@@ -19,6 +19,7 @@ var (
 	sectionNameVhOManifest = filepath.Join(util.MustGetThisDir(), "testdata", "section-name-vho.yaml")
 	extraVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho.yaml")
 	badVhOManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "webhook-reject-bad-vho.yaml")
+	extraVhOMergeManifest  = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho-merge.yaml")
 
 	// When we apply the setup file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
@@ -53,6 +54,11 @@ var (
 	// Extra VirtualHostOption resource to be created
 	extraVirtualHostOptionMeta = metav1.ObjectMeta{
 		Name:      "remove-content-type",
+		Namespace: "default",
+	}
+	// Extra VirtualHostOption resource to be created to test merging of options
+	extraMergeVirtualHostOptionMeta = metav1.ObjectMeta{
+		Name:      "extra-vho-merge",
 		Namespace: "default",
 	}
 	// SectionName VirtualHostOption resource to be created
