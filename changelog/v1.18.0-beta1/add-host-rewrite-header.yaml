@@ -8,4 +8,4 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/9622
   resolvesIssue: true
   description: >-
-    Header names are now validated according to RFC 9110, https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1. If an invalid header name is passed, it is rejected
+    Header names are now validated according to RFC 9110, https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1. If a header name that consists of invalid characters is passed via the healthCheck or headerManipulation `requestHeadersToAdd`, it is rejected.
