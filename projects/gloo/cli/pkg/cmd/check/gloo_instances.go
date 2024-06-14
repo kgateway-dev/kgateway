@@ -31,7 +31,7 @@ func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *o
 	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, constants.GlooFedDeploymentName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")
+			printer.AppendMessage("\nSkipping Gloo Instance check -- Gloo Federation not detected.")
 		} else {
 			fmt.Printf("Warning: could not get Gloo Fed deployment: %v. Skipping Gloo Instance check.\n", err)
 		}
@@ -52,7 +52,7 @@ func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *o
 	glooInstanceList, err := instanceReader.listGlooInstances(ctx)
 	if err != nil {
 		if meta.IsNoMatchError(err) {
-			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")
+			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected.")
 			return
 		}
 		fmt.Printf("Warning: could not list Gloo Instances: %v\n", err)

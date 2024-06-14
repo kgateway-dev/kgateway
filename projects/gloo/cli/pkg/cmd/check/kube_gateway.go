@@ -29,9 +29,11 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 	}
 
 	if !kubeGatewayEnabled {
-		printer.AppendMessage("Skipping Kubernetes Gateway resources check -- Kube Gateway integration not enabled")
+		printer.AppendMessage("\nSkipping Kubernetes Gateway resources check -- Kube Gateway integration not enabled")
 		return nil
 	}
+
+	printer.AppendMessage("\nDetected Kubernetes Gateway integration!")
 
 	checks := []CheckFunc{
 		internal.CheckGatewayClass,
