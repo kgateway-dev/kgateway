@@ -18,22 +18,22 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func KubeGatewayTests() e2e.SuiteRunner {
-	kubeGatewayTests := e2e.NewSuiteRunner(false)
+func KubeGatewaySuiteRunner() e2e.SuiteRunner {
+	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
 
-	kubeGatewayTests.Register("Deployer", deployer.NewTestingSuite)
-	kubeGatewayTests.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
-	kubeGatewayTests.Register("ListenerOptions", listener_options.NewTestingSuite)
-	kubeGatewayTests.Register("RouteOptions", route_options.NewTestingSuite)
-	kubeGatewayTests.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
-	kubeGatewayTests.Register("Upstreams", upstreams.NewTestingSuite)
-	kubeGatewayTests.Register("Services", services.NewTestingSuite)
-	kubeGatewayTests.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
-	kubeGatewayTests.Register("PortRouting", port_routing.NewTestingSuite)
-	kubeGatewayTests.Register("RouteDelegation", route_delegation.NewTestingSuite)
-	kubeGatewayTests.Register("Glooctl", newGlooctlTestingSuite)
+	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("RouteOptions", route_options.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Upstreams", upstreams.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Services", services.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
+	kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Glooctl", newGlooctlTestingSuite)
 
-	return kubeGatewayTests
+	return kubeGatewaySuiteRunner
 }
 
 // We need to define tests requiring nesting as their own suites in order to support the injection paradigm

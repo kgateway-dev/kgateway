@@ -46,5 +46,5 @@ func TestK8sGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	KubeGatewayTests().Run(ctx, t, testInstallation)
+	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

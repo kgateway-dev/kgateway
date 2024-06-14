@@ -6,11 +6,11 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
 )
 
-func IstioEdgeApiTests() e2e.SuiteRunner {
-	istioEdgeApiTests := e2e.NewSuiteRunner(false)
+func IstioEdgeApiSuiteRunner() e2e.SuiteRunner {
+	istioEdgeApiSuiteRunner := e2e.NewSuiteRunner(false)
 
-	istioEdgeApiTests.Register("HeadlessSvc", headless_svc.NewEdgeGatewayHeadlessSvcSuite)
-	istioEdgeApiTests.Register("IstioIntegration", istio.NewGlooTestingSuite)
+	istioEdgeApiSuiteRunner.Register("HeadlessSvc", headless_svc.NewEdgeGatewayHeadlessSvcSuite)
+	istioEdgeApiSuiteRunner.Register("IstioIntegration", istio.NewGlooTestingSuite)
 
-	return istioEdgeApiTests
+	return istioEdgeApiSuiteRunner
 }

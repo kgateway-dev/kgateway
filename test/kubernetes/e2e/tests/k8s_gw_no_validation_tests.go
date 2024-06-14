@@ -8,13 +8,13 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 )
 
-func KubeGatewayNoValidationTests() e2e.SuiteRunner {
-	kubeGatewayNoValidationTests := e2e.NewSuiteRunner(false)
+func KubeGatewayNoValidationSuiteRunner() e2e.SuiteRunner {
+	kubeGatewayNoValidationSuiteRunner := e2e.NewSuiteRunner(false)
 
-	kubeGatewayNoValidationTests.Register("ListenerOptions", listener_options.NewTestingSuite)
-	kubeGatewayNoValidationTests.Register("RouteOptions", route_options.NewTestingSuite)
-	kubeGatewayNoValidationTests.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
-	kubeGatewayNoValidationTests.Register("PortRouting", port_routing.NewTestingSuite)
+	kubeGatewayNoValidationSuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
+	kubeGatewayNoValidationSuiteRunner.Register("RouteOptions", route_options.NewTestingSuite)
+	kubeGatewayNoValidationSuiteRunner.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
+	kubeGatewayNoValidationSuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
 
-	return kubeGatewayNoValidationTests
+	return kubeGatewayNoValidationSuiteRunner
 }

@@ -63,5 +63,5 @@ func TestK8sGatewayIstio(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 10*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	IstioTests().Run(ctx, t, testInstallation)
+	IstioSuiteRunner().Run(ctx, t, testInstallation)
 }

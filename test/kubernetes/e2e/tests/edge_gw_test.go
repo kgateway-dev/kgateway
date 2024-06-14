@@ -44,5 +44,5 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	EdgeGwTests().Run(ctx, t, testInstallation)
+	EdgeGwSuiteRunner().Run(ctx, t, testInstallation)
 }

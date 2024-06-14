@@ -8,13 +8,13 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 )
 
-func IstioTests() e2e.SuiteRunner {
-	istioTests := e2e.NewSuiteRunner(false)
+func IstioSuiteRunner() e2e.SuiteRunner {
+	istioSuiteRunner := e2e.NewSuiteRunner(false)
 
-	istioTests.Register("PortRouting", port_routing.NewTestingSuite)
-	istioTests.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
-	istioTests.Register("IstioIntegration", istio.NewTestingSuite)
-	istioTests.Register("IstioGatewayParameters", deployer.NewIstioIntegrationTestingSuite)
+	istioSuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
+	istioSuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
+	istioSuiteRunner.Register("IstioIntegration", istio.NewTestingSuite)
+	istioSuiteRunner.Register("IstioGatewayParameters", deployer.NewIstioIntegrationTestingSuite)
 
-	return istioTests
+	return istioSuiteRunner
 }

@@ -65,5 +65,5 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	AutomtlsIstioEdgeApiTests().Run(ctx, t, testInstallation)
+	AutomtlsIstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)
 }

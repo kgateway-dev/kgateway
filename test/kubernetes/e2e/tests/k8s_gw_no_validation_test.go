@@ -45,5 +45,5 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	KubeGatewayNoValidationTests().Run(ctx, t, testInstallation)
+	KubeGatewayNoValidationSuiteRunner().Run(ctx, t, testInstallation)
 }

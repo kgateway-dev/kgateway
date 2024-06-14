@@ -64,5 +64,5 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	GlooctlIstioInjectTests().Run(ctx, t, testInstallation)
+	GlooctlIstioInjectSuiteRunner().Run(ctx, t, testInstallation)
 }
