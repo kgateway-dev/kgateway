@@ -274,12 +274,6 @@ In a browser, navigate to this route, `/route1`, on your gateway's URL (you can 
 
 ### Apply the session affinity configuration
 
-### Requirements
-
-- Kubernetes cluster with Gloo Edge Enterprise installed
-- At least two nodes in the cluster.
-- Permission to deploy a DaemonSet and edit Gloo Edge resources.
-
 #### Configure the upstream
 
 Use `kubectl edit upstream -n gloo-system default-session-affinity-app-80` and apply the changes shown below to set a hashing load balancer on the app's upstream.
@@ -349,12 +343,21 @@ Now that you have configured cookie-based sticky sessions, web requests from you
 
 
 ## Stateful Session Filter (Enterprise Only)
+
 Envoy provides another method of implementing sticky sessions using the [Stateful Session](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/stateful_session_filter) filter, which implements "strong" stickiness.
 
 This example uses the Counter reources as created in the [Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) section, with no additional modifications to the upstream or virtualservice needed.
 
+### Requirements
+
+- Kubernetes cluster with Gloo Edge Enterprise installed
+- At least two nodes in the cluster.
+- Permission to deploy a DaemonSet and edit Gloo Edge resources.
+
 ### Cookie based stateful session filter
-With Gloo Edge Enterprise installed on a cluster with multiple nodes and the Counter app resources applied, edit the gateway:
+[Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) as in the other examples
+
+Then edit the gateway:
 ```
 kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
 ```
