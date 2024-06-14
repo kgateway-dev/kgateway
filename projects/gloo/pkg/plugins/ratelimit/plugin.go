@@ -6,8 +6,7 @@ import (
 
 	envoy_extensions_filters_http_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-
-	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -45,7 +44,7 @@ var (
 	DefaultTimeout = prototime.DurationToProto(100 * time.Millisecond)
 
 	ServerNotFound = func(usRef *core.ResourceRef) error {
-		return eris.Errorf("ratelimit server upstream not found %s", usRef.String())
+		return pluginutils.NewUpstreamNotFoundErr(usRef)
 	}
 )
 

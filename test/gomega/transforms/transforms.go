@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
+	. "github.com/onsi/gomega"
 	"golang.org/x/exp/maps"
 )
 
@@ -57,4 +59,11 @@ func WithHeaderKeys() func(response *http.Response) []string {
 	return func(response *http.Response) []string {
 		return maps.Keys(response.Header)
 	}
+}
+
+// BytesToInt converts a byte slice (e.g. a curl response body) to an integer
+func BytesToInt(b []byte) int {
+	i, err := strconv.Atoi(string(b))
+	Expect(err).NotTo(HaveOccurred())
+	return i
 }

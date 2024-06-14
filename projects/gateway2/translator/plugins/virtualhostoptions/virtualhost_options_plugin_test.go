@@ -13,6 +13,7 @@ import (
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -93,7 +94,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 			})
 			It("produces expected error", func() {
 				err := plugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{}, outputListener)
-				Expect(err).To(MatchError(ErrUnexpectedListenerType))
+				Expect(err).To(MatchError(utils.ErrUnexpectedListenerType))
 			})
 		})
 

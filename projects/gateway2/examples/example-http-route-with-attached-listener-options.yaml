@@ -22,14 +22,18 @@ spec:
 apiVersion: gateway.solo.io/v1
 kind: ListenerOption
 metadata:
-  name: buffer-limit
+  name: access-logs
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
   options:
-    perConnectionBufferLimitBytes: 42000
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: ""
 ---
 apiVersion: v1
 kind: Service

@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	upstreams_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes/fake"
@@ -22,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	validationgrpc "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -100,6 +103,7 @@ var _ = Describe("Validation Server", func() {
 			GlooValidatorConfig: GlooValidatorConfig{
 				XdsSanitizer: xdsSanitizer,
 				Translator:   translator,
+				Settings:     settings,
 			},
 		}
 	})
@@ -665,4 +669,184 @@ var _ = Describe("Validation Server", func() {
 			Consistently(getNotifications, time.Second).Should(HaveLen(5))
 		})
 	})
+
+	Context("allowWarnings=true", func() {
+
+		BeforeEach(func() {
+
+			ctrl = gomock.NewController(T)
+
+			settings = &v1.Settings{
+				Gateway: &v1.GatewayOptions{
+					Validation: &v1.GatewayOptions_ValidationOptions{
+						AllowWarnings: &wrappers.BoolValue{
+							Value: true,
+						},
+					},
+				},
+			}
+			memoryClientFactory := &factory.MemoryResourceClientFactory{
+				Cache: memory.NewInMemoryResourceCache(),
+			}
+
+			kube := fake.NewSimpleClientset()
+			kubeCoreCache, err := corecache.NewKubeCoreCache(context.Background(), kube)
+			Expect(err).NotTo(HaveOccurred())
+
+			opts := bootstrap.Opts{
+				Settings:  settings,
+				Secrets:   memoryClientFactory,
+				Upstreams: memoryClientFactory,
+				Consul: bootstrap.Consul{
+					ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+				},
+				KubeClient:    kube,
+				KubeCoreCache: kubeCoreCache,
+			}
+			registeredPlugins = registry.Plugins(opts)
+
+			params = plugins.Params{
+				Ctx:      context.Background(),
+				Snapshot: samples.SimpleGlooSnapshot("gloo-system"),
+				Settings: settings,
+			}
+
+			routeReplacingSanitizer, _ := sanitizer.NewRouteReplacingSanitizer(settings.GetGloo().GetInvalidConfigPolicy())
+			xdsSanitizer = sanitizer.XdsSanitizers{
+				sanitizer.NewUpstreamRemovingSanitizer(),
+				routeReplacingSanitizer,
+			}
+		})
+
+		JustBeforeEach(func() {
+			pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
+
+			translator = NewTranslatorWithHasher(utils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)
+			vc = ValidatorConfig{
+				Ctx: context.Background(),
+				GlooValidatorConfig: GlooValidatorConfig{
+					XdsSanitizer: xdsSanitizer,
+					Translator:   translator,
+					Settings:     settings,
+				},
+			}
+		})
+
+		Context("proxy validation", func() {
+			var s Validator
+			var updatedParams plugins.Params
+
+			Context("route options validation", func() {
+				JustBeforeEach(func() {
+					s = NewValidator(vc)
+					_ = s.Sync(context.Background(), params.Snapshot)
+					updatedParams = params
+
+				})
+
+				It("error is reported with Validate Gloo when allowWarnings=true", func() {
+
+					routeOpts := &gloov1.RouteOptions{
+						Shadowing: &shadowing.RouteShadowing{
+							Percentage: -100, // negative percentage should cause a warning
+							Upstream: &core.ResourceRef{
+								Name: "test",
+							},
+						},
+					}
+					updatedParams.Snapshot = samples.SimpleGlooSnapshotWithRouteOptions(routeOpts, "gloo-system")
+
+					virtualService := updatedParams.Snapshot.VirtualServices[0]
+					proxy := updatedParams.Snapshot.Proxies[0]
+					_ = s.Sync(context.Background(), updatedParams.Snapshot)
+					reports, err := s.ValidateGloo(context.Background(), proxy, virtualService, false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(reports).To(HaveLen(1))
+
+					resourceReport := reports[0].ResourceReports
+					Expect(resourceReport).To(HaveLen(1))
+
+					// have to get the resource reference from the resource Report keys
+					keyResources := make([]resources.InputResource, len(resourceReport))
+					i := 0
+					for k := range resourceReport {
+						keyResources[i] = k
+						i++
+					}
+					keyForResource := keyResources[0]
+					resourceRef := keyForResource.GetMetadata().Ref()
+					resourceErrors := resourceReport[keyForResource].Errors
+
+					// Verify the report is for the upstream we expect
+					Expect(resourceRef.GetNamespace()).To(Equal("gloo-system"))
+					Expect(resourceRef.GetName()).To(Equal("test"))
+
+					// Verify the report is for the upstream we expect
+					Expect(resourceRef.GetNamespace()).To(Equal("gloo-system"))
+					Expect(resourceRef.GetName()).To(Equal("test"))
+
+					// Verify report contains a warning for the secret we removed
+					Expect(resourceErrors).To(HaveOccurred())
+					Expect(resourceErrors.Error()).To(ContainSubstring("shadow percentage must be between 0 and 100"))
+
+				})
+
+				It("warning is not reported with Validate Gloo when allowWarnings=true", func() {
+
+					route := &v1.Route{
+						Action: &v1.Route_RouteAction{
+							RouteAction: &v1.RouteAction{
+								Destination: &v1.RouteAction_Single{
+									Single: &v1.Destination{
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name: "fake",
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					updatedParams.Snapshot = samples.CustomGlooSnapshot(route, samples.SimpleUpstream(), samples.SimpleSecret(), "gloo-system")
+
+					virtualService := updatedParams.Snapshot.VirtualServices[0]
+					proxy := updatedParams.Snapshot.Proxies[0]
+					_ = s.Sync(context.Background(), updatedParams.Snapshot)
+					reports, err := s.ValidateGloo(context.Background(), proxy, virtualService, false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(reports).To(HaveLen(1))
+
+					resourceReport := reports[0].ResourceReports
+					Expect(resourceReport).To(HaveLen(1))
+
+					// have to get the resource reference from the resource Report keys
+					keyResources := make([]resources.InputResource, len(resourceReport))
+					i := 0
+					for k := range resourceReport {
+						keyResources[i] = k
+						i++
+					}
+					keyForResource := keyResources[0]
+					resourceRef := keyForResource.GetMetadata().Ref()
+					resourceErrors := resourceReport[keyForResource].Errors
+					resourceWarnings := resourceReport[keyForResource].Warnings
+
+					// Verify the report is for the upstream we expect
+					Expect(resourceRef.GetNamespace()).To(Equal("gloo-system"))
+					Expect(resourceRef.GetName()).To(Equal("test"))
+
+					// Verify report does not contain errors from plugins
+					Expect(resourceErrors).ToNot(HaveOccurred())
+					// Only Route Warning reported, the TcpHost Warning not reported (handled in reportPluginProcessingError)
+					Expect(resourceWarnings).To(HaveLen(3))
+					for _, warn := range resourceWarnings {
+						Expect(warn).To(ContainSubstring("Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { .fake } not found"))
+					}
+				})
+			})
+		})
+	})
+
 })

@@ -455,6 +455,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetStatefulSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStatefulSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStatefulSession(), target.GetStatefulSession()) {
+			return false
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
@@ -1233,6 +1243,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetHostRewritePathRegex(), target.GetHostRewritePathRegex()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_HostRewriteHeader:
+		if _, ok := target.HostRewriteType.(*RouteOptions_HostRewriteHeader); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHostRewriteHeader()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHostRewriteHeader()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHostRewriteHeader(), target.GetHostRewriteHeader()) {
 				return false
 			}
 		}

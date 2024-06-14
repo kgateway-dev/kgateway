@@ -2,11 +2,14 @@ package helper
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 
@@ -87,42 +90,7 @@ func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time
 }
 
 func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput interface{}, ginkgoOffset int, timeout ...time.Duration) {
-	currentTimeout, pollingInterval := GetTimeouts(timeout...)
-
-	// for some useful-ish output
-	tick := time.Tick(currentTimeout / 8)
-	Expect(t.CanCurl()).To(BeTrue())
-
-	EventuallyWithOffset(ginkgoOffset+1, func(g Gomega) {
-
-		var res string
-
-		bufChan, done, err := t.CurlAsyncChan(opts)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		defer close(done)
-		var buf io.Reader
-		select {
-		case <-tick:
-			buf = bytes.NewBufferString("waiting for reply")
-		case r, ok := <-bufChan:
-			if ok {
-				buf = r
-			}
-		}
-		byt, err := io.ReadAll(buf)
-		if err != nil {
-			res = err.Error()
-		} else {
-			res = string(byt)
-		}
-
-		expectedResponseMatcher := GetExpectedResponseMatcher(expectedOutput)
-		g.Expect(res).To(expectedResponseMatcher)
-		if opts.LogResponses {
-			log.GreyPrintf("success: %v", res)
-		}
-	}, currentTimeout, pollingInterval).Should(Succeed())
+	t.CurlEventuallyShouldRespond(opts, expectedOutput, ginkgoOffset, timeout...)
 }
 
 func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedResponse interface{}, ginkgoOffset int, timeout ...time.Duration) {
@@ -130,31 +98,32 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 	// for some useful-ish output
 	tick := time.Tick(currentTimeout / 8)
 
-	EventuallyWithOffset(ginkgoOffset+1, func(g Gomega) {
-		g.Expect(t.CanCurl()).To(BeTrue())
+	cli := kubectl.NewCli()
 
-		res, err := t.Curl(opts)
+	EventuallyWithOffset(ginkgoOffset+1, func(g Gomega) {
+		curlResp, err := cli.CurlFromPod(context.Background(), kubectl.PodExecOptions{Name: t.echoName, Namespace: t.namespace, Container: t.echoName}, t.buildCurlOptions(opts)...)
 		if err != nil {
 			// trigger an early exit if the pod has been deleted.
-			// if we return an error here, the Eventually will continue. By making an
-			// assertion with the outer context's Gomega, we can trigger a failure at
-			// that outer scope.
-			g.Expect(err).NotTo(MatchError(ContainSubstring(`pods "testserver" not found`)))
-			return
+			if strings.Contains(err.Error(), `pods "testserver" not found`) {
+				ginkgo.Fail(err.Error())
+			}
+
+			// Will always fail
+			g.Expect(err).NotTo(HaveOccurred())
 		}
 		select {
 		default:
 			break
 		case <-tick:
 			if opts.LogResponses {
-				log.GreyPrintf("running: %v\nwant %v\nhave: %s", opts, expectedResponse, res)
+				log.GreyPrintf("running: %v\nwant %v\nhave: %+v", opts, expectedResponse, curlResp)
 			}
 		}
 
 		expectedResponseMatcher := GetExpectedResponseMatcher(expectedResponse)
-		g.Expect(res).To(expectedResponseMatcher)
+		g.Expect(curlResp).To(expectedResponseMatcher)
 		if opts.LogResponses {
-			log.GreyPrintf("success: %v", res)
+			log.GreyPrintf("success: \n%s\n%s\n", curlResp.StdErr, curlResp.StdOut)
 		}
 	}, currentTimeout, pollingInterval).Should(Succeed())
 }
@@ -168,7 +137,7 @@ func GetExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher 
 		// contained that as a substring.
 		// To ensure that all tests which relied on this functionality still work, we accept a string, but
 		// improve the assertion to also validate that the StatusCode was a 200
-		return WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(&matchers.HttpResponse{
+		return WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(&matchers.HttpResponse{
 			Body:       ContainSubstring(a),
 			StatusCode: http.StatusOK,
 		}))
@@ -178,7 +147,7 @@ func GetExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher 
 		// expected response. See matchers.HaveHttpResponse for more details
 		// This is actually the preferred input, as it means that the WithCurlHttpResponse transform
 		// can process the Curl response
-		return WithTransform(transforms.WithCurlHttpResponse, matchers.HaveHttpResponse(a))
+		return WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(a))
 	case types.GomegaMatcher:
 		// As a fallback, we also allow developers to define the expected matcher explicitly
 		// If this is necessary, it means that the WithCurlHttpResponse transform likely needs to
@@ -190,7 +159,7 @@ func GetExpectedResponseMatcher(expectedOutput interface{}) types.GomegaMatcher 
 	return nil
 }
 
-func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
+func (t *testContainer) buildCurlOptions(opts CurlOpts) []curl.Option {
 	var curlOptions []curl.Option
 
 	appendOption := func(option curl.Option) {
@@ -258,6 +227,12 @@ func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
 	if opts.Sni != "" {
 		appendOption(curl.WithSni(opts.Sni))
 	}
+
+	return curlOptions
+}
+
+func (t *testContainer) buildCurlArgs(opts CurlOpts) []string {
+	curlOptions := t.buildCurlOptions(opts)
 
 	args := append([]string{"curl"}, curl.BuildArgs(curlOptions...)...)
 	log.Printf("running: %v", strings.Join(args, " "))
