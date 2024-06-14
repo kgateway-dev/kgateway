@@ -1150,6 +1150,7 @@ type RouteOptions struct {
 	//	*RouteOptions_HostRewrite
 	//	*RouteOptions_AutoHostRewrite
 	//	*RouteOptions_HostRewritePathRegex
+	//	*RouteOptions_HostRewriteHeader
 	HostRewriteType isRouteOptions_HostRewriteType `protobuf_oneof:"host_rewrite_type"`
 	// If true and there is a host rewrite, appends the x-forwarded-host header to requests.
 	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,146,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
@@ -1352,6 +1353,13 @@ func (x *RouteOptions) GetAutoHostRewrite() *wrappers.BoolValue {
 func (x *RouteOptions) GetHostRewritePathRegex() *v32.RegexMatchAndSubstitute {
 	if x, ok := x.GetHostRewriteType().(*RouteOptions_HostRewritePathRegex); ok {
 		return x.HostRewritePathRegex
+	}
+	return nil
+}
+
+func (x *RouteOptions) GetHostRewriteHeader() *wrappers.StringValue {
+	if x, ok := x.GetHostRewriteType().(*RouteOptions_HostRewriteHeader); ok {
+		return x.HostRewriteHeader
 	}
 	return nil
 }
@@ -1583,11 +1591,20 @@ type RouteOptions_HostRewritePathRegex struct {
 	HostRewritePathRegex *v32.RegexMatchAndSubstitute `protobuf:"bytes,101,opt,name=host_rewrite_path_regex,json=hostRewritePathRegex,proto3,oneof"`
 }
 
+type RouteOptions_HostRewriteHeader struct {
+	// Indicates that during forwarding, the host header will be swapped with the content of given downstream or custom header.
+	// If header value is empty, host header is left intact.
+	// Using this option will append the x-forwarded-host header if append_x_forwarded_host is set.
+	HostRewriteHeader *wrappers.StringValue `protobuf:"bytes,147,opt,name=host_rewrite_header,json=hostRewriteHeader,proto3,oneof"`
+}
+
 func (*RouteOptions_HostRewrite) isRouteOptions_HostRewriteType() {}
 
 func (*RouteOptions_AutoHostRewrite) isRouteOptions_HostRewriteType() {}
 
 func (*RouteOptions_HostRewritePathRegex) isRouteOptions_HostRewriteType() {}
+
+func (*RouteOptions_HostRewriteHeader) isRouteOptions_HostRewriteType() {}
 
 type isRouteOptions_RateLimitEarlyConfigType interface {
 	isRouteOptions_RateLimitEarlyConfigType()
@@ -3274,6 +3291,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_init() {
 		(*RouteOptions_HostRewrite)(nil),
 		(*RouteOptions_AutoHostRewrite)(nil),
 		(*RouteOptions_HostRewritePathRegex)(nil),
+		(*RouteOptions_HostRewriteHeader)(nil),
 		(*RouteOptions_RatelimitEarly)(nil),
 		(*RouteOptions_RateLimitEarlyConfigs)(nil),
 		(*RouteOptions_Ratelimit)(nil),
