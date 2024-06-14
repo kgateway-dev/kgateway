@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -307,7 +308,7 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1snap.ApiSnapshot, collector
 	// Make sure the upstream exists
 	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
 	if err != nil {
-		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
+		return "", pluginutils.NewUpstreamNotFoundErr(collectorUpstreamRef)
 	}
 
 	return translatorutil.UpstreamToClusterName(collectorUpstreamRef), nil

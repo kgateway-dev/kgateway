@@ -272,8 +272,7 @@ func (ml *mergedListener) translateListener(
 			AggregateListener: &v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					VirtualHosts: mergedVhosts,
-					// TODO(ilackarms): mid term - add http listener options
-					HttpOptions: nil,
+					HttpOptions:  nil, // HttpListenerOptions will be added by HttpListenerOption policy plugin
 				},
 				HttpFilterChains: httpFilterChains,
 				TcpListeners:     nil,

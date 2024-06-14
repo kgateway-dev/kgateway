@@ -627,7 +627,7 @@ func attachedInternal() *sologatewayv1.RouteOption {
 			Namespace: "default",
 		},
 		TargetRefs: []*corev1.PolicyTargetReference{
-			&corev1.PolicyTargetReference{
+			{
 				Group:     gwv1.GroupVersion.Group,
 				Kind:      wellknown.HTTPRouteKind,
 				Name:      "route",
@@ -667,7 +667,7 @@ func attachedBeforeInternal() *sologatewayv1.RouteOption {
 			Namespace: "default",
 		},
 		TargetRefs: []*corev1.PolicyTargetReference{
-			&corev1.PolicyTargetReference{
+			{
 				Group:     gwv1.GroupVersion.Group,
 				Kind:      wellknown.HTTPRouteKind,
 				Name:      "route",
@@ -707,7 +707,7 @@ func attachedOmitNamespaceInternal() *sologatewayv1.RouteOption {
 			Namespace: "default",
 		},
 		TargetRefs: []*corev1.PolicyTargetReference{
-			&corev1.PolicyTargetReference{
+			{
 				Group: gwv1.GroupVersion.Group,
 				Kind:  wellknown.HTTPRouteKind,
 				Name:  "route",
@@ -744,7 +744,7 @@ func nonAttachedInternal() *sologatewayv1.RouteOption {
 			Namespace: "default",
 		},
 		TargetRefs: []*corev1.PolicyTargetReference{
-			&corev1.PolicyTargetReference{
+			{
 				Group:     gwv1.GroupVersion.Group,
 				Kind:      wellknown.HTTPRouteKind,
 				Name:      "bad-route",
@@ -782,7 +782,7 @@ func attachedInvalidInternal() *sologatewayv1.RouteOption {
 			Namespace: "default",
 		},
 		TargetRefs: []*corev1.PolicyTargetReference{
-			&corev1.PolicyTargetReference{
+			{
 				Group:     gwv1.GroupVersion.Group,
 				Kind:      wellknown.HTTPRouteKind,
 				Name:      "route",
