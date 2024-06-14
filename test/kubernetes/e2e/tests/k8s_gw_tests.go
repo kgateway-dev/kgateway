@@ -18,8 +18,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func KubeGatewayTests() TestRunner {
-	kubeGatewayTests := NewTestRunner(false)
+func KubeGatewayTests() e2e.SuiteRunner {
+	kubeGatewayTests := e2e.NewSuiteRunner(false)
 
 	kubeGatewayTests.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewayTests.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)

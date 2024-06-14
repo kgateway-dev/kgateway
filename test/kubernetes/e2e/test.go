@@ -16,11 +16,6 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/stretchr/testify/suite"
-)
-
-type (
-	NewSuiteFunc func(ctx context.Context, testInstallation *TestInstallation) suite.TestingSuite
 )
 
 // MustTestHelper returns the SoloTestHelper used for e2e tests
