@@ -273,7 +273,12 @@ func (c *Cli) Execute(ctx context.Context, args ...string) (string, string, erro
 }
 
 func (c *Cli) Scale(ctx context.Context, namespace string, resource string, replicas uint) error {
-	return c.RunCommand(ctx, "scale", "-n", namespace, fmt.Sprintf("--replicas=%d", replicas), resource, "--timeout=300s")
+	err := c.RunCommand(ctx, "scale", "-n", namespace, fmt.Sprintf("--replicas=%d", replicas), resource, "--timeout=300s")
+	if err != nil {
+		return err
+	}
+	time.Sleep(2 * time.Second) // Sleep a bit so the container starts
+	return c.RunCommand(ctx, "wait", "-n", namespace, "--for=condition=available", resource, "--timeout=300s")
 }
 
 // GetContainerLogs retrieves the logs for the specified container

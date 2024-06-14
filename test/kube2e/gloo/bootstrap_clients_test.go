@@ -539,12 +539,13 @@ var _ = Describe("Bootstrap Clients", func() {
 		// During this test :
 		// - Scale up the deployment to 2 pods
 		// - Block kube api access to the leader pod
-		// - Ensure the leader pod loses leadership
-		// - Create a resource and verify it has been translated : This verifies that the other pod has become a leader
+		// - Verify the leader pod loses leadership
+		// - Verify the second pod becomes the leader
+		// - Create a resource and verify it has been translated
 		It("concedes leadership to another pod", func() {
 			testHelper.ModifyDeploymentEnv(ctx, deploymentClient, testHelper.InstallNamespace, "gloo", 0, corev1.EnvVar{
 				Name:  kube.MaxRecoveryDurationWithoutKubeAPIServer,
-				Value: "75s",
+				Value: "45s",
 			})
 
 			// Since a new deployment has been rolled out by changing the MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER env var,
@@ -552,9 +553,9 @@ var _ = Describe("Bootstrap Clients", func() {
 			waitUntilStartsLeading()
 
 			// Get the leader pod. Since there is only one pod it is the leader
-			name, _, err := testHelper.Execute(ctx, "get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[0].metadata.name}'")
+			leader, _, err := testHelper.Execute(ctx, "get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[0].metadata.name}'")
 			Expect(err).ToNot(HaveOccurred())
-			name = strings.ReplaceAll(name, "'", "")
+			leader = strings.ReplaceAll(leader, "'", "")
 
 			// Scale the deployment to 2 replicas so the other can take over when the leader is unable to communicate with the Kube API server
 			err = testHelper.Scale(ctx, testHelper.InstallNamespace, "deploy/gloo", 2)
@@ -564,8 +565,22 @@ var _ = Describe("Bootstrap Clients", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}()
 
+			// Get the follower pod.
+			follower, _, err := testHelper.Execute(ctx, "get", "pods", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo", "-o", "jsonpath='{.items[*].metadata.name}'")
+			Expect(err).ToNot(HaveOccurred())
+			// Before: 'gloo-7bd4788f8c-6qvd8' (leader) 'gloo-7bd4788f8c-qdjn6' (follower)
+			// After: gloo-7bd4788f8c-qdjn6 (follower)
+			follower = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(follower, "'", ""), " ", ""), leader, "")
+
+			// Verify that the follower is indeed not leading
+			Eventually(func(g Gomega) {
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+follower)
+				g.Expect(logs).To(ContainSubstring("new leader elected with ID: " + leader))
+				g.Expect(logs).ToNot(ContainSubstring("starting leadership"))
+			}, "60s", "1s").Should(Succeed())
+
 			// Label the leader so the network policy can block communication to the Kube API server
-			pod, err := resourceClientset.KubeClients().CoreV1().Pods(testHelper.InstallNamespace).Get(ctx, name, metav1.GetOptions{})
+			pod, err := resourceClientset.KubeClients().CoreV1().Pods(testHelper.InstallNamespace).Get(ctx, leader, metav1.GetOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			pod.Labels["block"] = "this"
 			_, err = resourceClientset.KubeClients().CoreV1().Pods(testHelper.InstallNamespace).Update(ctx, pod, metav1.UpdateOptions{})
@@ -577,23 +592,31 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			// Verify that the leader has stopped leading
 			Eventually(func(g Gomega) {
-				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+name)
-				g.Expect(logs).To(ContainSubstring("max recovery from kube apiserver unavailability set to 1m15s"))
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+leader)
+				g.Expect(logs).To(ContainSubstring("max recovery from kube apiserver unavailability set to 45s"))
 				g.Expect(logs).To(ContainSubstring("lost leadership"))
+			}, "600s", "10s").Should(Succeed())
+
+			// Verify that the follower has become the new leader
+			Eventually(func(g Gomega) {
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+follower)
+				g.Expect(logs).To(ContainSubstring("starting leadership"))
 			}, "60s", "1s").Should(Succeed())
 
-			// Ensure that we can still operate. This also validates that the second pod has become the leader
-			verifyTranslation()
-
-			// Cleanup the network policy. With connectivity restored, the old leader can become a follower
+			// Cleanup the network policy.
 			err = testHelper.DeleteFile(ctx, testHelper.RootDir+"/test/kube2e/gloo/artifacts/block-labels.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
+			// With connectivity restored, the old leader can become a follower
 			// Verify that the old leader has become a follower
 			Eventually(func(g Gomega) {
-				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+name)
+				logs := testHelper.GetContainerLogs(ctx, testHelper.InstallNamespace, "pod/"+leader)
 				g.Expect(logs).To(ContainSubstring("recovered from lease renewal failure"))
+				g.Expect(logs).To(ContainSubstring("new leader elected with ID: " + follower))
 			}, "60s", "1s").Should(Succeed())
+
+			// Ensure that we can still operate.
+			verifyTranslation()
 		})
 	})
 })
