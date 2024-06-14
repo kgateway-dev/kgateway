@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"golang.org/x/exp/slices"
@@ -21,9 +22,9 @@ func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Op
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
-	gc, err := cli.GatewayV1().GatewayClasses().Get(ctx, "gloo-gateway", metav1.GetOptions{})
+	gc, err := cli.GatewayV1().GatewayClasses().Get(ctx, wellknown.GatewayClassName, metav1.GetOptions{})
 	if err != nil {
-		errMessage := "Could not find solo GatewayClass gloo-gateway"
+		errMessage := fmt.Sprintf("Could not find solo GatewayClass %s", wellknown.GatewayClassName)
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
@@ -68,7 +69,7 @@ func CheckGateways(ctx context.Context, printer printers.P, opts *options.Option
 		// Pike until go 1.22
 		gw := gw
 
-		if gw.Spec.GatewayClassName != "gloo-gateway" {
+		if gw.Spec.GatewayClassName != wellknown.GatewayClassName {
 			// #not_my_gateway
 			continue
 		}
