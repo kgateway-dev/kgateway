@@ -92,10 +92,10 @@ message ListenerOptions {
     ConnectionBalanceConfig connection_balance_config = 6;
 
     // If enabled this sets up an early access logging service for the listener.
-    // Added initially to support listener level logging for HTTP listeners. 
+    // Added initially to support listener level logging for HTTP listeners.
     // For more info see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-access-log
     als.options.gloo.solo.io.AccessLoggingService listener_access_logging_service = 7;
-    
+
 }
 
 // Configuration for listener connection balancing.
@@ -421,6 +421,11 @@ message RouteOptions {
         // Indicates that during forwarding, the host header will be swapped with the result of the regex
         // substitution executed on path value with query and fragment removed.
         .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute host_rewrite_path_regex = 101;
+
+        // Indicates that during forwarding, the host header will be swapped with the content of given downstream or custom header.
+        // If header value is empty, host header is left intact.
+        // Using this option will append the x-forwarded-host header if append_x_forwarded_host is set.
+        google.protobuf.StringValue host_rewrite_header = 147;
     };
     // If true and there is a host rewrite, appends the x-forwarded-host header to requests.
     google.protobuf.BoolValue append_x_forwarded_host = 146;
