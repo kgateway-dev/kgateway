@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -230,7 +231,14 @@ func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route
 		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: rewriteType.AutoHostRewrite,
 		}
-
+	case *v1.RouteOptions_HostRewriteHeader:
+		err := headers.ValidateHeaderKey(rewriteType.HostRewriteHeader.GetValue())
+		if err != nil {
+			return err
+		}
+		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_HostRewriteHeader{
+			HostRewriteHeader: rewriteType.HostRewriteHeader.GetValue(),
+		}
 	case *v1.RouteOptions_HostRewritePathRegex:
 		regex, err := ConvertRegexMatchAndSubstitute(ctx, rewriteType.HostRewritePathRegex)
 		if err != nil {

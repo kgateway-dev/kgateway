@@ -7,6 +7,7 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/headers"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -71,6 +72,15 @@ func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secr
 	return result, nil
 }
 
+// validateCustomHeaders checks whether the custom header is allowed to be modified as per https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers
+// and validates the whether the header will be accepted by envoy
+func validateCustomHeaders(header envoycore_sk.HeaderValue) error {
+	if err := CheckForbiddenCustomHeaders(header); err != nil {
+		return err
+	}
+	return headers.ValidateHeaderKey(header.GetKey())
+}
+
 // CheckForbiddenCustomHeaders checks whether the custom header is allowed to be modified as per https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers
 func CheckForbiddenCustomHeaders(header envoycore_sk.HeaderValue) error {
 	key := header.GetKey()
@@ -90,7 +100,7 @@ func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *
 
 	switch typedOption := option.GetHeaderOption().(type) {
 	case *envoycore_sk.HeaderValueOption_Header:
-		if err := CheckForbiddenCustomHeaders(*typedOption.Header); err != nil {
+		if err := validateCustomHeaders(*typedOption.Header); err != nil {
 			return nil, err
 		}
 		return []*envoy_config_core_v3.HeaderValueOption{

@@ -665,6 +665,28 @@ var _ = Describe("host rewrite", func() {
 		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(BeTrue())
 	})
 
+	It("sets host_rewrite_header", func() {
+		hostRewriteHeader := "host-rewrite"
+		p := NewPlugin()
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{},
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				HostRewriteType: &v1.RouteOptions_HostRewriteHeader{
+					HostRewriteHeader: &wrappers.StringValue{
+						Value: hostRewriteHeader,
+					},
+				},
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.GetRoute().GetHostRewriteHeader()).To(Equal(hostRewriteHeader))
+	})
+
 	It("rewrites using regex", func() {
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{}
