@@ -19,7 +19,7 @@ import (
 )
 
 func KubeGatewayTests() TestRunner {
-	kubeGatewayTests := new(UnorderedTests)
+	kubeGatewayTests := NewTestRunner(false)
 
 	kubeGatewayTests.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewayTests.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)

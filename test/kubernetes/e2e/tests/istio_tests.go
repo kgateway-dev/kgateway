@@ -8,7 +8,7 @@ import (
 )
 
 func IstioTests() TestRunner {
-	istioTests := new(UnorderedTests)
+	istioTests := NewTestRunner(false)
 
 	istioTests.Register("PortRouting", port_routing.NewTestingSuite)
 	istioTests.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)

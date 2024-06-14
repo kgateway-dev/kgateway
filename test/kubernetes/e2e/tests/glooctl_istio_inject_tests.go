@@ -7,7 +7,7 @@ import (
 
 func GlooctlIstioInjectTests() TestRunner {
 	// NOTE: Order of tests is important here because the tests are dependent on each other (e.g. the inject test must run before the istio test)
-	glooctlIstioInjectTests := new(OrderedTests)
+	glooctlIstioInjectTests := NewTestRunner(true)
 
 	glooctlIstioInjectTests.Register("GlooctlIstioInject", glooctl.NewIstioInjectTestingSuite)
 	glooctlIstioInjectTests.Register("IstioIntegration", istio.NewGlooTestingSuite)

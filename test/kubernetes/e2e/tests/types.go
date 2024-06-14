@@ -9,19 +9,21 @@ import (
 )
 
 type (
-	NamedTest struct {
+	namedSuite struct {
 		Name     string
 		NewSuite e2e.NewSuiteFunc
 	}
 
-	OrderedTests struct {
-		tests []NamedTest
+	orderedTests struct {
+		tests []namedSuite
 	}
 
-	UnorderedTests struct {
+	tests struct {
 		tests map[string]e2e.NewSuiteFunc
 	}
 
+	// A TestRunner is an interface that allows E2E tests to simply Register tests in one location and execute them
+	// with Run.
 	TestRunner interface {
 		Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation)
 		Register(name string, newSuite e2e.NewSuiteFunc)
@@ -29,11 +31,25 @@ type (
 )
 
 var (
-	_ TestRunner = new(OrderedTests)
-	_ TestRunner = new(UnorderedTests)
+	_ TestRunner = new(orderedTests)
+	_ TestRunner = new(tests)
 )
 
-func (o OrderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
+// NewTestRunner returns an implementation of TestRunner that will execute tests as specified
+// in the ordered parameter.
+//
+// NOTE: it should be strongly preferred to use unordered tests. Only pass true to this function
+// if there is a clear need for the tests to be ordered, and specify in a comment near the call
+// to NewTestRunner why the tests need to be ordered.
+func NewTestRunner(ordered bool) TestRunner {
+	if ordered {
+		return new(orderedTests)
+	}
+
+	return new(tests)
+}
+
+func (o orderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
 	for _, namedTest := range o.tests {
 		t.Run(namedTest.Name, func(t *testing.T) {
 			suite.Run(t, namedTest.NewSuite(ctx, testInstallation))
@@ -41,18 +57,18 @@ func (o OrderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e
 	}
 }
 
-func (o *OrderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
+func (o *orderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
 	if o.tests == nil {
-		o.tests = make([]NamedTest, 0)
+		o.tests = make([]namedSuite, 0)
 	}
-	o.tests = append(o.tests, NamedTest{
+	o.tests = append(o.tests, namedSuite{
 		Name:     name,
 		NewSuite: newSuite,
 	})
 
 }
 
-func (u UnorderedTests) Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
+func (u tests) Run(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
 	// TODO(jbohanon) does some randomness need to be injected here to ensure they aren't run in the same order every time?
 	// from https://goplay.tools/snippet/A-qqQCWkFaZ it looks like maps are not stable, but tend toward stability.
 	for testName, newSuite := range u.tests {
@@ -62,7 +78,7 @@ func (u UnorderedTests) Run(ctx context.Context, t *testing.T, testInstallation 
 	}
 }
 
-func (u *UnorderedTests) Register(name string, newSuite e2e.NewSuiteFunc) {
+func (u *tests) Register(name string, newSuite e2e.NewSuiteFunc) {
 	if u.tests == nil {
 		u.tests = make(map[string]e2e.NewSuiteFunc)
 	}

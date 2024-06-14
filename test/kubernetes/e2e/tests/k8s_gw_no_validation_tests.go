@@ -8,7 +8,7 @@ import (
 )
 
 func KubeGatewayNoValidationTests() TestRunner {
-	kubeGatewayNoValidationTests := new(UnorderedTests)
+	kubeGatewayNoValidationTests := NewTestRunner(false)
 
 	kubeGatewayNoValidationTests.Register("ListenerOptions", listener_options.NewTestingSuite)
 	kubeGatewayNoValidationTests.Register("RouteOptions", route_options.NewTestingSuite)

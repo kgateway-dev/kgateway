@@ -5,7 +5,7 @@ import (
 )
 
 func EdgeGwTests() TestRunner {
-	edgeGwTests := new(UnorderedTests)
+	edgeGwTests := NewTestRunner(false)
 
 	edgeGwTests.Register("HeadlessSvc", headless_svc.NewEdgeGatewayHeadlessSvcSuite)
 
