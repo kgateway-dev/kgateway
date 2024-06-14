@@ -94,24 +94,25 @@ func (r *routeOptionQueries) GetRouteOptionForRouteRule(
 		}
 	}
 
+	merged := override
+	if merged == nil {
+		merged = &solokubev1.RouteOption{}
+	}
+
 	out := make([]*solokubev1.RouteOption, len(list.Items))
 	for i := range list.Items {
 		out[i] = &list.Items[i]
 	}
 	utils.SortByCreationTime(out)
-	attached := out[0]
-
-	if override == nil {
-		sources = append(sources, routeOptionToSourceRef(attached))
-		return attached, sources, nil
+	for _, opt := range out {
+		optionUsed := false
+		merged.Spec.Options, optionUsed = glooutils.ShallowMergeRouteOptions(merged.Spec.GetOptions(), opt.Spec.GetOptions())
+		if optionUsed {
+			sources = append(sources, routeOptionToSourceRef(opt))
+		}
 	}
 
-	_, usedAttached := glooutils.ShallowMergeRouteOptions(override.Spec.GetOptions(), attached.Spec.GetOptions())
-	if usedAttached {
-		sources = append(sources, routeOptionToSourceRef(attached))
-	}
-
-	return override, sources, nil
+	return merged, sources, nil
 }
 
 func lookupFilterOverride(

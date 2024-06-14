@@ -2,8 +2,10 @@ package route_options
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -65,6 +67,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestConfigureRouteOptionsWithMultipleTargetRefManualSetup":       {httproute1Manifest, basicRtoTargetRefManifest, extraRtoTargetRefManifest},
 		"TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup": {httproute1MultipleExtensionsManifest, basicRtoManifest, extraRtoManifest},
 		"TestConfigureRouteOptionsWithTargetRefAndFilterExtension":        {httproute1ExtensionManifest, basicRtoManifest, extraRtoTargetRefManifest},
+		"TestOptionsMerge": {mergeManifest},
 	}
 }
 
@@ -241,6 +244,43 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRefAndFilterExtension(
 	// )
 	// make sure we are getting responses with the extension ref RouteOption applied
 	s.assertEventuallyCurlRespondsWith(expectedResponseWithBasicHeader)
+}
+
+// TestOptionsMerge tests the merging of RouteOptions targeting the same HTTPRoute
+func (s *testingSuite) TestOptionsMerge() {
+	// Check status is accepted on RouteOptions
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&extrefRtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&target1RtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&target2RtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+
+	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			// Expect:
+			// x-foo: extref response header due to extref RouteOption
+			// /anything/rewrite path rewrite due to target-1 RouteOption
+			// foo.com host rewrite due to target-2 RouteOption
+			//
+			// ref: test/kubernetes/e2e/features/route_options/testdata/merge.yaml
+			Body:    And(ContainSubstring("/anything/rewrite"), ContainSubstring("foo.com")),
+			Headers: map[string]interface{}{"x-foo": Equal("extref")},
+		})
 }
 
 // This helper function adds the standard format for getter construction, allowing a reader to

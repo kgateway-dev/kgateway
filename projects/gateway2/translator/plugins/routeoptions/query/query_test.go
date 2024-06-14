@@ -39,10 +39,11 @@ var _ = Describe("Query", func() {
 			ctx := context.Background()
 
 			hr := httpRoute()
+			attachedOpt := attachedRouteOption()
 			hrNsName := types.NamespacedName{Namespace: hr.GetNamespace(), Name: hr.GetName()}
 			deps := []client.Object{
 				hr,
-				attachedRouteOption(),
+				attachedOpt,
 				diffNamespaceRouteOption(),
 			}
 			fakeClient := builder.WithObjects(deps...).Build()
@@ -54,8 +55,8 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
-			Expect(rtOpt.GetName()).To(Equal("good-policy"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+
+			Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeNumerically("==", attachedOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
 			Expect(sources).To(HaveLen(1))
 		})
 
@@ -87,9 +88,10 @@ var _ = Describe("Query", func() {
 			hr := httpRoute()
 			hrNsName := types.NamespacedName{Namespace: hr.GetNamespace(), Name: hr.GetName()}
 
+			attachedOpt := attachedRouteOptionOmitNamespace()
 			deps := []client.Object{
 				hr,
-				attachedRouteOptionOmitNamespace(),
+				attachedOpt,
 				diffNamespaceRouteOption(),
 			}
 			fakeClient := builder.WithObjects(deps...).Build()
@@ -101,8 +103,8 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
-			Expect(rtOpt.GetName()).To(Equal("good-policy-no-ns"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+
+			Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeNumerically("==", attachedOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
 			Expect(sources).To(HaveLen(1))
 		})
 
