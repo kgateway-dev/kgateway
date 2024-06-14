@@ -75,11 +75,19 @@ func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secr
 // validateCustomHeaders checks whether the custom header is allowed to be modified as per https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers
 // and validates the whether the header will be accepted by envoy
 func validateCustomHeaders(header envoycore_sk.HeaderValue) error {
+	if err := CheckForbiddenCustomHeaders(header); err != nil {
+		return err
+	}
+	return headers.ValidateHeaderKey(header.GetKey())
+}
+
+// CheckForbiddenCustomHeaders checks whether the custom header is allowed to be modified as per https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers
+func CheckForbiddenCustomHeaders(header envoycore_sk.HeaderValue) error {
 	key := header.GetKey()
 	if strings.HasPrefix(key, ":") || strings.ToLower(key) == "host" {
 		return errors.Errorf(": -prefixed or host headers may not be modified. Received '%s' header", key)
 	}
-	return headers.ValidateHeaderKey(key)
+	return nil
 }
 
 func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HeaderValueOption, error) {
