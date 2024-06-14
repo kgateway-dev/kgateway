@@ -78,8 +78,8 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	defer f.lock.Unlock()
 
 	proxiesToReport := make(map[int][]translatorutils.ProxyWithReports)
+	var proxySyncCount int
 	for _, proxyWithReport := range filterProxiesByControllerName(proxiesWithReports) {
-		var proxySyncCount int
 		// Get the sync iteration that produced the proxy from the proxy metadata
 		if proxyWithReport.Proxy.GetMetadata().GetAnnotations() != nil {
 			if syncId, ok := proxyWithReport.Proxy.GetMetadata().GetAnnotations()[utils.ProxySyncId]; ok {
@@ -104,15 +104,12 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
 		} else {
-			// this should never happen
-			contextutils.LoggerFrom(ctx).DPanicf("no registry found for proxy sync count %d", syncCount)
+			// this can happen when a non-proxy resource is reconciled by the gloo proxy reconciler (upstreams, secrets, etc)
+			contextutils.LoggerFrom(ctx).Debugf("no registry found for proxy sync count %d", syncCount)
 		}
+		delete(f.registryPerSync, syncCount)
 	}
 
-	// reinitialize the registry if there are no more proxies for the sync iteration
-	if len(f.resyncsPerProxy) == 0 {
-		f.registryPerSync = make(map[int]*registry.PluginRegistry)
-	}
 }
 
 type statusSyncer struct {
