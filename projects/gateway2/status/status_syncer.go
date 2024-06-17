@@ -26,6 +26,7 @@ var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatu
 // GatewayStatusSyncer is responsible for applying status plugins to Gloo Gateway proxies
 type GatewayStatusSyncer interface {
 	QueueStatusForProxies(
+		ctx context.Context,
 		proxiesToQueue v1.ProxyList,
 		pluginRegistry *registry.PluginRegistry,
 		totalSyncCount int,
@@ -59,12 +60,15 @@ func NewStatusSyncerFactory() GatewayStatusSyncer {
 
 // QueueStatusForProxies queues the proxies to be synced and plugin registry for the given sync iteration
 func (f *statusSyncerFactory) QueueStatusForProxies(
+	ctx context.Context,
 	proxiesToQueue v1.ProxyList,
 	pluginRegistry *registry.PluginRegistry,
 	totalSyncCount int,
 ) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
+
+	contextutils.LoggerFrom(ctx).Debugf("queueing %v proxies for sync %d", len(proxiesToQueue), totalSyncCount)
 
 	// check all proxies are handled in debugger
 	f.resyncsPerIteration[totalSyncCount] = make([]types.NamespacedName, 0)
@@ -85,6 +89,8 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	// ignore until the syncer has been initialized
 	f.lock.Lock()
 	defer f.lock.Unlock()
+
+	contextutils.LoggerFrom(ctx).Debugf("handling proxy reports for %v proxies", len(proxiesWithReports))
 
 	proxiesToReport := make(map[int][]translatorutils.ProxyWithReports)
 	var proxySyncCount int
@@ -124,9 +130,7 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 
 	for syncCount, proxies := range proxiesToReport {
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
-			if plugins != nil {
-				newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
-			}
+			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
 		} else {
 			// This can happen when a non-proxy resource is reconciled by the gloo proxy reconciler (upstreams, secrets, etc)
 			contextutils.LoggerFrom(ctx).Debugf("no registry found for proxy sync count %d", syncCount)
