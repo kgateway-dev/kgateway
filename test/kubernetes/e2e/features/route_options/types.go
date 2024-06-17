@@ -26,6 +26,7 @@ var (
 	httproute1BadExtensionManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "httproute1-bad-extension.yaml")
 	httproute1MultipleExtensionsManifest = filepath.Join(util.MustGetThisDir(), "testdata", "httproute1-multiple-extensions.yaml")
 	httproute2Manifest                   = filepath.Join(util.MustGetThisDir(), "testdata", "httproute2.yaml")
+	mergeManifest                        = filepath.Join(util.MustGetThisDir(), "testdata", "merge.yaml")
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	proxyService = &corev1.Service{
@@ -48,6 +49,9 @@ var (
 	extraRtoTargetRefMeta = objectMetaInDefault("extra-rto-targetref")
 	badRtoMeta            = objectMetaInDefault("bad-rto")
 	badRtoTargetRefMeta   = objectMetaInDefault("bad-rto-targetref")
+	extrefRtoMeta         = objectMetaInDefault("extref")
+	target1RtoMeta        = objectMetaInDefault("target-1")
+	target2RtoMeta        = objectMetaInDefault("target-2")
 
 	// Expected response matchers for various route options applied
 	expectedResponseWithBasicHeader          = expectedResponseWithFooHeader("basic-rto")
@@ -59,12 +63,14 @@ var (
 func objectMetaInDefault(name string) metav1.ObjectMeta {
 	return objectMeta(name, "default")
 }
+
 func objectMeta(name, namespace string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      name,
 		Namespace: namespace,
 	}
 }
+
 func expectedResponseWithFooHeader(value string) *matchers.HttpResponse {
 	return &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
@@ -73,5 +79,4 @@ func expectedResponseWithFooHeader(value string) *matchers.HttpResponse {
 		},
 		Body: gstruct.Ignore(),
 	}
-
 }

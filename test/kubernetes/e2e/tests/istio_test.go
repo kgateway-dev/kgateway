@@ -8,13 +8,9 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
+	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/skv2/codegen/util"
-	"github.com/stretchr/testify/suite"
 )
 
 // TestK8sGatewayIstio is the function which executes a series of tests against a given installation
@@ -67,19 +63,5 @@ func TestK8sGatewayIstio(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 10*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	t.Run("PortRouting", func(t *testing.T) {
-		suite.Run(t, port_routing.NewTestingSuite(ctx, testInstallation))
-	})
-
-	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewK8sGatewayHeadlessSvcSuite(ctx, testInstallation))
-	})
-
-	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewTestingSuite(ctx, testInstallation))
-	})
-
-	t.Run("IstioGatewayParameters", func(t *testing.T) {
-		suite.Run(t, deployer.NewIstioIntegrationTestingSuite(ctx, testInstallation))
-	})
+	IstioSuiteRunner().Run(ctx, t, testInstallation)
 }
