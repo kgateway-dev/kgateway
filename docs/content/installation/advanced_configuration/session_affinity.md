@@ -350,11 +350,10 @@ This example uses the counter resources that are created in the [Apply the Daemo
 
 ### Requirements
 
-- Kubernetes cluster with Gloo Edge Enterprise installed
-- At least two nodes in the cluster.
+- A Kubernetes cluster with at least two nodes with Gloo Edge Enterprise installed.
 - Permission to deploy a DaemonSet and edit Gloo Edge resources.
 
-### Cookie based stateful session filter
+### Cookie-based stateful session filter
 [Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) as in the other examples
 
 Then edit the gateway:
