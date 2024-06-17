@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -18,10 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ json.Marshaler = new(TranslatorSnapshot)
-
 type TranslatorSnapshot struct {
-	Clusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList `json:"clusteringresses"`
+	Clusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
@@ -57,10 +54,6 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
-}
-
-func (s TranslatorSnapshot) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&s)
 }
 
 func (s *TranslatorSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

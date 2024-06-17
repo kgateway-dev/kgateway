@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -18,12 +17,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ json.Marshaler = new(DiscoverySnapshot)
-
 type DiscoverySnapshot struct {
-	Upstreams      UpstreamList                                                                         `json:"upstreams"`
-	Kubenamespaces github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList `json:"kubenamespaces"`
-	Secrets        SecretList                                                                           `json:"secrets"`
+	Upstreams      UpstreamList
+	Kubenamespaces github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
+	Secrets        SecretList
 }
 
 func (s DiscoverySnapshot) Clone() DiscoverySnapshot {
@@ -85,10 +82,6 @@ func (s DiscoverySnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
-}
-
-func (s DiscoverySnapshot) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&s)
 }
 
 func (s *DiscoverySnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

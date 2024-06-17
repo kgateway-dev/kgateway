@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -16,10 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ json.Marshaler = new(EnterpriseSnapshot)
-
 type EnterpriseSnapshot struct {
-	AuthConfigs AuthConfigList `json:"authConfigs"`
+	AuthConfigs AuthConfigList
 }
 
 func (s EnterpriseSnapshot) Clone() EnterpriseSnapshot {
@@ -55,10 +52,6 @@ func (s EnterpriseSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
-}
-
-func (s EnterpriseSnapshot) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&s)
 }
 
 func (s *EnterpriseSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
