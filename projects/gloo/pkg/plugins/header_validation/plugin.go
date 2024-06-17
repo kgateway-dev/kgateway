@@ -1,7 +1,6 @@
 package header_validation
 
 import (
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -22,29 +21,29 @@ var (
 )
 
 const (
-  ExtensionName = "header_validation"
+	ExtensionName = "header_validation"
 )
 
 type plugin struct{}
 
 func NewPlugin() *plugin {
-  return &plugin{}
+	return &plugin{}
 }
 
 func (p *plugin) Name() string {
-  return ExtensionName
+	return ExtensionName
 }
 
 func (p *plugin) Init(_ plugins.InitParams) {
 }
 
 func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
-  in := listener.GetOptions().GetHeaderValidationSettings()
-  if allow_custom_methods := in.GetAllowCustomHeaderMethods(); allow_custom_methods {
+	in := listener.GetOptions().GetHeaderValidationSettings()
+	if allow_custom_methods := in.GetAllowCustomHeaderMethods(); allow_custom_methods {
 		if out.GetHttpProtocolOptions() == nil {
-      out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
-    }
-    out.HttpProtocolOptions.AllowCustomMethods = allow_custom_methods
-  }
-  return nil
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		out.GetHttpProtocolOptions().AllowCustomMethods = allow_custom_methods
+	}
+	return nil
 }

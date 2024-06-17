@@ -11,8 +11,8 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
 	"github.com/solo-io/gloo/test/e2e"
 )
 
@@ -90,4 +90,3 @@ var _ = Describe("Header Validation", Label(), func() {
 	})
 
 })
-
