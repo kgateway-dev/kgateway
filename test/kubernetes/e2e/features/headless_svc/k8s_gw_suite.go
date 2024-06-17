@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 )
 
+var _ e2e.NewSuiteFunc = NewK8sGatewayHeadlessSvcSuite
+
 type k8sGatewaySuite struct {
 	suite.Suite
 

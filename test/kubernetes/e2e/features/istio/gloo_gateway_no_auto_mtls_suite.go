@@ -16,6 +16,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ e2e.NewSuiteFunc = NewGlooTestingSuite
+
 // glooIstioTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mtls is disabled
 // and Upstreams do not have sslConfig values set
 type glooIstioTestingSuite struct {
