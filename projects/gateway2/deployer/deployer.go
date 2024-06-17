@@ -157,7 +157,8 @@ func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, va
 	return objs, nil
 }
 
-// Gets the GatewayParameters object (if any) associated with a given Gateway.
+// getGatewayParametersForGateway reuturns the a merged GatewayParameters object resulting from the default GwParams object and
+// the GwParam object specifically associated with the given Gateway (if one exists).
 func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
 
@@ -323,6 +324,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	return vals, nil
 }
 
+// Render uses the helm client to render the proxy helm chart into a list of kube objects.
 func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
@@ -345,6 +347,15 @@ func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]
 	return objs, nil
 }
 
+// GetObjsToDeploy does the following:
+//
+// * performs GatewayParameters lookup/merging etc to get a final set of helm values
+//
+// * use those helm values to render the internal `gloo-gateway` helm chart into k8s objects
+//
+// * sets ownerRefs on all generated objects
+//
+// * returns the objects to be deployed by the caller
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]client.Object, error) {
 	gwParam, err := d.getGatewayParametersForGateway(ctx, gw)
 	if err != nil {
