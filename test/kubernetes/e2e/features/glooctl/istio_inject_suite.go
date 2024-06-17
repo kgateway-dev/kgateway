@@ -13,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ e2e.NewSuiteFunc = NewIstioInjectTestingSuite
+
 // istioInjectTestingSuite is the entire Suite of tests for the "glooctl istio inject" integration cases
 // NOTE: This suite is not intended to be run as a standalone test suite. It applies the "glooctl istio inject" command
 // to an existing installation of Gloo Gateway and verifies that the necessary resources are created, but does not clean

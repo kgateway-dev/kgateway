@@ -7,12 +7,10 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/glooctl"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
 	"github.com/solo-io/skv2/codegen/util"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -66,16 +64,5 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	// NOTE: Order of tests is important here because the tests are dependent on each other (e.g. the inject test must run before the istio test)
-	t.Run("GlooctlIstioInject", func(t *testing.T) {
-		suite.Run(t, glooctl.NewIstioInjectTestingSuite(ctx, testInstallation))
-	})
-
-	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewGlooTestingSuite(ctx, testInstallation))
-	})
-
-	t.Run("GlooctlIstioUninject", func(t *testing.T) {
-		suite.Run(t, glooctl.NewIstioUninjectTestingSuite(ctx, testInstallation))
-	})
+	GlooctlIstioInjectSuiteRunner().Run(ctx, t, testInstallation)
 }
