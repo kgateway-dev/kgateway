@@ -2,19 +2,19 @@ package check
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check/internal"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	cliconstants "github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/kubegatewayutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/gloo/projects/gloo/constants"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CheckFunc = func(ctx context.Context, printer printers.P, opts *options.Options) error
@@ -50,37 +50,41 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 	return multiErr.ErrorOrNil()
 }
 
+// check if kube gateway integration is enabled by checking if the Gateway API CRDs are installed and
+// whether a GatewayParameters CR exists in the install namespace
 func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, error) {
-	// check if kube gateway integration is enabled by checking if the controller env variable is set in the
-	// gloo deployment
-	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
+	cfg, err := kubeutils.GetRestConfigWithKubeContext(opts.Top.KubeContext)
 	if err != nil {
-		return false, eris.Wrapf(err, "could not get kubernetes client")
-	}
-	glooDeployment, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, kubeutils.GlooDeploymentName, metav1.GetOptions{})
-	if err != nil {
-		return false, eris.Wrapf(err, "could not get gloo deployment")
+		return false, err
 	}
 
-	var glooContainer *corev1.Container
-	for _, container := range glooDeployment.Spec.Template.Spec.Containers {
-		if container.Name == cliconstants.GlooContainerName {
-			glooContainer = &container
-			break
-		}
+	hasCrds, err := kubegatewayutils.DetectKubeGatewayCrds(cfg)
+	if err != nil {
+		return false, eris.Wrapf(err, "could not determine if kubernetes gateway crds are applied")
 	}
-	if glooContainer == nil {
-		return false, eris.New("could not find gloo container in gloo deployment")
+	if !hasCrds {
+		return false, nil
 	}
 
-	for _, envVar := range glooContainer.Env {
-		if envVar.Name == constants.GlooGatewayEnableK8sGwControllerEnv {
-			val, err := strconv.ParseBool(envVar.Value)
-			if err != nil {
-				return false, eris.Wrapf(err, "could not parse value of %s env var in gloo deployment", constants.GlooGatewayEnableK8sGwControllerEnv)
-			}
-			return val, nil
-		}
+	// look for default GatewayParameters
+	scheme := scheme.Scheme
+	if err := v1alpha1.AddToScheme(scheme); err != nil {
+		return false, err
 	}
-	return false, nil
+	cli, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	gwp := v1alpha1.GatewayParameters{}
+	err = cli.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayParametersName, Namespace: opts.Metadata.GetNamespace()}, &gwp)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
