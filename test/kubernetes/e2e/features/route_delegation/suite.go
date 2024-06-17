@@ -19,6 +19,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
 type tsuite struct {
 	suite.Suite
 
@@ -33,7 +35,7 @@ type tsuite struct {
 	manifestObjects map[string][]client.Object
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) *tsuite {
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &tsuite{
 		ctx: ctx,
 		ti:  testInst,
