@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var _ e2e.NewSuiteFunc = NewGetProxySuite
+
 var (
 	yamlSeparator = regexp.MustCompile("\n---\n")
 )

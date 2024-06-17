@@ -21,6 +21,8 @@ import (
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 )
 
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
 // testingSuite is the entire Suite of tests for the "Route Options" feature
 type testingSuite struct {
 	suite.Suite
