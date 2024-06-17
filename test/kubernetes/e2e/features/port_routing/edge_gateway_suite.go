@@ -30,16 +30,16 @@ type glooGatewayPortRoutingTestingSuite struct {
 The port routing suite sets up in the following order
 
 SetupSuite:
- 1. Create k8s Gateway
- 2. Proxy provisioned
+ 1. Create the setup apps (curl, nginx, etc.)
+ 2. Create Virtual Service
 
 Each port routing test:
- 1. Attach HttpRoute with different port/targetport definition per test
- 2. Remove HttpRoute, proxy still exists without any routes
+ 1. Create Service with different port/targetport definition per test, and create corresponding Upstream resource
+ 2. Remove Upstream and Service, gloo proxy still exists with VirtualService, but no Upstream or Service
 
 TearDownSuite:
- 1. Deletes the k8s Gateway
- 2. Proxy de-provisioned
+ 1. Deletes the setup apps (curl, nginx, etc.)
+ 2. Delete Virtual Service
 */
 func NewEdgeGatewayApiTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &glooGatewayPortRoutingTestingSuite{

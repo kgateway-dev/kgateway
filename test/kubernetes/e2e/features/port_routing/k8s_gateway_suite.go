@@ -31,16 +31,18 @@ type portRoutingTestingSuite struct {
 The port routing suite sets up in the following order
 
 SetupSuite:
- 1. Create k8s Gateway
- 2. Proxy provisioned
+ 1. Create the setup apps (curl, nginx, etc.)
+ 2. Create k8s Gateway
+ 3. Proxy provisioned (k8s deployment created and checked)
 
 Each port routing test:
  1. Attach HttpRoute with different port/targetport definition per test
  2. Remove HttpRoute, proxy still exists without any routes
 
 TearDownSuite:
- 1. Deletes the k8s Gateway
- 2. Proxy de-provisioned
+ 1. Deletes the setup apps (curl, nginx, etc.)
+ 2. Deletes the k8s Gateway
+ 3. Proxy de-provisioned (k8s deployment deleted)
 */
 func NewK8sGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &portRoutingTestingSuite{
