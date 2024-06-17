@@ -92,18 +92,18 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
     <br>Typically, the command output indicates any errors in the control plane components or associated resources, such as in the following example.
 
     ```
-    Checking deployments... 1 Errors!
-    Checking pods... 2 Errors!
-    Checking upstreams... OK
-    Checking upstream groups... OK
-    Checking auth configs... OK
-    Checking rate limit configs... OK
+    Checking Deployments... 1 Errors!
+    Checking Pods... 2 Errors!
+    Checking Upstreams... OK
+    Checking UpstreamGroups... OK
+    Checking AuthConfigs... OK
+    Checking RateLimitConfigs... OK
     Checking VirtualHostOptions... OK
     Checking RouteOptions... OK
-    Checking secrets... OK
-    Checking virtual services... OK
-    Checking gateways... OK
-    Checking proxies... Skipping due to an error in checking deployments
+    Checking Secrets... OK
+    Checking VirtualServices... OK
+    Checking Gateways... OK
+    Checking Proxies... Skipping due to an error in checking deployments
     Skipping due to an error in checking deployments
     Error: 5 errors occurred:
     * Deployment gloo in namespace gloo-system is not available! Message: Deployment does not have minimum availability.
