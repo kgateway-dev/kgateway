@@ -72,7 +72,7 @@ func generateNetworkFilter(localRatelimit *local_ratelimit.TokenBucket) ([]plugi
 	}
 	return []plugins.StagedNetworkFilter{
 		{
-			NetworkFilter: &envoy_config_listener_v3.Filter{
+			Filter: &envoy_config_listener_v3.Filter{
 				Name: NetworkFilterName,
 				ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
 					TypedConfig: marshalledConf,

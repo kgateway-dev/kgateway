@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -276,6 +277,71 @@ var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       "1234",
+				}))
+			}, "15s", ".5s").Should(Succeed())
+		})
+
+		It("Can add endpoint metadata to headers using postRouting transformation", func() {
+			testContext.PatchDefaultUpstream(func(u *gloov1.Upstream) *gloov1.Upstream {
+				static := u.GetStatic()
+				if static == nil {
+					return u
+				}
+				// Set a metadata key in the transformation namespace
+				static.Hosts[0].Metadata = map[string]*structpb.Struct{
+					"io.solo.transformation": {
+						Fields: map[string]*structpb.Value{
+							"key": {
+								Kind: &structpb.Value_StringValue{
+									StringValue: "value",
+								},
+							},
+						},
+					},
+				}
+				return u
+			})
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vsBuilder := helpers.BuilderFromVirtualService(vs)
+				vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						PostRouting: &transformation.RequestResponseTransformations{
+							ResponseTransforms: []*transformation.ResponseMatch{{
+								ResponseTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{Text: "{{host_metadata(\"key\")}}"},
+											},
+											HeadersToAppend: []*transformation.TransformationTemplate_HeaderToAppend{
+												{
+													Key:   "x-custom-header",
+													Value: &transformation.InjaTemplate{Text: "{{host_metadata(\"key\")}}"},
+												},
+											},
+										},
+									},
+								},
+							}},
+						},
+					},
+				})
+				return vsBuilder.Build()
+			})
+
+			// send a request, expect that:
+			// 1. The body will contain the metadata value
+			// 2. The header `x-custom-header` will contain the metadata value
+
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody("123456789")
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       "value",
+					Headers: map[string]interface{}{
+						"x-custom-header": "value",
+					},
 				}))
 			}, "15s", ".5s").Should(Succeed())
 		})

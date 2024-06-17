@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -28,7 +29,7 @@ var (
 	DefaultTimeout = prototime.DurationToProto(200 * time.Millisecond)
 	NoServerRefErr = eris.New("no extauth server reference configured")
 	ServerNotFound = func(usRef *core.ResourceRef) error {
-		return eris.Errorf("extauth server upstream not found %s", usRef.String())
+		return pluginutils.NewUpstreamNotFoundErr(usRef)
 	}
 	InvalidStatusOnErrorErr = func(code uint32) error {
 		return eris.Errorf("invalid statusOnError code: %d", code)
@@ -194,7 +195,7 @@ func (m *MultiConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpL
 	return nil, extauth.ErrEnterpriseOnly
 }
 
-func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz, error), stage plugins.FilterStage) ([]plugins.StagedHttpFilter, error) {
+func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz, error), stage plugins.HTTPFilterStage) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
 	configurations, err := configurationGenerator()

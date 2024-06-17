@@ -5,6 +5,7 @@ import (
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/redirect"
@@ -88,6 +89,7 @@ func BuildPlugins(
 		redirect.NewPlugin(),
 		routeoptions.NewPlugin(queries, client, routeOptionClient, statusReporter),
 		virtualhostoptions.NewPlugin(queries, client, vhostOptionClient, statusReporter),
+		httplisteneroptions.NewPlugin(queries, client),
 		listeneroptions.NewPlugin(queries, client),
 		urlrewrite.NewPlugin(),
 	}

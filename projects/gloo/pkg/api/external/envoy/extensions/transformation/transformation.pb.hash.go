@@ -1201,5 +1201,10 @@ func (m *TransformationTemplate_DynamicMetadataValue) Hash(hasher hash.Hash64) (
 		}
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetJsonToProto())
+	if err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }

@@ -35,7 +35,7 @@ var _ = Describe("GrpcJson", func() {
 		anyPb, _       = utils.MessageToAny(envoyGrpcJsonConf)
 		expectedFilter = []plugins.StagedHttpFilter{
 			{
-				HttpFilter: &envoyhttp.HttpFilter{
+				Filter: &envoyhttp.HttpFilter{
 					Name: wellknown.GRPCJSONTranscoder,
 					ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 						TypedConfig: anyPb,
@@ -109,14 +109,14 @@ var _ = Describe("GrpcJson", func() {
 		Expect(err).NotTo(HaveOccurred())
 		routeFilter, ok := outRoute.TypedPerFilterConfig[wellknown.GRPCJSONTranscoder]
 		Expect(ok).To(BeTrue())
-		Expect(routeFilter).To(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
+		Expect(routeFilter).To(matchers.BeEquivalentToDiff(expectedFilter[0].Filter.GetTypedConfig()))
 		listenerFilter, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(listenerFilter).NotTo(BeNil())
 		Expect(listenerFilter).To(HaveLen(1))
 		// The filter should be a dummy filter to be overridden by route specific filters
-		Expect(listenerFilter[0]).NotTo(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
+		Expect(listenerFilter[0]).NotTo(matchers.BeEquivalentToDiff(expectedFilter[0].Filter.GetTypedConfig()))
 	})
 	It("Does not create an empty filter on listener when no routes with gRPC are not configured", func() {
 		us := &v1.Upstream{
@@ -224,7 +224,7 @@ var _ = Describe("GrpcJson", func() {
 			Expect(err).ToNot(HaveOccurred())
 			expectedFilter = []plugins.StagedHttpFilter{
 				{
-					HttpFilter: &envoyhttp.HttpFilter{
+					Filter: &envoyhttp.HttpFilter{
 						Name: wellknown.GRPCJSONTranscoder,
 						ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 							TypedConfig: anyPb,

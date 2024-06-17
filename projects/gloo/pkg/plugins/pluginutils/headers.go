@@ -29,7 +29,7 @@ func MarkHeaders(ctx context.Context, snap *v1snap.ApiSnapshot, in *v1.Route, ou
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
 		if err != nil {
-			return NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
+			return NewUpstreamGroupNotFoundErr(dest.UpstreamGroup)
 		}
 		return configureHeadersMultiDest(upstreamGroup.GetDestinations(), outAction, headers)
 	case *v1.RouteAction_Multi:

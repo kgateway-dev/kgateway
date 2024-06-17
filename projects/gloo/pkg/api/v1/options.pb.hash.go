@@ -750,6 +750,26 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetStatefulSession()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("StatefulSession")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetStatefulSession(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("StatefulSession")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	if h, ok := interface{}(m.GetHeaderValidationSettings()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
 			return 0, err
@@ -2085,6 +2105,28 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("HostRewritePathRegex")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *RouteOptions_HostRewriteHeader:
+
+		if h, ok := interface{}(m.GetHostRewriteHeader()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HostRewriteHeader")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHostRewriteHeader(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HostRewriteHeader")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

@@ -39,10 +39,11 @@ var _ = Describe("Query", func() {
 			ctx := context.Background()
 
 			hr := httpRoute()
+			attachedOpt := attachedRouteOption()
 			hrNsName := types.NamespacedName{Namespace: hr.GetNamespace(), Name: hr.GetName()}
 			deps := []client.Object{
 				hr,
-				attachedRouteOption(),
+				attachedOpt,
 				diffNamespaceRouteOption(),
 			}
 			fakeClient := builder.WithObjects(deps...).Build()
@@ -54,8 +55,8 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
-			Expect(rtOpt.GetName()).To(Equal("good-policy"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+
+			Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeNumerically("==", attachedOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
 			Expect(sources).To(HaveLen(1))
 		})
 
@@ -87,9 +88,10 @@ var _ = Describe("Query", func() {
 			hr := httpRoute()
 			hrNsName := types.NamespacedName{Namespace: hr.GetNamespace(), Name: hr.GetName()}
 
+			attachedOpt := attachedRouteOptionOmitNamespace()
 			deps := []client.Object{
 				hr,
-				attachedRouteOptionOmitNamespace(),
+				attachedOpt,
 				diffNamespaceRouteOption(),
 			}
 			fakeClient := builder.WithObjects(deps...).Build()
@@ -101,8 +103,8 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
-			Expect(rtOpt.GetName()).To(Equal("good-policy-no-ns"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+
+			Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeNumerically("==", attachedOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
 			Expect(sources).To(HaveLen(1))
 		})
 
@@ -148,11 +150,13 @@ func attachedRouteOption() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "test",
-				Namespace: wrapperspb.String("default"),
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.HTTPRouteKind,
+					Name:      "test",
+					Namespace: wrapperspb.String("default"),
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -175,10 +179,12 @@ func attachedRouteOptionOmitNamespace() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "test",
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group: gwv1.GroupVersion.Group,
+					Kind:  wellknown.HTTPRouteKind,
+					Name:  "test",
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -201,11 +207,13 @@ func diffNamespaceRouteOption() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "test",
-				Namespace: wrapperspb.String("default"),
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.HTTPRouteKind,
+					Name:      "test",
+					Namespace: wrapperspb.String("default"),
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -228,10 +236,12 @@ func diffNamespaceRouteOptionOmitNamespace() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "test",
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group: gwv1.GroupVersion.Group,
+					Kind:  wellknown.HTTPRouteKind,
+					Name:  "test",
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -240,44 +250,6 @@ func diffNamespaceRouteOptionOmitNamespace() *solokubev1.RouteOption {
 						HttpStatus: 500,
 					},
 				},
-			},
-		},
-	}
-}
-
-func childHTTPRoute() *gwv1.HTTPRoute {
-	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-route",
-			Namespace: "child",
-		},
-	}
-}
-
-func childRouteOption() *solokubev1.RouteOption {
-	now := metav1.Now()
-	return &solokubev1.RouteOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "child-policy",
-			Namespace:         "child",
-			CreationTimestamp: now,
-		},
-		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "child-route",
-			},
-			Options: &v1.RouteOptions{
-				// This should be ignored by the RouteOption merge
-				// because the parent RouteOption has the same field set
-				Faults: &faultinjection.RouteFaults{
-					Abort: &faultinjection.RouteAbort{
-						Percentage: 0.80,
-						HttpStatus: 418,
-					},
-				},
-				PrefixRewrite: wrapperspb.String("/foo"),
 			},
 		},
 	}
