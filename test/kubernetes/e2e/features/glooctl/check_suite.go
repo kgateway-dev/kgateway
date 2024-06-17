@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var _ e2e.NewSuiteFunc = NewCheckSuite
+
 // checkSuite contains the set of tests to validate the behavior of `glooctl check`
 // These tests attempt to mirror: https://github.com/solo-io/gloo/blob/v1.16.x/test/kube2e/glooctl/check_test.go
 type checkSuite struct {
