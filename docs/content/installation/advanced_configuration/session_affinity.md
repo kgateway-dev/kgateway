@@ -346,7 +346,7 @@ Now that you have configured cookie-based sticky sessions, web requests from you
 
 Envoy provides another method of implementing sticky sessions using the [Stateful Session](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/stateful_session_filter) filter, which implements "strong" stickiness.
 
-This example uses the counter resources that are created in the [Apply the DaemonSet ](#apply-the-daemonset) section. No additional modifications to the upstream or virtual service are required.
+This example uses the session affinity app resources that are created in the [Apply the DaemonSet](#apply-the-daemonset) section. No additional modifications to the upstream or virtual service are required.
 
 ### Requirements
 
@@ -354,78 +354,100 @@ This example uses the counter resources that are created in the [Apply the Daemo
 - Permission to deploy a DaemonSet and edit Gloo Edge resources.
 
 ### Cookie-based stateful session filter
-[Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) as in the other examples
 
-Then edit the gateway:
-```
-kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
-```
-and add the following config:
+When enabling the cookie-based stateful session filter, a hash of the upstream that serves the request is stored in a `statefulsessioncookie` cookie. In subsequent requests, the same upstream resource is used to fulfill the request. 
 
-{{< highlight yaml "hl_lines=4-11" >}}
-spec:
-  bindAddress: '::'
-  bindPort: 8080
-  httpGateway:
-    options:
-      statefulSession:
-        cookieBased:
-          cookie:
-            name: statefulsessioncookie
-            path: /route1
-            ttl: 60s
-  proxyNames:
-  - gateway-proxy
-  ssl: false
-  useProxyProto: false
-{{< /highlight >}}
+1. [Apply the session affinity DaemonSet](#apply-the-daemonset). 
 
-Now when you navigate to `route1` you should get an increasing count when you refresh.
+2. Edit the gateway proxy. 
+   ```sh
+   kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
+   ```
 
-### Header based stateful session filter
-With Gloo Edge Enterprise installed with the counter app resources applied, edit the gateway:
-```
-kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
-```
-and add the following config:
+3. Add the following configuration to the `spec` section of your gateway to enable the cookie-based stateful session filter.
+   {{< highlight yaml "hl_lines=4-11" >}}
+   spec:
+     bindAddress: '::'
+     bindPort: 8080
+     httpGateway:
+       options:
+         statefulSession:
+           cookieBased:
+             cookie:
+               name: statefulsessioncookie
+               path: /route1
+               ttl: 60s
+     proxyNames:
+     - gateway-proxy
+     ssl: false
+     useProxyProto: false
+   {{< /highlight >}}
 
-{{< highlight yaml "hl_lines=4-8" >}}
-spec:
-  bindAddress: '::'
-  bindPort: 8080
-  httpGateway:
-    options:
-      statefulSession:
-        headerBased:
-          headerName: statefulsessionheader
-  proxyNames:
-  - gateway-proxy
-  ssl: false
-  useProxyProto: false
-{{< /highlight >}}
+4. Get the URL of the gateway proxy.
+   ```sh
+   glooctl proxy url
+   ```
 
-Requests to the `route1` will now return a header that can be sent with subsequent requests to enable the session stickiness.
-Unlike cookies, the header won't be automatically applied by the browser, so it is easier to validate the behavior with a curl:
-```
-curl -v $(glooctl proxy url)/route1
-```
-will return results like:
-```
-< HTTP/1.1 200 OK
-< date: Tue, 11 Jun 2024 15:11:23 GMT
-< content-length: 1
-< content-type: text/plain; charset=utf-8
-< x-envoy-upstream-service-time: 10
-< statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==
-< server: envoy
-< 
-* Connection #0 to host 127.0.0.1 left intact
-3%  
-```
+5. Open a web browser and navigate to the `/route1` path. For example, if your gateway proxy is `http://34.111.222.111:80`, type `http://34.111.222.111:80/route1` in to your web browser.
+6. Refresh the page a couple of times. Verify that you see an increasing count as the requests are now all directed to the same upstream.
 
-We can then take the `statefulsessionheader` header from the request and add it to our curl request:
-```
-curl -v -H "statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==" $(glooctl proxy url)/route1
-```
+   Example output:
+   ```
+   5,6,7,8,...
+   ```
 
-Running the curl command with the header should result in an increasing count in the reply as the requests are all directed to the same upstream.
+### Header-based stateful session filter
+
+When enabling the header-based stateful session filter for a route, a `statefulsessionheader` header is returned with the hash of the upstream that served the request. You must use this header in subsequent requests to enable session stickiness. 
+
+1. [Apply the session affinity DaemonSet](#apply-the-daemonset). 
+
+2. Edit the gateway proxy. 
+   ```sh
+   kubectl edit gateways.gateway.solo.io -n gloo-system gateway-proxy
+   ```
+
+3. Add the following configuration to the `spec` section of your gateway to enable the header-based stateful session filter.
+   {{< highlight yaml "hl_lines=4-8" >}}
+   spec:
+     bindAddress: '::'
+     bindPort: 8080
+     httpGateway:
+       options:
+         statefulSession:
+           headerBased:
+             headerName: statefulsessionheader
+     proxyNames:
+     - gateway-proxy
+     ssl: false
+     useProxyProto: false
+   {{< /highlight >}}
+
+4. Get the URL of the gateway proxy.
+   ```sh
+   glooctl proxy url
+   ```
+
+5. Send a request to the `/route1` path. Requests to the `/route1` path return a `statefulsessionheader` header that you can send in subsequent requests to enable the session stickiness. Because headers are not automatically applied by the browser, it is easier to test this behavior by using a curl request. 
+   ```sh
+   curl -v $(glooctl proxy url)/route1
+   ```
+
+   Example output: 
+   ```
+   < HTTP/1.1 200 OK
+   < date: Tue, 11 Jun 2024 15:11:23 GMT
+   < content-length: 1
+   < content-type: text/plain; charset=utf-8
+   < x-envoy-upstream-service-time: 10
+   < statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==
+   < server: envoy
+   < 
+   * Connection #0 to host 127.0.0.1 left intact
+   3%  
+   ```
+
+6. Send another request to the `/route1` path and include the `statefulsessionheader` that was returned in the previous step. Verify that you see an increased count in your response as the requests are now all directed to the same upstream. 
+   ```sh
+   curl -v -H "statefulsessionheader: MTAuMjQ0LjAuNDU6ODA4MA==" $(glooctl proxy url)/route1
+   ```
