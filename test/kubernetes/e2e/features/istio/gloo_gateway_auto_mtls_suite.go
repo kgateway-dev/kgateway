@@ -16,6 +16,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ e2e.NewSuiteFunc = NewGlooIstioAutoMtlsSuite
+
 // glooIstioAutoMtlsTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mTLS is enabled
 type glooIstioAutoMtlsTestingSuite struct {
 	suite.Suite
