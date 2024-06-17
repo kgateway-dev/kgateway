@@ -33,7 +33,7 @@ webhooks:
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["routeoptions", "virtualhostoptions"]
-{{- end }}{{/* if .Values.gateway.validation.webhook..enablePolicyApi */}}
+{{- end }}{{/* if .Values.gateway.validation.webhook.enablePolicyApi */}}
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "virtualservices" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
