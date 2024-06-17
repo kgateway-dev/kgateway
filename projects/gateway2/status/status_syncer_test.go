@@ -284,7 +284,8 @@ var _ = Describe("Status Syncer", func() {
 		// ensure all proxies are removed from the queue
 		Expect(proxiesMap).To(BeEmpty())
 		registryMap = syncer.(*statusSyncerFactory).registryPerSync
-		// ensure registry is cleared for all sync iterations
-		Expect(registryMap).To(BeEmpty())
+		Expect(registryMap).ToNot(BeEmpty())
+		// ensure registry is only cleared for processed sync iteration
+		Expect(registryMap).To(And(HaveKey(123), HaveKey(124)))
 	})
 })
