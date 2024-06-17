@@ -3,3 +3,6 @@ changelog:
     description: >-
       Resolve the iosnapshot/history_test flake, by ensuring that asynchronous operations
       are provided time to complete.
+      
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
