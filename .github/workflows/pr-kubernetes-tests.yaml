@@ -64,7 +64,7 @@ jobs:
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-four'

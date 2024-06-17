@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ e2e.NewSuiteFunc = NewTestingSuite
+var _ e2e.NewSuiteFunc = NewK8sGatewayTestingSuite
 
 // portRoutingTestingSuite is the entire Suite of tests for the "PortRouting" cases
 type portRoutingTestingSuite struct {
@@ -42,16 +42,16 @@ TearDownSuite:
  1. Deletes the k8s Gateway
  2. Proxy de-provisioned
 */
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewK8sGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &portRoutingTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 		manifests: map[string][]string{
-			"TestInvalidPortAndValidTargetport":   {invalidPortAndValidTargetportManifest},
-			"TestMatchPortAndTargetport":          {matchPortandTargetportManifest},
-			"TestMatchPodPortWithoutTargetport":   {matchPodPortWithoutTargetportManifest},
-			"TestInvalidPortWithoutTargetport":    {invalidPortWithoutTargetportManifest},
-			"TestInvalidPortAndInvalidTargetport": {invalidPortAndInvalidTargetportManifest},
+			"TestInvalidPortAndValidTargetport":   {svcInvalidPortAndValidTargetportManifest, invalidPortAndValidTargetportManifest},
+			"TestMatchPortAndTargetport":          {svcMatchPortandTargetportManifest, matchPortandTargetportManifest},
+			"TestMatchPodPortWithoutTargetport":   {svcMatchPodPortWithoutTargetportManifest, matchPodPortWithoutTargetportManifest},
+			"TestInvalidPortWithoutTargetport":    {svcInvalidPortWithoutTargetportManifest, invalidPortWithoutTargetportManifest},
+			"TestInvalidPortAndInvalidTargetport": {svcInvalidPortAndInvalidTargetportManifest, invalidPortAndInvalidTargetportManifest},
 		},
 	}
 }
@@ -59,6 +59,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *portRoutingTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupK8sManifest)
+	s.NoError(err, "can apply setup k8s gateway manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	// Check that test resources are running
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
@@ -68,6 +70,8 @@ func (s *portRoutingTestingSuite) SetupSuite() {
 func (s *portRoutingTestingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupK8sManifest)
+	s.NoError(err, "can delete setup k8s gateway manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 }
 
