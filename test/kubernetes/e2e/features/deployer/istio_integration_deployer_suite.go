@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
+var _ e2e.NewSuiteFunc = NewIstioIntegrationTestingSuite
+
 // istioIntegrationDeployerSuite is the entire Suite of tests for the "deployer" feature that relies on an Istio installation
 // The "deployer" code can be found here: /projects/gateway2/deployer
 type istioIntegrationDeployerSuite struct {

@@ -12,6 +12,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
+var _ e2e.NewSuiteFunc = NewIstioAutoMtlsSuite
+
 // istioMtlsTestingSuite is the entire Suite of tests for the "Istio" integration cases where auto mTLS is enabled
 type istioAutoMtlsTestingSuite struct {
 	suite.Suite

@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
 
 	"github.com/solo-io/skv2/codegen/util"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
@@ -67,11 +65,5 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	t.Run("HeadlessSvc", func(t *testing.T) {
-		suite.Run(t, headless_svc.NewEdgeGatewayHeadlessSvcSuite(ctx, testInstallation))
-	})
-
-	t.Run("IstioIntegration", func(t *testing.T) {
-		suite.Run(t, istio.NewGlooIstioAutoMtlsSuite(ctx, testInstallation))
-	})
+	AutomtlsIstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)
 }
