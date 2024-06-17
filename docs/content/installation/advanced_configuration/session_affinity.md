@@ -346,7 +346,7 @@ Now that you have configured cookie-based sticky sessions, web requests from you
 
 Envoy provides another method of implementing sticky sessions using the [Stateful Session](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/stateful_session_filter) filter, which implements "strong" stickiness.
 
-This example uses the Counter reources as created in the [Apply the DaemonSet ](https://docs.solo.io/gloo-edge/latest/installation/advanced_configuration/session_affinity/#apply-the-daemonset) section, with no additional modifications to the upstream or virtualservice needed.
+This example uses the counter resources that are created in the [Apply the DaemonSet ](#apply-the-daemonset) section. No additional modifications to the upstream or virtual service are required.
 
 ### Requirements
 
