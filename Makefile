@@ -913,7 +913,7 @@ docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
 .PHONY: docker-standard
-docker-standard: check-go-version
+docker-standard: check-go-version ## Build docker images (standard only)
 docker-standard: gloo-docker
 docker-standard: discovery-docker
 docker-standard: gloo-envoy-wrapper-docker
@@ -924,7 +924,7 @@ docker-standard: access-logger-docker
 docker-standard: kubectl-docker
 
 .PHONY: docker-distroless
-docker-distroless: check-go-version
+docker-distroless: check-go-version ## Build docker images (distroless only)
 docker-distroless: gloo-distroless-docker
 docker-distroless: discovery-distroless-docker
 docker-distroless: gloo-envoy-wrapper-distroless-docker
@@ -937,7 +937,7 @@ docker-distroless: kubectl-distroless-docker
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
-docker: check-go-version
+docker: check-go-version ## Build all docker images (standard and distroless)
 docker: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker: docker-standard
