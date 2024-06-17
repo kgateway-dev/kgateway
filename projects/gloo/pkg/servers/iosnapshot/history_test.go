@@ -144,7 +144,7 @@ var _ = Describe("History", func() {
 					Status: apiv1.HTTPRouteStatus{},
 				},
 			}
-			history.SetKubeGatewayClient(clientBuilder.WithObjects(clientObjects...).Build())
+			setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 
 			inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -181,7 +181,7 @@ var _ = Describe("History", func() {
 					Status: apiv1.GatewayStatus{},
 				},
 			}
-			history.SetKubeGatewayClient(clientBuilder.WithObjects(clientObjects...).Build())
+			setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 
 			inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -199,8 +199,11 @@ var _ = Describe("History", func() {
 			var gatewayList apiv1.GatewayList
 			err = json.Unmarshal(gatewayBytes, &gatewayList)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(gatewayList.Items).To(HaveLen(1))
-			Expect(gatewayList.Items[0].GetName()).To(Equal("kubernetes-gateway"))
+
+			Expect(gatewayList.Items).To(ContainElement(
+				WithTransform(func(gateway apiv1.Gateway) string {
+					return gateway.GetName()
+				}, Equal("kubernetes-gateway"))))
 		})
 
 	})
@@ -256,4 +259,45 @@ func setSnapshotOnHistory(ctx context.Context, history History, snap *v1snap.Api
 		WithPolling(time.Millisecond*100).
 		WithTimeout(time.Second*5).
 		Should(Succeed(), "setting snapshot is asynchronous, so block until snapshot is processed")
+}
+
+// setClientOnHistory sets the Kubernetes Client on the history, and blocks until it has been processed
+// This is a utility method to help developers write tests, without having to worry about the asynchronous
+// nature of the `Set` API on the History
+func setClientOnHistory(ctx context.Context, history History, builder *fake.ClientBuilder) {
+	gwSignalObject := &apiv1.Gateway{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gw-signal",
+			Namespace: defaults.GlooSystem,
+		},
+	}
+
+	history.SetKubeGatewayClient(builder.WithObjects(gwSignalObject).Build())
+
+	Eventually(func(g Gomega) {
+		inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		returnedData := map[string]interface{}{}
+		err = json.Unmarshal(inputSnapshotBytes, &returnedData)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		gatewayKey := fmt.Sprintf("%s.%s", wellknown.GatewayGroup, wellknown.GatewayKind)
+		g.Expect(returnedData).To(HaveKey(gatewayKey), "Gateway should be included in input snap")
+
+		gatewayBytes, err := json.Marshal(returnedData[gatewayKey])
+		g.Expect(err).NotTo(HaveOccurred())
+
+		var gatewayList apiv1.GatewayList
+		err = json.Unmarshal(gatewayBytes, &gatewayList)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(gatewayList.Items).To(ContainElement(
+			WithTransform(func(gateway apiv1.Gateway) string {
+				return gateway.GetName()
+			}, Equal("gw-signal"))))
+	}).
+		WithPolling(time.Millisecond*100).
+		WithTimeout(time.Second*5).
+		Should(Succeed(), "setting client is asynchronous, so block until client is processed")
 }
