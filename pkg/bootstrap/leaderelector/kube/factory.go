@@ -74,7 +74,6 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 		return identity, err
 	}
 
-	var counter atomic.Uint32
 	var justFailed = false
 	var dontDie func()
 
@@ -149,6 +148,8 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 	// It runs within an infinite loop so that we can recover if this container is a leader but fails to renew the lease and renegotiate leader election if possible.
 	// This can be caused when there is a failure to connect to the kube api server
 	go func() {
+		var counter atomic.Uint32
+
 		for {
 			l, _ := newLeaderElector()
 			// Start the leader elector process
