@@ -8,16 +8,25 @@ message HeaderValidationSettings {
     // HTTP methods are not allowed). The list of default-allowed HTTP methods
     // can be found here:
     // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+    // **BREAKING API COMPATIBILITY WARNING**:
+    // Note that right now, this field only changes whether custom header methods are allowed on HTTP/1 connections only.
+    // In a future release of Gloo, this option will change to allow custom
+    // HTTP methods not just on HTTP/1, but also on all other HTTP protocols as
+    // well.
+
     // As of right now, this field is only supported on HTTP/1 connections.
-    // When Universal Header Validation is available in upstream Envoy, this
-    // field can be applied to all protocols.
+    // When Universal Header Validation is enabled in Envoy, this field will
+    // apply to all HTTP protocols.
     // TODO: let's think a bit more carefully about how we want to design this
     // for future-proofing purposes. I think we may want to consider having an
     // oneof here instead that could be something like (allow default
     // methods/allow all methods/custom allow-list).
     // we may also want to model our API similarly to upstream Envoy's UHV API
-    // TODO consider including a warning mentioning that future changes to this
-    // field may not be backwards compatible
+    // WARNING: these options should not be considered stable, and this API is
+    // subject to change in the future.
+    // question: alternately, we could enable this as an HTTP/1-only option,
+    // mark it as deprecated, and then when UHV is enabled, we could remove the
+    // deprecated option and introduce a new option for all HTTP protocols.
     bool allow_custom_header_methods = 1;
 }
 
