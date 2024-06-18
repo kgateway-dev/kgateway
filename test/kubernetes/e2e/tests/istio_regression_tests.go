@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 )
 
-func IstioEdgeApiSuiteRunner() e2e.SuiteRunner {
+func IstioRegressionSuiteRunner() e2e.SuiteRunner {
 	istioEdgeApiSuiteRunner := e2e.NewSuiteRunner(false)
 
 	istioEdgeApiSuiteRunner.Register("HeadlessSvc", headless_svc.NewEdgeGatewayHeadlessSvcSuite)
