@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-
 	"github.com/solo-io/gloo/projects/gateway2/crds"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/kubegatewayutils"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
