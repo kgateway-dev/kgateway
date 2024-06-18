@@ -9,6 +9,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
 // testingSuite is the entire Suite of tests for the "example" feature
 // Typically, we would include a link to the feature code here
 type testingSuite struct {

@@ -11,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
 // portRoutingTestingSuite is the entire Suite of tests for the "PortRouting" cases
 type portRoutingTestingSuite struct {
 	suite.Suite

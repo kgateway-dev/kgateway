@@ -13,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ e2e.NewSuiteFunc = NewEdgeGatewayHeadlessSvcSuite
+
 type edgeGatewaySuite struct {
 	suite.Suite
 
