@@ -15,8 +15,6 @@ SKIP_DOCKER="${SKIP_DOCKER:-false}"
 JUST_KIND="${JUST_KIND:-false}"
 # Offer a default value for type of installation
 KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
-# The version of istio to install for glooctl tests. This should get set by the 'setup-kind-cluster' github action, where it is a required input.
-ISTIO_VERSION="${ISTIO_VERSION:-1.22.0}"
 # Set the default image variant to standard
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
@@ -102,17 +100,4 @@ if [[ $CONFORMANCE == "true" ]]; then
 	  ipAddressPools:
 	    - address-pool
 	EOF
-fi
-
-# 7. Install additional resources used for particular KUBE2E tests
-if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then
-  TARGET_ARCH=x86_64
-  if [[ $ARCH == 'arm64' ]]; then
-    TARGET_ARCH=arm64
-  fi
-  echo "Downloading Istio $ISTIO_VERSION"
-  curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION TARGET_ARCH=$TARGET_ARCH sh -
-
-  echo "Installing Istio"
-  yes | "./istio-$ISTIO_VERSION/bin/istioctl" install --set profile=minimal
 fi
