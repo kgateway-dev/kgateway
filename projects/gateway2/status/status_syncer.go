@@ -70,14 +70,15 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 
 	contextutils.LoggerFrom(ctx).Debugf("queueing %v proxies for sync %d", len(proxiesToQueue), totalSyncCount)
 
-	// check all proxies are handled in debugger
-	f.resyncsPerIteration[totalSyncCount] = make([]types.NamespacedName, 0)
-
 	// queue each proxy for a given sync iteration
 	for _, proxy := range proxiesToQueue {
 		// overwrite the sync count for the proxy with the most recent sync count
 		f.resyncsPerProxy[getProxyNameNamespace(proxy)] = totalSyncCount
 
+		// keep track of proxies to check all proxies are handled in debugger
+		if f.resyncsPerIteration[totalSyncCount] == nil {
+			f.resyncsPerIteration[totalSyncCount] = make([]types.NamespacedName, 0)
+		}
 		f.resyncsPerIteration[totalSyncCount] = append(f.resyncsPerIteration[totalSyncCount], getProxyNameNamespace(proxy))
 	}
 	// the plugin registry that produced the proxies is the same for all proxies in a given sync
