@@ -43,10 +43,10 @@ To keep the mTLS communication transparent to the Edge configuration, we again l
 [Istio](https://istio.io/latest/docs/ops/deployment/architecture/) is logically split into a data plane and a control plane. The data plane is composed of a set of intelligent proxies (Envoy) deployed as sidecars. The control plane (istiod) provides service discovery, configuration and certificate management.
 Istiod acts as a Certificate Authority (CA) and generates certificates to allow secure mTLS communication in the data plane.
 
-**Istio-Proxy Sidecar**: This is responsible for generating the certificates used for mTLS communication. These certificates are mounted to a volume, which are then provided to the gateway-proxy configuration via SDS. The gateway-proxy, with these certificates, is now able to establish mTLS communication with an upstream in the Mesh. 
-The Istio-Proxy Sidecar usually runs both the istio-agent and envoy. The [istio-agent](https://github.com/istio/istio/blob/master/architecture/security/istio-agent.md) is responsible for generating the certificates, and the envoy is responsible for terminating TLS and establishing mTLS communication with other services in the Mesh. 
-By default, the istio-proxy will run an extended version of the Envoy proxy. However, we don't need the istio-proxy Envoy functionality, we only need the istio-agent to create the CSR request to istiod and handle rotating certificates near expiration. 
-To avoid running the istio-proxy Envoy, we can set the `DISABLE_ENVOY` environment variable. This will cause the istio-proxy to run in proxyless mode and not start the Envoy process. 
+**Istio-Proxy Sidecar**: This is responsible for generating the certificates used for mTLS communication. These certificates are mounted to a volume, which are then provided to the gateway-proxy configuration via SDS. The gateway-proxy, with these certificates, is now able to establish mTLS communication with an upstream in the Mesh.
+The Istio-Proxy Sidecar usually runs both the istio-agent and envoy. The [istio-agent](https://github.com/istio/istio/blob/master/architecture/security/istio-agent.md) is responsible for generating the certificates, and the envoy is responsible for terminating TLS and establishing mTLS communication with other services in the Mesh.
+By default, the istio-proxy will run an extended version of the Envoy proxy. However, we don't need the istio-proxy Envoy functionality, we only need the istio-agent to create the CSR request to istiod and handle rotating certificates near expiration.
+To avoid running the istio-proxy Envoy, we can set the `DISABLE_ENVOY` environment variable. This will cause the istio-proxy to run in proxyless mode and not start the Envoy process.
 
 <img src="https://github.com/istio/istio/raw/master/architecture/security/docs/overview.svg">
 
@@ -64,7 +64,7 @@ While the component itself has a single responsibility, implement the SDS API, i
 
 _As a result, we have `glooMtls.enabled` to enable the former, and `istioIntegration.enabled` to enable the latter._
 
-Note, the current Gloo SDS does not reach out to Istiod. The istio-agent is responsible for sending the CSR to Istiod. 
+Note, the current Gloo SDS does not reach out to Istiod. The istio-agent is responsible for sending the CSR to Istiod.
 The SDS server then reads the certs from a file written by the istio-agent and then SDS serves the certificates to the Gloo Envoy proxy.
 
 # Validating mTLS Traffic
@@ -73,9 +73,9 @@ Istio leverages the [`x-forwarded-client-cert`](https://istio.io/latest/docs/ops
 
 If the application that we’re running can logs requests that it receives, we could search the logs for the existence of that header
 
-# Testing automtls 
+# Testing automtls
 
-The istio e2e integration tests automtls functionality with Gloo Edge "classic" APIs and k8s Gateway API resources. This 
+The istio e2e integration tests automtls functionality with Gloo Edge "classic" APIs and k8s Gateway API resources. This
 can be manually tested by following the steps below on a kind cluster:
 
 1. Setup environment and kind cluster
@@ -164,7 +164,7 @@ Then edit upstream to disable automtls:
 kubectl edit upstreams -n gloo-system bookinfo-productpage-9080
 ```
 
-Add this line: 
+Add this line:
 
 ```shell
 spec:
@@ -272,7 +272,7 @@ Port-forward the new k8s gateway:
 kubectl port-forward deployment/gloo-proxy-http 8080:8080
 ``` 
 
-Now let's send traffic with the same curl as before, this time going through the new k8s Gateway API gateway. 
+Now let's send traffic with the same curl as before, this time going through the new k8s Gateway API gateway.
 The first attempt will succeed because of automtls is still enabled on the settings policy:
 
 ```shell

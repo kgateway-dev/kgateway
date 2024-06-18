@@ -11,7 +11,7 @@ import (
 func IstioSuiteRunner() e2e.SuiteRunner {
 	istioSuiteRunner := e2e.NewSuiteRunner(false)
 
-	istioSuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
+	istioSuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	istioSuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	istioSuiteRunner.Register("IstioIntegration", istio.NewTestingSuite)
 	istioSuiteRunner.Register("IstioGatewayParameters", deployer.NewIstioIntegrationTestingSuite)
