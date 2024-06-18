@@ -15,14 +15,36 @@ import (
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 )
 
+type testManifest struct {
+	manifestFile string
+	extraArgs    []string
+}
+
 var (
 	setupManifest = filepath.Join(util.MustGetThisDir(), "testdata/setup.yaml")
 
-	invalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata/invalid-port-and-valid-targetport.yaml")
-	invalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "testdata/invalid-port-and-invalid-targetport.yaml")
-	matchPodPortWithoutTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata/match-pod-port-without-targetport.yaml")
-	matchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "testdata/match-port-and-targetport.yaml")
-	invalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "testdata/invalid-port-without-targetport.yaml")
+	// Shared Resources
+	svcInvalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "svc", "invalid-port-and-valid-targetport.yaml")
+	svcInvalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "testdata", "svc", "invalid-port-and-invalid-targetport.yaml")
+	svcMatchPodPortWithoutTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "svc", "match-pod-port-without-targetport.yaml")
+	svcMatchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "svc", "match-port-and-targetport.yaml")
+	svcInvalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "svc", "invalid-port-without-targetport.yaml")
+
+	// K8s Resources
+	setupK8sManifest                        = filepath.Join(util.MustGetThisDir(), "testdata", "k8s-gw.yaml")
+	invalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "invalid-port-and-valid-targetport.yaml")
+	invalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "invalid-port-and-invalid-targetport.yaml")
+	matchPodPortWithoutTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "match-pod-port-without-targetport.yaml")
+	matchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "match-port-and-targetport.yaml")
+	invalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "invalid-port-without-targetport.yaml")
+
+	// Gloo Edge Resources
+	setupEdgeManifest                               = filepath.Join(util.MustGetThisDir(), "testdata", "edge-routing.yaml")
+	upstreamInvalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "invalid-port-and-valid-targetport.yaml")
+	upstreamInvalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "invalid-port-and-invalid-targetport.yaml")
+	upstreamMatchPodPortWithoutTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "match-pod-port-without-targetport.yaml")
+	upstreamMatchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "match-port-and-targetport.yaml")
+	upstreamInvalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "invalid-port-without-targetport.yaml")
 
 	// When we apply the setup.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
