@@ -450,6 +450,12 @@ type Webhook struct {
 	TimeoutSeconds                *int              `json:"timeoutSeconds,omitempty" desc:"the timeout for the webhook, defaults to 10"`
 	ExtraAnnotations              map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
 	SkipDeleteValidationResources []string          `json:"skipDeleteValidationResources,omitempty" desc:"resource types in this list will not use webhook valdaition for DELETEs. Use '*' to skip validation for all resources. Valid values are 'virtualservices', 'routetables','upstreams', 'secrets', 'ratelimitconfigs', and '*'. Invalid values will be accepted but will not be used."`
+	// EnablePolicyApi provides granular access to users to opt-out of Policy validation
+	// There are some known race conditions in our Gloo Gateway processes resource references,
+	// even when allowWarnings=true: https://github.com/solo-io/solo-projects/issues/6321
+	// As a result, this is intended as a short-term solution to provide users a way to opt-out of Policy API validation.
+	// The desired long-term strategy is that our validation logic is stable, and users can leverage it
+	EnablePolicyApi *bool `json:"enablePolicyApi,omitempty" desc:"enable validation of Policy Api resources (RouteOptions, VirtualHostOptions) (default: true). NOTE: This only applies if the Kubernetes Gateway Integration is also enabled (kubeGateway.enabled)."`
 	*KubeResourceOverride
 }
 
