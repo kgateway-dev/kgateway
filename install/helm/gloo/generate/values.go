@@ -351,6 +351,15 @@ type SecurityContext struct {
 	*SecurityOpts
 }
 
+// GatewayParamsSecurityContext is a passthrough struct that provides the corev1.SecurityContext without
+// exposing the SecurityOpts/MergePolicy. MergePolicy is irrelevant to the GatewayParameters case because
+// there is already a default and merge behavior defined. The "default" GatewayParameters are expected to
+// be the base config, which is where a default policy can defined; each gwapi.Gateway can have specific
+// GatewayParameters which can then override/merge into the default policy
+type GatewayParamsSecurityContext struct {
+	*corev1.SecurityContext
+}
+
 type GlooDeployment struct {
 	XdsPort               *int                `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy."`
 	RestXdsPort           *uint32             `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy."`
@@ -780,7 +789,8 @@ type Mtls struct {
 }
 
 type EnvoyContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image           *Image                        `json:"image,omitempty"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy proxy container."`
 }
 
 type SdsContainer struct {

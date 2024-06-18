@@ -21,6 +21,10 @@ spec:
     envoyContainer:
       image:
         {{- merge $gg.envoyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.envoyContainer.securityContext }}
+      securityContext:
+        {{- toYaml $gg.envoyContainer.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.envoyContainer.securityContext */}}
     podTemplate:
       extraLabels:
         {{- include "gloo-gateway.constLabels" . | nindent 8 }}

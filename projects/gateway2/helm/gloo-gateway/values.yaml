@@ -25,16 +25,16 @@ gateway:
     targetPort: 80
     protocol: TCP
     name: http
-  securityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    runAsUser: 10101
-    capabilities:
-      drop:
-        - ALL
-      add:
-        - NET_BIND_SERVICE
+  # securityContext:
+  #   allowPrivilegeEscalation: false
+  #   readOnlyRootFilesystem: true
+  #   runAsNonRoot: true
+  #   runAsUser: 10101
+  #   capabilities:
+  #     drop:
+  #       - ALL
+  #     add:
+  #       - NET_BIND_SERVICE
   serviceAccount:
     # Specifies whether a service account should be created
     create: true

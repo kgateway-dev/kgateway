@@ -30,12 +30,16 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
+      {{- if $gateway.podSecurityContext }}
       securityContext:
         {{- toYaml $gateway.podSecurityContext | nindent 8 }}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
+        {{- if $gateway.securityContext }}
         securityContext:
-          {{- toYaml $gateway.securityContext | nindent 12 }}
+          {{- toYaml $gateway.securityContext | nindent 10 }}
+        {{- end }}
         args:
         - "--disable-hot-restart"
         - "--service-node"
