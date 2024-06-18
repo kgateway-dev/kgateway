@@ -21,6 +21,7 @@ ISTIO_VERSION="${ISTIO_VERSION:-1.22.0}"
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
 CONFORMANCE="${CONFORMANCE:-false}"
+CILIUM_VERSION="${CILIUM_VERSION:-1.15.5}"
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
@@ -36,6 +37,14 @@ function create_kind_cluster_or_skip() {
     --name "$CLUSTER_NAME" \
     --image "kindest/node:$CLUSTER_NODE_VERSION" \
     --config="$SCRIPT_DIR/cluster.yaml"
+
+  # Install cilium as we need to define custom network policies to simulate kube api server unavailability
+  # in some of our kube2e tests
+  helm repo add cilium https://helm.cilium.io/
+  helm install cilium cilium/cilium --version $CILIUM_VERSION \
+   --namespace kube-system \
+   --set image.pullPolicy=IfNotPresent \
+   --set ipam.mode=kubernetes
   echo "Finished setting up cluster $CLUSTER_NAME"
 
   # so that you can just build the kind image alone if needed

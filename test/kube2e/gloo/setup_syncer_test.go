@@ -114,7 +114,7 @@ var _ = Describe("Setup Syncer", func() {
 		})
 
 		It("restarts validation grpc server when settings change", func() {
-			portForwarder, err := kubeCli.StartPortForward(ctx,
+			portForwarder, err := testHelper.StartPortForward(ctx,
 				portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
 				portforward.WithRemotePort(defaults.GlooValidationPort),
 			)

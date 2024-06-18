@@ -37,3 +37,8 @@ func (i identityImpl) IsLeader() bool {
 func (i identityImpl) Elected() <-chan struct{} {
 	return i.elected
 }
+
+// Reset updates the current identity to a follower. It can be promoted to a leader by closing the elected channel
+func (i identityImpl) Reset(elected <-chan struct{}) {
+	i.elected = elected
+}
