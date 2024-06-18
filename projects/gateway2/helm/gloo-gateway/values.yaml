@@ -1,15 +1,15 @@
 # Default values for gloo-gateway.
 
 gateway:
-  nameOverride: ""
-  fullnameOverride: ""
-  gatewayName: ""
-  gatewayNamespace: ""
+  # nameOverride: "" # should be removed
+  # fullnameOverride: "" # should be removed
+  # gatewayName: "" # no user-facing control, set by deployer
+  # gatewayNamespace: "" # no user-facing control, set by deployer
   xds:
-    host: ""
-    port: 8080
-  replicaCount: 1
-  resources: {}
+    host: "" #default can be here for sanity but never used, set by control plane via deployer
+    port: 8080 #default can be here for sanity but never used, set by control plane via deployer
+  replicaCount: 1 # default set in GwPs proxyDeployment.replicas
+  # resources: {} # remove, no reason for default here, add to GwParams
   autoscaling:
     enabled: false
     minReplicas: 1
@@ -25,6 +25,7 @@ gateway:
     targetPort: 80
     protocol: TCP
     name: http
+  # secCtx moved to default GwParams
   # securityContext:
   #   allowPrivilegeEscalation: false
   #   readOnlyRootFilesystem: true

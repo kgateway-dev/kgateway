@@ -14,8 +14,8 @@ type helmGateway struct {
 	// naming
 	Name             *string `json:"name,omitempty"`
 	GatewayName      *string `json:"gatewayName,omitempty"`
-	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
-	NameOverride     *string `json:"nameOverride,omitempty"`
+	GatewayNamespace *string `json:"gatewayNamespace,omitempty"` // TODO: Should be removed
+	NameOverride     *string `json:"nameOverride,omitempty"`     // TODO: Should be removed
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values

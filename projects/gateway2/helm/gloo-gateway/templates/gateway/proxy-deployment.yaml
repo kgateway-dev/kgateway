@@ -83,8 +83,10 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
+{{- if $gateway.resources }}
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
+{{- end }} {{/* if $gateway.resources */}}
 {{- if $gateway.istio.enabled }}
       - name: sds
         image: "{{ template "gloo-gateway.gateway.image" $gateway.sdsContainer.image }}"
