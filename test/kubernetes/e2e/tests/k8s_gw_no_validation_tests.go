@@ -14,7 +14,7 @@ func KubeGatewayNoValidationSuiteRunner() e2e.SuiteRunner {
 	kubeGatewayNoValidationSuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
 	kubeGatewayNoValidationSuiteRunner.Register("RouteOptions", route_options.NewTestingSuite)
 	kubeGatewayNoValidationSuiteRunner.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
-	kubeGatewayNoValidationSuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
+	kubeGatewayNoValidationSuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 
 	return kubeGatewayNoValidationSuiteRunner
 }
