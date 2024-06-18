@@ -76,9 +76,6 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 		f.resyncsPerProxy[getProxyNameNamespace(proxy)] = totalSyncCount
 
 		// keep track of proxies to check all proxies are handled in debugger
-		if f.resyncsPerIteration[totalSyncCount] == nil {
-			f.resyncsPerIteration[totalSyncCount] = make([]types.NamespacedName, 0)
-		}
 		f.resyncsPerIteration[totalSyncCount] = append(f.resyncsPerIteration[totalSyncCount], getProxyNameNamespace(proxy))
 	}
 	// the plugin registry that produced the proxies is the same for all proxies in a given sync
@@ -132,10 +129,6 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	for syncCount, proxies := range proxiesToReport {
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
-		} else {
-			// This can happen when a non-proxy resource is reconciled by the gloo proxy reconciler (upstreams, secrets, etc)
-			contextutils.LoggerFrom(ctx).Debugf("no registry found for proxy sync count %d", syncCount)
-			continue
 		}
 
 		// If there are no more proxies for the sync iteration, delete the sync count
