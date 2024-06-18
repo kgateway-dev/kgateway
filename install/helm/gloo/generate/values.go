@@ -455,7 +455,7 @@ type Webhook struct {
 	// even when allowWarnings=true: https://github.com/solo-io/solo-projects/issues/6321
 	// As a result, this is intended as a short-term solution to provide users a way to opt-out of Policy API validation.
 	// The desired long-term strategy is that our validation logic is stable, and users can leverage it
-	EnablePolicyApi *bool `json:"enablePolicyApi,omitempty" desc:"enable validation of Policy Api resources (RouteOptions, VirtualHostOptions) (default: true)"`
+	EnablePolicyApi *bool `json:"enablePolicyApi,omitempty" desc:"enable validation of Policy Api resources (RouteOptions, VirtualHostOptions). NOTE: This only applies if the Kubernetes Gateway Integration is also enabled (kubeGateway.enabled). (default: true)"`
 	*KubeResourceOverride
 }
 
