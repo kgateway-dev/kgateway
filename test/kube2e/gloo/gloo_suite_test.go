@@ -52,8 +52,6 @@ var (
 
 	envoyFactory envoy.Factory
 	vaultFactory *services.VaultFactory
-
-	kubeCli *kubectl.Cli
 )
 
 var _ = BeforeSuite(func() {
@@ -64,9 +62,8 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.Background())
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
+	testHelper.SetKubeCli(kubectl.NewCli().WithReceiver(GinkgoWriter))
 	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, metav1.ObjectMeta{Namespace: testHelper.InstallNamespace}))
-
-	kubeCli = kubectl.NewCli().WithReceiver(GinkgoWriter)
 
 	// Allow skipping of install step for running multiple times
 	if !glootestutils.ShouldSkipInstall() {
