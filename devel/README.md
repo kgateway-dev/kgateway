@@ -8,8 +8,6 @@ Find tools and information to help you develop the Gloo Gateway project.
 * `testing`: Descriptions on how the tests work and how to use them.
 * `tools`: A set of scripts and tools that are intended to help you develop the Gloo Gateway project's codebase. Learn more about these tools in the short descriptions later in this readme.
 
-_**Note**: For tools that help maintain an installation of Gloo Gateway (the product, not the project codebase), build those tools into the [CLI](/projects/gloo/cli) instead._
-
 Other resources:
 * [Developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/) to set up your development environment and learn more about extending the functionality of the Gloo Gateway project and related plug-ins. While written for external contributors, internal Solo developers might also find this guide helpful when onboarding.
 * [Product documentation](https://docs.solo.io/gloo-edge/latest/) with guides for end users to use Gloo Gateway as a product
