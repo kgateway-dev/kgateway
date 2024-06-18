@@ -8,7 +8,7 @@ The [Gloo Proxy Api](https://docs.solo.io/gloo-edge/latest/reference/api/github.
 
 This metadata is not required and the `resourceKind`, `resourceRef.name`, and `resourceRef.namespace` fields which compose the metadata are plain strings.
 
-While the objects used to create the Proxy Api resources are and should be generally irrelevant to the functionality of Gloo Edge, they do provide user facing value as sources of names and labels.
+While the objects used to create the Proxy Api resources are and should be generally irrelevant to the functionality of Gloo Gateway, they do provide user facing value as sources of names and labels.
 
 ## Current uses of this data
 ### Open Telemetry `service.name`
