@@ -14,7 +14,7 @@ on:
 jobs:
   # Runs the unit tests for `projects/gateway2`
   kube_gateway_project:
-    name: Build and Test Kubernetes Gateway Integration
+    name: projects/gateway2
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     # We should discuss if draft PRs should run unit tests
