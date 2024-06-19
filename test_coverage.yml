@@ -1,3 +1,5 @@
+# ref: https://github.com/vladopajic/go-test-coverage/blob/main/.testcoverage.example.yml
+
 # (mandatory)
 # Path to coverprofile file (output of `go test -coverprofile` command)
 profile: _output/cover.out
@@ -7,24 +9,16 @@ profile: _output/cover.out
 threshold:
   # (optional; default 0)
   # The minimum coverage that each file should have
-  file: 0
+  file: 50
 
   # (optional; default 0)
   # The minimum coverage that each package should have
-  package: 0
+  package: 50
 
   # (optional; default 0)
   # The minimum total coverage project should have
-  total: 0
+  total: 50
 
-# First rule from this list that matches file or package is going to apply
-# new threshold to it. If project has multiple rules that match same path,
-# override rules should be listed in order from specific to more general rules.
-override:
-  # Increase coverage threshold for files in the `projects/gateway2` package
-  # Some files fail as there is 0% coverage. We need to improve this to set a better standard for this code
-  - threshold: 50
-    path: ^projects/gateway2/*/*
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics
