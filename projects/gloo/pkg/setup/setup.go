@@ -41,11 +41,9 @@ func startSetupLoop(ctx context.Context) error {
 				contextutils.LoggerFrom(ctx).Infof("new leader elected with ID: %s", leaderId)
 			},
 			OnStoppedLeading: func() {
-				// Kill app if we lose leadership, we need to be VERY sure we don't continue
-				// any leader election processes.
-				// https://github.com/solo-io/gloo/issues/7346
-				// There is follow-up work to handle lost leadership more gracefully
-				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
+				// Don't die if we fall from grace. Instead we can retry leader election
+				// Ref: https://github.com/solo-io/gloo/issues/7346
+				contextutils.LoggerFrom(ctx).Errorf("lost leadership")
 			},
 		},
 	})

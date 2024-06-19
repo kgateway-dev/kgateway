@@ -17,7 +17,7 @@ gateway:
     alwaysAcceptResources: false
 gloo:
   logLevel: info
-  disableLeaderElection: true
+  disableLeaderElection: false
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

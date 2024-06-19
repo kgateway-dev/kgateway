@@ -24,7 +24,7 @@ webhooks:
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
   rules:
-{{- if .Values.kubeGateway.enabled }}
+{{- if and .Values.kubeGateway.enabled .Values.gateway.validation.webhook.enablePolicyApi }}
   - operations: [ "CREATE", "UPDATE" ]
     # RouteOption and VirtualHostOption DELETEs are not supported.
     # Their validation is currently limited to usage as Kube Gateway API Policies
@@ -33,7 +33,7 @@ webhooks:
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["routeoptions", "virtualhostoptions"]
-{{- end }}{{/* if .Values.kubeGateway.enabled */}}
+{{- end }}{{/* if and .Values.kubeGateway.enabled .Values.gateway.validation.webhook.enablePolicyApi */}}
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "virtualservices" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
