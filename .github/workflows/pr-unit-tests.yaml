@@ -43,7 +43,7 @@ jobs:
         title: "Code Coverage Report"
         # Path is relative to the working directory
         # This is the path where the `test-with-coverage` target emits output
-        lcov-file: ../_output/coverage.cov
+        lcov-file: _output/coverage.cov
         # The changed files are the reports that are most useful to PR authors
         filter-changed-files: true
         # We don't want to pollute the PR with many comments as users make changes
