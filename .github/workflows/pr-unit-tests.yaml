@@ -27,9 +27,9 @@ jobs:
         go-version-file: go.mod
     - name: Build
       run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
-    - name: Install Test Utils
+    - name: Install Test Tools
       shell: bash
-      run: make -C ./projects/gateway2/ install-go-tools
+      run: make install-go-test-coverage
     - name: Run Tests
       shell: bash
       env:
