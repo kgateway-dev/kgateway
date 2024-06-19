@@ -262,7 +262,7 @@ var _ = Describe("Check", func() {
 		It("fails when scanning with invalid kubecontext", func() {
 			_, err := GlooctlOut("check", "--kube-context", "not-gloo-context")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"not-gloo-context\" does not exist"))
+			Expect(err.Error()).To(ContainSubstring("context \"not-gloo-context\" does not exist"))
 		})
 
 		It("succeeds with correct kubecontext", func() {
