@@ -17,7 +17,9 @@ jobs:
     name: Build and Test Kubernetes Gateway Integration
     runs-on: ubuntu-22.04
     timeout-minutes: 10
-    if: ${{ !github.event.pull_request.draft }}
+    # We should discuss if draft PRs should run unit tests
+    # Historically, we have run them
+    # if: ${{ !github.event.pull_request.draft }}
     steps:
     - uses: actions/checkout@v4
     - name: Setup Go
