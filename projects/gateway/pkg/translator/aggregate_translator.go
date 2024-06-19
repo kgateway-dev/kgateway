@@ -31,7 +31,7 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 	snap := params.snapshot
 
 	var aggregateListener *gloov1.AggregateListener
-	switch gw := gateway.GetGatewayType().(type) {
+	switch gateway.GetGatewayType().(type) {
 	case *v1.Gateway_HttpGateway:
 		// we are safe to guard against empty VirtualServices first, since all HTTP features require VirtualServices to function.
 		if len(snap.VirtualServices) == 0 {
@@ -47,29 +47,9 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 		aggregateListener = a.computeAggregateListenerForHttpGateway(params, proxyName, gateway)
 
 	case *v1.Gateway_HybridGateway:
-		hybrid := gw.HybridGateway
-
-		// warn early if there are no virtual services and no tcp configurations
-		if len(snap.VirtualServices) == 0 {
-			hasTCP := hybrid.GetDelegatedTcpGateways() != nil
-			if !hasTCP && hybrid.GetMatchedGateways() != nil {
-				for _, matched := range hybrid.GetMatchedGateways() {
-					if matched.GetTcpGateway() != nil {
-						hasTCP = true
-						break
-					}
-				}
-			}
-			if !hasTCP {
-				snapHash := hashutils.MustHash(snap)
-				contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services or tcp gateways", snapHash)
-				if settingsutil.MaybeFromContext(params.ctx).GetGateway().GetTranslateEmptyGateways().GetValue() {
-					contextutils.LoggerFrom(params.ctx).Debugf("but continuing since translateEmptyGateways is set", snapHash)
-				} else {
-					return nil
-				}
-			}
-		}
+		// We do not want to check for empty VirtualServices or TCP configurations as doing so
+		// will result in accepting a hybrid gateway with non existing delegated gateways when there are no VS in the snapshot.
+		// Instead we compute the the aggregate listener and report any error.
 		aggregateListener = a.computeAggregateListenerForHybridGateway(params, proxyName, gateway)
 	}
 
