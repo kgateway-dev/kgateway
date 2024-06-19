@@ -165,6 +165,10 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
 
+.PHONE: install-go-test-coverage
+install-go-test-coverage:
+	go install github.com/vladopajic/go-test-coverage/v2@v2.8.1
+
 .PHONY: check-format
 check-format:
 	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
@@ -202,7 +206,7 @@ TEST_PKG ?= ./... # Default to run all tests
 GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
-install-test-tools: check-go-version
+install-test-tools: install-go-test-coverage
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # proto compiler installation
@@ -280,7 +284,7 @@ GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
 GO_TEST_ARGS ?= -timeout=25m -cpu=4 -outputdir=$(OUTPUT_DIR)
 # TODO - re-add race flag. just removing for testing purposes
-GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
+GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
@@ -298,9 +302,13 @@ go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset
 go-test-with-coverage: GO_TEST_ARGS += $(GO_TEST_COVERAGE_ARGS)
 go-test-with-coverage: go-test
 
+.PHONY: validate-test-coverage
+validate-test-coverage:
+	${GOBIN}/go-test-coverage --config=./test_coverage.yml
+
 .PHONY: view-test-coverage
 view-test-coverage:
-	go tool cover -html $(OUTPUT_DIR)/coverage.cov
+	go tool cover -html $(OUTPUT_DIR)/cover.out
 
 #----------------------------------------------------------------------------------
 # Clean
