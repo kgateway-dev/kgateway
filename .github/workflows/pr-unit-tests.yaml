@@ -1,0 +1,48 @@
+name: Unit Tests
+
+# This workflow invokes unit tests for the Gloo Gateway project
+# It was introduced during the 1.17 quarter, where we added a new project (projects/gateway2)
+# and therefore we only run those new tests here
+#
+# Our historical unit tests are run via CloudBuild
+# Overtime, it would be valuable to consolidate these approaches
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  # Runs the unit tests for `projects/gateway2`
+  kube_gateway_project:
+    name: Build and Test Kubernetes Gateway Integration
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - name: Build
+      run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
+    - name: Install utils for env tests
+      shell: bash
+      run: make -C ./projects/gateway2/ install-go-tools
+    - name: Run tests
+      shell: bash
+      env:
+        TEST_PKG: ./projects/gateway2/...
+      run: make go-test-with-coverage
+    - name: Report test coverage
+      uses: romeovs/lcov-reporter-action@v0.3.1
+      # https://github.com/romeovs/lcov-reporter-action
+      with:
+        title: "Code Coverage Report"
+        # Path is relative to the working directory
+        # This is the path where the `test-with-coverage` target emits output
+        lcov-file: ../_output/coverage.cov
+        # The changed files are the reports that are most useful to PR authors
+        filter-changed-files: true
+        # We don't want to pollute the PR with many comments as users make changes
+        delete-old-comments: true
