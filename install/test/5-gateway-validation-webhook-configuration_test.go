@@ -1,10 +1,15 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/onsi/gomega/types"
+	v1 "k8s.io/api/admissionregistration/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,6 +18,10 @@ import (
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	validatingWebhookConfigurationKind = "ValidatingWebhookConfiguration"
 )
 
 var _ = Describe("WebhookValidationConfiguration helm test", func() {
@@ -55,6 +64,115 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			Entry("all", []string{"*"}, 5),
 			Entry("empty", []string{}, 0),
 		)
+
+		Context("enablePolicyApi", func() {
+
+			// containPolicyApiOperation returns a GomegaMatcher which will assert that a provided ValidatingWebhookConfiguration
+			// contains the Rule that includes the Policy APIs
+			containPolicyApiOperation := func() types.GomegaMatcher {
+				policyApiOperation := v1.RuleWithOperations{
+					Operations: []v1.OperationType{
+						v1.Create,
+						v1.Update,
+					},
+					Rule: v1.Rule{
+						APIGroups:   []string{"gateway.solo.io"},
+						APIVersions: []string{"v1"},
+						Resources:   []string{"routeoptions", "virtualhostoptions"},
+					},
+				}
+				return WithTransform(func(config *v1.ValidatingWebhookConfiguration) []v1.RuleWithOperations {
+					if config == nil {
+						return nil
+					}
+					return config.Webhooks[0].Rules
+				}, ContainElement(policyApiOperation))
+			}
+
+			type enablePolicyApiCase struct {
+				enableKubeGatewayApi         *wrappers.BoolValue
+				enablePolicyApi              *wrappers.BoolValue
+				expectedWebhookConfiguration types.GomegaMatcher
+			}
+
+			DescribeTable("respects helm values",
+				func(testCase enablePolicyApiCase) {
+					var valuesArgs []string
+					if testCase.enableKubeGatewayApi != nil {
+						valuesArgs = append(valuesArgs, fmt.Sprintf(`kubeGateway.enabled=%t`, testCase.enableKubeGatewayApi.GetValue()))
+					}
+					if testCase.enablePolicyApi != nil {
+						valuesArgs = append(valuesArgs, fmt.Sprintf(`gateway.validation.webhook.enablePolicyApi=%t`, testCase.enablePolicyApi.GetValue()))
+					}
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: valuesArgs,
+					})
+
+					testManifest.ExpectUnstructured(
+						validatingWebhookConfigurationKind,
+						"", // ValidatingWebhookConfiguration is cluster-scoped
+						fmt.Sprintf("gloo-gateway-validation-webhook-%s", namespace),
+					).To(WithTransform(func(unstructuredVwc *unstructured.Unstructured) *v1.ValidatingWebhookConfiguration {
+						// convert the unstructured validating webhook configuration to a structured object
+						if unstructuredVwc == nil {
+							return nil
+						}
+
+						rawJson, err := json.Marshal(unstructuredVwc.Object)
+						if err != nil {
+							return nil
+						}
+
+						var structuredVwc *v1.ValidatingWebhookConfiguration
+						err = json.Unmarshal(rawJson, &structuredVwc)
+						if err != nil {
+							return nil
+						}
+
+						return structuredVwc
+					}, testCase.expectedWebhookConfiguration))
+				},
+				Entry("unset", enablePolicyApiCase{
+					enableKubeGatewayApi:         nil,
+					enablePolicyApi:              nil,
+					expectedWebhookConfiguration: Not(containPolicyApiOperation()),
+				}),
+				Entry("enableKubeGatewayApi=false,", enablePolicyApiCase{
+					enableKubeGatewayApi:         &wrappers.BoolValue{Value: false},
+					enablePolicyApi:              nil,
+					expectedWebhookConfiguration: Not(containPolicyApiOperation()),
+				}),
+				Entry("enableKubeGatewayApi=true,", enablePolicyApiCase{
+					enableKubeGatewayApi:         &wrappers.BoolValue{Value: true},
+					enablePolicyApi:              nil, // default is true
+					expectedWebhookConfiguration: containPolicyApiOperation(),
+				}),
+				Entry("enableKubeGatewayApi=true, enablePolicyApi=true", enablePolicyApiCase{
+					enableKubeGatewayApi:         &wrappers.BoolValue{Value: true},
+					enablePolicyApi:              &wrappers.BoolValue{Value: true},
+					expectedWebhookConfiguration: containPolicyApiOperation(),
+				}),
+				// This is the critical test case, which demonstrates that a user can enabled the K8s Gateway Integration,
+				// but disable validation for the Policy APIs
+				Entry("enableKubeGatewayApi=false, enablePolicyApi=true", enablePolicyApiCase{
+					enableKubeGatewayApi:         &wrappers.BoolValue{Value: false},
+					enablePolicyApi:              &wrappers.BoolValue{Value: true},
+					expectedWebhookConfiguration: Not(containPolicyApiOperation()),
+				}),
+				Entry("enableKubeGatewayApi=false, enablePolicyApi=true", enablePolicyApiCase{
+					enableKubeGatewayApi:         &wrappers.BoolValue{Value: false},
+					enablePolicyApi:              &wrappers.BoolValue{Value: true},
+					expectedWebhookConfiguration: Not(containPolicyApiOperation()),
+				}),
+				Entry("enableKubeGatewayApi=false, enablePolicyApi=false", enablePolicyApiCase{
+					enableKubeGatewayApi:         &wrappers.BoolValue{Value: false},
+					enablePolicyApi:              &wrappers.BoolValue{Value: false},
+					expectedWebhookConfiguration: Not(containPolicyApiOperation()),
+				}),
+			)
+		})
+
 	}
 	runTests(allTests)
 })
