@@ -278,7 +278,7 @@ GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 # Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
-GO_TEST_ARGS ?= -timeout=25m -cpu=4
+GO_TEST_ARGS ?= -timeout=25m -cpu=4 -outputdir=$(OUTPUT_DIR)
 # TODO - re-add race flag. just removing for testing purposes
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
 
