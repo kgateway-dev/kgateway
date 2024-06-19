@@ -17,9 +17,8 @@ jobs:
     name: projects/gateway2
     runs-on: ubuntu-22.04
     timeout-minutes: 10
-    # We should discuss if draft PRs should run unit tests
-    # Historically, we have run them
-    # if: ${{ !github.event.pull_request.draft }}
+    # Other unit tests are run by our CloudBuild runner
+    # These tests do run on Draft PRs, and so we maintain that consistency and run this job on Draft PRs as well
     steps:
     - uses: actions/checkout@v4
     - name: Setup Go
@@ -28,22 +27,22 @@ jobs:
         go-version-file: go.mod
     - name: Build
       run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
-    - name: Install utils for env tests
+    - name: Install Test Utils
       shell: bash
       run: make -C ./projects/gateway2/ install-go-tools
-    - name: Run tests
+    - name: Run Tests
       shell: bash
       env:
         TEST_PKG: ./projects/gateway2/...
       run: make go-test-with-coverage
-    - name: Report test coverage
+    - name: Report Test Coverage
       uses: romeovs/lcov-reporter-action@v0.3.1
       # https://github.com/romeovs/lcov-reporter-action
       with:
         title: "Code Coverage Report"
         # Path is relative to the working directory
         # This is the path where the `test-with-coverage` target emits output
-        lcov-file: _output/coverage.cov
+        lcov-file: ./_output/coverage.cov
         # The changed files are the reports that are most useful to PR authors
         filter-changed-files: true
         # We don't want to pollute the PR with many comments as users make changes
