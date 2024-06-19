@@ -199,12 +199,12 @@ var _ = Describe("Aggregate translator", func() {
 		})
 	})
 
-	When("there are no delegated gateways", func() {
+	When("The delegated gateways do not exist", func() {
 		JustBeforeEach(func() {
 			snap.VirtualServices = []*v1.VirtualService{}
 		})
 
-		It("throws an error for hybrid gateways", func() {
+		It("throws an error", func() {
 			aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
 			genProxyWithIsolatedVirtualHosts()
 			proxyName := proxy.Metadata.Name
