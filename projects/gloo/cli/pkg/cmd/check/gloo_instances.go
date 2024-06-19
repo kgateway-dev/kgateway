@@ -105,12 +105,8 @@ type unstructuredGlooInstanceReader struct {
 }
 
 func getUnstructuredGlooInstanceReader(cfg *rest.Config) (*unstructuredGlooInstanceReader, error) {
-	scheme := scheme.Scheme
-	if err := glooinstancev1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
 	client, err := client.New(cfg, client.Options{
-		Scheme: scheme,
+		Scheme: scheme.Scheme,
 	})
 	if err != nil {
 		return nil, err

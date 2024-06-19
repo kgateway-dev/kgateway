@@ -67,12 +67,8 @@ func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, err
 	}
 
 	// look for default GatewayParameters
-	scheme := scheme.Scheme
-	if err := v1alpha1.AddToScheme(scheme); err != nil {
-		return false, err
-	}
 	cli, err := client.New(cfg, client.Options{
-		Scheme: scheme,
+		Scheme: scheme.Scheme,
 	})
 	if err != nil {
 		return false, err

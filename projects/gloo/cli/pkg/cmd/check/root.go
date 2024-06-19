@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -21,7 +22,8 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+	fedv1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
+	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -30,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 var (
@@ -37,6 +40,16 @@ var (
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
 )
+
+func init() {
+	scheme := scheme.Scheme
+	if err := gatewayv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	if err := fedv1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+}
 
 // contains method
 func doesNotContain(arr []string, str string) bool {
@@ -565,7 +578,7 @@ func checkRateLimitConfigs(ctx context.Context, printer printers.P, _ *options.O
 			return nil, err
 		}
 		for _, config := range configs {
-			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
+			if config.Status.GetState() == rlv1alpha1.RateLimitConfigStatus_REJECTED {
 				errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
 				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.GetMessage())
 				multiErr = multierror.Append(multiErr, errors.New(errMessage))
