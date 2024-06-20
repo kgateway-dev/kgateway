@@ -34,7 +34,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 		JustBeforeEach(func() {
 			prepareMakefile(namespace, helmValues{valuesArgs: valuesArgs})
 		})
-		FWhen("kube gateway integration is enabled", func() {
+		When("kube gateway integration is enabled", func() {
 			BeforeEach(func() {
 				valuesArgs = append(valuesArgs, "kubeGateway.enabled=true")
 			})
