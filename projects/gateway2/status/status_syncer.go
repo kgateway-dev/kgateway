@@ -26,6 +26,7 @@ var _ proxy_syncer.QueueStatusForProxiesFn = (&statusSyncerFactory{}).QueueStatu
 // GatewayStatusSyncer is responsible for applying status plugins to Gloo Gateway proxies
 type GatewayStatusSyncer interface {
 	QueueStatusForProxies(
+		ctx context.Context,
 		proxiesToQueue v1.ProxyList,
 		pluginRegistry *registry.PluginRegistry,
 		totalSyncCount int,
@@ -42,20 +43,24 @@ type statusSyncerFactory struct {
 	// maps a proxy to the sync iteration that produced it
 	// only the latest sync iteration is stored and used to apply status plugins
 	resyncsPerProxy map[types.NamespacedName]int
+	// proxies left to sync
+	resyncsPerIteration map[int][]types.NamespacedName
 
 	lock *sync.Mutex
 }
 
 func NewStatusSyncerFactory() GatewayStatusSyncer {
 	return &statusSyncerFactory{
-		registryPerSync: make(map[int]*registry.PluginRegistry),
-		resyncsPerProxy: make(map[types.NamespacedName]int),
-		lock:            &sync.Mutex{},
+		registryPerSync:     make(map[int]*registry.PluginRegistry),
+		resyncsPerProxy:     make(map[types.NamespacedName]int),
+		resyncsPerIteration: make(map[int][]types.NamespacedName),
+		lock:                &sync.Mutex{},
 	}
 }
 
 // QueueStatusForProxies queues the proxies to be synced and plugin registry for the given sync iteration
 func (f *statusSyncerFactory) QueueStatusForProxies(
+	ctx context.Context,
 	proxiesToQueue v1.ProxyList,
 	pluginRegistry *registry.PluginRegistry,
 	totalSyncCount int,
@@ -63,9 +68,15 @@ func (f *statusSyncerFactory) QueueStatusForProxies(
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+	contextutils.LoggerFrom(ctx).Debugf("queueing %v proxies for sync %d", len(proxiesToQueue), totalSyncCount)
+
 	// queue each proxy for a given sync iteration
 	for _, proxy := range proxiesToQueue {
+		// overwrite the sync count for the proxy with the most recent sync count
 		f.resyncsPerProxy[getProxyNameNamespace(proxy)] = totalSyncCount
+
+		// keep track of proxies to check all proxies are handled in debugger
+		f.resyncsPerIteration[totalSyncCount] = append(f.resyncsPerIteration[totalSyncCount], getProxyNameNamespace(proxy))
 	}
 	// the plugin registry that produced the proxies is the same for all proxies in a given sync
 	f.registryPerSync[totalSyncCount] = pluginRegistry
@@ -77,9 +88,11 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+	contextutils.LoggerFrom(ctx).Debugf("handling proxy reports for %v proxies", len(proxiesWithReports))
+
 	proxiesToReport := make(map[int][]translatorutils.ProxyWithReports)
+	var proxySyncCount int
 	for _, proxyWithReport := range filterProxiesByControllerName(proxiesWithReports) {
-		var proxySyncCount int
 		// Get the sync iteration that produced the proxy from the proxy metadata
 		if proxyWithReport.Proxy.GetMetadata().GetAnnotations() != nil {
 			if syncId, ok := proxyWithReport.Proxy.GetMetadata().GetAnnotations()[utils.ProxySyncId]; ok {
@@ -91,8 +104,21 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 		// if the proxySyncCount saved in the statusSyncer for a given proxy is higher (i.e. newer) than the syncCount
 		// on the proxy metadata, then continue because this report iteration is for an older sync which we no longer care about
 		if f.resyncsPerProxy[proxyKey] > proxySyncCount {
-			// old proxy was garbage collected, expect a future resync
+			// old proxy was garbage collected, expect a future re-sync
 			continue
+		}
+
+		if f.resyncsPerIteration[proxySyncCount] == nil {
+			// re-sync already happened, nothing to do
+			continue
+		} else {
+			updatedList := make([]types.NamespacedName, 0)
+			for _, proxyNameNs := range f.resyncsPerIteration[proxySyncCount] {
+				if proxyNameNs != proxyKey {
+					updatedList = append(updatedList, proxyNameNs)
+				}
+			}
+			f.resyncsPerIteration[proxySyncCount] = updatedList
 		}
 
 		proxiesToReport[proxySyncCount] = append(proxiesToReport[proxySyncCount], proxyWithReport)
@@ -103,15 +129,12 @@ func (f *statusSyncerFactory) HandleProxyReports(ctx context.Context, proxiesWit
 	for syncCount, proxies := range proxiesToReport {
 		if plugins, ok := f.registryPerSync[syncCount]; ok {
 			newStatusSyncer(plugins).applyStatusPlugins(ctx, proxies)
-		} else {
-			// this should never happen
-			contextutils.LoggerFrom(ctx).DPanicf("no registry found for proxy sync count %d", syncCount)
 		}
-	}
 
-	// reinitialize the registry if there are no more proxies for the sync iteration
-	if len(f.resyncsPerProxy) == 0 {
-		f.registryPerSync = make(map[int]*registry.PluginRegistry)
+		// If there are no more proxies for the sync iteration, delete the sync count
+		if len(f.resyncsPerIteration) == 0 {
+			delete(f.registryPerSync, syncCount)
+		}
 	}
 }
 
