@@ -69,7 +69,7 @@ func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *o
 		printGlooInstanceCheckSummary("AuthConfigs", glooInstance.Spec.GetCheck().GetAuthConfigs())
 		printGlooInstanceCheckSummary("RateLimitConfigs", glooInstance.Spec.GetCheck().GetRateLimitConfigs())
 		printGlooInstanceCheckSummary("VirtualServices", glooInstance.Spec.GetCheck().GetVirtualServices())
-		printGlooInstanceCheckSummary("RouteRables", glooInstance.Spec.GetCheck().GetRouteTables())
+		printGlooInstanceCheckSummary("RouteTables", glooInstance.Spec.GetCheck().GetRouteTables())
 		printGlooInstanceCheckSummary("Gateways", glooInstance.Spec.GetCheck().GetGateways())
 		printGlooInstanceCheckSummary("MatchableHttpGateways", glooInstance.Spec.GetCheck().GetMatchableHttpGateways())
 		printGlooInstanceCheckSummary("MatchableTcpGateways", glooInstance.Spec.GetCheck().GetMatchableTcpGateways())
