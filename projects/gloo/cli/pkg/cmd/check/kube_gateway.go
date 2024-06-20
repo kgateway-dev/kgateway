@@ -35,10 +35,19 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 
 	printer.AppendMessage("\nDetected Kubernetes Gateway integration!")
 
-	checks := []CheckFunc{
-		internal.CheckGatewayClass,
-		internal.CheckGateways,
-		internal.CheckHTTPRoutes,
+	var checks = []CheckFunc{}
+
+	if included := doesNotContain(opts.Top.CheckName, "kube-gateway-classes"); included {
+		checks = append(checks, internal.CheckGatewayClass)
+
+	}
+
+	if included := doesNotContain(opts.Top.CheckName, "kube-gateways"); included {
+		checks = append(checks, internal.CheckGateways)
+	}
+
+	if included := doesNotContain(opts.Top.CheckName, "kube-http-routes"); included {
+		checks = append(checks, internal.CheckHTTPRoutes)
 	}
 
 	for _, check := range checks {
