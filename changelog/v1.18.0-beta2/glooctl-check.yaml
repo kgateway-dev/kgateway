@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5741
+    resolvesIssue: false
+    description: >-
+      Update `glooctl check` to check for Kubernetes Gateway resources.
