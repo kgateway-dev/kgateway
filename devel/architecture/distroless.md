@@ -7,7 +7,7 @@ The use of distroless variants is a standard practice adopted by various open so
 ## Why do we provide distroless images ?
 Initially, Gloo Gateway was built using alpine as the base image, however due to `musl-libc` library issues in alpine, the base image moved over to ubuntu.
 While this move fixed the issue by no longer relying on alpine's `musl-libc` library, the ubuntu images contained libraries and packages that were unnecessary and had troublesome licenses (e.g.: `berkeleydb/lib-db`) that made adoption of these images difficult among the user base.
-Rather than managing troublesome alpine-based images for specific users and debian-based images for general use, we decided to support distroless variants of our images and deprecate the alpine ones. This way, users who have restrictions based on licenses that are included in our images can use the distroless variant while others can use the standard image.
+Rather than managing troublesome alpine-based images for specific users and ubuntu-based images for general use, we decided to support distroless variants of our images and deprecate the alpine ones. This way, users who have restrictions based on licenses that are included in our images can use the distroless variant while others can use the standard image.
 > Note: As of now we only support amd64 based images
 
 ## How is it configured in Gloo Gateway?
