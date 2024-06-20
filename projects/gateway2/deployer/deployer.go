@@ -323,17 +323,37 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	return vals, nil
 }
 
-func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
+// Render relies on a `helm install` to render the Chart with the inject values
+// It returns the list of Objects that are rendered, and an optional error if rendering failed
+// or converting the rendered manifests to objects failed
+//
+// NOTE: The supplied context.Context is ignored. See the `installCtx` initialization for context around this.
+// We opt to not modify the function signature (and just ignore the parameter) because we anticipate the bug will
+// be resolved, at which point, we can resume using the injected context
+func (d *Deployer) Render(_ context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
 		Releases: storage.Init(mem),
 	}
-	client := action.NewInstall(cfg)
-	client.Namespace = ns
-	client.ReleaseName = name
-	client.ClientOnly = true
-	release, err := client.RunWithContext(ctx, d.chart, vals)
+	install := action.NewInstall(cfg)
+	install.Namespace = ns
+	install.ReleaseName = name
+	install.ClientOnly = true
+
+	// Upstream Helm has a subtle race-condition that occurs around context cancellation of Installations
+	// This manifests itslef when running tests with `-race` enabled:
+	// https://github.com/solo-io/solo-projects/issues/6408
+	//
+	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L229
+	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L403
+	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L416
+	//
+	// Since we are not actually relying on the release itself, we can side-step this race condition by not
+	// relying on a long-lived context
+	installCtx := context.Background()
+
+	release, err := install.RunWithContext(installCtx, d.chart, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for gateway %s.%s: %w", ns, name, err)
 	}
