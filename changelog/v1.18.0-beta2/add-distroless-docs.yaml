@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: Modifies `kubecli.Execute()` to use the kubecontext it is configured with by default.
+- type: NON_USER_FACING
+  description: Adding documentation around distroless
