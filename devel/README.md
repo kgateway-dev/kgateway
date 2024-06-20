@@ -2,7 +2,7 @@
 
 Find tools and information to help you develop the Gloo Gateway project.
 
-* `architecture`: Descriptions about how various modules are built.
+* `architecture`: Descriptions about high-level design and implementation details of various packages and features.
 * `contributing`: Information to help you contribute to the project, such as how to open issues, review pull requests, generate code, and backport fixes.
 * `debugging`: Troubleshooting steps for debugging frequent issues.
 * `testing`: Descriptions on how the tests work and how to use them.
