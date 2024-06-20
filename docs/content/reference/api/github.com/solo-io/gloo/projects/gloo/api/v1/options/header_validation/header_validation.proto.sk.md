@@ -28,13 +28,13 @@ weight: 5
 
 
 ```yaml
-"allowCustomHeaderMethods": bool
+"allow": .google.protobuf.Empty
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowCustomHeaderMethods` | `bool` | As of right now, this field is only supported on HTTP/1 connections. When Universal Header Validation is enabled in Envoy, this field will apply to all HTTP protocols. TODO: let's think a bit more carefully about how we want to design this for future-proofing purposes. I think we may want to consider having an oneof here instead that could be something like (allow default methods/allow all methods/custom allow-list). we may also want to model our API similarly to upstream Envoy's UHV API WARNING: these options should not be considered stable, and this API is subject to change in the future. question: alternately, we could enable this as an HTTP/1-only option, mark it as deprecated, and then when UHV is enabled, we could remove the deprecated option and introduce a new option for all HTTP protocols. |
+| `allow` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Allow - all HTTP methods will be allowed. |
 
 
 

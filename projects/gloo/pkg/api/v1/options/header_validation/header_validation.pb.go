@@ -10,6 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
+	empty "github.com/golang/protobuf/ptypes/empty"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
@@ -26,20 +27,19 @@ type HeaderValidationSettings struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// As of right now, this field is only supported on HTTP/1 connections.
-	// When Universal Header Validation is enabled in Envoy, this field will
-	// apply to all HTTP protocols.
-	// TODO: let's think a bit more carefully about how we want to design this
-	// for future-proofing purposes. I think we may want to consider having an
-	// oneof here instead that could be something like (allow default
-	// methods/allow all methods/custom allow-list).
-	// we may also want to model our API similarly to upstream Envoy's UHV API
-	// WARNING: these options should not be considered stable, and this API is
-	// subject to change in the future.
-	// question: alternately, we could enable this as an HTTP/1-only option,
-	// mark it as deprecated, and then when UHV is enabled, we could remove the
-	// deprecated option and introduce a new option for all HTTP protocols.
-	AllowCustomHeaderMethods bool `protobuf:"varint,1,opt,name=allow_custom_header_methods,json=allowCustomHeaderMethods,proto3" json:"allow_custom_header_methods,omitempty"`
+	// Whether custom HTTP methods should be allowed. If this field is omitted,
+	// Gloo defaults to returning 400 responses for requests that use custom
+	// header methods. The list of HTTP methods that are allowed by default can
+	// be found here:
+	// https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+	// Currently, this option only affects HTTP/1 traffic and not HTTP/2. A
+	// future release of Gloo will expand this option to support all HTTP
+	// protocols.
+	//
+	// Types that are assignable to CustomMethods:
+	//
+	//	*HeaderValidationSettings_Allow
+	CustomMethods isHeaderValidationSettings_CustomMethods `protobuf_oneof:"custom_methods"`
 }
 
 func (x *HeaderValidationSettings) Reset() {
@@ -74,12 +74,30 @@ func (*HeaderValidationSettings) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_header_validation_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HeaderValidationSettings) GetAllowCustomHeaderMethods() bool {
-	if x != nil {
-		return x.AllowCustomHeaderMethods
+func (m *HeaderValidationSettings) GetCustomMethods() isHeaderValidationSettings_CustomMethods {
+	if m != nil {
+		return m.CustomMethods
 	}
-	return false
+	return nil
 }
+
+func (x *HeaderValidationSettings) GetAllow() *empty.Empty {
+	if x, ok := x.GetCustomMethods().(*HeaderValidationSettings_Allow); ok {
+		return x.Allow
+	}
+	return nil
+}
+
+type isHeaderValidationSettings_CustomMethods interface {
+	isHeaderValidationSettings_CustomMethods()
+}
+
+type HeaderValidationSettings_Allow struct {
+	// Allow - all HTTP methods will be allowed
+	Allow *empty.Empty `protobuf:"bytes,2,opt,name=allow,proto3,oneof"`
+}
+
+func (*HeaderValidationSettings_Allow) isHeaderValidationSettings_CustomMethods() {}
 
 var File_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_header_validation_proto protoreflect.FileDescriptor
 
@@ -92,12 +110,14 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_
 	0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x12, 0x26, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x22, 0x59, 0x0a, 0x18, 0x48, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74,
-	0x69, 0x6e, 0x67, 0x73, 0x12, 0x3d, 0x0a, 0x1b, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x5f, 0x63, 0x75,
-	0x73, 0x74, 0x6f, 0x6d, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x6d, 0x65, 0x74, 0x68,
-	0x6f, 0x64, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x18, 0x61, 0x6c, 0x6c, 0x6f, 0x77,
-	0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x4d, 0x65, 0x74, 0x68,
+	0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x1a, 0x1b, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x5c, 0x0a, 0x18, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56,
+	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67,
+	0x73, 0x12, 0x2e, 0x0a, 0x05, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
+	0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x05, 0x61, 0x6c, 0x6c, 0x6f,
+	0x77, 0x42, 0x10, 0x0a, 0x0e, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x5f, 0x6d, 0x65, 0x74, 0x68,
 	0x6f, 0x64, 0x73, 0x42, 0x4c, 0x5a, 0x4a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
 	0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70,
 	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67,
@@ -121,13 +141,15 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_header_validation_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_header_validation_proto_goTypes = []interface{}{
 	(*HeaderValidationSettings)(nil), // 0: header_validation.options.gloo.solo.io.HeaderValidationSettings
+	(*empty.Empty)(nil),              // 1: google.protobuf.Empty
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_header_validation_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: header_validation.options.gloo.solo.io.HeaderValidationSettings.allow:type_name -> google.protobuf.Empty
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() {
@@ -150,6 +172,9 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation
 				return nil
 			}
 		}
+	}
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_options_header_validation_header_validation_proto_msgTypes[0].OneofWrappers = []interface{}{
+		(*HeaderValidationSettings_Allow)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

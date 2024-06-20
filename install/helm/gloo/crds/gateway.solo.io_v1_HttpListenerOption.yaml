@@ -811,8 +811,9 @@ spec:
                     type: object
                   headerValidationSettings:
                     properties:
-                      allowCustomHeaderMethods:
-                        type: boolean
+                      allow:
+                        maxProperties: 0
+                        type: object
                     type: object
                   healthCheck:
                     properties:
