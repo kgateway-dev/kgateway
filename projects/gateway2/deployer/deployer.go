@@ -108,11 +108,12 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 			Namespace: "default",
 		},
 	}
+	// TODO(Law): these must be set explicitly as we don't have defaults for them
+	// and the internal template isn't robust enough.
+	// This should be empty eventually -- the template must be resilient against nil-pointers
+	// i.e. don't add stuff here!
 	vals := map[string]any{
 		"gateway": map[string]any{
-			"serviceAccount": map[string]any{
-				"create": true,
-			},
 			"istio": map[string]any{
 				"enabled": false,
 			},

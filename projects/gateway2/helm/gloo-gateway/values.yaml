@@ -28,14 +28,3 @@ gateway:
     targetPort: 80
     protocol: TCP
     name: http
-  # TODO: change template to not break when completely absent
-  # For PR interesting decision, we are removing the templating of this entirely
-  # can be readded to GwParams as a true user-facing option when needed
-  serviceAccount:
-    # Specifies whether a service account should be created
-    create: true
-    # Annotations to add to the service account
-    annotations: {}
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name: ""
