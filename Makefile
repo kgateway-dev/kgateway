@@ -165,7 +165,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
 
-.PHONE: install-go-test-coverage
+.PHONY: install-go-test-coverage
 install-go-test-coverage:
 	go install github.com/vladopajic/go-test-coverage/v2@v2.8.1
 
