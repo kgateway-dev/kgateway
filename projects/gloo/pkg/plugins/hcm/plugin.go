@@ -141,11 +141,12 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		if out.GetHttpProtocolOptions() == nil {
 			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
 		}
-		// ALERT: AllowCustomMethods is deprecated from upstream Envoy and
-		// scheduled for removal. When that setting is removed, we must use
-		// Universal Header Validation to support this functionality. See
+		// ALERT: As of Edge 1.18, AllowCustomMethods is deprecated from
+		// upstream Envoy and scheduled for removal. When that setting is
+		// removed, we must use Universal Header Validation to support this
+		// functionality. See
 		// https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
-		out.HttpProtocolOptions.AllowCustomMethods = listener.GetOptions().GetHeaderValidationSettings().GetAllowCustomHeaderMethods()
+		out.GetHttpProtocolOptions().AllowCustomMethods = listener.GetOptions().GetHeaderValidationSettings().GetAllowCustomHeaderMethods()
 	}
 
 	if in.GetIdleTimeout() != nil {
