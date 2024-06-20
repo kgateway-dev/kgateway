@@ -18,7 +18,6 @@ gateway:
     # targetMemoryUtilizationPercentage: 80
   service:
     type: LoadBalancer # can leave for sanity but default set in GwPs service.type
-  readinessPort: 8082 # not configurable on GwPs, should just remove value and hardcode for now IMO
   # ports should come from the Gateway
   ports: # these are set by deployer and come from the gwv1.Gateway object, we can leave for sanity but never used
   - port: 80

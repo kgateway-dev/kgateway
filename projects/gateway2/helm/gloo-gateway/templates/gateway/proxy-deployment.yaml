@@ -325,9 +325,9 @@ data:
         role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
     static_resources:
       listeners:
-      - name: read_config_listener
+      - name: readiness_listener
         address:
-          socket_address: { address: 0.0.0.0, port_value: {{ $gateway.readinessPort }} }
+          socket_address: { address: 0.0.0.0, port_value: 8082 }
         filter_chains:
           - filters:
             - name: envoy.filters.network.http_connection_manager
