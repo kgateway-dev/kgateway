@@ -29,7 +29,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
+      serviceAccountName: {{ include "gloo-gateway.gateway.fullname" . }}
       {{- if $gateway.podSecurityContext }}
       securityContext:
         {{- toYaml $gateway.podSecurityContext | nindent 8 }}
