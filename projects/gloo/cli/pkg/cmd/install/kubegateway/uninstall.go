@@ -34,7 +34,7 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 		return err
 	}
 
-	objs, err := dep.Render(ctx, "default", installOpts.Namespace, map[string]any{})
+	objs, err := dep.Render("default", installOpts.Namespace, map[string]any{})
 	if err != nil {
 		return err
 	}
