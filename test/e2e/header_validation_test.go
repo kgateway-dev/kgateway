@@ -87,14 +87,6 @@ var _ = Describe("Header Validation", Label(), func() {
 			req := buildRequest()
 			Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusOK))
 		})
-
-		// We expect this test to fail when UHV is enabled in upstream Envoy
-		It("does not allow custom HTTP methods on HTTP/2", func() {
-			waitUntilProxyIsRunning()
-			req := buildRequest()
-			testClient := testutils.DefaultClientBuilder().WithHttp2(true).Build()
-			Expect(testClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusOK))
-		})
 	})
 
 })

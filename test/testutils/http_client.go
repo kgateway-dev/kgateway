@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
-	"golang.org/x/net/http2"
 )
 
 // DefaultHttpClient should be used in tests because it configures a timeout which the http.DefaultClient
@@ -34,7 +33,6 @@ type HttpClientBuilder struct {
 	rootCaCert         string
 	serverName         string
 	proxyProtocolBytes []byte
-	useHttp2           bool
 }
 
 // DefaultClientBuilder returns an HttpClientBuilder with some default values
@@ -45,11 +43,6 @@ func DefaultClientBuilder() *HttpClientBuilder {
 		timeout:    DefaultHttpClient.Timeout,
 		serverName: "gateway-proxy",
 	}
-}
-
-func (c *HttpClientBuilder) WithHttp2(useHttp2 bool) *HttpClientBuilder {
-	c.useHttp2 = useHttp2
-	return c
 }
 
 func (c *HttpClientBuilder) WithTimeout(timeout time.Duration) *HttpClientBuilder {
@@ -135,15 +128,9 @@ func (c *HttpClientBuilder) Build() *http.Client {
 		}
 	}
 
-	if c.useHttp2 {
-		client.Transport = &http2.Transport{
-			TLSClientConfig: tlsClientConfig,
-		}
-	} else {
-		client.Transport = &http.Transport{
-			TLSClientConfig: tlsClientConfig,
-			DialContext:     dialContext,
-		}
+	client.Transport = &http.Transport{
+		TLSClientConfig: tlsClientConfig,
+		DialContext:     dialContext,
 	}
 	client.Timeout = c.timeout
 
