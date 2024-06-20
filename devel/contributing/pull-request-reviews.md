@@ -62,7 +62,7 @@ After pulling down the code, you should try running the tests locally to ensure 
 ### Code Maintainers
 Solo.io has a dedicated team maintaining the Gloo Gateway project. When you submit a PR for Gloo Gateway, one of these maintainers will initiate the automation on your PR, and provide a review.
 
-If there are particular areas of the codebase that are being modified, it is important to identify subject-matter experts (SME) for those changes. If you do know know who this is, use the `@solo-io/gloo-edge-leads` GitHub handle to tag the Gloo Gateway technical leads, and they will identify the SMEs. If you can explicitly identify the domains that are being affected, it is easier to identify the relevant parties to review the code.
+If there are particular areas of the codebase that are being modified, it is important to identify subject-matter experts (SME) for those changes. If you do not know the SME, use the `@solo-io/gloo-edge-leads` GitHub handle to tag the Gloo Gateway technical leads, and they will identify the SMEs. If you can explicitly identify the domains that are being affected, it is easier to identify the relevant parties to review the code.
 
 ### Requirements
 Each PR requires 2 maintainers to approve the changes. The intention here is to distribute knowledge across more people, and provide an opportunity for broader perspective when reviewing the changes.

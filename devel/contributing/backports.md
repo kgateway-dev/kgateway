@@ -14,7 +14,7 @@ For a backport to be appropriate it must fit the following criteria:
 ## How to identify a backport
 On the issue that tracks the desired functionality, apply a `release/1.N` label to indicate the version of Gloo Gateway you wish the request to be supported on.
 
-For example, if there is a `release/1.14` label, that means the issue is targeted to be introduced first on the stable main branch, and then backported to Gloo Gateway 1.14.x.
+For example, if there is a `release/1.15` label, that means the issue is targeted to be introduced first on the stable main branch, and then backported to Gloo Gateway 1.15.x.
 
 ## How to create a backport
 First, create a PR to introduce the change on the main branch. Doing so ensures that changes are tested and reviewed before being applied to a previous version of Gloo Gateway. Also, given that we use [protocol buffers](https://developers.google.com/protocol-buffers) for our API definitions, introducing API changes to our main branch first ensures we will not have API compatibility issues when backporting.
