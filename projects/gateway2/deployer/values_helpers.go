@@ -135,10 +135,13 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 	}
 
 	return &helmIstioContainer{
-		Image:           istioImage,
-		LogLevel:        ptr.To(istioContainerConfig.GetLogLevel().GetValue()),
-		Resources:       istioContainerConfig.GetResources(),
-		SecurityContext: istioContainerConfig.GetSecurityContext(),
+		Image:                 istioImage,
+		LogLevel:              ptr.To(istioContainerConfig.GetLogLevel().GetValue()),
+		Resources:             istioContainerConfig.GetResources(),
+		SecurityContext:       istioContainerConfig.GetSecurityContext(),
+		IstioDiscoveryAddress: ptr.To(istioContainerConfig.GetIstioDiscoveryAddress().GetValue()),
+		IstioMetaMeshId:       ptr.To(istioContainerConfig.GetIstioMetaMeshId().GetValue()),
+		IstioMetaClusterId:    ptr.To(istioContainerConfig.GetIstioMetaClusterId().GetValue()),
 	}
 }
 
@@ -152,10 +155,7 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 	}
 
 	return &helmIstio{
-		Enabled:               ptr.To(istioValues.IntegrationEnabled),
-		IstioDiscoveryAddress: ptr.To(istioConfig.GetIstioProxyContainer().GetIstioDiscoveryAddress().GetValue()),
-		IstioMetaMeshId:       ptr.To(istioConfig.GetIstioProxyContainer().GetIstioMetaMeshId().GetValue()),
-		IstioMetaClusterId:    ptr.To(istioConfig.GetIstioProxyContainer().GetIstioMetaClusterId().GetValue()),
+		Enabled: ptr.To(istioValues.IntegrationEnabled),
 	}
 }
 
