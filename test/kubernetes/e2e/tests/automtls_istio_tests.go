@@ -10,7 +10,7 @@ import (
 func AutomtlsIstioSuiteRunner() e2e.SuiteRunner {
 	automtlsIstioSuiteRunner := e2e.NewSuiteRunner(false)
 
-	automtlsIstioSuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
+	automtlsIstioSuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	automtlsIstioSuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	automtlsIstioSuiteRunner.Register("IstioIntegrationAutoMtls", istio.NewIstioAutoMtlsSuite)
 

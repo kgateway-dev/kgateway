@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Remove old Istio integration regression e2e tests and glooctl Istio integration e2e tests.
