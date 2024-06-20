@@ -51,36 +51,38 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 	return gwPorts
 }
 
+// TODO: Removing until autoscaling is re-added.
+// See: https://github.com/solo-io/solo-projects/issues/5948
 // Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
-func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscaling {
-	hpaConfig := autoscaling.GetHorizontalPodAutoscaler()
-	if hpaConfig == nil {
-		return nil
-	}
+// func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscaling {
+// 	hpaConfig := autoscaling.GetHorizontalPodAutoscaler()
+// 	if hpaConfig == nil {
+// 		return nil
+// 	}
 
-	trueVal := true
-	autoscalingVals := &helmAutoscaling{
-		Enabled: &trueVal,
-	}
-	if hpaConfig.GetMinReplicas() != nil {
-		minReplicas := hpaConfig.GetMinReplicas().GetValue()
-		autoscalingVals.MinReplicas = &minReplicas
-	}
-	if hpaConfig.GetMaxReplicas() != nil {
-		maxReplicas := hpaConfig.GetMaxReplicas().GetValue()
-		autoscalingVals.MaxReplicas = &maxReplicas
-	}
-	if hpaConfig.GetTargetCpuUtilizationPercentage() != nil {
-		cpuPercent := hpaConfig.GetTargetCpuUtilizationPercentage().GetValue()
-		autoscalingVals.TargetCPUUtilizationPercentage = &cpuPercent
-	}
-	if hpaConfig.GetTargetMemoryUtilizationPercentage() != nil {
-		memPercent := hpaConfig.GetTargetMemoryUtilizationPercentage().GetValue()
-		autoscalingVals.TargetMemoryUtilizationPercentage = &memPercent
-	}
+// 	trueVal := true
+// 	autoscalingVals := &helmAutoscaling{
+// 		Enabled: &trueVal,
+// 	}
+// 	if hpaConfig.GetMinReplicas() != nil {
+// 		minReplicas := hpaConfig.GetMinReplicas().GetValue()
+// 		autoscalingVals.MinReplicas = &minReplicas
+// 	}
+// 	if hpaConfig.GetMaxReplicas() != nil {
+// 		maxReplicas := hpaConfig.GetMaxReplicas().GetValue()
+// 		autoscalingVals.MaxReplicas = &maxReplicas
+// 	}
+// 	if hpaConfig.GetTargetCpuUtilizationPercentage() != nil {
+// 		cpuPercent := hpaConfig.GetTargetCpuUtilizationPercentage().GetValue()
+// 		autoscalingVals.TargetCPUUtilizationPercentage = &cpuPercent
+// 	}
+// 	if hpaConfig.GetTargetMemoryUtilizationPercentage() != nil {
+// 		memPercent := hpaConfig.GetTargetMemoryUtilizationPercentage().GetValue()
+// 		autoscalingVals.TargetMemoryUtilizationPercentage = &memPercent
+// 	}
 
-	return autoscalingVals
-}
+// 	return autoscalingVals
+// }
 
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
 func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {

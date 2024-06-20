@@ -29,7 +29,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
+      serviceAccountName: {{ include "gloo-gateway.gateway.fullname" . }}
       {{- if $gateway.podSecurityContext }}
       securityContext:
         {{- toYaml $gateway.podSecurityContext | nindent 8 }}
@@ -262,21 +262,15 @@ spec:
       - name: workload-certs
         emptyDir: {}
 {{- end }} {{/* if $gateway.istio.enabled */}}
-{{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
+  name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
-  {{- with $gateway.serviceAccount.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 automountServiceAccountToken: false
-{{- end }} {{/* if $gateway.serviceAccount.create */}}
 ---
 apiVersion: v1
 kind: Service

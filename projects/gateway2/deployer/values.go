@@ -14,9 +14,9 @@ type helmGateway struct {
 	// naming
 	Name             *string `json:"name,omitempty"`
 	GatewayName      *string `json:"gatewayName,omitempty"`
-	GatewayNamespace *string `json:"gatewayNamespace,omitempty"` // TODO: Should be removed
+	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
 	NameOverride     *string `json:"nameOverride,omitempty"`     // TODO: Should be removed
-	FullnameOverride *string `json:"fullnameOverride,omitempty"`
+	FullnameOverride *string `json:"fullnameOverride,omitempty"` // TODO: Should be removed
 
 	// deployment/service values
 	ReplicaCount *uint32          `json:"replicaCount,omitempty"`
@@ -49,9 +49,6 @@ type helmGateway struct {
 
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`
-
-	// serviceaccount values
-	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -116,10 +113,4 @@ type helmIstioContainer struct {
 	// Note: This is set by envoySidecarResources in helm chart
 	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
-}
-
-type helmServiceAccount struct {
-	Create      *bool             `json:"create,omitempty"`
-	Name        *string           `json:"name,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
 }

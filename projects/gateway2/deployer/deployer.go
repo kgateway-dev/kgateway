@@ -108,11 +108,12 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 			Namespace: "default",
 		},
 	}
+	// TODO(Law): these must be set explicitly as we don't have defaults for them
+	// and the internal template isn't robust enough.
+	// This should be empty eventually -- the template must be resilient against nil-pointers
+	// i.e. don't add stuff here!
 	vals := map[string]any{
 		"gateway": map[string]any{
-			"serviceAccount": map[string]any{
-				"create": true,
-			},
 			"istio": map[string]any{
 				"enabled": false,
 			},
@@ -283,12 +284,18 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 
 	// deployment values
-	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
-	vals.Gateway.Autoscaling = autoscalingVals
-	if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
-		replicas := deployConfig.GetReplicas().GetValue()
-		vals.Gateway.ReplicaCount = &replicas
-	}
+	replicas := deployConfig.GetReplicas().GetValue()
+	vals.Gateway.ReplicaCount = &replicas
+
+	// TODO: The follow stanza has been commented out as autoscaling support has been removed.
+	// see https://github.com/solo-io/solo-projects/issues/5948 for more info.
+	//
+	// autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
+	// vals.Gateway.Autoscaling = autoscalingVals
+	// if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
+	// 	replicas := deployConfig.GetReplicas().GetValue()
+	// 	vals.Gateway.ReplicaCount = &replicas
+	// }
 
 	// service values
 	vals.Gateway.Service = getServiceValues(svcConfig)
