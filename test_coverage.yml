@@ -1,4 +1,4 @@
-# ref: https://github.com/vladopajic/go-test-coverage/blob/main/.testcoverage.example.yml
+# ref: https://github.com/vladopajic/go-test-coverage/blob/a5134457f681defa8eada436f1bcda10407f4f8b/.testcoverage.example.yml
 
 # (mandatory)
 # Path to coverprofile file (output of `go test -coverprofile` command)
