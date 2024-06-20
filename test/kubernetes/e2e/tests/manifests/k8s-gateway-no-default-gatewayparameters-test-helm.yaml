@@ -1,0 +1,57 @@
+global:
+  image:
+    pullPolicy: IfNotPresent
+  # Note: glooRbac.namespaced settings are not supported with Gloo Gateway https://github.com/solo-io/solo-projects/issues/6064
+  # Gateway API fundamentally expects HTTPRoutes and Gateways in any namespace and cross-namespace references to be supported
+  # Currently we are explicitly disabled namespaced roles for Gloo Gateway tests, but this can be left unset.
+  glooRbac:
+    namespaced: false
+settings:
+  # Gloo Gateway requires access to namespaces outside of the install namespace to watch and create Gateway resources
+  # singleNamespace=false must be set for namespace watch to work correctly. See: https://github.com/solo-io/solo-projects/issues/6058
+  singleNamespace: false
+  create: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+gateway:
+  persistProxySpec: false
+  logLevel: info
+  validation:
+    allowWarnings: true
+    alwaysAcceptResources: false
+    # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+    webhook:
+      skipDeleteValidationResources:
+        - upstreams
+kubeGateway:
+  # This is the field that enables the K8s Gateway Integration in Gloo Gateway
+  enabled: true
+  gatewayParameters:
+    # We are testing the behavior of the deployer when users null out fields on this object
+    glooGateway: 
+      # TODO (jbohanon): fix this so we don't fail the helm render with kubeGateway.gatewayParameters.glooGateway.proxyDeployment=null
+      proxyDeployment: 
+        replicas: 1
+      # TODO (jbohanon): fix this so we can't end up with Unspecified
+      service: 
+        type: LoadBalancer
+      # TODO (jbohanon): fix this so we don't fail the helm render with kubeGateway.gatewayParameters.glooGateway.envoyContainer=null
+      envoyContainer: 
+        image: {}
+      sdsContainer: null
+      istio: null
+
+gloo:
+  logLevel: info
+  disableLeaderElection: true
+  deployment:
+    replicas: 1
+    livenessProbeEnabled: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+# Disable discovery, not recommended for production
+discovery:
+  enabled: false
