@@ -323,9 +323,9 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	return vals, nil
 }
 
-// Render relies on a `helm install` to render the Chart with the inject values
-// It returns the list of Objects that are rendered, and an optional error if rendering failed
-// or converting the rendered manifests to objects failed
+// Render relies on a `helm install` to render the Chart with the injected values
+// It returns the list of Objects that are rendered, and an optional error if rendering failed,
+// or converting the rendered manifests to objects failed.
 //
 // NOTE: The supplied context.Context is ignored. See the `installCtx` initialization for context around this.
 // We opt to not modify the function signature (and just ignore the parameter) because we anticipate the bug will
@@ -342,7 +342,7 @@ func (d *Deployer) Render(_ context.Context, name, ns string, vals map[string]an
 	install.ClientOnly = true
 
 	// Upstream Helm has a subtle race-condition that occurs around context cancellation of Installations
-	// This manifests itslef when running tests with `-race` enabled:
+	// This manifests itself when running tests with `-race` enabled:
 	// https://github.com/solo-io/solo-projects/issues/6408
 	//
 	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L229
