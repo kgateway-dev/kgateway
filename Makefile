@@ -165,6 +165,10 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
 
+.PHONY: install-go-test-coverage
+install-go-test-coverage:
+	go install github.com/vladopajic/go-test-coverage/v2@v2.8.1
+
 .PHONY: check-format
 check-format:
 	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
@@ -194,7 +198,7 @@ GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | c
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
-GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
+GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
@@ -237,6 +241,7 @@ test: ## Run all tests, or only run the test package at {TEST_PKG} if it is spec
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
+# https://go.dev/blog/cover#heat-maps
 .PHONY: test-with-coverage
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
@@ -277,7 +282,8 @@ GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 # Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
-GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race
+GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race -outputdir=$(OUTPUT_DIR)
+GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
@@ -289,6 +295,19 @@ go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
 	$(TEST_PKG)
+
+# https://go.dev/blog/cover#heat-maps
+.PHONY: go-test-with-coverage
+go-test-with-coverage: GO_TEST_ARGS += $(GO_TEST_COVERAGE_ARGS)
+go-test-with-coverage: go-test
+
+.PHONY: validate-test-coverage
+validate-test-coverage:
+	${GOBIN}/go-test-coverage --config=./test_coverage.yml
+
+.PHONY: view-test-coverage
+view-test-coverage:
+	go tool cover -html $(OUTPUT_DIR)/cover.out
 
 #----------------------------------------------------------------------------------
 # Clean

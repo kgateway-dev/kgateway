@@ -3,10 +3,10 @@
 ## Overview
 A [Gloo Upstream](/projects/gloo/api/v1/upstream.proto) represents a destination for routing HTTP requests. An Upstream can be compared to [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto) in Envoy terminology.
 
-Upstreams can either be defined statically in a cluster, or can be discovered dynamically via Gloo Edge's Upstream Discovery feature.
+Upstreams can either be defined statically in a cluster, or can be discovered dynamically via Gloo Gateway's Upstream Discovery feature.
 
 ## How it works
-UDS runs in the [Discovery](/projects/discovery) component of Gloo Edge.
+UDS runs in the [Discovery](/projects/discovery) component of Gloo Gateway.
 
 Create a [discovery emitter](https://github.com/solo-io/gloo/blob/8bbe175ea136178bfe8b4d103ae702d4965c4c75/projects/gloo/pkg/api/v1/discovery_snapshot_emitter.sk.go#L135), which is responsible for the following:
 - Emit a snapshot of the resources that are required for UDS to operate (Upstreams, Secrets, Kubernetes Namespaces)

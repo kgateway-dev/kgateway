@@ -4,7 +4,7 @@
 See [e2e-tests](./e2e-tests.md) for more details about e2e tests in general
 
 ### Lambda Tests
-**These steps can only be taken if you are a Gloo Edge maintainer**
+**These steps can only be taken if you are a Gloo Gateway maintainer**
 
 You will need to do the following to run the [AWS Lambda Tests](/test/e2e/aws_test.go) locally:
 1. Obtain an AWS IAM User account that is part of the Solo.io organization
