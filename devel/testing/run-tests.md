@@ -14,7 +14,7 @@
   - [INVALID_TEST_REQS](#invalid_test_reqs)
 
 ## Background
-Gloo Edge testing leverages the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. As outlined in the linked documentation, Ginkgo pairs with the [Gomega](https://onsi.github.io/gomega/) matcher library to provide a BDD-style testing framework. For more details about how to write tests, check out our [writing tests docs](writing-tests.md).
+Gloo Gateway testing leverages the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. As outlined in the linked documentation, Ginkgo pairs with the [Gomega](https://onsi.github.io/gomega/) matcher library to provide a BDD-style testing framework. For more details about how to write tests, check out our [writing tests docs](writing-tests.md).
 
 ## Common Make Targets
 There are a few common make targets that can be used to run tests
@@ -65,7 +65,7 @@ TEST_PKG=test/... make test
 ```
 
 #### WAIT_ON_FAIL
-The `WAIT_ON_FAIL` environment variable can be used to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. This is useful to inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
+The `WAIT_ON_FAIL` environment variable can be used to prevent Ginkgo from cleaning up the Gloo Gateway installation in case of failure. This is useful to inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
 
 See [the definition](/test/testutils/env.go) for more details about when it can be used.
 

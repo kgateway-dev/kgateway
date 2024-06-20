@@ -1,0 +1,25 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6026
+    resolvesIssue: false
+    description: >-
+      Introduce code coverage tooling, introduce a basic check on projects/gateway2 tests
+      so that users have some feedback (that is not yet required).
+      
+      Update the `devel` folder to remove Gloo Edge references, and replace with Gloo Gateway
+  - type: NON_USER_FACING
+    description: >-
+      Resolve the iosnapshot/history_test flake, by ensuring that asynchronous operations
+      are provided time to complete.
+  - type: HELM
+    issueLink: https://github.com/solo-io/solo-projects/issues/6352
+    resolvesIssue: false
+    description: >-
+      Introduce `gateway.validation.webhook.enablePolicyApi` which controls whether or not RouteOptions and
+      VirtualHostOptions CRs are subject to validation. By default, this value is true.
+      The validation of these Policy APIs only runs if the Kubernetes Gateway integration is enabled (`kubeGateway.enabled`).
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6408
+    resolvesIssue: false
+    description: >-
+      Avoid a race condition in the deployer module, but not using a long-lived context.
