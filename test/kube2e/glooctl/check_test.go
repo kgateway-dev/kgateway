@@ -193,6 +193,24 @@ var _ = Describe("Check", func() {
 			Expect(output).NotTo(ContainSubstring("Checking Proxies..."))
 		})
 
+		It("excludes the kube gateway resources when it is disabled", func() {
+			output, err := GlooctlOut("check", "-x", "xds-metrics")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(output).To(ContainSubstring("Checking Deployments... OK"))
+			Expect(output).To(ContainSubstring("Checking Upstreams... OK"))
+			Expect(output).To(ContainSubstring("Checking UpstreamGroups... OK"))
+			Expect(output).To(ContainSubstring("Checking AuthConfigs... OK"))
+			Expect(output).To(ContainSubstring("Checking RateLimitConfigs... OK"))
+			Expect(output).To(ContainSubstring("Checking Secrets... OK"))
+			Expect(output).To(ContainSubstring("Checking VirtualServices... OK"))
+			Expect(output).To(ContainSubstring("Checking Gateways... OK"))
+			Expect(output).To(ContainSubstring("Checking Proxies... OK"))
+
+			Expect(output).NotTo(ContainSubstring("Checking kube GatewayClasses..."))
+			Expect(output).NotTo(ContainSubstring("Checking kube Gateways..."))
+			Expect(output).NotTo(ContainSubstring("Checking kube HTTPRoutes..."))
+		})
 	})
 
 	Context("timeouts", Ordered, func() {
