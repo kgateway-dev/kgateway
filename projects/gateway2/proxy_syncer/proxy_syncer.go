@@ -22,7 +22,7 @@ import (
 )
 
 // QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
-type QueueStatusForProxiesFn func(proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry, totalSyncCount int)
+type QueueStatusForProxiesFn func(ctx context.Context, proxies gloo_solo_io.ProxyList, pluginRegistry *registry.PluginRegistry, totalSyncCount int)
 
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
@@ -152,7 +152,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			TranslatedGateways: translatedGateways,
 		})
 
-		s.queueStatusForProxies(proxies, &pluginRegistry, totalResyncs)
+		s.queueStatusForProxies(ctx, proxies, &pluginRegistry, totalResyncs)
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
