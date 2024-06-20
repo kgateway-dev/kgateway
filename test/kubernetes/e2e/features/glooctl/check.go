@@ -40,6 +40,11 @@ var (
 			exclude:  Not(ContainSubstring("Checking UpstreamGroups...")),
 			readOnly: gstruct.Ignore(),
 		},
+		"auth-configs": {
+			include:  ContainSubstring("Checking AuthConfigs... OK"),
+			exclude:  Not(ContainSubstring("Checking AuthConfigs...")),
+			readOnly: gstruct.Ignore(),
+		},
 		"rate-limit-configs": {
 			include:  ContainSubstring("Checking RateLimitConfigs... OK"),
 			exclude:  Not(ContainSubstring("Checking RateLimitConfigs...")),
@@ -87,6 +92,21 @@ var (
 			include:  gstruct.Ignore(), // We have not had historical tests for this, it would be good to add
 			exclude:  gstruct.Ignore(), // We have not had historical tests for this, it would be good to add
 			readOnly: ContainSubstring("Warning: checking proxies with port forwarding is disabled"),
+		},
+		"kube-gateway-classes": {
+			include:  ContainSubstring("Checking kube GatewayClasses... OK"),
+			exclude:  Not(ContainSubstring("Checking kube GatewayClasses...")),
+			readOnly: gstruct.Ignore(),
+		},
+		"kube-gateways": {
+			include:  ContainSubstring("Checking kube Gateways... OK"),
+			exclude:  Not(ContainSubstring("Checking kube Gateways...")),
+			readOnly: gstruct.Ignore(),
+		},
+		"kube-http-routes": {
+			include:  ContainSubstring("Checking kube HTTPRoutes... OK"),
+			exclude:  Not(ContainSubstring("Checking kube HTTPRoutes...")),
+			readOnly: gstruct.Ignore(),
 		},
 	}
 )
