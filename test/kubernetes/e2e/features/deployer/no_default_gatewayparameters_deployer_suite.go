@@ -49,7 +49,6 @@ func (s *noDefaultGatewayParametersDeployerSuite) TestConfigureProxiesFromGatewa
 	deployment, err := s.testInstallation.ClusterContext.Clientset.AppsV1().Deployments(proxyDeployment.GetNamespace()).Get(s.ctx, proxyDeployment.GetName(), metav1.GetOptions{})
 	s.Require().NoError(err, "can get deployment")
 	secCtx := deployment.Spec.Template.Spec.SecurityContext
-	panic(secCtx)
 	s.Require().NotNil(secCtx)
 	s.Require().Nil(secCtx.RunAsUser)
 	s.Require().NotNil(secCtx.RunAsNonRoot)
