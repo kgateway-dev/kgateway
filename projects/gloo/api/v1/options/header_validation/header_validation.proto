@@ -9,7 +9,7 @@ message HeaderValidationSettings {
     // can be found here:
     // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
     // **BREAKING API COMPATIBILITY WARNING**:
-    // Note that right now, this field only changes whether custom header methods are allowed on HTTP/1 connections only.
+    // Note that right now, this field only changes whether custom header methods are allowed on HTTP/1 connections.
     // In a future release of Gloo, this option will change to allow custom
     // HTTP methods not just on HTTP/1, but also on all other HTTP protocols as
     // well.
