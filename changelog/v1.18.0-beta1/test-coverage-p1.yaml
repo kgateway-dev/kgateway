@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6026
+    resolvesIssue: false
+    description: >-
+      Introduce code coverage tooling, introduce a basic check on projects/gateway2 tests
+      so that users have some feedback (that is not yet required).
+      
+      Update the `devel` folder to remove Gloo Edge references, and replace with Gloo Gateway
+      
+      skipCI-kube-tests:true
