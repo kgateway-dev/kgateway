@@ -57,12 +57,7 @@ var _ = Describe("Header Validation", Label(), func() {
 			Build()
 	}
 
-	Context("Using default resources", func() {
-		// The TestContext creates the minimum resources necessary for e2e tests to run by default
-		// Without creating any additional configuration, we have a Gateway, Virtual Service, and Upstream.
-		// This means that a Proxy object is dynamically generated, and from there an xDS snapshot is computed
-		// and sent to Envoy to handle traffic
-
+	Context("Using default configuration", func() {
 		It("defaults to returning HTTP 400 on requests with custom HTTP methods", func() {
 			waitUntilProxyIsRunning()
 			req := buildRequest()
@@ -70,7 +65,7 @@ var _ = Describe("Header Validation", Label(), func() {
 		})
 	})
 
-	Context("With header_validation set to false", func() {
+	Context("With header validation disabled", func() {
 
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultGateway(writeNamespace)
@@ -82,7 +77,7 @@ var _ = Describe("Header Validation", Label(), func() {
 			testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{gw}
 		})
 
-		It("allows custom HTTP methods when enabled", func() {
+		It("custom HTTP methods are allowed", func() {
 			waitUntilProxyIsRunning()
 			req := buildRequest()
 			Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusOK))
