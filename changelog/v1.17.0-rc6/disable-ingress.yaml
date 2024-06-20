@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Disable ingress tests in v1.17 regression suite
+    skipCI-kube-tests:true
+    skipCI-docs-build:true
