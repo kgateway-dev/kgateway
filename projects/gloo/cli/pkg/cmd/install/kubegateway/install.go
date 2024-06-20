@@ -80,7 +80,7 @@ func install(opts *options.Options, installOpts *Options) error {
 		fmt.Printf("Skipping Gateway CRDs as they exist...\n")
 	}
 
-	objs, err := dep.Render(ctx, "default", installOpts.Namespace, vals)
+	objs, err := dep.Render("default", installOpts.Namespace, vals)
 	if err != nil {
 		return err
 	}
