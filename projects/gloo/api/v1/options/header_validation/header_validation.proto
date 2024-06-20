@@ -10,13 +10,13 @@ message HeaderValidationSettings {
 	// Gloo defaults to returning 400 responses for requests that use custom
 	// header methods. The list of HTTP methods that are allowed by default can
 	// be found here:
-    // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+  // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
 	// Currently, this option only affects HTTP/1 traffic and not HTTP/2. A
 	// future release of Gloo will expand this option to support all HTTP
 	// protocols.
 	oneof custom_methods {
 		// Allow - all HTTP methods will be allowed
-		google.protobuf.Empty allow = 1;
+		google.protobuf.Empty allowCustomMethods = 1;
 	}
 }
 

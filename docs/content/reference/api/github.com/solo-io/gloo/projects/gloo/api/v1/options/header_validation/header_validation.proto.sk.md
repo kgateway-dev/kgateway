@@ -28,13 +28,13 @@ weight: 5
 
 
 ```yaml
-"allow": .google.protobuf.Empty
+"allowCustomMethods": .google.protobuf.Empty
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allow` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Allow - all HTTP methods will be allowed. |
+| `allowCustomMethods` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Allow - all HTTP methods will be allowed. |
 
 
 

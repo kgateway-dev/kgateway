@@ -820,7 +820,7 @@ spec:
                         type: object
                       headerValidationSettings:
                         properties:
-                          allow:
+                          allowCustomMethods:
                             maxProperties: 0
                             type: object
                         type: object
@@ -2745,7 +2745,7 @@ spec:
                                   type: object
                                 headerValidationSettings:
                                   properties:
-                                    allow:
+                                    allowCustomMethods:
                                       maxProperties: 0
                                       type: object
                                   type: object

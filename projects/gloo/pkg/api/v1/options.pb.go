@@ -384,6 +384,7 @@ type HttpListenerOptions struct {
 	Tap *tap.Tap `protobuf:"bytes,34,opt,name=tap,proto3" json:"tap,omitempty"`
 	// Enterprise only: Listener-level stateful session settings
 	StatefulSession *stateful_session.StatefulSession `protobuf:"bytes,35,opt,name=stateful_session,json=statefulSession,proto3" json:"stateful_session,omitempty"`
+	// Header validation settings - fields in this message can be used to determine whether requests should be rejected based on the contents of the header.
 	// Whether custom HTTP methods should be allowed. Defaults to false (custom
 	// HTTP methods are not allowed). The list of default-allowed HTTP methods
 	// can be found here:

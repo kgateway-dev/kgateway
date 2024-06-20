@@ -148,7 +148,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		// functionality. See
 		// https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
 		switch customMethods.(type) {
-		case *header_validation.HeaderValidationSettings_Allow:
+		case *header_validation.HeaderValidationSettings_AllowCustomMethods:
 			out.GetHttpProtocolOptions().AllowCustomMethods = true
 		}
 	}
