@@ -95,10 +95,7 @@ type helmAutoscaling struct {
 }
 
 type helmIstio struct {
-	Enabled               *bool   `json:"enabled,omitempty"`
-	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
-	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
-	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type helmSdsContainer struct {
@@ -115,9 +112,13 @@ type sdsBootstrap struct {
 type helmIstioContainer struct {
 	Image    *helmImage `json:"image,omitempty"`
 	LogLevel *string    `json:"logLevel,omitempty"`
-	// Note: This is set by envoySidecarResources in helm chart
+
 	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
+
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
 }
 
 type helmServiceAccount struct {

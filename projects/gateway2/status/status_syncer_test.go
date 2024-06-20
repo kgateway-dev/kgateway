@@ -57,9 +57,10 @@ var _ = Describe("Status Syncer", func() {
 
 		proxiesToQueue := v1.ProxyList{proxyOne, proxyTwo}
 		pluginRegistry := &registry.PluginRegistry{}
+		ctx := context.Background()
 
 		// Test QueueStatusForProxies method
-		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry, 123)
+		syncer.QueueStatusForProxies(ctx, proxiesToQueue, pluginRegistry, 123)
 
 		// Queue the proxy (this is invoked in the proxy syncer)
 		proxiesMap := syncer.(*statusSyncerFactory).resyncsPerProxy
@@ -78,7 +79,6 @@ var _ = Describe("Status Syncer", func() {
 				},
 			},
 		}
-		ctx := context.Background()
 		syncer.HandleProxyReports(ctx, proxyOneWithReports)
 
 		// Ensure proxy one has been removed from the queue after handling reports, but proxy two is still present
@@ -145,9 +145,10 @@ var _ = Describe("Status Syncer", func() {
 
 		proxiesToQueue := v1.ProxyList{proxyOne, proxyTwo}
 		pluginRegistry := &registry.PluginRegistry{}
+		ctx := context.Background()
 
 		// Test QueueStatusForProxies method
-		syncer.QueueStatusForProxies(proxiesToQueue, pluginRegistry, 123)
+		syncer.QueueStatusForProxies(ctx, proxiesToQueue, pluginRegistry, 123)
 
 		// Queue the proxy (this is invoked in the proxy syncer)
 		proxiesMap := syncer.(*statusSyncerFactory).resyncsPerProxy
@@ -173,7 +174,6 @@ var _ = Describe("Status Syncer", func() {
 				},
 			},
 		}
-		ctx := context.Background()
 		syncer.HandleProxyReports(ctx, proxiesWithReports)
 
 		// Ensure both proxies are removed from the queue after handling reports
@@ -235,11 +235,12 @@ var _ = Describe("Status Syncer", func() {
 
 		proxiesToQueue125 := v1.ProxyList{newProxy}
 		pluginRegistry125 := &registry.PluginRegistry{}
+		ctx := context.Background()
 
 		// Each proxy is queued with a different registry per sync iteration
-		syncer.QueueStatusForProxies(proxiesToQueue123, pluginRegistry123, 123)
-		syncer.QueueStatusForProxies(proxiesToQueue124, pluginRegistry124, 124)
-		syncer.QueueStatusForProxies(proxiesToQueue125, pluginRegistry125, 125)
+		syncer.QueueStatusForProxies(ctx, proxiesToQueue123, pluginRegistry123, 123)
+		syncer.QueueStatusForProxies(ctx, proxiesToQueue124, pluginRegistry124, 124)
+		syncer.QueueStatusForProxies(ctx, proxiesToQueue125, pluginRegistry125, 125)
 
 		// Queue the proxy (this is invoked in the proxy syncer)
 		proxiesMap := syncer.(*statusSyncerFactory).resyncsPerProxy
@@ -258,7 +259,6 @@ var _ = Describe("Status Syncer", func() {
 				},
 			},
 		}
-		ctx := context.Background()
 		syncer.HandleProxyReports(ctx, oldProxiesWithReports)
 
 		// Ensure only the latest proxy is still present
@@ -284,7 +284,8 @@ var _ = Describe("Status Syncer", func() {
 		// ensure all proxies are removed from the queue
 		Expect(proxiesMap).To(BeEmpty())
 		registryMap = syncer.(*statusSyncerFactory).registryPerSync
-		// ensure registry is cleared for all sync iterations
-		Expect(registryMap).To(BeEmpty())
+		Expect(registryMap).ToNot(BeEmpty())
+		// ensure registry is only cleared for processed sync iteration
+		Expect(registryMap).To(And(HaveKey(123), HaveKey(124)))
 	})
 })
