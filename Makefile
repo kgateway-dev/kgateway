@@ -48,6 +48,12 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
+# ATTENTION: when updating to a new major version of Envoy, check if
+# universal header validation has been enabled and if so, we expect
+# failures in `test/e2e/header_validation_test.go`
+# for more information, see https://github.com/solo-io/gloo/pull/9633
+# and
+# https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.30.2-patch2
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS ?=

@@ -29,7 +29,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gzip"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/header_validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/healthcheck"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/istio_automtls"
@@ -113,7 +112,6 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		deprecated_cipher_passthrough.NewPlugin(),
 		local_ratelimit.NewPlugin(),
 		istio_automtls.NewPlugin(opts.GlooGateway.IstioValues.SidecarOnGatewayEnabled),
-		header_validation.NewPlugin(),
 	)
 
 	if opts.KubeClient != nil {
