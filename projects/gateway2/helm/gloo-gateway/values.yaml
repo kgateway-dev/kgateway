@@ -1,30 +1,38 @@
-# Default values for gloo-gateway.
-# TODO: Expand what this file actually represents
-# TODO: Leave sanity "defaults" here, explain why they are needed for `helm template`
-# and create github issue to track glooctl et al. tool to bridge the gap between these "defaults"
-# and default GwParams
+# These values represent configurable values for the dynamic proxy chart
+# They are not intended to be actual "defaults," rather they are just placeholder values
+# meant to allow rendering of the chart/template, as the real values will come from:
+# * The control plane
+# * The `Gateway` resource driving the proxy provisioning
+# * A (possibly merged) GatewayParameters object translated to helm values
+# The actual defaults for these values should come from the "default GatewayParameters" object
+# See: (/gloo/install/helm/gloo/templates/43-gatewayparameters.yaml)
+# TODO: This file/workflow can be shored up via https://github.com/solo-io/solo-projects/issues/6417
 
 gateway:
-  # nameOverride: "" # should be removed
-  # fullnameOverride: "" # should be removed
-  # gatewayName: "" # no user-facing control, set by deployer
-  # gatewayNamespace: "" # no user-facing control, set by deployer
+  # xds values really come from the control plane
   xds:
-    host: "" #default can be here for sanity but never used, set by control plane via deployer
-    port: 8080 #default can be here for sanity but never used, set by control plane via deployer
-  replicaCount: 1 # default set in GwPs proxyDeployment.replicas
-  # resources: {} # remove, no reason for default here, add to GwParams
+    host: ""
+    port: 8080
+
+  # real default set in default GatewayParam proxyDeployment.replicas
+  replicaCount: 1
+
+  # real default set in default GatewayParam service.type
+  service:
+    type: LoadBalancer
+
+  # list of ports really come from the Gateway resource driving this proxy
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+
+  # leftover autoscaling config; not actually wired up for public use yet
+  # see: https://github.com/solo-io/solo-projects/issues/5948
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  service:
-    type: LoadBalancer # can leave for sanity but default set in GwPs service.type
-  # ports should come from the Gateway
-  ports: # these are set by deployer and come from the gwv1.Gateway object, we can leave for sanity but never used
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-    name: http
