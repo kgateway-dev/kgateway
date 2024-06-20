@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Resolve the iosnapshot/history_test flake, by ensuring that asynchronous operations
-      are provided time to complete.
-      
-      skipCI-kube-tests:true
-      skipCI-docs-build:true
