@@ -9,7 +9,7 @@ These end-to-end tests do not require Kubernetes, and persist configuration in m
 - [Local Development](#local-development)
 
 ## Background
-This is the most common and preferred type of end-to-end test, since it is the quickest to set up and easiest to debug. Additionally, Gloo Edge may be run using various backing stores; these tests provide a single space to validate the translation of Gloo resources into Envoy resources, independently of where Gloo Edge is deployed. These test do not rely on Kubernetes, so if there is any Kubernetes behavior that needs to be tested, write a [kubernetes end-to-end test](../kube2e) instead.
+This is the most common and preferred type of end-to-end test, since it is the quickest to set up and easiest to debug. Additionally, Gloo Gateway may be run using various backing stores; these tests provide a single space to validate the translation of Gloo resources into Envoy resources, independently of where Gloo Gateway is deployed. These test do not rely on Kubernetes, so if there is any Kubernetes behavior that needs to be tested, write a [kubernetes end-to-end test](../../test/kubernetes/e2e) instead.
 
 ### Where are the tests?
 The tests are located in the [test/e2e](/test/e2e) folder

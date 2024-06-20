@@ -1,6 +1,6 @@
 # Test Flakes
 
-Tests must account for the eventually consistent nature of Gloo Edge. Writing deterministic end-to-end tests can be challenging, and at times a test will fail in our CI pipeline non-deterministically. We refer to these failures as flakes. We have found the most common flakes occur as a result of:
+Tests must account for the eventually consistent nature of Gloo Gateway. Writing deterministic end-to-end tests can be challenging, and at times a test will fail in our CI pipeline non-deterministically. We refer to these failures as flakes. We have found the most common flakes occur as a result of:
 1. **Test pollution**: another test in the same suite does not clean up resources
 2. **Eventual consistency**: the test does not wait long enough for resources to be applied and processed correctly
 
