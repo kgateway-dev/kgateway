@@ -380,12 +380,6 @@ message VirtualHostOptions {
     // Enterprise-only: External Processing filter settings for the virtual host. This can be used to
     // override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
-
-    // Whether custom HTTP methods should be allowed. Defaults to false (custom
-    // HTTP methods are not allowed). The list of default-allowed HTTP methods
-    // can be found here:
-    // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
-    header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 31;
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -590,13 +584,6 @@ message RouteOptions {
     // Enterprise-only: External Processing filter settings for the route. This can be used to
     // override certain HttpListenerOptions or VirtualHostOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
-
-    // Header Validation Settings. These can be used to configure Gloo with
-    // rules to customize whether requests should be accepted or rejected,
-    // based on the contents of the HTTP header.
-    // TODO: include some kind of warning that the behavior of these fields may
-    // change when we update Envoy to a new version.
-    header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 31;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

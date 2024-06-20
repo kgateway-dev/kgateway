@@ -446,11 +446,6 @@ spec:
                               type: string
                             type: array
                         type: object
-                      headerValidationSettings:
-                        properties:
-                          allowCustomHeaderMethods:
-                            type: boolean
-                        type: object
                       includeAttemptCountInResponse:
                         nullable: true
                         type: boolean
@@ -3333,11 +3328,6 @@ spec:
                                   items:
                                     type: string
                                   type: array
-                              type: object
-                            headerValidationSettings:
-                              properties:
-                                allowCustomHeaderMethods:
-                                  type: boolean
                               type: object
                             hostRewrite:
                               type: string

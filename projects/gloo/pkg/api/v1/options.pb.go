@@ -798,11 +798,6 @@ type VirtualHostOptions struct {
 	// Enterprise-only: External Processing filter settings for the virtual host. This can be used to
 	// override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings.
 	ExtProc *extproc.RouteSettings `protobuf:"bytes,30,opt,name=ext_proc,json=extProc,proto3" json:"ext_proc,omitempty"`
-	// Whether custom HTTP methods should be allowed. Defaults to false (custom
-	// HTTP methods are not allowed). The list of default-allowed HTTP methods
-	// can be found here:
-	// https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
-	HeaderValidationSettings *header_validation.HeaderValidationSettings `protobuf:"bytes,31,opt,name=header_validation_settings,json=headerValidationSettings,proto3" json:"header_validation_settings,omitempty"`
 }
 
 func (x *VirtualHostOptions) Reset() {
@@ -1042,13 +1037,6 @@ func (x *VirtualHostOptions) GetExtProc() *extproc.RouteSettings {
 	return nil
 }
 
-func (x *VirtualHostOptions) GetHeaderValidationSettings() *header_validation.HeaderValidationSettings {
-	if x != nil {
-		return x.HeaderValidationSettings
-	}
-	return nil
-}
-
 type isVirtualHostOptions_RateLimitEarlyConfigType interface {
 	isVirtualHostOptions_RateLimitEarlyConfigType()
 }
@@ -1278,12 +1266,6 @@ type RouteOptions struct {
 	// Enterprise-only: External Processing filter settings for the route. This can be used to
 	// override certain HttpListenerOptions or VirtualHostOptions settings.
 	ExtProc *extproc.RouteSettings `protobuf:"bytes,30,opt,name=ext_proc,json=extProc,proto3" json:"ext_proc,omitempty"`
-	// Header Validation Settings. These can be used to configure Gloo with
-	// rules to customize whether requests should be accepted or rejected,
-	// based on the contents of the HTTP header.
-	// TODO: include some kind of warning that the behavior of these fields may
-	// change when we update Envoy to a new version.
-	HeaderValidationSettings *header_validation.HeaderValidationSettings `protobuf:"bytes,31,opt,name=header_validation_settings,json=headerValidationSettings,proto3" json:"header_validation_settings,omitempty"`
 }
 
 func (x *RouteOptions) Reset() {
@@ -1617,13 +1599,6 @@ func (x *RouteOptions) GetIdleTimeout() *duration.Duration {
 func (x *RouteOptions) GetExtProc() *extproc.RouteSettings {
 	if x != nil {
 		return x.ExtProc
-	}
-	return nil
-}
-
-func (x *RouteOptions) GetHeaderValidationSettings() *header_validation.HeaderValidationSettings {
-	if x != nil {
-		return x.HeaderValidationSettings
 	}
 	return nil
 }
@@ -2591,7 +2566,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x6c, 0x69, 0x6d, 0x69, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c,
 	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54, 0x6f, 0x6b, 0x65, 0x6e,
 	0x42, 0x75, 0x63, 0x6b, 0x65, 0x74, 0x52, 0x0e, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x52, 0x61, 0x74,
-	0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0xc1, 0x12, 0x0a, 0x12, 0x56, 0x69, 0x72, 0x74, 0x75,
+	0x65, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0xc1, 0x11, 0x0a, 0x12, 0x56, 0x69, 0x72, 0x74, 0x75,
 	0x61, 0x6c, 0x48, 0x6f, 0x73, 0x74, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x38, 0x0a,
 	0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x18, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
@@ -2725,21 +2700,13 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x70, 0x72, 0x6f, 0x63, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f,
 	0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x53,
 	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x07, 0x65, 0x78, 0x74, 0x50, 0x72, 0x6f, 0x63,
-	0x12, 0x7e, 0x0a, 0x1a, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x18, 0x1f,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x40, 0x2e, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x76, 0x61,
-	0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x48, 0x65,
-	0x61, 0x64, 0x65, 0x72, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65,
-	0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x18, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61,
-	0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
 	0x42, 0x1e, 0x0a, 0x1c, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x65,
 	0x61, 0x72, 0x6c, 0x79, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65,
 	0x42, 0x18, 0x0a, 0x16, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x63,
 	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x42, 0x20, 0x0a, 0x1e, 0x72, 0x61,
 	0x74, 0x65, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x72, 0x65, 0x67, 0x75, 0x6c, 0x61, 0x72,
 	0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x42, 0x0c, 0x0a, 0x0a,
-	0x6a, 0x77, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x90, 0x1d, 0x0a, 0x0c, 0x52,
+	0x6a, 0x77, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x90, 0x1c, 0x0a, 0x0c, 0x52,
 	0x6f, 0x75, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x62, 0x0a, 0x0f, 0x74,
 	0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x6f, 0x72, 0x6d,
@@ -2934,15 +2901,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDesc = []
 	0x28, 0x0b, 0x32, 0x2b, 0x2e, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x63, 0x2e, 0x6f, 0x70, 0x74,
 	0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
 	0x6f, 0x2e, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52,
-	0x07, 0x65, 0x78, 0x74, 0x50, 0x72, 0x6f, 0x63, 0x12, 0x7e, 0x0a, 0x1a, 0x68, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73, 0x65,
-	0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x18, 0x1f, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x40, 0x2e, 0x68,
-	0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
-	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x18,
-	0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x1a, 0x59, 0x0a, 0x12, 0x45, 0x6e, 0x76, 0x6f,
+	0x07, 0x65, 0x78, 0x74, 0x50, 0x72, 0x6f, 0x63, 0x1a, 0x59, 0x0a, 0x12, 0x45, 0x6e, 0x76, 0x6f,
 	0x79, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
 	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
 	0x12, 0x2d, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
@@ -3195,65 +3154,63 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_depIdxs = []
 	17,  // 62: gloo.solo.io.VirtualHostOptions.include_attempt_count_in_response:type_name -> google.protobuf.BoolValue
 	56,  // 63: gloo.solo.io.VirtualHostOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
 	57,  // 64: gloo.solo.io.VirtualHostOptions.ext_proc:type_name -> extproc.options.gloo.solo.io.RouteSettings
-	40,  // 65: gloo.solo.io.VirtualHostOptions.header_validation_settings:type_name -> header_validation.options.gloo.solo.io.HeaderValidationSettings
-	46,  // 66: gloo.solo.io.RouteOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
-	58,  // 67: gloo.solo.io.RouteOptions.faults:type_name -> fault.options.gloo.solo.io.RouteFaults
-	59,  // 68: gloo.solo.io.RouteOptions.prefix_rewrite:type_name -> google.protobuf.StringValue
-	60,  // 69: gloo.solo.io.RouteOptions.timeout:type_name -> google.protobuf.Duration
-	42,  // 70: gloo.solo.io.RouteOptions.retries:type_name -> retries.options.gloo.solo.io.RetryPolicy
-	13,  // 71: gloo.solo.io.RouteOptions.extensions:type_name -> gloo.solo.io.Extensions
-	61,  // 72: gloo.solo.io.RouteOptions.tracing:type_name -> tracing.options.gloo.solo.io.RouteTracingSettings
-	62,  // 73: gloo.solo.io.RouteOptions.shadowing:type_name -> shadowing.options.gloo.solo.io.RouteShadowing
-	44,  // 74: gloo.solo.io.RouteOptions.header_manipulation:type_name -> headers.options.gloo.solo.io.HeaderManipulation
-	17,  // 75: gloo.solo.io.RouteOptions.auto_host_rewrite:type_name -> google.protobuf.BoolValue
-	63,  // 76: gloo.solo.io.RouteOptions.host_rewrite_path_regex:type_name -> solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
-	59,  // 77: gloo.solo.io.RouteOptions.host_rewrite_header:type_name -> google.protobuf.StringValue
-	17,  // 78: gloo.solo.io.RouteOptions.append_x_forwarded_host:type_name -> google.protobuf.BoolValue
-	45,  // 79: gloo.solo.io.RouteOptions.cors:type_name -> cors.options.gloo.solo.io.CorsPolicy
-	64,  // 80: gloo.solo.io.RouteOptions.lb_hash:type_name -> lbhash.options.gloo.solo.io.RouteActionHashConfig
-	65,  // 81: gloo.solo.io.RouteOptions.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
-	47,  // 82: gloo.solo.io.RouteOptions.ratelimit_basic:type_name -> ratelimit.options.gloo.solo.io.IngressRateLimit
-	66,  // 83: gloo.solo.io.RouteOptions.ratelimit_early:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-	49,  // 84: gloo.solo.io.RouteOptions.rate_limit_early_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-	66,  // 85: gloo.solo.io.RouteOptions.ratelimit:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-	49,  // 86: gloo.solo.io.RouteOptions.rate_limit_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-	66,  // 87: gloo.solo.io.RouteOptions.ratelimit_regular:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
-	49,  // 88: gloo.solo.io.RouteOptions.rate_limit_regular_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-	21,  // 89: gloo.solo.io.RouteOptions.waf:type_name -> waf.options.gloo.solo.io.Settings
-	67,  // 90: gloo.solo.io.RouteOptions.jwt:type_name -> jwt.options.gloo.solo.io.RouteExtension
-	68,  // 91: gloo.solo.io.RouteOptions.jwt_staged:type_name -> jwt.options.gloo.solo.io.JwtStagedRouteExtension
-	52,  // 92: gloo.solo.io.RouteOptions.rbac:type_name -> rbac.options.gloo.solo.io.ExtensionSettings
-	53,  // 93: gloo.solo.io.RouteOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
-	54,  // 94: gloo.solo.io.RouteOptions.dlp:type_name -> dlp.options.gloo.solo.io.Config
-	55,  // 95: gloo.solo.io.RouteOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-	31,  // 96: gloo.solo.io.RouteOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
-	56,  // 97: gloo.solo.io.RouteOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
-	10,  // 98: gloo.solo.io.RouteOptions.envoy_metadata:type_name -> gloo.solo.io.RouteOptions.EnvoyMetadataEntry
-	63,  // 99: gloo.solo.io.RouteOptions.regex_rewrite:type_name -> solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
-	11,  // 100: gloo.solo.io.RouteOptions.max_stream_duration:type_name -> gloo.solo.io.RouteOptions.MaxStreamDuration
-	60,  // 101: gloo.solo.io.RouteOptions.idle_timeout:type_name -> google.protobuf.Duration
-	57,  // 102: gloo.solo.io.RouteOptions.ext_proc:type_name -> extproc.options.gloo.solo.io.RouteSettings
-	40,  // 103: gloo.solo.io.RouteOptions.header_validation_settings:type_name -> header_validation.options.gloo.solo.io.HeaderValidationSettings
-	69,  // 104: gloo.solo.io.DestinationSpec.aws:type_name -> aws.options.gloo.solo.io.DestinationSpec
-	70,  // 105: gloo.solo.io.DestinationSpec.azure:type_name -> azure.options.gloo.solo.io.DestinationSpec
-	71,  // 106: gloo.solo.io.DestinationSpec.rest:type_name -> rest.options.gloo.solo.io.DestinationSpec
-	72,  // 107: gloo.solo.io.DestinationSpec.grpc:type_name -> grpc.options.gloo.solo.io.DestinationSpec
-	44,  // 108: gloo.solo.io.WeightedDestinationOptions.header_manipulation:type_name -> headers.options.gloo.solo.io.HeaderManipulation
-	46,  // 109: gloo.solo.io.WeightedDestinationOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
-	13,  // 110: gloo.solo.io.WeightedDestinationOptions.extensions:type_name -> gloo.solo.io.Extensions
-	53,  // 111: gloo.solo.io.WeightedDestinationOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
-	55,  // 112: gloo.solo.io.WeightedDestinationOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-	31,  // 113: gloo.solo.io.WeightedDestinationOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
-	56,  // 114: gloo.solo.io.WeightedDestinationOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
-	73,  // 115: gloo.solo.io.RouteOptions.EnvoyMetadataEntry.value:type_name -> google.protobuf.Struct
-	60,  // 116: gloo.solo.io.RouteOptions.MaxStreamDuration.max_stream_duration:type_name -> google.protobuf.Duration
-	60,  // 117: gloo.solo.io.RouteOptions.MaxStreamDuration.grpc_timeout_header_max:type_name -> google.protobuf.Duration
-	60,  // 118: gloo.solo.io.RouteOptions.MaxStreamDuration.grpc_timeout_header_offset:type_name -> google.protobuf.Duration
-	119, // [119:119] is the sub-list for method output_type
-	119, // [119:119] is the sub-list for method input_type
-	119, // [119:119] is the sub-list for extension type_name
-	119, // [119:119] is the sub-list for extension extendee
-	0,   // [0:119] is the sub-list for field type_name
+	46,  // 65: gloo.solo.io.RouteOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
+	58,  // 66: gloo.solo.io.RouteOptions.faults:type_name -> fault.options.gloo.solo.io.RouteFaults
+	59,  // 67: gloo.solo.io.RouteOptions.prefix_rewrite:type_name -> google.protobuf.StringValue
+	60,  // 68: gloo.solo.io.RouteOptions.timeout:type_name -> google.protobuf.Duration
+	42,  // 69: gloo.solo.io.RouteOptions.retries:type_name -> retries.options.gloo.solo.io.RetryPolicy
+	13,  // 70: gloo.solo.io.RouteOptions.extensions:type_name -> gloo.solo.io.Extensions
+	61,  // 71: gloo.solo.io.RouteOptions.tracing:type_name -> tracing.options.gloo.solo.io.RouteTracingSettings
+	62,  // 72: gloo.solo.io.RouteOptions.shadowing:type_name -> shadowing.options.gloo.solo.io.RouteShadowing
+	44,  // 73: gloo.solo.io.RouteOptions.header_manipulation:type_name -> headers.options.gloo.solo.io.HeaderManipulation
+	17,  // 74: gloo.solo.io.RouteOptions.auto_host_rewrite:type_name -> google.protobuf.BoolValue
+	63,  // 75: gloo.solo.io.RouteOptions.host_rewrite_path_regex:type_name -> solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
+	59,  // 76: gloo.solo.io.RouteOptions.host_rewrite_header:type_name -> google.protobuf.StringValue
+	17,  // 77: gloo.solo.io.RouteOptions.append_x_forwarded_host:type_name -> google.protobuf.BoolValue
+	45,  // 78: gloo.solo.io.RouteOptions.cors:type_name -> cors.options.gloo.solo.io.CorsPolicy
+	64,  // 79: gloo.solo.io.RouteOptions.lb_hash:type_name -> lbhash.options.gloo.solo.io.RouteActionHashConfig
+	65,  // 80: gloo.solo.io.RouteOptions.upgrades:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
+	47,  // 81: gloo.solo.io.RouteOptions.ratelimit_basic:type_name -> ratelimit.options.gloo.solo.io.IngressRateLimit
+	66,  // 82: gloo.solo.io.RouteOptions.ratelimit_early:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
+	49,  // 83: gloo.solo.io.RouteOptions.rate_limit_early_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
+	66,  // 84: gloo.solo.io.RouteOptions.ratelimit:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
+	49,  // 85: gloo.solo.io.RouteOptions.rate_limit_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
+	66,  // 86: gloo.solo.io.RouteOptions.ratelimit_regular:type_name -> ratelimit.options.gloo.solo.io.RateLimitRouteExtension
+	49,  // 87: gloo.solo.io.RouteOptions.rate_limit_regular_configs:type_name -> ratelimit.options.gloo.solo.io.RateLimitConfigRefs
+	21,  // 88: gloo.solo.io.RouteOptions.waf:type_name -> waf.options.gloo.solo.io.Settings
+	67,  // 89: gloo.solo.io.RouteOptions.jwt:type_name -> jwt.options.gloo.solo.io.RouteExtension
+	68,  // 90: gloo.solo.io.RouteOptions.jwt_staged:type_name -> jwt.options.gloo.solo.io.JwtStagedRouteExtension
+	52,  // 91: gloo.solo.io.RouteOptions.rbac:type_name -> rbac.options.gloo.solo.io.ExtensionSettings
+	53,  // 92: gloo.solo.io.RouteOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
+	54,  // 93: gloo.solo.io.RouteOptions.dlp:type_name -> dlp.options.gloo.solo.io.Config
+	55,  // 94: gloo.solo.io.RouteOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	31,  // 95: gloo.solo.io.RouteOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
+	56,  // 96: gloo.solo.io.RouteOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
+	10,  // 97: gloo.solo.io.RouteOptions.envoy_metadata:type_name -> gloo.solo.io.RouteOptions.EnvoyMetadataEntry
+	63,  // 98: gloo.solo.io.RouteOptions.regex_rewrite:type_name -> solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
+	11,  // 99: gloo.solo.io.RouteOptions.max_stream_duration:type_name -> gloo.solo.io.RouteOptions.MaxStreamDuration
+	60,  // 100: gloo.solo.io.RouteOptions.idle_timeout:type_name -> google.protobuf.Duration
+	57,  // 101: gloo.solo.io.RouteOptions.ext_proc:type_name -> extproc.options.gloo.solo.io.RouteSettings
+	69,  // 102: gloo.solo.io.DestinationSpec.aws:type_name -> aws.options.gloo.solo.io.DestinationSpec
+	70,  // 103: gloo.solo.io.DestinationSpec.azure:type_name -> azure.options.gloo.solo.io.DestinationSpec
+	71,  // 104: gloo.solo.io.DestinationSpec.rest:type_name -> rest.options.gloo.solo.io.DestinationSpec
+	72,  // 105: gloo.solo.io.DestinationSpec.grpc:type_name -> grpc.options.gloo.solo.io.DestinationSpec
+	44,  // 106: gloo.solo.io.WeightedDestinationOptions.header_manipulation:type_name -> headers.options.gloo.solo.io.HeaderManipulation
+	46,  // 107: gloo.solo.io.WeightedDestinationOptions.transformations:type_name -> transformation.options.gloo.solo.io.Transformations
+	13,  // 108: gloo.solo.io.WeightedDestinationOptions.extensions:type_name -> gloo.solo.io.Extensions
+	53,  // 109: gloo.solo.io.WeightedDestinationOptions.extauth:type_name -> enterprise.gloo.solo.io.ExtAuthExtension
+	55,  // 110: gloo.solo.io.WeightedDestinationOptions.buffer_per_route:type_name -> solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	31,  // 111: gloo.solo.io.WeightedDestinationOptions.csrf:type_name -> solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
+	56,  // 112: gloo.solo.io.WeightedDestinationOptions.staged_transformations:type_name -> transformation.options.gloo.solo.io.TransformationStages
+	73,  // 113: gloo.solo.io.RouteOptions.EnvoyMetadataEntry.value:type_name -> google.protobuf.Struct
+	60,  // 114: gloo.solo.io.RouteOptions.MaxStreamDuration.max_stream_duration:type_name -> google.protobuf.Duration
+	60,  // 115: gloo.solo.io.RouteOptions.MaxStreamDuration.grpc_timeout_header_max:type_name -> google.protobuf.Duration
+	60,  // 116: gloo.solo.io.RouteOptions.MaxStreamDuration.grpc_timeout_header_offset:type_name -> google.protobuf.Duration
+	117, // [117:117] is the sub-list for method output_type
+	117, // [117:117] is the sub-list for method input_type
+	117, // [117:117] is the sub-list for extension type_name
+	117, // [117:117] is the sub-list for extension extendee
+	0,   // [0:117] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_init() }

@@ -1270,26 +1270,6 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHeaderValidationSettings()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetHeaderValidationSettings(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	switch m.RateLimitEarlyConfigType.(type) {
 
 	case *VirtualHostOptions_RatelimitEarly:
@@ -2033,26 +2013,6 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		} else {
 			if _, err = hasher.Write([]byte("ExtProc")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	if h, ok := interface{}(m.GetHeaderValidationSettings()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetHeaderValidationSettings(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
