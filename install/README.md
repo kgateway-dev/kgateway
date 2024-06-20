@@ -1,4 +1,4 @@
-# Installing Gloo Edge
+# Installing Gloo Gateway
 ...[onto a local filesystem](https://docs.solo.io/gloo-edge/latest/installation/gateway/development/docker-compose-file/)
 ...[onto a Consul](https://docs.solo.io/gloo-edge/latest/installation/gateway/development/docker-compose-consul/)
 
