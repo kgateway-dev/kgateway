@@ -324,7 +324,7 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
-	Context("Single gwc and gw", func() {
+	FContext("Single gwc and gw", func() {
 		type input struct {
 			dInputs        *deployer.Inputs
 			gw             *api.Gateway

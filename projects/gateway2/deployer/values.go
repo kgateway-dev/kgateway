@@ -54,6 +54,10 @@ type helmGateway struct {
 
 	// serviceaccount values
 	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
+
+	// stats values
+	LoopbackAddress *string          `json:"loopbackAddress,omitempty"`
+	Stats           *helmStatsConfig `json:"stats,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -125,4 +129,11 @@ type helmServiceAccount struct {
 	Create      *bool             `json:"create,omitempty"`
 	Name        *string           `json:"name,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+type helmStatsConfig struct {
+	Enabled            *bool   `json:"enabled,omitempty"`
+	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
 }
