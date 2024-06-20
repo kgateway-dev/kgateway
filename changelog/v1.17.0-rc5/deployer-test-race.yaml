@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6408
+    resolvesIssue: false
+    description: >-
+      Avoid a race condition in the deployer module, but not using a long-lived context.
