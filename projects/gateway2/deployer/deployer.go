@@ -120,7 +120,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 		},
 	}
 
-	objs, err := d.renderChartToObjects(ctx, emptyGw, vals)
+	objs, err := d.renderChartToObjects(emptyGw, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +144,8 @@ func jsonConvert(in *helmConfig, out interface{}) error {
 	return json.Unmarshal(b, out)
 }
 
-func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
-	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
+func (d *Deployer) renderChartToObjects(gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
+	objs, err := d.Render(gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -326,11 +326,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 // Render relies on a `helm install` to render the Chart with the injected values
 // It returns the list of Objects that are rendered, and an optional error if rendering failed,
 // or converting the rendered manifests to objects failed.
-//
-// NOTE: The supplied context.Context is ignored. See the `installCtx` initialization for context around this.
-// We opt to not modify the function signature (and just ignore the parameter) because we anticipate the bug will
-// be resolved, at which point, we can resume using the injected context
-func (d *Deployer) Render(_ context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
+func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
@@ -339,18 +335,11 @@ func (d *Deployer) Render(_ context.Context, name, ns string, vals map[string]an
 	install := action.NewInstall(cfg)
 	install.Namespace = ns
 	install.ReleaseName = name
-	install.ClientOnly = true
 
-	// Upstream Helm has a subtle race-condition that occurs around context cancellation of Installations
-	// This manifests itself when running tests with `-race` enabled:
-	// https://github.com/solo-io/solo-projects/issues/6408
-	//
-	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L229
-	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L403
-	// https://github.com/helm/helm/blob/a2a324e51165388448be8caaf8737b7fd2f1a19a/pkg/action/install.go#L416
-	//
-	// Since we are not actually relying on the release itself, we can side-step this race condition by not
-	// relying on a long-lived context
+	// We rely on the Install object in `clientOnly` mode
+	// This means that there is no i/o (i.e. no reads/writes to k8s) that would need to be cancelled.
+	// This essentially guarantees that this function terminates quickly and doesn't block the rest of the controller.
+	install.ClientOnly = true
 	installCtx := context.Background()
 
 	release, err := install.RunWithContext(installCtx, d.chart, vals)
@@ -392,7 +381,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert helm values for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
-	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
+	objs, err := d.renderChartToObjects(gw, convertedVals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
