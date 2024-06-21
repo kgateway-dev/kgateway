@@ -42,7 +42,8 @@ The four primary components are instantiated using pods and services. The follow
 
 | Pod | Port | Usage |
 |-----|------|-------|
-| gateway | 8443 | Validation |
+| gloo | 8443 | Validation |
+| gloo | 9976 | REST xDS | 
 | gloo | 9977 | xDS Server |
 | gloo | 9988 | Validation |
 | gloo | 9979 | WASM cache |
@@ -59,7 +60,8 @@ The following table lists the services backed by the deployed pods.
 
 | Service | Port | Target | Target Port | Usage            |
 |---------|------|--------|-------------|------------------|
-| gateway | 443 | gateway | 8443 | Validation       |
+| gloo | 443 | gateway | 8443 | Validation       |
+| gloo | 9976 | gloo | 9976 | REST xDS         |
 | gloo | 9977 | gloo | 9977 | xDS Server       |
 | gloo | 9988 | gloo | 9988 | Validation       |
 | gloo | 9979 | gloo | 9979 | WASM cache       |
