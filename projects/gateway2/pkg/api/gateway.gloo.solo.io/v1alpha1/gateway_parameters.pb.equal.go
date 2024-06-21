@@ -119,6 +119,16 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetSdsContainer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSdsContainer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSdsContainer(), target.GetSdsContainer()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetPodTemplate()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetPodTemplate()) {
 			return false
@@ -145,16 +155,6 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetIstio(), target.GetIstio()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetSdsContainer()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetSdsContainer()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetSdsContainer(), target.GetSdsContainer()) {
 			return false
 		}
 	}
