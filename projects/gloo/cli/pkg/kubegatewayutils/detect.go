@@ -16,6 +16,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	KubeGatewayNetworkingGroup = "gateway.networking.k8s.io"
+)
+
 // Returns true if Kubernetes Gateway API CRDs are on the cluster.
 // Note: this doesn't check for specific CRD names; it returns true if *any* k8s Gateway CRD is detected
 func DetectKubeGatewayCrds(cfg *rest.Config) (bool, error) {
@@ -31,7 +35,7 @@ func DetectKubeGatewayCrds(cfg *rest.Config) (bool, error) {
 
 	// Check if gateway group exists
 	for _, group := range groups.Groups {
-		if group.Name == "gateway.networking.k8s.io" {
+		if group.Name == KubeGatewayNetworkingGroup {
 			return true, nil
 		}
 	}

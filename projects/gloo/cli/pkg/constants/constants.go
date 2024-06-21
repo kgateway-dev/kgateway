@@ -11,6 +11,23 @@ const (
 	GlooFedDeploymentName = "gloo-fed"
 
 	GlooContainerName = "gloo"
+
+	Deployments        = "deployments"
+	Pods               = "pods"
+	Upstreams          = "upstreams"
+	UpstreamGroup      = "upstreamgroup"
+	AuthConfigs        = "auth-configs"
+	RateLimitConfigs   = "rate-limit-configs"
+	VirtualHostOptions = "virtual-host-options"
+	RouteOptions       = "route-options"
+	Secrets            = "secrets"
+	VirtualServices    = "virtual-services"
+	Gateways           = "gateways"
+	Proxies            = "proxies"
+	XDSMetrics         = "xds-metrics"
+	KubeGatewayClasses = "kube-gateway-classes"
+	KubeGateways       = "kube-gateways"
+	KubeHTTPRoutes     = "kube-http-routes"
 )
 
 var (

@@ -140,7 +140,7 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	var deployments *appsv1.DeploymentList
-	deploymentsIncluded := doesNotContain(opts.Top.CheckName, "deployments")
+	deploymentsIncluded := doesNotContain(opts.Top.CheckName, constants.Deployments)
 	if deploymentsIncluded {
 		deployments, err = getAndCheckDeployments(ctx, printer, opts)
 		if err != nil {
@@ -148,7 +148,7 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.Pods); included {
 		err := checkPods(ctx, printer, opts)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -183,14 +183,14 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	var knownUpstreams []string
-	if included := doesNotContain(opts.Top.CheckName, "upstreams"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.Upstreams); included {
 		knownUpstreams, err = checkUpstreams(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "upstreamgroup"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.UpstreamGroup); included {
 		err := checkUpstreamGroups(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -198,7 +198,7 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	var knownAuthConfigs []string
-	if included := doesNotContain(opts.Top.CheckName, "auth-configs"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.AuthConfigs); included {
 		knownAuthConfigs, err = checkAuthConfigs(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -206,7 +206,7 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	var knownRateLimitConfigs []string
-	if included := doesNotContain(opts.Top.CheckName, "rate-limit-configs"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.RateLimitConfigs); included {
 		knownRateLimitConfigs, err = checkRateLimitConfigs(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -214,7 +214,7 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	var knownVirtualHostOptions []string
-	if included := doesNotContain(opts.Top.CheckName, "virtual-host-options"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.VirtualHostOptions); included {
 		knownVirtualHostOptions, err = checkVirtualHostOptions(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
@@ -222,42 +222,42 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	var knownRouteOptions []string
-	if included := doesNotContain(opts.Top.CheckName, "route-options"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.RouteOptions); included {
 		knownRouteOptions, err = checkRouteOptions(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "secrets"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.Secrets); included {
 		err := checkSecrets(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "virtual-services"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.VirtualServices); included {
 		err = checkVirtualServices(ctx, printer, opts, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "gateways"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.Gateways); included {
 		err := checkGateways(ctx, printer, opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "proxies"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.Proxies); included {
 		err := checkProxies(ctx, printer, opts, namespaces, opts.Metadata.GetNamespace(), deployments, deploymentsIncluded, settings)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.XDSMetrics); included {
 		err = checkXdsMetrics(ctx, printer, opts, deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)

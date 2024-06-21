@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check/internal"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/kubegatewayutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 )
@@ -32,15 +33,15 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 
 	var checks = []CheckFunc{}
 
-	if included := doesNotContain(opts.Top.CheckName, "kube-gateway-classes"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.KubeGatewayClasses); included {
 		checks = append(checks, internal.CheckGatewayClass)
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "kube-gateways"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.KubeGateways); included {
 		checks = append(checks, internal.CheckGateways)
 	}
 
-	if included := doesNotContain(opts.Top.CheckName, "kube-http-routes"); included {
+	if included := doesNotContain(opts.Top.CheckName, constants.KubeHTTPRoutes); included {
 		checks = append(checks, internal.CheckHTTPRoutes)
 	}
 
