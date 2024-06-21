@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-var _ e2e.NewSuiteFunc = NewNoDefaultGatewayParametersTestingSuite
+var _ e2e.NewSuiteFunc = NewMinimalDefaultGatewayParametersTestingSuite
 
-// noDefaultGatewayParametersDeployerSuite tests the "deployer" feature in situations where users have applied `null` values
+// minimalDefaultGatewayParametersDeployerSuite tests the "deployer" feature in situations where users have applied `null` values
 // to as many of the helm values controlling the default GatewayParameters for the gloo-gateway GatewayClass as possible.
 // The "deployer" code can be found here: /projects/gateway2/deployer
-type noDefaultGatewayParametersDeployerSuite struct {
+type minimalDefaultGatewayParametersDeployerSuite struct {
 	suite.Suite
 
 	ctx context.Context
@@ -24,14 +24,14 @@ type noDefaultGatewayParametersDeployerSuite struct {
 	testInstallation *e2e.TestInstallation
 }
 
-func NewNoDefaultGatewayParametersTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &noDefaultGatewayParametersDeployerSuite{
+func NewMinimalDefaultGatewayParametersTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &minimalDefaultGatewayParametersDeployerSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
 }
 
-func (s *noDefaultGatewayParametersDeployerSuite) TestConfigureProxiesFromGatewayParameters() {
+func (s *minimalDefaultGatewayParametersDeployerSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gwParametersManifestFile)
 		s.NoError(err, "can delete basic gateway manifest")

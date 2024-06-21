@@ -15,8 +15,9 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-// TestK8sGateway is the function which executes a series of tests against a given installation
-func TestK8sGatewayNoDefaultGatewayParameters(t *testing.T) {
+// TestK8sGatewayMinimalDefaultGatewayParameters is the function which executes a series of tests against a given installation
+// which is expected to have all user-facing options set to null in helm values
+func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
@@ -46,5 +47,5 @@ func TestK8sGatewayNoDefaultGatewayParameters(t *testing.T) {
 		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	KubeGatewayNoDefaultGatewayParametersSuiteRunner().Run(ctx, t, testInstallation)
+	KubeGatewayMinimalDefaultGatewayParametersSuiteRunner().Run(ctx, t, testInstallation)
 }
