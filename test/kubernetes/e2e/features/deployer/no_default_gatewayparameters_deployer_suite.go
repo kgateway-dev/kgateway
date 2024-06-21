@@ -11,7 +11,8 @@ import (
 
 var _ e2e.NewSuiteFunc = NewNoDefaultGatewayParametersTestingSuite
 
-// istioIntegrationDeployerSuite is the entire Suite of tests for the "deployer" feature that relies on an Istio installation
+// noDefaultGatewayParametersDeployerSuite tests the "deployer" feature in situations where users have applied `null` values
+// to as many of the helm values controlling the default GatewayParameters for the gloo-gateway GatewayClass as possible.
 // The "deployer" code can be found here: /projects/gateway2/deployer
 type noDefaultGatewayParametersDeployerSuite struct {
 	suite.Suite
