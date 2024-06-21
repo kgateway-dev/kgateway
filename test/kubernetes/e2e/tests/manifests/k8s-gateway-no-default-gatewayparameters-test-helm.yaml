@@ -30,20 +30,9 @@ kubeGateway:
   enabled: true
   gatewayParameters:
     # We are testing the behavior of the deployer when users null out fields on this object
-    glooGateway: 
-      # TODO (jbohanon): fix this so we don't fail the helm render with kubeGateway.gatewayParameters.glooGateway.proxyDeployment=null
-      proxyDeployment: 
-        replicas: 1
-      # TODO (jbohanon): fix this so we can't end up with Unspecified
-      service: 
-        type: LoadBalancer
-      # TODO (jbohanon): fix this so we don't fail the helm render with kubeGateway.gatewayParameters.glooGateway.envoyContainer=null
-      envoyContainer: 
-        image: {}
-        securityContext: null
-      sdsContainer: null
-      istio: null
-
+    # We expect the deployment to be created but to fail to deploy a running proxy due to the missing 
+    # envoy image name.
+    glooGateway: null
 gloo:
   logLevel: info
   disableLeaderElection: true
