@@ -30,7 +30,6 @@ func (t *HttpTranslator) ComputeListener(params Params, proxyName string, gatewa
 			contextutils.LoggerFrom(params.ctx).Debugf("but continuing since translateEmptyGateways is set", snapHash)
 		} else {
 			return nil
-
 		}
 	}
 
