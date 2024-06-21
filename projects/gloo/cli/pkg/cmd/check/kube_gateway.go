@@ -6,15 +6,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check/internal"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/kubegatewayutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CheckFunc = func(ctx context.Context, printer printers.P, opts *options.Options) error
@@ -67,29 +62,18 @@ func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, err
 		return false, err
 	}
 
-	hasCrds, err := kubegatewayutils.DetectKubeGatewayCrds(cfg)
+	gatewayEnabled, err := kubegatewayutils.DetectKubeGatewayEnabled(ctx, opts)
+	if err != nil {
+		return false, eris.Wrapf(err, "could not determine if kubeGateway is enabled")
+	}
+
+	hasCRDs, err := kubegatewayutils.DetectKubeGatewayCrds(cfg)
 	if err != nil {
 		return false, eris.Wrapf(err, "could not determine if kubernetes gateway crds are applied")
 	}
-	if !hasCrds {
-		return false, nil
+	if !hasCRDs {
+		return false, eris.Wrapf(err, "KubeGateway is enabled but the Kubernetes Gateway CRDs are not applied. Please fix this by running `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`")
 	}
 
-	// look for default GatewayParameters
-	cli, err := client.New(cfg, client.Options{
-		Scheme: scheme.Scheme,
-	})
-	if err != nil {
-		return false, err
-	}
-
-	gwp := v1alpha1.GatewayParameters{}
-	err = cli.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayParametersName, Namespace: opts.Metadata.GetNamespace()}, &gwp)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
+	return gatewayEnabled, nil
 }
