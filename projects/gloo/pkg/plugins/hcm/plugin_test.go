@@ -404,7 +404,7 @@ You can force this test to pass by adding the new fields listed below to project
 			cfg := &envoyhttp.HttpConnectionManager{}
 			options := v1.HttpListenerOptions{
 				HeaderValidationSettings: &header_validation.HeaderValidationSettings{
-					CustomMethods: &header_validation.HeaderValidationSettings_DisableHttp1MethodValidation{},
+					HeaderMethodValidation: &header_validation.HeaderValidationSettings_DisableHttp1MethodValidation{},
 				},
 			}
 			err := processHcmNetworkFilter(cfg, &options)
