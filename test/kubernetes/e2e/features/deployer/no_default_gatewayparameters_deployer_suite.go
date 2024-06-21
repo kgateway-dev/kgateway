@@ -32,19 +32,14 @@ func NewNoDefaultGatewayParametersTestingSuite(ctx context.Context, testInst *e2
 
 func (s *noDefaultGatewayParametersDeployerSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, istioGatewayParametersManifestFile)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, gwParams)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, deployerProvisionManifestFile)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gwParametersManifestFile)
+		s.NoError(err, "can delete basic gateway manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, gwParams, proxyService, proxyDeployment)
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, istioGatewayParametersManifestFile)
-	s.Require().NoError(err, "can apply manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gwParametersManifestFile)
+	s.Require().NoError(err, "can apply basic gateway manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams, proxyService, proxyDeployment)
 
 	deployment, err := s.testInstallation.ClusterContext.Clientset.AppsV1().Deployments(proxyDeployment.GetNamespace()).Get(s.ctx, proxyDeployment.GetName(), metav1.GetOptions{})
 	s.Require().NoError(err, "can get deployment")
