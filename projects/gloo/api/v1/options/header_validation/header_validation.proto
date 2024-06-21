@@ -13,7 +13,7 @@ message HeaderValidationSettings {
 	// https://github.com/envoyproxy/envoy/blob/0b9f67e7f71bcba3ff49575dc61676478cb68614/source/extensions/http/header_validators/envoy_default/header_validator.cc#L53
 	// Requests that use a method that is not present in this list will default
 	// to being rejected with a HTTP 400 response.
-	oneof custom_methods {
+	oneof header_method_validation {
 		// Disable method validation. Envoy will not perform any validation on
 		// the method provided in the HTTP header.
 		google.protobuf.Empty disable_method_validation = 1;

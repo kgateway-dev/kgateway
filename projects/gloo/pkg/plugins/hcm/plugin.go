@@ -138,7 +138,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		out.GetHttpProtocolOptions().EnableTrailers = in.GetEnableTrailers().GetValue()
 	}
 
-	if customMethods := listener.GetOptions().GetHeaderValidationSettings().GetCustomMethods(); customMethods != nil {
+	if methodValidation := listener.GetOptions().GetHeaderValidationSettings().GetHeaderMethodValidation(); methodValidation != nil {
 		if out.GetHttpProtocolOptions() == nil {
 			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
 		}
@@ -147,7 +147,7 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		// removed, we must use Universal Header Validation to support this
 		// functionality. See
 		// https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
-		switch customMethods.(type) {
+		switch methodValidation.(type) {
 		case *header_validation.HeaderValidationSettings_DisableMethodValidation:
 			out.GetHttpProtocolOptions().AllowCustomMethods = true
 		}
