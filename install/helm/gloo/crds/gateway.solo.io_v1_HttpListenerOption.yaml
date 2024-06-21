@@ -811,7 +811,7 @@ spec:
                     type: object
                   headerValidationSettings:
                     properties:
-                      allowCustomMethods:
+                      disableMethodValidation:
                         maxProperties: 0
                         type: object
                     type: object

@@ -188,7 +188,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `router` | [.gloo.solo.io.Router](../options/router/router.proto.sk/#router) | Router is an extension of the envoy http filters Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto. |
 | `tap` | [.tap.options.gloo.solo.io.Tap](../enterprise/options/tap/tap.proto.sk/#tap) | Enterprise only: Tap filter settings (experimental). |
 | `statefulSession` | [.stateful_session.options.gloo.solo.io.StatefulSession](../enterprise/options/stateful_session/stateful_session.proto.sk/#statefulsession) | Enterprise only: Listener-level stateful session settings. |
-| `headerValidationSettings` | [.header_validation.options.gloo.solo.io.HeaderValidationSettings](../options/header_validation/header_validation.proto.sk/#headervalidationsettings) | Header validation settings - fields in this message can be used to determine whether requests should be rejected based on the contents of the header. Whether custom HTTP methods should be allowed. Defaults to false (custom HTTP methods are not allowed). The list of default-allowed HTTP methods can be found here: https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54. |
+| `headerValidationSettings` | [.header_validation.options.gloo.solo.io.HeaderValidationSettings](../options/header_validation/header_validation.proto.sk/#headervalidationsettings) | Header validation settings - fields in this message can be used to determine whether requests should be rejected based on the contents of the header. |
 
 
 

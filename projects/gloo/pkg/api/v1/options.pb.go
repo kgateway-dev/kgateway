@@ -384,11 +384,9 @@ type HttpListenerOptions struct {
 	Tap *tap.Tap `protobuf:"bytes,34,opt,name=tap,proto3" json:"tap,omitempty"`
 	// Enterprise only: Listener-level stateful session settings
 	StatefulSession *stateful_session.StatefulSession `protobuf:"bytes,35,opt,name=stateful_session,json=statefulSession,proto3" json:"stateful_session,omitempty"`
-	// Header validation settings - fields in this message can be used to determine whether requests should be rejected based on the contents of the header.
-	// Whether custom HTTP methods should be allowed. Defaults to false (custom
-	// HTTP methods are not allowed). The list of default-allowed HTTP methods
-	// can be found here:
-	// https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+	// Header validation settings - fields in this message can be used to
+	// determine whether requests should be rejected based on the contents of
+	// the header.
 	HeaderValidationSettings *header_validation.HeaderValidationSettings `protobuf:"bytes,36,opt,name=header_validation_settings,json=headerValidationSettings,proto3" json:"header_validation_settings,omitempty"`
 }
 

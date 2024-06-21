@@ -71,7 +71,7 @@ var _ = Describe("Header Validation", Label(), func() {
 			gw := gatewaydefaults.DefaultGateway(writeNamespace)
 			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				HeaderValidationSettings: &header_validation.HeaderValidationSettings{
-					CustomMethods: &header_validation.HeaderValidationSettings_AllowCustomMethods{},
+					CustomMethods: &header_validation.HeaderValidationSettings_DisableMethodValidation{},
 				},
 			}
 			testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{gw}

@@ -28,13 +28,13 @@ weight: 5
 
 
 ```yaml
-"allowCustomMethods": .google.protobuf.Empty
+"disableMethodValidation": .google.protobuf.Empty
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowCustomMethods` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Allow - all HTTP methods will be allowed. |
+| `disableMethodValidation` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Disable method validation. Envoy will not perform any validation on the method provided in the HTTP header. |
 
 
 
