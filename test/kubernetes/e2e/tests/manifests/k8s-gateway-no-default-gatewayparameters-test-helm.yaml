@@ -40,6 +40,7 @@ kubeGateway:
       # TODO (jbohanon): fix this so we don't fail the helm render with kubeGateway.gatewayParameters.glooGateway.envoyContainer=null
       envoyContainer: 
         image: {}
+        securityContext: null
       sdsContainer: null
       istio: null
 

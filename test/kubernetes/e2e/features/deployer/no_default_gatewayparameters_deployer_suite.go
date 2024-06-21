@@ -48,11 +48,12 @@ func (s *noDefaultGatewayParametersDeployerSuite) TestConfigureProxiesFromGatewa
 
 	deployment, err := s.testInstallation.ClusterContext.Clientset.AppsV1().Deployments(proxyDeployment.GetNamespace()).Get(s.ctx, proxyDeployment.GetName(), metav1.GetOptions{})
 	s.Require().NoError(err, "can get deployment")
-	secCtx := deployment.Spec.Template.Spec.SecurityContext
+	s.Require().Len(deployment.Spec.Template.Spec.Containers, 1)
+	secCtx := deployment.Spec.Template.Spec.Containers[0].SecurityContext
 	s.Require().NotNil(secCtx)
 	s.Require().Nil(secCtx.RunAsUser)
 	s.Require().NotNil(secCtx.RunAsNonRoot)
 	s.Require().False(*secCtx.RunAsNonRoot)
-	// AllowPrivilegeEscalation isn't on the object...?
-	// s.Require().True(*secCtx.AllowPrivilegeEscalation)
+	s.Require().NotNil(secCtx.AllowPrivilegeEscalation)
+	s.Require().True(*secCtx.AllowPrivilegeEscalation)
 }
