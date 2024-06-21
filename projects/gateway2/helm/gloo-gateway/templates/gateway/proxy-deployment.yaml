@@ -340,6 +340,12 @@ data:
                               - name: ":method"
                                 string_match:
                                   exact: GET
+                        - match:
+                            path: "/stats/prometheus"
+                            headers:
+                              - name: ":method"
+                                string_match:
+                                  exact: GET
                           route:
                             cluster: admin_port_cluster
                 http_filters:
