@@ -31,7 +31,7 @@ func AddResourceNamespaceFlag(set *pflag.FlagSet, strptr *[]string) {
 }
 
 func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
-	set.StringSliceVarP(strarrptr, "exclude", "x", []string{}, "check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)")
+	set.StringSliceVarP(strarrptr, "exclude", "x", []string{}, "check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, virtual-host-options, route-options, secrets, virtual-services, gateways, proxies, xds-metrics, kube-gateway-classes, kube-gateways, kube-http-routes)")
 }
 
 // AddReadOnlyFlag adds a flag to our flag set that indicates we shouldn't do anything that requires RBAC create permissions
