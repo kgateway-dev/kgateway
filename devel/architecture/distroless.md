@@ -11,7 +11,7 @@ Rather than managing troublesome alpine-based images for specific users and ubun
 > Note: As of now we only support amd64 based images
 
 ## How is it configured in Gloo Gateway?
-The image variant can be specified by using the `global.image.variant` Helm value. You can choose one of the following variants: 'standard', 'fips', 'distroless', and 'fips-distroless'. If the value is omitted, 'standard' is used. Note that the 'fips' and 'fips-distroless' variants are an Enterprise-only feature. This change deprecates the `global.image.fips` Helm value.
+The image variant can be specified by using the `global.image.variant` Helm value. You can choose one of the following variants: 'standard',  and 'distroless. If the value is omitted, 'standard' is used.
 The distroless images have the suffix `-distroless` in their respective image tag, such as `quay.io/solo-io/gloo-ee:v1.17.0-distroless`.
 
 ## How is it implemented in Gloo Gateway?
@@ -22,24 +22,12 @@ Finally, we use the appropriate customized distroless image (`GLOO_DISTROLESS_BA
 > To ensure that both the distroless and standard variants hold up to the same standard, we run the PRs regression tests against the distroless variant and nightlies against the standard variant of our images.
 
 ## Which components have distroless variants built?
-Gloo Gateway Enterprise supports a distroless variant for the following images :
-- caching-ee
-- discovery-ee
-- discovery-ee-fips
-- ext-auth-plugins
-- extauth-ee
-- extauth-ee-fips
-- gloo-ee
-- gloo-ee-envoy-wrapper
-- gloo-ee-envoy-wrapper-fips
-- gloo-ee-fips
-- observability-ee
-- rate-limit-ee
-- rate-limit-ee-fips
-- sds-ee
-- sds-ee-fips
-- gloo-fed
-- gloo-fed-apiserver
-- gloo-fed-rbac-validating-webhook
-- gloo-federation-console
-- gloo-fed-apiserver-envoy
+Gloo Gateway supports a distroless variant for the following images :
+- gloo
+- discovery
+- gloo-envoy-wrapper
+- sds
+- certgen
+- ingress
+- access-logger
+- kubectl
