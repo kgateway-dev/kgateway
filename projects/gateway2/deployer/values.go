@@ -15,8 +15,8 @@ type helmGateway struct {
 	Name             *string `json:"name,omitempty"`
 	GatewayName      *string `json:"gatewayName,omitempty"`
 	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
-	NameOverride     *string `json:"nameOverride,omitempty"`     // TODO: Should be removed
-	FullnameOverride *string `json:"fullnameOverride,omitempty"` // TODO: Should be removed
+	NameOverride     *string `json:"nameOverride,omitempty"`
+	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
 	ReplicaCount *uint32          `json:"replicaCount,omitempty"`

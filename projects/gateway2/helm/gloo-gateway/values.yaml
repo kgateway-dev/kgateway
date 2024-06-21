@@ -9,19 +9,19 @@
 # TODO: This file/workflow can be shored up via https://github.com/solo-io/solo-projects/issues/6417
 
 gateway:
-  # xds values really come from the control plane
+  # xds values actually come from the control plane
   xds:
     host: ""
     port: 8080
 
-  # real default set in default GatewayParam proxyDeployment.replicas
+  # actual default set in default GatewayParam proxyDeployment.replicas
   replicaCount: 1
 
-  # real default set in default GatewayParam service.type
+  # actual default set in default GatewayParam service.type
   service:
     type: LoadBalancer
 
-  # list of ports really come from the Gateway resource driving this proxy
+  # list of ports actually come from the Gateway resource driving this proxy
   ports:
   - port: 80
     targetPort: 80
