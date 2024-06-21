@@ -798,6 +798,7 @@ type EnvoyContainer struct {
 	Image           *Image                        `json:"image,omitempty"`
 	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy proxy container."`
 	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Resource requirements for envoy proxy container."`
+	Annotations     map[string]string             `json:"annotations,omitempty" desc:"Annotations for envoy proxy container."`
 }
 
 type SdsContainer struct {

@@ -33,7 +33,7 @@ spec:
       extraLabels:
         {{- include "gloo-gateway.constLabels" . | nindent 8 }}
       extraAnnotations:
-        {{ - include "$gg.proxyDeployment.annotations" . | nindent 8 }}
+        {{- toYaml $gg.envoyContainer.annotations | nindent 8 }}
 {{- if $gg.sdsContainer }}
     sdsContainer:
       image:

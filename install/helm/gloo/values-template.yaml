@@ -22,16 +22,14 @@ kubeGateway:
               - ALL
             add:
               - NET_BIND_SERVICE
-      proxyDeployment:
-        replicas: 1
         annotations:
           # By default, we expose the scrape annotations for Prometheus
           # This is intended to reduce the burden of enabling telemetry on our proxies
-
           prometheus.io/path: /metrics
           prometheus.io/port: "8081"
           prometheus.io/scrape: "true"
-
+      proxyDeployment:
+        replicas: 1
       service:
         type: LoadBalancer
       sdsContainer:
