@@ -22,8 +22,8 @@ func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:       env.GetOrDefault(testutils.InstallNamespace, "k8s-gateway-no-default-gatewayparameters-test"),
-			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-no-default-gatewayparameters-test-helm.yaml"),
+			InstallNamespace:       env.GetOrDefault(testutils.InstallNamespace, "k8s-gateway-minimal-default-gatewayparameters-test"),
+			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
 			ValidationAlwaysAccept: false,
 		},
 	)
