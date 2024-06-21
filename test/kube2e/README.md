@@ -35,7 +35,6 @@ It accepts a number of environment variables, to control the creation of a kind 
 | CLUSTER_NAME         | kind      | The name of the cluster that will be generated                                                                               |
 | CLUSTER_NODE_VERSION | v1.28.0   | The version of the [Node Docker image](https://hub.docker.com/r/kindest/node/) to use for booting the cluster                |
 | VERSION              | 1.0.0-ci1 | The version used to tag Gloo images that are deployed to the cluster                                                         |
-| KUBE2E_TESTS         | gateway   | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade', 'istio'` |
 | SKIP_DOCKER          | false     | Skip building docker images (used when testing a release version)                                                            |
 | RELEASED_VERSION     | ''        | Used if you want to test a previously released version. 'LATEST' will find the latest release                                |
 

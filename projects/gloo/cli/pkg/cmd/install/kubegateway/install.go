@@ -5,18 +5,16 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-
 	"github.com/solo-io/gloo/projects/gateway2/crds"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/kubegatewayutils"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -59,7 +57,7 @@ func install(opts *options.Options, installOpts *Options) error {
 	createNamespace(ctx, cli, installOpts.Namespace)
 
 	// Check if CRDs already exist
-	crdsExist, err := detectCrds(cfg)
+	crdsExist, err := kubegatewayutils.DetectKubeGatewayCrds(cfg)
 	if err != nil {
 		return err
 	}
@@ -137,27 +135,6 @@ func install(opts *options.Options, installOpts *Options) error {
 	fmt.Printf("All resources have been successfully initialized!\n")
 	fmt.Printf("Please run glooctl check to make sure everything is up and running :)\n")
 	return nil
-}
-
-func detectCrds(cfg *rest.Config) (bool, error) {
-	discClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return false, err
-	}
-
-	groups, err := discClient.ServerGroups()
-	if err != nil {
-		return false, err
-	}
-
-	// Check if gateway group exists
-	for _, group := range groups.Groups {
-		if group.Name == "gateway.networking.k8s.io" {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 func createNamespace(ctx context.Context, cli client.Client, namespace string) {
