@@ -37,5 +37,5 @@ runs:
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
-      name: bug-report
+      name: bug-report-${{ inputs.cluster-name }}
       path: ./_test/bug_report/${{ inputs.cluster-name }}

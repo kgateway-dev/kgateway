@@ -121,7 +121,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context) ([]schema.GroupVersionKin
 		},
 	}
 
-	objs, err := d.renderChartToObjects(ctx, emptyGw, vals)
+	objs, err := d.renderChartToObjects(emptyGw, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +145,8 @@ func jsonConvert(in *helmConfig, out interface{}) error {
 	return json.Unmarshal(b, out)
 }
 
-func (d *Deployer) renderChartToObjects(ctx context.Context, gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
-	objs, err := d.Render(ctx, gw.Name, gw.Namespace, vals)
+func (d *Deployer) renderChartToObjects(gw *api.Gateway, vals map[string]any) ([]client.Object, error) {
+	objs, err := d.Render(gw.Name, gw.Namespace, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -331,18 +331,26 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	return vals, nil
 }
 
-// Render uses the helm client to render the proxy helm chart into a list of kube objects.
-func (d *Deployer) Render(ctx context.Context, name, ns string, vals map[string]any) ([]client.Object, error) {
+// Render relies on a `helm install` to render the Chart with the injected values
+// It returns the list of Objects that are rendered, and an optional error if rendering failed,
+// or converting the rendered manifests to objects failed.
+func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
 		Releases: storage.Init(mem),
 	}
-	client := action.NewInstall(cfg)
-	client.Namespace = ns
-	client.ReleaseName = name
-	client.ClientOnly = true
-	release, err := client.RunWithContext(ctx, d.chart, vals)
+	install := action.NewInstall(cfg)
+	install.Namespace = ns
+	install.ReleaseName = name
+
+	// We rely on the Install object in `clientOnly` mode
+	// This means that there is no i/o (i.e. no reads/writes to k8s) that would need to be cancelled.
+	// This essentially guarantees that this function terminates quickly and doesn't block the rest of the controller.
+	install.ClientOnly = true
+	installCtx := context.Background()
+
+	release, err := install.RunWithContext(installCtx, d.chart, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for gateway %s.%s: %w", ns, name, err)
 	}
@@ -390,7 +398,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert helm values for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}
-	objs, err := d.renderChartToObjects(ctx, gw, convertedVals)
+	objs, err := d.renderChartToObjects(gw, convertedVals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy for gateway %s.%s: %w", gw.GetNamespace(), gw.GetName(), err)
 	}

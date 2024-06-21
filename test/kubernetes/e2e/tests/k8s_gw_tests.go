@@ -29,7 +29,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("Upstreams", upstreams.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Services", services.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
-	kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Glooctl", newGlooctlTestingSuite)
 

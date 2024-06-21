@@ -222,7 +222,11 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                          required:
+                          - secretRefs
                           type: object
+                      required:
+                      - secretRefs
                       type: object
                     jwt:
                       maxProperties: 0
@@ -268,6 +272,8 @@ spec:
                           type: string
                         userDnTemplate:
                           type: string
+                      required:
+                      - address
                       type: object
                     name:
                       nullable: true
@@ -297,6 +303,8 @@ spec:
                           items:
                             type: string
                           type: array
+                      required:
+                      - appUrl
                       type: object
                     oauth2:
                       properties:
@@ -326,6 +334,8 @@ spec:
                                   type: string
                                 userIdAttributeName:
                                   type: string
+                              required:
+                              - introspectionUrl
                               type: object
                             introspectionUrl:
                               type: string
@@ -337,6 +347,8 @@ spec:
                                   properties:
                                     inlineString:
                                       type: string
+                                  required:
+                                  - inlineString
                                   type: object
                                 remoteJwks:
                                   properties:
@@ -344,6 +356,8 @@ spec:
                                       type: string
                                     url:
                                       type: string
+                                  required:
+                                  - url
                                   type: object
                               type: object
                             requiredScopes:
@@ -474,6 +488,12 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                          required:
+                          - clientId
+                          - appUrl
+                          - callbackPath
+                          - authEndpoint
+                          - tokenEndpoint
                           type: object
                         oidcAuthorizationCode:
                           properties:
@@ -562,6 +582,8 @@ spec:
                                       type: object
                                     validFor:
                                       type: string
+                                  required:
+                                  - signingKeyRef
                                   type: object
                               type: object
                             clientId:
@@ -758,6 +780,11 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                          required:
+                          - clientId
+                          - issuerUrl
+                          - appUrl
+                          - callbackPath
                           type: object
                       type: object
                     opaAuth:
@@ -780,6 +807,8 @@ spec:
                           type: object
                         query:
                           type: string
+                      required:
+                      - query
                       type: object
                     opaServerAuth:
                       properties:
@@ -796,6 +825,8 @@ spec:
                           type: string
                         serverAddr:
                           type: string
+                      required:
+                      - package
                       type: object
                     passThroughAuth:
                       properties:
@@ -827,6 +858,8 @@ spec:
                               type: object
                             tlsConfig:
                               type: object
+                          required:
+                          - address
                           type: object
                         http:
                           properties:
@@ -868,6 +901,8 @@ spec:
                               type: object
                             url:
                               type: string
+                          required:
+                          - url
                           type: object
                       type: object
                     pluginAuth:
@@ -881,6 +916,8 @@ spec:
                           type: string
                         pluginFileName:
                           type: string
+                      required:
+                      - config
                       type: object
                   type: object
                 type: array
@@ -894,6 +931,8 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
                 type: object
+            required:
+            - configs
             type: object
           status:
             default: {}

@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/solo-projects/issues/6352
+    resolvesIssue: false
+    description: >-
+      Introduce `gateway.validation.webhook.enablePolicyApi` which controls whether or not RouteOptions and
+      VirtualHostOptions CRs are subject to validation. By default, this value is true.
+      The validation of these Policy APIs only runs if the Kubernetes Gateway integration is enabled (`kubeGateway.enabled`).
