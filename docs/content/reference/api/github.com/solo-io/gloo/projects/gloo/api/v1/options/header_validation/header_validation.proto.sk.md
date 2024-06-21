@@ -28,13 +28,13 @@ weight: 5
 
 
 ```yaml
-"disableMethodValidation": .google.protobuf.Empty
+"disableHttp1MethodValidation": .google.protobuf.Empty
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `disableMethodValidation` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Disable method validation. Envoy will not perform any validation on the method provided in the HTTP header. |
+| `disableHttp1MethodValidation` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Disable method validation. Envoy will not perform any validation on the method provided in the HTTP header. |
 
 
 
