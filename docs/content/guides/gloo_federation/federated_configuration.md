@@ -183,47 +183,52 @@ glooctl check
 ```
 
 ```shell
-Checking deployments... OK
-Checking pods... OK
-Checking upstreams... OK
-Checking upstream groups... OK
-Checking auth configs... OK
-Checking rate limit configs... OK
+Checking Deployments... OK
+Checking Pods... OK
+Checking Upstreams... OK
+Checking UpstreamGroups... OK
+Checking AuthConfigs... OK
+Checking RateLimitConfigs... OK
 Checking VirtualHostOptions... OK
 Checking RouteOptions... OK
-Checking secrets... OK
-Checking virtual services... OK
-Checking gateways... OK
-Checking proxies... OK
-Checking rate limit server... OK
+Checking Secrets... OK
+Checking VirtualServices... OK
+Checking Gateways... OK
+Checking Proxies... OK
 No problems detected.
 
 Detected Gloo Federation!
 
 Checking Gloo Instance remote-1-gloo-system...
-Checking deployments... OK
-Checking pods... OK
-Checking settings... OK
-Checking upstreams... OK
-Checking upstream groups... OK
-Checking auth configs... OK
-Checking virtual services... OK
-Checking route tables... OK
-Checking gateways... OK
-Checking proxies... OK
+Checking Deployments... OK
+Checking Pods... OK
+Checking Settings... OK
+Checking Upstreams... OK
+Checking UpstreamGroups... OK
+Checking AuthConfigs... OK
+Checking RateLimitConfigs... OK
+Checking VirtualServices... OK
+Checking RouteRables... OK
+Checking Gateways... OK
+Checking MatchableHttpGateways... OK
+Checking MatchableTcpGateways... OK
+Checking Proxies... OK
 
 
 Checking Gloo Instance remote-2-gloo-system...
-Checking deployments... OK
-Checking pods... OK
-Checking settings... OK
-Checking upstreams... OK
-Checking upstream groups... OK
-Checking auth configs... OK
-Checking virtual services... OK
-Checking route tables... OK
-Checking gateways... OK
-Checking proxies... OK
+Checking Deployments... OK
+Checking Pods... OK
+Checking Settings... OK
+Checking Upstreams... OK
+Checking UpstreamGroups... OK
+Checking AuthConfigs... OK
+Checking RateLimitConfigs... OK
+Checking VirtualServices... OK
+Checking RouteRables... OK
+Checking Gateways... OK
+Checking MatchableHttpGateways... OK
+Checking MatchableTcpGateways... OK
+Checking Proxies... OK
 ```
 
 Note that it is best to have `gloo-edge` installed on this admin cluster. To do so, if needed, you can use the following values and command.

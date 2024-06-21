@@ -22,7 +22,6 @@ runs:
   - name: Setup test env
     shell: bash
     env:
-      KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       CLUSTER_NAME: 'kind'
       CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
       IMAGE_VARIANT: ${{ matrix.image-variant }}
