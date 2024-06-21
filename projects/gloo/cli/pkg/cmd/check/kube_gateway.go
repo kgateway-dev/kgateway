@@ -34,7 +34,6 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 
 	if included := doesNotContain(opts.Top.CheckName, "kube-gateway-classes"); included {
 		checks = append(checks, internal.CheckGatewayClass)
-
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "kube-gateways"); included {
