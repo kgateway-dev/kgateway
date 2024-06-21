@@ -34,8 +34,8 @@
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.cpu|string||amount of CPUs|
-|kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas|int32|1|number of instances to deploy.|
-|kubeGateway.gatewayParameters.glooGateway.service.type|string|LoadBalancer|K8s service type|
+|kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas|int32|1|number of instances to deploy. If set to null, a default of 1 will be imposed.|
+|kubeGateway.gatewayParameters.glooGateway.service.type|string|LoadBalancer|K8s service type. If set to null, a default of LoadBalancer will be imposed.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.repository|string|sds|The image repository (name) for the container.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|

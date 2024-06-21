@@ -331,11 +331,11 @@ type Istio struct {
 }
 
 type ProvisionedDeployment struct {
-	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy."`
+	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy. If set to null, a default of 1 will be imposed."`
 }
 
 type ProvisionedService struct {
-	Type *string `json:"type,omitempty" desc:"K8s service type"`
+	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
 }
 
 type SecurityOpts struct {
