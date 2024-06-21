@@ -51,7 +51,17 @@ func newGlooctlTestingSuite(ctx context.Context, testInstallation *e2e.TestInsta
 }
 
 func (s *glooctlSuite) TestCheck() {
+	// To ensure that glooctl check works as expected in an installation with kubeGateway enabled :
+	// 0. Install Edge with kubeGateway enabled (done when the test begins)
+	// 1. Verify it checks kubeGateway resources
 	suite.Run(s.T(), glooctl.NewCheckSuite(s.ctx, s.testInstallation))
+	// TODO (davidjumani) :
+	// 2. Upgrade Edge with kubeGateway disabled
+	// 3. Verify it does not check kubeGateway resources
+	// 4. Upgrade Edge with kubeGateway enabled
+	// 5. Verify it checks kubeGateway resources
+	// This verifies that we are not relying on any logic / resources that can be left behind after an upgrade or when the user switches between gateway modes
+	// Doing so will also eliminate the need for the kube2e/glooctl/exclude tests
 }
 
 func (s *glooctlSuite) TestDebug() {

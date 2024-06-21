@@ -18,31 +18,36 @@ type checkOutput struct {
 var (
 	checkOutputByKey = map[string]checkOutput{
 		"deployments": {
-			include: ContainSubstring("Checking deployments... OK"),
+			include: ContainSubstring("Checking Deployments... OK"),
 			exclude: And(
-				Not(ContainSubstring("Checking deployments...")),
-				ContainSubstring("Checking proxies... Skipping proxies because deployments were excluded"),
+				Not(ContainSubstring("Checking Deployments...")),
+				ContainSubstring("Checking Proxies... Skipping proxies because deployments were excluded"),
 			),
 			readOnly: gstruct.Ignore(),
 		},
 		"pods": {
-			include:  ContainSubstring("Checking pods... OK"),
-			exclude:  Not(ContainSubstring("Checking pods...")),
+			include:  ContainSubstring("Checking Pods... OK"),
+			exclude:  Not(ContainSubstring("Checking Pods...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"upstreams": {
-			include:  ContainSubstring("Checking upstreams... OK"),
-			exclude:  Not(ContainSubstring("Checking upstreams...")),
+			include:  ContainSubstring("Checking Upstreams... OK"),
+			exclude:  Not(ContainSubstring("Checking Upstreams...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"upstreamgroup": {
-			include:  ContainSubstring("Checking upstream groups... OK"),
-			exclude:  Not(ContainSubstring("Checking upstream groups...")),
+			include:  ContainSubstring("Checking UpstreamGroups... OK"),
+			exclude:  Not(ContainSubstring("Checking UpstreamGroups...")),
+			readOnly: gstruct.Ignore(),
+		},
+		"auth-configs": {
+			include:  ContainSubstring("Checking AuthConfigs... OK"),
+			exclude:  Not(ContainSubstring("Checking AuthConfigs...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"rate-limit-configs": {
-			include:  ContainSubstring("Checking rate limit configs... OK"),
-			exclude:  Not(ContainSubstring("Checking rate limit configs...")),
+			include:  ContainSubstring("Checking RateLimitConfigs... OK"),
+			exclude:  Not(ContainSubstring("Checking RateLimitConfigs...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"virtual-host-options": {
@@ -56,13 +61,13 @@ var (
 			readOnly: gstruct.Ignore(),
 		},
 		"secrets": {
-			include:  ContainSubstring("Checking secrets... OK"),
-			exclude:  Not(ContainSubstring("Checking secrets...")),
+			include:  ContainSubstring("Checking Secrets... OK"),
+			exclude:  Not(ContainSubstring("Checking Secrets...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"virtual-services": {
-			include:  ContainSubstring("Checking virtual services... OK"),
-			exclude:  Not(ContainSubstring("Checking virtual services...")),
+			include:  ContainSubstring("Checking VirtualServices... OK"),
+			exclude:  Not(ContainSubstring("Checking VirtualServices...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"route-tables": {
@@ -74,19 +79,34 @@ var (
 			readOnly: gstruct.Ignore(),
 		},
 		"gateways": {
-			include:  ContainSubstring("Checking gateways... OK"),
-			exclude:  Not(ContainSubstring("Checking gateways...")),
+			include:  ContainSubstring("Checking Gateways... OK"),
+			exclude:  Not(ContainSubstring("Checking Gateways...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"proxies": {
-			include:  ContainSubstring("Checking proxies... OK"),
-			exclude:  Not(ContainSubstring("Checking proxies...")),
+			include:  ContainSubstring("Checking Proxies... OK"),
+			exclude:  Not(ContainSubstring("Checking Proxies...")),
 			readOnly: ContainSubstring("Warning: checking proxies with port forwarding is disabled"),
 		},
 		"xds-metrics": {
 			include:  gstruct.Ignore(), // We have not had historical tests for this, it would be good to add
 			exclude:  gstruct.Ignore(), // We have not had historical tests for this, it would be good to add
 			readOnly: ContainSubstring("Warning: checking proxies with port forwarding is disabled"),
+		},
+		"kube-gateway-classes": {
+			include:  ContainSubstring("Checking Kubernetes GatewayClasses... OK"),
+			exclude:  Not(ContainSubstring("Checking Kubernetes GatewayClasses...")),
+			readOnly: gstruct.Ignore(),
+		},
+		"kube-gateways": {
+			include:  ContainSubstring("Checking Kubernetes Gateways... OK"),
+			exclude:  Not(ContainSubstring("Checking Kubernetes Gateways...")),
+			readOnly: gstruct.Ignore(),
+		},
+		"kube-http-routes": {
+			include:  ContainSubstring("Checking Kubernetes HTTPRoutes... OK"),
+			exclude:  Not(ContainSubstring("Checking Kubernetes HTTPRoutes...")),
+			readOnly: gstruct.Ignore(),
 		},
 	}
 )

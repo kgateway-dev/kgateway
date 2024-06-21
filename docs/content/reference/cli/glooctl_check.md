@@ -17,7 +17,7 @@ glooctl check [flags]
 ### Options
 
 ```
-  -x, --exclude strings                   check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)
+  -x, --exclude strings                   check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, virtual-host-options, route-options, secrets, virtual-services, gateways, proxies, xds-metrics, kube-gateway-classes, kube-gateways, kube-http-routes)
   -h, --help                              help for check
   -n, --namespace string                  namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType                 output format: (json, table) (default table)
