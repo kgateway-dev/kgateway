@@ -76,7 +76,7 @@ func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, err
 		return false, eris.Wrapf(err, "unable to determine if Kubernetes Gateway CRDs are applied")
 	}
 	if !hasCRDs {
-		return false, eris.New("Kubernetes Gateway integration is enabled but the Kubernetes Gateway CRDs are not applied. Please fix this by running `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`")
+		return false, eris.New("The Kubernetes Gateway integration is enabled, but the Kubernetes Gateway CRDs are not applied in the cluster. To apply the CRDs, run `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`")
 	}
 
 	return true, nil
