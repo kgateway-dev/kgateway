@@ -1,6 +1,6 @@
 # Filing Issues
 
-GitHub issues are the main way for reporting bugs and requesting features in Gloo Edge.
+GitHub issues are the main way for reporting bugs and requesting features in Gloo Gateway.
 
 If you encounter a bug or have a feature request, please take the following approach:
 1. Search for existing issues.
@@ -13,7 +13,7 @@ If you encounter a bug or have a feature request, please take the following appr
 - Issues can include links to private resources, such as Slack conversations or private code. 
 - Private Enterprise issues can be used to track Open Source work. 
 - The more details about the issue, the better. Please include the following information:
-  - Gloo Edge version
+  - Gloo Gateway version
   - Kubernetes version
   - Operating system
   - Steps to reproduce
@@ -32,7 +32,7 @@ If you encounter a bug or have a feature request, please take the following appr
 - Copy the error message from the failed job (logs are discarded after a few months). 
 
 ## Security Issues
-We take Gloo Edge's security very seriously. If you've found a security issue or a potential security issue in Gloo Edge, please **DO NOT** file a public Github issue.
+We take Gloo Gateway's security very seriously. If you've found a security issue or a potential security issue in Gloo Gateway, please **DO NOT** file a public Github issue.
 
 *Instead, send your report privately to security@solo.io*
 

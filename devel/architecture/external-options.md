@@ -1,7 +1,7 @@
 # External Options (VirtualHostOption and RouteOption)
 
 ## Overview
-Gloo Edge supports decoupling certain resources from the definitions of options related to the resource. Currently there are two objects which support delegating options definition in this way:
+Gloo Gateway supports decoupling certain resources from the definitions of options related to the resource. Currently there are two objects which support delegating options definition in this way:
 - A VirtualHost (exists on a VirtualService) can be configured with the separate resource [VirtualHostOption](./projects/gateway/api/v1/external_options.proto).
 - A Route (exists on a VirtualHost within a VirtualService or on a RouteTable) can be configured with the separate resource [RouteOption](./projects/gateway/api/v1/external_options.proto).
 

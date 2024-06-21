@@ -254,6 +254,9 @@ type AuthConfig struct {
 	//
 	// State is shared between successful requests on the chain, i.e., the headers returned from each
 	// successful auth service get appended into the final auth response.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
 	Configs []*AuthConfig_Config `protobuf:"bytes,3,rep,name=configs,proto3" json:"configs,omitempty"`
 	// How to handle processing of named configs within an auth config chain.
 	// An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
@@ -879,8 +882,9 @@ type AuthPlugin struct {
 	PluginFileName string `protobuf:"bytes,2,opt,name=plugin_file_name,json=pluginFileName,proto3" json:"plugin_file_name,omitempty"`
 	// Name of the exported symbol that implements the plugin interface in the plugin.
 	// If not specified, defaults to the name of the plugin
-	ExportedSymbolName string          `protobuf:"bytes,3,opt,name=exported_symbol_name,json=exportedSymbolName,proto3" json:"exported_symbol_name,omitempty"`
-	Config             *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
+	ExportedSymbolName string `protobuf:"bytes,3,opt,name=exported_symbol_name,json=exportedSymbolName,proto3" json:"exported_symbol_name,omitempty"`
+	// +kubebuilder:validation:Required
+	Config *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
 }
 
 func (x *AuthPlugin) Reset() {
@@ -1130,6 +1134,7 @@ type isHmacAuth_SecretStorage interface {
 }
 
 type HmacAuth_SecretRefs struct {
+	// +kubebuilder:validation:Required
 	SecretRefs *SecretRefList `protobuf:"bytes,1,opt,name=secret_refs,json=secretRefs,proto3,oneof"`
 }
 
@@ -1151,6 +1156,9 @@ type SecretRefList struct {
 	unknownFields protoimpl.UnknownFields
 
 	// list of secrets as registered with the issuer
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
 	SecretRefs []*core.ResourceRef `protobuf:"bytes,1,rep,name=secret_refs,json=secretRefs,proto3" json:"secret_refs,omitempty"`
 }
 
@@ -1257,6 +1265,9 @@ type OAuth struct {
 	AuthEndpointQueryParams map[string]string `protobuf:"bytes,7,rep,name=auth_endpoint_query_params,json=authEndpointQueryParams,proto3" json:"auth_endpoint_query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// we to redirect after successful auth, if we can't determine the original
 	// url this should be your publicly available app url.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	AppUrl string `protobuf:"bytes,4,opt,name=app_url,json=appUrl,proto3" json:"app_url,omitempty"`
@@ -1440,6 +1451,8 @@ type OAuth2_OidcAuthorizationCode struct {
 	// provide issuer location and let gloo handle OIDC flow for you.
 	// requests authorized by validating the contents of ID token.
 	// can also authorize the access token if configured.
+	//
+	// +kubebuilder:validation:XValidation:rule="has(self.clientAuthentication) ? !has(self.clientSecretRef) && !has(self.disableClientSecret) : has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="If clientAuthentication is set, neither clientSecretRef nor disableClientSecret may be set. Otherwise, clientSecretRef must be set or disableClientSecret must be true."
 	OidcAuthorizationCode *OidcAuthorizationCode `protobuf:"bytes,1,opt,name=oidc_authorization_code,json=oidcAuthorizationCode,proto3,oneof"`
 }
 
@@ -1458,6 +1471,8 @@ type OAuth2_Oauth2 struct {
 	// provide issuer location and let Gloo handle Oauth2 flow for you.
 	// requests authorized by validating the contents of access token.
 	// Prefer to use OIDC for better security.
+	//
+	// +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true"
 	Oauth2 *PlainOAuth2 `protobuf:"bytes,3,opt,name=oauth2,proto3,oneof"`
 }
 
@@ -2158,6 +2173,9 @@ type OidcAuthorizationCode struct {
 	unknownFields protoimpl.UnknownFields
 
 	// your client id as registered with the issuer
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	// your client secret as registered with the issuer.
 	// This is required unless `disable_client_secret` is true
@@ -2167,6 +2185,9 @@ type OidcAuthorizationCode struct {
 	ClientSecretRef *core.ResourceRef `protobuf:"bytes,2,opt,name=client_secret_ref,json=clientSecretRef,proto3" json:"client_secret_ref,omitempty"`
 	// The url of the issuer. We will look for OIDC information in issuerUrl+
 	// ".well-known/openid-configuration"
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	IssuerUrl string `protobuf:"bytes,3,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
 	// extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
 	// this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
@@ -2178,9 +2199,15 @@ type OidcAuthorizationCode struct {
 	TokenEndpointQueryParams map[string]string `protobuf:"bytes,14,rep,name=token_endpoint_query_params,json=tokenEndpointQueryParams,proto3" json:"token_endpoint_query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// where to redirect after successful auth, if we can't determine the original url.
 	// this should be your publicly available app url.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	AppUrl string `protobuf:"bytes,5,opt,name=app_url,json=appUrl,proto3" json:"app_url,omitempty"`
 	// a callback path relative to app url that will be used for OIDC callbacks.
 	// should not be used by the application.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	CallbackPath string `protobuf:"bytes,6,opt,name=callback_path,json=callbackPath,proto3" json:"callback_path,omitempty"`
 	// a path relative to app url that will be used for logging out from an OIDC session.
 	// should not be used by the application.
@@ -2267,7 +2294,8 @@ type OidcAuthorizationCode struct {
 	// Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
 	AccessToken *OidcAuthorizationCode_AccessToken `protobuf:"bytes,23,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	// Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service.
-	IdentityToken        *OidcAuthorizationCode_IdentityToken        `protobuf:"bytes,24,opt,name=identity_token,json=identityToken,proto3" json:"identity_token,omitempty"`
+	IdentityToken *OidcAuthorizationCode_IdentityToken `protobuf:"bytes,24,opt,name=identity_token,json=identityToken,proto3" json:"identity_token,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="has(self.clientSecret) || has(self.privateKeyJwt)",message="Must specify clientSecret or privateKeyJwt"
 	ClientAuthentication *OidcAuthorizationCode_ClientAuthentication `protobuf:"bytes,25,opt,name=client_authentication,json=clientAuthentication,proto3" json:"client_authentication,omitempty"`
 	// Types that are assignable to Provider:
 	//
@@ -2522,6 +2550,9 @@ type PlainOAuth2 struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Your client ID as registered with the issuer
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	// Your client secret as registered with the issuer.
 	// This is required unless `disable_client_secret` is set.
@@ -2532,9 +2563,15 @@ type PlainOAuth2 struct {
 	AuthEndpointQueryParams map[string]string `protobuf:"bytes,3,rep,name=auth_endpoint_query_params,json=authEndpointQueryParams,proto3" json:"auth_endpoint_query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Where to redirect after successful auth, if Gloo can't determine the original URL.
 	// Set this field to your publicly available app URL.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	AppUrl string `protobuf:"bytes,4,opt,name=app_url,json=appUrl,proto3" json:"app_url,omitempty"`
 	// A callback path relative to the app URL to be used for OAuth2 callbacks.
 	// Do not use this path in the application itself.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	CallbackPath string `protobuf:"bytes,5,opt,name=callback_path,json=callbackPath,proto3" json:"callback_path,omitempty"`
 	// Scopes to request for.
 	Scopes []string `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
@@ -2552,8 +2589,14 @@ type PlainOAuth2 struct {
 	// Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
 	AfterLogoutUrl string `protobuf:"bytes,10,opt,name=after_logout_url,json=afterLogoutUrl,proto3" json:"after_logout_url,omitempty"`
 	// The URL of the provider authorization endpoint.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	AuthEndpoint string `protobuf:"bytes,11,opt,name=auth_endpoint,json=authEndpoint,proto3" json:"auth_endpoint,omitempty"`
 	// The URL of the provider token endpoint.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	TokenEndpoint string `protobuf:"bytes,12,opt,name=token_endpoint,json=tokenEndpoint,proto3" json:"token_endpoint,omitempty"`
 	// The URL of the provider token revocation endpoint.
 	// For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
@@ -2819,6 +2862,9 @@ type IntrospectionValidation struct {
 	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	IntrospectionUrl string `protobuf:"bytes,1,opt,name=introspection_url,json=introspectionUrl,proto3" json:"introspection_url,omitempty"`
 	// Your client id as registered with the issuer.
 	// Optional: Use if the token introspection url requires client authentication.
@@ -3051,6 +3097,8 @@ type AccessTokenValidation_IntrospectionUrl struct {
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	// This field is deprecated as it does not support authenticated introspection requests
 	//
+	// +kubebuilder:validation:MinLength=1
+	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	IntrospectionUrl string `protobuf:"bytes,1,opt,name=introspection_url,json=introspectionUrl,proto3,oneof"`
 }
@@ -3064,6 +3112,8 @@ type AccessTokenValidation_Jwt struct {
 type AccessTokenValidation_Introspection struct {
 	// Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
 	// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+	//
+	// +kubebuilder:validation:XValidation:rule="has(self.clientId) && size(self.clientId) > 0 ? has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret) : !has(self.clientSecretRef)",message="If clientId is set, clientSecretRef must be set or disableClientSecret must be true. Otherwise, clientSecretRef must not be set."
 	Introspection *IntrospectionValidation `protobuf:"bytes,3,opt,name=introspection,proto3,oneof"`
 }
 
@@ -3736,6 +3786,9 @@ type OpaAuth struct {
 	// The query that determines the auth decision. The result of this query
 	// must be either a boolean or an array with boolean as the first element. A boolean `true` value means that
 	// the request will be authorized. Any other value, or error, means that the request will be denied.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Query string `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
 	// Additional Options for Opa Auth configuration.
 	Options *OpaAuthOptions `protobuf:"bytes,3,opt,name=options,proto3" json:"options,omitempty"`
@@ -3874,6 +3927,9 @@ type OpaServerAuth struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The package from your Rego policy bundle used to query the OPA data API.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
 	// The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api).
 	RuleName string `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
@@ -3960,6 +4016,9 @@ type Ldap struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
 	// When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the
@@ -4385,6 +4444,9 @@ type PassThroughGrpc struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// Timeout for the auth server to respond. Defaults to 5s
 	ConnectionTimeout *duration.Duration `protobuf:"bytes,2,opt,name=connection_timeout,json=connectionTimeout,proto3" json:"connection_timeout,omitempty"`
@@ -4506,6 +4568,9 @@ type PassThroughHttp struct {
 	// Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
 	// To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service
 	// pod as a base64-encoded string
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// Pass through the incoming request body, ext auth state, and filter metadata.
 	// For more information, see the [PassThrough Http Request description](#request-1).
@@ -5233,6 +5298,7 @@ type isAuthConfig_Config_AuthConfig interface {
 }
 
 type AuthConfig_Config_BasicAuth struct {
+	// +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : has(self.encryption) && has(self.userList)",message="Either apr or both encryption and userSource must be set; apr may not be set alongside either encryption or userSource"
 	BasicAuth *BasicAuth `protobuf:"bytes,1,opt,name=basic_auth,json=basicAuth,proto3,oneof"`
 }
 
@@ -5269,6 +5335,7 @@ type AuthConfig_Config_Jwt struct {
 }
 
 type AuthConfig_Config_PassThroughAuth struct {
+	// +kubebuilder:validation:XValidation:rule="has(self.grpc) || has(self.http)",message="Must specify grpc or http"
 	PassThroughAuth *PassThroughAuth `protobuf:"bytes,12,opt,name=pass_through_auth,json=passThroughAuth,proto3,oneof"`
 }
 
@@ -6345,6 +6412,8 @@ type isOidcAuthorizationCode_ClientAuthentication_ClientAuthenticationConfig int
 
 type OidcAuthorizationCode_ClientAuthentication_ClientSecret_ struct {
 	// Use the client secret method to authenticate the client
+	//
+	// +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true"
 	ClientSecret *OidcAuthorizationCode_ClientAuthentication_ClientSecret `protobuf:"bytes,1,opt,name=client_secret,json=clientSecret,proto3,oneof"`
 }
 
@@ -6550,6 +6619,8 @@ type OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Signing key for the JWT used to authenticate the client
+	//
+	// +kubebuilder:validation:Required
 	SigningKeyRef *core.ResourceRef `protobuf:"bytes,1,opt,name=signing_key_ref,json=signingKeyRef,proto3" json:"signing_key_ref,omitempty"`
 	// Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
 	// the future the expiration time is allowed to be. If omitted, default is 5s.
@@ -6609,6 +6680,9 @@ type JwtValidation_RemoteJwks struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The HTTP URI to fetch the JWKS.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// The frequency at which the JWKS should be refreshed.
 	// If not specified, the default value is 5 minutes.
@@ -6668,6 +6742,9 @@ type JwtValidation_LocalJwks struct {
 	unknownFields protoimpl.UnknownFields
 
 	// JWKS is embedded as a string.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	InlineString string `protobuf:"bytes,1,opt,name=inline_string,json=inlineString,proto3" json:"inline_string,omitempty"`
 }
 

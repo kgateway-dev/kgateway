@@ -1,6 +1,6 @@
 # Pull Requests
 
-This doc explains the best practices for submitting a pull request to the [Gloo Edge project](https://github.com/solo-io/gloo).
+This doc explains the best practices for submitting a pull request to the [Gloo Gateway project](https://github.com/solo-io/gloo).
 It should serve as a reference for all contributors, and be useful especially useful to new and infrequent submitters.
 
 # Submission Process
@@ -36,7 +36,7 @@ Small PRs are more likely to be reviewed quickly and thoroughly. If the PR takes
 #### Use Commits to Tell the Story
 Having a series of discrete commits makes it easier to understand the idea of the PR, and break up the review into smaller chunks
 
-When PRs merge in Gloo Edge, they are squashed into a single commit, so it is not necessary to squash your commits before merging.
+When PRs merge in Gloo Gateway, they are squashed into a single commit, so it is not necessary to squash your commits before merging.
 
 #### Avoid Squashing Previous Commits and Using Force Pushes
 This can make it difficult to understand the history of the PR, and can make it difficult to understand the changes in the future.
@@ -65,4 +65,4 @@ The PR body is generally the first place reviewers will look to gather context o
 - Enumerate all changes, even/especially minor ones, so the reviewer knows they are intentional
 - Link any relevant Slack conversations or design documents in the PR body so that they are not lost
 
-When a PR merges into the target branch in Gloo Edge, the changes are squashed into a single commit, whose message is the PR title. As such, it is important to have a clear title that describes the change
+When a PR merges into the target branch in Gloo Gateway, the changes are squashed into a single commit, whose message is the PR title. As such, it is important to have a clear title that describes the change

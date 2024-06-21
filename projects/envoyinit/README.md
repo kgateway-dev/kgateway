@@ -1,14 +1,14 @@
 # Envoyinit
-The running instance of Envoy. In Gloo Edge, this is commonly referred to as the `gateway-proxy` component.
+The running instance of Envoy. In Gloo Gateway, this is commonly referred to as the `gateway-proxy` component.
 
 ## Background
 The [Envoy Proxy](https://www.envoyproxy.io/) is a cloud-native, high-performance, service proxy. 
 
 ### Source Code
-The Gloo Edge service proxies provide all the functionality of the [open source Envoy Proxy](https://github.com/solo-io/envoy-gloo), in addition to some custom extensions. The source code for these proxies is maintained at [envoy-gloo](https://github.com/solo-io/envoy-gloo)
+The Gloo Gateway service proxies provide all the functionality of the [open source Envoy Proxy](https://github.com/solo-io/envoy-gloo), in addition to some custom extensions. The source code for these proxies is maintained at [envoy-gloo](https://github.com/solo-io/envoy-gloo)
 
 ### Versioning
-In the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile), the `ENVOY_GLOO_IMAGE` value defines the version of `envoy-gloo` that Gloo Edge depends on.
+In the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile), the `ENVOY_GLOO_IMAGE` value defines the version of `envoy-gloo` that Gloo Gateway depends on.
 
 Envoy publishes new minor releases [each quarter](https://www.envoyproxy.io/docs/envoy/latest/version_history/version_history#). Gloo attempts to follow this cadence, and increment our minor version of `envoy-gloo` as well.
 
@@ -28,15 +28,15 @@ make gloo-envoy-wrapper-docker -B
 ```
 
 ## Release
-During a Gloo Edge release, the `gloo-envoy-wrapper` image is published to the [Google Cloud Registry](https://console.cloud.google.com/gcr/images/gloo-edge/GLOBAL) and the [Quay repository](https://quay.io/repository/solo-io/gloo-envoy-wrapper).
+During a Gloo Gateway release, the `gloo-envoy-wrapper` image is published to the [Google Cloud Registry](https://console.cloud.google.com/gcr/images/gloo-edge/GLOBAL) and the [Quay repository](https://quay.io/repository/solo-io/gloo-envoy-wrapper).
 
 ## Configuration
-Envoy [configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/configuration) can be provided either statically or dynamically. In Gloo Edge, we leverage both of these patterns: at initialization time, the proxy is provided with basic boostrap configuration, and then all future updates are provided dynamically by the control-plane.
+Envoy [configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/configuration) can be provided either statically or dynamically. In Gloo Gateway, we leverage both of these patterns: at initialization time, the proxy is provided with basic boostrap configuration, and then all future updates are provided dynamically by the control-plane.
 
 ### Static
 Envoy is configured with [Bootstrap configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/bootstrap). This provides static server configuration and configures Envoy to access dynamic configuration from the Gloo control plane.
 
-In Gloo Edge, Envoy configuration is processed in the following order:
+In Gloo Gateway, Envoy configuration is processed in the following order:
 
 1. The bootstrap configuration is defined in a [ConfigMap](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml)
 2. The ConfigMap is mounted as a volume on the Pod

@@ -164,7 +164,7 @@ format that will be included in the extauth snapshot.
 | ----- | ---- | ----------- | 
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
+| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. +kubebuilder:validation:Required +kubebuilder:validation:MinItems=1. |
 | `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 | `failOnRedirect` | `bool` | How the service should handle a redirect response from an OIDC issuer. In the default false mode, the redirect will be considered a successful response, and the client will receive a 302 with a location header. If this is set to true, the client will instead receive a 401 unauthorized response. This is useful in cases where API calls are being made or other such occurrences where the client cannot handle the redirect. |
 
@@ -195,7 +195,7 @@ format that will be included in the extauth snapshot.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) | +kubebuilder:validation:XValidation:rule="has(self.apr) ? !has(self.encryption) && !has(self.userList) : has(self.encryption) && has(self.userList)",message="Either apr or both encryption and userSource must be set; apr may not be set alongside either encryption or userSource". Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk/#oauth) |  Only one of `oauth`, `basicAuth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `oauth2` | [.enterprise.gloo.solo.io.OAuth2](../extauth.proto.sk/#oauth2) |  Only one of `oauth2`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk/#apikeyauth) |  Only one of `apiKeyAuth`, `basicAuth`, `oauth`, `oauth2`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
@@ -203,7 +203,7 @@ format that will be included in the extauth snapshot.
 | `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk/#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour. Only one of `jwt`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
-| `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `hmacAuth`, or `opaServerAuth` can be set. |
+| `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) | +kubebuilder:validation:XValidation:rule="has(self.grpc) || has(self.http)",message="Must specify grpc or http". Only one of `passThroughAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `hmacAuth`, or `opaServerAuth` can be set. |
 | `hmacAuth` | [.enterprise.gloo.solo.io.HmacAuth](../extauth.proto.sk/#hmacauth) |  Only one of `hmacAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, or `opaServerAuth` can be set. |
 | `opaServerAuth` | [.enterprise.gloo.solo.io.OpaServerAuth](../extauth.proto.sk/#opaserverauth) |  Only one of `opaServerAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, or `hmacAuth` can be set. |
 
@@ -424,7 +424,7 @@ This is used with custom auth servers.
 | `name` | `string` | Name of the plugin. |
 | `pluginFileName` | `string` | Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin. |
 | `exportedSymbolName` | `string` | Name of the exported symbol that implements the plugin interface in the plugin. If not specified, defaults to the name of the plugin. |
-| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  |
+| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | +kubebuilder:validation:Required. |
 
 
 
@@ -601,7 +601,7 @@ It conforms to https://www.ietf.org/rfc/rfc2104.txt
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `secretRefs` | [.enterprise.gloo.solo.io.SecretRefList](../extauth.proto.sk/#secretreflist) |  |
+| `secretRefs` | [.enterprise.gloo.solo.io.SecretRefList](../extauth.proto.sk/#secretreflist) | +kubebuilder:validation:Required. |
 | `parametersInHeaders` | [.enterprise.gloo.solo.io.HmacParametersInHeaders](../extauth.proto.sk/#hmacparametersinheaders) |  |
 
 
@@ -619,7 +619,7 @@ It conforms to https://www.ietf.org/rfc/rfc2104.txt
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `secretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | list of secrets as registered with the issuer. |
+| `secretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | list of secrets as registered with the issuer +kubebuilder:validation:Required +kubebuilder:validation:MinItems=1. |
 
 
 
@@ -663,7 +663,7 @@ Deprecated: Prefer OAuth2
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. |
-| `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |
+| `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |
 
@@ -684,9 +684,9 @@ Deprecated: Prefer OAuth2
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `oauth2` can be set. |
+| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. +kubebuilder:validation:XValidation:rule="has(self.clientAuthentication) ? !has(self.clientSecretRef) && !has(self.disableClientSecret) : has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="If clientAuthentication is set, neither clientSecretRef nor disableClientSecret may be set. Otherwise, clientSecretRef must be set or disableClientSecret must be true.". Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `oauth2` can be set. |
 | `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `oauth2` can be set. |
-| `oauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. Only one of `oauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
+| `oauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true". Only one of `oauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
 
 
 
@@ -1063,13 +1063,13 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientId` | `string` | your client id as registered with the issuer. |
+| `clientId` | `string` | your client id as registered with the issuer +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. This is required unless `disable_client_secret` is true This field has been deprecated and can be set in the client_secret option of client_authentication. |
-| `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |
+| `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration" +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
 | `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
-| `appUrl` | `string` | where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url. |
-| `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application. |
+| `appUrl` | `string` | where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
+| `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |
 | `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |
@@ -1086,7 +1086,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. This field has been deprecated and can be set in the client_secret option of client_authentication. |
 | `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
-| `clientAuthentication` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication](../extauth.proto.sk/#clientauthentication) |  |
+| `clientAuthentication` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication](../extauth.proto.sk/#clientauthentication) | +kubebuilder:validation:XValidation:rule="has(self.clientSecret) || has(self.privateKeyJwt)",message="Must specify clientSecret or privateKeyJwt". |
 | `default` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
 | `azure` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 
@@ -1146,7 +1146,7 @@ Configuration specific to the client authentication type used to exchange the ac
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientSecret` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication.ClientSecret](../extauth.proto.sk/#clientsecret) | Use the client secret method to authenticate the client. Only one of `clientSecret` or `privateKeyJwt` can be set. |
+| `clientSecret` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication.ClientSecret](../extauth.proto.sk/#clientsecret) | Use the client secret method to authenticate the client +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true". Only one of `clientSecret` or `privateKeyJwt` can be set. |
 | `privateKeyJwt` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication.PrivateKeyJwt](../extauth.proto.sk/#privatekeyjwt) | Use the private ket JWT method to authenticate the client. Only one of `privateKeyJwt` or `clientSecret` can be set. |
 
 
@@ -1186,7 +1186,7 @@ Private Key JWT Authentication requires a signing key for the JWT and an duratio
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Signing key for the JWT used to authenticate the client. |
+| `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Signing key for the JWT used to authenticate the client +kubebuilder:validation:Required. |
 | `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
 
 
@@ -1258,18 +1258,18 @@ This way, you can enable distibuted claims and caching for when users are member
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientId` | `string` | Your client ID as registered with the issuer. |
+| `clientId` | `string` | Your client ID as registered with the issuer +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. This is required unless `disable_client_secret` is set. |
 | `authEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
-| `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. |
-| `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. |
+| `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
+| `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `scopes` | `[]string` | Scopes to request for. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
 | `logoutPath` | `string` | A path relative to the app URL to use for logging out from an OAuth2 session. Do not use this path in the application itself. If not provided, logout functionality is disabled. |
 | `tokenEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's token request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
 | `afterLogoutUrl` | `string` | URL to redirect to after logout. Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value. |
-| `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
-| `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
+| `authEndpoint` | `string` | The URL of the provider authorization endpoint. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
+| `tokenEndpoint` | `string` | The URL of the provider token endpoint. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret. |
 
@@ -1329,7 +1329,7 @@ Specifies how to fetch JWKS from remote and how to cache it.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `url` | `string` | The HTTP URI to fetch the JWKS. |
+| `url` | `string` | The HTTP URI to fetch the JWKS. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `refreshInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The frequency at which the JWKS should be refreshed. If not specified, the default value is 5 minutes. |
 
 
@@ -1348,7 +1348,7 @@ Represents a locally available JWKS.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `inlineString` | `string` | JWKS is embedded as a string. |
+| `inlineString` | `string` | JWKS is embedded as a string. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 
 
 
@@ -1375,7 +1375,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. |
+| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
@@ -1402,9 +1402,9 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests. Only one of `introspectionUrl`, `jwt`, or `introspection` can be set. |
+| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests +kubebuilder:validation:MinLength=1. Only one of `introspectionUrl`, `jwt`, or `introspection` can be set. |
 | `jwt` | [.enterprise.gloo.solo.io.JwtValidation](../extauth.proto.sk/#jwtvalidation) | Validate access tokens that conform to the [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification. Only one of `jwt`, `introspectionUrl`, or `introspection` can be set. |
-| `introspection` | [.enterprise.gloo.solo.io.IntrospectionValidation](../extauth.proto.sk/#introspectionvalidation) | Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification. Only one of `introspection`, `introspectionUrl`, or `jwt` can be set. |
+| `introspection` | [.enterprise.gloo.solo.io.IntrospectionValidation](../extauth.proto.sk/#introspectionvalidation) | Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification. +kubebuilder:validation:XValidation:rule="has(self.clientId) && size(self.clientId) > 0 ? has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret) : !has(self.clientSecretRef)",message="If clientId is set, clientSecretRef must be set or disableClientSecret must be true. Otherwise, clientSecretRef must not be set.". Only one of `introspection`, `introspectionUrl`, or `jwt` can be set. |
 | `userinfoUrl` | `string` | The URL for the OIDC userinfo endpoint. If provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response (or cached response) will be added to the `AuthorizationRequest` state under the "introspection" key. This can be useful to leverage the userinfo response in, for example, an external auth server plugin. |
 | `cacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done. |
 | `requiredScopes` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
@@ -1716,7 +1716,7 @@ For Gloo Platform environments, use OpaServerAuth instead.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |
-| `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
+| `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
 
 
@@ -1758,7 +1758,7 @@ auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAu
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `package` | `string` | The package from your Rego policy bundle used to query the OPA data API. |
+| `package` | `string` | The package from your Rego policy bundle used to query the OPA data API. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `ruleName` | `string` | The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api). |
 | `serverAddr` | `string` | The address of the OPA server to query, in the format `ADDRESS:PORT`. For OPA servers within the cluster, the address is the pod's service address, such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster, the server must be accessible to the cluster, such as through an ExternalService. If you do not have your own OPA server instance, omit this field. When the external auth service has the OPA server sidecar enabled, the OPA server sidecar will be used instead. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional options for OPA Auth configuration. |
@@ -1790,7 +1790,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `address` | `string` | Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`. |
+| `address` | `string` | Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `userDnTemplate` | `string` | Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io". |
 | `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |
@@ -1924,7 +1924,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `address` | `string` | Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`. |
+| `address` | `string` | Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
 | `tlsConfig` | [.enterprise.gloo.solo.io.PassThroughGrpcTLSConfig](../extauth.proto.sk/#passthroughgrpctlsconfig) | TLS config for the Grpc passthrough, if not configured the connection will use insecure. |
 | `retryPolicy` | [.enterprise.gloo.solo.io.RetryPolicy](../extauth.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream. This field is optional and failed calls will not retry unless configured. |
@@ -1966,7 +1966,7 @@ else the request is unauthorized.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `url` | `string` | Required: URL of the passthrough http service, is a fully qualified domain name. Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected. To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service pod as a base64-encoded string. |
+| `url` | `string` | Required: URL of the passthrough http service, is a fully qualified domain name. Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected. To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service pod as a base64-encoded string +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) | Pass through the incoming request body, ext auth state, and filter metadata. For more information, see the [PassThrough Http Request description](#request-1). |
 | `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) | Pass through response information such as the headers and body to downstream clients. For more information, see the [PassThrough Http Response description](#response-1). |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
