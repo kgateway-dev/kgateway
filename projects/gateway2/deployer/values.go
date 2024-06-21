@@ -56,7 +56,7 @@ type helmGateway struct {
 	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
 
 	// stats values
-	LoopbackAddress *string          `json:"loopbackAddress,omitempty"`
+	LoopbackAddress string           `json:"loopbackAddress,omitempty"`
 	Stats           *helmStatsConfig `json:"stats,omitempty"`
 }
 
@@ -132,8 +132,8 @@ type helmServiceAccount struct {
 }
 
 type helmStatsConfig struct {
-	Enabled            *bool   `json:"enabled,omitempty"`
-	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
-	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
-	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
+	Enabled            bool   `json:"enabled,omitempty"`
+	RoutePrefixRewrite string `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   bool   `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite string `json:"statsPrefixRewrite,omitempty"`
 }

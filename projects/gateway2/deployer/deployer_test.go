@@ -324,7 +324,7 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
-	FContext("Single gwc and gw", func() {
+	Context("Single gwc and gw", func() {
 		type input struct {
 			dInputs        *deployer.Inputs
 			gw             *api.Gateway
@@ -543,6 +543,7 @@ var _ = Describe("Deployer", func() {
 				Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.GetPodTemplate().GetExtraAnnotations()))
 				Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetPodTemplate().GetSecurityContext().GetRunAsUser()))
 				Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(expectedGwp.GetPodTemplate().GetSecurityContext().GetRunAsGroup()))
+				Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "true"))
 
 				svc := objs.findService(defaultNamespace, defaultServiceName)
 				Expect(svc).ToNot(BeNil())
@@ -795,6 +796,21 @@ var _ = Describe("Deployer", func() {
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
 						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, proxyName),
 					}))
+
+					// make sure the stats listener is enabled
+					staticResources := envoyConfig["static_resources"].(map[string]any)
+					listeners := staticResources["listeners"].([]interface{})
+					var prometheusListener map[string]any
+					for _, lis := range listeners {
+						lis := lis.(map[string]any)
+						lisName := lis["name"]
+						if lisName == "prometheus_listener" {
+							prometheusListener = lis
+							break
+						}
+					}
+					Expect(prometheusListener).NotTo(BeNil())
+
 					return nil
 				},
 			}),

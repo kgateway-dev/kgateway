@@ -261,6 +261,13 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 				Host: &d.inputs.ControlPlane.Kube.XdsHost,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
+			LoopbackAddress: "127.0.0.1",
+			Stats: &helmStatsConfig{
+				Enabled:            true,
+				RoutePrefixRewrite: "/stats/prometheus",
+				EnableStatsRoute:   true,
+				StatsPrefixRewrite: "/stats",
+			},
 		},
 	}
 
@@ -283,42 +290,44 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 
 	// deployment values
 	autoscalingVals := getAutoscalingValues(kubeProxyConfig.GetAutoscaling())
-	vals.Gateway.Autoscaling = autoscalingVals
+	gateway := vals.Gateway
+
+	gateway.Autoscaling = autoscalingVals
 	if autoscalingVals == nil && deployConfig.GetReplicas() != nil {
 		replicas := deployConfig.GetReplicas().GetValue()
-		vals.Gateway.ReplicaCount = &replicas
+		gateway.ReplicaCount = &replicas
 	}
 
 	// service values
-	vals.Gateway.Service = getServiceValues(svcConfig)
+	gateway.Service = getServiceValues(svcConfig)
 
 	// pod template values
-	vals.Gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
-	vals.Gateway.ExtraPodLabels = podConfig.GetExtraLabels()
-	vals.Gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
-	vals.Gateway.PodSecurityContext = podConfig.GetSecurityContext()
-	vals.Gateway.NodeSelector = podConfig.GetNodeSelector()
-	vals.Gateway.Affinity = podConfig.GetAffinity()
-	vals.Gateway.Tolerations = podConfig.GetTolerations()
+	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
+	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
+	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
+	gateway.PodSecurityContext = podConfig.GetSecurityContext()
+	gateway.NodeSelector = podConfig.GetNodeSelector()
+	gateway.Affinity = podConfig.GetAffinity()
+	gateway.Tolerations = podConfig.GetTolerations()
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel().GetValue()
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-	vals.Gateway.LogLevel = &logLevel
+	gateway.LogLevel = &logLevel
 	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
 	if err != nil {
 		return nil, err
 	}
-	vals.Gateway.ComponentLogLevel = &compLogLevelStr
+	gateway.ComponentLogLevel = &compLogLevelStr
 
 	// istio values
-	vals.Gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)
-	vals.Gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
-	vals.Gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
+	gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)
+	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
+	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 
-	vals.Gateway.Resources = envoyContainerConfig.GetResources()
-	vals.Gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	vals.Gateway.Image = getEnvoyImageValues(envoyContainerConfig.GetImage())
+	gateway.Resources = envoyContainerConfig.GetResources()
+	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	gateway.Image = getEnvoyImageValues(envoyContainerConfig.GetImage())
 
 	return vals, nil
 }

@@ -16,10 +16,15 @@ spec:
       {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with $gateway.extraPodAnnotations }}
       annotations:
+      {{- with $gateway.extraPodAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if $statsConfig.enabled }}
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
+      {{- end}}
       labels:
         {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}
@@ -70,6 +75,10 @@ spec:
         - name: {{ $p.name }}
           protocol: {{ $p.protocol }}
           containerPort: {{ $p.targetPort }}
+        {{- end }}
+        {{- if $statsConfig.enabled }}
+        - name: http-monitoring
+          containerPort: 8081
         {{- end }}
         exec:
           command:
