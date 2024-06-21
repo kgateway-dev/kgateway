@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: e074048f8ccd27da
+    crd.solo.io/specHash: 3d094106aa543a91
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -921,6 +921,9 @@ spec:
                             type: object
                         type: object
                     type: object
+                  loopbackAddress:
+                    nullable: true
+                    type: string
                   podTemplate:
                     properties:
                       affinity:
@@ -1436,6 +1439,21 @@ spec:
                         - Unspecified
                         - ClusterIP
                         - LoadBalancer
+                        type: string
+                    type: object
+                  stats:
+                    properties:
+                      enableStatsRoute:
+                        nullable: true
+                        type: boolean
+                      enabled:
+                        nullable: true
+                        type: boolean
+                      routePrefixRewrite:
+                        nullable: true
+                        type: string
+                      statsRoutePrefixRewrite:
+                        nullable: true
                         type: string
                     type: object
                 type: object
