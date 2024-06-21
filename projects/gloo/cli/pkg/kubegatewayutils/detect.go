@@ -6,6 +6,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	cliconstants "github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -14,10 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
-)
-
-const (
-	KubeGatewayNetworkingGroup = "gateway.networking.k8s.io"
 )
 
 // Returns true if Kubernetes Gateway API CRDs are on the cluster.
@@ -35,7 +32,7 @@ func DetectKubeGatewayCrds(cfg *rest.Config) (bool, error) {
 
 	// Check if gateway group exists
 	for _, group := range groups.Groups {
-		if group.Name == KubeGatewayNetworkingGroup {
+		if group.Name == wellknown.GatewayGroup {
 			return true, nil
 		}
 	}

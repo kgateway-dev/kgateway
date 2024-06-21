@@ -94,18 +94,18 @@ var (
 			readOnly: ContainSubstring("Warning: checking proxies with port forwarding is disabled"),
 		},
 		"kube-gateway-classes": {
-			include:  ContainSubstring("Checking kube GatewayClasses... OK"),
-			exclude:  Not(ContainSubstring("Checking kube GatewayClasses...")),
+			include:  ContainSubstring("Checking Kubernetes GatewayClasses... OK"),
+			exclude:  Not(ContainSubstring("Checking Kubernetes GatewayClasses...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"kube-gateways": {
-			include:  ContainSubstring("Checking kube Gateways... OK"),
-			exclude:  Not(ContainSubstring("Checking kube Gateways...")),
+			include:  ContainSubstring("Checking Kubernetes Gateways... OK"),
+			exclude:  Not(ContainSubstring("Checking Kubernetes Gateways...")),
 			readOnly: gstruct.Ignore(),
 		},
 		"kube-http-routes": {
-			include:  ContainSubstring("Checking kube HTTPRoutes... OK"),
-			exclude:  Not(ContainSubstring("Checking kube HTTPRoutes...")),
+			include:  ContainSubstring("Checking Kubernetes HTTPRoutes... OK"),
+			exclude:  Not(ContainSubstring("Checking Kubernetes HTTPRoutes...")),
 			readOnly: gstruct.Ignore(),
 		},
 	}

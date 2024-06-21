@@ -207,9 +207,9 @@ var _ = Describe("Check", func() {
 			Expect(output).To(ContainSubstring("Checking Gateways... OK"))
 			Expect(output).To(ContainSubstring("Checking Proxies... OK"))
 
-			Expect(output).NotTo(ContainSubstring("Checking kube GatewayClasses..."))
-			Expect(output).NotTo(ContainSubstring("Checking kube Gateways..."))
-			Expect(output).NotTo(ContainSubstring("Checking kube HTTPRoutes..."))
+			Expect(output).NotTo(ContainSubstring("Checking Kubernetes GatewayClasses..."))
+			Expect(output).NotTo(ContainSubstring("Checking Kubernetes Gateways..."))
+			Expect(output).NotTo(ContainSubstring("Checking Kubernetes HTTPRoutes..."))
 		})
 	})
 

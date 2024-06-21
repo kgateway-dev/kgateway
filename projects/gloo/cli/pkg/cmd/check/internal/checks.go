@@ -18,7 +18,7 @@ import (
 )
 
 func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking kube GatewayClasses... ")
+	printer.AppendCheck("Checking Kubernetes GatewayClasses... ")
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
@@ -44,15 +44,15 @@ func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Op
 	)
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus("kube GatewayClasses", fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus("Kubernetes GatewayClasses", fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus("kube GatewayClasses", "OK")
+	printer.AppendStatus("Kubernetes GatewayClasses", "OK")
 	return nil
 }
 
 func CheckGateways(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking kube Gateways... ")
+	printer.AppendCheck("Checking Kubernetes Gateways... ")
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
@@ -120,15 +120,15 @@ func CheckGateways(ctx context.Context, printer printers.P, opts *options.Option
 	}
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus("kube Gateways", fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus("Kubernetes Gateways", fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus("kube Gateways", "OK")
+	printer.AppendStatus("Kubernetes Gateways", "OK")
 	return nil
 }
 
 func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking kube HTTPRoutes... ")
+	printer.AppendCheck("Checking Kubernetes HTTPRoutes... ")
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
@@ -177,10 +177,10 @@ func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Opti
 	}
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus("kube HTTPRoutes", fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus("Kubernetes HTTPRoutes", fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus("kube HTTPRoutes", "OK")
+	printer.AppendStatus("Kubernetes HTTPRoutes", "OK")
 	return nil
 
 }

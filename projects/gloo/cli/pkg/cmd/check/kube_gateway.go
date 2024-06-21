@@ -20,7 +20,7 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 
 	kubeGatewayEnabled, err := isKubeGatewayEnabled(ctx, opts)
 	if err != nil {
-		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "unable to determine if kube gateway is enabled"))
+		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "unable to determine if Kubernetes Gateway integration is enabled"))
 		return multiErr
 	}
 
@@ -64,7 +64,7 @@ func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, err
 
 	gatewayEnabled, err := kubegatewayutils.DetectKubeGatewayEnabled(ctx, opts)
 	if err != nil {
-		return false, eris.Wrapf(err, "could not determine if kubeGateway is enabled")
+		return false, eris.Wrapf(err, "unable to determine if Kubernetes Gateway integration is enabled")
 	}
 
 	if !gatewayEnabled {
@@ -73,10 +73,10 @@ func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, err
 
 	hasCRDs, err := kubegatewayutils.DetectKubeGatewayCrds(cfg)
 	if err != nil {
-		return false, eris.Wrapf(err, "could not determine if kubernetes gateway crds are applied")
+		return false, eris.Wrapf(err, "unable to determine if Kubernetes Gateway CRDs are applied")
 	}
 	if !hasCRDs {
-		return false, eris.New("KubeGateway is enabled but the Kubernetes Gateway CRDs are not applied. Please fix this by running `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`")
+		return false, eris.New("Kubernetes Gateway integration is enabled but the Kubernetes Gateway CRDs are not applied. Please fix this by running `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`")
 	}
 
 	return true, nil
