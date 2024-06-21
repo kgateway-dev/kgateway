@@ -193,7 +193,7 @@ var _ = Describe("Check", func() {
 			Expect(output).NotTo(ContainSubstring("Checking Proxies..."))
 		})
 
-		It("excludes the kube gateway resources when it is disabled", func() {
+		It("excludes the Kubernetes Gateway resources when it is disabled", func() {
 			output, err := GlooctlOut("check", "-x", "xds-metrics")
 			Expect(err).NotTo(HaveOccurred())
 

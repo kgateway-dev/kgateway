@@ -89,7 +89,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				multiErr = multierror.Append(multiErr, err)
 			}
 
-			// check kube gateway resources
+			// check kubernetes gateway resources
 			err = CheckKubeGatewayResources(ctx, printer, opts)
 			if err != nil {
 				multiErr = multierror.Append(multiErr, err)
