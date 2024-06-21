@@ -43,7 +43,7 @@ The four primary components are instantiated using pods and services. The follow
 | Pod | Port | Usage |
 |-----|------|-------|
 | gloo | 8443 | Validation |
-| gloo | 9976 | REST xDS port | 
+| gloo | 9976 | REST xDS | 
 | gloo | 9977 | xDS Server |
 | gloo | 9988 | Validation |
 | gloo | 9979 | WASM cache |
