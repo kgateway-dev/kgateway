@@ -29,13 +29,17 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
+      serviceAccountName: {{ include "gloo-gateway.gateway.fullname" . }}
+      {{- if $gateway.podSecurityContext }}
       securityContext:
         {{- toYaml $gateway.podSecurityContext | nindent 8 }}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
+        {{- if $gateway.securityContext }}
         securityContext:
-          {{- toYaml $gateway.securityContext | nindent 12 }}
+          {{- toYaml $gateway.securityContext | nindent 10 }}
+        {{- end }}
         args:
         - "--disable-hot-restart"
         - "--service-node"
@@ -79,8 +83,10 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
+{{- if $gateway.resources }}
         resources:
           {{- toYaml $gateway.resources | nindent 12 }}
+{{- end }} {{/* if $gateway.resources */}}
 {{- if $gateway.istio.enabled }}
       - name: sds
         image: "{{ template "gloo-gateway.gateway.image" $gateway.sdsContainer.image }}"
@@ -255,21 +261,15 @@ spec:
       - name: workload-certs
         emptyDir: {}
 {{- end }} {{/* if $gateway.istio.enabled */}}
-{{- if $gateway.serviceAccount.create }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "gloo-gateway.gateway.serviceAccountName" . }}
+  name: {{ include "gloo-gateway.gateway.fullname" . }}
   labels:
     {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
-  {{- with $gateway.serviceAccount.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 automountServiceAccountToken: false
-{{- end }} {{/* if $gateway.serviceAccount.create */}}
 ---
 apiVersion: v1
 kind: Service
@@ -318,9 +318,9 @@ data:
         role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
     static_resources:
       listeners:
-      - name: read_config_listener
+      - name: readiness_listener
         address:
-          socket_address: { address: 0.0.0.0, port_value: {{ $gateway.readinessPort }} }
+          socket_address: { address: 0.0.0.0, port_value: 8082 }
         filter_chains:
           - filters:
             - name: envoy.filters.network.http_connection_manager

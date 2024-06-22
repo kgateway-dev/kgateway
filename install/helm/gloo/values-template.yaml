@@ -12,8 +12,22 @@ kubeGateway:
       envoyContainer:
         image:
           repository: gloo-envoy-wrapper
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10101
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - NET_BIND_SERVICE
+      # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be 
+      # imposed by the template.
       proxyDeployment:
         replicas: 1
+      # If service or service.type are null, a default of LoadBalancer will be 
+      # imposed by the template.
       service:
         type: LoadBalancer
       sdsContainer:

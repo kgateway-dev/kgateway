@@ -1,47 +1,38 @@
-# Default values for gloo-gateway.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# These values represent configurable values for the dynamic proxy chart
+# They are not intended to be actual "defaults," rather they are just placeholder values
+# meant to allow rendering of the chart/template, as the real values will come from:
+# * The control plane
+# * The `Gateway` resource driving the proxy provisioning
+# * A (possibly merged) GatewayParameters object translated to helm values
+# The actual defaults for these values should come from the "default GatewayParameters" object
+# See: (/gloo/install/helm/gloo/templates/43-gatewayparameters.yaml)
+# TODO: This file/workflow can be shored up via https://github.com/solo-io/solo-projects/issues/6417
 
 gateway:
-  nameOverride: ""
-  fullnameOverride: ""
-  gatewayName: ""
-  gatewayNamespace: ""
+  # xds values actually come from the control plane
   xds:
     host: ""
     port: 8080
+
+  # actual default set in default GatewayParam proxyDeployment.replicas
   replicaCount: 1
-  resources: {}
+
+  # actual default set in default GatewayParam service.type
+  service:
+    type: LoadBalancer
+
+  # list of ports actually come from the Gateway resource driving this proxy
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+
+  # leftover autoscaling config; not actually wired up for public use yet
+  # see: https://github.com/solo-io/solo-projects/issues/5948
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  service:
-    type: LoadBalancer
-  readinessPort: 8082
-  # ports should come from the Gateway
-  ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-    name: http
-  securityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    runAsUser: 10101
-    capabilities:
-      drop:
-        - ALL
-      add:
-        - NET_BIND_SERVICE
-  serviceAccount:
-    # Specifies whether a service account should be created
-    create: true
-    # Annotations to add to the service account
-    annotations: {}
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name: ""

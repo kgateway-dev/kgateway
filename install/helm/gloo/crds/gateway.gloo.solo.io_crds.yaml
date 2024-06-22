@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: e074048f8ccd27da
+    crd.solo.io/specHash: c30098945b4c73d8
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -57,32 +57,6 @@ spec:
             properties:
               kube:
                 properties:
-                  autoscaling:
-                    properties:
-                      horizontalPodAutoscaler:
-                        properties:
-                          maxReplicas:
-                            maximum: 4294967295
-                            minimum: 0
-                            nullable: true
-                            type: integer
-                          minReplicas:
-                            maximum: 4294967295
-                            minimum: 0
-                            nullable: true
-                            type: integer
-                          targetCpuUtilizationPercentage:
-                            maximum: 4294967295
-                            minimum: 0
-                            nullable: true
-                            type: integer
-                          targetMemoryUtilizationPercentage:
-                            maximum: 4294967295
-                            minimum: 0
-                            nullable: true
-                            type: integer
-                        type: object
-                    type: object
                   deployment:
                     properties:
                       replicas:
