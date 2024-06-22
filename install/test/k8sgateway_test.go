@@ -21,6 +21,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest TestManifest
 			valuesArgs   []string
 		)
+		// TODO: why is this called a Makefile?
 		prepareMakefile := func(namespace string, values helmValues) {
 			tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
