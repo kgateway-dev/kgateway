@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	v1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
@@ -28,9 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -114,7 +111,6 @@ var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
-		k8sGatewayExt extensions.K8sGatewayExtensions
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/gloo/templates/43-gatewayparameters.yaml
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
@@ -191,14 +187,6 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 	)
-	BeforeEach(func() {
-		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-		Expect(err).NotTo(HaveOccurred())
-		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-			Mgr: mgr,
-		})
-		Expect(err).NotTo(HaveOccurred())
-	})
 	Context("special cases", func() {
 		var gwc *api.GatewayClass
 		BeforeEach(func() {
@@ -224,7 +212,6 @@ var _ = Describe("Deployer", func() {
 				ControlPlane: bootstrap.ControlPlane{
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
-				Extensions: k8sGatewayExt,
 			})
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -236,20 +223,12 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("support segmenting by release", func() {
-			mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-			Expect(err).NotTo(HaveOccurred())
-			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-				Mgr: mgr,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
 				ControlPlane: bootstrap.ControlPlane{
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
-				Extensions: k8sGatewayExt,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -259,7 +238,6 @@ var _ = Describe("Deployer", func() {
 				ControlPlane: bootstrap.ControlPlane{
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
-				Extensions: k8sGatewayExt,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -340,19 +318,12 @@ var _ = Describe("Deployer", func() {
 		var (
 			gwpOverrideName       = "default-gateway-params"
 			defaultDeployerInputs = func() *deployer.Inputs {
-				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-				Expect(err).NotTo(HaveOccurred())
-				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.Background(), extensions.K8sGatewayExtensionsFactoryParameters{
-					Mgr: mgr,
-				})
-				Expect(err).NotTo(HaveOccurred())
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,
 					Dev:            false,
 					ControlPlane: bootstrap.ControlPlane{
 						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 					},
-					Extensions: k8sGatewayExt,
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
@@ -808,13 +779,6 @@ var _ = Describe("Deployer", func() {
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
 				newDeployerErr: deployer.NilDeployerInputsErr,
-			}),
-			Entry("nil K8sGatewayExtensions input to NewDeployer", &input{
-				dInputs:    &deployer.Inputs{},
-				gw:         defaultGateway(),
-				defaultGwp: defaultGatewayParams(),
-			}, &expectedOutput{
-				newDeployerErr: deployer.NilK8sExtensionsErr,
 			}),
 			Entry("No GatewayParameters override but default is self-managed; should not deploy gateway", &input{
 				dInputs:    defaultDeployerInputs(),
