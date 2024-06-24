@@ -22,7 +22,7 @@ spec:
       {{- end }}
       {{- if $statsConfig.enabled }}
         prometheus.io/path: /metrics
-        prometheus.io/port: "8081"
+        prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       {{- end}}
       labels:
@@ -82,7 +82,7 @@ spec:
         {{- end }}
         {{- if $statsConfig.enabled }}
         - name: http-monitoring
-          containerPort: 8081
+          containerPort: 9091
         {{- end }}
         exec:
           command:
@@ -361,7 +361,7 @@ data:
         address:
           socket_address:
             address: 0.0.0.0
-            port_value: 8081
+            port_value: 9091
         filter_chains:
           - filters:
               - name: envoy.filters.network.http_connection_manager
