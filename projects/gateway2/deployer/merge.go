@@ -78,7 +78,9 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 
 	dstKube.Service = deepMergeService(dstKube.GetService(), srcKube.GetService())
 
-	dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
+	// TODO: removed until autoscaling reimplemented
+	// see: https://github.com/solo-io/solo-projects/issues/5948
+	// dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
 
 	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
@@ -329,20 +331,22 @@ func deepMergeService(dst, src *kube.Service) *kube.Service {
 	return dst
 }
 
-func deepMergeAutoscaling(dst, src *kube.Autoscaling) *kube.Autoscaling {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
+// TODO: removing until autoscaling reimplemented
+// see: https://github.com/solo-io/solo-projects/issues/5948
+// func deepMergeAutoscaling(dst, src *kube.Autoscaling) *kube.Autoscaling {
+// 	// nil src override means just use dst
+// 	if src == nil {
+// 		return dst
+// 	}
 
-	if dst == nil {
-		return src
-	}
+// 	if dst == nil {
+// 		return src
+// 	}
 
-	dst.HorizontalPodAutoscaler = deepMergeHorizontalPodAutoscaler(dst.GetHorizontalPodAutoscaler(), src.GetHorizontalPodAutoscaler())
+// 	dst.HorizontalPodAutoscaler = deepMergeHorizontalPodAutoscaler(dst.GetHorizontalPodAutoscaler(), src.GetHorizontalPodAutoscaler())
 
-	return dst
-}
+// 	return dst
+// }
 
 func deepMergeHorizontalPodAutoscaler(dst, src *kube.HorizontalPodAutoscaler) *kube.HorizontalPodAutoscaler {
 	// nil src override means just use dst

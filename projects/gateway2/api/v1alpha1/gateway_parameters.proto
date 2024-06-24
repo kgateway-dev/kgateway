@@ -57,8 +57,10 @@ message KubernetesProxyConfig {
   // the network.
   kube.gateway.gloo.solo.io.Service service = 4;
 
+  // NOTE: Not used currently
   // Autoscaling configuration.
-  kube.gateway.gloo.solo.io.Autoscaling autoscaling = 5;
+  // kube.gateway.gloo.solo.io.Autoscaling autoscaling = 5;
+  reserved 5;
 
   // Istio integration configuration.
   IstioIntegration istio = 6;

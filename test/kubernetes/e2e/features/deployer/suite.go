@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +14,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 )
@@ -45,12 +42,16 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) TestProvisionDeploymentAndService() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, deployerProvisionManifestFile)
-		s.NoError(err, "can delete manifest")
+		s.NoError(err, "can delete deployer provision manifest")
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, basicGatewayManifestFile)
+		s.NoError(err, "can delete basic gateway manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, deployerProvisionManifestFile)
-	s.Require().NoError(err, "can apply manifest")
+	s.Require().NoError(err, "can apply deployer provision manifest")
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicGatewayManifestFile)
+	s.Require().NoError(err, "can apply basic gateway manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 }
 
@@ -67,10 +68,10 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, deployerProvisionManifestFile)
 	s.Require().NoError(err, "can apply manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gwParametersManifestFile)
 	s.Require().NoError(err, "can apply manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
@@ -114,12 +115,6 @@ func (s *testingSuite) TestSelfManagedGateway() {
 	}, 10*time.Second, 1*time.Second)
 
 	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-}
-
-func (s *testingSuite) getterForMeta(meta *metav1.ObjectMeta) helpers.InputResourceGetter {
-	return func() (resources.InputResource, error) {
-		return s.testInstallation.ResourceClients.RouteOptionClient().Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{})
-	}
 }
 
 func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {

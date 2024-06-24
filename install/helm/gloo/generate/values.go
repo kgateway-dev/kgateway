@@ -331,11 +331,11 @@ type Istio struct {
 }
 
 type ProvisionedDeployment struct {
-	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy."`
+	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy. If set to null, a default of 1 will be imposed."`
 }
 
 type ProvisionedService struct {
-	Type *string `json:"type,omitempty" desc:"K8s service type"`
+	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
 }
 
 type SecurityOpts struct {
@@ -349,6 +349,15 @@ type PodSecurityContext struct {
 type SecurityContext struct {
 	*corev1.SecurityContext
 	*SecurityOpts
+}
+
+// GatewayParamsSecurityContext is a passthrough struct that provides the corev1.SecurityContext without
+// exposing the SecurityOpts/MergePolicy. MergePolicy is irrelevant to the GatewayParameters case because
+// there is already a default and merge behavior defined. The "default" GatewayParameters are expected to
+// be the base config, which is where a default policy can defined; each gwapi.Gateway can have specific
+// GatewayParameters which can then override/merge into the default policy
+type GatewayParamsSecurityContext struct {
+	*corev1.SecurityContext
 }
 
 type GlooDeployment struct {
@@ -786,7 +795,9 @@ type Mtls struct {
 }
 
 type EnvoyContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image           *Image                        `json:"image,omitempty"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy proxy container."`
+	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Resource requirements for envoy proxy container."`
 }
 
 type SdsContainer struct {

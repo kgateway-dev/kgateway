@@ -149,16 +149,6 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetAutoscaling()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAutoscaling()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAutoscaling(), target.GetAutoscaling()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetIstio()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetIstio()) {
 			return false
