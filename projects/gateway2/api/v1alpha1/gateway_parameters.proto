@@ -219,7 +219,7 @@ message GatewayParametersStatus {
 }
 
 message StatsConfig {
-  // Whether to enable the stats server. Defaults to true.
+  // Whether to expose metrics annotations and ports for scraping metrics.
   .google.protobuf.BoolValue enabled = 1;
 
   // The Envoy stats endpoint to which the metrics are written
