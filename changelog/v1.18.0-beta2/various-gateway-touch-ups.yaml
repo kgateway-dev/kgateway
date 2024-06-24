@@ -1,0 +1,16 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6381
+    resolvesIssue: false
+    description: >-
+      Follow up to https://github.com/solo-io/gloo/pull/9657 --
+      Renders out securityContext for sds and istio sidecar containers to dynamic GG proxy and
+      fixes the helm docs for these containers.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/9660
+    resolvesIssue: true
+    description: >-
+      Only act on GatewayClass resources that use the Gloo Gateway controller name
+  - type: NON_USER_FACING
+    description: >-
+      Remove unused Extensions from Deployer component
