@@ -37,6 +37,7 @@ function create_kind_cluster_or_skip() {
   # Install cilium as we need to define custom network policies to simulate kube api server unavailability
   # in some of our kube2e tests
   helm repo add cilium https://helm.cilium.io/
+  helm repo update
   helm install cilium cilium/cilium --version $CILIUM_VERSION \
    --namespace kube-system \
    --set image.pullPolicy=IfNotPresent \
