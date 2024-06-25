@@ -21,7 +21,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest TestManifest
 			valuesArgs   []string
 		)
-		prepareMakefile := func(namespace string, values helmValues) {
+		prepareHelmManifest := func(namespace string, values helmValues) {
 			tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 			testManifest = tm
@@ -32,7 +32,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 		})
 
 		JustBeforeEach(func() {
-			prepareMakefile(namespace, helmValues{valuesArgs: valuesArgs})
+			prepareHelmManifest(namespace, helmValues{valuesArgs: valuesArgs})
 		})
 		When("kube gateway integration is enabled", func() {
 			BeforeEach(func() {

@@ -11,7 +11,6 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -41,7 +40,6 @@ var (
 			gwpNamespace, gwpName, resourceType, gwNamespace, gwName)
 	}
 	NilDeployerInputsErr = eris.New("nil inputs to NewDeployer")
-	NilK8sExtensionsErr  = eris.New("nil K8sGatewayExtensions to NewDeployer")
 )
 
 // A Deployer is responsible for deploying proxies
@@ -58,16 +56,12 @@ type Inputs struct {
 	Dev            bool
 	IstioValues    bootstrap.IstioValues
 	ControlPlane   bootstrap.ControlPlane
-	Extensions     extensions.K8sGatewayExtensions
 }
 
 // NewDeployer creates a new gateway deployer
 func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 	if inputs == nil {
 		return nil, NilDeployerInputsErr
-	}
-	if inputs.Extensions == nil {
-		return nil, NilK8sExtensionsErr
 	}
 
 	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
