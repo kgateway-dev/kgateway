@@ -317,17 +317,17 @@ type GatewayParametersForGatewayClasses struct {
 }
 
 type GatewayParameters struct {
-	EnvoyContainer  *EnvoyContainer        `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
-	ProxyDeployment *ProvisionedDeployment `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
-	Service         *ProvisionedService    `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
-	SdsContainer    *SdsContainer          `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
-	Istio           *Istio                 `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
+	EnvoyContainer  *EnvoyContainer            `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
+	ProxyDeployment *ProvisionedDeployment     `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service         *ProvisionedService        `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
+	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 
 type Istio struct {
-	IstioProxyContainer *IstioProxyContainer `json:"istioProxyContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
-	CustomSidecars      []interface{}        `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
+	IstioProxyContainer *GatewayParamsIstioProxyContainer `json:"istioProxyContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
+	CustomSidecars      []interface{}                     `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
 }
 
 type ProvisionedDeployment struct {
@@ -807,6 +807,13 @@ type SdsContainer struct {
 	Resources       *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
+type GatewayParamsSdsContainer struct {
+	Image           *Image                        `json:"image,omitempty"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	LogLevel        *string                       `json:"logLevel,omitempty" desc:"Log level for sds.  Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info."`
+	Resources       *ResourceRequirements         `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
+}
+
 type EnvoySidecarContainer struct {
 	Image           *Image           `json:"image,omitempty"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy-sidecar gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
@@ -816,6 +823,18 @@ type IstioProxyContainer struct {
 	Image           *Image           `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
+
+	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer
+	// Note: these are only supported for k8s Gateway API.
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"Kubernetes\""`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"istiod.istio-system.svc:15012\""`
+}
+
+type GatewayParamsIstioProxyContainer struct {
+	Image           *Image                        `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	LogLevel        *string                       `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
 
 	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer
 	// Note: these are only supported for k8s Gateway API.

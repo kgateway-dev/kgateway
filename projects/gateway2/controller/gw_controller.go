@@ -20,7 +20,6 @@ const (
 
 type gatewayReconciler struct {
 	cli           client.Client
-	className     api.ObjectName
 	autoProvision bool
 
 	scheme   *runtime.Scheme
@@ -52,7 +51,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if gw.GetDeletionTimestamp() != nil {
-		// no need to do nothing as we have owner refs, so children will be deleted.
+		// no need to do anything as we have owner refs, so children will be deleted
 		log.Info("gateway deleted, no need for reconciling")
 		return ctrl.Result{}, nil
 	}
@@ -104,7 +103,6 @@ func updateStatus(ctx context.Context, cli client.Client, gw *api.Gateway, svcmd
 	}
 
 	// update gateway addresses in the status
-
 	desiredAddresses := getDesiredAddresses(&svc)
 	actualAddresses := gw.Status.Addresses
 	if slices.Equal(desiredAddresses, actualAddresses) {

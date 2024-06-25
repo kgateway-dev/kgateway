@@ -3,17 +3,17 @@ package deployer_test
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	wrapperspb "github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	v1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/external/kubernetes/api/core/v1"
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
@@ -28,9 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -114,7 +112,6 @@ var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
-		k8sGatewayExt extensions.K8sGatewayExtensions
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/gloo/templates/43-gatewayparameters.yaml
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
@@ -133,21 +130,21 @@ var _ = Describe("Deployer", func() {
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
 								Deployment: &gw2_v1alpha1.ProxyDeployment{
-									Replicas: &wrappers.UInt32Value{Value: 2},
+									Replicas: &wrapperspb.UInt32Value{Value: 2},
 								},
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-									LogLevel: &wrappers.StringValue{Value: "debug"},
+									LogLevel: &wrapperspb.StringValue{Value: "debug"},
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
 								Image: &kube.Image{
-									Registry:   &wrappers.StringValue{Value: "scooby"},
-									Repository: &wrappers.StringValue{Value: "dooby"},
-									Tag:        &wrappers.StringValue{Value: "doo"},
+									Registry:   &wrapperspb.StringValue{Value: "scooby"},
+									Repository: &wrapperspb.StringValue{Value: "dooby"},
+									Tag:        &wrapperspb.StringValue{Value: "doo"},
 									PullPolicy: kube.Image_Always,
 								},
 							},
@@ -162,7 +159,7 @@ var _ = Describe("Deployer", func() {
 							},
 							Service: &kube.Service{
 								Type:      kube.Service_ClusterIP,
-								ClusterIP: &wrappers.StringValue{Value: "99.99.99.99"},
+								ClusterIP: &wrapperspb.StringValue{Value: "99.99.99.99"},
 								ExtraAnnotations: map[string]string{
 									"foo": "bar",
 								},
@@ -191,14 +188,6 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 	)
-	BeforeEach(func() {
-		mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-		Expect(err).NotTo(HaveOccurred())
-		k8sGatewayExt, err = extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-			Mgr: mgr,
-		})
-		Expect(err).NotTo(HaveOccurred())
-	})
 	Context("special cases", func() {
 		var gwc *api.GatewayClass
 		BeforeEach(func() {
@@ -224,7 +213,6 @@ var _ = Describe("Deployer", func() {
 				ControlPlane: bootstrap.ControlPlane{
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
-				Extensions: k8sGatewayExt,
 			})
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -236,20 +224,12 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("support segmenting by release", func() {
-			mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-			Expect(err).NotTo(HaveOccurred())
-			k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.TODO(), extensions.K8sGatewayExtensionsFactoryParameters{
-				Mgr: mgr,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
 				ControlPlane: bootstrap.ControlPlane{
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
-				Extensions: k8sGatewayExt,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -259,7 +239,6 @@ var _ = Describe("Deployer", func() {
 				ControlPlane: bootstrap.ControlPlane{
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
-				Extensions: k8sGatewayExt,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -340,19 +319,12 @@ var _ = Describe("Deployer", func() {
 		var (
 			gwpOverrideName       = "default-gateway-params"
 			defaultDeployerInputs = func() *deployer.Inputs {
-				mgr, err := ctrl.NewManager(&rest.Config{}, ctrl.Options{})
-				Expect(err).NotTo(HaveOccurred())
-				k8sGatewayExt, err := extensions.NewK8sGatewayExtensions(context.Background(), extensions.K8sGatewayExtensionsFactoryParameters{
-					Mgr: mgr,
-				})
-				Expect(err).NotTo(HaveOccurred())
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,
 					Dev:            false,
 					ControlPlane: bootstrap.ControlPlane{
 						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 					},
-					Extensions: k8sGatewayExt,
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
@@ -418,21 +390,21 @@ var _ = Describe("Deployer", func() {
 							Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 								WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
 									Deployment: &gw2_v1alpha1.ProxyDeployment{
-										Replicas: &wrappers.UInt32Value{Value: 3},
+										Replicas: &wrapperspb.UInt32Value{Value: 3},
 									},
 								},
 								EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 									Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-										LogLevel: &wrappers.StringValue{Value: "debug"},
+										LogLevel: &wrapperspb.StringValue{Value: "debug"},
 										ComponentLogLevels: map[string]string{
 											"router":   "info",
 											"listener": "warn",
 										},
 									},
 									Image: &kube.Image{
-										Registry:   &wrappers.StringValue{Value: "foo"},
-										Repository: &wrappers.StringValue{Value: "bar"},
-										Tag:        &wrappers.StringValue{Value: "bat"},
+										Registry:   &wrapperspb.StringValue{Value: "foo"},
+										Repository: &wrapperspb.StringValue{Value: "bar"},
+										Tag:        &wrapperspb.StringValue{Value: "bat"},
 										PullPolicy: kube.Image_Always,
 									},
 								},
@@ -447,7 +419,7 @@ var _ = Describe("Deployer", func() {
 								},
 								Service: &kube.Service{
 									Type:      kube.Service_ClusterIP,
-									ClusterIP: &wrappers.StringValue{Value: "99.99.99.99"},
+									ClusterIP: &wrapperspb.StringValue{Value: "99.99.99.99"},
 									ExtraAnnotations: map[string]string{
 										"foo": "bar",
 									},
@@ -474,27 +446,30 @@ var _ = Describe("Deployer", func() {
 							Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 								SdsContainer: &gw2_v1alpha1.SdsContainer{
 									Image: &kube.Image{
-										Registry:   &wrappers.StringValue{Value: "foo"},
-										Repository: &wrappers.StringValue{Value: "bar"},
-										Tag:        &wrappers.StringValue{Value: "baz"},
+										Registry:   &wrapperspb.StringValue{Value: "foo"},
+										Repository: &wrapperspb.StringValue{Value: "bar"},
+										Tag:        &wrapperspb.StringValue{Value: "baz"},
 									},
 								},
 								Istio: &gw2_v1alpha1.IstioIntegration{
 									IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
 										Image: &kube.Image{
-											Registry:   &wrappers.StringValue{Value: "scooby"},
-											Repository: &wrappers.StringValue{Value: "dooby"},
-											Tag:        &wrappers.StringValue{Value: "doo"},
+											Registry:   &wrapperspb.StringValue{Value: "scooby"},
+											Repository: &wrapperspb.StringValue{Value: "dooby"},
+											Tag:        &wrapperspb.StringValue{Value: "doo"},
 										},
-										IstioDiscoveryAddress: &wrappers.StringValue{Value: "can't"},
-										IstioMetaMeshId:       &wrappers.StringValue{Value: "be"},
-										IstioMetaClusterId:    &wrappers.StringValue{Value: "overridden"},
+										IstioDiscoveryAddress: &wrapperspb.StringValue{Value: "can't"},
+										IstioMetaMeshId:       &wrapperspb.StringValue{Value: "be"},
+										IstioMetaClusterId:    &wrapperspb.StringValue{Value: "overridden"},
 									},
 								},
 							},
 						},
 					},
 				}
+			}
+			fullyDefinedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+				return fullyDefinedGatewayParams(wellknown.DefaultGatewayParametersName, defaultNamespace)
 			}
 			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
 				gw := defaultGateway()
@@ -575,6 +550,7 @@ var _ = Describe("Deployer", func() {
 		)
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
+				GinkgoHelper()
 				if expectedErr != nil {
 					Expect(err).To(MatchError(expectedErr))
 					return true
@@ -635,6 +611,113 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					return validateGatewayParametersPropagation(objs, inp.overrideGwp)
+				},
+			}),
+			Entry("Fully defined GatewayParameters", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParams(),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					expectedGwp := inp.defaultGwp.Spec.GetKube()
+					Expect(objs).NotTo(BeEmpty())
+					// Check we have Deployment, ConfigMap, ServiceAccount, Service
+					Expect(objs).To(HaveLen(4))
+					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+					Expect(dep).ToNot(BeNil())
+					Expect(dep.Spec.Replicas).ToNot(BeNil())
+					Expect(*dep.Spec.Replicas).To(Equal(int32(expectedGwp.GetDeployment().Replicas.GetValue())))
+
+					Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.GetPodTemplate().GetExtraAnnotations()))
+					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetPodTemplate().GetSecurityContext().GetRunAsUser()))
+
+					// assert envoy container
+					expectedEnvoyImage := fmt.Sprintf("%s/%s",
+						expectedGwp.GetEnvoyContainer().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetEnvoyContainer().GetImage().GetRepository().GetValue(),
+					)
+					envoyContainer := dep.Spec.Template.Spec.Containers[0]
+					Expect(envoyContainer.Image).To(ContainSubstring(expectedEnvoyImage))
+					if expectedTag := expectedGwp.GetEnvoyContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
+						Expect(envoyContainer.Image).To(ContainSubstring(":" + expectedTag))
+					} else {
+						Expect(envoyContainer.Image).To(ContainSubstring(":" + version.Version))
+					}
+					Expect(string(envoyContainer.ImagePullPolicy)).To(Equal(expectedGwp.GetEnvoyContainer().GetImage().GetPullPolicy().String()))
+					Expect(envoyContainer.Resources.Limits.Cpu().String()).To(Equal(expectedGwp.GetEnvoyContainer().GetResources().GetLimits()["cpu"]))
+					Expect(envoyContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetEnvoyContainer().GetResources().GetRequests()["cpu"]))
+
+					// assert sds container
+					expectedSdsImage := fmt.Sprintf("%s/%s",
+						expectedGwp.GetSdsContainer().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetSdsContainer().GetImage().GetRepository().GetValue(),
+					)
+					sdsContainer := dep.Spec.Template.Spec.Containers[1]
+					Expect(sdsContainer.Image).To(ContainSubstring(expectedSdsImage))
+					if expectedTag := expectedGwp.GetSdsContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
+						Expect(sdsContainer.Image).To(ContainSubstring(":" + expectedTag))
+					} else {
+						Expect(sdsContainer.Image).To(ContainSubstring(":" + version.Version))
+					}
+					Expect(string(sdsContainer.ImagePullPolicy)).To(Equal(expectedGwp.GetSdsContainer().GetImage().GetPullPolicy().String()))
+					Expect(*sdsContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetSdsContainer().GetSecurityContext().GetRunAsUser()))
+					Expect(sdsContainer.Resources.Limits.Cpu().String()).To(Equal(expectedGwp.GetSdsContainer().GetResources().GetLimits()["cpu"]))
+					Expect(sdsContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetSdsContainer().GetResources().GetRequests()["cpu"]))
+					idx := slices.IndexFunc(sdsContainer.Env, func(e corev1.EnvVar) bool {
+						return e.Name == "LOG_LEVEL"
+					})
+					Expect(idx).ToNot(Equal(-1))
+					Expect(sdsContainer.Env[idx].Value).To(Equal(expectedGwp.GetSdsContainer().GetBootstrap().GetLogLevel().GetValue()))
+
+					// assert istio container
+					istioExpectedImage := fmt.Sprintf("%s/%s",
+						expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetRepository().GetValue(),
+					)
+					istioContainer := dep.Spec.Template.Spec.Containers[2]
+					Expect(istioContainer.Image).To(ContainSubstring(istioExpectedImage))
+					if expectedTag := expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
+						Expect(istioContainer.Image).To(ContainSubstring(":" + expectedTag))
+					} else {
+						Expect(istioContainer.Image).To(ContainSubstring(":" + version.Version))
+					}
+					Expect(string(istioContainer.ImagePullPolicy)).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetPullPolicy().String()))
+					Expect(*istioContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetSecurityContext().GetRunAsUser()))
+					Expect(istioContainer.Resources.Limits.Cpu().String()).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetResources().GetLimits()["cpu"]))
+					Expect(istioContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetResources().GetRequests()["cpu"]))
+					// TODO: assert on istio args (e.g. log level, istio meta fields, etc)
+
+					// assert Service
+					svc := objs.findService(defaultNamespace, defaultServiceName)
+					Expect(svc).ToNot(BeNil())
+					Expect(svc.GetAnnotations()).ToNot(BeNil())
+					Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.GetService().GetExtraAnnotations()))
+					Expect(string(svc.Spec.Type)).To(Equal(expectedGwp.GetService().GetType().String()))
+					Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.GetService().GetClusterIP().GetValue()))
+
+					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
+					Expect(sa).ToNot(BeNil())
+
+					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+					Expect(cm).ToNot(BeNil())
+
+					logLevelsMap := expectedGwp.GetEnvoyContainer().GetBootstrap().GetComponentLogLevels()
+					levels := []types.GomegaMatcher{}
+					for k, v := range logLevelsMap {
+						levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
+					}
+
+					argsMatchers := []interface{}{
+						"--log-level",
+						expectedGwp.GetEnvoyContainer().GetBootstrap().GetLogLevel().GetValue(),
+						"--component-log-level",
+						And(levels...),
+					}
+
+					Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
+						argsMatchers...,
+					))
+					return nil
 				},
 			}),
 			Entry("correct deployment with sds enabled", &input{
@@ -809,13 +892,6 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				newDeployerErr: deployer.NilDeployerInputsErr,
 			}),
-			Entry("nil K8sGatewayExtensions input to NewDeployer", &input{
-				dInputs:    &deployer.Inputs{},
-				gw:         defaultGateway(),
-				defaultGwp: defaultGatewayParams(),
-			}, &expectedOutput{
-				newDeployerErr: deployer.NilK8sExtensionsErr,
-			}),
 			Entry("No GatewayParameters override but default is self-managed; should not deploy gateway", &input{
 				dInputs:    defaultDeployerInputs(),
 				gw:         defaultGateway(),
@@ -845,4 +921,145 @@ var _ = Describe("Deployer", func() {
 func newFakeClientWithObjs(objs ...client.Object) client.Client {
 	s := scheme.NewScheme()
 	return fake.NewClientBuilder().WithScheme(s).WithObjects(objs...).Build()
+}
+
+func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayParameters {
+	return &gw2_v1alpha1.GatewayParameters{
+		TypeMeta: metav1.TypeMeta{
+			Kind: gw2_v1alpha1.GatewayParametersGVK.Kind,
+			// The parsing expects GROUP/VERSION format in this field
+			APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.GatewayParametersGVK.Group, gw2_v1alpha1.GatewayParametersGVK.Version),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			UID:       "1236",
+		},
+		Spec: gw2_v1alpha1.GatewayParametersSpec{
+			EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_Kube{
+				Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+					WorkloadType: &gw2_v1alpha1.KubernetesProxyConfig_Deployment{
+						Deployment: &gw2_v1alpha1.ProxyDeployment{
+							Replicas: &wrapperspb.UInt32Value{Value: 3},
+						},
+					},
+					EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
+						Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+							LogLevel: &wrapperspb.StringValue{Value: "debug"},
+							ComponentLogLevels: map[string]string{
+								"router":   "info",
+								"listener": "warn",
+							},
+						},
+						Image: &kube.Image{
+							Registry:   &wrapperspb.StringValue{Value: "foo"},
+							Repository: &wrapperspb.StringValue{Value: "bar"},
+							Tag:        &wrapperspb.StringValue{Value: "bat"},
+							PullPolicy: kube.Image_Always,
+						},
+						SecurityContext: &v1.SecurityContext{
+							RunAsUser: ptr.To(int64(111)),
+						},
+						Resources: &kube.ResourceRequirements{
+							Limits:   map[string]string{"cpu": "101m"},
+							Requests: map[string]string{"cpu": "103m"},
+						},
+					},
+					SdsContainer: &gw2_v1alpha1.SdsContainer{
+						Image: &kube.Image{
+							Registry:   &wrapperspb.StringValue{Value: "sds-registry"},
+							Repository: &wrapperspb.StringValue{Value: "sds-repository"},
+							Tag:        &wrapperspb.StringValue{Value: "sds-tag"},
+							Digest:     &wrapperspb.StringValue{Value: "sds-digest"},
+							PullPolicy: kube.Image_Always,
+						},
+						SecurityContext: &v1.SecurityContext{
+							RunAsUser: ptr.To(int64(222)),
+						},
+						Resources: &kube.ResourceRequirements{
+							Limits:   map[string]string{"cpu": "201m"},
+							Requests: map[string]string{"cpu": "203m"},
+						},
+						Bootstrap: &gw2_v1alpha1.SdsBootstrap{
+							LogLevel: &wrapperspb.StringValue{Value: "debug"},
+						},
+					},
+					PodTemplate: &kube.Pod{
+						ExtraAnnotations: map[string]string{
+							"pod-anno": "foo",
+						},
+						ExtraLabels: map[string]string{
+							"pod-label": "foo",
+						},
+						SecurityContext: &v1.PodSecurityContext{
+							RunAsUser: ptr.To(int64(333)),
+						},
+						ImagePullSecrets: []*v1.LocalObjectReference{{
+							Name: ptr.To("pod-image-pull-secret"),
+						}},
+						NodeSelector: map[string]string{
+							"pod-node-selector": "foo",
+						},
+						Affinity: &v1.Affinity{
+							NodeAffinity: &v1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
+									NodeSelectorTerms: []*v1.NodeSelectorTerm{{
+										MatchExpressions: []*v1.NodeSelectorRequirement{{
+											Key:      ptr.To("pod-affinity-nodeAffinity-required-expression-key"),
+											Operator: ptr.To("pod-affinity-nodeAffinity-required-expression-operator"),
+											Values:   []string{"foo"},
+										}},
+										MatchFields: []*v1.NodeSelectorRequirement{{
+											Key:      ptr.To("pod-affinity-nodeAffinity-required-field-key"),
+											Operator: ptr.To("pod-affinity-nodeAffinity-required-field-operator"),
+											Values:   []string{"foo"},
+										}},
+									}},
+								},
+							},
+						},
+						Tolerations: []*v1.Toleration{{
+							Key:               ptr.To("pod-toleration-key"),
+							Operator:          ptr.To("pod-toleration-operator"),
+							Value:             ptr.To("pod-toleration-value"),
+							Effect:            ptr.To("pod-toleration-effect"),
+							TolerationSeconds: ptr.To(int64(1)),
+						}},
+					},
+					Service: &kube.Service{
+						Type:      kube.Service_ClusterIP,
+						ClusterIP: &wrapperspb.StringValue{Value: "99.99.99.99"},
+						ExtraAnnotations: map[string]string{
+							"service-anno": "foo",
+						},
+						ExtraLabels: map[string]string{
+							"service-label": "foo",
+						},
+					},
+					Istio: &gw2_v1alpha1.IstioIntegration{
+						IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
+							Image: &kube.Image{
+								Registry:   &wrapperspb.StringValue{Value: "istio-registry"},
+								Repository: &wrapperspb.StringValue{Value: "istio-repository"},
+								Tag:        &wrapperspb.StringValue{Value: "istio-tag"},
+								Digest:     &wrapperspb.StringValue{Value: "istio-digest"},
+								PullPolicy: kube.Image_Always,
+							},
+							SecurityContext: &v1.SecurityContext{
+								RunAsUser: ptr.To(int64(444)),
+							},
+							Resources: &kube.ResourceRequirements{
+								Limits:   map[string]string{"cpu": "301m"},
+								Requests: map[string]string{"cpu": "303m"},
+							},
+							LogLevel:              &wrapperspb.StringValue{Value: "debug"},
+							IstioDiscoveryAddress: &wrapperspb.StringValue{Value: "istioDiscoveryAddress"},
+							IstioMetaMeshId:       &wrapperspb.StringValue{Value: "istioMetaMeshId"},
+							IstioMetaClusterId:    &wrapperspb.StringValue{Value: "istioMetaClusterId"},
+						},
+					},
+				},
+			},
+		},
+	}
 }

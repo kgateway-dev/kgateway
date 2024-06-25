@@ -41,7 +41,7 @@ const (
 
 type GatewayConfig struct {
 	Mgr            manager.Manager
-	GWClass        apiv1.ObjectName
+	GWClassName    apiv1.ObjectName
 	Dev            bool
 	ControllerName string
 	AutoProvision  bool
@@ -55,7 +55,7 @@ type GatewayConfig struct {
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	log := log.FromContext(ctx)
-	log.V(5).Info("starting controller", "controllerName", cfg.ControllerName, "gwclass", cfg.GWClass)
+	log.V(5).Info("starting controller", "controllerName", cfg.ControllerName, "gwClassName", cfg.GWClassName)
 
 	controllerBuilder := &controllerBuilder{
 		cfg: cfg,
@@ -164,7 +164,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		Dev:            c.cfg.Dev,
 		IstioValues:    c.cfg.IstioValues,
 		ControlPlane:   c.cfg.ControlPlane,
-		Extensions:     c.cfg.Extensions,
 	})
 	if err != nil {
 		return err
@@ -178,8 +177,9 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
+			// we only care about Gateways that use our GatewayClass
 			if gw, ok := object.(*apiv1.Gateway); ok {
-				return gw.Spec.GatewayClassName == c.cfg.GWClass
+				return gw.Spec.GatewayClassName == c.cfg.GWClassName
 			}
 			return false
 		}), predicate.GenerationChangedPredicate{}))
@@ -226,7 +226,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	gwReconciler := &gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
-		className:     c.cfg.GWClass,
 		autoProvision: c.cfg.AutoProvision,
 		deployer:      d,
 		kick:          c.cfg.Kick,
@@ -246,6 +245,13 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
+			// we only care about GatewayClasses that use our controller name
+			if gwClass, ok := object.(*apiv1.GatewayClass); ok {
+				return gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
+			}
+			return false
+		})).
 		For(&apiv1.GatewayClass{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
