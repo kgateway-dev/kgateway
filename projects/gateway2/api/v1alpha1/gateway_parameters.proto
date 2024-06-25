@@ -64,6 +64,9 @@ message KubernetesProxyConfig {
 
   // Istio integration configuration.
   IstioIntegration istio = 6;
+
+  // Optional stats configuration (enabled by default)
+  StatsConfig stats = 8;
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
@@ -211,4 +214,18 @@ message GatewayParametersStatus {
   // The current conditions of the GatewayParameters. This is not currently
   // implemented.
   // repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 1;
+}
+
+message StatsConfig {
+  // Whether to expose metrics annotations and ports for scraping metrics.
+  .google.protobuf.BoolValue enabled = 1;
+
+  // The Envoy stats endpoint to which the metrics are written
+  .google.protobuf.StringValue route_prefix_rewrite = 2;
+
+  // Enables an additional route to the stats cluster defaulting to /stats
+  .google.protobuf.BoolValue enable_stats_route = 3;
+
+  // The Envoy stats endpoint with general metrics for the additional stats route
+  .google.protobuf.StringValue stats_route_prefix_rewrite = 4;
 }

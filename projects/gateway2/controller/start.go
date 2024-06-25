@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	gatewayClass = apiv1.ObjectName(wellknown.GatewayClassName)
+	gatewayClassName = apiv1.ObjectName(wellknown.GatewayClassName)
 
 	setupLog = ctrl.Log.WithName("setup")
 )
@@ -137,7 +137,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	gwCfg := GatewayConfig{
 		Mgr:            mgr,
-		GWClass:        gatewayClass,
+		GWClassName:    gatewayClassName,
 		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane:   cfg.Opts.ControlPlane,
