@@ -159,16 +159,6 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetLoopbackAddress()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetLoopbackAddress()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetLoopbackAddress(), target.GetLoopbackAddress()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetStats()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetStats()) {
 			return false
