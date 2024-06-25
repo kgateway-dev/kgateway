@@ -93,7 +93,7 @@ var _ = Describe("Header Validation", Label(), func() {
 			testContext.EventuallyProxyAccepted()
 			waitUntilProxyIsRunning()
 			Eventually(func(g Gomega) {
-			  g.Expect(testutils.DefaultHttpClient.Do(buildRequest("CUSTOMMETHOD"))).Should(matchers.HaveStatusCode(http.StatusOK))
+				g.Expect(testutils.DefaultHttpClient.Do(buildRequest("CUSTOMMETHOD"))).Should(matchers.HaveStatusCode(http.StatusOK))
 			}, "10s", "1s").Should(Succeed())
 
 		})
