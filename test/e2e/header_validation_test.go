@@ -42,31 +42,27 @@ var _ = Describe("Header Validation", Label(), func() {
 
 	waitUntilProxyIsRunning := func() {
 		// Do a GET request to make sure the proxy is running
-		Eventually(func(g Gomega) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			req := testContext.GetHttpRequestBuilder().Build()
 			result, err := testutils.DefaultHttpClient.Do(req)
-			g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
-			g.ExpectWithOffset(1, result).Should(matchers.HaveOkResponse())
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(result).Should(matchers.HaveOkResponse())
 		}, "5s", ".5s").Should(Succeed(), "GET with valid host returns a 200")
 	}
 
-	buildRequest := func() *http.Request {
+	buildRequestWithCustomMethod := func() *http.Request {
 		return testContext.GetHttpRequestBuilder().
 			WithMethod("CUSTOMMETHOD").
 			Build()
 	}
 
-	Context("Using default configuration", func() {
-		It("defaults to returning HTTP 400 on requests with custom HTTP methods", func() {
+	Context("Header Validation tests", func() {
+		It("rejects custom methods with default configuration", func() {
 			waitUntilProxyIsRunning()
-			req := buildRequest()
-			Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusBadRequest))
+			Expect(testutils.DefaultHttpClient.Do(buildRequestWithCustomMethod())).Should(matchers.HaveStatusCode(http.StatusBadRequest))
 		})
-	})
 
-	Context("With header validation disabled", func() {
-
-		It("custom HTTP methods are allowed", func() {
+		It("allows custom methods when DisableHttp1MethodValidation is set", func() {
 			testContext.PatchDefaultGateway(func(gateway *gatewayv1.Gateway) *gatewayv1.Gateway {
 				gateway.GatewayType = &gatewayv1.Gateway_HttpGateway{
 					HttpGateway: &gatewayv1.HttpGateway{
@@ -82,7 +78,7 @@ var _ = Describe("Header Validation", Label(), func() {
 			testContext.EventuallyProxyAccepted()
 			waitUntilProxyIsRunning()
 			Eventually(func(g Gomega) {
-			  g.Expect(testutils.DefaultHttpClient.Do(buildRequest())).Should(matchers.HaveStatusCode(http.StatusOK))
+			  g.Expect(testutils.DefaultHttpClient.Do(buildRequestWithCustomMethod())).Should(matchers.HaveStatusCode(http.StatusOK))
 			}, "10s", "1s").Should(Succeed())
 
 		})
