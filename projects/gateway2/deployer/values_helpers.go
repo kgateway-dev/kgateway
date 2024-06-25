@@ -110,8 +110,9 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 		Repository: ptr.To(sdsConfigImage.GetRepository().GetValue()),
 		Tag:        ptr.To(sdsConfigImage.GetTag().GetValue()),
 		Digest:     ptr.To(sdsConfigImage.GetDigest().GetValue()),
-		PullPolicy: ptr.To(sdsConfigImage.GetPullPolicy().String()),
 	}
+	setPullPolicy(sdsConfigImage.GetPullPolicy(), sdsImage)
+
 	return &helmSdsContainer{
 		Image:           sdsImage,
 		Resources:       sdsContainerConfig.GetResources(),
@@ -133,8 +134,8 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 		Repository: ptr.To(istioConfigImage.GetRepository().GetValue()),
 		Tag:        ptr.To(istioConfigImage.GetTag().GetValue()),
 		Digest:     ptr.To(istioConfigImage.GetDigest().GetValue()),
-		PullPolicy: ptr.To(istioConfigImage.GetPullPolicy().String()),
 	}
+	setPullPolicy(istioConfigImage.GetPullPolicy(), istioImage)
 
 	return &helmIstioContainer{
 		Image:                 istioImage,
@@ -165,13 +166,14 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 // 1. getting the image values from a GatewayParameter
 // 2. for values not provided, fall back to the defaults (if any) from the k8s gw extensions
 func getEnvoyImageValues(envoyImage *v1alpha1kube.Image) *helmImage {
-	return &helmImage{
+	helmImage := &helmImage{
 		Registry:   ptr.To(envoyImage.GetRegistry().GetValue()),
 		Repository: ptr.To(envoyImage.GetRepository().GetValue()),
 		Tag:        ptr.To(envoyImage.GetTag().GetValue()),
 		Digest:     ptr.To(envoyImage.GetDigest().GetValue()),
-		PullPolicy: ptr.To(envoyImage.GetPullPolicy().String()),
 	}
+	setPullPolicy(envoyImage.GetPullPolicy(), helmImage)
+	return helmImage
 }
 
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the
@@ -193,4 +195,12 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ","), nil
+}
+
+func setPullPolicy(pullPolicy v1alpha1kube.Image_PullPolicy, helmImage *helmImage) {
+	// don't do anything if pull policy is unspecified
+	if pullPolicy == v1alpha1kube.Image_Unspecified {
+		return
+	}
+	helmImage.PullPolicy = ptr.To(pullPolicy.String())
 }
