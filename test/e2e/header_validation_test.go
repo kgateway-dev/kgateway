@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
 	"github.com/solo-io/gloo/test/e2e"
@@ -67,20 +66,25 @@ var _ = Describe("Header Validation", Label(), func() {
 
 	Context("With header validation disabled", func() {
 
-		BeforeEach(func() {
-			gw := gatewaydefaults.DefaultGateway(writeNamespace)
-			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-				HeaderValidationSettings: &header_validation.HeaderValidationSettings{
-					HeaderMethodValidation: &header_validation.HeaderValidationSettings_DisableHttp1MethodValidation{},
-				},
-			}
-			testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{gw}
-		})
-
 		It("custom HTTP methods are allowed", func() {
+			testContext.PatchDefaultGateway(func(gateway *gatewayv1.Gateway) *gatewayv1.Gateway {
+				gateway.GatewayType = &gatewayv1.Gateway_HttpGateway{
+					HttpGateway: &gatewayv1.HttpGateway{
+						Options: &gloov1.HttpListenerOptions{
+							HeaderValidationSettings: &header_validation.HeaderValidationSettings{
+								HeaderMethodValidation: &header_validation.HeaderValidationSettings_DisableHttp1MethodValidation{},
+							},
+						},
+					},
+				}
+				return gateway
+			})
+			testContext.EventuallyProxyAccepted()
 			waitUntilProxyIsRunning()
-			req := buildRequest()
-			Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusOK))
+			Eventually(func(g Gomega) {
+			  g.Expect(testutils.DefaultHttpClient.Do(buildRequest())).Should(matchers.HaveStatusCode(http.StatusOK))
+			}, "10s", "1s").Should(Succeed())
+
 		})
 	})
 
