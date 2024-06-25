@@ -85,7 +85,7 @@ spec:
           failureThreshold: 3
 {{- if $gateway.resources }}
         resources:
-          {{- toYaml $gateway.resources | nindent 12 }}
+          {{- toYaml $gateway.resources | nindent 10 }}
 {{- end }} {{/* if $gateway.resources */}}
 {{- if $gateway.istio.enabled }}
       - name: sds
