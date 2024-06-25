@@ -119,15 +119,9 @@ type helmIstioContainer struct {
 	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
 }
 
-type helmServiceAccount struct {
-	Create      *bool             `json:"create,omitempty"`
-	Name        *string           `json:"name,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
-}
-
 type helmStatsConfig struct {
-	Enabled            bool   `json:"enabled,omitempty"`
-	RoutePrefixRewrite string `json:"routePrefixRewrite,omitempty"`
-	EnableStatsRoute   bool   `json:"enableStatsRoute,omitempty"`
-	StatsPrefixRewrite string `json:"statsPrefixRewrite,omitempty"`
+	Enabled            *bool   `json:"enabled,omitempty"`
+	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
 }

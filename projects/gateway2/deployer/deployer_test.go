@@ -502,6 +502,30 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
+			gatewayParamsOverrideWithoutStats = func() *gw2_v1alpha1.GatewayParameters {
+				return &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind: gw2_v1alpha1.GatewayParametersGVK.Kind,
+						// The parsing expects GROUP/VERSION format in this field
+						APIVersion: fmt.Sprintf("%s/%s", gw2_v1alpha1.GatewayParametersGVK.Group, gw2_v1alpha1.GatewayParametersGVK.Version),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      gwpOverrideName,
+						Namespace: defaultNamespace,
+						UID:       "1236",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						EnvironmentType: &gw2_v1alpha1.GatewayParametersSpec_Kube{
+							Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+								Stats: &gw2_v1alpha1.StatsConfig{
+									Enabled:          &wrappers.BoolValue{Value: false},
+									EnableStatsRoute: &wrappers.BoolValue{Value: false},
+								},
+							},
+						},
+					},
+				}
+			}
 			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
 				gw := defaultGateway()
 				gw.Annotations = map[string]string{
@@ -813,6 +837,52 @@ var _ = Describe("Deployer", func() {
 						}
 					}
 					Expect(prometheusListener).NotTo(BeNil())
+
+					return nil
+				},
+			}),
+			Entry("envoy yaml is valid with stats disabled", &input{
+				dInputs:     defaultDeployerInputs(),
+				gw:          defaultGateway(),
+				defaultGwp:  defaultGatewayParams(),
+				overrideGwp: gatewayParamsOverrideWithoutStats(),
+				gwc:         defaultGatewayClass(),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					gw := defaultGateway()
+					Expect(objs).NotTo(BeEmpty())
+
+					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+					Expect(cm).NotTo(BeNil())
+
+					envoyYaml := cm.Data["envoy.yaml"]
+					Expect(envoyYaml).NotTo(BeEmpty())
+
+					// make sure it's valid yaml
+					var envoyConfig map[string]any
+					err := yaml.Unmarshal([]byte(envoyYaml), &envoyConfig)
+					Expect(err).NotTo(HaveOccurred(), "envoy config is not valid yaml: %s", envoyYaml)
+
+					// make sure the envoy node metadata looks right
+					node := envoyConfig["node"].(map[string]any)
+					proxyName := fmt.Sprintf("%s-%s", gw.Namespace, gw.Name)
+					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, proxyName),
+					}))
+
+					// make sure the stats listener is enabled
+					staticResources := envoyConfig["static_resources"].(map[string]any)
+					listeners := staticResources["listeners"].([]interface{})
+					var prometheusListener map[string]any
+					for _, lis := range listeners {
+						lis := lis.(map[string]any)
+						lisName := lis["name"]
+						if lisName == "prometheus_listener" {
+							prometheusListener = lis
+							break
+						}
+					}
+					Expect(prometheusListener).To(BeNil())
 
 					return nil
 				},

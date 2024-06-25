@@ -175,10 +175,10 @@ func getEnvoyImageValues(envoyImage *v1alpha1kube.Image) *helmImage {
 // Get the stats values for the envoy listener in the configmap for bootstrap.
 func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
 	return &helmStatsConfig{
-		Enabled:            statsConfig.GetEnabled().GetValue(),
-		RoutePrefixRewrite: statsConfig.GetRoutePrefixRewrite().GetValue(),
-		EnableStatsRoute:   statsConfig.GetEnableStatsRoute().GetValue(),
-		StatsPrefixRewrite: statsConfig.GetStatsRoutePrefixRewrite().GetValue(),
+		Enabled:            ptr.To(statsConfig.GetEnabled().GetValue()),
+		RoutePrefixRewrite: ptr.To(statsConfig.GetRoutePrefixRewrite().GetValue()),
+		EnableStatsRoute:   ptr.To(statsConfig.GetEnableStatsRoute().GetValue()),
+		StatsPrefixRewrite: ptr.To(statsConfig.GetStatsRoutePrefixRewrite().GetValue()),
 	}
 }
 
