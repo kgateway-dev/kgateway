@@ -90,7 +90,9 @@ spec:
 {{- if $gateway.istio.enabled }}
       - name: sds
         image: "{{ template "gloo-gateway.gateway.image" $gateway.sdsContainer.image }}"
-        imagePullPolicy: IfNotPresent
+        {{- if $gateway.sdsContainer.image.pullPolicy }}
+        imagePullPolicy: {{ $gateway.sdsContainer.image.pullPolicy }}
+        {{- end }}
         env:
           - name: POD_NAME
             valueFrom:
@@ -118,8 +120,10 @@ spec:
           tcpSocket:
             port: 8234
           timeoutSeconds: 1
+        {{- if $gateway.sdsContainer.resources }}
         resources:
-          {{- toYaml .Values.gateway.resources | nindent 12 }}
+          {{- toYaml $gateway.sdsContainer.resources | nindent 10 }}
+        {{- end }}
         {{- if $gateway.sdsContainer.securityContext }}
         securityContext:
           {{- toYaml $gateway.sdsContainer.securityContext | nindent 10 }}
@@ -135,7 +139,9 @@ spec:
             name: istio-certs
       - name: istio-proxy
         image: "{{ template "gloo-gateway.gateway.image" $gateway.istioContainer.image }}"
-        # TODO(npolshak): Add configurable envoySidecarResources
+        {{- if $gateway.istioContainer.image.pullPolicy }}
+        imagePullPolicy: {{ $gateway.istioContainer.image.pullPolicy }}
+        {{- end }}
         args:
           - proxy
           - sidecar
@@ -207,6 +213,10 @@ spec:
                 fieldPath: metadata.namespace
           - name: DISABLE_ENVOY
             value: "true"
+        {{- if $gateway.istioContainer.resources }}
+        resources:
+          {{- toYaml $gateway.istioContainer.resources | nindent 10 }}
+        {{- end }}
         {{- if $gateway.istioContainer.securityContext }}
         securityContext:
           {{- toYaml $gateway.istioContainer.securityContext | nindent 10 }}

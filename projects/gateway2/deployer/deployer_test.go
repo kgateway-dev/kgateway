@@ -3,6 +3,7 @@ package deployer_test
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
@@ -467,8 +468,8 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
-			fullyDefinedGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
-				return fullyDefinedGatewayParams(gwpOverrideName, defaultNamespace)
+			fullyDefinedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+				return fullyDefinedGatewayParams(wellknown.DefaultGatewayParametersName, defaultNamespace)
 			}
 			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
 				gw := defaultGateway()
@@ -549,6 +550,7 @@ var _ = Describe("Deployer", func() {
 		)
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
+				GinkgoHelper()
 				if expectedErr != nil {
 					Expect(err).To(MatchError(expectedErr))
 					return true
@@ -612,12 +614,109 @@ var _ = Describe("Deployer", func() {
 				},
 			}),
 			Entry("Fully defined GatewayParameters", &input{
-				dInputs:    defaultDeployerInputs(),
+				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
-				defaultGwp: fullyDefinedGatewayParamsOverride(),
+				defaultGwp: fullyDefinedGatewayParams(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
-					// TODO (validate all objects have all expected fields populated from GatewayParameters
+					expectedGwp := inp.defaultGwp.Spec.GetKube()
+					Expect(objs).NotTo(BeEmpty())
+					// Check we have Deployment, ConfigMap, ServiceAccount, Service
+					Expect(objs).To(HaveLen(4))
+					dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+					Expect(dep).ToNot(BeNil())
+					Expect(dep.Spec.Replicas).ToNot(BeNil())
+					Expect(*dep.Spec.Replicas).To(Equal(int32(expectedGwp.GetDeployment().Replicas.GetValue())))
+
+					Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.GetPodTemplate().GetExtraAnnotations()))
+					Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetPodTemplate().GetSecurityContext().GetRunAsUser()))
+
+					// assert envoy container
+					expectedEnvoyImage := fmt.Sprintf("%s/%s",
+						expectedGwp.GetEnvoyContainer().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetEnvoyContainer().GetImage().GetRepository().GetValue(),
+					)
+					envoyContainer := dep.Spec.Template.Spec.Containers[0]
+					Expect(envoyContainer.Image).To(ContainSubstring(expectedEnvoyImage))
+					if expectedTag := expectedGwp.GetEnvoyContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
+						Expect(envoyContainer.Image).To(ContainSubstring(":" + expectedTag))
+					} else {
+						Expect(envoyContainer.Image).To(ContainSubstring(":" + version.Version))
+					}
+					Expect(string(envoyContainer.ImagePullPolicy)).To(Equal(expectedGwp.GetEnvoyContainer().GetImage().GetPullPolicy().String()))
+					Expect(envoyContainer.Resources.Limits.Cpu().String()).To(Equal(expectedGwp.GetEnvoyContainer().GetResources().GetLimits()["cpu"]))
+					Expect(envoyContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetEnvoyContainer().GetResources().GetRequests()["cpu"]))
+
+					// assert sds container
+					expectedSdsImage := fmt.Sprintf("%s/%s",
+						expectedGwp.GetSdsContainer().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetSdsContainer().GetImage().GetRepository().GetValue(),
+					)
+					sdsContainer := dep.Spec.Template.Spec.Containers[1]
+					Expect(sdsContainer.Image).To(ContainSubstring(expectedSdsImage))
+					if expectedTag := expectedGwp.GetSdsContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
+						Expect(sdsContainer.Image).To(ContainSubstring(":" + expectedTag))
+					} else {
+						Expect(sdsContainer.Image).To(ContainSubstring(":" + version.Version))
+					}
+					Expect(string(sdsContainer.ImagePullPolicy)).To(Equal(expectedGwp.GetSdsContainer().GetImage().GetPullPolicy().String()))
+					Expect(*sdsContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetSdsContainer().GetSecurityContext().GetRunAsUser()))
+					Expect(sdsContainer.Resources.Limits.Cpu().String()).To(Equal(expectedGwp.GetSdsContainer().GetResources().GetLimits()["cpu"]))
+					Expect(sdsContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetSdsContainer().GetResources().GetRequests()["cpu"]))
+					idx := slices.IndexFunc(sdsContainer.Env, func(e corev1.EnvVar) bool {
+						return e.Name == "LOG_LEVEL"
+					})
+					Expect(idx).ToNot(Equal(-1))
+					Expect(sdsContainer.Env[idx].Value).To(Equal(expectedGwp.GetSdsContainer().GetBootstrap().GetLogLevel().GetValue()))
+
+					// assert istio container
+					istioExpectedImage := fmt.Sprintf("%s/%s",
+						expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetRepository().GetValue(),
+					)
+					istioContainer := dep.Spec.Template.Spec.Containers[2]
+					Expect(istioContainer.Image).To(ContainSubstring(istioExpectedImage))
+					if expectedTag := expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetTag().GetValue(); expectedTag != "" {
+						Expect(istioContainer.Image).To(ContainSubstring(":" + expectedTag))
+					} else {
+						Expect(istioContainer.Image).To(ContainSubstring(":" + version.Version))
+					}
+					Expect(string(istioContainer.ImagePullPolicy)).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetImage().GetPullPolicy().String()))
+					Expect(*istioContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetSecurityContext().GetRunAsUser()))
+					Expect(istioContainer.Resources.Limits.Cpu().String()).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetResources().GetLimits()["cpu"]))
+					Expect(istioContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetResources().GetRequests()["cpu"]))
+					// TODO: assert on istio args (e.g. log level, istio meta fields, etc)
+
+					// assert Service
+					svc := objs.findService(defaultNamespace, defaultServiceName)
+					Expect(svc).ToNot(BeNil())
+					Expect(svc.GetAnnotations()).ToNot(BeNil())
+					Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.GetService().GetExtraAnnotations()))
+					Expect(string(svc.Spec.Type)).To(Equal(expectedGwp.GetService().GetType().String()))
+					Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.GetService().GetClusterIP().GetValue()))
+
+					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
+					Expect(sa).ToNot(BeNil())
+
+					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+					Expect(cm).ToNot(BeNil())
+
+					logLevelsMap := expectedGwp.GetEnvoyContainer().GetBootstrap().GetComponentLogLevels()
+					levels := []types.GomegaMatcher{}
+					for k, v := range logLevelsMap {
+						levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
+					}
+
+					argsMatchers := []interface{}{
+						"--log-level",
+						expectedGwp.GetEnvoyContainer().GetBootstrap().GetLogLevel().GetValue(),
+						"--component-log-level",
+						And(levels...),
+					}
+
+					Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
+						argsMatchers...,
+					))
 					return nil
 				},
 			}),
@@ -862,8 +961,8 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 							RunAsUser: ptr.To(int64(111)),
 						},
 						Resources: &kube.ResourceRequirements{
-							Limits:   map[string]string{"cpu": "101m", "memory": "102Mi"},
-							Requests: map[string]string{"cpu": "103m", "memory": "104Mi"},
+							Limits:   map[string]string{"cpu": "101m"},
+							Requests: map[string]string{"cpu": "103m"},
 						},
 					},
 					SdsContainer: &gw2_v1alpha1.SdsContainer{
@@ -878,8 +977,8 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 							RunAsUser: ptr.To(int64(222)),
 						},
 						Resources: &kube.ResourceRequirements{
-							Limits:   map[string]string{"cpu": "201m", "memory": "202Mi"},
-							Requests: map[string]string{"cpu": "203m", "memory": "204Mi"},
+							Limits:   map[string]string{"cpu": "201m"},
+							Requests: map[string]string{"cpu": "203m"},
 						},
 						Bootstrap: &gw2_v1alpha1.SdsBootstrap{
 							LogLevel: &wrapperspb.StringValue{Value: "debug"},
@@ -950,8 +1049,8 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 								RunAsUser: ptr.To(int64(444)),
 							},
 							Resources: &kube.ResourceRequirements{
-								Limits:   map[string]string{"cpu": "301m", "memory": "302Mi"},
-								Requests: map[string]string{"cpu": "303m", "memory": "304Mi"},
+								Limits:   map[string]string{"cpu": "301m"},
+								Requests: map[string]string{"cpu": "303m"},
 							},
 							LogLevel:              &wrapperspb.StringValue{Value: "debug"},
 							IstioDiscoveryAddress: &wrapperspb.StringValue{Value: "istioDiscoveryAddress"},
