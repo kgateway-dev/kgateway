@@ -50,16 +50,31 @@ var _ = Describe("Header Validation", Label(), func() {
 		}, "5s", ".5s").Should(Succeed(), "GET with valid host returns a 200")
 	}
 
-	buildRequestWithCustomMethod := func() *http.Request {
+	buildRequest := func(methodName string) *http.Request {
 		return testContext.GetHttpRequestBuilder().
-			WithMethod("CUSTOMMETHOD").
+			WithMethod(methodName).
 			Build()
 	}
 
 	Context("Header Validation tests", func() {
 		It("rejects custom methods with default configuration", func() {
 			waitUntilProxyIsRunning()
-			Expect(testutils.DefaultHttpClient.Do(buildRequestWithCustomMethod())).Should(matchers.HaveStatusCode(http.StatusBadRequest))
+			Expect(testutils.DefaultHttpClient.Do(buildRequest("CUSTOMMETHOD"))).Should(matchers.HaveStatusCode(http.StatusBadRequest))
+		})
+
+		It("rejects standard extended methods with default configuration", func() {
+			// We expect that this test will fail when UHV is enabled. By
+			// default, UHV does not restrict any HTTP methods. However, even
+			// when UHV is configured to restrict HTTP methods (using this
+			// option):
+			// https://github.com/envoyproxy/envoy/blob/release/v1.30/api/envoy/extensions/http/header_validators/envoy_default/v3/header_validator.proto#L143
+			// it will still allow methods from this list:
+			// https://github.com/envoyproxy/envoy/blob/0b9f67e7f71bcba3ff49575dc61676478cb68614/source/extensions/http/header_validators/envoy_default/header_validator.cc#L53-L93
+			// which is substantially more methods than the original list of
+			// allowed methods:
+			// https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+			waitUntilProxyIsRunning()
+			Expect(testutils.DefaultHttpClient.Do(buildRequest("LABEL"))).Should(matchers.HaveStatusCode(http.StatusBadRequest))
 		})
 
 		It("allows custom methods when DisableHttp1MethodValidation is set", func() {
@@ -78,7 +93,7 @@ var _ = Describe("Header Validation", Label(), func() {
 			testContext.EventuallyProxyAccepted()
 			waitUntilProxyIsRunning()
 			Eventually(func(g Gomega) {
-			  g.Expect(testutils.DefaultHttpClient.Do(buildRequestWithCustomMethod())).Should(matchers.HaveStatusCode(http.StatusOK))
+			  g.Expect(testutils.DefaultHttpClient.Do(buildRequest("CUSTOMMETHOD"))).Should(matchers.HaveStatusCode(http.StatusOK))
 			}, "10s", "1s").Should(Succeed())
 
 		})
