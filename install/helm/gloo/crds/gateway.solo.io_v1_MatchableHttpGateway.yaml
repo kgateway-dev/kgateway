@@ -812,6 +812,12 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      headerValidationSettings:
+                        properties:
+                          disableHttp1MethodValidation:
+                            maxProperties: 0
+                            type: object
+                        type: object
                       healthCheck:
                         properties:
                           path:

@@ -69,6 +69,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_healthcheck "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
@@ -365,6 +367,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.StatefulSession = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session.StatefulSession)
 	} else {
 		target.StatefulSession = proto.Clone(m.GetStatefulSession()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session.StatefulSession)
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(clone.Cloner); ok {
+		target.HeaderValidationSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	} else {
+		target.HeaderValidationSettings = proto.Clone(m.GetHeaderValidationSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
 	}
 
 	switch m.ExtProcConfig.(type) {
