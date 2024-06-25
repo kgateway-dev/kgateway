@@ -396,8 +396,8 @@ func checkUpstreams(ctx context.Context, opts *options.Options, namespaces []str
 	printer.AppendCheck("Checking upstreams... ")
 	var knownUpstreams []string
 	var multiErr *multierror.Error
+	client, err := helpers.UpstreamClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		client, err := helpers.UpstreamClient(ctx, []string{ns})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -440,8 +440,8 @@ func checkUpstreams(ctx context.Context, opts *options.Options, namespaces []str
 func checkUpstreamGroups(ctx context.Context, opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking upstream groups... ")
 	var multiErr *multierror.Error
+	upstreamGroupClient, err := helpers.UpstreamGroupClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		upstreamGroupClient, err := helpers.UpstreamGroupClient(ctx, []string{ns})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -487,8 +487,8 @@ func checkAuthConfigs(ctx context.Context, opts *options.Options, namespaces []s
 	printer.AppendCheck("Checking auth configs... ")
 	var knownAuthConfigs []string
 	var multiErr *multierror.Error
+	authConfigClient, err := helpers.AuthConfigClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		authConfigClient, err := helpers.AuthConfigClient(ctx, []string{ns})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -532,9 +532,8 @@ func checkRateLimitConfigs(ctx context.Context, opts *options.Options, namespace
 	printer.AppendCheck("Checking rate limit configs... ")
 	var knownConfigs []string
 	var multiErr *multierror.Error
+	rlcClient, err := helpers.RateLimitConfigClient(ctx, namespaces)
 	for _, ns := range namespaces {
-
-		rlcClient, err := helpers.RateLimitConfigClient(ctx, []string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(ratelimit.RateLimitConfigCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
@@ -572,8 +571,8 @@ func checkVirtualHostOptions(ctx context.Context, opts *options.Options, namespa
 	printer.AppendCheck("Checking VirtualHostOptions... ")
 	var knownVhOpts []string
 	var multiErr *multierror.Error
+	vhoptClient, err := helpers.VirtualHostOptionClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		vhoptClient, err := helpers.VirtualHostOptionClient(ctx, []string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(gatewayv1.VirtualHostOptionCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
@@ -620,8 +619,8 @@ func checkRouteOptions(ctx context.Context, opts *options.Options, namespaces []
 	printer.AppendCheck("Checking RouteOptions... ")
 	var knownRouteOpts []string
 	var multiErr *multierror.Error
+	routeOptionClient, err := helpers.RouteOptionClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		routeOptionClient, err := helpers.RouteOptionClient(ctx, []string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(gatewayv1.RouteOptionCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
@@ -668,8 +667,8 @@ func checkVirtualServices(ctx context.Context, opts *options.Options, namespaces
 	printer.AppendCheck("Checking virtual services... ")
 	var multiErr *multierror.Error
 
+	virtualServiceClient, err := helpers.VirtualServiceClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		virtualServiceClient, err := helpers.VirtualServiceClient(ctx, []string{ns})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -808,8 +807,8 @@ func checkVirtualServices(ctx context.Context, opts *options.Options, namespaces
 func checkGateways(ctx context.Context, opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking gateways... ")
 	var multiErr *multierror.Error
+	gatewayClient, err := helpers.GatewayClient(ctx, namespaces)
 	for _, ns := range namespaces {
-		gatewayClient, err := helpers.GatewayClient(ctx, []string{ns})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
