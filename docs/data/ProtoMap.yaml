@@ -1208,6 +1208,9 @@ apis:
   hcm.options.gloo.solo.io.HttpConnectionManagerSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#HttpConnectionManagerSettings
     package: hcm.options.gloo.solo.io
+  header_validation.options.gloo.solo.io.HeaderValidationSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto.sk/#HeaderValidationSettings
+    package: header_validation.options.gloo.solo.io
   headers.options.gloo.solo.io.HeaderManipulation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto.sk/#HeaderManipulation
     package: headers.options.gloo.solo.io

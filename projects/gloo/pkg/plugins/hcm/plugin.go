@@ -11,6 +11,7 @@ import (
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolvalidation"
@@ -135,6 +136,21 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 		}
 
 		out.GetHttpProtocolOptions().EnableTrailers = in.GetEnableTrailers().GetValue()
+	}
+
+	if methodValidation := listener.GetOptions().GetHeaderValidationSettings().GetHeaderMethodValidation(); methodValidation != nil {
+		if out.GetHttpProtocolOptions() == nil {
+			out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		// ALERT: As of Edge 1.18, AllowCustomMethods is deprecated from
+		// upstream Envoy and scheduled for removal. When that setting is
+		// removed, we must use Universal Header Validation to support this
+		// functionality. See
+		// https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
+		switch methodValidation.(type) {
+		case *header_validation.HeaderValidationSettings_DisableHttp1MethodValidation:
+			out.GetHttpProtocolOptions().AllowCustomMethods = true
+		}
 	}
 
 	if in.GetIdleTimeout() != nil {

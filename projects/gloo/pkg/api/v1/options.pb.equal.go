@@ -465,6 +465,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeaderValidationSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeaderValidationSettings(), target.GetHeaderValidationSettings()) {
+			return false
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
