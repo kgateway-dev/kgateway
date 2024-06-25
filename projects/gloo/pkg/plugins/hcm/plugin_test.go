@@ -174,6 +174,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxRequestsPerConnection()).To(MatchProto(settings.MaxRequestsPerConnection))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxHeadersCount()).To(MatchProto(settings.MaxHeadersCount))
 		Expect(cfg.GetCodecType()).To(Equal(envoyhttp.HttpConnectionManager_HTTP1))
+		Expect(cfg.HttpProtocolOptions.AllowCustomMethods).To(BeFalse())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 		Expect(cfg.GetPathWithEscapedSlashesAction()).To(Equal(envoyhttp.HttpConnectionManager_REJECT_REQUEST))
