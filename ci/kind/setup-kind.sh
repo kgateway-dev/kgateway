@@ -13,8 +13,6 @@ VERSION="${VERSION:-1.0.0-ci1}"
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster
 JUST_KIND="${JUST_KIND:-false}"
-# Offer a default value for type of installation
-KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
 # Set the default image variant to standard
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
@@ -38,11 +36,14 @@ function create_kind_cluster_or_skip() {
 
   # Install cilium as we need to define custom network policies to simulate kube api server unavailability
   # in some of our kube2e tests
-  helm repo add cilium https://helm.cilium.io/
-  helm install cilium cilium/cilium --version $CILIUM_VERSION \
+  helm repo add cilium-setup-kind https://helm.cilium.io/
+  helm repo update
+  helm install cilium cilium-setup-kind/cilium --version $CILIUM_VERSION \
    --namespace kube-system \
    --set image.pullPolicy=IfNotPresent \
-   --set ipam.mode=kubernetes
+   --set ipam.mode=kubernetes \
+   --set operator.replicas=1
+  helm repo remove cilium-setup-kind
   echo "Finished setting up cluster $CLUSTER_NAME"
 
   # so that you can just build the kind image alone if needed

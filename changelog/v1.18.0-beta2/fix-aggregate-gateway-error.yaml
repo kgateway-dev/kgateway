@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/8834
+  resolvesIssue: false
+  description: >-
+    Fix a bug where a hybrid gateway with non existing delegatedHttpGateways is accepted if no virtual services exist. This would only occur when the flag for isolating virtualservices by ssl configs is enabled. 

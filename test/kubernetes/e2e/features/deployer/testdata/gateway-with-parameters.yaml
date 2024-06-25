@@ -33,3 +33,8 @@ spec:
         componentLogLevels:
           upstream: debug
           connection: trace
+      securityContext:
+        runAsUser: null
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true
+

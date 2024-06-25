@@ -66,18 +66,6 @@ gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
-*/}}
-{{- define "gloo-gateway.gateway.serviceAccountName" -}}
-{{- if .Values.gateway.serviceAccount.create }}
-{{- default (include "gloo-gateway.gateway.fullname" .) .Values.gateway.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.gateway.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-
-{{/*
 Return a container image value as a string
 */}}
 {{- define "gloo-gateway.gateway.image" -}}

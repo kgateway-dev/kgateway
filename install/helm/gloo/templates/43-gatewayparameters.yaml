@@ -1,4 +1,5 @@
 {{- if .Values.kubeGateway.enabled -}}
+{{- $global := .Values.global -}}
 kind: GatewayParameters
 apiVersion: gateway.gloo.solo.io/v1alpha1
 metadata:
@@ -8,19 +9,47 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   kube:
-{{- if .Values.kubeGateway.gatewayParameters }}
-{{- if .Values.kubeGateway.gatewayParameters.glooGateway }}
-{{- $gg := .Values.kubeGateway.gatewayParameters.glooGateway -}}
-{{- $global := .Values.global }}
+{{- $gg := dict -}}
+{{- if .Values.kubeGateway.gatewayParameters -}}
+{{- if .Values.kubeGateway.gatewayParameters.glooGateway -}}
+{{- $gg = .Values.kubeGateway.gatewayParameters.glooGateway -}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters */}}
+{{- $replicas := 1 -}}
+{{- if $gg.proxyDeployment -}}
+{{- if $gg.proxyDeployment.replicas -}}
+{{- $replicas = $gg.proxyDeployment.replicas -}}
+{{- end -}}{{/* if $gg.proxyDeployment.replicas */}}
+{{- end }}{{/* if $gg.proxyDeployment */}}
     deployment:
-      replicas: {{ $gg.proxyDeployment.replicas }}
-{{- if $gg.service }}
-    service:
-      type: {{ $gg.service.type }}
+      replicas: {{ $replicas }}
+{{- $serviceType := "LoadBalancer" -}}
+{{- if $gg.service -}}
+{{- if $gg.service.type -}}
+{{- $serviceType = $gg.service.type -}}
+{{- end -}}{{/* if $gg.service.type */}}
 {{- end }}{{/* if $gg.service */}}
+    service:
+      type: {{ $serviceType }}
     envoyContainer:
       image:
-        {{- merge $gg.envoyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+        {{- $envoyImage := dict -}}
+        {{- if $gg.envoyContainer -}}
+        {{- if $gg.envoyContainer.image -}}
+        {{- $envoyImage = $gg.envoyContainer.image -}}
+        {{- end -}}{{/* if $gg.envoyContainer.image */}}
+        {{- end }}{{/* if $gg.envoyContainer */}}
+        {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.envoyContainer -}}
+{{- if $gg.envoyContainer.securityContext }}
+      securityContext:
+        {{- toYaml $gg.envoyContainer.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.envoyContainer.securityContext */}}
+{{- if $gg.envoyContainer.resources }}
+      resources:
+        {{- toYaml $gg.envoyContainer.resources | nindent 8 }}
+{{- end }}{{/* if $gg.envoyContainer.resources */}}
+{{- end }}{{/* if $gg.envoyContainer */}}
     podTemplate:
       extraLabels:
         {{- include "gloo-gateway.constLabels" . | nindent 8 }}
@@ -61,6 +90,4 @@ spec:
         istioMetaClusterId: {{ $gg.istio.istioProxyContainer.istioMetaClusterId }}
 {{- end }}{{/* if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) */}}
 {{- end }}{{/* if $gg.sdsContainer */}}
-{{- end }}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
-{{- end }}{{/* if .Values.kubeGateway.gatewayParameters */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

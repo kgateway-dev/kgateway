@@ -8,7 +8,6 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/version"
@@ -44,9 +43,7 @@ type testBootstrap struct {
 	envoy_config_bootstrap.Bootstrap
 }
 
-func (t *testBootstrap) SetMetadata(meta *core.Metadata) {
-	return
-}
+func (t *testBootstrap) SetMetadata(meta *core.Metadata) {}
 
 func (t *testBootstrap) Equal(_ any) bool {
 	return false
@@ -560,14 +557,14 @@ var _ = Describe("Deployer", func() {
 				logLevelsMap := expectedGwp.GetEnvoyContainer().GetBootstrap().GetComponentLogLevels()
 				levels := []types.GomegaMatcher{}
 				for k, v := range logLevelsMap {
-					levels = append(levels, gomega.ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
+					levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
 				}
 
 				argsMatchers := []interface{}{
 					"--log-level",
 					expectedGwp.GetEnvoyContainer().GetBootstrap().GetLogLevel().GetValue(),
 					"--component-log-level",
-					gomega.And(levels...),
+					And(levels...),
 				}
 
 				Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(

@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
@@ -27,10 +28,10 @@ import (
 func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *options.Options) {
 	// check if the gloo fed deployment exists
 	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
-	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, "gloo-fed", metav1.GetOptions{})
+	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, constants.GlooFedDeploymentName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")
+			printer.AppendMessage("\nSkipping Gloo Instance check -- Gloo Federation not detected.")
 		} else {
 			fmt.Printf("Warning: could not get Gloo Fed deployment: %v. Skipping Gloo Instance check.\n", err)
 		}
@@ -51,7 +52,7 @@ func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *o
 	glooInstanceList, err := instanceReader.listGlooInstances(ctx)
 	if err != nil {
 		if meta.IsNoMatchError(err) {
-			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")
+			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected.")
 			return
 		}
 		fmt.Printf("Warning: could not list Gloo Instances: %v\n", err)
@@ -60,16 +61,19 @@ func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *o
 	printer.AppendMessage("\nDetected Gloo Federation!")
 	for _, glooInstance := range glooInstanceList.Items {
 		fmt.Printf("\nChecking Gloo Instance %s... ", glooInstance.GetName())
-		printGlooInstanceCheckSummary("deployments", glooInstance.Spec.GetCheck().GetDeployments())
-		printGlooInstanceCheckSummary("pods", glooInstance.Spec.GetCheck().GetPods())
-		printGlooInstanceCheckSummary("settings", glooInstance.Spec.GetCheck().GetSettings())
-		printGlooInstanceCheckSummary("upstreams", glooInstance.Spec.GetCheck().GetUpstreams())
-		printGlooInstanceCheckSummary("upstream groups", glooInstance.Spec.GetCheck().GetUpstreamGroups())
-		printGlooInstanceCheckSummary("auth configs", glooInstance.Spec.GetCheck().GetAuthConfigs())
-		printGlooInstanceCheckSummary("virtual services", glooInstance.Spec.GetCheck().GetVirtualServices())
-		printGlooInstanceCheckSummary("route tables", glooInstance.Spec.GetCheck().GetRouteTables())
-		printGlooInstanceCheckSummary("gateways", glooInstance.Spec.GetCheck().GetGateways())
-		printGlooInstanceCheckSummary("proxies", glooInstance.Spec.GetCheck().GetProxies())
+		printGlooInstanceCheckSummary("Deployments", glooInstance.Spec.GetCheck().GetDeployments())
+		printGlooInstanceCheckSummary("Pods", glooInstance.Spec.GetCheck().GetPods())
+		printGlooInstanceCheckSummary("Settings", glooInstance.Spec.GetCheck().GetSettings())
+		printGlooInstanceCheckSummary("Upstreams", glooInstance.Spec.GetCheck().GetUpstreams())
+		printGlooInstanceCheckSummary("UpstreamGroups", glooInstance.Spec.GetCheck().GetUpstreamGroups())
+		printGlooInstanceCheckSummary("AuthConfigs", glooInstance.Spec.GetCheck().GetAuthConfigs())
+		printGlooInstanceCheckSummary("RateLimitConfigs", glooInstance.Spec.GetCheck().GetRateLimitConfigs())
+		printGlooInstanceCheckSummary("VirtualServices", glooInstance.Spec.GetCheck().GetVirtualServices())
+		printGlooInstanceCheckSummary("RouteTables", glooInstance.Spec.GetCheck().GetRouteTables())
+		printGlooInstanceCheckSummary("Gateways", glooInstance.Spec.GetCheck().GetGateways())
+		printGlooInstanceCheckSummary("MatchableHttpGateways", glooInstance.Spec.GetCheck().GetMatchableHttpGateways())
+		printGlooInstanceCheckSummary("MatchableTcpGateways", glooInstance.Spec.GetCheck().GetMatchableTcpGateways())
+		printGlooInstanceCheckSummary("Proxies", glooInstance.Spec.GetCheck().GetProxies())
 		fmt.Printf("\n\n")
 	}
 }
@@ -101,12 +105,8 @@ type unstructuredGlooInstanceReader struct {
 }
 
 func getUnstructuredGlooInstanceReader(cfg *rest.Config) (*unstructuredGlooInstanceReader, error) {
-	scheme := scheme.Scheme
-	if err := glooinstancev1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
 	client, err := client.New(cfg, client.Options{
-		Scheme: scheme,
+		Scheme: scheme.Scheme,
 	})
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -260,6 +261,12 @@ func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, args ...string)
 }
 
 func (c *Cli) Execute(ctx context.Context, args ...string) (string, string, error) {
+	if c.kubeContext != "" {
+		if !slices.Contains(args, "--context") {
+			args = append([]string{"--context", c.kubeContext}, args...)
+		}
+	}
+
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 
