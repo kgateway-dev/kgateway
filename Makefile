@@ -48,6 +48,12 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
+# ATTENTION: when updating to a new major version of Envoy, check if
+# universal header validation has been enabled and if so, we expect
+# failures in `test/e2e/header_validation_test.go`
+# for more information, see https://github.com/solo-io/gloo/pull/9633
+# and
+# https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.30.2-patch2
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS ?=
@@ -932,7 +938,7 @@ docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
 .PHONY: docker-standard
-docker-standard: check-go-version
+docker-standard: check-go-version ## Build docker images (standard only)
 docker-standard: gloo-docker
 docker-standard: discovery-docker
 docker-standard: gloo-envoy-wrapper-docker
@@ -943,7 +949,7 @@ docker-standard: access-logger-docker
 docker-standard: kubectl-docker
 
 .PHONY: docker-distroless
-docker-distroless: check-go-version
+docker-distroless: check-go-version ## Build docker images (distroless only)
 docker-distroless: gloo-distroless-docker
 docker-distroless: discovery-distroless-docker
 docker-distroless: gloo-envoy-wrapper-distroless-docker
@@ -956,7 +962,7 @@ docker-distroless: kubectl-distroless-docker
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
-docker: check-go-version
+docker: check-go-version ## Build all docker images (standard and distroless)
 docker: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker: docker-standard
