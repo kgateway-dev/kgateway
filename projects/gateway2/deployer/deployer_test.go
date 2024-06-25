@@ -843,13 +843,13 @@ var _ = Describe("Deployer", func() {
 			}),
 			Entry("envoy yaml is valid with stats disabled", &input{
 				dInputs:     defaultDeployerInputs(),
-				gw:          defaultGateway(),
+				gw:          defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: gatewayParamsOverrideWithoutStats(),
 				gwc:         defaultGatewayClass(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
-					gw := defaultGateway()
+					gw := defaultGatewayWithGatewayParams(gwpOverrideName)
 					Expect(objs).NotTo(BeEmpty())
 
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
