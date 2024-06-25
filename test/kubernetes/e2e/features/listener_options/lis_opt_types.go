@@ -6,6 +6,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -13,7 +14,10 @@ import (
 )
 
 var (
-	setupManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	setupManifests = []string{
+		filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml"),
+		e2edefaults.CurlPodManifest,
+	}
 	basicLisOptManifest = filepath.Join(util.MustGetThisDir(), "testdata", "basic-lisopt.yaml")
 
 	// When we apply the setup file, we expect resources to be created with this metadata
