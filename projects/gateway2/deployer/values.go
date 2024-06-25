@@ -49,6 +49,9 @@ type helmGateway struct {
 
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`
+
+	// stats values
+	Stats *helmStatsConfig `json:"stats,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -114,4 +117,11 @@ type helmIstioContainer struct {
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
 	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
 	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
+}
+
+type helmStatsConfig struct {
+	Enabled            *bool   `json:"enabled,omitempty"`
+	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
 }

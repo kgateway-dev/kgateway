@@ -85,6 +85,8 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 
+	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
+
 	if srcKube.GetWorkloadType() == nil {
 		return dst
 	}
@@ -101,6 +103,24 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 		// TODO(jbohanon) log or something? Shouldn't happen unless a new type is added
 		break
 	}
+
+	return dst
+}
+
+func deepMergeStatsConfig(dst *v1alpha1.StatsConfig, src *v1alpha1.StatsConfig) *v1alpha1.StatsConfig {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.EnableStatsRoute = mergePointers(dst.EnableStatsRoute, src.EnableStatsRoute)
+	dst.Enabled = mergePointers(dst.Enabled, src.Enabled)
+	dst.RoutePrefixRewrite = mergePointers(dst.GetRoutePrefixRewrite(), src.GetRoutePrefixRewrite())
+	dst.StatsRoutePrefixRewrite = mergePointers(dst.GetStatsRoutePrefixRewrite(), src.GetStatsRoutePrefixRewrite())
 
 	return dst
 }

@@ -322,7 +322,15 @@ type GatewayParameters struct {
 	Service         *ProvisionedService        `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
 	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
+	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
 	// TODO(npolshak): Add support for GlooMtls
+}
+
+type GatewayParamsStatsConfig struct {
+	Enabled                 *bool   `json:"enabled,omitempty" desc:"Enable the prometheus endpoint"`
+	RoutePrefixRewrite      *string `json:"routePrefixRewrite,omitempty" desc:"Set the prefix rewrite used for the prometheus endpoint"`
+	EnableStatsRoute        *bool   `json:"enableStatsRoute,omitempty" desc:"Enable the stats endpoint"`
+	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty" desc:"Set the prefix rewrite used for the stats endpoint"`
 }
 
 type Istio struct {

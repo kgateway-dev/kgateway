@@ -44,6 +44,11 @@ kubeGateway:
           istioDiscoveryAddress: istiod.istio-system.svc:15012
           istioMetaMeshId: cluster.local
           istioMetaClusterId: Kubernetes
+      stats:
+        enabled: true
+        routePrefixRewrite: "/stats/prometheus"
+        enableStatsRoute: true
+        statsRoutePrefixRewrite: "/stats"
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot

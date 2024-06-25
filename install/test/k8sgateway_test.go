@@ -107,6 +107,11 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetSdsContainer().GetResources()).To(BeNil())
 
 				Expect(gwpKube.GetService().GetType()).To(Equal(kube.Service_LoadBalancer))
+
+				Expect(gwpKube.GetStats().GetEnabled().GetValue()).To(BeTrue())
+				Expect(gwpKube.GetStats().GetRoutePrefixRewrite().GetValue()).To(Equal("/stats/prometheus"))
+				Expect(gwpKube.GetStats().GetEnableStatsRoute().GetValue()).To(BeTrue())
+				Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite().GetValue()).To(Equal("/stats"))
 			})
 
 			When("overrides are set", func() {
@@ -153,6 +158,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.logLevel=debug",
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.runAsNonRoot=null",
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.runAsUser=888",
+						"kubeGateway.gatewayParameters.glooGateway.stats.enabled=false",
+						"kubeGateway.gatewayParameters.glooGateway.stats.routePrefixRewrite=/foo/bar",
+						"kubeGateway.gatewayParameters.glooGateway.stats.enableStatsRoute=false",
+						"kubeGateway.gatewayParameters.glooGateway.stats.statsRoutePrefixRewrite=/scooby/doo",
 						"global.istioIntegration.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
@@ -222,6 +231,11 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetSdsContainer().GetResources().GetLimits()).To(matchers.ContainMapElements(sdsLimits))
 
 					Expect(gwpKube.GetService().GetType()).To(Equal(kube.Service_ClusterIP))
+
+					Expect(gwpKube.GetStats().GetEnabled().GetValue()).To(BeFalse())
+					Expect(gwpKube.GetStats().GetRoutePrefixRewrite().GetValue()).To(Equal("/foo/bar"))
+					Expect(gwpKube.GetStats().GetEnableStatsRoute().GetValue()).To(BeFalse())
+					Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite().GetValue()).To(Equal("/scooby/doo"))
 				})
 			})
 

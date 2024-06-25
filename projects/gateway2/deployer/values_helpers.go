@@ -162,9 +162,7 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 	}
 }
 
-// Get the image values for the envoy container in the proxy deployment. This is done by:
-// 1. getting the image values from a GatewayParameter
-// 2. for values not provided, fall back to the defaults (if any) from the k8s gw extensions
+// Get the image values for the envoy container in the proxy deployment.
 func getEnvoyImageValues(envoyImage *v1alpha1kube.Image) *helmImage {
 	helmImage := &helmImage{
 		Registry:   ptr.To(envoyImage.GetRegistry().GetValue()),
@@ -174,6 +172,16 @@ func getEnvoyImageValues(envoyImage *v1alpha1kube.Image) *helmImage {
 	}
 	setPullPolicy(envoyImage.GetPullPolicy(), helmImage)
 	return helmImage
+}
+
+// Get the stats values for the envoy listener in the configmap for bootstrap.
+func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
+	return &helmStatsConfig{
+		Enabled:            ptr.To(statsConfig.GetEnabled().GetValue()),
+		RoutePrefixRewrite: ptr.To(statsConfig.GetRoutePrefixRewrite().GetValue()),
+		EnableStatsRoute:   ptr.To(statsConfig.GetEnableStatsRoute().GetValue()),
+		StatsPrefixRewrite: ptr.To(statsConfig.GetStatsRoutePrefixRewrite().GetValue()),
+	}
 }
 
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the
