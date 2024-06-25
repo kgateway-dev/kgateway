@@ -167,6 +167,12 @@ var _ = Describe("Deployer", func() {
 									"foo": "bar",
 								},
 							},
+							Stats: &gw2_v1alpha1.StatsConfig{
+								Enabled:                 &wrappers.BoolValue{Value: true},
+								RoutePrefixRewrite:      &wrappers.StringValue{Value: "/stats/prometheus"},
+								EnableStatsRoute:        &wrappers.BoolValue{Value: true},
+								StatsRoutePrefixRewrite: &wrappers.StringValue{Value: "/stats"},
+							},
 						},
 					},
 				},
