@@ -263,12 +263,6 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 				Host: &d.inputs.ControlPlane.Kube.XdsHost,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
-			Stats: &helmStatsConfig{
-				Enabled:            true,
-				RoutePrefixRewrite: "/stats/prometheus",
-				EnableStatsRoute:   true,
-				StatsPrefixRewrite: "/stats",
-			},
 		},
 	}
 
@@ -287,6 +281,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	svcConfig := kubeProxyConfig.GetService()
 	istioConfig := kubeProxyConfig.GetIstio()
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
+	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 
 	gateway := vals.Gateway
@@ -335,6 +330,8 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	gateway.Image = getEnvoyImageValues(envoyContainerConfig.GetImage())
+
+	gateway.Stats = getStatsValues(statsConfig)
 
 	return vals, nil
 }
