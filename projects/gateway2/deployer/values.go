@@ -50,12 +50,8 @@ type helmGateway struct {
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`
 
-	// serviceaccount values
-	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
-
 	// stats values
-	LoopbackAddress string           `json:"loopbackAddress,omitempty"`
-	Stats           *helmStatsConfig `json:"stats,omitempty"`
+	Stats *helmStatsConfig `json:"stats,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port

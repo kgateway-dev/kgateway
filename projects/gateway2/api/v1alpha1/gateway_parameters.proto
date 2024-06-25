@@ -65,12 +65,8 @@ message KubernetesProxyConfig {
   // Istio integration configuration.
   IstioIntegration istio = 6;
 
-  // Optional Loopback Address, used to configure the stats server
-  // Defaults to 127.0.0.1
-  .google.protobuf.StringValue loopback_address = 8;
-
   // Optional stats configuration (enabled by default)
-  StatsConfig stats = 9;
+  StatsConfig stats = 8;
 }
 
 // Configuration for the Proxy deployment in Kubernetes.

@@ -36,10 +36,3 @@ gateway:
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-
-  stats:
-    enabled: true
-    routePrefixRewrite: "/stats/prometheus"
-    enableStatsRoute: true
-    statsPrefixRewrite: "/stats"
-  loopbackAddress: "127.0.0.1"

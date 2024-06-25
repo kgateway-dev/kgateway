@@ -263,7 +263,6 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 				Host: &d.inputs.ControlPlane.Kube.XdsHost,
 				Port: &d.inputs.ControlPlane.Kube.XdsPort,
 			},
-			LoopbackAddress: "127.0.0.1",
 			Stats: &helmStatsConfig{
 				Enabled:            true,
 				RoutePrefixRewrite: "/stats/prometheus",
@@ -290,9 +289,9 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 
-	// deployment values
 	gateway := vals.Gateway
 
+	// deployment values
 	replicas := deployConfig.GetReplicas().GetValue()
 	gateway.ReplicaCount = &replicas
 
