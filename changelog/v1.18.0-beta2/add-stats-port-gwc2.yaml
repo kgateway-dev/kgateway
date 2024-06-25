@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6393
+    resolvesIssue: true
+    description: |
+      Export Prometheus Metrics on Port 9091 for Gloo Gateway.

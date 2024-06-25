@@ -102,6 +102,10 @@
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioMetaClusterId|string|Kubernetes|ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "Kubernetes"|
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioDiscoveryAddress|string|istiod.istio-system.svc:15012|discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "istiod.istio-system.svc:15012"|
 |kubeGateway.gatewayParameters.glooGateway.istio.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false|
+|kubeGateway.gatewayParameters.glooGateway.stats.enabled|bool|true|Enable the prometheus endpoint|
+|kubeGateway.gatewayParameters.glooGateway.stats.routePrefixRewrite|string|/stats/prometheus|Set the prefix rewrite used for the prometheus endpoint|
+|kubeGateway.gatewayParameters.glooGateway.stats.enableStatsRoute|bool|true|Enable the stats endpoint|
+|kubeGateway.gatewayParameters.glooGateway.stats.statsRoutePrefixRewrite|string|/stats|Set the prefix rewrite used for the stats endpoint|
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
