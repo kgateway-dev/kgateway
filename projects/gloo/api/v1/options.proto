@@ -18,6 +18,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/prox
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto";
@@ -231,6 +232,11 @@ message HttpListenerOptions {
 
     // Enterprise only: Listener-level stateful session settings
     stateful_session.options.gloo.solo.io.StatefulSession stateful_session = 35;
+
+    // Header validation settings - fields in this message can be used to
+    // determine whether requests should be rejected based on the contents of
+    // the header.
+    header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 36;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -578,6 +584,7 @@ message RouteOptions {
     // override certain HttpListenerOptions or VirtualHostOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
 }
+
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {
     // Note to developers: new DestinationSpecs must be added to this oneof field
