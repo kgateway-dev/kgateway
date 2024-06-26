@@ -16,7 +16,9 @@ import (
 type CheckFunc = func(ctx context.Context, printer printers.P, opts *options.Options) error
 
 func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *options.Options) error {
-	registrar.registerGatewayv1alpha1()
+	// I don't think we even need to register these in the scheme because we use a gwapi client directly
+	// ref ./internal/checks.go
+	// registrar.registerGatewayv1alpha1()
 
 	var multiErr *multierror.Error
 

@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -107,8 +106,10 @@ type unstructuredGlooInstanceReader struct {
 }
 
 func getUnstructuredGlooInstanceReader(cfg *rest.Config) (*unstructuredGlooInstanceReader, error) {
+	// because all this client does is list this one object type, we pass our scheme with just
+	// gloo instance api registered.
 	client, err := client.New(cfg, client.Options{
-		Scheme: scheme.Scheme,
+		Scheme: registrar.scheme,
 	})
 	if err != nil {
 		return nil, err

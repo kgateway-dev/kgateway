@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -33,7 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
@@ -43,6 +42,7 @@ var (
 
 	registrar = &schemeRegistrar{
 		Mutex:                     &sync.Mutex{},
+		scheme:                    runtime.NewScheme(),
 		gatewayv1alpha1Registered: false,
 		fedv1Registered:           false,
 	}
@@ -1013,27 +1013,28 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 	}
 }
 
+// since the following line is the impl for scheme, we will maintain a local scheme
+// var Scheme = runtime.NewScheme()
 type schemeRegistrar struct {
 	*sync.Mutex
+	scheme                                     *runtime.Scheme
 	gatewayv1alpha1Registered, fedv1Registered bool
 }
 
-func (r *schemeRegistrar) registerGatewayv1alpha1() {
-	r.Lock()
-	defer r.Unlock()
-	scheme := scheme.Scheme
-	if err := gatewayv1alpha1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
-	r.gatewayv1alpha1Registered = true
+// func (r *schemeRegistrar) registerGatewayv1alpha1() {
+// 	r.Lock()
+// 	defer r.Unlock()
+// 	if err := gatewayv1alpha1.AddToScheme(r.scheme); err != nil {
+// 		panic(err)
+// 	}
+// 	r.gatewayv1alpha1Registered = true
 
-}
+// }
 
 func (r *schemeRegistrar) registerFedv1() {
 	r.Lock()
 	defer r.Unlock()
-	scheme := scheme.Scheme
-	if err := fedv1.AddToScheme(scheme); err != nil {
+	if err := fedv1.AddToScheme(r.scheme); err != nil {
 		panic(err)
 	}
 	r.fedv1Registered = true
