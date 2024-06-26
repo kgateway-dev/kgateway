@@ -56,3 +56,10 @@ CVE-2023-45283
 # A fix is not available for the Kubernetes versions supported in 1.13
 # https://github.com/solo-io/gloo/issues/9443
 CVE-2023-45288
+
+# https://github.com/advisories/GHSA-49gw-vxvf-fc2g
+# This vulnerability is resolved on all images except kubectl.
+# This vulnerability is in the netip package which is not used by kubectl
+# A fix is not available for the Kubernetes versions supported in 1.13
+# https://github.com/solo-io/gloo/issues/9672
+CVE-2024-24790
