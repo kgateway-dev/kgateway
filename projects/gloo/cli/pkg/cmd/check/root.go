@@ -41,7 +41,11 @@ var (
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
 
-	registrar = &schemeRegistrar{}
+	registrar = &schemeRegistrar{
+		Mutex:                     &sync.Mutex{},
+		gatewayv1alpha1Registered: false,
+		fedv1Registered:           false,
+	}
 )
 
 // contains method
