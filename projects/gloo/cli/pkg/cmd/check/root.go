@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -40,38 +41,8 @@ var (
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
 
-	gatewayv1alpha1Registered, fedv1Registered bool
-	gatewayv1alpha1RegistrationChan            = make(chan struct{}, 1)
-	fedv1RegistrationChan                      = make(chan struct{}, 1)
+	registrar = &schemeRegistrar{}
 )
-
-// We open these channels so that we don't needlessly register the definitions.
-// The definitions are only registered right before they are needed, and only once.
-// There is possibly a send on closed channel panic here if the sender is past the
-// boolean check between the receiver setting to true and closing the channel
-func init() {
-	scheme := scheme.Scheme
-	go func() {
-		select {
-		case <-gatewayv1alpha1RegistrationChan:
-			gatewayv1alpha1Registered = true
-			if err := gatewayv1alpha1.AddToScheme(scheme); err != nil {
-				panic(err)
-			}
-		}
-		close(gatewayv1alpha1RegistrationChan)
-	}()
-	go func() {
-		select {
-		case <-fedv1RegistrationChan:
-			fedv1Registered = true
-			if err := fedv1.AddToScheme(scheme); err != nil {
-				panic(err)
-			}
-		}
-		close(fedv1RegistrationChan)
-	}()
-}
 
 // contains method
 func doesNotContain(arr []string, str string) bool {
@@ -1036,4 +1007,31 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 		}
 		return false
 	}
+}
+
+type schemeRegistrar struct {
+	*sync.Mutex
+	gatewayv1alpha1Registered, fedv1Registered bool
+}
+
+func (r *schemeRegistrar) registerGatewayv1alpha1() {
+	r.Lock()
+	defer r.Unlock()
+	scheme := scheme.Scheme
+	if err := gatewayv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	r.gatewayv1alpha1Registered = true
+
+}
+
+func (r *schemeRegistrar) registerFedv1() {
+	r.Lock()
+	defer r.Unlock()
+	scheme := scheme.Scheme
+	if err := fedv1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	r.fedv1Registered = true
+
 }

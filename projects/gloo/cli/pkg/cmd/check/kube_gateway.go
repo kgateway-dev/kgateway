@@ -16,10 +16,8 @@ import (
 type CheckFunc = func(ctx context.Context, printer printers.P, opts *options.Options) error
 
 func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *options.Options) error {
+	registrar.registerGatewayv1alpha1()
 
-	if !gatewayv1alpha1Registered {
-		gatewayv1alpha1RegistrationChan <- struct{}{}
-	}
 	var multiErr *multierror.Error
 
 	kubeGatewayEnabled, err := isKubeGatewayEnabled(ctx, opts)
