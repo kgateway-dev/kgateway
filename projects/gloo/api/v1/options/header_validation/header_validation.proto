@@ -1,0 +1,24 @@
+syntax = "proto3";
+package header_validation.options.gloo.solo.io;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation";
+
+message HeaderValidationSettings {
+  // How header methods will be validated. By default, Envoy will
+  // validate HTTP methods for HTTP/1 connections against the default set of allowed methods.
+  // The default allowed methods can be found here:
+  // https://github.com/envoyproxy/envoy/blob/2970ddbd4ade787dd51dfbe605ae2e8c5d8ffcf7/source/common/http/http1/balsa_parser.cc#L54
+  // or here, if Universal Header Validation is enabled:
+  // https://github.com/envoyproxy/envoy/blob/0b9f67e7f71bcba3ff49575dc61676478cb68614/source/extensions/http/header_validators/envoy_default/header_validator.cc#L53
+  // Invalid methods on HTTP/1 requests will be rejected with a HTTP 400
+  // response.
+  // For HTTP/2, Envoy does not validate header methods by default.
+	oneof header_method_validation {
+		// Disable method validation. Envoy will not perform any validation on
+		// the method provided in the HTTP header.
+		google.protobuf.Empty disable_http1_method_validation = 1;
+	}
+}
+

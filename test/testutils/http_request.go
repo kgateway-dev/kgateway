@@ -61,6 +61,11 @@ func (h *HttpRequestBuilder) WithOptionsMethod() *HttpRequestBuilder {
 	return h
 }
 
+func (h *HttpRequestBuilder) WithMethod(method string) *HttpRequestBuilder {
+	h.method = method
+	return h
+}
+
 func (h *HttpRequestBuilder) WithScheme(scheme string) *HttpRequestBuilder {
 	h.scheme = scheme
 	return h
