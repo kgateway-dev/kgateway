@@ -39,16 +39,38 @@ var (
 	CrdNotFoundErr = func(crdName string) error {
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
+
+	gatewayv1alpha1Registered, fedv1Registered bool
+	gatewayv1alpha1RegistrationChan            = make(chan struct{}, 1)
+	fedv1RegistrationChan                      = make(chan struct{}, 1)
 )
 
+// We open these channels so that we don't needlessly register the definitions.
+// The definitions are only registered right before they are needed, and only once.
+// There is possibly a send on closed channel panic here if the sender is past the
+// boolean check between the receiver setting to true and closing the channel
 func init() {
 	scheme := scheme.Scheme
-	if err := gatewayv1alpha1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
-	if err := fedv1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
+	go func() {
+		select {
+		case <-gatewayv1alpha1RegistrationChan:
+			gatewayv1alpha1Registered = true
+			if err := gatewayv1alpha1.AddToScheme(scheme); err != nil {
+				panic(err)
+			}
+		}
+		close(gatewayv1alpha1RegistrationChan)
+	}()
+	go func() {
+		select {
+		case <-fedv1RegistrationChan:
+			fedv1Registered = true
+			if err := fedv1.AddToScheme(scheme); err != nil {
+				panic(err)
+			}
+		}
+		close(fedv1RegistrationChan)
+	}()
 }
 
 // contains method

@@ -26,6 +26,9 @@ import (
 )
 
 func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *options.Options) {
+	if !fedv1Registered {
+		fedv1RegistrationChan <- struct{}{}
+	}
 	// check if the gloo fed deployment exists
 	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, constants.GlooFedDeploymentName, metav1.GetOptions{})
