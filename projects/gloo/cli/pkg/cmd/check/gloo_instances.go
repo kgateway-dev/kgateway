@@ -19,14 +19,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func CheckMulticlusterResources(ctx context.Context, printer printers.P, opts *options.Options) {
-	registrar.registerFedv1()
-
 	// check if the gloo fed deployment exists
 	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, constants.GlooFedDeploymentName, metav1.GetOptions{})
@@ -106,10 +105,12 @@ type unstructuredGlooInstanceReader struct {
 }
 
 func getUnstructuredGlooInstanceReader(cfg *rest.Config) (*unstructuredGlooInstanceReader, error) {
-	// because all this client does is list this one object type, we pass our scheme with just
-	// gloo instance api registered.
+	scheme := runtime.NewScheme()
+	if err := glooinstancev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
 	client, err := client.New(cfg, client.Options{
-		Scheme: registrar.scheme,
+		Scheme: scheme,
 	})
 	if err != nil {
 		return nil, err

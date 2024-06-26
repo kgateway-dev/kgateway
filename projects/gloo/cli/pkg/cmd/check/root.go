@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -22,7 +21,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
-	fedv1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -32,19 +30,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
 	CrdNotFoundErr = func(crdName string) error {
 		return eris.Errorf("%s CRD has not been registered", crdName)
-	}
-
-	registrar = &schemeRegistrar{
-		Mutex:                     &sync.Mutex{},
-		scheme:                    runtime.NewScheme(),
-		gatewayv1alpha1Registered: false,
-		fedv1Registered:           false,
 	}
 )
 
@@ -1011,32 +1001,4 @@ func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 		}
 		return false
 	}
-}
-
-// since the following line is the impl for scheme, we will maintain a local scheme
-// var Scheme = runtime.NewScheme()
-type schemeRegistrar struct {
-	*sync.Mutex
-	scheme                                     *runtime.Scheme
-	gatewayv1alpha1Registered, fedv1Registered bool
-}
-
-// func (r *schemeRegistrar) registerGatewayv1alpha1() {
-// 	r.Lock()
-// 	defer r.Unlock()
-// 	if err := gatewayv1alpha1.AddToScheme(r.scheme); err != nil {
-// 		panic(err)
-// 	}
-// 	r.gatewayv1alpha1Registered = true
-
-// }
-
-func (r *schemeRegistrar) registerFedv1() {
-	r.Lock()
-	defer r.Unlock()
-	if err := fedv1.AddToScheme(r.scheme); err != nil {
-		panic(err)
-	}
-	r.fedv1Registered = true
-
 }
