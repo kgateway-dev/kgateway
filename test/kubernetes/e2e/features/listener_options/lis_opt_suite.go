@@ -60,8 +60,10 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) TearDownSuite() {
 	// Check that the common setup manifest is deleted
 	for _, manifest := range setupManifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.NoError(err, "can apply "+manifest)
+		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
+		s.NoError(err, "can delete "+manifest)
+		s.testInstallation.Assertions.ExpectObjectDeleted(manifest, err, output)
+
 	}
 }
 
