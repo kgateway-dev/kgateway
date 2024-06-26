@@ -22,11 +22,11 @@ kubeGateway:
               - ALL
             add:
               - NET_BIND_SERVICE
-      # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be 
+      # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be
       # imposed by the template.
       proxyDeployment:
         replicas: 1
-      # If service or service.type are null, a default of LoadBalancer will be 
+      # If service or service.type are null, a default of LoadBalancer will be
       # imposed by the template.
       service:
         type: LoadBalancer
@@ -44,6 +44,13 @@ kubeGateway:
           istioDiscoveryAddress: istiod.istio-system.svc:15012
           istioMetaMeshId: cluster.local
           istioMetaClusterId: Kubernetes
+      aiExtension:
+        enabled: false
+        image:
+          repository: gloo-ai-extension
+          registry: quay.io/solo-io
+          pullPolicy: IfNotPresent
+        listenAddress: unix:///var/run/gloo-ai.sock
       stats:
         enabled: true
         routePrefixRewrite: "/stats/prometheus"

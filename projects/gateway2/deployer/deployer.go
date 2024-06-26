@@ -277,6 +277,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
+	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
 
 	gateway := vals.Gateway
 
@@ -320,6 +321,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)
 	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
+	gateway.AIExtension = getAIExtensionValues(aiExtensionConfig)
 
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
