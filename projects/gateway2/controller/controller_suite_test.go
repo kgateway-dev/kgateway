@@ -109,7 +109,7 @@ var _ = BeforeSuite(func() {
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		GWClass:        gatewayClassObjName,
+		GWClassName:    gatewayClassObjName,
 		AutoProvision:  true,
 		Kick:           func(ctx context.Context) { return },
 		Extensions:     exts,
