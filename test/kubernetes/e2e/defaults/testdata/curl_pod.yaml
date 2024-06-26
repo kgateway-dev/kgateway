@@ -12,6 +12,7 @@ metadata:
   labels:
     app: curl
     version: v1
+    app.kubernetes.io/name: curl
 spec:
   containers:
     - name: curl
