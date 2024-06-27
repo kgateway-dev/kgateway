@@ -19,8 +19,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -105,8 +105,12 @@ type unstructuredGlooInstanceReader struct {
 }
 
 func getUnstructuredGlooInstanceReader(cfg *rest.Config) (*unstructuredGlooInstanceReader, error) {
+	scheme := runtime.NewScheme()
+	if err := glooinstancev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
 	client, err := client.New(cfg, client.Options{
-		Scheme: scheme.Scheme,
+		Scheme: scheme,
 	})
 	if err != nil {
 		return nil, err
