@@ -1,6 +1,6 @@
 # Documentation
 
-The documentation is built from a private GitHub. Currently, only Solo.io team members can contribute to this repository. 
+The documentation is built from a private GitHub repository. Currently, only Solo.io team members can contribute to this repository. 
 
 To request changes to the documentation or report an issue, follow the steps in [filing issues](/devel/contributing/issues.md)
 
