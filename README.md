@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://github.com/solo-io/gloo/blob/main/docs/content/img/logo-gloo-gateway-horizontal.svg" alt="Gloo Gateway" width="800">
+    <img src="https://github.com/solo-io/gloo/blob/main/docs/content/img/logo.svg" alt="Gloo Gateway" width="800">
   <br> 
   An Envoy-Powered API Gateway
 </h1>
@@ -29,7 +29,7 @@ Because of that, Gloo Gateway gives you the flexibility to run both Kubernetes G
 &nbsp; [**Twitter**](https://twitter.com/soloio_inc) |
 &nbsp; [**Enterprise Trial**](https://www.solo.io/free-trial/)
 
-<BR><center><img src="https://docs.solo.io/gateway/img/gateway/gloo-gateway-ov.svg" alt="Gloo Gateway Architecture" width="906"></center>
+<BR><center><img src="https://docs.solo.io/gateway/img/gateway/gloo-gateway-ov.svg" alt="Gloo Gateway Architecture" width="800"></center>
 
 ### Using Gloo Gateway
 - **Kubernetes Gateway API**: Gloo Gateway is a feature-rich ingress controller, built on top of the Envoy Proxy and fully conformant with the Kubernetes Gateway API.
