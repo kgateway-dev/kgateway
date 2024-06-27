@@ -14,7 +14,7 @@
 > The existing Gloo Edge APIs were not changed and continue to be fully supported.
 
 ## About Gloo Gateway
-Gloo Gateway is a feature-rich, fast, and flexible Kubernetes-native ingress controller and next-generation API gateway that is built on top of [Envoy proxy](https://www.envoyproxy.io). It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds. 
+Gloo Gateway is a feature-rich, fast, and flexible Kubernetes-native ingress controller and next-generation API gateway that is built on top of [Envoy proxy](https://www.envoyproxy.io) and the Kubernetes Gateway API. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds. 
 
 [**Installation**](https://docs.solo.io/gateway/latest/quickstart/) &nbsp; |
 &nbsp; [**Documentation**](https://docs.solo.io/gateway/latest/) &nbsp; |
@@ -23,7 +23,7 @@ Gloo Gateway is a feature-rich, fast, and flexible Kubernetes-native ingress con
 &nbsp; [**Twitter**](https://twitter.com/soloio_inc) |
 &nbsp; [**Enterprise Trial**](https://www.solo.io/free-trial/)
 
-<BR><center><img src="https://docs.solo.io/gateway/img/gateway/gloo-gateway-ov.svg" alt="Gloo Gateway Architecture" width="700"></center>
+<BR><center><img src="/docs/content/img/gloo-gateway-architecture.svg" alt="Gloo Gateway Architecture" width="700"></center>
 
 ### Using Gloo Gateway
 - **Kubernetes Gateway API**: Gloo Gateway is a feature-rich ingress controller, built on top of the Envoy Proxy and fully conformant with the Kubernetes Gateway API.
