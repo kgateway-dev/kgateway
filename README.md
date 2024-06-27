@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://github.com/solo-io/gloo/blob/ggv2-gh/docs/content/img/logo.svg" alt="Gloo Gateway" width="800">
+    <img src="https://github.com/solo-io/gloo/blob/main/docs/content/img/logo.svg" alt="Gloo Gateway" width="800">
   <br> 
   An Envoy-Powered API Gateway
 </h1>
@@ -22,8 +22,8 @@ Because of that, Gloo Gateway gives you the flexibility to run both Kubernetes G
 
 [**Installation for K8s Gateway API**](https://docs.solo.io/gateway/latest/quickstart/) &nbsp; |
 &nbsp; [**Installation for Gloo Edge API**](https://docs.solo.io/gloo-edge/latest/getting_started/) &nbsp; |
-&nbsp; [**K8s Gateway API Documentation**](https://docs.solo.io/gateway/latest/) &nbsp; |
-&nbsp; [**Gloo Edge API Documentation**](https://docs.solo.io/gateway/latest/) &nbsp; |
+&nbsp; [**K8s Gateway API docs**](https://docs.solo.io/gateway/latest/) &nbsp; |
+&nbsp; [**Gloo Edge API docs**](https://docs.solo.io/gateway/latest/) &nbsp; |
 &nbsp; [**Blog**](https://www.solo.io/blog/?category=gloo) &nbsp; |
 &nbsp; [**Slack**](https://slack.solo.io) &nbsp; |
 &nbsp; [**Twitter**](https://twitter.com/soloio_inc) |
@@ -34,10 +34,10 @@ Because of that, Gloo Gateway gives you the flexibility to run both Kubernetes G
 ### Using Gloo Gateway
 - **Kubernetes Gateway API**: Gloo Gateway is a feature-rich ingress controller, built on top of the Envoy Proxy and fully conformant with the Kubernetes Gateway API.
 - **Next-generation API gateway**: Gloo Gateway provides a long list of API gateway features including rate limiting, circuit breaking, retries, caching, transformation, service-mesh integration, security, external authentication and authorization.
-- **Hybrid apps**: Gloo Gateway creates applications that route to backends implemented as microservices, serverless functions and legacy apps. This feature can help users to -
-A) Gradually migrate from their legacy code to microservices and serverless.
-B) Add new functionalities using cloud-native technologies while maintaining their legacy codebase.
-C) Allow different teams in an organization choose different architectures. See here for more on the Hybrid App paradigm.
+- **Hybrid apps**: Gloo Gateway creates applications that route to backends implemented as microservices, serverless functions and legacy apps. This feature can help users to
+  * Gradually migrate from their legacy code to microservices and serverless.
+  * Add new functionalities using cloud-native technologies while maintaining their legacy codebase.
+  * Allow different teams in an organization choose different architectures. 
 
 
 ### What makes Gloo Gateway unique
