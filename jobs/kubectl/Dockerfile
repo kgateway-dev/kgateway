@@ -1,6 +1,6 @@
 ARG BASE_IMAGE
 
-FROM bitnami/kubectl:1.28.9 as kubectl
+FROM bitnami/kubectl:1.29.6 as kubectl
 
 FROM $BASE_IMAGE
 
