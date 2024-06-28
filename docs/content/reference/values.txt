@@ -140,6 +140,25 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.limits.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.requests.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.requests.cpu|string||amount of CPUs|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].value|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.fieldRef.apiVersion|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.fieldRef.fieldPath|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.containerName|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.resource|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor|int64|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor|int32|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.configMapKeyRef.name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.configMapKeyRef.key|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.configMapKeyRef.optional|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.key|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.optional|bool|||
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
