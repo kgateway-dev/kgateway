@@ -108,5 +108,9 @@ spec:
       resources:
         {{- toYaml $gg.aiExtension.resources | nindent 8 }}
 {{- end }}{{/* if $gg.aiExtension.resources */}}
+{{- if $gg.aiExtension.env }}
+      env:
+{{ toYaml $gg.aiExtension.env | indent 6 }}
+{{- end }} {{/* if $gg.aiExtension.env */}}
 {{- end }}{{/* if $gg.aiExtension */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}
