@@ -220,7 +220,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
         {{- if .Values.kubeGateway.enabled }}
-          - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
+          - name: GG_K8S_GW_CONTROLLER
             value: "true"
         {{- end }}{{/* if .Values.kubeGateway.enabled */}}
         {{- if .Values.gloo.splitLogOutput }}

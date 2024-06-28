@@ -40,7 +40,7 @@ func DetectKubeGatewayCrds(cfg *rest.Config) (bool, error) {
 	return false, nil
 }
 
-// Returns true if the GG_EXPERIMENTAL_K8S_GW_CONTROLLER env var is true in the gloo deployment.
+// Returns true if the GG_K8S_GW_CONTROLLER env var is true in the gloo deployment.
 // Note: This is tied up with the GG implementation and will need to be updated if it changes
 func DetectKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, error) {
 	// check if Kubernetes Gateway integration is enabled by checking if the controller env variable is set in the
