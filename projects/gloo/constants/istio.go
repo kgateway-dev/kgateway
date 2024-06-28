@@ -1,12 +1,6 @@
 package constants
 
 const (
-	// Env variable that indicates the Istio mtls integration is enabled via istioSDS.enabled on the helm chart.
-	// If enabled, an istio-proxy container is assumed to exist alongside the gateway proxy.
-	// Note: This value should be inherited at installation time, to determine if the istio sidecar is injected.
-	// In the interim, we use an env variable to control the value
-	IstioMtlsEnabled = "GG_EXPERIMENTAL_ISTIO_MTLS_SDS_ENABLED"
-
 	// Env variable that indicates the Istio sidecar injection is enabled via istioIntegration.enableIstioSidecarOnGateway
 	// on the helm chart. If enabled, the gateway proxy is assumed to have an istio sidecar injected.
 	IstioInjectionEnabled = "ENABLE_ISTIO_SIDECAR_ON_GATEWAY"
