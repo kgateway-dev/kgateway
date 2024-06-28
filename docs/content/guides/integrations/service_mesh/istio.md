@@ -4,137 +4,113 @@ menuTitle: Configure your Gloo Edge gateway to run an Istio sidecar
 weight: 1
 ---
 
-You can configure your Gloo Edge gateway with an Istio sidecar to secure the connection between your gateway and the services in your Istio service mesh. The sidecar in your Gloo Edge gateway uses mutual TLS (mTLS) to prove its identity to the services in the mesh and vice versa.
+### About Istio
 
-## Before you begin
+The open source project Istio is the leading service mesh implementation that offers powerful features to secure, control, connect, and monitor cloud-native, distributed applications. Istio is designed for workloads that run in one or more Kubernetes clusters, but you can also extend your service mesh to include virtual machines and other endpoints that are hosted outside your cluster. The key benefits of Istio include: 
 
-Complete the following tasks before configuring an Istio sidecar for your Gloo Edge gateway: 
+* Automatic load balancing for HTTP, gRPC, WebSocket, MongoDB, and TCP traffic
+* Secure TLS encryption for service-to-service communication with identity-based authentication and authorization
+* Advanced routing and traffic management policies, such as retries, failovers, and fault injection
+* Fine-grained access control and quotas
+* Automatic logs, metrics, and traces for traffic in the service mesh
 
-1. Create or use an existing cluster that runs Kubernetes a version supported by both [your version of Edge]({{< versioned_link_path fromRoot="/reference/support" >}}) and the [version of Istio you intend to install](https://istio.io/latest/docs/releases/supported-releases/). 
-2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.14 through 1.20 are supported in Gloo Edge 1.16. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
-3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/) to configure a service mesh that is based on Envoy and Istio, and that can span across multiple service meshes and clusters. 
-4. Install [Helm version 3](https://helm.sh/docs/intro/install/) on your local machine.
+### About the Gloo Edge Istio integration
 
-## Configure the Gloo Edge gateway with an Istio sidecar
+Gloo Edge comes with an Istio integration that allows you to configure your gateway proxy with an Istio sidecar. The Istio sidecar uses mutual TLS (mTLS) to prove its identity and to secure the connection between your gateway and the services in your Istio service mesh. In addition, you can control and secure the traffic that enters the mesh by applying all the advanced routing, traffic management, security, and resiliency capabilities that Gloo Edge offers. For example, you can set up end-user authentication and authorization, per-user rate limiting quotas, web application filters, and access logging to help prevent malicious attacks and audit service mesh usage. 
 
-Install the Gloo Edge gateway and inject it with an Istio sidecar. 
+### Changes to the Istio integration in 1.17
 
-1. Add the Gloo Edge Helm repo. 
-   ```shell
-   helm repo add gloo https://storage.googleapis.com/solo-public-helm
-   ```
-   
-2. Update the repo. 
-   ```shell
-   helm repo update
-   ```
-      
-3. Create a `value-overrides.yaml` file with the following content:
-- Set `istioIntegration.disableAutoinjection` to `true` so that Istio does not automatically inject a sidecar to the gateway proxy pods. This way, Gloo can configure the sidecar.
-- Set `global.istioIntegration.enabled` to `true` so that the Istio proxy is added to the gateway deployment. This way, the gateway proxy can use Istio certs despite not being in the mesh. Gloo uses a default sidecar configuration, which you can review in the [`gloo` project on GitHub](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/7-gateway-proxy-deployment.yaml). You can also use the `global.istioSDS.customSidecars[]` setting to provide your own sidecar configuration for the Gloo Edge Gateway.
-- Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
-  - The default Istio version is 1.22.0
+In Gloo Edge 1.17, a new auto-mTLS feature was introduced that simplifies the integration with Istio service meshes. The auto-mTLS feature automatically injects mTLS configuration into all Upstream resources in your cluster. Without auto-mTLS, every Upstream must be updated manually to add the mTLS configuration. 
+
+
+## Set up an Istio service mesh
+
+Use Solo.io's Gloo Mesh Enterprise product to install a managed Istio version by using the built-in Istio lifecycle manager, or manually install and manage your own Istio installation. 
+
+{{< tabs >}}
+{{% tab name="Managed Istio with Gloo Mesh Enterprise" %}}
+
+Gloo Mesh Enterprise is a service mesh management plane that is based on hardened, open-source projects like Envoy and Istio. With Gloo Mesh, you can unify the configuration, operation, and visibility of service-to-service connectivity across your distributed applications. These apps can run in different virtual machines (VMs) or Kubernetes clusters on premises or in various cloud providers, and even in different service meshes.
+
+Follow the [Gloo Mesh Enterprise get started guide](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/single/gs_single/) to quickly install a managed Solo distribution of Istio by using the built-in Istio lifecycle manager. 
+
+{{% /tab %}}
+{{% tab name="Manual Istio installation" %}}
+
+Set up Istio. Choose between the following options to set up Istio: 
+* [Manually install a Solo distribution of Istio](https://docs.solo.io/gloo-mesh-enterprise/latest/istio/manual/manual_deploy/). 
+* Install an open source distribution of Istio by following the [Istio documentation](https://istio.io/latest/docs/setup/getting-started/). 
+
+{{% /tab %}}
+{{< /tabs >}}
+
+## Deploy the httpbin app
+
+1. Deploy the httpbin app.  
    ```yaml
-   global:
-     istioIntegration:
-       disableAutoinjection: true
-       enabled: true
-     glooMtls:
-       istioProxy:
-         image:
-           registry: docker.io/istio
-           repository: proxyv2
-           tag: 1.22.0
-       sds:
-         image:
-           repository: sds
-           tag: 1.15.7
-   gatewayProxies:
-     gatewayProxy:
-       podTemplate: 
-         httpPort: 8080
-         httpsPort: 8443
+   kubectl apply -f- <<EOF
+   apiVersion: v1
+   kind: ServiceAccount
+   metadata:
+     name: httpbin
+   ---
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: httpbin
+     labels:
+       app: httpbin
+   spec:
+     ports:
+     - name: http
+       port: 8000
+       targetPort: 80
+     selector:
+       app: httpbin
+   ---
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: httpbin
+   spec:
+     replicas: 1
+     selector:
+       matchLabels:
+         app: httpbin
+         version: v1
+     template:
+       metadata:
+         labels:
+           app: httpbin
+           version: v1
+       spec:
+         serviceAccountName: httpbin
+         containers:
+         - image: docker.io/kennethreitz/httpbin
+           imagePullPolicy: IfNotPresent
+           name: httpbin
+           ports:
+           - containerPort: 80
+   EOF
    ```
 
-   {{% notice note %}}
-   Although the `istioProxy` values are defined in the `glooMtls` block, the values are also used to configure `istioMtls`.
-   {{% /notice %}}
-   
-1. Install or upgrade Gloo Edge. 
-   {{< tabs >}} 
-   {{< tab name="Install Gloo Edge">}}
-
-   Install Gloo Edge with the settings in the `value-overrides.yaml` file. This command creates the `gloo-system` namespace and installs the Gloo Edge components into it.
-   ```shell
-    helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f value-overrides.yaml
-   ```
-   {{< /tab >}}
-   {{< tab name="Upgrade Gloo Edge">}}
-   Upgrade Gloo Edge with the settings in the `value-overrides.yaml` file.
-   ```shell
-   helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
-   ```
-   {{< /tab >}}
-   {{< /tabs >}}
-
-2. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
-   
-3. Verify that your `gateway-proxy` pod now has three containers.
-   ```shell
-   kubectl get pods -n gloo-system
-   ```
-    
-   Example output: 
-   ```
-   NAME                             READY   STATUS      RESTARTS   AGE
-   discovery-6dcc8ddc58-q4zv7       1/1     Running     0          39s
-   gateway-certgen-xzr7t            0/1     Completed   0          43s
-   gateway-proxy-7bc5c97449-n9498   3/3     Running     0          39s
-   gloo-d8cfbf86b-v59j4             1/1     Running     0          39s
-   gloo-resource-rollout-hhvf9      0/1     Completed   0          38s
-   ```
-    
-4. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running.
-   ```shell
-   kubectl describe <gateway-pod-name> -n gloo-system
-   ```
-
-Congratulations! You have successfully configured an Istio sidecar for your Gloo Edge gateway. 
-
-## Set up and verify the mTLS connection 
-
-To demonstrate that you can connect to your app via mutual TLS (mTLS), you can follow these step to: 
-- Install the httpbin app in your cluster
-- Set up a virtual service to route incoming requests to the httpbin app
-- Require strict PeerAuthentication in the Istio mesh
-- Configure the relevant upstream(s) to use Istio mTLS
-
-1. Install the httpbin app in your cluster as part of the Istio mesh. 
-   ```shell
-   kubectl label namespace default istio-injection=enabled
-   kubectl apply -f https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml
+2. Verify that the httpbin app is running. 
+   ```sh
+   kubectl get pods 
    ```
    
-   Example output: 
-   ```
-   namespace/default labeled
-   serviceaccount/httpbin created
-   service/httpbin created
-   deployment.apps/httpbin created
-   ```
-
-2. Create a virtual service to set up the routing rules for your httpbin app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
+3. Create a VirtualService to configure routing to the httpbin app. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
-     name: vs
+     name: httpbin
      namespace: gloo-system
    spec:
      virtualHost:
        domains:
-       - 'www.example.com'
+       - '*'
        routes:
        - matchers:
          - prefix: /
@@ -146,27 +122,149 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    EOF
    ```
    
-3. Test access to httpbin by sending a request to the `/headers` endpoint. This endpoint returns a response with all of the request headers received by httpbin. 
-   ```shell
-   curl -H "Host: www.example.com" $(glooctl proxy url)/headers
+4. Send a request to the httpbin app and verify that you get back a 200 HTTP response code. 
+   ```sh
+   curl -vik $(glooctl proxy url --name=gateway-proxy)/headers
    ```
-   A response indicates that httpbin is reachable. However, traffic to the product page upstream is not encrypted with mTLS.
-   We can tell this because the `X-Forwarded-Client-Cert` header is not present.
-   ```json
+   
+   Example output: 
+   ```
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
+   ...
    {
      "headers": {
-       "Accept": "*/*",
-       "Host": "httpbin.default",
-       "User-Agent": "curl/7.88.1",
-       "X-B3-Sampled": "0",
-       "X-B3-Spanid": "b55df4f4d6d75692",
-       "X-B3-Traceid": "c048ebc0bb22b1eeb55df4f4d6d75692",
-       "X-Forwarded-Host": "www.example.com"
+       "Accept": "*/*", 
+       "Host": "34.162.22.180", 
+       "User-Agent": "curl/7.77.0", 
+       "X-Envoy-Expected-Rq-Timeout-Ms": "15000"
      }
    }
    ```
 
-4. To require all traffic in the mesh to use mTLS, apply the following STRICT PeerAuthentication policy.
+## Enable the Istio integration in Gloo Edge
+
+Upgrade your Gloo Edge installation to enable the Istio integration. 
+
+1. Get the name of the istiod service. Depending on how you set up Istio, you might see a revisionless service name (`istiod`) or a service name with a revision, such as `istiod-1-21`. 
+   ```sh
+   kubectl get services -n istio-system
+   ```
+   
+   Example output: 
+   ```                          
+   NAME          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                                 AGE
+   istiod-1-21   ClusterIP   10.102.24.31   <none>        15010/TCP,15012/TCP,443/TCP,15014/TCP   3h49m
+   ``` 
+
+2. Derive the Kubernetes service address for your istiod deployment. The service address uses the format `<service-name>.<namespace>.svc:15012`. For example, if your service name is `istiod-1-21`, the full service address is `istiod-1-21.istio-system.svc:15012`.
+
+3. Get the Helm values for your current Gloo Edge installation. 
+   ```sh
+   helm get values gloo -n gloo-system -o yaml > gloo-gateway.yaml
+   open gloo-gateway.yaml
+   ```
+   
+4. Add the following values to the Helm value file to enable the Istio integration with auto-mTLS. Make sure that you change the `istioProxyContainer` values to the service address and cluster name of your Istio installation.
+
+   {{< notice note >}}If you do not want auto-mTLS to be enabled, set this value to <code>false</code>.{{< /notice >}}
+   {{< tabs  >}}
+   {{% tab name="Open source" %}}
+   ```yaml
+   global:
+     istioIntegration:
+       enableAutoMtls: true
+       enabled: true
+     istioSDS:
+       enabled: true
+   gatewayProxies:
+     gatewayProxy:
+       istioDiscoveryAddress: istiod-1-21.istio-system.svc:15012
+       istioMetaClusterId: mycluster
+       istioMetaMeshId: mycluster
+   ```
+  
+   {{% /tab %}}
+   {{% tab name="Enterprise Edition" %}}
+   
+   ```yaml
+   global:
+     istioIntegration:
+       enableAutoMtls: true
+       enabled: true
+     istioSDS:
+       enabled: true
+   gloo:
+     gatewayProxies:
+       gatewayProxy:
+         istioDiscoveryAddress: istiod-1-21.istio-system.svc:15012
+         istioMetaClusterId: mycluster
+         istioMetaMeshId: mycluster
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+   
+   | Setting | Description |
+   | -- | -- | 
+   | `enableAutoMtls` | Automatically configure all Upstream resources in your cluster for mTLS. | 
+   | `istioDiscoveryAddress` | The address of the istiod service. If omitted, `istiod.istio-system.svc:15012` is used. |
+   | `istioMetaClusterId` </br> `istioMetaMeshId` | The name of the cluster where Gloo Gateway is installed. |
+   
+5. Upgrade your Gloo Gateway installation. 
+   {{< tabs >}}
+   {{% tab name="Open source" %}}
+   ```sh
+   helm upgrade -n gloo-system gloo gloo/gloo \
+      -f gloo-gateway.yaml \
+      --version={{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+   ```
+   {{% /tab %}}
+   {{% tab name="Enterprise Edition" %}}
+   ```sh
+   helm upgrade -n gloo-system gloo glooe/gloo-ee \
+    -f gloo-gateway.yaml \
+    --version={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+
+6. Verify that your `gateway-proxy` pod is restarted with 3 containers now, `gateway-proxy`, `istio-proxy`, and `sds`. 
+   ```sh
+   kubectl get pods -n gloo-system | grep gateway-proxy
+   ```
+   
+   Example output: 
+   ```
+   gateway-proxy-f7cd596b7-tv5z7    3/3     Running            0              3h31m
+   ```
+   
+## Set up mTLS routing to httpbin
+
+
+1. Label the httpbin namespace for Istio sidecar injection. 
+   ```sh
+   export REVISION=$(kubectl get pod -L app=istiod -n istio-system -o jsonpath='{.items[0].metadata.labels.istio\.io/rev}')      
+   echo $REVISION
+   kubectl label ns default istio.io/rev=$REVISION --overwrite=true
+   ```
+  
+2. Perform a rollout restart for the httpbin deployment so that an Istio sidecar is added to the httpbin app and the app is included in your service mesh. 
+   ```sh
+   kubectl rollout restart deployment httpbin 
+   ```
+   
+3. Verify that the httpbin app comes up with an additional container. 
+   ```sh
+   kubectl get pods 
+   ```
+   
+   Example output: 
+   ```
+   NAME                      READY   STATUS    RESTARTS   AGE
+   httpbin-f798c698d-vpltn   2/2     Running   0          15s
+   ```
+
+4. Create a strict PeerAuthentication policy to require all traffic in the mesh to use mTLS.
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: "security.istio.io/v1beta1"
@@ -179,54 +277,95 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
        mode: STRICT
    EOF
    ```
-5. Repeat the same curl request to the product page.
-   ```shell
-   curl -v -H "Host: www.example.com" $(glooctl proxy url)/headers 
-   ```
-   The `503 Service Unavailable` response is returned because the upstream is not configured for Istio mTLS.
-   ```text
-   *   Trying 127.0.0.1:32000...
-   * Connected to localhost (127.0.0.1) port 32000 (#0)
-   > GET /headers HTTP/1.1
-   > Host: www.example.com
-   > User-Agent: curl/7.88.1
-   > Accept: */*
-   >
-   < HTTP/1.1 503 Service Unavailable
-   < content-length: 95
-   < content-type: text/plain
-   < date: Tue, 03 Oct 2023 20:15:55 GMT
-   < server: envoy
-   <
-   * Connection #0 to host localhost left intact
-     upstream connect error or disconnect/reset before headers. reset reason: connection termination
-   ```
 
-6. Use `glooctl` to configure the upstream for Istio mTLS.
-   ```shell
+6. **Without auto-mTLS**: If you enabled auto-mTLS, the Upstream that represents the httpbin app is automatically configured for mTLS. However, if auto-mTLS is not enabled, you must manually configure the Upstream for mTLS. 
+   ```sh
    glooctl istio enable-mtls --upstream default-httpbin-8000
    ```
+   
+   {{< notice note >}}
+   If you do not add mTLS configuration to your Upstream and you try to send a request to the app, the request is denied with a 503 HTTP response code and you see an error message similar to the following: <code>upstream connect error or disconnect/reset before headers. reset reason: connection termination</code>. 
+   {{< /notice >}}
+   
 
-7. Repeat the same curl request to the product page.
-   ```shell
-   curl -v -H "Host: www.example.com" $(glooctl proxy url)/headers 
+7. Send a request to the httpbin app. Verify that you get back a 200 HTTP response and that an [`x-forwarded-client-cert`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-client-cert) header is returned. The presence of this header indicates that the connection from the gateway to the httpbin app is now encrypted via mutual TLS. 
+
+   ```sh
+   curl -vik $(glooctl proxy url --name=gateway-proxy)/headers
    ```
-   This time, the request succeeds because traffic is encrypted using mTLS. Note that httpbin received the `X-Forwarded-Client-Cert` header, indicating that Istio mTLS has occurred.
-   {{<highlight json "hl_lines=9">}}
-   {
-     "headers": {
-       "Accept": "*/*",
-       "Host": "httpbin.default",
-       "User-Agent": "curl/7.88.1",
-       "X-B3-Sampled": "0",
-       "X-B3-Spanid": "b34b0243f9a1e410",
-       "X-B3-Traceid": "21dc96a98c29ef48b34b0243f9a1e410",
-       "X-Forwarded-Client-Cert": "By=spiffe://cluster.local/ns/default/sa/httpbin;Hash=924e94ed5ff628e797d62acddf37d347ce3df827d5605727bae31a45025bb2a3;Subject=\"\";URI=spiffe://cluster.local/ns/gloo-system/sa/gateway-proxy",
-       "X-Forwarded-Host": "www.example.com"
-     }
-   }
-   {{</highlight>}}
 
-{{% notice note %}} 
-If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the httpbin app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
-{{% /notice %}}
+   Example output: 
+   {{< highlight yaml "hl_lines=21-22" >}}
+   {
+    "headers": {
+      "Accept": [
+        "*/*"
+      ],
+      "Host": [
+        "www.example.com:8080"
+      ],
+      "User-Agent": [
+        "curl/7.77.0"
+      ],
+      "X-B3-Sampled": [
+        "0"
+      ],
+      "X-B3-Spanid": [
+        "92744e97e79d8f22"
+      ],
+      "X-B3-Traceid": [
+        "8189f0a6c4e3582792744e97e79d8f22"
+      ],
+      "X-Forwarded-Client-Cert": [
+        "By=spiffe://gloo-edge-docs-mgt/ns/httpbin/sa/httpbin;Hash=3a57f9d8fddea59614b4ade84fcc186edeffb47794c06608068a3553e811bdfe;Subject=\"\";URI=spiffe://gloo-edge-docs-mgt/ns/gloo-system/sa/gloo-proxy-http"
+      ],
+      "X-Forwarded-Proto": [
+        "http"
+      ],
+      "X-Request-Id": [
+        "7f1d6e38-3bf7-44fd-8298-a77c34e5b865"
+      ]
+    }
+   }
+   {{< /highlight >}}
+   
+   
+## Cleanup
+
+You can optionally remove the resources that you created. 
+
+1. Follow the [Uninstall guide in the Gloo Mesh Enterprise documentation](https://docs.solo.io/gloo-mesh-enterprise/main/setup/uninstall/) to remove Gloo Mesh Enterprise. 
+   
+2. Upgrade your Gloo Edge Helm installation and remove the Helm values that you added as part of this guide. 
+
+3. Remove the Istio sidecar from the httpbin app. 
+   1. Remove the Istio label from the httpbin namespace. 
+      ```sh
+      kubectl label ns default istio.io/rev-
+      ```
+   2. Perform a rollout restart for the httpbin deployment. 
+      ```sh
+      kubectl rollout restart deployment httpbin
+      ```
+   3. Verify that the Istio sidecar container is removed. 
+      ```sh
+      kubectl get pods 
+      ```
+      
+      Example output: 
+      ```
+      NAME                       READY   STATUS        RESTARTS   AGE
+      httpbin-7d4965fb6d-mslx2   1/1     Running       0          6s
+      ```
+
+4. Delete the VirtualService resource. 
+   ```sh
+   kubectl delete virtualservice httpbin -n gloo-system
+   ```
+   
+5. Remove the httpbin app. 
+   ```sh
+   kubectl delete serviceaccount httpbin
+   kubectl delete service httpbin
+   kubectl delete deployment httpbin
+   ```

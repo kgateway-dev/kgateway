@@ -92,6 +92,7 @@ The following lists consist of the changes that were initially introduced with t
 
 **New or improved features**:
 
+* **New auto-mTLS feature for the Istio integration**: In Gloo Edge 1.17, a new auto-mTLS feature was introduced that simplifies the integration with Istio service meshes. The auto-mTLS feature automatically injects mTLS configuration into all Upstream resources in your cluster. Without auto-mTLS, every Upstream must be updated manually to add the mTLS configuration. For more information, see [Gloo Edge and Istio]({{< versioned_link_path fromRoot="/guides/integrations/service_mesh/istio/" >}}).
 
 <!--
 **Deprecated features**:
