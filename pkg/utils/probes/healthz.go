@@ -4,28 +4,61 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func StartLivenessProbeServer(ctx context.Context) {
+type ProbeServerParams struct {
+	Port         int
+	Path         string
+	ResponseCode int
+	ResponseBody string
+}
+
+func NewProbeServerParams() ProbeServerParams {
+	return ProbeServerParams{
+		Port:         8765,
+		Path:         "/healthz",
+		ResponseCode: http.StatusOK,
+		ResponseBody: "OK\n",
+	}
+}
+
+// StartLivenessProbeServerOnPort accepts a port and opens a simple http server
+// which will respond to requests at the configured port and path
+func StartProbeServer(ctx context.Context, params ProbeServerParams) {
 	var server *http.Server
+
+	// make sure we don't blow up on a bad call with some sane defaults
+	if !strings.HasPrefix(params.Path, "/") {
+		params.Path = "/" + params.Path
+	}
+	if params.Port == 0 {
+		params.Port = 8765
+	}
+	if params.ResponseCode == 0 {
+		params.ResponseCode = http.StatusOK
+	}
 
 	// Run the server in a goroutine
 	go func() {
 		mux := new(http.ServeMux)
-		mux.HandleFunc("/healthz", okHandler)
+		mux.HandleFunc(params.Path, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(params.ResponseCode)
+			w.Write([]byte(params.ResponseBody))
+		})
 		server = &http.Server{
-			Addr:    fmt.Sprintf(":%d", 8765),
+			Addr:    fmt.Sprintf(":%d", params.Port),
 			Handler: mux,
 		}
-		contextutils.LoggerFrom(ctx).Infof("healthz server starting at %s", server.Addr)
+		contextutils.LoggerFrom(ctx).Infof("probe server starting at %s listening for %s", server.Addr, params.Path)
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			contextutils.LoggerFrom(ctx).Info("healthz server closed")
+			contextutils.LoggerFrom(ctx).Info("probe server closed")
 		} else {
-			contextutils.LoggerFrom(ctx).Warnf("healthz server closed with unexpected error: %v", err)
+			contextutils.LoggerFrom(ctx).Warnf("probe server closed with unexpected error: %v", err)
 		}
 	}()
 
@@ -36,13 +69,16 @@ func StartLivenessProbeServer(ctx context.Context) {
 			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer shutdownCancel()
 			if err := server.Shutdown(shutdownCtx); err != nil {
-				contextutils.LoggerFrom(shutdownCtx).Warnf("healthz server shutdown returned error: %v", err)
+				contextutils.LoggerFrom(shutdownCtx).Warnf("probe server shutdown returned error: %v", err)
 			}
 		}
 	}()
 }
 
-func okHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "OK\n")
+// StartLivenessProbeServer starts a probe server listening on 8765 for requests to /healthz
+// and responds with HTTP 200 with body OK\n
+//
+// This is a convenience wrapper around StartProbeServer which can be customized with params.
+func StartLivenessProbeServer(ctx context.Context) {
+	StartProbeServer(ctx, NewProbeServerParams())
 }
