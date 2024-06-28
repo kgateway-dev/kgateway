@@ -75,11 +75,6 @@ rules:
   - gatewayparameters
   verbs: ["get", "list", "watch"]
 - apiGroups:
-  - "gloo.solo.io"
-  resources:
-  - upstreams
-  verbs: ["get", "list", "watch", "patch", "create"]
-- apiGroups:
   - ""
   resources:
   - services
