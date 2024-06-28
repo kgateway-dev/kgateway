@@ -169,6 +169,16 @@ func (m *KubernetesProxyConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAiExtension()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAiExtension()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAiExtension(), target.GetAiExtension()) {
+			return false
+		}
+	}
+
 	switch m.WorkloadType.(type) {
 
 	case *KubernetesProxyConfig_Deployment:
@@ -665,6 +675,97 @@ func (m *StatsConfig) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetStatsRoutePrefixRewrite(), target.GetStatsRoutePrefixRewrite()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AiExtension) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AiExtension)
+	if !ok {
+		that2, ok := that.(AiExtension)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetImage()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetImage()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetImage(), target.GetImage()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetListenAddress()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetListenAddress()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetListenAddress(), target.GetListenAddress()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetSecurityContext()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSecurityContext()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSecurityContext(), target.GetSecurityContext()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetResources()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResources()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResources(), target.GetResources()) {
+			return false
+		}
+	}
+
+	if len(m.GetEnv()) != len(target.GetEnv()) {
+		return false
+	}
+	for idx, v := range m.GetEnv() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetEnv()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetEnv()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

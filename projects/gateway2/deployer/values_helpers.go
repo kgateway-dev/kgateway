@@ -6,23 +6,22 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
+	"golang.org/x/exp/slices"
+	"k8s.io/utils/ptr"
+	api "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"golang.org/x/exp/slices"
-	"k8s.io/utils/ptr"
-	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // This file contains helper functions that generate helm values in the format needed
 // by the deployer.
 
-var (
-	ComponentLogLevelEmptyError = func(key string, value string) error {
-		return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
-	}
-)
+var ComponentLogLevelEmptyError = func(key string, value string) error {
+	return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
+}
 
 // Extract the listener ports from a Gateway. These will be used to populate:
 // 1. the ports exposed on the envoy container
@@ -211,4 +210,28 @@ func setPullPolicy(pullPolicy v1alpha1kube.Image_PullPolicy, helmImage *helmImag
 		return
 	}
 	helmImage.PullPolicy = ptr.To(pullPolicy.String())
+}
+
+func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
+	if config == nil {
+		return nil
+	}
+
+	configImage := config.GetImage()
+	image := &helmImage{
+		Registry:   ptr.To(configImage.GetRegistry().GetValue()),
+		Repository: ptr.To(configImage.GetRepository().GetValue()),
+		Tag:        ptr.To(configImage.GetTag().GetValue()),
+		Digest:     ptr.To(configImage.GetDigest().GetValue()),
+	}
+	setPullPolicy(configImage.GetPullPolicy(), image)
+
+	return &helmAIExtension{
+		Enabled:         config.GetEnabled().GetValue(),
+		Image:           image,
+		ListenAddress:   ptr.To(config.GetListenAddress().GetValue()),
+		SecurityContext: config.GetSecurityContext(),
+		Resources:       config.GetResources(),
+		Env:             config.GetEnv(),
+	}
 }

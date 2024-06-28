@@ -1,0 +1,13 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6465
+    resolvesIssue: false
+    description: |
+      gateway2: enable provisioning of AI extension
+
+      Enables the provisioning of the AI extproc extension
+      via GatewayParameter. A new `aiExtension` field is added
+      to enable customizing the deployment of the extension
+      service as a sidecar. The extension service is opaque
+      to Gloo OSS, and is left to downstream projects to implement
+      and plug-in.

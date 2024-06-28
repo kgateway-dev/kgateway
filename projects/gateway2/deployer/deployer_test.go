@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	knownwrappers "google.golang.org/protobuf/types/known/wrapperspb"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -469,6 +470,15 @@ var _ = Describe("Deployer", func() {
 										IstioMetaClusterId:    &wrapperspb.StringValue{Value: "overridden"},
 									},
 								},
+								AiExtension: &gw2_v1alpha1.AiExtension{
+									Enabled: knownwrappers.Bool(true),
+									Image: &kube.Image{
+										Registry:   knownwrappers.String("foo"),
+										Repository: knownwrappers.String("bar"),
+										Tag:        knownwrappers.String("baz"),
+									},
+									ListenAddress: knownwrappers.String("unix:///foo/bar"),
+								},
 							},
 						},
 					},
@@ -718,6 +728,15 @@ var _ = Describe("Deployer", func() {
 					Expect(istioContainer.Resources.Requests.Cpu().String()).To(Equal(expectedGwp.GetIstio().GetIstioProxyContainer().GetResources().GetRequests()["cpu"]))
 					// TODO: assert on istio args (e.g. log level, istio meta fields, etc)
 
+					// assert AI extension container
+					expectedAIExtension := fmt.Sprintf("%s/%s",
+						expectedGwp.GetAiExtension().GetImage().GetRegistry().GetValue(),
+						expectedGwp.GetAiExtension().GetImage().GetRepository().GetValue(),
+					)
+					aiExt := dep.Spec.Template.Spec.Containers[3]
+					Expect(aiExt.Image).To(ContainSubstring(expectedAIExtension))
+					Expect(aiExt.Env[len(aiExt.Env)-1].Value).To(Equal(expectedGwp.GetAiExtension().GetListenAddress().GetValue()))
+
 					// assert Service
 					svc := objs.findService(defaultNamespace, defaultServiceName)
 					Expect(svc).ToNot(BeNil())
@@ -751,7 +770,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("correct deployment with sds enabled", &input{
+			Entry("correct deployment with sds and AI extension enabled", &input{
 				dInputs:     istioEnabledDeployerInputs(),
 				gw:          defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp:  defaultGatewayParams(),
@@ -759,8 +778,8 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					containers := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers
-					Expect(containers).To(HaveLen(3))
-					var foundGw, foundSds, foundIstioProxy bool
+					Expect(containers).To(HaveLen(4))
+					var foundGw, foundSds, foundIstioProxy, foundAIExtension bool
 					var sdsContainer, istioProxyContainer corev1.Container
 					for _, container := range containers {
 						switch container.Name {
@@ -772,6 +791,8 @@ var _ = Describe("Deployer", func() {
 							foundIstioProxy = true
 						case "gloo-gateway":
 							foundGw = true
+						case "gloo-ai-extension":
+							foundAIExtension = true
 						default:
 							Fail("unknown container name " + container.Name)
 						}
@@ -779,6 +800,7 @@ var _ = Describe("Deployer", func() {
 					Expect(foundGw).To(BeTrue())
 					Expect(foundSds).To(BeTrue())
 					Expect(foundIstioProxy).To(BeTrue())
+					Expect(foundAIExtension).To(BeTrue())
 
 					bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, defaultConfigMapName)
 					clusters := bootstrapCfg.GetStaticResources().GetClusters()
@@ -1149,6 +1171,10 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 							IstioMetaMeshId:       &wrapperspb.StringValue{Value: "istioMetaMeshId"},
 							IstioMetaClusterId:    &wrapperspb.StringValue{Value: "istioMetaClusterId"},
 						},
+					},
+					AiExtension: &gw2_v1alpha1.AiExtension{
+						Enabled:       knownwrappers.Bool(true),
+						ListenAddress: knownwrappers.String("unix:///foo/bar"),
 					},
 				},
 			},

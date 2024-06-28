@@ -67,6 +67,8 @@ message KubernetesProxyConfig {
 
   // Optional stats configuration (enabled by default)
   StatsConfig stats = 8;
+
+  AiExtension ai_extension = 9;
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
@@ -228,4 +230,34 @@ message StatsConfig {
 
   // The Envoy stats endpoint with general metrics for the additional stats route
   .google.protobuf.StringValue stats_route_prefix_rewrite = 4;
+}
+
+// Configuration for the AI extension.
+message AiExtension {
+  // Whether to enable the extension.
+  .google.protobuf.BoolValue enabled = 1;
+
+  // The extension's container image. See
+  // https://kubernetes.io/docs/concepts/containers/images
+  // for details.
+  //
+  // Default values are rendered into the default GatewayParameters from the helm
+  // values_template.yaml with any user overrides
+  kube.gateway.gloo.solo.io.Image image = 2;
+
+  // Address the extension will listen on.
+  google.protobuf.StringValue listen_address = 3;
+
+  // The extension's container security context. See
+  // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
+  // for details.
+  k8s.io.api.core.v1.SecurityContext security_context = 4;
+
+  // The extension's container compute resource configuration. See
+  // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  // for details.
+  kube.gateway.gloo.solo.io.ResourceRequirements resources = 5;
+
+  // The extension's container environment variables.
+  repeated k8s.io.api.core.v1.EnvVar env = 6;
 }

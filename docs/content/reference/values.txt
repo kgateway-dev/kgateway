@@ -106,6 +106,59 @@
 |kubeGateway.gatewayParameters.glooGateway.stats.routePrefixRewrite|string|/stats/prometheus|Set the prefix rewrite used for the prometheus endpoint|
 |kubeGateway.gatewayParameters.glooGateway.stats.enableStatsRoute|bool|true|Enable the stats endpoint|
 |kubeGateway.gatewayParameters.glooGateway.stats.statsRoutePrefixRewrite|string|/stats|Set the prefix rewrite used for the stats endpoint|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.enabled|bool|false|Enable the AI extension|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.repository|string|gloo-ai-extension|The image repository (name) for the container.|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.registry|string|quay.io/solo-io|The image hostname prefix and registry, such as quay.io/solo-io.|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.pullPolicy|string|IfNotPresent|The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.variant|string||Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.fipsDigest|string||[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.image.fips|bool||[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.listenAddress|string|unix:///var/run/gloo-ai.sock|The address the extension server listens on.|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.capabilities.add[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.capabilities.drop[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.privileged|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seLinuxOptions.user|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seLinuxOptions.role|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seLinuxOptions.type|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seLinuxOptions.level|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.windowsOptions.gmsaCredentialSpec|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.windowsOptions.runAsUserName|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.windowsOptions.hostProcess|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.runAsUser|int64|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.runAsGroup|int64|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.runAsNonRoot|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.readOnlyRootFilesystem|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.allowPrivilegeEscalation|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.procMount|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seccompProfile.type|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seccompProfile.localhostProfile|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.limits.memory|string||amount of memory|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.limits.cpu|string||amount of CPUs|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.requests.memory|string||amount of memory|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.requests.cpu|string||amount of CPUs|
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].value|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.fieldRef.apiVersion|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.fieldRef.fieldPath|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.containerName|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.resource|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor|int64|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor|int32|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.resourceFieldRef.divisor[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.configMapKeyRef.name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.configMapKeyRef.key|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.configMapKeyRef.optional|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.key|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.optional|bool|||
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|

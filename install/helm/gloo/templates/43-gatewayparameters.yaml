@@ -94,4 +94,23 @@ spec:
 {{- end -}}{{/* if $gg.stats */}}
 {{- end }}{{/* if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) */}}
 {{- end }}{{/* if $gg.sdsContainer */}}
+{{- if $gg.aiExtension }}
+    aiExtension:
+      enabled: {{ $gg.aiExtension.enabled }}
+      image:
+        {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+      listenAddress: {{ $gg.aiExtension.listenAddress }}
+{{- if $gg.aiExtension.securityContext }}
+      securityContext:
+        {{- toYaml $gg.aiExtension.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.aiExtension.securityContext */}}
+{{- if $gg.aiExtension.resources }}
+      resources:
+        {{- toYaml $gg.aiExtension.resources | nindent 8 }}
+{{- end }}{{/* if $gg.aiExtension.resources */}}
+{{- if $gg.aiExtension.env }}
+      env:
+{{ toYaml $gg.aiExtension.env | indent 6 }}
+{{- end }} {{/* if $gg.aiExtension.env */}}
+{{- end }}{{/* if $gg.aiExtension */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

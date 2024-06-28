@@ -67,6 +67,7 @@ func GetTestExtraEnvVar() corev1.EnvVar {
 		Value: "test",
 	}
 }
+
 func GetValidationEnvVar() corev1.EnvVar {
 	return corev1.EnvVar{
 		Name:  "VALIDATION_MUST_START",
@@ -83,8 +84,7 @@ func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource
 }
 
 var _ = Describe("Helm Test", func() {
-
-	var allTests = func(rendererTestCase renderTestCase) {
+	allTests := func(rendererTestCase renderTestCase) {
 		var (
 			glooPorts = []corev1.ContainerPort{
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
@@ -227,7 +227,6 @@ var _ = Describe("Helm Test", func() {
 			})
 
 			It("can create gloo pdb with minAvailable", func() {
-
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
 						"gloo.podDisruptionBudget.minAvailable='2'",
@@ -253,7 +252,6 @@ spec:
 			})
 
 			It("can create gloo pdb with maxUnavailable", func() {
-
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
 						"gloo.podDisruptionBudget.maxUnavailable='2'",
@@ -279,7 +277,6 @@ spec:
 			})
 
 			It("errors rendering when gloo pdb has both maxUnavailable and minAvailable set", func() {
-
 				expectRenderError(namespace, helmValues{
 					valuesArgs: []string{
 						"gloo.podDisruptionBudget.maxUnavailable='2'",
@@ -373,7 +370,7 @@ spec:
 						},
 					})
 
-					var resourcesTested = 0
+					resourcesTested := 0
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
@@ -383,7 +380,7 @@ spec:
 						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						deploymentLabels := structuredDeployment.Spec.Template.Labels
-						var foundTestValue = false
+						foundTestValue := false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
 								ExpectWithOffset(1, value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
@@ -410,7 +407,7 @@ spec:
 						},
 					})
 
-					var resourcesTested = 0
+					resourcesTested := 0
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
@@ -423,7 +420,7 @@ spec:
 						if structuredDeployment.Name != "clusteringress-proxy" {
 							return
 						}
-						var foundTestValue = false
+						foundTestValue := false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
 								ExpectWithOffset(1, value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
@@ -466,7 +463,7 @@ spec:
 
 							// check the labels
 							jobLabels := structuredJob.Spec.Template.Labels
-							var foundTestValue = false
+							foundTestValue := false
 							for label, expectedValue := range expectedLabels {
 								ExpectWithOffset(1, jobLabels[label]).To(Equal(expectedValue), fmt.Sprintf("Job %s expected test label to have"+
 									" value %s. Found value %s", job.GetName(), expectedValue, jobLabels[label]))
@@ -507,7 +504,6 @@ spec:
 						}
 
 						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
-
 					})
 
 					It("should be able to set custom labels and annotations on cleanupJob", func() {
@@ -560,7 +556,8 @@ spec:
 							"settings.integrations.knative.enabled=true",
 							"settings.integrations.knative.version=0.7.0",
 							"settings.integrations.knative.proxy.stats=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -584,7 +581,8 @@ spec:
 							"settings.integrations.knative.enabled=true",
 							"settings.integrations.knative.version=0.8.0",
 							"settings.integrations.knative.proxy.stats=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -661,7 +659,6 @@ spec:
 
 						foundMonitoringPort := deploymentContainsMonitoringPort(structuredDeployment)
 						ExpectWithOffset(1, foundMonitoringPort).To(BeTrue(), fmt.Sprintf("'http-monitoring' port should be set on deployment %+v", deployment))
-
 					})
 
 					// assert that gloo has stats disabled
@@ -755,7 +752,6 @@ spec:
 
 					Expect(actualDeploymentsWithHttpMonitoring).To(Equal(expectedDeploymentsWithHttpMonitoring))
 				})
-
 			})
 
 			Context("gloo mtls settings", func() {
@@ -855,7 +851,8 @@ spec:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"global.glooStats.enabled=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -877,7 +874,8 @@ spec:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"gatewayProxies.gatewayProxy.stats.enabled=true",
-							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json"},
+							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -926,7 +924,8 @@ spec:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"global.glooMtls.enabled=true",
-							"gateway.certGenJob.runOnUpdate=true"},
+							"gateway.certGenJob.runOnUpdate=true",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -951,7 +950,8 @@ spec:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"global.glooMtls.enabled=true",
-							"gateway.certGenJob.runOnUpdate=false"},
+							"gateway.certGenJob.runOnUpdate=false",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -974,9 +974,7 @@ spec:
 			})
 
 			Context("gloo with linkerd settings", func() {
-				var (
-					linkerdInjectionLabel = "linkerd.io/inject"
-				)
+				linkerdInjectionLabel := "linkerd.io/inject"
 				It("linkerd injection should always be disabled in job pod templates when linkerd is enabled", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
@@ -1095,7 +1093,6 @@ spec:
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).NotTo(ContainElement(istioCertsVolume), "should not mount istio-certs in gloo")
 							Expect(structuredDeployment.Spec.Template.Spec.Containers[0].Env).Should(ContainElement(GetLogLevelEnvVar("debug")))
 						}
-
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -1139,7 +1136,6 @@ spec:
 							Expect(structuredDeployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).NotTo(ContainElement(istioCertsVolume), "should not mount istio-certs in gloo")
 						}
-
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -1185,8 +1181,10 @@ spec:
 
 				It("should add an Istio injection label for pods that can be configured for it", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
-							"global.istioIntegration.disableAutoinjection=false"},
+						valuesArgs: []string{
+							"global.istioIntegration.whitelistDiscovery=true",
+							"global.istioIntegration.disableAutoinjection=false",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -1218,7 +1216,8 @@ spec:
 					secondDeploymentHttpPort := 1337
 					secondDeploymentHttpsPort := 1338
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
+						valuesArgs: []string{
+							"global.istioIntegration.whitelistDiscovery=true",
 							"global.istioIntegration.enableIstioSidecarOnGateway=true",
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
@@ -1268,7 +1267,8 @@ spec:
 					secondDeploymentHttpPort := 1337
 					secondDeploymentHttpsPort := 1338
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
+						valuesArgs: []string{
+							"global.istioIntegration.whitelistDiscovery=true",
 							"global.istioIntegration.enableIstioSidecarOnGateway=true",
 							"global.istioIntegration.istioSidecarRevTag=some-revision",
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
@@ -1349,8 +1349,10 @@ spec:
 
 				It("The created namespace can be labeled for Istio discovery", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"namespace.create=true",
-							"global.istioIntegration.labelInstallNamespace=true"},
+						valuesArgs: []string{
+							"namespace.create=true",
+							"global.istioIntegration.labelInstallNamespace=true",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -1371,9 +1373,11 @@ spec:
 				})
 				It("The created namespace can be labeled with a revision tag for Istio discovery", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"namespace.create=true",
+						valuesArgs: []string{
+							"namespace.create=true",
 							"global.istioIntegration.labelInstallNamespace=true",
-							"global.istioIntegration.istioSidecarRevTag=some-revision"},
+							"global.istioIntegration.istioSidecarRevTag=some-revision",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -1407,7 +1411,6 @@ spec:
 						Expect(field).To(BeFalse())
 					})
 				})
-
 			})
 
 			Context("gateway", func() {
@@ -2031,7 +2034,6 @@ spec:
 					})
 
 					It("can create gwp autoscaling/v1 hpa", func() {
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.horizontalPodAutoscaler.apiVersion=autoscaling/v1",
@@ -2065,7 +2067,6 @@ apiVersion: autoscaling/v1
 					})
 
 					It("can create gwp autoscaling/v2beta2 hpa", func() {
-
 						prepareMakefileFromValuesFile("values/val_gwp_hpa_v2beta2.yaml")
 
 						hpa := makeUnstructured(`
@@ -2104,11 +2105,9 @@ apiVersion: autoscaling/v2beta2
 `)
 
 						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeEquivalentTo(hpa))
-
 					})
 
 					It("can create gwp autoscaling/v2 hpa", func() {
-
 						prepareMakefileFromValuesFile("values/val_gwp_hpa_v2.yaml")
 
 						hpa := makeUnstructured(`
@@ -2155,7 +2154,6 @@ spec:
 `)
 
 						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeEquivalentTo(hpa))
-
 					})
 
 					It("gwp pdb disabled by default", func() {
@@ -2165,7 +2163,6 @@ spec:
 					})
 
 					It("can create gwp pdb with minAvailable", func() {
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable='2'",
@@ -2191,7 +2188,6 @@ spec:
 					})
 
 					It("can create gwp pdb with maxUnavailable", func() {
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable='2'",
@@ -2217,7 +2213,6 @@ spec:
 					})
 
 					It("can create gwp pdb for multiple gateways with unique selectors", func() {
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable='2'",
@@ -2338,7 +2333,6 @@ spec:
 				})
 
 				Context("Failover Gateway", func() {
-
 					gwFailover := makeUnstructured(`
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -2386,11 +2380,9 @@ spec:
 							getSslGatewayName(defaults.GatewayProxyName): Not(BeNil()),
 						})
 					})
-
 				})
 
 				Context("custom gateway", func() {
-
 					Context("when the default values weren't overridden", func() {
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
@@ -2507,9 +2499,7 @@ spec:
 							service := getService(testManifest, namespace, "another-gateway-proxy")
 							Expect(service.ObjectMeta.Annotations).To(Equal(map[string]string{"override": "override"}))
 						})
-
 					})
-
 				})
 
 				Context("when multiple custom gatewayproxy override disabled default proxy", func() {
@@ -2602,7 +2592,6 @@ spec:
 						})
 						testManifest.ExpectServiceAccount(gatewayProxyServiceAccount)
 					})
-
 				})
 
 				Context("gateway-proxy service", func() {
@@ -2752,9 +2741,7 @@ spec:
 				})
 
 				Context("gateway-proxy deployment", func() {
-					var (
-						gatewayProxyDeployment *appsv1.Deployment
-					)
+					var gatewayProxyDeployment *appsv1.Deployment
 
 					checkDiscoveryAddressEqual := func(expected string) {
 						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -2878,9 +2865,7 @@ spec:
 					})
 
 					Context("gateway-proxy daemonset", func() {
-						var (
-							daemonSet *appsv1.DaemonSet
-						)
+						var daemonSet *appsv1.DaemonSet
 						BeforeEach(func() {
 							daemonSet = &appsv1.DaemonSet{
 								TypeMeta: metav1.TypeMeta{
@@ -3154,7 +3139,6 @@ spec:
 					})
 
 					It("sets affinity", func() {
-
 						gatewayProxyDeployment.Spec.Template.Spec.Affinity = &corev1.Affinity{
 							NodeAffinity: &corev1.NodeAffinity{
 								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
@@ -3179,7 +3163,6 @@ spec:
 					})
 
 					It("sets topologySpreadConstraints", func() {
-
 						gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints = append(
 							gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints,
 							corev1.TopologySpreadConstraint{
@@ -3504,7 +3487,6 @@ spec:
 						Expect(sdsContainer.Name).To(Equal("sds"))
 						Expect(sdsContainer.Image).To(Equal(generateExpectedImage("my-sds-reg/sds-ee", "my-sds-tag", variant)))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
-
 					},
 						Entry("No variant specified", ""),
 						Entry("Standard variant", "standard"),
@@ -3560,8 +3542,7 @@ spec:
 					})
 
 					It("ISTIO_META_MESH_ID env var default value set", func() {
-
-						var value = "cluster.local"
+						value := "cluster.local"
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -3589,13 +3570,11 @@ spec:
 								}
 							}
 							Expect(istioMetaMeshID).To(Equal(value), "ISTIO_META_MESH_ID should equal "+value)
-
 						})
 					})
 
 					It("can set ISTIO_META_MESH_ID env var", func() {
-
-						var value = "foo"
+						value := "foo"
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -3626,13 +3605,11 @@ spec:
 							if structuredDeployment.GetName() == "gateway-proxy" {
 								Expect(istioMetaMeshID).To(Equal(value), "ISTIO_META_MESH_ID should equal "+value)
 							}
-
 						})
 					})
 
 					It("ISTIO_META_CLUSTER_ID env var default value set", func() {
-
-						var value = "Kubernetes"
+						value := "Kubernetes"
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -3662,13 +3639,11 @@ spec:
 							if structuredDeployment.GetName() == "gateway-proxy" {
 								Expect(istioMetaClusterID).To(Equal(value), "ISTIO_META_CLUSTER_ID should equal "+value)
 							}
-
 						})
 					})
 
 					It("can set ISTIO_META_CLUSTER_ID env var", func() {
-
-						var value = "bar"
+						value := "bar"
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -3699,7 +3674,6 @@ spec:
 							if structuredDeployment.GetName() == "gateway-proxy" {
 								Expect(istioMetaClusterID).To(Equal(value), "ISTIO_META_CLUSTER_ID should equal "+value)
 							}
-
 						})
 					})
 
@@ -3731,7 +3705,6 @@ spec:
 					})
 
 					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
-
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
 							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
 							corev1.VolumeMount{
@@ -3890,7 +3863,6 @@ spec:
 								Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring("rest_xds_cluster"), "should have an rest_xds_cluster configured")
 							}
 						})
-
 					})
 
 					Context("pass image pull secrets", func() {
@@ -3973,7 +3945,6 @@ spec:
 
 						prepareMakefile(namespace, helmValues{})
 						testManifest.ExpectUnstructured(glooService.GetKind(), glooService.GetNamespace(), glooService.GetName()).To(BeEquivalentTo(glooService))
-
 					})
 
 					It("creates settings with the gateway config with old mapping", func() {
@@ -4040,7 +4011,8 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gateway.enabled=false",
-							}})
+							},
+						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 					It("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
@@ -4238,7 +4210,6 @@ spec:
 						})
 
 						testManifest.ExpectUnstructured(expectedYaml.GetKind(), expectedYaml.GetNamespace(), expectedYaml.GetName()).To(BeEquivalentTo(expectedYaml))
-
 					})
 
 					It("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
@@ -4283,7 +4254,7 @@ spec:
 								// other containers should have default resources values set in their templates.
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
-									var expectedVals = sdsVals
+									expectedVals := sdsVals
 									// Two deployments employ proxy containers requiring the envoySidecar resources config:
 									// - gloo (whose sidecar container is named: "envoy-sidecar")
 									// - gateway-proxy (named: "istio-proxy")
@@ -4697,7 +4668,6 @@ metadata:
 
 `)
 						testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeEquivalentTo(serviceAccount))
-
 					})
 				})
 			})
@@ -4731,7 +4701,6 @@ metadata:
 					})
 					testManifest.ExpectServiceAccount(glooServiceAccount)
 				})
-
 			})
 
 			Context("control plane deployments", func() {
@@ -4788,19 +4757,20 @@ metadata:
 						}
 						deploy := rb.GetDeploymentAppsv1()
 						updateDeployment(deploy)
-						deploy.Spec.Template.Spec.Volumes = []corev1.Volume{{
-							Name: "labels-volume",
-							VolumeSource: corev1.VolumeSource{
-								DownwardAPI: &corev1.DownwardAPIVolumeSource{
-									Items: []corev1.DownwardAPIVolumeFile{{
-										Path: "labels",
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "metadata.labels",
-										},
-									}},
+						deploy.Spec.Template.Spec.Volumes = []corev1.Volume{
+							{
+								Name: "labels-volume",
+								VolumeSource: corev1.VolumeSource{
+									DownwardAPI: &corev1.DownwardAPIVolumeSource{
+										Items: []corev1.DownwardAPIVolumeFile{{
+											Path: "labels",
+											FieldRef: &corev1.ObjectFieldSelector{
+												FieldPath: "metadata.labels",
+											},
+										}},
+									},
 								},
 							},
-						},
 							{
 								Name: "validation-certs",
 								VolumeSource: corev1.VolumeSource{
@@ -4809,7 +4779,8 @@ metadata:
 										DefaultMode: proto.Int(420),
 									},
 								},
-							}}
+							},
+						}
 						deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 							{
 								Name:      "validation-certs",
@@ -4905,7 +4876,6 @@ metadata:
 								"gloo.deployment.image.registry=gcr.io/solo-public",
 							},
 						})
-
 					})
 
 					It("can set log level env var", func() {
@@ -4944,25 +4914,28 @@ metadata:
 					})
 					It("can disable validation", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
-						glooDeployment.Spec.Template.Spec.Volumes = []corev1.Volume{{
-							Name: "labels-volume",
-							VolumeSource: corev1.VolumeSource{
-								DownwardAPI: &corev1.DownwardAPIVolumeSource{
-									Items: []corev1.DownwardAPIVolumeFile{{
-										Path: "labels",
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "metadata.labels",
-										},
-									}},
+						glooDeployment.Spec.Template.Spec.Volumes = []corev1.Volume{
+							{
+								Name: "labels-volume",
+								VolumeSource: corev1.VolumeSource{
+									DownwardAPI: &corev1.DownwardAPIVolumeSource{
+										Items: []corev1.DownwardAPIVolumeFile{{
+											Path: "labels",
+											FieldRef: &corev1.ObjectFieldSelector{
+												FieldPath: "metadata.labels",
+											},
+										}},
+									},
 								},
 							},
-						},
 						}
 						glooDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
-							{Name: "labels-volume",
+							{
+								Name:      "labels-volume",
 								MountPath: "/etc/gloo",
 								ReadOnly:  true,
-							}}
+							},
+						}
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gateway.validation.enabled=false"},
 						})
@@ -5147,7 +5120,6 @@ metadata:
 								"discovery.deployment.image.registry=gcr.io/solo-public",
 							},
 						})
-
 					})
 
 					DescribeTable("supports deploying the correct discovery-ee image variant", func(variant string) {
@@ -5289,13 +5261,10 @@ metadata:
 						})
 					})
 				})
-
 			})
 
 			Describe("configmaps", func() {
-				var (
-					gatewayProxyConfigMapName = "gateway-proxy-envoy-config"
-				)
+				gatewayProxyConfigMapName := "gateway-proxy-envoy-config"
 
 				labels := map[string]string{
 					"gloo":             "gateway-proxy",
@@ -5305,7 +5274,8 @@ metadata:
 
 				It("should allow customising tcp keepalive on custom gateway proxies", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"",
+						valuesArgs: []string{
+							"",
 							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30",
 							"gatewayProxies.anotherGatewayProxy.tcpKeepaliveTimeSeconds=33",
 						},
@@ -5335,8 +5305,10 @@ metadata:
 
 				It("should allow customising tcp keepalive", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"",
-							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30"},
+						valuesArgs: []string{
+							"",
+							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30",
+						},
 					})
 					byt, err := os.ReadFile("fixtures/envoy_config/tcp_keepalive.yaml")
 					Expect(err).ToNot(HaveOccurred())
@@ -5356,10 +5328,11 @@ metadata:
 				})
 
 				It("is not created if disabled", func() {
-
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"settings.aws.enableServiceAccountCredentials=true",
-							"gatewayProxies.gatewayProxy.disabled=false"},
+						valuesArgs: []string{
+							"settings.aws.enableServiceAccountCredentials=true",
+							"gatewayProxies.gatewayProxy.disabled=false",
+						},
 					})
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "", "")
@@ -5403,7 +5376,8 @@ metadata:
 						valuesArgs: []string{
 							"gatewayProxies.gatewayProxy.envoyOverloadManager.enabled=true",
 							"gatewayProxies.gatewayProxy.envoyOverloadManager.refreshInterval=2s",
-							"gatewayProxies.gatewayProxy.disabled=false"},
+							"gatewayProxies.gatewayProxy.disabled=false",
+						},
 					})
 
 					byt, err := os.ReadFile("fixtures/envoy_config/overload_manager.yaml")
@@ -5424,7 +5398,6 @@ metadata:
 				})
 
 				It("can create a gateway proxy config with added bootstrap extensions", func() {
-
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
 
 					byt, err := os.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
@@ -5445,7 +5418,6 @@ metadata:
 				})
 
 				It("can create a gateway proxy config with custom static layer", func() {
-
 					prepareMakefileFromValuesFile("values/val_custom_static_bootstrap.yaml")
 
 					byt, err := os.ReadFile("fixtures/envoy_config/custom_static_bootstrap.yaml")
@@ -5467,10 +5439,12 @@ metadata:
 
 				It("can create arbitrary configmaps", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.configMaps[0].name=my-config-map",
+						valuesArgs: []string{
+							"global.configMaps[0].name=my-config-map",
 							"global.configMaps[0].namespace=my-ns",
 							"global.configMaps[0].data.key1=value1",
-							"global.configMaps[0].data.key2=value2"},
+							"global.configMaps[0].data.key2=value2",
+						},
 					})
 					cmRb := ResourceBuilder{
 						Namespace: "my-ns",
@@ -5483,9 +5457,7 @@ metadata:
 				})
 
 				Describe("gateway proxy - AWS", func() {
-
 					It("has a global cluster", func() {
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"settings.aws.enableServiceAccountCredentials=true"},
 						})
@@ -5502,7 +5474,6 @@ metadata:
 					})
 
 					It("has a regional cluster", func() {
-
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"settings.aws.enableServiceAccountCredentials=true",
@@ -5624,11 +5595,9 @@ metadata:
 						testManifest.Expect("ConfigMap", namespace, "gateway-proxy-envoy-config").NotTo(BeNil())
 					})
 				})
-
 			})
 
 			Context("ingress-proxy service", func() {
-
 				var ingressProxyService *corev1.Service
 
 				BeforeEach(func() {
@@ -5704,7 +5673,8 @@ metadata:
 							"ingress.enabled=true",
 							"ingressProxy.deployment.stats=true",
 							"global.glooStats.enabled=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+							"global.glooStats.routePrefixRewrite=/stats?format=json",
+						},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -5724,7 +5694,6 @@ metadata:
 			})
 
 			Describe("merge ingress and gateway", func() {
-
 				// helper for passing a values file
 				prepareMakefileFromValuesFile := func(valuesFile string) {
 					prepareMakefile(namespace, helmValues{
@@ -5747,7 +5716,7 @@ metadata:
 						glooAnnotations[k] = v
 					}
 					glooAnnotations["gloo.solo.io/oss-image-tag"] = version
-					var glooDeploymentPostMerge = &appsv1.Deployment{
+					glooDeploymentPostMerge := &appsv1.Deployment{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Deployment",
 							APIVersion: "apps/v1",
@@ -5766,19 +5735,20 @@ metadata:
 									Annotations: glooAnnotations,
 								},
 								Spec: corev1.PodSpec{
-									Volumes: []corev1.Volume{{
-										Name: "labels-volume",
-										VolumeSource: corev1.VolumeSource{
-											DownwardAPI: &corev1.DownwardAPIVolumeSource{
-												Items: []corev1.DownwardAPIVolumeFile{{
-													Path: "labels",
-													FieldRef: &corev1.ObjectFieldSelector{
-														FieldPath: "metadata.labels",
-													},
-												}},
+									Volumes: []corev1.Volume{
+										{
+											Name: "labels-volume",
+											VolumeSource: corev1.VolumeSource{
+												DownwardAPI: &corev1.DownwardAPIVolumeSource{
+													Items: []corev1.DownwardAPIVolumeFile{{
+														Path: "labels",
+														FieldRef: &corev1.ObjectFieldSelector{
+															FieldPath: "metadata.labels",
+														},
+													}},
+												},
 											},
 										},
-									},
 									},
 									ServiceAccountName: "gloo",
 									Containers: []corev1.Container{
@@ -5848,7 +5818,7 @@ metadata:
 					ingressPodLabels := map[string]string{
 						"gloo": "ingress",
 					}
-					var ingressDeploymentPostMerge = &appsv1.Deployment{
+					ingressDeploymentPostMerge := &appsv1.Deployment{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Deployment",
 							APIVersion: "apps/v1",
@@ -5912,7 +5882,6 @@ metadata:
 			})
 
 			Describe("Deployment Privileges Test", func() {
-
 				// Helper func for testing pod & container root privileges logic
 				expectNonRoot := func(testManifest TestManifest) {
 					deployments := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -5954,14 +5923,12 @@ metadata:
 				Context("Gloo", func() {
 					Context("all cluster-scoped deployments", func() {
 						It("is running all deployments with non root user permissions by default", func() {
-
 							prepareMakefile(namespace, helmValues{})
 
 							expectNonRoot(testManifest)
 						})
 
 						It("is running all deployments with non root user permissions with knative, accessLogger, ingress, and mTLS enabled", func() {
-
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
 									"gateway.enabled=false",
@@ -5976,7 +5943,6 @@ metadata:
 						})
 					})
 				})
-
 			})
 
 			Describe("Standard k8s values", func() {
@@ -6456,7 +6422,6 @@ metadata:
 				}
 
 				DescribeTable("applies default restricted container security contexts", func(resourceName string, containerName string, resourceType string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
-
 					for _, seccompTypeValue := range []string{"RuntimeDefault", "Localhost", ""} {
 						helmArgs := extraArgs
 						if seccompTypeValue != "" {
@@ -6478,7 +6443,6 @@ metadata:
 						securityContext := container.SecurityContext
 						Expect(securityContext).To(Equal(expectedDefaults), "seccompTypeValue: %s", seccompTypeValue)
 					}
-
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", applyDiscovery),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", applyNil, "global.glooMtls.enabled=true"),
@@ -6557,7 +6521,6 @@ metadata:
 							},
 						},
 					))
-
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
@@ -6666,7 +6629,6 @@ metadata:
 					initialSecurityContext.Sysctls = expectedSysctls
 
 					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
-
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
@@ -6707,7 +6669,6 @@ metadata:
 
 					container = getContainer(testManifest, "Deployment", resourceName, containerName)
 					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(20202))))
-
 				},
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "gloo.deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "gloo.deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
@@ -6764,7 +6725,6 @@ metadata:
 					_, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 					Expect(err).To(HaveOccurred(), "should error on an invalid mergePolicy")
 				})
-
 			})
 
 			Context("Kube resource overrides", func() {
@@ -6992,7 +6952,6 @@ metadata:
 					Expect(labels["the"]).To(Equal("other"))
 				})
 			})
-
 		})
 
 		Context("Reflection", func() {
@@ -7001,9 +6960,9 @@ metadata:
 			//  - 3 of the image values are used in our helm generate code, which doesn't like pointers.
 			//    We're not changing them for this test, since that code is likely to be removed/changed soon.
 			//  - The one exception is the Repository value, which is instead needed by value during codegen.
-			var (
-				pointerExceptions = map[string]interface{}{}
-			)
+
+			pointerExceptions := map[string]interface{}{}
+
 			It("All non-embedded fields in values.go have the omitempty tag", func() {
 				// The following code iterates over each struct in values.go,
 				// then iterates over each struct's fields and checks that they either contain the
@@ -7264,11 +7223,9 @@ func getContainer(t TestManifest, kind string, resourceName string, containerNam
 	})
 
 	return &foundContainer
-
 }
 
 func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deployment {
-
 	structuredDeployment := &appsv1.Deployment{}
 
 	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {

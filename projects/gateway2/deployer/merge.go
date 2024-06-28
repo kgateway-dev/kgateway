@@ -84,7 +84,7 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 
 	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
-
+	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
 
 	if srcKube.GetWorkloadType() == nil {
@@ -422,7 +422,6 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 }
 
 func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.IstioIntegration {
-
 	// nil src override means just use dst
 	if src == nil {
 		return dst
@@ -449,6 +448,7 @@ func mergeCustomSidecars(dst, src []*v1.Container) []*v1.Container {
 	// given non-nil src override, use that instead
 	return src
 }
+
 func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioContainer {
 	// nil src override means just use dst
 	if src == nil {
@@ -658,6 +658,26 @@ func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig_De
 
 	// we can use the getter here since the value is a pb wrapper
 	dstDeployment.Replicas = mergePointers(dst.Deployment.GetReplicas(), src.Deployment.GetReplicas())
+
+	return dst
+}
+
+func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.ListenAddress = mergePointers(dst.GetListenAddress(), src.GetListenAddress())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+	dst.Env = deepMergeSlices(dst.GetEnv(), src.GetEnv())
 
 	return dst
 }

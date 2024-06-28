@@ -222,6 +222,26 @@ func (m *KubernetesProxyConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAiExtension()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("AiExtension")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAiExtension(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("AiExtension")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.WorkloadType.(type) {
 
 	case *KubernetesProxyConfig_Deployment:
@@ -897,6 +917,146 @@ func (m *StatsConfig) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *AiExtension) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gateway.gloo.solo.io.github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1.AiExtension")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetEnabled()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Enabled")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEnabled(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Enabled")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetImage()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Image")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetImage(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Image")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetListenAddress()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ListenAddress")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetListenAddress(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ListenAddress")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetSecurityContext()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("SecurityContext")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSecurityContext(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("SecurityContext")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetResources()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Resources")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetResources(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Resources")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetEnv() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil

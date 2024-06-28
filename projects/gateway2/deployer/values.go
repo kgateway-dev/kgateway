@@ -52,6 +52,9 @@ type helmGateway struct {
 
 	// stats values
 	Stats *helmStatsConfig `json:"stats,omitempty"`
+
+	// AI extension values
+	AIExtension *helmAIExtension `json:"aiExtension,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -124,4 +127,13 @@ type helmStatsConfig struct {
 	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
 	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
 	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
+}
+
+type helmAIExtension struct {
+	Enabled         bool                               `json:"enabled,omitempty"`
+	Image           *helmImage                         `json:"image,omitempty"`
+	ListenAddress   *string                            `json:"listenAddress,omitempty"`
+	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
+	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	Env             []*extcorev1.EnvVar                `json:"env,omitempty"`
 }

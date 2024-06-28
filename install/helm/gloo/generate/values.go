@@ -247,8 +247,7 @@ type SecretOptionsSource struct {
 	Directory  Directory         `json:"directory,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
 }
 
-type KubernetesSecrets struct {
-}
+type KubernetesSecrets struct{}
 
 type VaultSecrets struct {
 	Address     string         `json:"address,omitempty" desc:"Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200)."`
@@ -323,6 +322,7 @@ type GatewayParameters struct {
 	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
+	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 
@@ -868,4 +868,13 @@ type IstioIntegration struct {
 	EnableIstioSidecarOnGateway *bool   `json:"enableIstioSidecarOnGateway,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if disableAutoinjection is 'true'."`
 	IstioSidecarRevTag          *string `json:"istioSidecarRevTag,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if disableAutoinjection is 'true'."`
 	AppendXForwardedHost        *bool   `json:"appendXForwardedHost,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Enable appending the X-Forwarded-Host header with the Istio-provided value. Default: true."`
+}
+
+type GatewayParamsAIExtension struct {
+	Enabled         *bool                         `json:"enabled,omitempty" desc:"Enable the AI extension"`
+	Image           *Image                        `json:"image,omitempty" desc:"Container image for the extension"`
+	ListenAddress   *string                       `json:"listenAddress,omitempty" desc:"The address the extension server listens on."`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for extension container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Sets default resource requirements for the extension."`
+	Env             []*corev1.EnvVar              `json:"env,omitempty" desc:"Container environment variables for the extension."`
 }
