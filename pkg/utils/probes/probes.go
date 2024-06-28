@@ -10,15 +10,16 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-type ProbeServerParams struct {
+type ServerParams struct {
 	Port         int
 	Path         string
 	ResponseCode int
 	ResponseBody string
 }
 
-func NewProbeServerParams() ProbeServerParams {
-	return ProbeServerParams{
+// NewServerParams creates gloo's default probe server parameters
+func NewServerParams() ServerParams {
+	return ServerParams{
 		Port:         8765,
 		Path:         "/healthz",
 		ResponseCode: http.StatusOK,
@@ -26,9 +27,9 @@ func NewProbeServerParams() ProbeServerParams {
 	}
 }
 
-// StartLivenessProbeServerOnPort accepts a port and opens a simple http server
+// StartServer accepts a port and opens a simple http server
 // which will respond to requests at the configured port and path
-func StartProbeServer(ctx context.Context, params ProbeServerParams) {
+func StartServer(ctx context.Context, params ServerParams) {
 	var server *http.Server
 
 	// make sure we don't blow up on a bad call with some sane defaults

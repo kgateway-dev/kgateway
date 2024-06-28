@@ -7,5 +7,5 @@ import "context"
 //
 // This is a convenience wrapper around StartProbeServer which can be customized with params.
 func StartLivenessProbeServer(ctx context.Context) {
-	StartProbeServer(ctx, NewProbeServerParams())
+	StartServer(ctx, NewServerParams())
 }

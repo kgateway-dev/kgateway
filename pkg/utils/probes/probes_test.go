@@ -44,13 +44,13 @@ var _ = Describe("Probes", func() {
 	})
 
 	It("starts a custom server", func() {
-		params := ProbeServerParams{
+		params := ServerParams{
 			Port:         9876,
 			Path:         "foobar",
 			ResponseCode: http.StatusTeapot,
 			ResponseBody: "scoobydoo",
 		}
-		StartProbeServer(ctx, params)
+		StartServer(ctx, params)
 
 		Eventually(func(g Gomega) {
 			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/%s", params.Port, params.Path))
