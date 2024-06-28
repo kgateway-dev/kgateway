@@ -876,4 +876,5 @@ type GatewayParamsAIExtension struct {
 	ListenAddress   *string                       `json:"listenAddress,omitempty" desc:"The address the extension server listens on."`
 	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for extension container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Sets default resource requirements for the extension."`
+	Env             []*corev1.EnvVar              `json:"env,omitempty" desc:"Container environment variables for the extension."`
 }

@@ -232,5 +232,6 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 		ListenAddress:   config.GetListenAddress().GetValue(),
 		SecurityContext: config.GetSecurityContext(),
 		Resources:       config.GetResources(),
+		Env:             config.GetEnv(),
 	}
 }

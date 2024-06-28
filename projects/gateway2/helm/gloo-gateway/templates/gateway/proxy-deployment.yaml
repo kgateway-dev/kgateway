@@ -265,7 +265,10 @@ spec:
                 apiVersion: v1
                 fieldPath: metadata.namespace
           - name: LISTEN_ADDR
-            value: {{ required "gateway.aiExtension.listenAddress must be set" $gateway.aiExtension.listenAddress }}
+            value: {{ $gateway.aiExtension.listenAddress | default "unix:///var/run/gloo-ai.sock" }}
+{{- if $gateway.aiExtension.env }}
+{{ toYaml $gateway.aiExtension.env | indent 10 }}
+{{- end }} {{/* if $gateway.aiExtension.env */}}
         {{- if $gateway.aiExtension.resources }}
         resources:
           {{- toYaml $gateway.aiExtension.resources | nindent 10 }}
@@ -519,18 +522,3 @@ data:
         resource_api_version: V3
         ads: {}
 ---
-{{- if (($gateway.aiExtension).enabled) }}
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}-ai-extension
-  labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
-spec:
-  useHttp2: true
-  pipe:
-    path: {{ required "gateway.aiExtension.listenAddress must be set" $gateway.aiExtension.listenAddress | replace "unix://" "" }}
-  useHttp2: true
----
-{{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
