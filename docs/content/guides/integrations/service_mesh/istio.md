@@ -20,7 +20,7 @@ Gloo Edge comes with an Istio integration that allows you to configure your gate
 
 ### Changes to the Istio integration in 1.17
 
-In Gloo Edge 1.17, a new auto-mTLS feature was introduced that simplifies the integration with Istio service meshes. The auto-mTLS feature automatically injects mTLS configuration into Previously, the Upstream that represents the service in the mesh needed to be manually configured for mTLS communication. This step is not required anymore as Gloo Edge automatically 
+In Gloo Edge 1.17, a new auto-mTLS feature was introduced that simplifies the integration with Istio service meshes. The auto-mTLS feature automatically injects mTLS configuration into all Upstream resources in your cluster. Without auto-mTLS, every Upstream must be updated manually to add the mTLS configuration. 
 
 
 ## Set up an Istio service mesh
@@ -165,7 +165,9 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
    open gloo-gateway.yaml
    ```
    
-4. Add the following values to the Helm value file. Make sure that you change the `istioProxyContainer` values to the service address and cluster name of your Istio installation.
+4. Add the following values to the Helm value file to enable the Istio integration with auto-mTLS. Make sure that you change the `istioProxyContainer` values to the service address and cluster name of your Istio installation.
+
+   {{< notice note >}}If you do not want auto-mTLS to be enabled, set this value to <code>false</code>.{{< /notice >}}
    {{< tabs  >}}
    {{% tab name="Open source" %}}
    ```yaml
@@ -178,8 +180,8 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
    gatewayProxies:
      gatewayProxy:
        istioDiscoveryAddress: istiod-1-21.istio-system.svc:15012
-       istioMetaClusterId: gloo-edge-docs-mgt
-       istioMetaMeshId: gloo-edge-docs-mgt
+       istioMetaClusterId: mycluster
+       istioMetaMeshId: mycluster
    ```
   
    {{% /tab %}}
@@ -196,14 +198,15 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
      gatewayProxies:
        gatewayProxy:
          istioDiscoveryAddress: istiod-1-21.istio-system.svc:15012
-         istioMetaClusterId: gloo-edge-docs-mgt
-         istioMetaMeshId: gloo-edge-docs-mgt
+         istioMetaClusterId: mycluster
+         istioMetaMeshId: mycluster
    ```
    {{% /tab %}}
    {{< /tabs >}}
    
    | Setting | Description |
    | -- | -- | 
+   | `enableAutoMtls` | Automatically configure all Upstream resources in your cluster for mTLS. | 
    | `istioDiscoveryAddress` | The address of the istiod service. If omitted, `istiod.istio-system.svc:15012` is used. |
    | `istioMetaClusterId` </br> `istioMetaMeshId` | The name of the cluster where Gloo Gateway is installed. |
    
@@ -261,7 +264,32 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
    httpbin-f798c698d-vpltn   2/2     Running   0          15s
    ```
 
-4. Send a request to the httpbin app. Verify that you back a 200 HTTP response and that an [`x-forwarded-client-cert`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-client-cert) header is returned. The presence of this header indicates that the connection from the gateway to the httpbin app is now encrypted with mutual TLS. 
+5. Create a strict PeerAuthentication policy to require all traffic in the mesh to use mTLS
+   ```yaml
+   kubectl apply -f - <<EOF
+   apiVersion: "security.istio.io/v1beta1"
+   kind: "PeerAuthentication"
+   metadata:
+     name: "test"
+     namespace: "istio-system"
+   spec:
+     mtls:
+       mode: STRICT
+   EOF
+   ```
+
+6. **Without auto-mTLS**: If you enabled auto-mTLS, the Upstream that represents the httpbin app is automatically configured for mTLS. However, if auto-mTLS is not enabled, you must manually configure the Upstream for mTLS. 
+   ```sh
+   glooctl istio enable-mtls --upstream default-httpbin-8000
+   ```
+   
+   {{< notice note >}}
+   If you do not add mTLS configuration to your Upstream and you try to send a request to the app, the request is denied with a 503 HTTP response code and you see an error message similar to the following: <code>upstream connect error or disconnect/reset before headers. reset reason: connection termination</code>. 
+   {{< /notice >}}
+   
+
+7. Send a request to the httpbin app. Verify that you get back a 200 HTTP response and that an [`x-forwarded-client-cert`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-client-cert) header is returned. The presence of this header indicates that the connection from the gateway to the httpbin app is now encrypted via mutual TLS. 
+
    ```sh
    curl -vik $(glooctl proxy url --name=gateway-proxy)/headers
    ```
@@ -301,24 +329,6 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
    }
    {{< /highlight >}}
    
-5. Create a strict PeerAuthentication policy to require all traffic in the mesh to use mTLS
-   ```yaml
-   kubectl apply -f - <<EOF
-   apiVersion: "security.istio.io/v1beta1"
-   kind: "PeerAuthentication"
-   metadata:
-     name: "test"
-     namespace: "istio-system"
-   spec:
-     mtls:
-       mode: STRICT
-   EOF
-   ```
-
-6. Send another request to the httpbin app. Verify that you continue to see a 200 HTTP response and that an [`x-forwarded-client-cert`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-client-cert) header is returned. 
-   ```sh
-   curl -vik $(glooctl proxy url --name=gateway-proxy)/headers
-   ```
    
 ## Cleanup
 
