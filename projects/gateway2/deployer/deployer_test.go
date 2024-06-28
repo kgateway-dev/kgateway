@@ -1172,6 +1172,10 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 							IstioMetaClusterId:    &wrapperspb.StringValue{Value: "istioMetaClusterId"},
 						},
 					},
+					AiExtension: &gw2_v1alpha1.AiExtension{
+						Enabled:       knownwrappers.Bool(true),
+						ListenAddress: knownwrappers.String("unix:///foo/bar"),
+					},
 				},
 			},
 		},
