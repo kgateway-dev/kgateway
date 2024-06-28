@@ -264,7 +264,7 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
    httpbin-f798c698d-vpltn   2/2     Running   0          15s
    ```
 
-5. Create a strict PeerAuthentication policy to require all traffic in the mesh to use mTLS
+4. Create a strict PeerAuthentication policy to require all traffic in the mesh to use mTLS.
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: "security.istio.io/v1beta1"
