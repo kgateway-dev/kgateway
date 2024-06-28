@@ -5,8 +5,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 )
 
 // testingSuite is the entire Suite of tests for testing K8s Service-specific features/fixes
@@ -46,8 +48,9 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithService() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		curlPodExecOpt,
+		defaults.CurlPodExecOpt,
 		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
 		},
 		expectedSvcResp)
