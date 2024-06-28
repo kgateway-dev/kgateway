@@ -16,7 +16,7 @@ import (
 )
 
 var _ = Describe("Kubernetes Gateway API integration", func() {
-	var allTests = func(rendererTestCase renderTestCase) {
+	allTests := func(rendererTestCase renderTestCase) {
 		var (
 			testManifest TestManifest
 			valuesArgs   []string
@@ -59,7 +59,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				testManifest.Expect("ClusterRoleBinding", "", deployerRbacName+"-binding").NotTo(BeNil())
 			})
 			It("renders default GatewayParameters", func() {
-
 				gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
 				Expect(gwpUnstructured).NotTo(BeNil())
 
@@ -112,6 +111,15 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetStats().GetRoutePrefixRewrite().GetValue()).To(Equal("/stats/prometheus"))
 				Expect(gwpKube.GetStats().GetEnableStatsRoute().GetValue()).To(BeTrue())
 				Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite().GetValue()).To(Equal("/stats"))
+
+				Expect(gwpKube.GetAiExtension().GetEnabled().GetValue()).To(BeFalse())
+				Expect(gwpKube.GetAiExtension().GetListenAddress().GetValue()).To(ContainSubstring("unix://"))
+				Expect(gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
+				Expect(gwpKube.GetAiExtension().GetImage().GetRegistry().GetValue()).To(Equal("quay.io/solo-io"))
+				Expect(gwpKube.GetAiExtension().GetImage().GetRepository().GetValue()).To(Equal("gloo-ai-extension"))
+				Expect(gwpKube.GetAiExtension().GetImage().GetTag().GetValue()).To(Equal(version))
+				Expect(gwpKube.GetAiExtension().GetSecurityContext()).To(BeNil())
+				Expect(gwpKube.GetAiExtension().GetResources()).To(BeNil())
 			})
 
 			When("overrides are set", func() {
@@ -162,12 +170,16 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.stats.routePrefixRewrite=/foo/bar",
 						"kubeGateway.gatewayParameters.glooGateway.stats.enableStatsRoute=false",
 						"kubeGateway.gatewayParameters.glooGateway.stats.statsRoutePrefixRewrite=/scooby/doo",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.tag=sds-override-tag",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.registry=sds-override-registry",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.repository=sds-override-repository",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.pullPolicy=Never",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.listenAddress=unix:///foo/bar",
 						"global.istioIntegration.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
 				It("passes overrides to default GatewayParameters with Istio container", func() {
-
 					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
 					Expect(gwpUnstructured).NotTo(BeNil())
 
@@ -236,6 +248,12 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetStats().GetRoutePrefixRewrite().GetValue()).To(Equal("/foo/bar"))
 					Expect(gwpKube.GetStats().GetEnableStatsRoute().GetValue()).To(BeFalse())
 					Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite().GetValue()).To(Equal("/scooby/doo"))
+
+					Expect(gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(kube.Image_Never))
+					Expect(gwpKube.GetAiExtension().GetImage().GetRegistry().GetValue()).To(Equal("sds-override-registry"))
+					Expect(gwpKube.GetAiExtension().GetImage().GetRepository().GetValue()).To(Equal("sds-override-repository"))
+					Expect(gwpKube.GetAiExtension().GetImage().GetTag().GetValue()).To(Equal("sds-override-tag"))
+					Expect(gwpKube.GetAiExtension().GetListenAddress().GetValue()).To(ContainSubstring("unix:///foo/bar"))
 				})
 			})
 
@@ -270,7 +288,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
 				It("passes overrides to default GatewayParameters with custom sidecar", func() {
-
 					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
 					Expect(gwpUnstructured).NotTo(BeNil())
 
