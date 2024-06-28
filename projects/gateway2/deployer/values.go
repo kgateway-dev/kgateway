@@ -132,7 +132,7 @@ type helmStatsConfig struct {
 type helmAIExtension struct {
 	Enabled         bool                               `json:"enabled,omitempty"`
 	Image           *helmImage                         `json:"image,omitempty"`
-	ListenAddress   string                             `json:"listenAddress,omitempty"`
+	ListenAddress   *string                            `json:"listenAddress,omitempty"`
 	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
 	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	Env             []*extcorev1.EnvVar                `json:"env,omitempty"`

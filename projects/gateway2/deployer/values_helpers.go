@@ -229,7 +229,7 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 	return &helmAIExtension{
 		Enabled:         config.GetEnabled().GetValue(),
 		Image:           image,
-		ListenAddress:   config.GetListenAddress().GetValue(),
+		ListenAddress:   ptr.To(config.GetListenAddress().GetValue()),
 		SecurityContext: config.GetSecurityContext(),
 		Resources:       config.GetResources(),
 		Env:             config.GetEnv(),
