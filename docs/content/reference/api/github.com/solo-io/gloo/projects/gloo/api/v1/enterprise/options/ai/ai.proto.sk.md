@@ -160,7 +160,7 @@ weight: 5
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. |
 | `semanticCaching` | [.ai.options.gloo.solo.io.SemanticCaching](../ai.proto.sk/#semanticcaching) | Semantic caching configuration. |
 | `backupModels` | `[]string` | Backup models to use in case of a failure with the primary model passed in the request. |
-| `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) |  |
+| `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of fields to be added to the prompt before sending it to the LLM model. These will NOT override the user input fields unless override is explicitly set to true. |
 
 
 

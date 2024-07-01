@@ -355,8 +355,10 @@ type RouteSettings struct {
 	SemanticCaching *SemanticCaching `protobuf:"bytes,5,opt,name=semantic_caching,json=semanticCaching,proto3" json:"semantic_caching,omitempty"`
 	// Backup models to use in case of a failure with the primary model
 	// passed in the request.
-	BackupModels []string        `protobuf:"bytes,6,rep,name=backup_models,json=backupModels,proto3" json:"backup_models,omitempty"`
-	Defaults     []*FieldDefault `protobuf:"bytes,7,rep,name=defaults,proto3" json:"defaults,omitempty"`
+	BackupModels []string `protobuf:"bytes,6,rep,name=backup_models,json=backupModels,proto3" json:"backup_models,omitempty"`
+	// A list of fields to be added to the prompt before sending it to the LLM model.
+	// These will NOT override the user input fields unless override is explicitly set to true.
+	Defaults []*FieldDefault `protobuf:"bytes,7,rep,name=defaults,proto3" json:"defaults,omitempty"`
 }
 
 func (x *RouteSettings) Reset() {

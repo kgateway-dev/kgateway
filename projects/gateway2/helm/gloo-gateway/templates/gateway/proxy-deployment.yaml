@@ -305,8 +305,7 @@ spec:
         name: envoy-config
       {{- if (($gateway.aiExtension).enabled) }}
       - name: ai-extension-socket
-        emptyDir:
-          medium: Memory
+        emptyDir: {}
       {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:

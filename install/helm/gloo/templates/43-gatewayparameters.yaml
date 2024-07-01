@@ -53,6 +53,10 @@ spec:
     podTemplate:
       extraLabels:
         {{- include "gloo-gateway.constLabels" . | nindent 8 }}
+{{- if ($gg.podTemplate).securityContext }}
+      securityContext:
+        {{- toYaml $gg.podTemplate.securityContext | nindent 8 }}
+{{- end}}{{/* if ($gg.podTemplate).securityContext */}}
 {{- if $gg.sdsContainer }}
     sdsContainer:
       image:

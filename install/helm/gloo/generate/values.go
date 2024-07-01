@@ -317,6 +317,7 @@ type GatewayParametersForGatewayClasses struct {
 
 type GatewayParameters struct {
 	EnvoyContainer  *EnvoyContainer            `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
+	PodTemplate     *PodTemplate               `json:"podTemplate,omitempty" desc:"Config for the dynamically provisioned gateway pod."`
 	ProxyDeployment *ProvisionedDeployment     `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
 	Service         *ProvisionedService        `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
 	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
@@ -336,6 +337,10 @@ type GatewayParamsStatsConfig struct {
 type Istio struct {
 	IstioProxyContainer *GatewayParamsIstioProxyContainer `json:"istioProxyContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
 	CustomSidecars      []interface{}                     `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
+}
+
+type PodTemplate struct {
+	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty" desc:"securityContext for the gateway pod."`
 }
 
 type ProvisionedDeployment struct {
