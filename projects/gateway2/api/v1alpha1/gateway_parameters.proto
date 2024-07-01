@@ -210,6 +210,9 @@ message IstioContainer {
 
   // The cluster id of the istio cluster. Defaults to "Kubernetes".
   google.protobuf.StringValue istio_meta_cluster_id = 7;
+
+  // The trust domain of the istio cluster. Defaults to "cluster.local".
+  google.protobuf.StringValue istio_trust_domain = 8;
 }
 
 message GatewayParametersStatus {

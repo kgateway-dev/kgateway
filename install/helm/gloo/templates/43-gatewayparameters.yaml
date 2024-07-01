@@ -88,6 +88,7 @@ spec:
         istioDiscoveryAddress: {{ $gg.istio.istioProxyContainer.istioDiscoveryAddress }}
         istioMetaMeshId: {{ $gg.istio.istioProxyContainer.istioMetaMeshId }}
         istioMetaClusterId: {{ $gg.istio.istioProxyContainer.istioMetaClusterId }}
+        istioTrustDomain: {{ $gg.istio.istioProxyContainer.istioTrustDomain }}
 {{- if $gg.stats }}
     stats:
     {{- toYaml $gg.stats | nindent 6 }}

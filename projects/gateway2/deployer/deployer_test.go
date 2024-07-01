@@ -468,6 +468,7 @@ var _ = Describe("Deployer", func() {
 										IstioDiscoveryAddress: &wrapperspb.StringValue{Value: "can't"},
 										IstioMetaMeshId:       &wrapperspb.StringValue{Value: "be"},
 										IstioMetaClusterId:    &wrapperspb.StringValue{Value: "overridden"},
+										IstioTrustDomain:      &wrapperspb.StringValue{Value: "really"},
 									},
 								},
 								AiExtension: &gw2_v1alpha1.AiExtension{
@@ -1170,6 +1171,7 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 							IstioDiscoveryAddress: &wrapperspb.StringValue{Value: "istioDiscoveryAddress"},
 							IstioMetaMeshId:       &wrapperspb.StringValue{Value: "istioMetaMeshId"},
 							IstioMetaClusterId:    &wrapperspb.StringValue{Value: "istioMetaClusterId"},
+							IstioTrustDomain:      &wrapperspb.StringValue{Value: "istioTrustDomain"},
 						},
 					},
 					AiExtension: &gw2_v1alpha1.AiExtension{

@@ -393,7 +393,7 @@ spec:
         - NONE
         - --dnsRefreshRate
         - 300s
-        - --trust-domain=cluster.local
+        - --trust-domain={{ $spec.trustDomain | default "cluster.local" }}
         - --controlPlaneBootstrap=false
         env:
           - name: OUTPUT_CERTS

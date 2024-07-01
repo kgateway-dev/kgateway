@@ -589,6 +589,16 @@ func (m *IstioContainer) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetIstioTrustDomain()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIstioTrustDomain()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIstioTrustDomain(), target.GetIstioTrustDomain()) {
+			return false
+		}
+	}
+
 	return true
 }
 

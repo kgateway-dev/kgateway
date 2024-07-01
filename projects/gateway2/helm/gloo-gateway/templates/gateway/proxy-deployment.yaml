@@ -173,7 +173,7 @@ spec:
           - NONE
           - --dnsRefreshRate
           - 300s
-          - --trust-domain=cluster.local
+          - --trust-domain=={{ $gateway.istioContainer.trustDomain }}
           - --controlPlaneBootstrap=false
         env:
           - name: OUTPUT_CERTS

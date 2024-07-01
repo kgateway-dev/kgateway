@@ -490,6 +490,13 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 		dstIstioMetaClusterId = srcIstioMetaClusterId
 	}
 
+	destIstioTrustDomain := dst.GetIstioTrustDomain()
+	srcIstioTrustDomain := src.GetIstioTrustDomain()
+	if destIstioTrustDomain == nil {
+		// Doesn't matter if we're overriding empty with empty
+		destIstioTrustDomain = srcIstioTrustDomain
+	}
+
 	return dst
 }
 
