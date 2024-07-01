@@ -56,7 +56,7 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$|^TestK8sGateway$$/^Services$$'
 
-        # May 14th: ~ minutes execution time (see load_balancing_tests.md)
+        # May 14th: 20 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
@@ -66,12 +66,12 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
-        # May 14th: 23 minutes execution time (see load_balancing_tests.md)
+        # May 14th: 17 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
 
-          # May 14th: ~ minutes execution time (see load_balancing_tests.md)
+          # May 14th: 17 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-five'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestCustomTrustDomainIstioRegression$$|^TestK8sGatewayIstioCustomTrustDomain$$)'
