@@ -678,6 +678,7 @@ func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension 
 	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 	dst.Env = deepMergeSlices(dst.GetEnv(), src.GetEnv())
+	dst.Ports = deepMergeSlices(dst.GetPorts(), src.GetPorts())
 
 	return dst
 }

@@ -136,4 +136,5 @@ type helmAIExtension struct {
 	SecurityContext *extcorev1.SecurityContext         `json:"securityContext,omitempty"`
 	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	Env             []*extcorev1.EnvVar                `json:"env,omitempty"`
+	Ports           []*extcorev1.ContainerPort         `json:"ports,omitempty"`
 }

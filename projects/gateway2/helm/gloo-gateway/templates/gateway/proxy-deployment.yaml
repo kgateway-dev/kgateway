@@ -273,6 +273,10 @@ spec:
 {{- if $gateway.aiExtension.env }}
 {{ toYaml $gateway.aiExtension.env | indent 10 }}
 {{- end }} {{/* if $gateway.aiExtension.env */}}
+{{- if $gateway.aiExtension.ports }}
+        ports:
+{{ toYaml $gateway.aiExtension.ports | indent 10 }}
+{{- end }} {{/* if $gateway.aiExtension.ports */}}
         volumeMounts:
           - name: ai-extension-socket
             mountPath: {{ include "ai_extension_socket_dir" . }}
