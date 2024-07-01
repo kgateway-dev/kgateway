@@ -112,5 +112,9 @@ spec:
       env:
 {{ toYaml $gg.aiExtension.env | indent 6 }}
 {{- end }} {{/* if $gg.aiExtension.env */}}
+{{- if $gg.aiExtension.ports }}
+      ports:
+{{ toYaml $gg.aiExtension.ports | indent 6 }}
+{{- end }} {{/* if $gg.aiExtension.ports */}}
 {{- end }}{{/* if $gg.aiExtension */}}
 {{- end }}{{/* if .Values.kubeGateway.enabled */}}

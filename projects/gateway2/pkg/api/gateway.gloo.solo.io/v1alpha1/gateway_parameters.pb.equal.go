@@ -768,5 +768,22 @@ func (m *AiExtension) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetPorts()) != len(target.GetPorts()) {
+		return false
+	}
+	for idx, v := range m.GetPorts() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPorts()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPorts()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
