@@ -13,6 +13,12 @@ import (
 	glooruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/skv2/codegen/util"
+)
+
+var (
+	istioRevisionSetup          = filepath.Join(util.MustGetThisDir(), "istio-revision-setup.yaml")
+	istioCustomTrustDomainSetup = filepath.Join(util.MustGetThisDir(), "istio-custom-trust-domain-setup.yaml")
 )
 
 func GetIstioctl(ctx context.Context) (string, error) {
@@ -31,6 +37,20 @@ func InstallMinimalIstio(
 	istioctlBinary, kubeContext string,
 ) error {
 	return installIstioOperator(ctx, istioctlBinary, kubeContext, "")
+}
+
+func InstallCustomTrustDomainIstio(
+	ctx context.Context,
+	istioctlBinary, kubeContext string,
+) error {
+	return installIstioOperator(ctx, istioctlBinary, kubeContext, istioCustomTrustDomainSetup)
+}
+
+func InstallRevisionedIstio(
+	ctx context.Context,
+	istioctlBinary, kubeContext string,
+) error {
+	return installIstioOperator(ctx, istioctlBinary, kubeContext, istioRevisionSetup)
 }
 
 // TODO(npolshak): Add additional Istio setup options as needed (versions, revisions, ambient, etc.)
