@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-// TestK8sGatewayIstioRevision is the function which executes a series of tests against a given installation with
+// TestK8sGatewayIstioCustomTrustDomain is the function which executes a series of tests against a given installation with
 // k8s gateway enabled and Istio installed with revisions
-func TestK8sGatewayIstioRevision(t *testing.T) {
+func TestK8sGatewayIstioCustomTrustDomain(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
