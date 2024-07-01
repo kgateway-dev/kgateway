@@ -838,6 +838,7 @@ type IstioProxyContainer struct {
 	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
 	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"Kubernetes\""`
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"istiod.istio-system.svc:15012\""`
+	IstioTrustDomain      *string `json:"istioTrustDomain,omitempty" desc:"Istio --trust-domain arg. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
 }
 
 type GatewayParamsIstioProxyContainer struct {
@@ -850,6 +851,7 @@ type GatewayParamsIstioProxyContainer struct {
 	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
 	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"Kubernetes\""`
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"istiod.istio-system.svc:15012\""`
+	IstioTrustDomain      *string `json:"istioTrustDomain,omitempty" desc:"Istio --trust-domain arg. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
 }
 
 type IstioSDS struct {

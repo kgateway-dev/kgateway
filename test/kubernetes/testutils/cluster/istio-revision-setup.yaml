@@ -3,5 +3,5 @@ kind: IstioOperator
 metadata:
   namespace: istio-system
 spec:
-  profile: default
+  profile: minimal
   revision: 1-22-1

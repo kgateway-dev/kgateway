@@ -3,6 +3,6 @@ kind: IstioOperator
 metadata:
   namespace: istio-system
 spec:
-  profile: default
+  profile: minimal
   meshConfig:
     trustDomain: example.org

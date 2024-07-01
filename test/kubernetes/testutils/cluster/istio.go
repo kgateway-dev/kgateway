@@ -53,7 +53,6 @@ func InstallRevisionedIstio(
 	return installIstioOperator(ctx, istioctlBinary, kubeContext, istioRevisionSetup)
 }
 
-// TODO(npolshak): Add additional Istio setup options as needed (versions, revisions, ambient, etc.)
 func installIstioOperator(
 	ctx context.Context,
 	istioctlBinary, kubeContext, operatorFile string) error {
@@ -64,10 +63,11 @@ func installIstioOperator(
 	var cmd *exec.Cmd
 	if operatorFile == "" {
 		// use the minimal profile by default if no operator file is provided
-		// yes | istioctl install --context <kube-context> --set profile=minimal
-		cmd = exec.Command("sh", "-c", "yes | "+istioctlBinary+" install --context "+kubeContext+" --set profile=minimal")
+		// istioctl install -y --context <kube-context> --set profile=minimal
+		cmd = exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "--set", "profile=minimal")
 	} else {
-		cmd = exec.Command("sh", "-c", "yes | "+istioctlBinary, "install", "-y", "--context", kubeContext, "-f", operatorFile)
+		//  istioctl install -y --context <kube-context> -f <operator-file>
+		cmd = exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "-f", operatorFile)
 	}
 
 	if err := cmd.Run(); err != nil {

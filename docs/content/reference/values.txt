@@ -101,6 +101,7 @@
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioMetaMeshId|string|cluster.local|ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "cluster.local"|
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioMetaClusterId|string|Kubernetes|ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "Kubernetes"|
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioDiscoveryAddress|string|istiod.istio-system.svc:15012|discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "istiod.istio-system.svc:15012"|
+|kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioTrustDomain|string|cluster.local|Istio --trust-domain arg. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "cluster.local"|
 |kubeGateway.gatewayParameters.glooGateway.istio.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false|
 |kubeGateway.gatewayParameters.glooGateway.stats.enabled|bool|true|Enable the prometheus endpoint|
 |kubeGateway.gatewayParameters.glooGateway.stats.routePrefixRewrite|string|/stats/prometheus|Set the prefix rewrite used for the prometheus endpoint|
@@ -1581,6 +1582,7 @@
 |global.glooMtls.istioProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "cluster.local"|
 |global.glooMtls.istioProxy.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "Kubernetes"|
 |global.glooMtls.istioProxy.istioDiscoveryAddress|string||discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "istiod.istio-system.svc:15012"|
+|global.glooMtls.istioProxy.istioTrustDomain|string||Istio --trust-domain arg. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "cluster.local"|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|

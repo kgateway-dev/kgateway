@@ -82,6 +82,7 @@ func istioInject(_ []string, opts *options.Options) error {
 	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
 	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
 	istioDiscoveryAddress := getIstioDiscoveryAddress(opts.Istio.IstioDiscoveryAddress)
+	istioTrustDomain := getIstioTrustDomain(opts.Istio.IstioTrustDomain)
 	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
 	if err != nil {
@@ -148,7 +149,7 @@ func istioInject(_ []string, opts *options.Options) error {
 			if err != nil {
 				return err
 			}
-			err = addIstioSidecar(opts.Top.Ctx, &deployment, istioNS, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress)
+			err = addIstioSidecar(opts.Top.Ctx, &deployment, istioNS, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress, istioTrustDomain)
 			if err != nil {
 				return err
 			}
@@ -179,7 +180,7 @@ func addSdsSidecar(ctx context.Context, deployment *appsv1.Deployment, glooNames
 }
 
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
-func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) error {
+func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress, istioTrustDomain string) error {
 	// Get current istio version & JWT policy from cluster
 	istioPilotContainer, err := getIstiodContainer(ctx, istioNamespace)
 	if err != nil {
@@ -195,7 +196,7 @@ func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNa
 	jwtPolicy := getJWTPolicy(istioPilotContainer)
 
 	// Get the appropriate sidecar based on Istio configuration currently deployed
-	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress)
+	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress, istioTrustDomain)
 	if err != nil {
 		return err
 	}
