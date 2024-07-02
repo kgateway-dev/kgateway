@@ -975,26 +975,6 @@ func (m *AiExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetListenAddress()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ListenAddress")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetListenAddress(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ListenAddress")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	if h, ok := interface{}(m.GetSecurityContext()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("SecurityContext")); err != nil {
 			return 0, err
@@ -1036,6 +1016,30 @@ func (m *AiExtension) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	for _, v := range m.GetEnv() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	for _, v := range m.GetPorts() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {

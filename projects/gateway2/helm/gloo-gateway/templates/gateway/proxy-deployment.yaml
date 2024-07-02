@@ -264,11 +264,13 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: LISTEN_ADDR
-            value: {{ $gateway.aiExtension.listenAddress | default "unix:///var/run/gloo-ai.sock" }}
 {{- if $gateway.aiExtension.env }}
 {{ toYaml $gateway.aiExtension.env | indent 10 }}
 {{- end }} {{/* if $gateway.aiExtension.env */}}
+{{- if $gateway.aiExtension.ports }}
+        ports:
+{{ toYaml $gateway.aiExtension.ports | indent 10 }}
+{{- end }} {{/* if $gateway.aiExtension.ports */}}
         {{- if $gateway.aiExtension.resources }}
         resources:
           {{- toYaml $gateway.aiExtension.resources | nindent 10 }}

@@ -245,19 +245,19 @@ message AiExtension {
   // values_template.yaml with any user overrides
   kube.gateway.gloo.solo.io.Image image = 2;
 
-  // Address the extension will listen on.
-  google.protobuf.StringValue listen_address = 3;
-
   // The extension's container security context. See
   // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
   // for details.
-  k8s.io.api.core.v1.SecurityContext security_context = 4;
+  k8s.io.api.core.v1.SecurityContext security_context = 3;
 
   // The extension's container compute resource configuration. See
   // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   // for details.
-  kube.gateway.gloo.solo.io.ResourceRequirements resources = 5;
+  kube.gateway.gloo.solo.io.ResourceRequirements resources = 4;
 
   // The extension's container environment variables.
-  repeated k8s.io.api.core.v1.EnvVar env = 6;
+  repeated k8s.io.api.core.v1.EnvVar env = 5;
+
+  // The extensions's container ports.
+  repeated k8s.io.api.core.v1.ContainerPort ports = 6;
 }

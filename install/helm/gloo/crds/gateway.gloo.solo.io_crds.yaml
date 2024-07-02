@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    crd.solo.io/specHash: 88daf0fb4fec3555
+    crd.solo.io/specHash: 8b5646b60a42b1d9
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
@@ -139,9 +139,23 @@ spec:
                             nullable: true
                             type: string
                         type: object
-                      listenAddress:
-                        nullable: true
-                        type: string
+                      ports:
+                        items:
+                          properties:
+                            containerPort:
+                              format: int32
+                              type: integer
+                            hostIP:
+                              type: string
+                            hostPort:
+                              format: int32
+                              type: integer
+                            name:
+                              type: string
+                            protocol:
+                              type: string
+                          type: object
+                        type: array
                       resources:
                         properties:
                           limits:

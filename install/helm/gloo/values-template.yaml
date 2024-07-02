@@ -50,7 +50,8 @@ kubeGateway:
           repository: gloo-ai-extension
           registry: quay.io/solo-io
           pullPolicy: IfNotPresent
-        listenAddress: unix:///var/run/gloo-ai.sock
+        env: []
+        ports: []
       stats:
         enabled: true
         routePrefixRewrite: "/stats/prometheus"
