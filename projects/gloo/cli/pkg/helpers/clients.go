@@ -139,6 +139,33 @@ func KubeClient() (kubernetes.Interface, error) {
 	return clientset, nil
 }
 
+func GetGlooDeploymentName(ctx context.Context, namespace string) (string, error) {
+	client, err := KubeClient()
+	if err != nil {
+		errMessage := "error getting KubeClient"
+		fmt.Println(errMessage)
+		return "", fmt.Errorf(errMessage+": %v", err)
+	}
+	_, err = client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		errMessage := "Gloo namespace does not exist"
+		fmt.Println(errMessage)
+		return "", fmt.Errorf(errMessage+": %v", err)
+	}
+	deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "gloo=gloo",
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(deployments.Items) != 1 {
+		errMessage := "Unable to find the gloo deployment"
+		fmt.Println(errMessage)
+		return "", fmt.Errorf(errMessage+": %v", err)
+	}
+	return deployments.Items[0].Name, nil
+}
+
 func MustGetNamespaces(ctx context.Context) []string {
 	ns, err := GetNamespaces(ctx)
 	if err != nil {

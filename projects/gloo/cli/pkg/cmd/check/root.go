@@ -113,6 +113,13 @@ func CheckResources(opts *options.Options) error {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
+	// Fetch the gloo deployment name even if check deployments is disabled as it is used in other checks
+	customGlooDeploymentName, err = helpers.GetGlooDeploymentName(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+		// Fallback to the default deployment name if unable to fetch the custom one
+		customGlooDeploymentName = glooDeployment
+	}
 
 	if included := doesNotContain(opts.Top.CheckName, "pods"); included {
 		err := checkPods(ctx, opts)

@@ -186,6 +186,11 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 // if name is empty, return all proxies
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
 
+	glooDeploymentName, err := helpers.GetGlooDeploymentName(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	if err != nil {
+		return nil, err
+	}
+
 	options := []grpc.CallOption{
 		// Some proxies can become very large and exceed the default 100Mb limit
 		// For this reason we want remove the limit but will settle for a limit of MaxInt32
@@ -198,7 +203,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 		return nil, err
 	}
 	localPort := strconv.Itoa(freePort)
-	portFwdCmd, err := cliutil.PortForward(opts.Metadata.GetNamespace(), "deployment/gloo",
+	portFwdCmd, err := cliutil.PortForward(opts.Metadata.GetNamespace(), "deployment/"+glooDeploymentName,
 		localPort, proxyEndpointPort, opts.Top.Verbose)
 	if portFwdCmd.Process != nil {
 		defer portFwdCmd.Process.Release()

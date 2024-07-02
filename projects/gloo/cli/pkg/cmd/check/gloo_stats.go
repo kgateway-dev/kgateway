@@ -27,6 +27,9 @@ var (
 		return fmt.Sprintf("Gloo has detected that the data plane is out of sync. The following types of resources have not been accepted: %v. "+
 			"Gloo will not be able to process any other configuration updates until these errors are resolved.", resourceNames)
 	}
+
+	// Initialize the custom deployment name that is overwritten later on
+	customGlooDeploymentName = glooDeployment
 )
 
 func ResourcesSyncedOverXds(stats, deploymentName string) bool {
@@ -78,7 +81,7 @@ func checkXdsMetrics(opts *options.Options, glooNamespace string, deployments *v
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
-	stats, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, glooNamespace, "deploy/"+glooDeployment,
+	stats, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, glooNamespace, "deploy/"+customGlooDeploymentName,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		return err
@@ -89,12 +92,12 @@ func checkXdsMetrics(opts *options.Options, glooNamespace string, deployments *v
 	}
 
 	if strings.TrimSpace(stats) == "" {
-		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
+		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+customGlooDeploymentName+" deployment")
 		fmt.Println(err)
 		return fmt.Errorf(err)
 	}
 
-	if !ResourcesSyncedOverXds(stats, glooDeployment) {
+	if !ResourcesSyncedOverXds(stats, customGlooDeploymentName) {
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
