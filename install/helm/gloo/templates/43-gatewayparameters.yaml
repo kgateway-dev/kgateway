@@ -99,7 +99,6 @@ spec:
       enabled: {{ $gg.aiExtension.enabled }}
       image:
         {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-      listenAddress: {{ $gg.aiExtension.listenAddress }}
 {{- if $gg.aiExtension.securityContext }}
       securityContext:
         {{- toYaml $gg.aiExtension.securityContext | nindent 8 }}

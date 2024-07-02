@@ -264,8 +264,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: LISTEN_ADDR
-            value: {{ $gateway.aiExtension.listenAddress }}
 {{- if $gateway.aiExtension.env }}
 {{ toYaml $gateway.aiExtension.env | indent 10 }}
 {{- end }} {{/* if $gateway.aiExtension.env */}}

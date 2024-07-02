@@ -721,16 +721,6 @@ func (m *AiExtension) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetListenAddress()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetListenAddress()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetListenAddress(), target.GetListenAddress()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetSecurityContext()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetSecurityContext()) {
 			return false

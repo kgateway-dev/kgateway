@@ -113,13 +113,13 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite().GetValue()).To(Equal("/stats"))
 
 				Expect(gwpKube.GetAiExtension().GetEnabled().GetValue()).To(BeFalse())
-				Expect(gwpKube.GetAiExtension().GetListenAddress().GetValue()).To(ContainSubstring("unix://"))
 				Expect(gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(kube.Image_IfNotPresent))
 				Expect(gwpKube.GetAiExtension().GetImage().GetRegistry().GetValue()).To(Equal("quay.io/solo-io"))
 				Expect(gwpKube.GetAiExtension().GetImage().GetRepository().GetValue()).To(Equal("gloo-ai-extension"))
 				Expect(gwpKube.GetAiExtension().GetImage().GetTag().GetValue()).To(Equal(version))
 				Expect(gwpKube.GetAiExtension().GetSecurityContext()).To(BeNil())
 				Expect(gwpKube.GetAiExtension().GetResources()).To(BeNil())
+				Expect(gwpKube.GetAiExtension().GetPorts()).To(BeEmpty())
 			})
 
 			When("overrides are set", func() {
@@ -174,7 +174,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.registry=sds-override-registry",
 						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.repository=sds-override-repository",
 						"kubeGateway.gatewayParameters.glooGateway.aiExtension.image.pullPolicy=Never",
-						"kubeGateway.gatewayParameters.glooGateway.aiExtension.listenAddress=unix:///foo/bar",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[0].name=port1",
+						"kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[0].containerPort=80",
 						"global.istioIntegration.enabled=true",
 					}
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
@@ -253,7 +254,9 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetAiExtension().GetImage().GetRegistry().GetValue()).To(Equal("sds-override-registry"))
 					Expect(gwpKube.GetAiExtension().GetImage().GetRepository().GetValue()).To(Equal("sds-override-repository"))
 					Expect(gwpKube.GetAiExtension().GetImage().GetTag().GetValue()).To(Equal("sds-override-tag"))
-					Expect(gwpKube.GetAiExtension().GetListenAddress().GetValue()).To(ContainSubstring("unix:///foo/bar"))
+					Expect(gwpKube.GetAiExtension().GetPorts()).To(HaveLen(1))
+					Expect(gwpKube.GetAiExtension().GetPorts()[0].GetName()).To(Equal("port1"))
+					Expect(gwpKube.GetAiExtension().GetPorts()[0].GetContainerPort()).To(BeEquivalentTo(80))
 				})
 			})
 
