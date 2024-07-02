@@ -3,9 +3,9 @@ package glooctl
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/onsi/gomega"
-
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 )
@@ -74,4 +74,124 @@ func (s *checkSuite) TestCheckKubeContext() {
 	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.ClusterContext.KubeContext, "-x", "xds-metrics")
 	s.NoError(err)
+}
+
+func (s *checkSuite) TestCheckTimeout() {
+	// When passing short timeout, check will fail
+	shortTimeoutValues, err := os.CreateTemp("", "*.yaml")
+	s.NoError(err)
+	_, err = shortTimeoutValues.Write([]byte(`checkTimeoutSeconds: 1ns`))
+	s.NoError(err)
+
+	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace,
+		"-c", shortTimeoutValues.Name())
+	s.Error(err)
+	s.Contains(err.Error(), "Could not communicate with kubernetes cluster: namespaces \"not-gloo-system\" not found")
+
+	// When passing valid timeout, check should succeed
+	normalTimeoutValues, err := os.CreateTemp("", "*.yaml")
+	s.NoError(err)
+	_, err = normalTimeoutValues.Write([]byte(`checkTimeoutSeconds: 300s`))
+	s.NoError(err)
+
+	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace,
+		"-c", normalTimeoutValues.Name())
+	s.NoError(err)
+}
+
+func (s *checkSuite) TestCheckNamespace() {
+	// namespace does not exist
+	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx, "-n", "not-gloo-system")
+	s.Error(err)
+	s.Contains(output, "Could not communicate with kubernetes cluster: namespaces \"not-gloo-system\" not found")
+
+	// gloo not in namespace
+	output, err = s.testInstallation.Actions.Glooctl().Check(s.ctx, "-n", "default")
+	s.Error(err)
+	s.Contains(output, "Warning: The provided label selector (gloo) applies to no pods")
+
+	// pod does not exist
+	output, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace,
+		"-p", "not-gloo")
+	s.NoError(err)
+	s.Contains(output, "Warning: The provided label selector (not-gloo) applies to no pods")
+	s.Contains(output, "No problems detected.")
+
+	// resource namespace does not exist
+	output, err = s.testInstallation.Actions.Glooctl().Check(s.ctx, "-r", "not-gloo-system")
+	s.Error(err)
+	s.Contains(output, "No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)")
+}
+
+func (s *checkSuite) TestNoGateways() {
+	s.T().Cleanup(func() {
+		// Scale gateways back
+		err := s.testInstallation.ClusterContext.Cli.Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "gateway-proxy", 1)
+		s.NoError(err)
+		err = s.testInstallation.ClusterContext.Cli.Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "public-gw", 1)
+		s.NoError(err)
+	})
+
+	// Scale gateways down
+	err := s.testInstallation.ClusterContext.Cli.Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "gateway-proxy", 0)
+	s.NoError(err)
+	// public-gw is defined in the helm chart
+	err = s.testInstallation.ClusterContext.Cli.Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "public-gw", 0)
+	s.NoError(err)
+
+	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.ClusterContext.KubeContext, "-x", "xds-metrics")
+	s.Error(err)
+	s.Contains(err.Error(), "Gloo installation is incomplete: no active gateway-proxy pods exist in cluster")
+}
+
+func (s *checkSuite) TestEdgeGatewayScaled() {
+	s.T().Cleanup(func() {
+		// Scale gateway back
+		err := s.testInstallation.ClusterContext.Cli.Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "gateway-proxy", 1)
+		s.NoError(err)
+	})
+
+	// Scale gateway down
+	err := s.testInstallation.ClusterContext.Cli.Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "gateway-proxy", 0)
+	s.NoError(err)
+
+	output, err := s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.ClusterContext.KubeContext, "-x", "xds-metrics")
+	s.NoError(err)
+	s.Contains(output, "Warning: gloo-system:gateway-proxy has zero replicas")
+	s.Contains(output, "No problems detected.")
+	gomega.Expect(output).To(GlooctlEdgeHealthyCheck())
+}
+
+func (s *checkSuite) TestEdgeResourceError() {
+	s.T().Cleanup(func() {
+		// Delete invalid config
+		err := s.testInstallation.ClusterContext.Cli.DeleteFileSafe(s.ctx, invalidVSDestDoesNotExist)
+		err = s.testInstallation.ClusterContext.Cli.DeleteFileSafe(s.ctx, invalidVSRouteDoesNotExist)
+		s.NoError(err)
+	})
+
+	// Apply invalid config
+	err := s.testInstallation.ClusterContext.Cli.ApplyFile(s.ctx, invalidVSDestDoesNotExist)
+	err = s.testInstallation.ClusterContext.Cli.ApplyFile(s.ctx, invalidVSRouteDoesNotExist)
+	s.NoError(err)
+
+	// Run check
+	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.ClusterContext.KubeContext, "-x", "xds-metrics")
+	s.Error(err)
+	gomega.Expect(err.Error()).To(
+		gomega.And(
+			gomega.ContainSubstring("* Found rejected virtual service by 'gloo-system': default reject-me-too (Reason: 2 errors occurred:"),
+			gomega.ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [gloo-system.reject-me]"),
+			gomega.ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.reject-me]"),
+
+			gomega.ContainSubstring("* Found rejected virtual service by 'gloo-system': gloo-system reject-me (Reason: 2 errors occurred:"),
+			gomega.ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.reject-me-too]"),
+			gomega.ContainSubstring("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too gloo-system.reject-me]")),
+	)
 }

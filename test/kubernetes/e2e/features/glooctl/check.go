@@ -1,7 +1,12 @@
 package glooctl
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 )
@@ -110,3 +115,46 @@ var (
 		},
 	}
 )
+
+// Common expected substrings for both matchers (Edge and k8s Gateway)
+var edgeExpectedChecks = []string{
+	"Checking Deployments... OK",
+	"Checking Pods... OK",
+	"Checking Upstreams... OK",
+	"Checking UpstreamGroups... OK",
+	"Checking AuthConfigs... OK",
+	"Checking RateLimitConfigs... OK",
+	"Checking Secrets... OK",
+	"Checking VirtualServices... OK",
+	"Checking Gateways... OK",
+	"Checking Proxies... OK",
+}
+
+// GlooctlEdgeHealthyCheck returns a GomegaMatcher that checks for all the expected Gloo Edge checks in the output.
+func GlooctlEdgeHealthyCheck() types.GomegaMatcher {
+	return &glooctlEdgeHealthyCheckMatcher{}
+}
+
+type glooctlEdgeHealthyCheckMatcher struct{}
+
+func (matcher *glooctlEdgeHealthyCheckMatcher) Match(actual interface{}) (success bool, err error) {
+	output, ok := actual.(string)
+	if !ok {
+		return false, errors.New(fmt.Sprintf("Invalid type. Expected string, got %v", actual))
+	}
+
+	for _, substring := range edgeExpectedChecks {
+		if !strings.Contains(output, substring) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (matcher *glooctlEdgeHealthyCheckMatcher) FailureMessage(actual interface{}) (message string) {
+	return format.Message(actual, "to contain expected glooctl checks")
+}
+
+func (matcher *glooctlEdgeHealthyCheckMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+	return format.Message(actual, "to contain expected glooctl checks")
+}

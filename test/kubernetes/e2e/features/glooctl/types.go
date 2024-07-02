@@ -12,10 +12,12 @@ import (
 )
 
 var (
-	backendManifestFile      = filepath.Join(util.MustGetThisDir(), "testdata", "backend.yaml")
-	edgeGatewaysManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-gateways.yaml")
-	edgeRoutesManifestFile   = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-routes.yaml")
-	kubeGatewaysManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "kube-gateway-routes.yaml")
+	backendManifestFile        = filepath.Join(util.MustGetThisDir(), "testdata", "backend.yaml")
+	edgeGatewaysManifestFile   = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-gateways.yaml")
+	edgeRoutesManifestFile     = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-routes.yaml")
+	kubeGatewaysManifestFile   = filepath.Join(util.MustGetThisDir(), "testdata", "kube-gateway-routes.yaml")
+	invalidVSDestDoesNotExist  = filepath.Join(util.MustGetThisDir(), "testdata", "vs-invalid-destination.yaml")
+	invalidVSRouteDoesNotExist = filepath.Join(util.MustGetThisDir(), "testdata", "vs-invalid-route.yaml")
 
 	// resources created by backend manifest
 	nginxSvc = &corev1.Service{
