@@ -56,6 +56,9 @@ var _ = Describe("Root", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: "gloo-system",
+					Labels: map[string]string{
+						"gloo": "gloo",
+					},
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
@@ -95,6 +98,9 @@ var _ = Describe("Root", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: "gloo-system",
+					Labels: map[string]string{
+						"gloo": "gloo",
+					},
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
@@ -176,6 +182,9 @@ var _ = Describe("Root", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: myNs,
+					Labels: map[string]string{
+						"gloo": "gloo",
+					},
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
@@ -221,6 +230,9 @@ var _ = Describe("Root", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: "gloo-system",
+					Labels: map[string]string{
+						"gloo": "gloo",
+					},
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})
