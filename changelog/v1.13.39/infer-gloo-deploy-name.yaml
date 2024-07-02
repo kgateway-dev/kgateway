@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9163
+  resolvesIssue: false
+  description: Infer the gloo deployment name in cases where the deployment name is not the default `gloo`. The gloo deployment is identified by the `gloo=gloo` label.
