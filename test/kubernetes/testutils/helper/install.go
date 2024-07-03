@@ -29,7 +29,6 @@ var defaults = TestConfig{
 	TestAssetDir:          "_test",
 	BuildAssetDir:         "_output",
 	HelmRepoIndexFileName: "index.yaml",
-	DeployTestServer:      true,
 }
 
 // supportedArchs is represents the list of architectures we build glooctl for
@@ -72,8 +71,6 @@ type TestConfig struct {
 	GlooctlExecName string
 	// If provided, the licence key to install the enterprise version of Gloo
 	LicenseKey string
-	// Determines whether the test server pod gets deployed
-	DeployTestServer bool
 	// Install a released version of gloo. This is the value of the github tag that may have a leading 'v'
 	ReleasedVersion string
 	// If true, glooctl will be run with a -v flag
@@ -136,15 +133,6 @@ func NewSoloTestHelper(configFunc TestConfigFunc) (*SoloTestHelper, error) {
 
 	testHelper := &SoloTestHelper{
 		TestConfig: &testConfig,
-	}
-
-	// Optionally, initialize a test server
-	// this should not be done here but managed by tests requiring this applying the manifest
-	if testConfig.DeployTestServer {
-		err := testHelper.Cli.ApplyFile(context.TODO(), filepath.Join(testConfig.RootDir, "test", "kubernetes", "e2e", "defaults", "testdata", "nginx_pod.yaml"))
-		if err != nil {
-			return nil, errors.Wrapf(err, "initializing test nginx upstream")
-		}
 	}
 
 	return testHelper, nil
@@ -250,10 +238,6 @@ func (h *SoloTestHelper) UninstallGloo() error {
 }
 
 func (h *SoloTestHelper) uninstallGloo(all bool) error {
-	if h.DeployTestServer {
-		h.DeleteFile(context.TODO(), filepath.Join(h.RootDir, "test", "kubernetes", "e2e", "defaults", "testdata", "nginx_pod.yaml"))
-	}
-
 	log.Printf("uninstalling gloo...")
 	cmdArgs := []string{
 		filepath.Join(h.BuildAssetDir, h.GlooctlExecName), "uninstall", "-n", h.InstallNamespace, "--delete-namespace",

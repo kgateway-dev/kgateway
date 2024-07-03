@@ -26,7 +26,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 		panic(err)
 	}
 
-	testHelper.DeployTestServer = false
+	testHelper.SetKubeCli(installation.ClusterContext.Cli)
 
 	return testHelper
 }
