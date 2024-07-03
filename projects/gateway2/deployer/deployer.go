@@ -286,8 +286,9 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway := vals.Gateway
 
 	// deployment values
-	replicas := *deployConfig.Replicas
-	gateway.ReplicaCount = &replicas
+	if deployConfig != nil {
+		gateway.ReplicaCount = deployConfig.Replicas
+	}
 
 	// TODO: The follow stanza has been commented out as autoscaling support has been removed.
 	// see https://github.com/solo-io/solo-projects/issues/5948 for more info.
@@ -301,35 +302,43 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 
 	// service values
 	gateway.Service = getServiceValues(svcConfig)
-
-	// pod template values
-	gateway.ExtraPodAnnotations = podConfig.ExtraAnnotations
-	gateway.ExtraPodLabels = podConfig.ExtraLabels
-	gateway.ImagePullSecrets = podConfig.ImagePullSecrets
-	gateway.PodSecurityContext = podConfig.SecurityContext
-	gateway.NodeSelector = podConfig.NodeSelector
-	gateway.Affinity = podConfig.Affinity
-	gateway.Tolerations = podConfig.Tolerations
-
-	// envoy container values
-	logLevel := envoyContainerConfig.Bootstrap.LogLevel
-	compLogLevels := envoyContainerConfig.Bootstrap.ComponentLogLevels
-	gateway.LogLevel = &logLevel
-	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
-	if err != nil {
-		return nil, err
+	if podConfig != nil {
+		// pod template values
+		gateway.ExtraPodAnnotations = podConfig.ExtraAnnotations
+		gateway.ExtraPodLabels = podConfig.ExtraLabels
+		gateway.ImagePullSecrets = podConfig.ImagePullSecrets
+		gateway.PodSecurityContext = podConfig.SecurityContext
+		gateway.NodeSelector = podConfig.NodeSelector
+		gateway.Affinity = podConfig.Affinity
+		gateway.Tolerations = podConfig.Tolerations
 	}
-	gateway.ComponentLogLevel = &compLogLevelStr
+
+	if envoyContainerConfig != nil {
+		// envoy container values
+		if envoyBootstrap := envoyContainerConfig.Bootstrap; envoyBootstrap != nil {
+			logLevel := envoyContainerConfig.Bootstrap.LogLevel
+			compLogLevels := envoyContainerConfig.Bootstrap.ComponentLogLevels
+			gateway.LogLevel = &logLevel
+			compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
+			if err != nil {
+				return nil, err
+			}
+			gateway.ComponentLogLevel = &compLogLevelStr
+		}
+
+		gateway.Resources = envoyContainerConfig.Resources
+		gateway.SecurityContext = envoyContainerConfig.SecurityContext
+		gateway.Image = getImageValues(envoyContainerConfig.Image)
+	} else {
+		// set default values
+		gateway.Image = getImageValues(&v1alpha1.Image{})
+	}
 
 	// istio values
 	gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)
 	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 	gateway.AIExtension = getAIExtensionValues(aiExtensionConfig)
-
-	gateway.Resources = envoyContainerConfig.Resources
-	gateway.SecurityContext = envoyContainerConfig.SecurityContext
-	gateway.Image = getImageValues(envoyContainerConfig.Image)
 
 	gateway.Stats = getStatsValues(statsConfig)
 
