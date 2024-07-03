@@ -169,6 +169,7 @@ func (ml *mergedListeners) appendHttpsListener(
 		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,
+		listener:          listener,
 	})
 }
 
@@ -225,7 +226,6 @@ func (ml *mergedListener) translateListener(
 		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
 			ctx,
 			ml.name,
-			ml.gatewayNamespace,
 			ml.listener,
 			pluginRegistry,
 			reporter,
@@ -272,16 +272,13 @@ func (ml *mergedListener) translateListener(
 			AggregateListener: &v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					VirtualHosts: mergedVhosts,
-					// TODO(ilackarms): mid term - add http listener options
-					HttpOptions: nil,
+					HttpOptions:  nil, // HttpListenerOptions will be added by HttpListenerOption policy plugin
 				},
 				HttpFilterChains: httpFilterChains,
-				// TODO(ilackarms): mid term - add http listener options
-				TcpListeners: nil,
+				TcpListeners:     nil,
 			},
 		},
-		// TODO(ilackarms): mid term - add listener options
-		Options:      nil,
+		Options:      nil, // Listener options will be added by ListenerOption policy plugin
 		RouteOptions: nil,
 	}
 }
@@ -301,7 +298,6 @@ type httpFilterChainParent struct {
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
-	gatewayNamespace string,
 	listener gwv1.Listener,
 	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,

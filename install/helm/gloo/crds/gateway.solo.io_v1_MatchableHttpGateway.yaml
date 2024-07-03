@@ -812,6 +812,12 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      headerValidationSettings:
+                        properties:
+                          disableHttp1MethodValidation:
+                            maxProperties: 0
+                            type: object
+                        type: object
                       healthCheck:
                         properties:
                           path:
@@ -1259,6 +1265,28 @@ spec:
                       sanitizeClusterHeader:
                         nullable: true
                         type: boolean
+                      statefulSession:
+                        properties:
+                          cookieBased:
+                            properties:
+                              cookie:
+                                properties:
+                                  name:
+                                    type: string
+                                  path:
+                                    type: string
+                                  ttl:
+                                    type: string
+                                type: object
+                            type: object
+                          headerBased:
+                            properties:
+                              headerName:
+                                type: string
+                            type: object
+                          strict:
+                            type: boolean
+                        type: object
                       tap:
                         properties:
                           sinks:

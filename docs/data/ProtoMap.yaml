@@ -533,6 +533,9 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.upstream_wait.v2.UpstreamWaitFilterConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/upstream_wait/upstream_wait_filter.proto.sk/#UpstreamWaitFilterConfig
+    package: envoy.config.filter.http.upstream_wait.v2
   envoy.config.filter.listener.tls_cipher_inspector.v3.TlsCipherInspector:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/listener/tls_cipher_inspector/v3/tls_cipher_inspector.proto.sk/#TlsCipherInspector
     package: envoy.config.filter.listener.tls_cipher_inspector.v3
@@ -659,8 +662,14 @@ apis:
   gateway.solo.io.HttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#HttpGateway
     package: gateway.solo.io
+  gateway.solo.io.HttpListenerOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#HttpListenerOption
+    package: gateway.solo.io
   gateway.solo.io.HybridGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
+    package: gateway.solo.io
+  gateway.solo.io.ListenerOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#ListenerOption
     package: gateway.solo.io
   gateway.solo.io.MatchableHttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto.sk/#MatchableHttpGateway
@@ -1199,6 +1208,9 @@ apis:
   hcm.options.gloo.solo.io.HttpConnectionManagerSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#HttpConnectionManagerSettings
     package: hcm.options.gloo.solo.io
+  header_validation.options.gloo.solo.io.HeaderValidationSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto.sk/#HeaderValidationSettings
+    package: header_validation.options.gloo.solo.io
   headers.options.gloo.solo.io.HeaderManipulation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto.sk/#HeaderManipulation
     package: headers.options.gloo.solo.io
@@ -1895,6 +1907,15 @@ apis:
   solo.io.udpa.annotations.VersioningAnnotation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
     package: solo.io.udpa.annotations
+  stateful_session.options.gloo.solo.io.CookieBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#CookieBasedSessionState
+    package: stateful_session.options.gloo.solo.io
+  stateful_session.options.gloo.solo.io.HeaderBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#HeaderBasedSessionState
+    package: stateful_session.options.gloo.solo.io
+  stateful_session.options.gloo.solo.io.StatefulSession:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#StatefulSession
+    package: stateful_session.options.gloo.solo.io
   static.options.gloo.solo.io.Host:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/static/static.proto.sk/#Host
     package: static.options.gloo.solo.io

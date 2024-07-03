@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Add tests for AdvancePortSafeListen, to demonstrate that the logic to find a free port works as expected

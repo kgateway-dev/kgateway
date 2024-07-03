@@ -54,7 +54,8 @@ var _ = Describe("Merge", func() {
 			},
 		}
 
-		actual := ShallowMergeRouteOptions(dst, src)
+		actual, overwrote := ShallowMergeRouteOptions(dst, src)
 		Expect(actual).To(Equal(expected))
+		Expect(overwrote).To(BeTrue())
 	})
 })

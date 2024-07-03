@@ -1,0 +1,19 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6175
+    resolvesIssue: false
+    description: |
+      This change updates the route sorting such that regex based matchers
+      are prioritized over prefix based matchers to be consistent with
+      Gloo gateway v1. The Gateway API states that the precedence of
+      regex matches is implementation specific, so this change conforms
+      to the API requirements.
+
+      Further, it avoids prioritizing regex based matchers based on their
+      lengths as this is rather abitrary. E.g., /a/b.*/.* is longer than
+      /a/b./c but less specific, so it's relative order should be lower
+      in the sorted order but if prioritized based on length it would
+      appear before a more specific match. If there is a tie among
+      regex routes, the other precedence rules govern the relative
+      ordering among them.
+

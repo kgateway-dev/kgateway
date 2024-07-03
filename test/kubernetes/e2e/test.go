@@ -81,8 +81,9 @@ func CreateTestInstallationForCluster(
 
 		// GeneratedFiles contains the unique location where files generated during the execution
 		// of tests against this installation will be stored
-		// By creating a unique location, per TestInstallation, we guarantee isolation between TestInstallation
-		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace),
+		// By creating a unique location, per TestInstallation and per Cluster.Name we guarantee isolation
+		// between TestInstallation outputs per CI run
+		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace, clusterContext.Name),
 	}
 	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
 	return installation
@@ -176,9 +177,14 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	// This is a work in progress
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
-	logFile := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.txt")
-	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo", ">", logFile)
-	_ = logsCmd.Run()
+
+	glooLogFilePath := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.log")
+	glooLogFile, err := os.Create(glooLogFilePath)
+	i.Assertions.Require.NoError(err)
+	defer glooLogFile.Close()
+
+	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
+	_ = logsCmd.WithStdout(glooLogFile).WithStderr(glooLogFile).Run()
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
@@ -196,13 +202,14 @@ type GeneratedFiles struct {
 }
 
 // MustGeneratedFiles returns GeneratedFiles, or panics if there was an error generating the directories
-func MustGeneratedFiles(tmpDirId string) GeneratedFiles {
+func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 	tmpDir, err := os.MkdirTemp("", tmpDirId)
 	if err != nil {
 		panic(err)
 	}
 
-	failureDir := filepath.Join(testruntime.PathToBugReport(), tmpDirId)
+	// output path is in the format of bug_report/cluster_name/tmp_dir_id
+	failureDir := filepath.Join(testruntime.PathToBugReport(), clusterId, tmpDirId)
 	err = os.MkdirAll(failureDir, os.ModePerm)
 	if err != nil {
 		panic(err)

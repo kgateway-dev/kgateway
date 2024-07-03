@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -42,6 +43,13 @@ func NewCli() *Cli {
 		receiver:    io.Discard,
 		kubeContext: "",
 	}
+}
+
+// CurlResponse stores the output from a curl, with separate fields for StdErr, which typically contains headers and
+// connection information, and SteOut, which typically contains the response body
+type CurlResponse struct {
+	StdErr string
+	StdOut string
 }
 
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
@@ -87,20 +95,27 @@ func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) er
 
 // ApplyFile applies the resources defined in a file, and returns an error if one occurred
 func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	_, err := c.ApplyFileWithOutput(ctx, fileName, extraArgs...)
+	return err
+}
+
+// ApplyFileWithOutput applies the resources defined in a file,
+// if an error occurred, it will be returned along with the output of the command
+func (c *Cli) ApplyFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
 	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		_ = fileInput.Close()
 	}()
 
-	return c.Command(ctx, applyArgs...).
+	runErr := c.Command(ctx, applyArgs...).
 		WithStdin(fileInput).
-		Run().
-		Cause()
+		Run()
+	return runErr.OutputString(), runErr.Cause()
 }
 
 // Delete deletes the resources defined in the bytes, and returns an error if one occurred
@@ -114,20 +129,27 @@ func (c *Cli) Delete(ctx context.Context, content []byte, extraArgs ...string) e
 
 // DeleteFile deletes the resources defined in a file, and returns an error if one occurred
 func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...string) error {
+	_, err := c.DeleteFileWithOutput(ctx, fileName, extraArgs...)
+	return err
+}
+
+// DeleteFileWithOutput deletes the resources defined in a file,
+// if an error occurred, it will be returned along with the output of the command
+func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
 	applyArgs := append([]string{"delete", "-f", fileName}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		_ = fileInput.Close()
 	}()
 
-	return c.Command(ctx, applyArgs...).
+	runErr := c.Command(ctx, applyArgs...).
 		WithStdin(fileInput).
-		Run().
-		Cause()
+		Run()
+	return runErr.OutputString(), runErr.Cause()
 }
 
 // DeleteFileSafe deletes the resources defined in a file, and returns an error if one occurred
@@ -196,8 +218,8 @@ func (c *Cli) CurlFromEphemeralPod(ctx context.Context, podMeta types.Namespaced
 }
 
 // CurlFromPod executes a Curl request from the given pod for the given options.
-// It differs from CurlFromEphemeralPod in that it does not uses an ephemeral container to execute the Curl command
-func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options ...curl.Option) (string, error) {
+// It differs from CurlFromEphemeralPod in that it does not use an ephemeral container to execute the Curl command
+func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options ...curl.Option) (*CurlResponse, error) {
 	appendOption := func(option curl.Option) {
 		options = append(options, option)
 	}
@@ -228,17 +250,23 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 		"5",
 	}, curlArgs...)
 
-	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, nil, args...)
+	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, args...)
 
-	return stdout + stderr, err
+	return &CurlResponse{StdOut: stdout, StdErr: stderr}, err
 }
 
-func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (string, string, error) {
+func (c *Cli) ExecuteOn(ctx context.Context, kubeContext string, args ...string) (string, string, error) {
 	args = append([]string{"--context", kubeContext}, args...)
-	return c.Execute(ctx, stdin, args...)
+	return c.Execute(ctx, args...)
 }
 
-func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) (string, string, error) {
+func (c *Cli) Execute(ctx context.Context, args ...string) (string, string, error) {
+	if c.kubeContext != "" {
+		if !slices.Contains(args, "--context") {
+			args = append([]string{"--context", c.kubeContext}, args...)
+		}
+	}
+
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 
@@ -249,4 +277,19 @@ func (c *Cli) Execute(ctx context.Context, stdin *bytes.Buffer, args ...string) 
 		WithStderr(stderr).Run().Cause()
 
 	return stdout.String(), stderr.String(), err
+}
+
+func (c *Cli) Scale(ctx context.Context, namespace string, resource string, replicas uint) error {
+	err := c.RunCommand(ctx, "scale", "-n", namespace, fmt.Sprintf("--replicas=%d", replicas), resource, "--timeout=300s")
+	if err != nil {
+		return err
+	}
+	time.Sleep(2 * time.Second) // Sleep a bit so the container starts
+	return c.RunCommand(ctx, "wait", "-n", namespace, "--for=condition=available", resource, "--timeout=300s")
+}
+
+// GetContainerLogs retrieves the logs for the specified container
+func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string) (string, error) {
+	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "logs", name)
+	return stdout + stderr, err
 }

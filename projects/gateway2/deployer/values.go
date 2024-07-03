@@ -22,9 +22,7 @@ type helmGateway struct {
 	ReplicaCount *uint32          `json:"replicaCount,omitempty"`
 	Autoscaling  *helmAutoscaling `json:"autoscaling,omitempty"`
 	Ports        []helmPort       `json:"ports,omitempty"`
-	// TODO: This is unused
-	ReadinessPort *uint16      `json:"readinessPort,omitempty"`
-	Service       *helmService `json:"service,omitempty"`
+	Service      *helmService     `json:"service,omitempty"`
 
 	// pod template values
 	ExtraPodAnnotations map[string]string             `json:"extraPodAnnotations,omitempty"`
@@ -35,6 +33,13 @@ type helmGateway struct {
 	Affinity            *corev1.Affinity              `json:"affinity,omitempty"`
 	Tolerations         []*corev1.Toleration          `json:"tolerations,omitempty"`
 
+	// sds container values
+	SdsContainer *helmSdsContainer `json:"sdsContainer,omitempty"`
+	// istio container values
+	IstioContainer *helmIstioContainer `json:"istioContainer,omitempty"`
+	// istio integration values
+	Istio *helmIstio `json:"istio,omitempty"`
+
 	// envoy container values
 	LogLevel          *string                            `json:"logLevel,omitempty"`
 	ComponentLogLevel *string                            `json:"componentLogLevel,omitempty"`
@@ -42,14 +47,14 @@ type helmGateway struct {
 	Resources         *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext            `json:"securityContext,omitempty"`
 
-	// istio values
-	IstioSDS *helmIstioSds `json:"istioSDS,omitempty"`
-
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`
 
-	// serviceaccount values
-	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
+	// stats values
+	Stats *helmStatsConfig `json:"stats,omitempty"`
+
+	// AI extension values
+	AIExtension *helmAIExtension `json:"aiExtension,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -90,12 +95,45 @@ type helmAutoscaling struct {
 	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
-type helmIstioSds struct {
+type helmIstio struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-type helmServiceAccount struct {
-	Create      *bool             `json:"create,omitempty"`
-	Name        *string           `json:"name,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
+type helmSdsContainer struct {
+	Image           *helmImage                         `json:"image,omitempty"`
+	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *corev1.SecurityContext            `json:"securityContext,omitempty"`
+	SdsBootstrap    *sdsBootstrap                      `json:"sdsBootstrap,omitempty"`
+}
+
+type sdsBootstrap struct {
+	LogLevel *string `json:"logLevel,omitempty"`
+}
+
+type helmIstioContainer struct {
+	Image    *helmImage `json:"image,omitempty"`
+	LogLevel *string    `json:"logLevel,omitempty"`
+
+	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *corev1.SecurityContext            `json:"securityContext,omitempty"`
+
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
+}
+
+type helmStatsConfig struct {
+	Enabled            *bool   `json:"enabled,omitempty"`
+	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
+}
+
+type helmAIExtension struct {
+	Enabled         bool                               `json:"enabled,omitempty"`
+	Image           *helmImage                         `json:"image,omitempty"`
+	SecurityContext *corev1.SecurityContext            `json:"securityContext,omitempty"`
+	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	Env             []*corev1.EnvVar                   `json:"env,omitempty"`
+	Ports           []*corev1.ContainerPort            `json:"ports,omitempty"`
 }

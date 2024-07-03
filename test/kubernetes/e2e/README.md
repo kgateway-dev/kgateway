@@ -18,10 +18,20 @@ We define all tests in the [features](./features) package. This is done for a va
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
 2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
+## Test Suites
+A Test Suite is a subset of the Feature concept. A single Feature has at minimum one Test Suite, and can have many. Each Test Suite within the feature must have a function which satisfies the signature `NewSuiteFunc` found in [suite.go](./suite.go).
+
+These test suites are registered by a name and this func in [Tests](#tests) to be run against various `TestInstallation`s.
+
 ## Tests
 This package holds the entry point for each of our `TestInstallation`. 
 
 See [Load balancing tests](./load_balancing_tests.md) for more information about how these tests are run in CI.
+
+Each `*_test.go` file contains a specific test installation and exists within the `tests_test` package. In order for tests to be imported and run from other repos, each `*_test.go` file has a corresponding `*_test.go` file which exists in the `tests` package. This is done because `_test` packages cannot be imported.
+
+In order to add a feature suite to be run in a given test installation, it must be added to the exported function in the corresponding `*_tests.go` file.
+e.g. In order to add a feature suite to be run with the test installation defined in `istio_test.go`, we have to register it by adding it to `IstioTests()` in `istio_tests.go` following the existing paradigm.
 
 ## Environment Variables
 

@@ -5,7 +5,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway
   annotations:
     {{- if not .Values.gateway.validation.webhook.disableHelmHook }}
@@ -24,6 +24,16 @@ webhooks:
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
   rules:
+{{- if and .Values.kubeGateway.enabled .Values.gateway.validation.webhook.enablePolicyApi }}
+  - operations: [ "CREATE", "UPDATE" ]
+    # RouteOption and VirtualHostOption DELETEs are not supported.
+    # Their validation is currently limited to usage as Kube Gateway API Policies
+    # and are hermetically validated for semantic correctness only. This means there
+    # is no validation needed for DELETEs, as a DELETE will never result be semantically invalid
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["routeoptions", "virtualhostoptions"]
+{{- end }}{{/* if and .Values.kubeGateway.enabled .Values.gateway.validation.webhook.enablePolicyApi */}}
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "virtualservices" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
@@ -33,7 +43,7 @@ webhooks:
     apiVersions: ["v1"]
     resources: ["routetables"]
   - operations: [ "CREATE", "UPDATE" ]
-{{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support 
+{{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support
 specific resources, we will manage the resources that the webhook receives via the helm configurations*/}}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]

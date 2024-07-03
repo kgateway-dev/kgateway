@@ -1,6 +1,6 @@
 # Envoy Segmentation Fault
 
-When a segmentation fault occurs in the gateway-proxy pod, the stack trace is not visible. If you are running Gloo Edge Enterprise, replace the default docker image in that pod, with the debug replica:
+When a segmentation fault occurs in the proxy pod running Envoy, the stack trace is not visible. If you are running Gloo Gateway Enterprise, replace the default docker image in that pod with the debug replica:
 
 Original Image:
 ```bash

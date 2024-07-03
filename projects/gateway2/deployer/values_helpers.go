@@ -6,21 +6,22 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // This file contains helper functions that generate helm values in the format needed
 // by the deployer.
 
-var (
-	ComponentLogLevelEmptyError = func(key string, value string) error {
-		return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
-	}
-)
+var ComponentLogLevelEmptyError = func(key string, value string) error {
+	return eris.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
+}
 
 // Extract the listener ports from a Gateway. These will be used to populate:
 // 1. the ports exposed on the envoy container
@@ -49,24 +50,26 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 	return gwPorts
 }
 
+// TODO: Removing until autoscaling is re-added.
+// See: https://github.com/solo-io/solo-projects/issues/5948
 // Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
-func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscaling {
-	hpaConfig := autoscaling.HorizontalPodAutoscaler
-	if hpaConfig == nil {
-		return nil
-	}
+// func getAutoscalingValues(autoscaling *v1.Autoscaling) *helmAutoscaling {
+// 	hpaConfig := autoscaling.HorizontalPodAutoscaler
+// 	if hpaConfig == nil {
+// 		return nil
+// 	}
 
-	trueVal := true
-	autoscalingVals := &helmAutoscaling{
-		Enabled: &trueVal,
-	}
-	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
-	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
-	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
-	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
+// 	trueVal := true
+// 	autoscalingVals := &helmAutoscaling{
+// 		Enabled: &trueVal,
+// 	}
+// 	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
+// 	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
+// 	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
+// 	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
 
-	return autoscalingVals
-}
+// 	return autoscalingVals
+// }
 
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
 func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
@@ -82,50 +85,89 @@ func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
 	}
 }
 
-// Get the default image values for the envoy container in the proxy deployment.
-// Typically this is a gloo envoy wrapper image.
-func getDefaultEnvoyImageValues(image extensions.Image) *helmImage {
-	// Get the envoy repo and tag from the k8s gw extensions.
-	// The other default values (registry and pullPolicy) are statically defined in the deployer
-	// helm chart.
-	return &helmImage{
-		Repository: &image.Repository,
-		Tag:        &image.Tag,
+// Convert sds values from GatewayParameters into helm values to be used by the deployer.
+func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsContainer {
+	if sdsContainerConfig == nil {
+		return nil
+	}
+
+	sdsConfigImage := sdsContainerConfig.Image
+	sdsImage := &helmImage{
+		Registry:   ptr.To(sdsConfigImage.Registry),
+		Repository: ptr.To(sdsConfigImage.Repository),
+		Tag:        ptr.To(sdsConfigImage.Tag),
+		Digest:     ptr.To(sdsConfigImage.Digest),
+	}
+	setPullPolicy(sdsConfigImage.PullPolicy, sdsImage)
+
+	return &helmSdsContainer{
+		Image:           sdsImage,
+		Resources:       sdsContainerConfig.Resources,
+		SecurityContext: sdsContainerConfig.SecurityContext,
+		SdsBootstrap: &sdsBootstrap{
+			LogLevel: sdsContainerConfig.SdsBootstrap.LogLevel,
+		},
 	}
 }
 
-// Get the image values for the envoy container in the proxy deployment. This is done by:
-// 1. getting the image values from a GatewayParameter
-// 2. for values not provided, fall back to the defaults (if any) from the k8s gw extensions
-func getMergedEnvoyImageValues(defaultImage extensions.Image, overrideImage *v1alpha1kube.Image) *helmImage {
-	// if no overrides are provided, use the default values
-	if overrideImage == nil {
-		return getDefaultEnvoyImageValues(defaultImage)
+func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *helmIstioContainer {
+	if istioContainerConfig == nil {
+		return nil
 	}
 
-	// for repo and tag, fall back to defaults if not provided
-	repository := overrideImage.Repository
-	if repository == "" {
-		repository = defaultImage.Repository
+	istioConfigImage := istioContainerConfig.Image
+	istioImage := &helmImage{
+		Registry:   ptr.To(istioConfigImage.Registry),
+		Repository: ptr.To(istioConfigImage.Repository),
+		Tag:        ptr.To(istioConfigImage.Tag),
+		Digest:     ptr.To(istioConfigImage.Digest),
 	}
-	tag := overrideImage.Tag
-	if tag == "" {
-		tag = defaultImage.Tag
+	setPullPolicy(istioConfigImage.PullPolicy, istioImage)
+
+	return &helmIstioContainer{
+		Image:                 istioImage,
+		LogLevel:              istioContainerConfig.LogLevel,
+		Resources:             &istioContainerConfig.Resources,
+		SecurityContext:       istioContainerConfig.SecurityContext,
+		IstioDiscoveryAddress: istioContainerConfig.IstioDiscoveryAddress,
+		IstioMetaMeshId:       istioContainerConfig.IstioMetaMeshId,
+		IstioMetaClusterId:    istioContainerConfig.IstioMetaClusterId,
+	}
+}
+
+// Convert istio values from GatewayParameters into helm values to be used by the deployer.
+func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.IstioIntegration) *helmIstio {
+	// if istioConfig is nil, istio sds is disabled and values can be ignored
+	if istioConfig == nil {
+		return &helmIstio{
+			Enabled: ptr.To(istioValues.IntegrationEnabled),
+		}
 	}
 
-	registry := overrideImage.Registry
-	digest := overrideImage.Digest
+	return &helmIstio{
+		Enabled: ptr.To(istioValues.IntegrationEnabled),
+	}
+}
 
-	// get the string representation of pull policy, unless it's unspecified, in which case we
-	// leave it empty to fall back to the default value
-	pullPolicy := string(overrideImage.PullPolicy)
+// Get the image values for the envoy container in the proxy deployment.
+func getEnvoyImageValues(envoyImage *v1alpha1.Image) *helmImage {
+	helmImage := &helmImage{
+		Registry:   ptr.To(envoyImage.Registry),
+		Repository: ptr.To(envoyImage.Repository),
+		Tag:        ptr.To(envoyImage.Tag),
+		Digest:     ptr.To(envoyImage.Digest),
+	}
+	setPullPolicy(envoyImage.PullPolicy, helmImage)
+	return helmImage
+}
 
-	return &helmImage{
-		Registry:   &registry,
-		Repository: &repository,
-		Tag:        &tag,
-		Digest:     &digest,
-		PullPolicy: &pullPolicy,
+// Get the stats values for the envoy listener in the configmap for bootstrap.
+func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
+	return &helmStatsConfig{
+		Enabled:            statsConfig.Enabled,
+		RoutePrefixRewrite: statsConfig.RoutePrefixRewrite,
+		EnableStatsRoute:   statsConfig.EnableStatsRoute,
+		StatsPrefixRewrite: statsConfig.StatsRoutePrefixRewrite,
 	}
 }
 
@@ -148,4 +190,32 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ","), nil
+}
+
+func setPullPolicy(pullPolicy corev1.PullPolicy, helmImage *helmImage) {
+	helmImage.PullPolicy = ptr.To(string(pullPolicy))
+}
+
+func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
+	if config == nil {
+		return nil
+	}
+
+	configImage := config.Image
+	image := &helmImage{
+		Registry:   ptr.To(configImage.Registry),
+		Repository: ptr.To(configImage.Repository),
+		Tag:        ptr.To(configImage.Tag),
+		Digest:     ptr.To(configImage.Digest),
+	}
+	setPullPolicy(configImage.PullPolicy, image)
+
+	return &helmAIExtension{
+		Enabled:         *config.Enabled,
+		Image:           image,
+		SecurityContext: config.SecurityContext,
+		Resources:       &config.Resources,
+		Env:             config.Env,
+		Ports:           config.Ports,
+	}
 }

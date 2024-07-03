@@ -31,11 +31,10 @@ func TestExtensionRef(t *testing.T) {
 		Group: sologatewayv1.RouteOptionGVK.Group,
 		Kind:  sologatewayv1.RouteOptionGVK.Kind,
 	}
-	filter := utils.FindExtensionRefFilter(&rtCtx, gk)
+	filter := utils.FindExtensionRefFilter(rtCtx.Rule, gk)
 	g.Expect(filter).ToNot(BeNil())
 
-	routeOption := &solokubev1.RouteOption{}
-	err := utils.GetExtensionRefObj(context.Background(), &rtCtx, queries, filter.ExtensionRef, routeOption)
+	routeOption, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.Route, queries, filter.ExtensionRef)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(routeOption.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeEquivalentTo(1))
 }
@@ -50,11 +49,10 @@ func TestExtensionRefWrongObject(t *testing.T) {
 		Group: sologatewayv1.RouteOptionGVK.Group,
 		Kind:  sologatewayv1.RouteOptionGVK.Kind,
 	}
-	filter := utils.FindExtensionRefFilter(&rtCtx, gk)
+	filter := utils.FindExtensionRefFilter(rtCtx.Rule, gk)
 	g.Expect(filter).ToNot(BeNil())
 
-	vhostOption := &solokubev1.VirtualHostOption{}
-	err := utils.GetExtensionRefObj(context.Background(), &rtCtx, queries, filter.ExtensionRef, vhostOption)
+	_, err := utils.GetExtensionRefObj[*solokubev1.VirtualHostOption](context.Background(), rtCtx.Route, queries, filter.ExtensionRef)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(errors.Is(err, utils.ErrTypesNotEqual)).To(BeTrue())
 }

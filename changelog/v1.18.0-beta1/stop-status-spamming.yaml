@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6252
+    resolvesIssue: false
+    description: Fix issue where Kube Gateway proxies would have errors regarding status logged constantly

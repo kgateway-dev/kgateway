@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >- 
+      Fix issue where upstream creation/deletion were not being reconciled by the K8s Gateway controller.
+    issueLink: https://github.com/solo-io/solo-projects/issues/6222

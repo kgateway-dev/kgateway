@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6130
+    resolvesIssue: false
+    description: >-
+      Expand the resources that are returned by `/snapshots/input` to include the Kubernetes Gateway resources

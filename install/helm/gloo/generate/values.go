@@ -25,19 +25,30 @@ type Config struct {
 }
 
 type Global struct {
-	Image                *Image             `json:"image,omitempty"`
-	Extensions           interface{}        `json:"extensions,omitempty"`
-	GlooRbac             *Rbac              `json:"glooRbac,omitempty"`
-	GlooStats            Stats              `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
-	GlooMtls             Mtls               `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
-	IstioSDS             IstioSDS           `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	IstioIntegration     IstioIntegration   `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
-	ExtraSpecs           *bool              `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
-	ExtauthCustomYaml    *bool              `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
-	Console              interface{}        `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
-	Graphql              interface{}        `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
-	ConfigMaps           []*GlobalConfigMap `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
-	ExtraCustomResources *bool              `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	Image                *Image                `json:"image,omitempty"`
+	Extensions           interface{}           `json:"extensions,omitempty"`
+	GlooRbac             *Rbac                 `json:"glooRbac,omitempty"`
+	GlooStats            Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments."`
+	GlooMtls             Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication."`
+	IstioSDS             IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS."`
+	IstioIntegration     IstioIntegration      `json:"istioIntegration,omitempty" desc:"Configs used to manage Gloo pod visibility for Istio's automatic discovery and sidecar injection."`
+	ExtraSpecs           *bool                 `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	ExtauthCustomYaml    *bool                 `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
+	Console              interface{}           `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
+	Graphql              interface{}           `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
+	ConfigMaps           []*GlobalConfigMap    `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
+	ExtraCustomResources *bool                 `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	AdditionalLabels     map[string]string     `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
+	PodSecurityStandards *PodSecurityStandards `json:"podSecurityStandards,omitempty" desc:"Configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+}
+
+type PodSecurityStandards struct {
+	Container *ContainerSecurityStandards `json:"container,omitempty" desc:"Container configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+}
+
+type ContainerSecurityStandards struct {
+	EnableRestrictedContainerDefaults *bool   `json:"enableRestrictedContainerDefaults,omitempty" desc:"Set to true to default all containers to a security policy that minimally conforms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). "`
+	DefaultSeccompProfileType         *string `json:"defaultSeccompProfileType,omitempty" desc:"The seccomp profile type to use for default restricted container securityContexts. Valid values are 'RuntimeDefault' and 'Localhost'. Default is 'RuntimeDefault'. Has no effect if enableRestrictedContainerDefaults is false."`
 }
 
 type Namespace struct {
@@ -86,14 +97,15 @@ type PodSpec struct {
 
 type JobSpec struct {
 	*PodSpec
-	ActiveDeadlineSeconds   *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
-	BackoffLimit            *int              `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
-	Completions             *int              `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
-	ManualSelector          *bool             `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
-	Parallelism             *int              `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
-	TtlSecondsAfterFinished *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest."`
-	ExtraPodLabels          map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
-	ExtraPodAnnotations     map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`
+	ActiveDeadlineSeconds    *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	BackoffLimit             *int              `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
+	Completions              *int              `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
+	ManualSelector           *bool             `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
+	Parallelism              *int              `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
+	TtlSecondsAfterFinished  *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest."`
+	ExtraPodLabels           map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
+	ExtraPodAnnotations      map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`
+	ContainerSecurityContext *SecurityContext  `json:"containerSecurityContext,omitempty" desc:"securityContext for the job. If this is defined it supercedes any values set in RunAsUser, RunAsGroup, FsGroup, ReadOnlyRootFilesystem or any other securityContext fields that may be individually set.  See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type DeploymentSpecSansResources struct {
@@ -183,8 +195,9 @@ type KnativeProxy struct {
 	Internal                            *KnativeProxyInternal `json:"internal,omitempty" desc:"kube resource overrides for knative internal proxy resources"`
 	*DeploymentSpec
 	*ServiceSpec
-	ConfigMap  *KubeResourceOverride `json:"configMap,omitempty"`
-	Deployment *KubeResourceOverride `json:"deployment,omitempty"`
+	ConfigMap                *KubeResourceOverride `json:"configMap,omitempty"`
+	Deployment               *KubeResourceOverride `json:"deployment,omitempty"`
+	ContainerSecurityContext *SecurityContext      `json:"containerSecurityContext,omitempty" desc:"securityContext for knative proxy containers. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type KnativeProxyInternal struct {
@@ -234,8 +247,7 @@ type SecretOptionsSource struct {
 	Directory  Directory         `json:"directory,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
 }
 
-type KubernetesSecrets struct {
-}
+type KubernetesSecrets struct{}
 
 type VaultSecrets struct {
 	Address     string         `json:"address,omitempty" desc:"Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200)."`
@@ -295,11 +307,47 @@ type Gloo struct {
 }
 
 type KubeGateway struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	Enabled           *bool                               `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
+	GatewayParameters *GatewayParametersForGatewayClasses `json:"gatewayParameters,omitempty" desc:"Maps GatewayClasses to default GatewayParameters"`
+}
+
+type GatewayParametersForGatewayClasses struct {
+	GlooGateway *GatewayParameters `json:"glooGateway,omitempty" desc:"Default GatewayParameters for gloo-gateway GatewayClass."`
+}
+
+type GatewayParameters struct {
+	EnvoyContainer  *EnvoyContainer            `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
+	ProxyDeployment *ProvisionedDeployment     `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
+	Service         *ProvisionedService        `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
+	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
+	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
+	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
+	// TODO(npolshak): Add support for GlooMtls
+}
+
+type GatewayParamsStatsConfig struct {
+	Enabled                 *bool   `json:"enabled,omitempty" desc:"Enable the prometheus endpoint"`
+	RoutePrefixRewrite      *string `json:"routePrefixRewrite,omitempty" desc:"Set the prefix rewrite used for the prometheus endpoint"`
+	EnableStatsRoute        *bool   `json:"enableStatsRoute,omitempty" desc:"Enable the stats endpoint"`
+	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty" desc:"Set the prefix rewrite used for the stats endpoint"`
+}
+
+type Istio struct {
+	IstioProxyContainer *GatewayParamsIstioProxyContainer `json:"istioProxyContainer,omitempty" desc:"Config used to manage the istio-proxy container."`
+	CustomSidecars      []interface{}                     `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if Istio.enabled is false"`
+}
+
+type ProvisionedDeployment struct {
+	Replicas *int32 `json:"replicas,omitempty" desc:"number of instances to deploy. If set to null, a default of 1 will be imposed."`
+}
+
+type ProvisionedService struct {
+	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
 }
 
 type SecurityOpts struct {
-	MergePolicy *string `json:"mergePolicy,omitempty" desc:"How to combine the defined security policy with the default security policy. Valid values are \"\", \"no-merge\", and \"helm-merge\". If defined as an empty string or \"no-merge\", use the defined security context as is.  If \"helm-merge\", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is \"\"."`
+	MergePolicy *string `json:"mergePolicy,omitempty" desc:"How to combine the defined security policy with the default security policy. Valid values are \"\", \"no-merge\", and \"helm-merge\". If defined as an empty string or \"no-merge\", use the defined security context as is.  If \"helm-merge\", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is \"\"."`
 }
 type PodSecurityContext struct {
 	*corev1.PodSecurityContext
@@ -309,6 +357,15 @@ type PodSecurityContext struct {
 type SecurityContext struct {
 	*corev1.SecurityContext
 	*SecurityOpts
+}
+
+// GatewayParamsSecurityContext is a passthrough struct that provides the corev1.SecurityContext without
+// exposing the SecurityOpts/MergePolicy. MergePolicy is irrelevant to the GatewayParameters case because
+// there is already a default and merge behavior defined. The "default" GatewayParameters are expected to
+// be the base config, which is where a default policy can defined; each gwapi.Gateway can have specific
+// GatewayParameters which can then override/merge into the default policy
+type GatewayParamsSecurityContext struct {
+	*corev1.SecurityContext
 }
 
 type GlooDeployment struct {
@@ -324,14 +381,14 @@ type GlooDeployment struct {
 	ExtraGlooAnnotations  map[string]string   `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
 	LivenessProbeEnabled  *bool               `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
 	OssImageTag           *string             `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
-	PodSecurityContext    *PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See [pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core) for details."`
+	PodSecurityContext    *PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See [pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core) for details."`
 	*DeploymentSpec
 	*GlooDeploymentContainer
 }
 
 type GlooDeploymentContainer struct {
 	Image                        *Image           `json:"image,omitempty"`
-	GlooContainerSecurityContext *SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
+	GlooContainerSecurityContext *SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type Discovery struct {
@@ -345,14 +402,15 @@ type Discovery struct {
 }
 
 type DiscoveryDeployment struct {
-	Image                     *Image            `json:"image,omitempty"`
-	Stats                     Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
-	FloatingUserId            *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser                 *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                   *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraDiscoveryLabels      map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
-	ExtraDiscoveryAnnotations map[string]string `json:"extraDiscoveryAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment."`
-	EnablePodSecurityContext  *bool             `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	Image                             *Image            `json:"image,omitempty"`
+	Stats                             Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
+	FloatingUserId                    *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser                         *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FsGroup                           *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraDiscoveryLabels              map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
+	ExtraDiscoveryAnnotations         map[string]string `json:"extraDiscoveryAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the gloo edge discovery deployment."`
+	EnablePodSecurityContext          *bool             `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	DiscoveryContainerSecurityContext *SecurityContext  `json:"discoveryContainerSecurityContext,omitempty" desc:"securityContext for the discovery container. If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 	*DeploymentSpec
 }
 
@@ -409,6 +467,12 @@ type Webhook struct {
 	TimeoutSeconds                *int              `json:"timeoutSeconds,omitempty" desc:"the timeout for the webhook, defaults to 10"`
 	ExtraAnnotations              map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
 	SkipDeleteValidationResources []string          `json:"skipDeleteValidationResources,omitempty" desc:"resource types in this list will not use webhook valdaition for DELETEs. Use '*' to skip validation for all resources. Valid values are 'virtualservices', 'routetables','upstreams', 'secrets', 'ratelimitconfigs', and '*'. Invalid values will be accepted but will not be used."`
+	// EnablePolicyApi provides granular access to users to opt-out of Policy validation
+	// There are some known race conditions in our Gloo Gateway processes resource references,
+	// even when allowWarnings=true: https://github.com/solo-io/solo-projects/issues/6321
+	// As a result, this is intended as a short-term solution to provide users a way to opt-out of Policy API validation.
+	// The desired long-term strategy is that our validation logic is stable, and users can leverage it
+	EnablePolicyApi *bool `json:"enablePolicyApi,omitempty" desc:"enable validation of Policy Api resources (RouteOptions, VirtualHostOptions) (default: true). NOTE: This only applies if the Kubernetes Gateway Integration is also enabled (kubeGateway.enabled)."`
 	*KubeResourceOverride
 }
 
@@ -635,17 +699,18 @@ type Failover struct {
 }
 
 type AccessLogger struct {
-	Image                        *Image                `json:"image,omitempty"`
-	Port                         *uint                 `json:"port,omitempty"`
-	ServiceName                  *string               `json:"serviceName,omitempty"`
-	Enabled                      *bool                 `json:"enabled,omitempty"`
-	Stats                        *Stats                `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
-	RunAsUser                    *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                      *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraAccessLoggerLabels      map[string]string     `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
-	ExtraAccessLoggerAnnotations map[string]string     `json:"extraAccessLoggerAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment."`
-	Service                      *KubeResourceOverride `json:"service,omitempty"`
-	Deployment                   *KubeResourceOverride `json:"deployment,omitempty"`
+	Image                                *Image                `json:"image,omitempty"`
+	Port                                 *uint                 `json:"port,omitempty"`
+	ServiceName                          *string               `json:"serviceName,omitempty"`
+	Enabled                              *bool                 `json:"enabled,omitempty"`
+	Stats                                *Stats                `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
+	RunAsUser                            *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FsGroup                              *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraAccessLoggerLabels              map[string]string     `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
+	ExtraAccessLoggerAnnotations         map[string]string     `json:"extraAccessLoggerAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment."`
+	Service                              *KubeResourceOverride `json:"service,omitempty"`
+	Deployment                           *KubeResourceOverride `json:"deployment,omitempty"`
+	AccessLoggerContainerSecurityContext *SecurityContext      `json:"accessLoggerContainerSecurityContext,omitempty" desc:"Security context for the access logger deployment.  If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details.""`
 	*DeploymentSpec
 }
 
@@ -657,12 +722,13 @@ type Ingress struct {
 }
 
 type IngressDeployment struct {
-	Image                   *Image            `json:"image,omitempty"`
-	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FloatingUserId          *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	ExtraIngressLabels      map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
-	ExtraIngressAnnotations map[string]string `json:"extraIngressAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment."`
-	Stats                   *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	Image                           *Image            `json:"image,omitempty"`
+	RunAsUser                       *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FloatingUserId                  *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	ExtraIngressLabels              map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
+	ExtraIngressAnnotations         map[string]string `json:"extraIngressAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment."`
+	Stats                           *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	IngressContainerSecurityContext *SecurityContext  `json:"ingressContainerSecurityContext,omitempty" desc:"Security context for the ingress deployment.  If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 	*DeploymentSpec
 }
 
@@ -676,15 +742,16 @@ type IngressProxy struct {
 }
 
 type IngressProxyDeployment struct {
-	Image                   *Image            `json:"image,omitempty"`
-	HttpPort                *int              `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
-	HttpsPort               *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
-	ExtraPorts              []interface{}     `json:"extraPorts,omitempty"`
-	ExtraAnnotations        map[string]string `json:"extraAnnotations,omitempty"`
-	FloatingUserId          *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
-	ExtraIngressProxyLabels map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
-	Stats                   *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	Image                                *Image            `json:"image,omitempty"`
+	HttpPort                             *int              `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
+	HttpsPort                            *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
+	ExtraPorts                           []interface{}     `json:"extraPorts,omitempty"`
+	ExtraAnnotations                     map[string]string `json:"extraAnnotations,omitempty"`
+	FloatingUserId                       *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser                            *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
+	ExtraIngressProxyLabels              map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
+	Stats                                *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
+	IngressProxyContainerSecurityContext *SecurityContext  `json:"ingressProxyContainerSecurityContext,omitempty" desc:"Security context for the ingress proxy deployment. If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 	*DeploymentSpec
 }
 
@@ -735,10 +802,24 @@ type Mtls struct {
 	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
+type EnvoyContainer struct {
+	Image           *Image                        `json:"image,omitempty"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy proxy container."`
+	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Resource requirements for envoy proxy container."`
+}
+
 type SdsContainer struct {
-	Image           *Image           `json:"image,omitempty"`
-	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
-	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for sds.  Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info."`
+	Image           *Image                `json:"image,omitempty"`
+	SecurityContext *SecurityContext      `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	LogLevel        *string               `json:"logLevel,omitempty" desc:"Log level for sds.  Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info."`
+	Resources       *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
+}
+
+type GatewayParamsSdsContainer struct {
+	Image           *Image                        `json:"image,omitempty"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	LogLevel        *string                       `json:"logLevel,omitempty" desc:"Log level for sds.  Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info."`
+	Resources       *ResourceRequirements         `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
 type EnvoySidecarContainer struct {
@@ -750,19 +831,50 @@ type IstioProxyContainer struct {
 	Image           *Image           `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 	LogLevel        *string          `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
+
+	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer
+	// Note: these are only supported for k8s Gateway API.
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"Kubernetes\""`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"istiod.istio-system.svc:15012\""`
+}
+
+type GatewayParamsIstioProxyContainer struct {
+	Image           *Image                        `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	LogLevel        *string                       `json:"logLevel,omitempty" desc:"Log level for istio-proxy. Options include \"info\", \"debug\", \"warning\", and \"error\". Default level is info Default is 'warning'."`
+
+	// TODO(npolshak): Deprecate GatewayProxy IstioMetaMeshId/IstioMetaClusterId/IstioDiscoveryAddress in favor of IstioProxyContainer
+	// Note: these are only supported for k8s Gateway API.
+	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"cluster.local\""`
+	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"Kubernetes\""`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to \"istiod.istio-system.svc:15012\""`
 }
 
 type IstioSDS struct {
-	Enabled        *bool         `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation"`
+	// NOTE: IstioSDS.Enabled is deprecated. Use IstioIntegration.Enabled instead.
+	Enabled        *bool         `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation. Warning: this value is deprecated and will be removed in a future release. Use global.istioIntegration.enabled instead."`
 	CustomSidecars []interface{} `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false"`
 }
 
 type IstioIntegration struct {
-	LabelInstallNamespace       *bool   `json:"labelInstallNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label (or 'istio.io/rev=' if 'istioSidecarRevTag' field is also set) to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended."`
-	WhitelistDiscovery          *bool   `json:"whitelistDiscovery,omitempty" desc:"Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled."`
-	DisableAutoinjection        *bool   `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true, as some pods do not immediately work with an Istio sidecar without extra manual configuration."`
-	EnableIstioSidecarOnGateway *bool   `json:"enableIstioSidecarOnGateway,omitempty" desc:"Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if disableAutoinjection is 'true'."`
-	IstioSidecarRevTag          *string `json:"istioSidecarRevTag,omitempty" desc:"Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if disableAutoinjection is 'true'."`
-	AppendXForwardedHost        *bool   `json:"appendXForwardedHost,omitempty" desc:"Enable appending the X-Forwarded-Host header with the Istio-provided value. Default: true."`
-	EnableAutoMtls              *bool   `json:"enableAutoMtls,omitempty" desc:"Enables Istio auto mtls configuration for Gloo Edge upstreams. Defaults to false."`
+	Enabled              *bool `json:"enabled,omitempty" desc:"Enables Istio integration for Gloo Edge, adding the sds and istio-proxy containers to gateways for Istio mTLS cert rotation."`
+	EnableAutoMtls       *bool `json:"enableAutoMtls,omitempty" desc:"Enables Istio auto mtls configuration for Gloo Edge upstreams."`
+	DisableAutoinjection *bool `json:"disableAutoinjection,omitempty" desc:"Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true, as some pods do not immediately work with an Istio sidecar without extra manual configuration. Warning: this value is not supported with Kubernetes Gateway API proxy. "`
+
+	// NOTE: these fields are deprecated and will be removed in a future release and are not supported with Kubernetes Gateway API.
+	LabelInstallNamespace       *bool   `json:"labelInstallNamespace,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. If creating a namespace for Gloo, include the 'istio-injection: enabled' label (or 'istio.io/rev=' if 'istioSidecarRevTag' field is also set) to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended."`
+	WhitelistDiscovery          *bool   `json:"whitelistDiscovery,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled."`
+	EnableIstioSidecarOnGateway *bool   `json:"enableIstioSidecarOnGateway,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if disableAutoinjection is 'true'."`
+	IstioSidecarRevTag          *string `json:"istioSidecarRevTag,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if disableAutoinjection is 'true'."`
+	AppendXForwardedHost        *bool   `json:"appendXForwardedHost,omitempty" desc:"Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Enable appending the X-Forwarded-Host header with the Istio-provided value. Default: true."`
+}
+
+type GatewayParamsAIExtension struct {
+	Enabled         *bool                         `json:"enabled,omitempty" desc:"Enable the AI extension"`
+	Image           *Image                        `json:"image,omitempty" desc:"Container image for the extension"`
+	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for extension container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Sets default resource requirements for the extension."`
+	Env             []*corev1.EnvVar              `json:"env,omitempty" desc:"Container environment variables for the extension."`
+	Ports           []*corev1.ContainerPort       `json:"ports,omitempty" desc:"Container ports for the extension."`
 }

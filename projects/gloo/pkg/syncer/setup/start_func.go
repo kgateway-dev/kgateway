@@ -3,19 +3,22 @@ package setup
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/go-utils/stats"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
@@ -58,18 +61,11 @@ func K8sGatewayControllerStartFunc(
 	authConfigClient api.AuthConfigClient,
 	routeOptionClient gateway.RouteOptionClient,
 	vhOptionClient gateway.VirtualHostOptionClient,
+	statusClient resources.StatusClient,
+	snapshotHistory iosnapshot.History,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-		if opts.ProxyDebugServer.Server != nil {
-			// If we have a debug server running, let's register the proxy client used by
-			// the k8s gateway translation. This will enable operators to query the debug endpoint
-			// and inspect the proxies that are stored in memory
-			opts.ProxyDebugServer.Server.RegisterProxyReader(debug.K8sGatewayTranslation, proxyClient)
-		}
-
-		statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
-
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
@@ -82,9 +78,33 @@ func K8sGatewayControllerStartFunc(
 			VirtualHostOptionClient: vhOptionClient,
 			StatusReporter:          statusReporter,
 
+			SnapshotHistory: snapshotHistory,
+
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API
 			Dev: false,
 		})
+	}
+}
+
+// AdminServerStartFunc returns the setup.StartFunc for the Admin Server
+// The Admin Server is the groundwork for an Administration Interface, similar to that of Envoy
+// https://github.com/solo-io/gloo/issues/6494
+// The endpoints that are available on this server are split between two places:
+//  1. The default endpoints are defined by our stats server: https://github.com/solo-io/go-utils/blob/8eda16b9878d71673e6a3a9756f6088160f75468/stats/stats.go#L79
+//  2. Custom endpoints are defined by our admin server handler in `gloo/pkg/servers/admin`
+func AdminServerStartFunc(history iosnapshot.History) StartFunc {
+	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
+		// serverHandlers defines the custom handlers that the Admin Server will support
+		serverHandlers := admin.ServerHandlers(ctx, history)
+
+		// The Stats Server is used as the running server for our admin endpoints
+		//
+		// NOTE: There is a slight difference in how we run this server -vs- how we used to run it
+		// In the past, we would start the server once, at the beginning of the running container
+		// Now, we start a new server each time we invoke a StartFunc.
+		stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), serverHandlers)
+
+		return nil
 	}
 }

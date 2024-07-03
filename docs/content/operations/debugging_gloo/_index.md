@@ -34,18 +34,18 @@ glooctl check
 
 Example output for a healthy setup: 
 ```
-Checking deployments... OK
-Checking pods... OK
-Checking upstreams... OK
-Checking upstream groups... OK
-Checking auth configs... OK
-Checking rate limit configs... OK
+Checking Deployments... OK
+Checking Pods... OK
+Checking Upstreams... OK
+Checking UpstreamGroups... OK
+Checking AuthConfigs... OK
+Checking RateLimitConfigs... OK
 Checking VirtualHostOptions... OK
 Checking RouteOptions... OK
-Checking secrets... OK
-Checking virtual services... OK
-Checking gateways... OK
-Checking proxies... OK
+Checking Secrets... OK
+Checking VirtualServices... OK
+Checking Gateways... OK
+Checking Proxies... OK
 No problems detected.
 ```
 

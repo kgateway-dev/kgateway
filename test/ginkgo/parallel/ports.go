@@ -66,8 +66,8 @@ func AdvancePort(p *uint32) uint32 {
 
 // AdvancePortSafeListen returns a port that is safe to use in parallel tests
 // It relies on pinging the port to see if it is in use
-func AdvancePortSafeListen(p *uint32) uint32 {
-	return MustAdvancePortSafe(p, portInUseListen)
+func AdvancePortSafeListen(p *uint32, retryOptions ...retry.Option) uint32 {
+	return MustAdvancePortSafe(p, portInUseListen, retryOptions...)
 }
 
 func portInUseListen(proposedPort uint32) error {

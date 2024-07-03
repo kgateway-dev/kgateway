@@ -2,11 +2,13 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	skv2corev1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -54,14 +56,14 @@ func FindAppliedRouteFilter(
 // references the supplied GroupKind in the Rule being processed.
 // Returns nil if the Rule doesn't contain a matching ExtensionRef filter
 func FindExtensionRefFilter(
-	routeCtx *plugins.RouteContext,
+	rule *gwv1.HTTPRouteRule,
 	gk schema.GroupKind,
 ) *gwv1.HTTPRouteFilter {
-	if routeCtx.Rule == nil {
+	if rule == nil {
 		return nil
 	}
 	// TODO: check full Filter list for duplicates and error?
-	for _, filter := range routeCtx.Rule.Filters {
+	for _, filter := range rule.Filters {
 		if filter.Type == gwv1.HTTPRouteFilterExtensionRef {
 			if filter.ExtensionRef.Group == gwv1.Group(gk.Group) && filter.ExtensionRef.Kind == gwv1.Kind(gk.Kind) {
 				return &filter
@@ -73,37 +75,97 @@ func FindExtensionRefFilter(
 
 var (
 	ErrTypesNotEqual = fmt.Errorf("types not equal")
-	ErrNotSettable   = fmt.Errorf("can't set value")
 )
 
 // GetExtensionRefObj uses the provided query engine to retrieve an ExtensionRef object
-// and set the value of `obj` to point to it.
-// The type of `obj` must match the type referenced in the extensionRef and must be a pointer.
-// An error will be returned if the Get was unsuccessful or if the type passed is not valid.
+// and return the object of the same type as the type parameter.
+// An error will be returned if the Get was unsuccessful or if the type parameter was not correct.
 // A nil error indicates success and `obj` should be usable as normal.
-func GetExtensionRefObj(
+func GetExtensionRefObj[T client.Object](
 	ctx context.Context,
-	routeCtx *plugins.RouteContext,
+	route *gwv1.HTTPRoute,
 	queries query.GatewayQueries,
 	extensionRef *gwv1.LocalObjectReference,
-	obj client.Object,
-) error {
-	localObj, err := queries.GetLocalObjRef(ctx, queries.ObjToFrom(routeCtx.Route), *extensionRef)
+) (T, error) {
+	return GetExtensionRefObjFrom[T](ctx, queries.ObjToFrom(route), queries, extensionRef)
+}
+
+func GetExtensionRefObjFrom[T client.Object](
+	ctx context.Context,
+	from query.From,
+	queries query.GatewayQueries,
+	extensionRef *gwv1.LocalObjectReference,
+) (T, error) {
+	var t T
+	localObj, err := queries.GetLocalObjRef(ctx, from, *extensionRef)
 	if err != nil {
-		return err
+		return t, err
 	}
-	if reflect.TypeOf(obj) != reflect.TypeOf(localObj) {
-		return fmt.Errorf(
-			"%w: passed Obj typeOf: '%v' localObj typeOf: '%v'",
-			ErrTypesNotEqual,
-			reflect.TypeOf(obj),
-			reflect.TypeOf(localObj),
+
+	typed, ok := localObj.(T)
+	if !ok {
+		return t, fmt.Errorf(
+			"%w: generic object typeOf: '%T' localObj typeOf: '%T'",
+			ErrTypesNotEqual, t, localObj,
 		)
 	}
-	elem := reflect.ValueOf(obj).Elem()
-	if !elem.CanSet() {
-		return ErrNotSettable
-	}
-	elem.Set(reflect.ValueOf(localObj).Elem())
-	return nil
+	return typed, nil
 }
+
+// PolicyWithSectionedTargetRefs is a wrapper type to represent policy objects
+// that attach via TargetRefWtihSectionName
+type PolicyWithSectionedTargetRefs[T client.Object] interface {
+	GetTargetRefs() []*skv2corev1.PolicyTargetReferenceWithSectionName
+	GetObject() T
+}
+
+// GetPrioritizedListenerPolicies accepts a slice of Gateway-attached policies (that may explicitly
+// target a specific Listener and returns a slice of these policies (or a subset) resources.
+// The returned policy list is sorted by specificity in the order of
+//
+// 1. older with section name
+//
+// 2. newer with section name
+//
+// 3. older without section name
+//
+// 4. newer without section name
+func GetPrioritizedListenerPolicies[T client.Object](
+	items []PolicyWithSectionedTargetRefs[T],
+	listener *gwv1.Listener,
+) []T {
+	var optsWithSectionName, optsWithoutSectionName []T
+	for i := range items {
+		item := items[i]
+		// only use the first targetRef in the list for now; user should be warned by caller of this function
+		targetRef := item.GetTargetRefs()[0]
+		if sectionName := targetRef.GetSectionName(); sectionName != nil && sectionName.GetValue() != "" {
+			// we have a section name, now check if it matches the specific listener provided
+			if sectionName.GetValue() == string(listener.Name) {
+				optsWithSectionName = append(optsWithSectionName, item.GetObject())
+			}
+		} else {
+			// attach all matched items that do not have a section name and let the caller be discerning
+			optsWithoutSectionName = append(optsWithoutSectionName, item.GetObject())
+		}
+	}
+
+	// this can happen if the policy list only contains items targeting other Listeners by section name
+	if len(optsWithoutSectionName)+len(optsWithSectionName) == 0 {
+		return nil
+	}
+
+	SortByCreationTime(optsWithSectionName)
+	SortByCreationTime(optsWithoutSectionName)
+	return append(optsWithSectionName, optsWithoutSectionName...)
+}
+
+// TODO: remove this as part of https://github.com/solo-io/solo-projects/issues/6286
+const MultipleTargetRefErrStr = "found ListenerOption %s/%s that contains multiple targetRefs which is not currently supported, only the first targetRef will be used"
+
+var (
+	ErrUnexpectedListenerType = errors.New("unexpected listener type")
+	ErrUnexpectedListener     = func(l *gloov1.Listener) error {
+		return fmt.Errorf("%w: expected AggregateListener, got %T", ErrUnexpectedListenerType, l.GetListenerType())
+	}
+)

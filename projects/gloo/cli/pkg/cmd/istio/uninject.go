@@ -119,12 +119,12 @@ func istioUninject(_ []string, opts *options.Options) error {
 			if len(containers) > 1 {
 				for i := len(containers) - 1; i >= 0; i-- {
 					container := containers[i]
-					if container.Name == "sds" {
+					if container.Name == SDSContainerName {
 						sdsPresent = true
 						copy(containers[i:], containers[i+1:])
 						containers = containers[:len(containers)-1]
 					}
-					if container.Name == "istio-proxy" {
+					if container.Name == IstioProxyName {
 						istioPresent = true
 
 						copy(containers[i:], containers[i+1:])

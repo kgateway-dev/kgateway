@@ -11,6 +11,8 @@ kind: PodDisruptionBudget
 metadata:
   name: gloo-pdb
   namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "gloo.labels" . | indent 4}}
 spec:
   {{- if .Values.gloo.podDisruptionBudget.minAvailable }}
   minAvailable: {{ .Values.gloo.podDisruptionBudget.minAvailable }}

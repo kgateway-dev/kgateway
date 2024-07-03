@@ -16,7 +16,6 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -24,11 +23,9 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
@@ -58,7 +55,7 @@ func init() {
 const emptyVersionKey = "empty"
 
 var (
-	emptyResource = cache.Resources{
+	emptyResource = envoycache.Resources{
 		Version: emptyVersionKey,
 		Items:   map[string]envoycache.Resource{},
 	}
@@ -81,7 +78,9 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
+	s.snapshotHistory.SetApiSnapshot(snap)
 	s.latestSnap = snap
+
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
@@ -126,13 +125,14 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	var proxiesWithReports []translatorutils.ProxyWithReports
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
-		metaKey := GetKeyFromProxyMeta(proxy)
+		metaKey := xds.SnapshotCacheKey(proxy)
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
 			proxyCtx = ctxWithTags
 		}
 
 		params := plugins.Params{
 			Ctx:      proxyCtx,
+			Settings: s.settings,
 			Snapshot: snap,
 			Messages: map[*core.ResourceRef][]string{},
 		}
@@ -198,7 +198,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode
-// https://github.com/solo-io/gloo/issues/6494
+// Deprecated: https://github.com/solo-io/gloo/issues/6494
+// Prefer to use the iosnapshot.History
 func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 
@@ -229,18 +230,4 @@ func prettify(original interface{}) string {
 	}
 
 	return string(b)
-}
-
-func GetKeyFromProxyMeta(proxy *gloov1.Proxy) string {
-	meta := proxy.GetMetadata()
-	metaKey := meta.Ref().Key()
-	labels := proxy.GetMetadata().GetLabels()
-	if labels != nil && labels[utils.ProxyTypeKey] == utils.GatewayApiProxyValue {
-		proxyNamespace := labels[utils.GatewayNamespaceKey]
-		if proxyNamespace != "" {
-			meta.Namespace = proxyNamespace
-			metaKey = meta.Ref().Key()
-		}
-	}
-	return metaKey
 }

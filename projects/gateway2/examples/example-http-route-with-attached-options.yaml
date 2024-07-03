@@ -24,8 +24,8 @@ kind: RouteOption
 metadata:
   name: policy-attached
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
+  targetRefs:
+  - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: example-route
   options:

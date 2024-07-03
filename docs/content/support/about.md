@@ -18,7 +18,7 @@ All Solo customers have access to various channels for obtaining technical assis
 * Open a support ticket in the [Support Portal](https://support.solo.io).
 * Join the community of Solo users in [Slack](https://soloio.slack.com), or talk to your Account Executive to be added to the private Solo Slack space.
 * Contact Solo Support by sending an email to `support@solo.io`. 
-* Call the Support Hotline at `+1-601-476-5646` (for **urgent priority, production-related** issues only).
+* For urgent priority issues that impact production, call the [Support Hotline](https://support.solo.io/hc/en-us/articles/25251551340692-Support-Number).
 
 For more information, see the following resources: 
 * [Submit a request]({{% versioned_link_path fromRoot="/support/support-ticket/#submit-a-ticket" %}}): Learn how to create a ticket by using the Support Portal or email. 
@@ -63,7 +63,7 @@ All Solo.io customers have access to various channels for obtaining technical as
 * Open a support ticket in the [Support Portal](https://support.solo.io).
 * Join the community of Solo users in [Slack](https://soloio.slack.com), or talk to your Account Executive to be added to the private Solo Slack space.
 * Contact Solo Support by sending an email to `support@solo.io`. 
-* Call the Support Hotline at `+1-601-476-5646` (for **urgent priority, production-related** issues only).
+* For urgent priority issues that impact production, call the [Support Hotline](https://support.solo.io/hc/en-us/articles/25251551340692-Support-Number).
  
 ### Istio-support only: Targeted time for initial response
 
@@ -71,13 +71,13 @@ When you contact Solo Support, you can choose a priority for your request. For m
 
 |Priority level|Targeted time for initial response|
 |--|--|
-|Urgent**|1 hour (24/7/365)|
+|Urgent`**`|1 hour (24/7/365)|
 |High|4 business hours  (Monday - Friday 9:00 am - 6:00 pm US Eastern Time)|
 |Normal|8 business hours  (Monday - Friday 9:00 am - 6:00 pm US Eastern Time)|
 |Low|24 business hours  (Monday - Friday 9:00 am - 6:00 pm US Eastern Time)|
 
 {{% alert context="danger" %}}
-**To report Urgent priority, production-related issues, you must contact Solo’s Support Hotline at `+1-601-476-5646`. 
+`**`For urgent priority issues that impact production, call the [Support Hotline](https://support.solo.io/hc/en-us/articles/25251551340692-Support-Number).
 {{% /alert %}} 
 
 {{% alert %}}

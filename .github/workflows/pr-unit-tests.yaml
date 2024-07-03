@@ -1,0 +1,46 @@
+name: Unit Tests
+
+# This workflow invokes unit tests for the Gloo Gateway project
+# It was introduced during the 1.17 quarter, where we added a new project (projects/gateway2)
+# and therefore we only run those new tests here
+#
+# Our historical unit tests are run via CloudBuild
+# Overtime, it would be valuable to consolidate these approaches
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  # Runs the unit tests for `projects/gateway2`
+  kube_gateway_project:
+    name: projects/gateway2
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    # Other unit tests are run by our CloudBuild runner
+    # These tests do run on Draft PRs, and so we maintain that consistency and run this job on Draft PRs as well
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - name: Build
+      run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
+    - name: Install Test Utils
+      shell: bash
+      run: make -C ./projects/gateway2/ install-go-tools
+    - name: Install Test Coverage Tools
+      shell: bash
+      run: make install-go-test-coverage
+    - name: Run Tests
+      shell: bash
+      env:
+        TEST_PKG: ./projects/gateway2/...
+      run: make go-test-with-coverage
+    - name: Validate Test Coverage
+      shell: bash
+      # The make will error if test coverage drops below a certain threshold
+      # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
+      # However, we should strive to establish a baseline, and then make it required on PRs
+      run: make --always-make --ignore-errors validate-test-coverage

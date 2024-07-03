@@ -13,15 +13,11 @@ VERSION="${VERSION:-1.0.0-ci1}"
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster
 JUST_KIND="${JUST_KIND:-false}"
-# Offer a default value for type of installation
-KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
-# The version of istio to install for glooctl tests
-# https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"
 # Set the default image variant to standard
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
 CONFORMANCE="${CONFORMANCE:-false}"
+CILIUM_VERSION="${CILIUM_VERSION:-1.15.5}"
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
@@ -37,6 +33,17 @@ function create_kind_cluster_or_skip() {
     --name "$CLUSTER_NAME" \
     --image "kindest/node:$CLUSTER_NODE_VERSION" \
     --config="$SCRIPT_DIR/cluster.yaml"
+
+  # Install cilium as we need to define custom network policies to simulate kube api server unavailability
+  # in some of our kube2e tests
+  helm repo add cilium-setup-kind https://helm.cilium.io/
+  helm repo update
+  helm install cilium cilium-setup-kind/cilium --version $CILIUM_VERSION \
+   --namespace kube-system \
+   --set image.pullPolicy=IfNotPresent \
+   --set ipam.mode=kubernetes \
+   --set operator.replicas=1
+  helm repo remove cilium-setup-kind
   echo "Finished setting up cluster $CLUSTER_NAME"
 
   # so that you can just build the kind image alone if needed
@@ -54,14 +61,14 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION USE_SILENCE_REDIRECTS=true make build-test-chart
+  VERSION=$VERSION make build-test-chart
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-USE_SILENCE_REDIRECTS=true make -s build-cli-local
+make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
@@ -77,7 +84,7 @@ if [[ $CONFORMANCE == "true" ]]; then
   kubectl rollout status -n metallb-system daemonset/speaker --timeout 2m
   kubectl wait -n metallb-system  pod -l app=metallb --for=condition=Ready --timeout=10s
 
-  SUBNET=$(docker network inspect  kind -f '{{(index .IPAM.Config 0).Subnet}}'| cut -d '.' -f1,2)
+  SUBNET=$(docker network inspect kind | jq -r '.[].IPAM.Config[].Subnet | select(contains(":") | not)' | cut -d '.' -f1,2)
   MIN=${SUBNET}.255.0
   MAX=${SUBNET}.255.231
 
@@ -103,17 +110,4 @@ if [[ $CONFORMANCE == "true" ]]; then
 	  ipAddressPools:
 	    - address-pool
 	EOF
-fi
-
-# 7. Install additional resources used for particular KUBE2E tests
-if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then
-  TARGET_ARCH=x86_64
-  if [[ $ARCH == 'arm64' ]]; then
-    TARGET_ARCH=arm64
-  fi
-  echo "Downloading Istio $ISTIO_VERSION"
-  curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION TARGET_ARCH=$TARGET_ARCH sh -
-
-  echo "Installing Istio"
-  yes | "./istio-$ISTIO_VERSION/bin/istioctl" install --set profile=minimal
 fi

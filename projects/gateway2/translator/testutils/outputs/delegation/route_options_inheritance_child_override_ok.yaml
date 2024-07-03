@@ -18,6 +18,10 @@ listeners:
               sources:
               - resourceKind: RouteOption
                 resourceRef:
+                  name: route-a-opt
+                  namespace: a
+              - resourceKind: RouteOption
+                resourceRef:
                   name: example-opt
                   namespace: infra
             options:

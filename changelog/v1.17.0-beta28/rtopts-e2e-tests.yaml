@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6082
+    resolvesIssue: true
+    description: >-
+      Revise and add cases for end to end testing RouteOptions integration with Kubernetes Gateway API

@@ -94,7 +94,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 				It("returns an error", func() {
 					_, err := extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(nil, nil)
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(HaveInErrorChain(ServerNotFound(invalidUs)))
+					Expect(err).To(Equal(ServerNotFound(invalidUs)))
 				})
 			})
 
@@ -152,7 +152,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 					// Should take config from http listener
 					Expect(filters[0].Stage.Weight).To(Equal(0))
 					Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage))
-					Expect(filters[0].HttpFilter.Name).To(Equal(wellknown.HTTPExternalAuthorization))
+					Expect(filters[0].Filter.Name).To(Equal(wellknown.HTTPExternalAuthorization))
 				})
 			})
 

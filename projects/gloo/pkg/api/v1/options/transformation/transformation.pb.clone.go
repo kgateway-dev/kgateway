@@ -178,6 +178,12 @@ func (m *TransformationStages) Clone() proto.Message {
 		target.Regular = proto.Clone(m.GetRegular()).(*RequestResponseTransformations)
 	}
 
+	if h, ok := interface{}(m.GetPostRouting()).(clone.Cloner); ok {
+		target.PostRouting = h.Clone().(*RequestResponseTransformations)
+	} else {
+		target.PostRouting = proto.Clone(m.GetPostRouting()).(*RequestResponseTransformations)
+	}
+
 	target.InheritTransformation = m.GetInheritTransformation()
 
 	if h, ok := interface{}(m.GetLogRequestResponseInfo()).(clone.Cloner); ok {
@@ -501,6 +507,8 @@ func (m *TransformationTemplate_DynamicMetadataValue) Clone() proto.Message {
 	} else {
 		target.Value = proto.Clone(m.GetValue()).(*InjaTemplate)
 	}
+
+	target.JsonToProto = m.GetJsonToProto()
 
 	return target
 }

@@ -10,8 +10,10 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 )
+
+var _ e2e.NewSuiteFunc = NewK8sGatewayHeadlessSvcSuite
 
 type k8sGatewaySuite struct {
 	suite.Suite
@@ -38,9 +40,9 @@ func NewK8sGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInstal
 // SetupSuite generates manifest files for the test suite
 func (s *k8sGatewaySuite) SetupSuite() {
 	// use the k8s gateway api resources
-	resources := []client.Object{K8sGateway, HeadlessSvcHTTPRoute}
+	resourcesToCreate := []client.Object{K8sGateway, HeadlessSvcHTTPRoute}
 
-	err := utils.WriteResourcesToFile(resources, s.routingManifestFile)
+	err := resources.WriteResourcesToFile(resourcesToCreate, s.routingManifestFile)
 	s.Require().NoError(err, "can write resources to file")
 }
 

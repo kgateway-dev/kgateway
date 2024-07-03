@@ -5,7 +5,7 @@ kind: Service
 metadata:
   labels:
     discovery.solo.io/function_discovery: disabled
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: discovery
   name: discovery
   namespace: {{ .Release.Namespace }}

@@ -34,11 +34,13 @@ func HaveState(state core.Status_State) types.GomegaMatcher {
 		State: &state,
 	})
 }
+
 func HaveReportedBy(reporter string) types.GomegaMatcher {
 	return HaveStatus(&SoloKitStatus{
 		ReportedBy: reporter,
 	})
 }
+
 func HaveAcceptedState() types.GomegaMatcher {
 	st := core.Status_Accepted
 	return HaveStatus(&SoloKitStatus{
@@ -119,7 +121,6 @@ func HaveNamespacedStatuses(expected *SoloKitNamespacedStatuses) types.GomegaMat
 		namespacedStatusesMatchers: namespacedStatusMatchers,
 		evaluated:                  false,
 	}
-
 }
 
 // HaveStatus produces a matcher that will match if the provided status matches the
@@ -231,7 +232,7 @@ func (m *HaveNamespacedStatusesMatcher) Match(actual interface{}) (success bool,
 	for ns, matcher := range m.namespacedStatusesMatchers {
 		actualStatus, ok := val.GetStatuses()[ns]
 		if !ok {
-			return false, eris.New("have matcher for namespace which is not found")
+			return false, eris.Errorf("have matcher for namespace %s which is not found", ns)
 		}
 		if actualStatus == nil {
 			return false, eris.New("got nil status")

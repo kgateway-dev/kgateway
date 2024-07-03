@@ -97,6 +97,7 @@ func proxyMetadata(gateway *gwv1.Gateway, writeNamespace string) *core.Metadata 
 		// All proxies are created in the writeNamespace (ie. gloo-system).
 		// We apply a label to maintain a reference to where the originating Gateway was defined
 		Labels: map[string]string{
+			// the proxy type key/value must stay in sync with the one defined in projects/gateway2/proxy_syncer/proxy_syncer.go
 			utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
 			utils.GatewayNamespaceKey: gateway.GetNamespace(),
 		},

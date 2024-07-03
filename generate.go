@@ -75,6 +75,7 @@ func main() {
 				"gloo.solo.io.HybridListener",
 				"gloo.solo.io.AggregateListener",
 			},
+			DisableKubeMarkers: true,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

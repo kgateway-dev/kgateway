@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/utils"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 	"github.com/solo-io/skv2/codegen/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -21,7 +21,7 @@ func main() {
 	k8sApiResources := []client.Object{headless_svc.K8sGateway, headless_svc.HeadlessSvcHTTPRoute}
 	k8sApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.K8sApiRoutingGeneratedFileName)
 
-	err := utils.WriteResourcesToFile(k8sApiResources, k8sApiRoutingGeneratedExample)
+	err := resources.WriteResourcesToFile(k8sApiResources, k8sApiRoutingGeneratedExample)
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +30,7 @@ func main() {
 	exampleNs := defaults.GlooSystem
 	edgeGatewayApiResources := headless_svc.GetEdgeGatewayResources(exampleNs)
 	edgeGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)
-	err = utils.WriteResourcesToFile(edgeGatewayApiResources, edgeGatewayApiRoutingGeneratedExample)
+	err = resources.WriteResourcesToFile(edgeGatewayApiResources, edgeGatewayApiRoutingGeneratedExample)
 	if err != nil {
 		panic(err)
 	}

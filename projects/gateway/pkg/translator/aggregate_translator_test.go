@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -195,6 +196,31 @@ var _ = Describe("Aggregate translator", func() {
 			Expect(l).NotTo(BeNil())
 			Expect(l.GetAggregateListener()).NotTo(BeNil())
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		})
+	})
+
+	When("The delegated gateways do not exist", func() {
+		JustBeforeEach(func() {
+			snap.VirtualServices = []*v1.VirtualService{}
+		})
+
+		It("throws an error", func() {
+			aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
+			genProxyWithIsolatedVirtualHosts()
+			proxyName := proxy.Metadata.Name
+			gw := snap.Gateways[2]
+			gw.GetHybridGateway().MatchedGateways = nil
+			gw.GetHybridGateway().DelegatedHttpGateways = &v1.DelegatedHttpGateway{
+				SelectionType: &v1.DelegatedHttpGateway_Selector{
+					Selector: &selectors.Selector{
+						Labels: map[string]string{"non-existing": "gateway"},
+					},
+				},
+			}
+			snap.Gateways = v1.GatewayList{gw}
+			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, gw)
+			Expect(l).To(BeNil())
+			Expect(reports.ValidateStrict().Error()).To(ContainSubstring(EmptyHybridGatewayMessage))
 		})
 	})
 })

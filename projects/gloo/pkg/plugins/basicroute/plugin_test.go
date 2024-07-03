@@ -7,20 +7,22 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"google.golang.org/protobuf/types/known/durationpb"
-
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_retry_priorities_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/priority/previous_priorities/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
@@ -490,6 +492,76 @@ var _ = Describe("retries with both intervals", func() {
 		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
 	})
 })
+
+var _ = Describe("retries priority predicate", func() {
+	var (
+		retryPolicy         *retries.RetryPolicy
+		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
+	)
+
+	BeforeEach(func() {
+		t := prototime.DurationToProto(time.Minute)
+		retryPolicy = &retries.RetryPolicy{
+			RetryOn:       "if at first you don't succeed",
+			NumRetries:    5,
+			PerTryTimeout: t,
+			PriorityPredicate: &retries.RetryPolicy_PreviousPriorities_{
+				PreviousPriorities: &retries.RetryPolicy_PreviousPriorities{
+					UpdateFrequency: &wrapperspb.UInt32Value{Value: 2},
+				},
+			},
+		}
+		previous := envoy_retry_priorities_v3.PreviousPrioritiesConfig{
+			UpdateFrequency: 2,
+		}
+		marshalled, err := utils.MessageToAny(&previous)
+		Expect(err).NotTo(HaveOccurred())
+		expectedRetryPolicy = &envoy_config_route_v3.RetryPolicy{
+			RetryOn: "if at first you don't succeed",
+			NumRetries: &wrappers.UInt32Value{
+				Value: 5,
+			},
+			PerTryTimeout: t,
+			RetryPriority: &envoy_config_route_v3.RetryPolicy_RetryPriority{
+				Name: PreviousPrioritiesExtensionName,
+				ConfigType: &envoy_config_route_v3.RetryPolicy_RetryPriority_TypedConfig{
+					TypedConfig: marshalled,
+				},
+			},
+		}
+	})
+
+	It("works", func() {
+		plugin := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := plugin.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				Retries: retryPolicy,
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+
+	It("works on vhost", func() {
+		plugin := NewPlugin()
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				Retries: retryPolicy,
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+})
+
 var _ = Describe("host rewrite", func() {
 	It("rewrites using provided string", func() {
 
@@ -591,6 +663,28 @@ var _ = Describe("host rewrite", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(BeTrue())
+	})
+
+	It("sets host_rewrite_header", func() {
+		hostRewriteHeader := "host-rewrite"
+		p := NewPlugin()
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{},
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				HostRewriteType: &v1.RouteOptions_HostRewriteHeader{
+					HostRewriteHeader: &wrappers.StringValue{
+						Value: hostRewriteHeader,
+					},
+				},
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.GetRoute().GetHostRewriteHeader()).To(Equal(hostRewriteHeader))
 	})
 
 	It("rewrites using regex", func() {

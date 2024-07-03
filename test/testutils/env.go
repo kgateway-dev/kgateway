@@ -13,6 +13,9 @@ const (
 	// installation from a previous run
 	SkipInstall = "SKIP_INSTALL"
 
+	// InstallNamespace is the namespace in which Gloo is installed
+	InstallNamespace = "INSTALL_NAMESPACE"
+
 	// SkipIstioInstall is a flag that indicates whether to skip the install of Istio.
 	// This is used to test against an existing installation of Istio so that the
 	// test framework does not need to install/uninstall Istio.

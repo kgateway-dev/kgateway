@@ -7,6 +7,56 @@ k8s:
 kubeGateway:
   # disable the integration by default, since it requires extra steps to set up (i.e. applying Gateway API CRDs)
   enabled: false
+  gatewayParameters:
+    glooGateway:
+      envoyContainer:
+        image:
+          repository: gloo-envoy-wrapper
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10101
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - NET_BIND_SERVICE
+      # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be
+      # imposed by the template.
+      proxyDeployment:
+        replicas: 1
+      # If service or service.type are null, a default of LoadBalancer will be
+      # imposed by the template.
+      service:
+        type: LoadBalancer
+      sdsContainer:
+        image:
+          repository: sds
+        logLevel: info
+      istio:
+        istioProxyContainer:
+          image:
+            repository: proxyv2
+            registry: docker.io/istio
+            tag: 1.22.0
+          logLevel: warning
+          istioDiscoveryAddress: istiod.istio-system.svc:15012
+          istioMetaMeshId: cluster.local
+          istioMetaClusterId: Kubernetes
+      aiExtension:
+        enabled: false
+        image:
+          repository: gloo-ai-extension
+          registry: quay.io/solo-io
+          pullPolicy: IfNotPresent
+        env: []
+        ports: []
+      stats:
+        enabled: true
+        routePrefixRewrite: "/stats/prometheus"
+        enableStatsRoute: true
+        statsRoutePrefixRewrite: "/stats"
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
@@ -90,6 +140,10 @@ gateway:
       enabled: true
       disableHelmHook: false
       extraAnnotations: {}
+      # We have learned that defaulting validation behavior leads to unintentional usage of it
+      # https://github.com/solo-io/gloo/issues/9309
+      # As a result, for our Policy API, we default it to on, and provide users the way to opt-out of it
+      enablePolicyApi: true
   certGenJob:
     enabled: true
     image:
@@ -238,7 +292,7 @@ global:
       image:
         repository: proxyv2
         registry: docker.io/istio
-        tag: 1.18.2
+        tag: 1.22.0
       logLevel: warning
     envoy:
       image:
@@ -246,12 +300,19 @@ global:
   istioSDS:
     enabled: false
   istioIntegration:
-    labelInstallNamespace: false
-    whitelistDiscovery: false
+    enabled: false
     disableAutoinjection: false
-    enableIstioSidecarOnGateway: false
-    appendXForwardedHost: true
     enableAutoMtls: false
+    # To be deprecated in future release
+    labelInstallNamespace: false
+    # To be deprecated in future release
+    whitelistDiscovery: false
+    # To be deprecated in future release
+    enableIstioSidecarOnGateway: false
+    # To be deprecated in future release
+    appendXForwardedHost: true
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true
+  # additionalLabels adds a label to all object metadata
+  additionalLabels: {}

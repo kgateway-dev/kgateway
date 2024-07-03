@@ -6,14 +6,10 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"golang.org/x/exp/slices"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -21,105 +17,14 @@ import (
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
-// Checks whether the cluster that the kubeconfig points at is available
-// The timeout for the kubernetes client is set to a low value to notify the user of the failure
-func CheckConnection(ctx context.Context, _ printers.P, opts *options.Options) error {
-	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
-	if err != nil {
-		return eris.Wrapf(err, "Could not get kubernetes client")
-	}
-	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
-	if err != nil {
-		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
-	}
-	return nil
-}
-
-func CheckDeployments(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking deployments... ")
-	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
-	if err != nil {
-		errMessage := "error getting KubeClient"
-		fmt.Println(errMessage)
-		return fmt.Errorf(errMessage+": %v", err)
-	}
-	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
-	if err != nil {
-		errMessage := "Gloo namespace does not exist"
-		fmt.Println(errMessage)
-		return fmt.Errorf(errMessage)
-	}
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	if len(deployments.Items) == 0 {
-		errMessage := "Gloo is not installed"
-		fmt.Println(errMessage)
-		return fmt.Errorf(errMessage)
-	}
-	var multiErr *multierror.Error
-	var message string
-	setMessage := func(c appsv1.DeploymentCondition) {
-		if c.Message != "" {
-			message = fmt.Sprintf(" Message: %s", c.Message)
-		}
-	}
-
-	for _, deployment := range deployments.Items {
-		// possible condition types listed at https://godoc.org/k8s.io/api/apps/v1#DeploymentConditionType
-		// check for each condition independently because multiple conditions will be True and DeploymentReplicaFailure
-		// tends to provide the most explicit error message.
-		for _, condition := range deployment.Status.Conditions {
-			setMessage(condition)
-			if condition.Type == appsv1.DeploymentReplicaFailure && condition.Status == corev1.ConditionTrue {
-				err := fmt.Errorf("Deployment %s in namespace %s failed to create pods!%s", deployment.Name, deployment.Namespace, message)
-				multiErr = multierror.Append(multiErr, err)
-			}
-		}
-
-		for _, condition := range deployment.Status.Conditions {
-			setMessage(condition)
-			if condition.Type == appsv1.DeploymentProgressing && condition.Status != corev1.ConditionTrue {
-				err := fmt.Errorf("Deployment %s in namespace %s is not progressing!%s", deployment.Name, deployment.Namespace, message)
-				multiErr = multierror.Append(multiErr, err)
-			}
-		}
-
-		for _, condition := range deployment.Status.Conditions {
-			setMessage(condition)
-			if condition.Type == appsv1.DeploymentAvailable && condition.Status != corev1.ConditionTrue {
-				err := fmt.Errorf("Deployment %s in namespace %s is not available!%s", deployment.Name, deployment.Namespace, message)
-				multiErr = multierror.Append(multiErr, err)
-			}
-
-		}
-
-		for _, condition := range deployment.Status.Conditions {
-			if condition.Type != appsv1.DeploymentAvailable &&
-				condition.Type != appsv1.DeploymentReplicaFailure &&
-				condition.Type != appsv1.DeploymentProgressing {
-				err := fmt.Errorf("Deployment %s has an unhandled deployment condition %s", deployment.Name, condition.Type)
-				multiErr = multierror.Append(multiErr, err)
-			}
-		}
-	}
-	if multiErr.ErrorOrNil() != nil {
-		printer.AppendStatus("deployments", fmt.Sprintf("%v Errors!", multiErr.Len()))
-		return multiErr.ErrorOrNil()
-	}
-	printer.AppendStatus("deployments", "OK")
-	return nil
-}
-
 func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking GatewayClass... ")
+	printer.AppendCheck("Checking Kubernetes GatewayClasses... ")
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
-	gc, err := cli.GatewayV1().GatewayClasses().Get(ctx, "gloo-gateway", metav1.GetOptions{})
+	gc, err := cli.GatewayV1().GatewayClasses().Get(ctx, wellknown.GatewayClassName, metav1.GetOptions{})
 	if err != nil {
-		errMessage := "Could not find solo GatewayClass gloo-gateway"
+		errMessage := fmt.Sprintf("Could not find solo GatewayClass %s", wellknown.GatewayClassName)
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
@@ -139,15 +44,15 @@ func CheckGatewayClass(ctx context.Context, printer printers.P, opts *options.Op
 	)
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus("GatewayClass", fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus("Kubernetes GatewayClasses", fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus("GatewayClass", "OK")
+	printer.AppendStatus("Kubernetes GatewayClasses", "OK")
 	return nil
 }
 
-func CheckGatewys(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking Gateways... ")
+func CheckGateways(ctx context.Context, printer printers.P, opts *options.Options) error {
+	printer.AppendCheck("Checking Kubernetes Gateways... ")
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
@@ -164,7 +69,7 @@ func CheckGatewys(ctx context.Context, printer printers.P, opts *options.Options
 		// Pike until go 1.22
 		gw := gw
 
-		if gw.Spec.GatewayClassName != "gloo-gateway" {
+		if gw.Spec.GatewayClassName != wellknown.GatewayClassName {
 			// #not_my_gateway
 			continue
 		}
@@ -215,15 +120,15 @@ func CheckGatewys(ctx context.Context, printer printers.P, opts *options.Options
 	}
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus("Gateway", fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus("Kubernetes Gateways", fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus("Gateway", "OK")
+	printer.AppendStatus("Kubernetes Gateways", "OK")
 	return nil
 }
 
 func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Options) error {
-	printer.AppendCheck("Checking HTTPRoutes... ")
+	printer.AppendCheck("Checking Kubernetes HTTPRoutes... ")
 	cfg := config.GetConfigOrDie()
 	cli := gwclient.NewForConfigOrDie(cfg)
 
@@ -272,10 +177,10 @@ func CheckHTTPRoutes(ctx context.Context, printer printers.P, opts *options.Opti
 	}
 
 	if multierr.ErrorOrNil() != nil {
-		printer.AppendStatus(wellknown.HTTPRouteKind, fmt.Sprintf("%v Errors!", multierr.Len()))
+		printer.AppendStatus("Kubernetes HTTPRoutes", fmt.Sprintf("%v Errors!", multierr.Len()))
 		return multierr.ErrorOrNil()
 	}
-	printer.AppendStatus(wellknown.HTTPRouteKind, "OK")
+	printer.AppendStatus("Kubernetes HTTPRoutes", "OK")
 	return nil
 
 }

@@ -84,12 +84,21 @@ func (ProxyLatency_Measurement) EnumDescriptor() ([]byte, []int) {
 
 // Configure the proxy latency filter. This filter measures the latency
 // incurred by the filter chain in a histogram.
+// The filter fields are similar to the settings for [`COMMON_DURATION`](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage.html),
+// introduced in Envoy 1.31.
+// The filter also emits the following additional dynamic metadata fields,
+// which you can use to augment the existing upstream options for access logging:
+// - request_out_internal: first_byte_processed_millis
+// - request_out: firstUpstreamTxByteSent
+// - response_out: firstDownstreamTxByteSent
 type ProxyLatency struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// How to measure the request.
+	// Affects the output stats.
+	// Does not affect metadata.
 	Request ProxyLatency_Measurement `protobuf:"varint,1,opt,name=request,proto3,enum=envoy.config.filter.http.proxylatency.v2.ProxyLatency_Measurement" json:"request,omitempty"`
 	// When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is
 	// instead of when the first byte is sent upstream. This has the advantage of not measuring the time
@@ -107,7 +116,8 @@ type ProxyLatency struct {
 	ChargeClusterStat *wrappers.BoolValue `protobuf:"bytes,3,opt,name=charge_cluster_stat,json=chargeClusterStat,proto3" json:"charge_cluster_stat,omitempty"`
 	// Charge a stat per listener. If not specified, defaults to true.
 	ChargeListenerStat *wrappers.BoolValue `protobuf:"bytes,4,opt,name=charge_listener_stat,json=chargeListenerStat,proto3" json:"charge_listener_stat,omitempty"`
-	// Should we emit request timing to dynamic metadata. defaults to true.
+	// Whether request timing is emitted to dynamic metadata.
+	// If enabled, defaults to true.
 	EmitDynamicMetadata *wrappers.BoolValue `protobuf:"bytes,6,opt,name=emit_dynamic_metadata,json=emitDynamicMetadata,proto3" json:"emit_dynamic_metadata,omitempty"`
 }
 

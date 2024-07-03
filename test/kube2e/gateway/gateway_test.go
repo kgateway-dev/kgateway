@@ -374,7 +374,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, ContainSubstring(kube2e.TestServerHttpResponse()), 1, 60*time.Second, 1*time.Second)
+				}, kube2e.TestServerHttpResponse(), 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -1351,7 +1351,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Service:           gatewayProxy,
 					Port:              int(defaults2.TcpPort),
 					ConnectionTimeout: 1,
-				}, ContainSubstring(responseString), 0, 30*time.Second)
+				}, responseString, 0, 30*time.Second)
 			})
 
 		})
@@ -1406,7 +1406,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Port:              int(defaults2.TcpPort),
 					ConnectionTimeout: 1,
 					SelfSigned:        true,
-				}, ContainSubstring(responseString), 0, 30*time.Second)
+				}, responseString, 0, 30*time.Second)
 			})
 
 		})
@@ -2637,7 +2637,7 @@ spec:
 						ConnectionTimeout: 1,
 						WithoutStats:      true,
 						Verbose:           true,
-					}, ContainSubstring(`HTTP/1.1 404 Not Found`), 1, 60*time.Second, 1*time.Second)
+					}, &testmatchers.HttpResponse{StatusCode: http.StatusNotFound}, 1, 60*time.Second, 1*time.Second)
 				})
 
 				It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {

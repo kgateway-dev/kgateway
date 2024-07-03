@@ -5,6 +5,12 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/parameters"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -20,6 +26,12 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+)
+
+var (
+	awsMissingFuncRefError                = eris.New("upstreams must have a logical name specified in the backend ref via the parameters extensionref")
+	azureMissingFuncRefError              = eris.New("upstreams must have a function name specified in the backend ref via the parameters extensionref")
+	nonFunctionUpstreamWithParameterError = eris.New("parameters extensionref is only supported for aws and azure upstreams")
 )
 
 func TranslateGatewayHTTPRouteRules(
@@ -119,20 +131,21 @@ func translateGatewayHTTPRouteRule(
 			Options:  &v1.RouteOptions{},
 		}
 
-		hasDelegatedRoute := false
+		var delegatedRoutes []*v1.Route
+		var delegates bool
 		if len(rule.BackendRefs) > 0 {
-			hasDelegatedRoute = setRouteAction(
+			delegates = setRouteAction(
 				ctx,
 				queries,
 				gwroute,
-				rule.BackendRefs,
+				rule,
 				outputRoute,
 				reporter,
 				baseReporter,
 				pluginRegistry,
 				gwListener,
 				match,
-				outputs,
+				&delegatedRoutes,
 				routesVisited,
 				delegationChain,
 			)
@@ -147,14 +160,34 @@ func translateGatewayHTTPRouteRule(
 			Match:           &match,
 			Reporter:        reporter,
 		}
+
+		// Apply the plugins for this route
 		for _, plugin := range pluginRegistry.GetRoutePlugins() {
 			err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
 			}
-		}
 
-		if outputRoute.GetAction() == nil && !hasDelegatedRoute {
+			// If this parent route has delegatee routes, override any applied policies
+			// that are on the child with the parent's policies.
+			// When a plugin is invoked on a route, it must override the existing route.
+			for _, child := range delegatedRoutes {
+				err := plugin.ApplyRoutePlugin(ctx, rtCtx, child)
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Errorf("error applying RoutePlugin to child route %s: %v", child.GetName(), err)
+				}
+			}
+		}
+		// Add the delegatee output routes to the final output list
+		*outputs = append(*outputs, delegatedRoutes...)
+
+		// It is possible for a parent route to not produce an output route action
+		// if it only delegates and does not directly route to a backend.
+		// We should only set a direct response action when there is no output action
+		// for a parent rule and when there are no delegated routes because this would
+		// otherwise result in a top level matcher with a direct response action for the
+		// path that the parent is delegating for.
+		if outputRoute.GetAction() == nil && !delegates {
 			outputRoute.Action = &v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: http.StatusInternalServerError,
@@ -256,7 +289,7 @@ func setRouteAction(
 	ctx context.Context,
 	queries query.GatewayQueries,
 	gwroute *gwv1.HTTPRoute,
-	backendRefs []gwv1.HTTPBackendRef,
+	rule gwv1.HTTPRouteRule,
 	outputRoute *v1.Route,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -268,13 +301,14 @@ func setRouteAction(
 	delegationChain *list.List,
 ) bool {
 	var weightedDestinations []*v1.WeightedDestination
-	hasDelegatedRoute := false
+	backendRefs := rule.BackendRefs
+	delegates := false
 
 	for _, backendRef := range backendRefs {
 		// If the backend is an HTTPRoute, it implies route delegation
 		// for which delegated routes are recursively flattened and translated
 		if backendref.RefIsHTTPRoute(backendRef.BackendObjectReference) {
-			hasDelegatedRoute = true
+			delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
 				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
@@ -337,6 +371,23 @@ func setRouteAction(
 			})
 
 		case backendref.RefIsUpstream(backendRef.BackendObjectReference):
+			upstream, ok := obj.(*gloov1.Upstream)
+			if !ok {
+				// should never happen
+				contextutils.LoggerFrom(ctx).Errorf("expected upstream, got %T", obj)
+				continue
+			}
+			spec, err := makeDestinationSpec(upstream, backendRef.Filters)
+			if err != nil {
+				reporter.SetCondition(reports.HTTPRouteCondition{
+					Type:    gwv1.RouteConditionResolvedRefs,
+					Status:  metav1.ConditionFalse,
+					Reason:  gwv1.RouteReasonBackendNotFound,
+					Message: err.Error(),
+				})
+				contextutils.LoggerFrom(ctx).Errorf("failed to make destination spec for backend upstream %s: %v", upstream.Name, err)
+				continue
+			}
 			weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
@@ -345,13 +396,13 @@ func setRouteAction(
 							Namespace: ns,
 						},
 					},
+					DestinationSpec: spec,
 				},
 				Weight:  weight,
 				Options: nil,
 			})
 
 		default:
-			// TODO(npolshak): Add support for other types of destinations (upstreams, etc.)
 			contextutils.LoggerFrom(ctx).Errorf("unsupported backend type for kind: %v and type: %v", *backendRef.BackendObjectReference.Kind, *backendRef.BackendObjectReference.Group)
 		}
 	}
@@ -378,5 +429,52 @@ func setRouteAction(
 		}
 	}
 
-	return hasDelegatedRoute
+	return delegates
+}
+
+// makeDestinationSpec computes the destination spec for a given upstream based on the type of upstream and the Filters from the backend reference
+func makeDestinationSpec(upstream *gloov1.Upstream, filters []gwv1.HTTPRouteFilter) (*v1.DestinationSpec, error) {
+	var sectionName string
+	for _, filter := range filters {
+		// only look for 'parameters' extensionref filters
+		if filter.Type != gwv1.HTTPRouteFilterExtensionRef ||
+			filter.ExtensionRef == nil ||
+			filter.ExtensionRef.Group != parameters.ParameterGroup ||
+			filter.ExtensionRef.Kind != parameters.ParameterKind {
+			continue
+		}
+		sectionName = string(filter.ExtensionRef.Name)
+		break
+	}
+
+	switch upstream.Spec.GetUpstreamType().(type) {
+	case *v1.Upstream_Aws:
+		if sectionName == "" {
+			return nil, awsMissingFuncRefError
+		}
+		return &v1.DestinationSpec{
+			DestinationType: &v1.DestinationSpec_Aws{
+				Aws: &aws.DestinationSpec{
+					LogicalName: sectionName,
+				},
+			},
+		}, nil
+	case *v1.Upstream_Azure:
+		if sectionName == "" {
+			return nil, azureMissingFuncRefError
+		}
+		return &v1.DestinationSpec{
+			DestinationType: &v1.DestinationSpec_Azure{
+				Azure: &azure.DestinationSpec{
+					FunctionName: sectionName,
+				},
+			},
+		}, nil
+	}
+
+	// not a supported upstream type
+	if sectionName != "" {
+		return nil, nonFunctionUpstreamWithParameterError
+	}
+	return nil, nil
 }

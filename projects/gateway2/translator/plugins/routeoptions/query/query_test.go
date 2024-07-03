@@ -1,7 +1,6 @@
 package query_test
 
 import (
-	"container/list"
 	"context"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,6 +11,7 @@ import (
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
@@ -39,21 +39,25 @@ var _ = Describe("Query", func() {
 			ctx := context.Background()
 
 			hr := httpRoute()
+			attachedOpt := attachedRouteOption()
 			hrNsName := types.NamespacedName{Namespace: hr.GetNamespace(), Name: hr.GetName()}
 			deps := []client.Object{
 				hr,
-				attachedRouteOption(),
+				attachedOpt,
 				diffNamespaceRouteOption(),
 			}
 			fakeClient := builder.WithObjects(deps...).Build()
 
 			query := query.NewQuery(fakeClient)
-			rtOpt, err := query.GetRouteOptionForRoute(ctx, hrNsName, nil)
+			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
+
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
-			Expect(rtOpt.GetName()).To(Equal("good-policy"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+
+			Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeNumerically("==", attachedOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
+			Expect(sources).To(HaveLen(1))
 		})
 
 		It("should not find an attached option when none are in the same namespace as route", func() {
@@ -69,10 +73,13 @@ var _ = Describe("Query", func() {
 			fakeClient := builder.WithObjects(deps...).Build()
 
 			query := query.NewQuery(fakeClient)
-			rtOpt, err := query.GetRouteOptionForRoute(ctx, hrNsName, nil)
+			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
+
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).To(BeNil())
+			Expect(sources).To(BeEmpty())
 		})
 
 		It("should find the only attached option with a targetRef with omitted namespace", func() {
@@ -81,20 +88,24 @@ var _ = Describe("Query", func() {
 			hr := httpRoute()
 			hrNsName := types.NamespacedName{Namespace: hr.GetNamespace(), Name: hr.GetName()}
 
+			attachedOpt := attachedRouteOptionOmitNamespace()
 			deps := []client.Object{
 				hr,
-				attachedRouteOptionOmitNamespace(),
+				attachedOpt,
 				diffNamespaceRouteOption(),
 			}
 			fakeClient := builder.WithObjects(deps...).Build()
 
 			query := query.NewQuery(fakeClient)
-			rtOpt, err := query.GetRouteOptionForRoute(ctx, hrNsName, nil)
+			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
+
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).ToNot(BeNil())
-			Expect(rtOpt.GetName()).To(Equal("good-policy-no-ns"))
-			Expect(rtOpt.GetNamespace()).To(Equal("default"))
+
+			Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeNumerically("==", attachedOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
+			Expect(sources).To(HaveLen(1))
 		})
 
 		It("should not find an attached option when none are in the same namespace as route with omitted namespace", func() {
@@ -110,47 +121,13 @@ var _ = Describe("Query", func() {
 			fakeClient := builder.WithObjects(deps...).Build()
 
 			query := query.NewQuery(fakeClient)
-			rtOpt, err := query.GetRouteOptionForRoute(ctx, hrNsName, nil)
+			gwQuery := testutils.BuildGatewayQueriesWithClient(fakeClient)
+
+			rtOpt, sources, err := query.GetRouteOptionForRouteRule(ctx, hrNsName, nil, gwQuery)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rtOpt).To(BeNil())
-		})
-
-		Context("with delegation", func() {
-			It("should merge the parent and child RouteOption", func() {
-				ctx := context.Background()
-
-				parent := httpRoute()
-				parentNsName := types.NamespacedName{Namespace: parent.GetNamespace(), Name: parent.GetName()}
-				child := childHTTPRoute()
-				childNsName := types.NamespacedName{Namespace: child.GetNamespace(), Name: child.GetName()}
-				parentRouteOpt := attachedRouteOption()
-				childRouteOpt := childRouteOption()
-
-				delegationChain := list.New()
-				delegationChain.PushFront(parentNsName)
-
-				deps := []client.Object{
-					parent,
-					child,
-					parentRouteOpt,
-					childRouteOpt,
-				}
-				fakeClient := builder.WithObjects(deps...).Build()
-
-				query := query.NewQuery(fakeClient)
-				rtOpt, err := query.GetRouteOptionForRoute(ctx, childNsName, delegationChain.Front())
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(rtOpt).ToNot(BeNil())
-				Expect(rtOpt.GetName()).To(Equal("good-policy"))
-				Expect(rtOpt.GetNamespace()).To(Equal("default"))
-				// Assert that parent options are prioritized in the merge
-				Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(Equal(parentRouteOpt.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()))
-				Expect(rtOpt.Spec.GetOptions().GetFaults().GetAbort().GetHttpStatus()).To(Equal(parentRouteOpt.Spec.GetOptions().GetFaults().GetAbort().GetHttpStatus()))
-				// Assert that child options are augmented with the parent options in the merge
-				Expect(rtOpt.Spec.GetOptions().GetPrefixRewrite().GetValue()).To(Equal(childRouteOpt.Spec.GetOptions().GetPrefixRewrite().GetValue()))
-			})
+			Expect(sources).To(BeEmpty())
 		})
 	})
 })
@@ -173,11 +150,13 @@ func attachedRouteOption() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "test",
-				Namespace: wrapperspb.String("default"),
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.HTTPRouteKind,
+					Name:      "test",
+					Namespace: wrapperspb.String("default"),
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -200,10 +179,12 @@ func attachedRouteOptionOmitNamespace() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "test",
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group: gwv1.GroupVersion.Group,
+					Kind:  wellknown.HTTPRouteKind,
+					Name:  "test",
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -226,11 +207,13 @@ func diffNamespaceRouteOption() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.HTTPRouteKind,
-				Name:      "test",
-				Namespace: wrapperspb.String("default"),
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group:     gwv1.GroupVersion.Group,
+					Kind:      wellknown.HTTPRouteKind,
+					Name:      "test",
+					Namespace: wrapperspb.String("default"),
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -253,10 +236,12 @@ func diffNamespaceRouteOptionOmitNamespace() *solokubev1.RouteOption {
 			CreationTimestamp: now,
 		},
 		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "test",
+			TargetRefs: []*corev1.PolicyTargetReference{
+				{
+					Group: gwv1.GroupVersion.Group,
+					Kind:  wellknown.HTTPRouteKind,
+					Name:  "test",
+				},
 			},
 			Options: &v1.RouteOptions{
 				Faults: &faultinjection.RouteFaults{
@@ -265,44 +250,6 @@ func diffNamespaceRouteOptionOmitNamespace() *solokubev1.RouteOption {
 						HttpStatus: 500,
 					},
 				},
-			},
-		},
-	}
-}
-
-func childHTTPRoute() *gwv1.HTTPRoute {
-	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-route",
-			Namespace: "child",
-		},
-	}
-}
-
-func childRouteOption() *solokubev1.RouteOption {
-	now := metav1.Now()
-	return &solokubev1.RouteOption{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "child-policy",
-			Namespace:         "child",
-			CreationTimestamp: now,
-		},
-		Spec: sologatewayv1.RouteOption{
-			TargetRef: &corev1.PolicyTargetReference{
-				Group: gwv1.GroupVersion.Group,
-				Kind:  wellknown.HTTPRouteKind,
-				Name:  "child-route",
-			},
-			Options: &v1.RouteOptions{
-				// This should be ignored by the RouteOption merge
-				// because the parent RouteOption has the same field set
-				Faults: &faultinjection.RouteFaults{
-					Abort: &faultinjection.RouteAbort{
-						Percentage: 0.80,
-						HttpStatus: 418,
-					},
-				},
-				PrefixRewrite: wrapperspb.String("/foo"),
 			},
 		},
 	}

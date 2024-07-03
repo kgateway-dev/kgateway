@@ -2,9 +2,9 @@ package translator
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/go-utils/contextutils"
@@ -49,9 +49,10 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 	case *v1.Gateway_HybridGateway:
 		hybrid := gw.HybridGateway
 
-		// warn early if there are no virtual services and no tcp configurations
-		if len(snap.VirtualServices) == 0 {
-			hasTCP := hybrid.GetDelegatedTcpGateways() != nil
+		// warn early if there are no virtual services, no tcp configurations and no delegated gateways
+		var hasDelegatedGateways = hybrid.GetDelegatedTcpGateways() != nil || hybrid.GetDelegatedHttpGateways() != nil
+		if len(snap.VirtualServices) == 0 && !hasDelegatedGateways {
+			var hasTCP = false
 			if !hasTCP && hybrid.GetMatchedGateways() != nil {
 				for _, matched := range hybrid.GetMatchedGateways() {
 					if matched.GetTcpGateway() != nil {
@@ -403,10 +404,8 @@ func newBuilder() *aggregateListenerBuilder {
 }
 
 func (b *aggregateListenerBuilder) addHttpFilterChain(virtualHosts []*gloov1.VirtualHost, httpOptions *gloov1.HttpListenerOptions, matcher *gloov1.Matcher) {
-	// store HttpListenerOptions, indexed by a hash of the httpOptions
-	httpOptionsHash, _ := httpOptions.Hash(nil)
-	httpOptionsRef := strconv.Itoa(int(httpOptionsHash))
-	b.httpOptionsByName[httpOptionsRef] = httpOptions
+	// Hash and store the httpOptions and keep the ref as we need it to build the HFC later
+	httpOptionsRef := utils.HashAndStoreHttpOptions(httpOptions, b.httpOptionsByName)
 
 	// store VirtualHosts, indexed by the name of the VirtualHost
 	var virtualHostRefs []string

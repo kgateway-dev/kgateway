@@ -1,4 +1,5 @@
 # Developer Tools
+_**Note**: For tools that help maintain an installation of Gloo Gateway (the product, not the project codebase), build those tools into the [CLI](/projects/gloo/cli) instead._
 
 ## Changelog creation tool
 

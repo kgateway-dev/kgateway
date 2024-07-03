@@ -122,14 +122,14 @@ Upgrade your Gloo Edge installation. The following example upgrade commands assu
    ```
    Example output:
    ```bash
-   Checking deployments... OK
-   Checking pods... OK
-   Checking upstreams... OK
-   Checking upstream groups... OK
-   Checking secrets... OK
-   Checking virtual services... OK
-   Checking gateways... OK
-   Checking proxies... OK
+   Checking Deployments... OK
+   Checking Pods... OK
+   Checking Upstreams... OK
+   Checking UpstreamGroups... OK
+   Checking Secrets... OK
+   Checking VirtualServices... OK
+   Checking Gateways... OK
+   Checking Proxies... OK
    No problems detected.
    ```
 
