@@ -347,6 +347,7 @@ import (
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/xff_offset"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/service/ext_proc/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/metadata/v3"
