@@ -44,7 +44,6 @@ kubeGateway:
           istioDiscoveryAddress: istiod.istio-system.svc:15012
           istioMetaMeshId: cluster.local
           istioMetaClusterId: Kubernetes
-          istioTrustDomain: cluster.local
       aiExtension:
         enabled: false
         image:

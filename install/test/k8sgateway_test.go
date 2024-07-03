@@ -94,7 +94,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioDiscoveryAddress().GetValue()).To(Equal("istiod.istio-system.svc:15012"))
 				Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioMetaMeshId().GetValue()).To(Equal("cluster.local"))
 				Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioMetaClusterId().GetValue()).To(Equal("Kubernetes"))
-				Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioTrustDomain().GetValue()).To(Equal("cluster.local"))
 
 				Expect(gwpKube.GetPodTemplate().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"gloo": "kube-gateway"}))
 
@@ -225,7 +224,6 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioDiscoveryAddress().GetValue()).To(Equal("istiod.istio-system.svc:15012"))
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioMetaMeshId().GetValue()).To(Equal("cluster.local"))
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioMetaClusterId().GetValue()).To(Equal("Kubernetes"))
-					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioTrustDomain().GetValue()).To(Equal("cluster.local"))
 
 					Expect(gwpKube.GetPodTemplate().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"gloo": "kube-gateway"}))
 

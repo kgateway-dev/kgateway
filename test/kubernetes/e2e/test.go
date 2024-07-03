@@ -146,10 +146,6 @@ func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context) error {
 	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
 }
 
-func (i *TestInstallation) InstallCustomTrustDomainIstio(ctx context.Context) error {
-	return cluster.InstallCustomTrustDomainIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
-}
-
 func (i *TestInstallation) UninstallIstio() error {
 	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
 }

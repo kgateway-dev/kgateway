@@ -1,6 +1,7 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6472
-    resolvesIssue: true
+    resolvesIssue: false
     description: |
-      Make trust domain configurable for Istio integration. 
+      Remove ---trust-domain arg for Istio agent proxy. Envoy no longer runs by default and this is not used by the 
+      istio-proxy for the CSR request.

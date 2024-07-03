@@ -120,7 +120,6 @@ type helmIstioContainer struct {
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
 	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
 	IstioMetaClusterId    *string `json:"istioMetaClusterId,omitempty"`
-	IstioTrustDomain      *string `json:"istioTrustDomain,omitempty"`
 }
 
 type helmStatsConfig struct {

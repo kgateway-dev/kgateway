@@ -56,25 +56,25 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Glooctl$$|^TestK8sGateway$$/^Services$$'
 
-        # May 14th: 20 minutes execution time (see load_balancing_tests.md)
+        # July 1st: 20 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
 
-        # May 14th: 24 minutes execution time (see load_balancing_tests.md)
+        # July 1st: 24 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$)'
 
-        # May 14th: 17 minutes execution time (see load_balancing_tests.md)
+        # July 1st: 17 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
 
-          # May 14th: 17 minutes execution time (see load_balancing_tests.md)
+          # July 1st: 17 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-five'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestCustomTrustDomainIstioRegression$$|^TestK8sGatewayIstioCustomTrustDomain$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestIstioRegression$$)'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/

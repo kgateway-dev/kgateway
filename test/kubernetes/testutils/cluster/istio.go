@@ -16,10 +16,7 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-var (
-	istioRevisionSetup          = filepath.Join(util.MustGetThisDir(), "istio-revision-setup.yaml")
-	istioCustomTrustDomainSetup = filepath.Join(util.MustGetThisDir(), "istio-custom-trust-domain-setup.yaml")
-)
+var istioRevisionSetup = filepath.Join(util.MustGetThisDir(), "istio-revision-setup.yaml")
 
 func GetIstioctl(ctx context.Context) (string, error) {
 	// Download istioctl binary
@@ -37,13 +34,6 @@ func InstallMinimalIstio(
 	istioctlBinary, kubeContext string,
 ) error {
 	return installIstioOperator(ctx, istioctlBinary, kubeContext, "")
-}
-
-func InstallCustomTrustDomainIstio(
-	ctx context.Context,
-	istioctlBinary, kubeContext string,
-) error {
-	return installIstioOperator(ctx, istioctlBinary, kubeContext, istioCustomTrustDomainSetup)
 }
 
 func InstallRevisionedIstio(

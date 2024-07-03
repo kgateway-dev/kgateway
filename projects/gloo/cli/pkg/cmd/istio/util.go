@@ -103,19 +103,6 @@ func getIstioDiscoveryAddress(discoveryAddress string) string {
 	return "istiod.istio-system.svc:15012"
 }
 
-// getIstioTrustDomain returns the set value or default value 'cluster.local' if unset
-func getIstioTrustDomain(istioTrustDomain string) string {
-	var result = ""
-
-	if istioTrustDomain == "" {
-		result = "cluster.local"
-	} else {
-		result = istioTrustDomain
-	}
-
-	return result
-}
-
 // getJWTPolicy gets the JWT policy from istiod
 func getJWTPolicy(pilotContainer corev1.Container) string {
 	for _, env := range pilotContainer.Env {

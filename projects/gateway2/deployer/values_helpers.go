@@ -144,7 +144,6 @@ func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *hel
 		IstioDiscoveryAddress: ptr.To(istioContainerConfig.GetIstioDiscoveryAddress().GetValue()),
 		IstioMetaMeshId:       ptr.To(istioContainerConfig.GetIstioMetaMeshId().GetValue()),
 		IstioMetaClusterId:    ptr.To(istioContainerConfig.GetIstioMetaClusterId().GetValue()),
-		IstioTrustDomain:      ptr.To(istioContainerConfig.GetIstioTrustDomain().GetValue()),
 	}
 }
 

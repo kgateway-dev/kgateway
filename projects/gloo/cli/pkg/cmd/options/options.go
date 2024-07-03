@@ -177,7 +177,6 @@ type Istio struct {
 	IstioMetaMeshId       string // IstioMetaMeshId sets ISTIO_META_MESH_ID env var
 	IstioMetaClusterId    string // IstioMetaClusterId sets ISTIO_META_CLUSTER_ID env var
 	IstioDiscoveryAddress string // IstioDiscoveryAddress sets discoveryAddress field within PROXY_CONFIG env var
-	IstioTrustDomain      string // IstioTrustDomain sets --trust-domain arg
 }
 
 type InputRoute struct {
