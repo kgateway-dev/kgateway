@@ -51,11 +51,10 @@ func (h *SoloTestHelper) WaitForRollout(ctx context.Context, deploymentName stri
 	}, "30s", "1s").Should(BeTrue())
 }
 
-// Can be replaced entirely with Cli
 func (h *SoloTestHelper) GetContainerLogs(ctx context.Context, namespace string, name string) string {
 	GinkgoHelper()
 
-	out, err := h.Cli.GetContainerLogs(ctx, namespace, name)
+	out, _, err := h.Cli.Execute(ctx, "-n", namespace, "logs", name)
 	Expect(err).ToNot(HaveOccurred())
 	return out
 }

@@ -1,4 +1,4 @@
-package kube2e
+package helper
 
 import (
 	"context"
@@ -18,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/gomega/assertions"
-	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/stats"
@@ -46,7 +45,7 @@ func GetHttpEchoImage() string {
 }
 
 // GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
-func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
+func GlooctlCheckEventuallyHealthy(offset int, testHelper *SoloTestHelper, timeoutInterval string) {
 	EventuallyWithOffset(offset, func() error {
 		contextWithCancel, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -167,9 +166,9 @@ func ToFile(content string) string {
 // This response is given by the testserver from the python2 SimpleHTTPServer
 func TestServerHttpResponse() string {
 	if runtime.GOARCH == "arm64" {
-		return helper.SimpleHttpResponseArm
+		return SimpleHttpResponseArm
 	} else {
-		return helper.SimpleHttpResponse
+		return SimpleHttpResponse
 	}
 }
 
@@ -193,7 +192,7 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
 	return releasedVersion
 }
-func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {
+func GetTestHelper(ctx context.Context, namespace string) (*SoloTestHelper, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -203,9 +202,9 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 	return GetTestHelperForRootDir(ctx, rootDir, namespace)
 }
 
-func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*helper.SoloTestHelper, error) {
+func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*SoloTestHelper, error) {
 	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
-		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+		return NewSoloTestHelper(func(defaults TestConfig) TestConfig {
 			defaults.RootDir = rootDir
 			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
@@ -214,7 +213,7 @@ func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*h
 			return defaults
 		})
 	} else {
-		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+		return NewSoloTestHelper(func(defaults TestConfig) TestConfig {
 			defaults.RootDir = rootDir
 			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
