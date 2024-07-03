@@ -45,8 +45,7 @@ gloo:
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
-    istioDiscoveryAddress: istiod-1-22-1.istio-system.svc:15012 # this needs to be set for Istio integration to work with revisions
-    healthyPanicThreshold: 0
+    disabled: true
 # Disable discovery, not recommended for production
 discovery:
   enabled: false
