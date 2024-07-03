@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6465
+    resolvesIssue: false
+    description: |
+      gateway2: misc fixes for AI extension
+
+      Removes listenAddress from GatewayParameters because it
+      will be set via aiExtension.env. Adds ports to aiExtension
+      GatewayParameter field to configure container ports.

@@ -477,7 +477,12 @@ var _ = Describe("Deployer", func() {
 										Repository: knownwrappers.String("bar"),
 										Tag:        knownwrappers.String("baz"),
 									},
-									ListenAddress: knownwrappers.String("unix:///foo/bar"),
+									Ports: []*v1.ContainerPort{
+										{
+											Name:          ptr.To("foo"),
+											ContainerPort: ptr.To[int32](80),
+										},
+									},
 								},
 							},
 						},
@@ -735,7 +740,7 @@ var _ = Describe("Deployer", func() {
 					)
 					aiExt := dep.Spec.Template.Spec.Containers[3]
 					Expect(aiExt.Image).To(ContainSubstring(expectedAIExtension))
-					Expect(aiExt.Env[len(aiExt.Env)-1].Value).To(Equal(expectedGwp.GetAiExtension().GetListenAddress().GetValue()))
+					Expect(aiExt.Ports).To(HaveLen(len(expectedGwp.GetAiExtension().GetPorts())))
 
 					// assert Service
 					svc := objs.findService(defaultNamespace, defaultServiceName)
@@ -1173,8 +1178,13 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 						},
 					},
 					AiExtension: &gw2_v1alpha1.AiExtension{
-						Enabled:       knownwrappers.Bool(true),
-						ListenAddress: knownwrappers.String("unix:///foo/bar"),
+						Enabled: knownwrappers.Bool(true),
+						Ports: []*v1.ContainerPort{
+							{
+								Name:          ptr.To("foo"),
+								ContainerPort: ptr.To[int32](80),
+							},
+						},
 					},
 				},
 			},

@@ -116,7 +116,6 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.image.variant|string||Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.image.fipsDigest|string||[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.image.fips|bool||[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)|
-|kubeGateway.gatewayParameters.glooGateway.aiExtension.listenAddress|string|unix:///var/run/gloo-ai.sock|The address the extension server listens on.|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.capabilities.add[]|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.capabilities.drop[]|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.privileged|bool|||
@@ -159,6 +158,11 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.name|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.key|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.env[].valueFrom.secretKeyRef.optional|bool|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].name|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostPort|int32|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].containerPort|int32|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].protocol|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostIP|string|||
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|

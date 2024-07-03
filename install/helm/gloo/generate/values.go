@@ -873,8 +873,8 @@ type IstioIntegration struct {
 type GatewayParamsAIExtension struct {
 	Enabled         *bool                         `json:"enabled,omitempty" desc:"Enable the AI extension"`
 	Image           *Image                        `json:"image,omitempty" desc:"Container image for the extension"`
-	ListenAddress   *string                       `json:"listenAddress,omitempty" desc:"The address the extension server listens on."`
 	SecurityContext *GatewayParamsSecurityContext `json:"securityContext,omitempty" desc:"securityContext for extension container. If this is defined it supersedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 	Resources       *ResourceRequirements         `json:"resources,omitempty" desc:"Sets default resource requirements for the extension."`
 	Env             []*corev1.EnvVar              `json:"env,omitempty" desc:"Container environment variables for the extension."`
+	Ports           []*corev1.ContainerPort       `json:"ports,omitempty" desc:"Container ports for the extension."`
 }
