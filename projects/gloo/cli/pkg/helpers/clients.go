@@ -158,12 +158,25 @@ func GetGlooDeploymentName(ctx context.Context, namespace string) (string, error
 	if err != nil {
 		return "", err
 	}
-	if len(deployments.Items) != 1 {
-		errMessage := "Unable to find the gloo deployment"
-		fmt.Println(errMessage)
-		return "", fmt.Errorf(errMessage+": %v", err)
+	if len(deployments.Items) == 1 {
+		return deployments.Items[0].Name, nil
 	}
-	return deployments.Items[0].Name, nil
+	errMessage := "Unable to find the gloo deployment"
+	// if there are multiple we can reasonably use the default variant
+	for _, d := range deployment.Items{
+		if d.Name != glooDeployment{
+			// At least 1 deployment exists, in case we dont find default update our error message
+			errMessage = "too many app=gloo deployments, cannot decide which to target"
+			continue
+		}
+		// TODO: (nfuden) Remove this, while we should generally avoid println in our formatted output we already have alot of these
+		fmt.Println("multiple gloo labeled apps found, defaulting to", glooDeployment)
+		return glooDeployment, nil
+	}
+	fmt.Println(errMessage)
+	return "", fmt.Errorf(errMessage+": %v", err)
+	}
+	
 }
 
 func MustGetNamespaces(ctx context.Context) []string {
