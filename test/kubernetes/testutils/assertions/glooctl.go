@@ -53,7 +53,7 @@ func (p *Provider) EventuallyMatchesVersion(ctx context.Context, serverVersion s
 		innerG.Expect(csv.GetServer()).To(HaveLen(1), "has detected gloo deployment")
 		kServer := csv.GetServer()[0].GetKubernetes()
 		innerG.Expect(kServer.GetContainers()).ToNot(BeEmpty(), "has containers for gloo deployment")
-		innerG.Expect(kServer.GetContainers()[0].Tag).To(Equal(serverVersion), "has expected tag")
+		innerG.Expect(kServer.GetContainers()[0].GetTag()).To(Equal(serverVersion), "has expected tag")
 	}).
 		WithContext(ctx).
 		// These are some basic defaults that we expect to work in most cases
