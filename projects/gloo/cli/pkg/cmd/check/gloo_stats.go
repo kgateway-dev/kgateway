@@ -7,12 +7,12 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
 )
 
 const (
-	glooDeployment      = "gloo"
 	rateLimitDeployment = "rate-limit"
 	glooStatsPath       = "/metrics"
 
@@ -29,7 +29,7 @@ var (
 	}
 
 	// Initialize the custom deployment name that is overwritten later on
-	customGlooDeploymentName = glooDeployment
+	customGlooDeploymentName = helpers.GlooDeploymentName
 )
 
 func ResourcesSyncedOverXds(stats, deploymentName string) bool {
