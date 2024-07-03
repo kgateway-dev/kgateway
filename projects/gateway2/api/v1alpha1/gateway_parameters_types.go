@@ -37,32 +37,32 @@ type SelfManagedGateway struct {
 // Configuration for the set of Kubernetes resources that will be provisioned
 // for a given Gateway.
 type KubernetesProxyConfig struct {
-	// +optional
+	// +kubebuilder:validation:Optional
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// +optional
+	// +kubebuilder:validation:Optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
 	// Configuration for the container running the Secret Discovery Service (SDS).
-	// +optional
+	// +kubebuilder:validation:Optional
 	SdsContainer *SdsContainer `json:"sdsContainer,omitempty"`
 	// Configuration for the pods that will be created.
-	// +optional
+	// +kubebuilder:validation:Optional
 	PodTemplate *Pod `json:"podTemplate,omitempty"`
 	// Configuration for the Kubernetes Service that exposes the Envoy proxy over
 	// the network.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Service *Service `json:"service,omitempty"`
 	// Autoscaling configuration.
 	// Autoscaling Autoscaling `json:"autoscaling,omitempty"`
 	// Configuration for the Istio integration.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Istio *IstioIntegration `json:"istioIntegration,omitempty"`
 	// Configuration for the stats server.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Stats *StatsConfig `json:"statsConfig,omitempty"`
 	// Configuration for the AI extension.
-	// +optional
+	// +kubebuilder:validation:Optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 }
 
@@ -124,7 +124,7 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Replicas *uint32 `json:"replicas,omitempty"`
 }
 
@@ -138,7 +138,7 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 type EnvoyContainer struct {
 
 	// Initial envoy configuration.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Bootstrap *EnvoyBootstrap `json:"bootstrap,omitempty"`
 	// The envoy container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
@@ -150,17 +150,17 @@ type EnvoyContainer struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	// +optional
+	// +kubebuilder:validation:Optional
 	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
@@ -198,7 +198,7 @@ type EnvoyBootstrap struct {
 	// "critical" and "off". Defaults to "info". See
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
 	// for more information.
-	// +optional
+	// +kubebuilder:validation:Optional
 	LogLevel *string `json:"logLevel,omitempty"`
 	// Envoy log levels for specific components. The keys are component names and
 	// the values are one of "trace", "debug", "info", "warn", "error",
@@ -216,7 +216,7 @@ type EnvoyBootstrap struct {
 	// for more information.
 	//
 	// Note: the keys and values cannot be empty, but they are not otherwise validated.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
 }
 
@@ -281,9 +281,9 @@ func (in *SdsBootstrap) GetLogLevel() *string {
 }
 
 type IstioIntegration struct {
-	// +optional
+	// +kubebuilder:validation:Optional
 	IstioProxyContainer *IstioContainer `json:"istioProxyContainer,omitempty"`
-	// +optional
+	// +kubebuilder:validation:Optional
 	CustomSidecars []*corev1.Container `json:"customSidecars,omitempty"`
 }
 
@@ -312,29 +312,29 @@ type IstioContainer struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	// +optional
+	// +kubebuilder:validation:Optional
 	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	LogLevel *string `json:"logLevel,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	IstioMetaMeshId *string `json:"istioMetaMeshId,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	IstioMetaClusterId *string `json:"istioMetaClusterId,omitempty"`
 }
 
@@ -388,16 +388,16 @@ func (in *IstioContainer) GetIstioMetaClusterId() *string {
 }
 
 type StatsConfig struct {
-	// +optional
+	// +kubebuilder:validation:Optional
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	EnableStatsRoute *bool `json:"enableStatsRoute,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty"`
 }
 
@@ -431,7 +431,7 @@ func (in *StatsConfig) GetStatsRoutePrefixRewrite() *string {
 
 // Configuration for the AI extension.
 type AiExtension struct {
-	// +optional
+	// +kubebuilder:validation:Optional
 	Enabled *bool `json:"enabled,omitempty"`
 	// The envoy container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
@@ -443,23 +443,23 @@ type AiExtension struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	// +optional
+	// +kubebuilder:validation:Optional
 	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	Env []*corev1.EnvVar `json:"env,omitempty"`
 
-	// +optional
+	// +kubebuilder:validation:Optional
 	Ports []*corev1.ContainerPort `json:"ports,omitempty"`
 }
 

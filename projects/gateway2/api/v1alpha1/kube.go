@@ -10,7 +10,7 @@ type Autoscaling struct {
 	// workload to match demand. See
 	// https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty"`
 }
 
@@ -27,21 +27,21 @@ func (in *Autoscaling) GetHorizontalPodAutoscaler() *HorizontalPodAutoscaler {
 type HorizontalPodAutoscaler struct {
 	// The lower limit for the number of replicas to which the autoscaler can
 	// scale down. Defaults to 1.
-	// +optional
+	// +kubebuilder:validation:Optional
 	MinReplicas *uint32 `json:"minReplicas,omitempty"`
 	// The upper limit for the number of replicas to which the autoscaler can
 	// scale up. Cannot be less than `minReplicas`. Defaults to 100.
-	// +optional
+	// +kubebuilder:validation:Optional
 	MaxReplicas *uint32 `json:"maxReplicas,omitempty"`
 	// The target value of the average CPU utilization across all relevant pods,
 	// represented as a percentage of the requested value of the resource for the
 	// pods. Defaults to 80.
-	// +optional
+	// +kubebuilder:validation:Optional
 	TargetCpuUtilizationPercentage *uint32 `json:"targetCpuUtilizationPercentage,omitempty"`
 	// The target value of the average memory utilization across all relevant
 	// pods, represented as a percentage of the requested value of the resource
 	// for the pods. Defaults to 80.
-	// +optional
+	// +kubebuilder:validation:Optional
 	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
@@ -77,21 +77,21 @@ func (in *HorizontalPodAutoscaler) GetTargetMemoryUtilizationPercentage() *uint3
 // for details.
 type Image struct {
 	// The image registry.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Registry *string `json:"registry,omitempty"`
 	// The image repository (name).
-	// +optional
+	// +kubebuilder:validation:Optional
 	Repository *string `json:"repository,omitempty"`
 	// The image tag.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Tag *string `json:"tag,omitempty"`
 	// The hash digest of the image, e.g. `sha256:12345...`
-	// +optional
+	// +kubebuilder:validation:Optional
 	Digest *string `json:"digest,omitempty"`
 	// The image pull policy for the container. See
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	PullPolicy *corev1.PullPolicy `json:"pull_policy,omitempty"`
 }
 
@@ -133,7 +133,7 @@ func (in *Image) GetPullPolicy() *corev1.PullPolicy {
 // Configuration for a Kubernetes Service.
 type Service struct {
 	// The Kubernetes Service type.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Type *corev1.ServiceType `json:"type,omitempty"`
 	// The manually specified IP address of the service, if a randomly assigned
 	// IP is not desired. See
@@ -141,13 +141,13 @@ type Service struct {
 	// and
 	// https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
 	// on the implications of setting `clusterIP`.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ClusterIP *string `json:"clusterIP,omitempty"`
 	// Additional labels to add to the Service object metadata.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Service object metadata.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
@@ -182,36 +182,36 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Pod object metadata.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	// The pod security context. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty"`
 	// An optional list of references to secrets in the same namespace to use for
 	// pulling any of the images used by this Pod spec. See
 	// https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// A selector which must be true for the pod to fit on a node. See
 	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
 	// details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// If specified, the pod's scheduling constraints. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 	// If specified, the pod's tolerations. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
-	// +optional
+	// +kubebuilder:validation:Optional
 	Tolerations []*corev1.Toleration `json:"tolerations,omitempty"`
 }
 
