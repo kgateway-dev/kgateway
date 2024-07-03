@@ -1,4 +1,6 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/pull/9347
+    resolvesIssue: false
     description: >-
       Use kube builder instead of skv2 for faster and easier codegen for GGv2 CRDs.

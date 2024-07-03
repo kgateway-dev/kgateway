@@ -23,7 +23,7 @@ type Image struct {
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
 	// +kubebuilder:validation:Optional
-	PullPolicy corev1.PullPolicy `json:"pull_policy,omitempty"`
+	PullPolicy corev1.PullPolicy `json:"pullPolicy,omitempty"`
 }
 
 func (in *Image) GetRegistry() string {

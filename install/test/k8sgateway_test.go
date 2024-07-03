@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Kubernetes Gateway API integration", func() {
@@ -71,18 +72,18 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				gwpKube := gwp.Spec.Kube
 				Expect(gwpKube).ToNot(BeNil())
 
-				Expect(gwpKube.Deployment.Replicas).To(Equal(uint32(1)))
+				Expect(*gwpKube.Deployment.Replicas).To(Equal(uint32(1)))
 
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullIfNotPresent))
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetRegistry()).To(Equal("quay.io/solo-io"))
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository()).To(Equal("gloo-envoy-wrapper"))
 				Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag()).To(Equal(version))
-				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeFalse())
-				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeTrue())
-				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsNonRoot).To(BeTrue())
-				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(10101)))
-				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Drop).To(ContainElement("ALL"))
-				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Add).To(ContainElement("NET_BIND_SERVICE"))
+				Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeFalse())
+				Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeTrue())
+				Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsNonRoot).To(BeTrue())
+				Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(10101)))
+				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Drop).To(ContainElement(corev1.Capability("ALL")))
+				Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Add).To(ContainElement(corev1.Capability("NET_BIND_SERVICE")))
 				Expect(gwpKube.GetEnvoyContainer().GetResources()).To(BeNil())
 
 				Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullIfNotPresent))
@@ -107,12 +108,12 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 				Expect(gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeLoadBalancer))
 
-				Expect(gwpKube.GetStats().GetEnabled()).To(BeTrue())
+				Expect(*gwpKube.GetStats().GetEnabled()).To(BeTrue())
 				Expect(gwpKube.GetStats().GetRoutePrefixRewrite()).To(Equal("/stats/prometheus"))
-				Expect(gwpKube.GetStats().GetEnableStatsRoute()).To(BeTrue())
+				Expect(*gwpKube.GetStats().GetEnableStatsRoute()).To(BeTrue())
 				Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite()).To(Equal("/stats"))
 
-				Expect(gwpKube.GetAiExtension().GetEnabled()).To(BeFalse())
+				Expect(*gwpKube.GetAiExtension().GetEnabled()).To(BeFalse())
 				Expect(gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(corev1.PullIfNotPresent))
 				Expect(gwpKube.GetAiExtension().GetImage().GetRegistry()).To(Equal("quay.io/solo-io"))
 				Expect(gwpKube.GetAiExtension().GetImage().GetRepository()).To(Equal("gloo-ai-extension"))
@@ -124,10 +125,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 			When("overrides are set", func() {
 				var (
-					sdsRequests   = map[string]string{"memory": "101Mi", "cpu": "201m"}
-					sdsLimits     = map[string]string{"memory": "301Mi", "cpu": "401m"}
-					envoyRequests = map[string]string{"memory": "102Mi", "cpu": "202m"}
-					envoyLimits   = map[string]string{"memory": "302Mi", "cpu": "402m"}
+					sdsRequests   = corev1.ResourceList{"memory": resource.MustParse("101Mi"), "cpu": resource.MustParse("201m")}
+					sdsLimits     = corev1.ResourceList{"memory": resource.MustParse("301Mi"), "cpu": resource.MustParse("401m")}
+					envoyRequests = corev1.ResourceList{"memory": resource.MustParse("102Mi"), "cpu": resource.MustParse("202m")}
+					envoyLimits   = corev1.ResourceList{"memory": resource.MustParse("302Mi"), "cpu": resource.MustParse("402m")}
 				)
 				BeforeEach(func() {
 					extraValuesArgs := []string{
@@ -142,10 +143,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.pullPolicy=Always",
 						"kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.runAsNonRoot=null",
 						"kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.runAsUser=777",
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.memory=%s", envoyRequests["memory"]),
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.cpu=%s", envoyRequests["cpu"]),
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.memory=%s", envoyLimits["memory"]),
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.cpu=%s", envoyLimits["cpu"]),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.memory=%s", envoyRequests["memory"].ToUnstructured()),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.cpu=%s", envoyRequests["cpu"].ToUnstructured()),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.memory=%s", envoyLimits["memory"].ToUnstructured()),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.cpu=%s", envoyLimits["cpu"].ToUnstructured()),
 						"kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas=5",
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag=sds-override-tag",
@@ -155,10 +156,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.logLevel=debug",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.runAsNonRoot=null",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.runAsUser=999",
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.memory=%s", sdsRequests["memory"]),
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.cpu=%s", sdsRequests["cpu"]),
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory=%s", sdsLimits["memory"]),
-						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu=%s", sdsLimits["cpu"]),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.memory=%s", sdsRequests["memory"].ToUnstructured()),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.requests.cpu=%s", sdsRequests["cpu"].ToUnstructured()),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory=%s", sdsLimits["memory"].ToUnstructured()),
+						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu=%s", sdsLimits["cpu"].ToUnstructured()),
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.tag=istio-override-tag",
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.registry=istio-override-registry",
 						"kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.image.repository=istio-override-repository",
@@ -203,10 +204,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					// runAsNonRoot to be missing (nil) and the rest to be rendered from defaults.
 					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeFalse())
 					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeTrue())
-					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsNonRoot).To(BeNil()) // Not using getter here as it masks nil as false
+					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsNonRoot).To(BeNil()) // Not using getter here as it masks nil as false
 					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(777)))
-					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Drop).To(ContainElement("ALL"))
-					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Add).To(ContainElement("NET_BIND_SERVICE"))
+					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Drop).To(ContainElement(corev1.Capability("ALL")))
+					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Add).To(ContainElement(corev1.Capability("NET_BIND_SERVICE")))
 					Expect(gwpKube.GetEnvoyContainer().GetResources().Requests).To(matchers.ContainMapElements(envoyRequests))
 					Expect(gwpKube.GetEnvoyContainer().GetResources().Limits).To(matchers.ContainMapElements(envoyLimits))
 
@@ -240,14 +241,14 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(*gwpKube.GetSdsContainer().GetSecurityContext().RunAsUser).To(Equal(int64(999)))
 					Expect(gwpKube.GetSdsContainer().GetSecurityContext().Capabilities).To(BeNil())
 					Expect(gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
-					Expect(gwpKube.GetSdsContainer().GetResources().Limits).To(matchers.ContainMapElements(sdsRequests))
+					Expect(gwpKube.GetSdsContainer().GetResources().Requests).To(matchers.ContainMapElements(sdsRequests))
 					Expect(gwpKube.GetSdsContainer().GetResources().Limits).To(matchers.ContainMapElements(sdsLimits))
 
 					Expect(gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 
-					Expect(gwpKube.GetStats().GetEnabled()).To(BeFalse())
+					Expect(*gwpKube.GetStats().GetEnabled()).To(BeFalse())
 					Expect(gwpKube.GetStats().GetRoutePrefixRewrite()).To(Equal("/foo/bar"))
-					Expect(gwpKube.GetStats().GetEnableStatsRoute()).To(BeFalse())
+					Expect(*gwpKube.GetStats().GetEnableStatsRoute()).To(BeFalse())
 					Expect(gwpKube.GetStats().GetStatsRoutePrefixRewrite()).To(Equal("/scooby/doo"))
 
 					Expect(gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(corev1.PullNever))

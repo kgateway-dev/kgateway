@@ -57,10 +57,10 @@ type KubernetesProxyConfig struct {
 	// Autoscaling Autoscaling `json:"autoscaling,omitempty"`
 	// Configuration for the Istio integration.
 	// +kubebuilder:validation:Optional
-	Istio *IstioIntegration `json:"istioIntegration,omitempty"`
+	Istio *IstioIntegration `json:"istio,omitempty"`
 	// Configuration for the stats server.
 	// +kubebuilder:validation:Optional
-	Stats *StatsConfig `json:"statsConfig,omitempty"`
+	Stats *StatsConfig `json:"stats,omitempty"`
 	// Configuration for the AI extension.
 	// +kubebuilder:validation:Optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
