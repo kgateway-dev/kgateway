@@ -112,37 +112,6 @@ for details.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="gateway.gloo.solo.io/v1alpha1.Autoscaling">Autoscaling
-</h3>
-<div>
-<p>Kubernetes autoscaling configuration.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>horizontalPodAutoscaler</code><br/>
-<em>
-<a href="#gateway.gloo.solo.io/v1alpha1.HorizontalPodAutoscaler">
-HorizontalPodAutoscaler
-</a>
-</em>
-</td>
-<td>
-<p>If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
-workload to match demand. See
-<a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/</a>
-for details.</p>
-</td>
-</tr>
-</tbody>
-</table>
 <h3 id="gateway.gloo.solo.io/v1alpha1.EnvoyBootstrap">EnvoyBootstrap
 </h3>
 <p>
@@ -407,76 +376,6 @@ KubernetesProxyConfig
 </p>
 <div>
 </div>
-<h3 id="gateway.gloo.solo.io/v1alpha1.HorizontalPodAutoscaler">HorizontalPodAutoscaler
-</h3>
-<p>
-(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.Autoscaling">Autoscaling</a>)
-</p>
-<div>
-<p>Horizontal pod autoscaling configuration. See
-<a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/</a>
-for details.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>minReplicas</code><br/>
-<em>
-uint32
-</em>
-</td>
-<td>
-<p>The lower limit for the number of replicas to which the autoscaler can
-scale down. Defaults to 1.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>maxReplicas</code><br/>
-<em>
-uint32
-</em>
-</td>
-<td>
-<p>The upper limit for the number of replicas to which the autoscaler can
-scale up. Cannot be less than <code>minReplicas</code>. Defaults to 100.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>targetCpuUtilizationPercentage</code><br/>
-<em>
-uint32
-</em>
-</td>
-<td>
-<p>The target value of the average CPU utilization across all relevant pods,
-represented as a percentage of the requested value of the resource for the
-pods. Defaults to 80.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>targetMemoryUtilizationPercentage</code><br/>
-<em>
-uint32
-</em>
-</td>
-<td>
-<p>The target value of the average memory utilization across all relevant
-pods, represented as a percentage of the requested value of the resource
-for the pods. Defaults to 80.</p>
-</td>
-</tr>
-</tbody>
-</table>
 <h3 id="gateway.gloo.solo.io/v1alpha1.Image">Image
 </h3>
 <p>

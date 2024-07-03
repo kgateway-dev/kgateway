@@ -123,10 +123,10 @@ func deepMergeStatsConfig(dst *v1alpha1.StatsConfig, src *v1alpha1.StatsConfig) 
 		return src
 	}
 
-	dst.EnableStatsRoute = mergePointers(dst.EnableStatsRoute, src.EnableStatsRoute)
+	dst.EnableStatsRoute = mergeComparable(dst.EnableStatsRoute, src.EnableStatsRoute)
 	dst.Enabled = mergePointers(dst.Enabled, src.Enabled)
-	dst.RoutePrefixRewrite = mergePointers(dst.RoutePrefixRewrite, src.RoutePrefixRewrite)
-	dst.StatsRoutePrefixRewrite = mergePointers(dst.StatsRoutePrefixRewrite, src.StatsRoutePrefixRewrite)
+	dst.RoutePrefixRewrite = mergeComparable(dst.RoutePrefixRewrite, src.RoutePrefixRewrite)
+	dst.StatsRoutePrefixRewrite = mergeComparable(dst.StatsRoutePrefixRewrite, src.StatsRoutePrefixRewrite)
 
 	return dst
 }
@@ -367,41 +367,6 @@ func deepMergeService(dst, src *v1alpha1.Service) *v1alpha1.Service {
 	return dst
 }
 
-// TODO: removing until autoscaling reimplemented
-// see: https://github.com/solo-io/solo-projects/issues/5948
-// func deepMergeAutoscaling(dst, src *kube.Autoscaling) *kube.Autoscaling {
-// 	// nil src override means just use dst
-// 	if src == nil {
-// 		return dst
-// 	}
-
-// 	if dst == nil {
-// 		return src
-// 	}
-
-// 	dst.HorizontalPodAutoscaler = deepMergeHorizontalPodAutoscaler(dst.GetHorizontalPodAutoscaler(), src.GetHorizontalPodAutoscaler())
-
-// 	return dst
-// }
-
-func deepMergeHorizontalPodAutoscaler(dst, src *v1alpha1.HorizontalPodAutoscaler) *v1alpha1.HorizontalPodAutoscaler {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return src
-	}
-
-	dst.MinReplicas = mergePointers(dst.MinReplicas, src.MinReplicas)
-	dst.MaxReplicas = mergePointers(dst.MaxReplicas, src.MaxReplicas)
-	dst.TargetCpuUtilizationPercentage = mergePointers(dst.TargetCpuUtilizationPercentage, src.TargetCpuUtilizationPercentage)
-	dst.TargetMemoryUtilizationPercentage = mergePointers(dst.TargetMemoryUtilizationPercentage, src.TargetMemoryUtilizationPercentage)
-
-	return dst
-}
-
 func deepMergeSdsContainer(dst, src *v1alpha1.SdsContainer) *v1alpha1.SdsContainer {
 	// nil src override means just use dst
 	if src == nil {
@@ -430,7 +395,7 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 		return src
 	}
 
-	if src.LogLevel != nil {
+	if src.LogLevel != "" {
 		dst.LogLevel = src.LogLevel
 	}
 
@@ -479,7 +444,7 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	dst.SecurityContext = deepMergeSecurityContext(dst.SecurityContext, src.SecurityContext)
 	dst.Resources = deepMergeResourceRequirements(dst.Resources, src.Resources)
 
-	if logLevel := src.LogLevel; logLevel != nil {
+	if logLevel := src.LogLevel; logLevel != "" {
 		dst.LogLevel = logLevel
 	}
 
@@ -487,21 +452,21 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	// GatewayParameters populated by helm values
 	dstIstioDiscoveryAddress := dst.IstioDiscoveryAddress
 	srcIstioDiscoveryAddress := src.IstioDiscoveryAddress
-	if dstIstioDiscoveryAddress == nil {
+	if dstIstioDiscoveryAddress == "" {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
 	}
 
 	dstIstioMetaMeshId := dst.IstioMetaMeshId
 	srcIstioMetaMeshId := src.IstioMetaMeshId
-	if dstIstioMetaMeshId == nil {
+	if dstIstioMetaMeshId == "" {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaMeshId = srcIstioMetaMeshId
 	}
 
 	dstIstioMetaClusterId := dst.IstioMetaClusterId
 	srcIstioMetaClusterId := src.IstioMetaClusterId
-	if dstIstioMetaClusterId == nil {
+	if dstIstioMetaClusterId == "" {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaClusterId = srcIstioMetaClusterId
 	}
@@ -543,23 +508,23 @@ func deepMergeImage(dst, src *v1alpha1.Image) *v1alpha1.Image {
 	// because all fields are not nullable, we treat empty strings as empty values
 	// and do not override with them
 
-	if src.Registry != nil {
+	if src.Registry != "" {
 		dst.Registry = src.Registry
 	}
 
-	if src.Repository != nil {
+	if src.Repository != "" {
 		dst.Repository = src.Repository
 	}
 
-	if src.Tag != nil {
+	if src.Tag != "" {
 		dst.Tag = src.Tag
 	}
 
-	if src.Digest != nil {
+	if src.Digest != "" {
 		dst.Digest = src.Digest
 	}
 
-	if src.PullPolicy != nil {
+	if src.PullPolicy != "" {
 		dst.PullPolicy = src.PullPolicy
 	}
 
@@ -575,7 +540,7 @@ func deepMergeEnvoyBootstrap(dst, src *v1alpha1.EnvoyBootstrap) *v1alpha1.EnvoyB
 	if dst == nil {
 		return src
 	}
-	if src.LogLevel != nil {
+	if src.LogLevel != "" {
 		dst.LogLevel = src.LogLevel
 	}
 

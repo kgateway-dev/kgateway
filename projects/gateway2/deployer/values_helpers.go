@@ -49,14 +49,6 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 	return gwPorts
 }
 
-func getDefaultValue[T comparable](value *T) T {
-	var t T
-	if value == nil {
-		return t
-	}
-	return *value
-}
-
 // TODO: Removing until autoscaling is re-added.
 // See: https://github.com/solo-io/solo-projects/issues/5948
 // Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
@@ -82,11 +74,11 @@ func getDefaultValue[T comparable](value *T) T {
 func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
-	svcType := string(getDefaultValue(svcConfig.Type))
+	svcType := string(svcConfig.Type)
 	clusterIp := svcConfig.ClusterIP
 	return &helmService{
 		Type:             &svcType,
-		ClusterIP:        ptr.To(getDefaultValue(clusterIp)),
+		ClusterIP:        ptr.To(clusterIp),
 		ExtraAnnotations: svcConfig.ExtraAnnotations,
 		ExtraLabels:      svcConfig.ExtraLabels,
 	}
@@ -107,7 +99,7 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 
 	if bootstrap := sdsContainerConfig.Bootstrap; bootstrap != nil {
 		vals.SdsBootstrap = &sdsBootstrap{
-			LogLevel: bootstrap.LogLevel,
+			LogLevel: ptr.To(bootstrap.LogLevel),
 		}
 	}
 
@@ -121,12 +113,12 @@ func getIstioContainerValues(config *v1alpha1.IstioContainer) *helmIstioContaine
 
 	return &helmIstioContainer{
 		Image:                 getImageValues(config.Image),
-		LogLevel:              config.LogLevel,
+		LogLevel:              ptr.To(config.LogLevel),
 		Resources:             config.Resources,
 		SecurityContext:       config.SecurityContext,
-		IstioDiscoveryAddress: config.IstioDiscoveryAddress,
-		IstioMetaMeshId:       config.IstioMetaMeshId,
-		IstioMetaClusterId:    config.IstioMetaClusterId,
+		IstioDiscoveryAddress: ptr.To(config.IstioDiscoveryAddress),
+		IstioMetaMeshId:       ptr.To(config.IstioMetaMeshId),
+		IstioMetaClusterId:    ptr.To(config.IstioMetaClusterId),
 	}
 }
 
@@ -151,12 +143,12 @@ func getImageValues(image *v1alpha1.Image) *helmImage {
 	}
 
 	helmImage := &helmImage{
-		Registry:   ptr.To(getDefaultValue(image.Registry)),
-		Repository: ptr.To(getDefaultValue(image.Repository)),
-		Tag:        ptr.To(getDefaultValue(image.Tag)),
-		Digest:     ptr.To(getDefaultValue(image.Digest)),
+		Registry:   ptr.To(image.Registry),
+		Repository: ptr.To(image.Repository),
+		Tag:        ptr.To(image.Tag),
+		Digest:     ptr.To(image.Digest),
 	}
-	setPullPolicy(getDefaultValue(image.PullPolicy), helmImage)
+	setPullPolicy(image.PullPolicy, helmImage)
 	return helmImage
 }
 
@@ -167,9 +159,9 @@ func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
 	}
 	return &helmStatsConfig{
 		Enabled:            statsConfig.Enabled,
-		RoutePrefixRewrite: statsConfig.RoutePrefixRewrite,
+		RoutePrefixRewrite: ptr.To(statsConfig.RoutePrefixRewrite),
 		EnableStatsRoute:   statsConfig.EnableStatsRoute,
-		StatsPrefixRewrite: statsConfig.StatsRoutePrefixRewrite,
+		StatsPrefixRewrite: ptr.To(statsConfig.StatsRoutePrefixRewrite),
 	}
 }
 

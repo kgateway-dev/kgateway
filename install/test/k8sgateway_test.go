@@ -193,7 +193,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
 
-					Expect(gwpKube.GetDeployment().GetReplicas()).To(Equal(uint32(5)))
+					Expect(*gwpKube.GetDeployment().GetReplicas()).To(Equal(uint32(5)))
 
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullAlways))
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRegistry()).To(Equal("envoy-override-registry"))
@@ -201,10 +201,10 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag()).To(Equal("envoy-override-tag"))
 					// We specified non-null override for runAsUser and null override for runAsNonRoot. We expect runAsUser to be overridden,
 					// runAsNonRoot to be missing (nil) and the rest to be rendered from defaults.
-					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeFalse())
-					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeTrue())
-					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsNonRoot).To(BeNil()) // Not using getter here as it masks nil as false
-					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(777)))
+					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeFalse())
+					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeTrue())
+					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsNonRoot).To(BeNil()) // Not using getter here as it masks nil as false
+					Expect(*gwpKube.GetEnvoyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(777)))
 					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Drop).To(ContainElement("ALL"))
 					Expect(gwpKube.GetEnvoyContainer().GetSecurityContext().Capabilities.Add).To(ContainElement("NET_BIND_SERVICE"))
 					Expect(gwpKube.GetEnvoyContainer().GetResources().Requests).To(matchers.ContainMapElements(envoyRequests))
@@ -219,7 +219,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeNil()) // Not using getter here as it masks nil as false
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeNil())   // Not using getter here as it masks nil as false
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetSecurityContext().RunAsNonRoot).To(BeNil())             // Not using getter here as it masks nil as false
-					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(888)))
+					Expect(*gwpKube.GetIstio().GetIstioProxyContainer().GetSecurityContext().RunAsUser).To(Equal(int64(888)))
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetSecurityContext().Capabilities).To(BeNil())
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetLogLevel()).To(Equal("debug"))
 					Expect(gwpKube.GetIstio().GetIstioProxyContainer().GetIstioDiscoveryAddress()).To(Equal("istiod.istio-system.svc:15012"))
@@ -237,9 +237,9 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetSdsContainer().GetSecurityContext().AllowPrivilegeEscalation).To(BeNil()) // Not using getter here as it masks nil as false
 					Expect(gwpKube.GetSdsContainer().GetSecurityContext().ReadOnlyRootFilesystem).To(BeNil())   // Not using getter here as it masks nil as false
 					Expect(gwpKube.GetSdsContainer().GetSecurityContext().RunAsNonRoot).To(BeNil())             // Not using getter here as it masks nil as false
-					Expect(gwpKube.GetSdsContainer().GetSecurityContext().RunAsUser).To(Equal(int64(999)))
+					Expect(*gwpKube.GetSdsContainer().GetSecurityContext().RunAsUser).To(Equal(int64(999)))
 					Expect(gwpKube.GetSdsContainer().GetSecurityContext().Capabilities).To(BeNil())
-					Expect(gwpKube.GetSdsContainer().GetBootstrap().LogLevel).To(Equal("debug"))
+					Expect(gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
 					Expect(gwpKube.GetSdsContainer().GetResources().Limits).To(matchers.ContainMapElements(sdsRequests))
 					Expect(gwpKube.GetSdsContainer().GetResources().Limits).To(matchers.ContainMapElements(sdsLimits))
 
@@ -305,21 +305,21 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 					Expect(*gwpKube.GetDeployment().GetReplicas()).To(Equal(uint32(5)))
 
-					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullAlways))
-					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetRegistry()).To(Equal("envoy-override-registry"))
-					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetRepository()).To(Equal("envoy-override-repository"))
-					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetTag()).To(Equal("envoy-override-tag"))
+					Expect(gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullAlways))
+					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRegistry()).To(Equal("envoy-override-registry"))
+					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository()).To(Equal("envoy-override-repository"))
+					Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag()).To(Equal("envoy-override-tag"))
 
 					Expect(gwpKube.GetIstio().GetCustomSidecars()[0].Name).To(Equal("custom-sidecar"))
 					Expect(gwpKube.GetPodTemplate().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"gloo": "kube-gateway"}))
 
-					Expect(*gwpKube.GetSdsContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullNever))
-					Expect(*gwpKube.GetSdsContainer().GetImage().GetRegistry()).To(Equal("sds-override-registry"))
-					Expect(*gwpKube.GetSdsContainer().GetImage().GetRepository()).To(Equal("sds-override-repository"))
-					Expect(*gwpKube.GetSdsContainer().GetImage().GetTag()).To(Equal("sds-override-tag"))
-					Expect(*gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
+					Expect(gwpKube.GetSdsContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullNever))
+					Expect(gwpKube.GetSdsContainer().GetImage().GetRegistry()).To(Equal("sds-override-registry"))
+					Expect(gwpKube.GetSdsContainer().GetImage().GetRepository()).To(Equal("sds-override-repository"))
+					Expect(gwpKube.GetSdsContainer().GetImage().GetTag()).To(Equal("sds-override-tag"))
+					Expect(gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
 
-					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
+					Expect(gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 				})
 			})
 		})

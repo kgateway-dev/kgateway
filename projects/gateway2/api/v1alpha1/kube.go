@@ -4,128 +4,59 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Kubernetes autoscaling configuration.
-type Autoscaling struct {
-	// If set, a Kubernetes HorizontalPodAutoscaler will be created to scale the
-	// workload to match demand. See
-	// https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
-	// for details.
-	// +kubebuilder:validation:Optional
-	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty"`
-}
-
-func (in *Autoscaling) GetHorizontalPodAutoscaler() *HorizontalPodAutoscaler {
-	if in == nil {
-		return nil
-	}
-	return in.HorizontalPodAutoscaler
-}
-
-// Horizontal pod autoscaling configuration. See
-// https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
-// for details.
-type HorizontalPodAutoscaler struct {
-	// The lower limit for the number of replicas to which the autoscaler can
-	// scale down. Defaults to 1.
-	// +kubebuilder:validation:Optional
-	MinReplicas *uint32 `json:"minReplicas,omitempty"`
-	// The upper limit for the number of replicas to which the autoscaler can
-	// scale up. Cannot be less than `minReplicas`. Defaults to 100.
-	// +kubebuilder:validation:Optional
-	MaxReplicas *uint32 `json:"maxReplicas,omitempty"`
-	// The target value of the average CPU utilization across all relevant pods,
-	// represented as a percentage of the requested value of the resource for the
-	// pods. Defaults to 80.
-	// +kubebuilder:validation:Optional
-	TargetCpuUtilizationPercentage *uint32 `json:"targetCpuUtilizationPercentage,omitempty"`
-	// The target value of the average memory utilization across all relevant
-	// pods, represented as a percentage of the requested value of the resource
-	// for the pods. Defaults to 80.
-	// +kubebuilder:validation:Optional
-	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
-}
-
-func (in *HorizontalPodAutoscaler) GetMinReplicas() *uint32 {
-	if in == nil {
-		return nil
-	}
-	return in.MinReplicas
-}
-
-func (in *HorizontalPodAutoscaler) GetMaxReplicas() *uint32 {
-	if in == nil {
-		return nil
-	}
-	return in.MaxReplicas
-}
-
-func (in *HorizontalPodAutoscaler) GetTargetCpuUtilizationPercentage() *uint32 {
-	if in == nil {
-		return nil
-	}
-	return in.TargetCpuUtilizationPercentage
-}
-
-func (in *HorizontalPodAutoscaler) GetTargetMemoryUtilizationPercentage() *uint32 {
-	if in == nil {
-		return nil
-	}
-	return in.TargetMemoryUtilizationPercentage
-}
-
 // A container image. See https://kubernetes.io/docs/concepts/containers/images
 // for details.
 type Image struct {
 	// The image registry.
 	// +kubebuilder:validation:Optional
-	Registry *string `json:"registry,omitempty"`
+	Registry string `json:"registry,omitempty"`
 	// The image repository (name).
 	// +kubebuilder:validation:Optional
-	Repository *string `json:"repository,omitempty"`
+	Repository string `json:"repository,omitempty"`
 	// The image tag.
 	// +kubebuilder:validation:Optional
-	Tag *string `json:"tag,omitempty"`
+	Tag string `json:"tag,omitempty"`
 	// The hash digest of the image, e.g. `sha256:12345...`
 	// +kubebuilder:validation:Optional
-	Digest *string `json:"digest,omitempty"`
+	Digest string `json:"digest,omitempty"`
 	// The image pull policy for the container. See
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
 	// +kubebuilder:validation:Optional
-	PullPolicy *corev1.PullPolicy `json:"pull_policy,omitempty"`
+	PullPolicy corev1.PullPolicy `json:"pull_policy,omitempty"`
 }
 
-func (in *Image) GetRegistry() *string {
+func (in *Image) GetRegistry() string {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.Registry
 }
 
-func (in *Image) GetRepository() *string {
+func (in *Image) GetRepository() string {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.Repository
 }
 
-func (in *Image) GetTag() *string {
+func (in *Image) GetTag() string {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.Tag
 }
 
-func (in *Image) GetDigest() *string {
+func (in *Image) GetDigest() string {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.Digest
 }
 
-func (in *Image) GetPullPolicy() *corev1.PullPolicy {
+func (in *Image) GetPullPolicy() corev1.PullPolicy {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.PullPolicy
 }
@@ -134,7 +65,7 @@ func (in *Image) GetPullPolicy() *corev1.PullPolicy {
 type Service struct {
 	// The Kubernetes Service type.
 	// +kubebuilder:validation:Optional
-	Type *corev1.ServiceType `json:"type,omitempty"`
+	Type corev1.ServiceType `json:"type,omitempty"`
 	// The manually specified IP address of the service, if a randomly assigned
 	// IP is not desired. See
 	// https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address
@@ -142,7 +73,7 @@ type Service struct {
 	// https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
 	// on the implications of setting `clusterIP`.
 	// +kubebuilder:validation:Optional
-	ClusterIP *string `json:"clusterIP,omitempty"`
+	ClusterIP string `json:"clusterIP,omitempty"`
 	// Additional labels to add to the Service object metadata.
 	// +kubebuilder:validation:Optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
@@ -151,16 +82,16 @@ type Service struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
-func (in *Service) GetType() *corev1.ServiceType {
+func (in *Service) GetType() corev1.ServiceType {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.Type
 }
 
-func (in *Service) GetClusterIP() *string {
+func (in *Service) GetClusterIP() string {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.ClusterIP
 }

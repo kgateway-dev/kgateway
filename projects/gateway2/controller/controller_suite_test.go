@@ -141,7 +141,7 @@ var _ = BeforeSuite(func() {
 		Spec: v1alpha1.GatewayParametersSpec{
 			Kube: &v1alpha1.KubernetesProxyConfig{
 				Service: &v1alpha1.Service{
-					Type: ptr.To(corev1.ServiceTypeLoadBalancer),
+					Type: corev1.ServiceTypeLoadBalancer,
 				},
 				Istio: &v1alpha1.IstioIntegration{},
 			},
