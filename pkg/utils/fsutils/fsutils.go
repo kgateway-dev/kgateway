@@ -23,10 +23,6 @@ func ToTempFile(content string) (string, error) {
 	return f.Name(), nil
 }
 
-var (
-	ErrNotFound = fmt.Errorf("path not ")
-)
-
 func IsDirectory(dir string) bool {
 	stat, err := os.Stat(dir)
 	if err != nil {

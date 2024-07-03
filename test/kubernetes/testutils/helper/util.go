@@ -3,29 +3,21 @@ package helper
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"runtime"
-	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/fsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/stats"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap/zapcore"
-	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -91,85 +83,9 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	)
 }
 
-func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
-	UpdateSettings(ctx, func(settings *v1.Settings) {
-		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
-		settings.GetGateway().GetValidation().DisableTransformationValidation = &wrappers.BoolValue{Value: shouldDisable}
-	}, installNamespace)
-}
-
-// enable/disable strict validation
-func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
-	UpdateSettings(ctx, func(settings *v1.Settings) {
-		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
-		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
-	}, installNamespace)
-}
-
-func UpdateAllowWarningsSetting(ctx context.Context, allowWarnings bool, installNamespace string) {
-	UpdateSettings(ctx, func(settings *v1.Settings) {
-		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
-		settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: allowWarnings}
-	}, installNamespace)
-}
-
-func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamespace string) {
-	UpdateSettings(ctx, func(settings *v1.Settings) {
-		Expect(settings.GetGloo()).NotTo(BeNil())
-		settings.GetGloo().EnableRestEds = &wrappers.BoolValue{Value: enableRestEds}
-	}, installNamespace)
-}
-
-func UpdateReplaceInvalidRoutes(ctx context.Context, replaceInvalidRoutes bool, installNamespace string) {
-	UpdateSettings(ctx, func(settings *v1.Settings) {
-		Expect(settings.GetGloo().GetInvalidConfigPolicy()).NotTo(BeNil())
-		settings.GetGloo().GetInvalidConfigPolicy().ReplaceInvalidRoutes = replaceInvalidRoutes
-	}, installNamespace)
-}
-
-func UpdateSettings(ctx context.Context, updateSettings func(settings *v1.Settings), installNamespace string) {
-	// when validation config changes, the validation server restarts -- give time for it to come up again.
-	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
-	// what we want to test.
-	// TODO (samheilbron) We should avoid relying on time.Sleep in our tests as these tend to cause flakes
-	waitForSettingsToPropagate := func() {
-		time.Sleep(3 * time.Second)
-	}
-	UpdateSettingsWithPropagationDelay(updateSettings, waitForSettingsToPropagate, ctx, installNamespace)
-}
-
-func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Settings), waitForSettingsToPropagate func(), ctx context.Context, installNamespace string) {
-	settingsClient := clienthelpers.MustSettingsClient(ctx)
-	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
-
-	updateSettings(settings)
-
-	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
-	Expect(err).NotTo(HaveOccurred())
-
-	waitForSettingsToPropagate()
-}
-
-func ToFile(content string) string {
-	fname, err := fsutils.ToTempFile(content)
-	Expect(err).ToNot(HaveOccurred())
-
-	return fname
-}
-
-// https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
-// We should move tests away from using the testserver, and instead depend on EphemeralContainers.
-// The default response changed in later kube versions, which caused this value to change.
-// Ideally the test utilities used by Gloo are maintained in the Gloo repo, so I opted to move
-// this constant here.
-// This response is given by the testserver from the python2 SimpleHTTPServer
+// This response is given by the nginx pod defined in test/kubernetes/e2e/defaults/
 func TestServerHttpResponse() string {
-	if runtime.GOARCH == "arm64" {
-		return SimpleHttpResponseArm
-	} else {
-		return SimpleHttpResponse
-	}
+	return e2edefaults.NginxResponse
 }
 
 // For nightly runs, we want to install a released version rather than using a locally built chart
@@ -192,15 +108,6 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
 	return releasedVersion
 }
-func GetTestHelper(ctx context.Context, namespace string) (*SoloTestHelper, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	rootDir := filepath.Join(cwd, "../../..")
-	return GetTestHelperForRootDir(ctx, rootDir, namespace)
-}
 
 func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*SoloTestHelper, error) {
 	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
@@ -221,30 +128,4 @@ func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*S
 			return defaults
 		})
 	}
-}
-
-func GetFailurePolicy(ctx context.Context, webhookName string) *admissionregv1.FailurePolicyType {
-	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
-	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
-	return cfg.Webhooks[0].FailurePolicy
-}
-
-func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy admissionregv1.FailurePolicyType) {
-	kubeClient := clienthelpers.MustKubeClient()
-	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
-	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
-	cfg.Webhooks[0].FailurePolicy = &failurePolicy
-
-	_, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-}
-func GetValidatingWebhook(ctx context.Context, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
-	return GetValidatingWebhookWithOffset(ctx, 1, webhookName)
-}
-
-func GetValidatingWebhookWithOffset(ctx context.Context, offset int, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
-	kubeClient := clienthelpers.MustKubeClient()
-	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
-	ExpectWithOffset(offset, err).NotTo(HaveOccurred())
-	return cfg
 }

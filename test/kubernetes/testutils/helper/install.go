@@ -10,23 +10,18 @@ import (
 
 	"helm.sh/helm/v3/pkg/repo"
 
-	"github.com/avast/retry-go"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/fsutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/k8s-utils/testutils/kube"
 )
 
 const (
 	GATEWAY = "gateway"
-	INGRESS = "ingress"
-	KNATIVE = "knative"
 )
 
 // Default test configuration
@@ -242,15 +237,6 @@ func glooctlInstallWithTimeout(rootDir string, io *InstallOptions, timeout time.
 	case <-time.After(timeout):
 		return errors.New("timeout - did something go wrong fetching the docker images?")
 	}
-}
-
-func waitForDefaultServiceAccount(ctx context.Context, installNamespace string) error {
-	kubeClient := kube.MustKubeClient()
-	getDefaultServiceAccount := func() error {
-		_, err := kubeClient.CoreV1().ServiceAccounts(installNamespace).Get(ctx, "default", metav1.GetOptions{})
-		return err
-	}
-	return retry.Do(getDefaultServiceAccount)
 }
 
 // passes the --all flag to glooctl uninstall
