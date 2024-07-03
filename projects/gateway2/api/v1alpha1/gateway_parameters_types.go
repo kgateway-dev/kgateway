@@ -27,6 +27,7 @@ type GatewayParametersSpec struct {
 	SelfManaged *SelfManagedGateway    `json:"selfManaged,omitempty"`
 	Kube        *KubernetesProxyConfig `json:"kube,omitempty"`
 }
+
 type GatewayParametersStatus struct {
 }
 
@@ -57,9 +58,72 @@ type KubernetesProxyConfig struct {
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 }
 
+func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
+	if in == nil {
+		return nil
+	}
+	return in.Deployment
+}
+
+func (in *KubernetesProxyConfig) GetEnvoyContainer() *EnvoyContainer {
+	if in == nil {
+		return nil
+	}
+	return in.EnvoyContainer
+}
+
+func (in *KubernetesProxyConfig) GetSdsContainer() *SdsContainer {
+	if in == nil {
+		return nil
+	}
+	return in.SdsContainer
+}
+
+func (in *KubernetesProxyConfig) GetPodTemplate() *Pod {
+	if in == nil {
+		return nil
+	}
+	return in.PodTemplate
+}
+
+func (in *KubernetesProxyConfig) GetService() *Service {
+	if in == nil {
+		return nil
+	}
+	return in.Service
+}
+
+func (in *KubernetesProxyConfig) GetIstio() *IstioIntegration {
+	if in == nil {
+		return nil
+	}
+	return in.Istio
+}
+
+func (in *KubernetesProxyConfig) GetStats() *StatsConfig {
+	if in == nil {
+		return nil
+	}
+	return in.Stats
+}
+
+func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
+	if in == nil {
+		return nil
+	}
+	return in.AiExtension
+}
+
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	Replicas *uint32 `json:"replicas,omitempty"`
+}
+
+func (in *ProxyDeployment) GetReplicas() *uint32 {
+	if in == nil {
+		return nil
+	}
+	return in.Replicas
 }
 
 type EnvoyContainer struct {
@@ -87,13 +151,41 @@ type EnvoyContainer struct {
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
+func (in *EnvoyContainer) GetBootstrap() *EnvoyBootstrap {
+	if in == nil {
+		return nil
+	}
+	return in.Bootstrap
+}
+
+func (in *EnvoyContainer) GetImage() *Image {
+	if in == nil {
+		return nil
+	}
+	return in.Image
+}
+
+func (in *EnvoyContainer) GetSecurityContext() *corev1.SecurityContext {
+	if in == nil {
+		return nil
+	}
+	return in.SecurityContext
+}
+
+func (in *EnvoyContainer) GetResources() *corev1.ResourceRequirements {
+	if in == nil {
+		return nil
+	}
+	return in.Resources
+}
+
 type EnvoyBootstrap struct {
 
 	// Envoy log level. Options include "trace", "debug", "info", "warn", "error",
 	// "critical" and "off". Defaults to "info". See
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
 	// for more information.
-	LogLevel string `json:"logLevel,omitempty"`
+	LogLevel *string `json:"logLevel,omitempty"`
 	// Envoy log levels for specific components. The keys are component names and
 	// the values are one of "trace", "debug", "info", "warn", "error",
 	// "critical", or "off", e.g.
@@ -113,6 +205,20 @@ type EnvoyBootstrap struct {
 	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
 }
 
+func (in *EnvoyBootstrap) GetLogLevel() *string {
+	if in == nil {
+		return nil
+	}
+	return in.LogLevel
+}
+
+func (in *EnvoyBootstrap) GetComponentLogLevels() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ComponentLogLevels
+}
+
 type SdsContainer struct {
 	Image           *Image                       `json:"image,omitempty"`
 	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
@@ -120,13 +226,62 @@ type SdsContainer struct {
 	Bootstrap       *SdsBootstrap                `json:"bootstrap,omitempty"`
 }
 
+func (in *SdsContainer) GetImage() *Image {
+	if in == nil {
+		return nil
+	}
+	return in.Image
+}
+
+func (in *SdsContainer) GetSecurityContext() *corev1.SecurityContext {
+	if in == nil {
+		return nil
+	}
+	return in.SecurityContext
+}
+
+func (in *SdsContainer) GetResources() *corev1.ResourceRequirements {
+	if in == nil {
+		return nil
+	}
+	return in.Resources
+}
+
+func (in *SdsContainer) GetBootstrap() *SdsBootstrap {
+	if in == nil {
+		return nil
+	}
+	return in.Bootstrap
+}
+
 type SdsBootstrap struct {
 	LogLevel *string `json:"logLevel,omitempty"`
+}
+
+func (in *SdsBootstrap) GetLogLevel() *string {
+	if in == nil {
+		return nil
+	}
+	return in.LogLevel
 }
 
 type IstioIntegration struct {
 	IstioProxyContainer *IstioContainer     `json:"istioProxyContainer,omitempty"`
 	CustomSidecars      []*corev1.Container `json:"customSidecars,omitempty"`
+}
+
+func (in *IstioIntegration) GetIstioProxyContainer() *IstioContainer {
+	if in == nil {
+		return nil
+	}
+	return in.IstioProxyContainer
+}
+
+func (in *IstioIntegration) GetCustomSidecars() []*corev1.Container {
+	if in == nil {
+		return nil
+	}
+	return in.CustomSidecars
 }
 
 type IstioContainer struct {
@@ -159,6 +314,55 @@ type IstioContainer struct {
 	IstioMetaClusterId *string `json:"istioMetaClusterId,omitempty"`
 }
 
+func (in *IstioContainer) GetImage() *Image {
+	if in == nil {
+		return nil
+	}
+	return in.Image
+}
+
+func (in *IstioContainer) GetSecurityContext() *corev1.SecurityContext {
+	if in == nil {
+		return nil
+	}
+	return in.SecurityContext
+}
+
+func (in *IstioContainer) GetResources() *corev1.ResourceRequirements {
+	if in == nil {
+		return nil
+	}
+	return in.Resources
+}
+
+func (in *IstioContainer) GetLogLevel() *string {
+	if in == nil {
+		return nil
+	}
+	return in.LogLevel
+}
+
+func (in *IstioContainer) GetIstioDiscoveryAddress() *string {
+	if in == nil {
+		return nil
+	}
+	return in.IstioDiscoveryAddress
+}
+
+func (in *IstioContainer) GetIstioMetaMeshId() *string {
+	if in == nil {
+		return nil
+	}
+	return in.IstioMetaMeshId
+}
+
+func (in *IstioContainer) GetIstioMetaClusterId() *string {
+	if in == nil {
+		return nil
+	}
+	return in.IstioMetaClusterId
+}
+
 type StatsConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
 
@@ -169,6 +373,35 @@ type StatsConfig struct {
 	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty"`
 }
 
+func (in *StatsConfig) GetEnabled() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.Enabled
+}
+
+func (in *StatsConfig) GetRoutePrefixRewrite() *string {
+	if in == nil {
+		return nil
+	}
+	return in.RoutePrefixRewrite
+}
+
+func (in *StatsConfig) GetEnableStatsRoute() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.EnableStatsRoute
+}
+
+func (in *StatsConfig) GetStatsRoutePrefixRewrite() *string {
+	if in == nil {
+		return nil
+	}
+	return in.StatsRoutePrefixRewrite
+}
+
+// Configuration for the AI extension.
 type AiExtension struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	// The envoy container image. See
@@ -194,6 +427,48 @@ type AiExtension struct {
 	Env []*corev1.EnvVar `json:"env,omitempty"`
 
 	Ports []*corev1.ContainerPort `json:"ports,omitempty"`
+}
+
+func (in *AiExtension) GetEnabled() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.Enabled
+}
+
+func (in *AiExtension) GetImage() *Image {
+	if in == nil {
+		return nil
+	}
+	return in.Image
+}
+
+func (in *AiExtension) GetSecurityContext() *corev1.SecurityContext {
+	if in == nil {
+		return nil
+	}
+	return in.SecurityContext
+}
+
+func (in *AiExtension) GetResources() *corev1.ResourceRequirements {
+	if in == nil {
+		return nil
+	}
+	return in.Resources
+}
+
+func (in *AiExtension) GetEnv() []*corev1.EnvVar {
+	if in == nil {
+		return nil
+	}
+	return in.Env
+}
+
+func (in *AiExtension) GetPorts() []*corev1.ContainerPort {
+	if in == nil {
+		return nil
+	}
+	return in.Ports
 }
 
 func init() {

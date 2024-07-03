@@ -13,6 +13,13 @@ type Autoscaling struct {
 	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty"`
 }
 
+func (in *Autoscaling) GetHorizontalPodAutoscaler() *HorizontalPodAutoscaler {
+	if in == nil {
+		return nil
+	}
+	return in.HorizontalPodAutoscaler
+}
+
 // Horizontal pod autoscaling configuration. See
 // https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 // for details.
@@ -33,6 +40,34 @@ type HorizontalPodAutoscaler struct {
 	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
+func (in *HorizontalPodAutoscaler) GetMinReplicas() *uint32 {
+	if in == nil {
+		return nil
+	}
+	return in.MinReplicas
+}
+
+func (in *HorizontalPodAutoscaler) GetMaxReplicas() *uint32 {
+	if in == nil {
+		return nil
+	}
+	return in.MaxReplicas
+}
+
+func (in *HorizontalPodAutoscaler) GetTargetCpuUtilizationPercentage() *uint32 {
+	if in == nil {
+		return nil
+	}
+	return in.TargetCpuUtilizationPercentage
+}
+
+func (in *HorizontalPodAutoscaler) GetTargetMemoryUtilizationPercentage() *uint32 {
+	if in == nil {
+		return nil
+	}
+	return in.TargetMemoryUtilizationPercentage
+}
+
 // A container image. See https://kubernetes.io/docs/concepts/containers/images
 // for details.
 type Image struct {
@@ -48,6 +83,41 @@ type Image struct {
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
 	PullPolicy corev1.PullPolicy `json:"pull_policy,omitempty"`
+}
+
+func (in *Image) GetRegistry() string {
+	if in == nil {
+		return ""
+	}
+	return in.Registry
+}
+
+func (in *Image) GetRepository() string {
+	if in == nil {
+		return ""
+	}
+	return in.Repository
+}
+
+func (in *Image) GetTag() string {
+	if in == nil {
+		return ""
+	}
+	return in.Tag
+}
+
+func (in *Image) GetDigest() string {
+	if in == nil {
+		return ""
+	}
+	return in.Digest
+}
+
+func (in *Image) GetPullPolicy() corev1.PullPolicy {
+	if in == nil {
+		return ""
+	}
+	return in.PullPolicy
 }
 
 // Configuration for a Kubernetes Service.
@@ -66,6 +136,34 @@ type Service struct {
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Service object metadata.
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+}
+
+func (in *Service) GetType() corev1.ServiceType {
+	if in == nil {
+		return ""
+	}
+	return in.Type
+}
+
+func (in *Service) GetClusterIP() string {
+	if in == nil {
+		return ""
+	}
+	return in.ClusterIP
+}
+
+func (in *Service) GetExtraLabels() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraLabels
+}
+
+func (in *Service) GetExtraAnnotations() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraAnnotations
 }
 
 // Configuration for a Kubernetes Pod template.
@@ -95,4 +193,53 @@ type Pod struct {
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
 	Tolerations []*corev1.Toleration `json:"tolerations,omitempty"`
+}
+
+func (in *Pod) GetExtraLabels() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraLabels
+}
+
+func (in *Pod) GetExtraAnnotations() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraAnnotations
+}
+
+func (in *Pod) GetSecurityContext() *corev1.PodSecurityContext {
+	if in == nil {
+		return nil
+	}
+	return in.SecurityContext
+}
+
+func (in *Pod) GetImagePullSecrets() []corev1.LocalObjectReference {
+	if in == nil {
+		return nil
+	}
+	return in.ImagePullSecrets
+}
+
+func (in *Pod) GetNodeSelector() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.NodeSelector
+}
+
+func (in *Pod) GetAffinity() *corev1.Affinity {
+	if in == nil {
+		return nil
+	}
+	return in.Affinity
+}
+
+func (in *Pod) GetTolerations() []*corev1.Toleration {
+	if in == nil {
+		return nil
+	}
+	return in.Tolerations
 }

@@ -269,26 +269,21 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
 	kubeProxyConfig := gwParam.Spec.Kube
-	deployConfig := kubeProxyConfig.Deployment
-	podConfig := kubeProxyConfig.PodTemplate
-	envoyContainerConfig := kubeProxyConfig.EnvoyContainer
-	svcConfig := kubeProxyConfig.Service
-	istioConfig := kubeProxyConfig.Istio
-	if istioConfig == nil {
-		istioConfig = &v1alpha1.IstioIntegration{}
-	}
+	deployConfig := kubeProxyConfig.GetDeployment()
+	podConfig := kubeProxyConfig.GetPodTemplate()
+	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
+	svcConfig := kubeProxyConfig.GetService()
+	istioConfig := kubeProxyConfig.GetIstio()
 
-	sdsContainerConfig := kubeProxyConfig.SdsContainer
-	statsConfig := kubeProxyConfig.Stats
-	istioContainerConfig := istioConfig.IstioProxyContainer
-	aiExtensionConfig := kubeProxyConfig.AiExtension
+	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
+	statsConfig := kubeProxyConfig.GetStats()
+	istioContainerConfig := istioConfig.GetIstioProxyContainer()
+	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
 
 	gateway := vals.Gateway
 
 	// deployment values
-	if deployConfig != nil {
-		gateway.ReplicaCount = deployConfig.Replicas
-	}
+	gateway.ReplicaCount = deployConfig.GetReplicas()
 
 	// TODO: The follow stanza has been commented out as autoscaling support has been removed.
 	// see https://github.com/solo-io/solo-projects/issues/5948 for more info.
@@ -302,37 +297,28 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 
 	// service values
 	gateway.Service = getServiceValues(svcConfig)
-	if podConfig != nil {
-		// pod template values
-		gateway.ExtraPodAnnotations = podConfig.ExtraAnnotations
-		gateway.ExtraPodLabels = podConfig.ExtraLabels
-		gateway.ImagePullSecrets = podConfig.ImagePullSecrets
-		gateway.PodSecurityContext = podConfig.SecurityContext
-		gateway.NodeSelector = podConfig.NodeSelector
-		gateway.Affinity = podConfig.Affinity
-		gateway.Tolerations = podConfig.Tolerations
-	}
+	// pod template values
+	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
+	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
+	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
+	gateway.PodSecurityContext = podConfig.GetSecurityContext()
+	gateway.NodeSelector = podConfig.GetNodeSelector()
+	gateway.Affinity = podConfig.GetAffinity()
+	gateway.Tolerations = podConfig.GetTolerations()
 
-	if envoyContainerConfig != nil {
-		// envoy container values
-		if envoyBootstrap := envoyContainerConfig.Bootstrap; envoyBootstrap != nil {
-			logLevel := envoyContainerConfig.Bootstrap.LogLevel
-			compLogLevels := envoyContainerConfig.Bootstrap.ComponentLogLevels
-			gateway.LogLevel = &logLevel
-			compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
-			if err != nil {
-				return nil, err
-			}
-			gateway.ComponentLogLevel = &compLogLevelStr
-		}
-
-		gateway.Resources = envoyContainerConfig.Resources
-		gateway.SecurityContext = envoyContainerConfig.SecurityContext
-		gateway.Image = getImageValues(envoyContainerConfig.Image)
-	} else {
-		// set default values
-		gateway.Image = getImageValues(&v1alpha1.Image{})
+	// envoy container values
+	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
+	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+	gateway.LogLevel = logLevel
+	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
+	if err != nil {
+		return nil, err
 	}
+	gateway.ComponentLogLevel = &compLogLevelStr
+
+	gateway.Resources = envoyContainerConfig.GetResources()
+	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	gateway.Image = getImageValues(envoyContainerConfig.GetImage())
 
 	// istio values
 	gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)

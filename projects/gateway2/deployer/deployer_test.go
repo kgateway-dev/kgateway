@@ -130,7 +130,7 @@ var _ = Describe("Deployer", func() {
 						},
 						EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 							Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-								LogLevel: "debug",
+								LogLevel: ptr.To("debug"),
 								ComponentLogLevels: map[string]string{
 									"router":   "info",
 									"listener": "warn",
@@ -392,7 +392,7 @@ var _ = Describe("Deployer", func() {
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-									LogLevel: "debug",
+									LogLevel: ptr.To("debug"),
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
@@ -1047,7 +1047,7 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 				},
 				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
-						LogLevel: "debug",
+						LogLevel: ptr.To("debug"),
 						ComponentLogLevels: map[string]string{
 							"router":   "info",
 							"listener": "warn",

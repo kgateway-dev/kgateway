@@ -573,7 +573,7 @@ func deepMergeEnvoyBootstrap(dst, src *v1alpha1.EnvoyBootstrap) *v1alpha1.EnvoyB
 	if dst == nil {
 		return src
 	}
-	if src.LogLevel != "" {
+	if src.LogLevel != nil {
 		dst.LogLevel = src.LogLevel
 	}
 
