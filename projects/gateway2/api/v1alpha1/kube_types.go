@@ -8,20 +8,29 @@ import (
 // for details.
 type Image struct {
 	// The image registry.
+	//
 	// +kubebuilder:validation:Optional
 	Registry string `json:"registry,omitempty"`
+
 	// The image repository (name).
+	//
 	// +kubebuilder:validation:Optional
 	Repository string `json:"repository,omitempty"`
+
 	// The image tag.
+	//
 	// +kubebuilder:validation:Optional
 	Tag string `json:"tag,omitempty"`
+
 	// The hash digest of the image, e.g. `sha256:12345...`
+	//
 	// +kubebuilder:validation:Optional
 	Digest string `json:"digest,omitempty"`
+
 	// The image pull policy for the container. See
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
+	//
 	// +kubebuilder:validation:Optional
 	PullPolicy corev1.PullPolicy `json:"pullPolicy,omitempty"`
 }
@@ -64,20 +73,27 @@ func (in *Image) GetPullPolicy() corev1.PullPolicy {
 // Configuration for a Kubernetes Service.
 type Service struct {
 	// The Kubernetes Service type.
+	//
 	// +kubebuilder:validation:Optional
 	Type corev1.ServiceType `json:"type,omitempty"`
+
 	// The manually specified IP address of the service, if a randomly assigned
 	// IP is not desired. See
 	// https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address
 	// and
 	// https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
 	// on the implications of setting `clusterIP`.
+	//
 	// +kubebuilder:validation:Optional
 	ClusterIP string `json:"clusterIP,omitempty"`
+
 	// Additional labels to add to the Service object metadata.
+	//
 	// +kubebuilder:validation:Optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
+
 	// Additional annotations to add to the Service object metadata.
+	//
 	// +kubebuilder:validation:Optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
@@ -113,35 +129,48 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
+	//
 	// +kubebuilder:validation:Optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
+
 	// Additional annotations to add to the Pod object metadata.
+	//
 	// +kubebuilder:validation:Optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+
 	// The pod security context. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
 	// for details.
+	//
 	// +kubebuilder:validation:Optional
 	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty"`
+
 	// An optional list of references to secrets in the same namespace to use for
 	// pulling any of the images used by this Pod spec. See
 	// https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 	// for details.
+	//
 	// +kubebuilder:validation:Optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
 	// A selector which must be true for the pod to fit on a node. See
 	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
 	// details.
+	//
 	// +kubebuilder:validation:Optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
 	// If specified, the pod's scheduling constraints. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core
 	// for details.
+	//
 	// +kubebuilder:validation:Optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
 	// If specified, the pod's tolerations. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
+	//
 	// +kubebuilder:validation:Optional
 	Tolerations []*corev1.Toleration `json:"tolerations,omitempty"`
 }
