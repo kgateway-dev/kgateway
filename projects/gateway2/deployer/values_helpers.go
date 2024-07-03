@@ -49,6 +49,14 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 	return gwPorts
 }
 
+func getDefaultValue[T comparable](value *T) T {
+	var t T
+	if value == nil {
+		return t
+	}
+	return *value
+}
+
 // TODO: Removing until autoscaling is re-added.
 // See: https://github.com/solo-io/solo-projects/issues/5948
 // Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
@@ -74,11 +82,11 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
-	svcType := string(svcConfig.Type)
+	svcType := string(getDefaultValue(svcConfig.Type))
 	clusterIp := svcConfig.ClusterIP
 	return &helmService{
 		Type:             &svcType,
-		ClusterIP:        &clusterIp,
+		ClusterIP:        ptr.To(getDefaultValue(clusterIp)),
 		ExtraAnnotations: svcConfig.ExtraAnnotations,
 		ExtraLabels:      svcConfig.ExtraLabels,
 	}
@@ -143,12 +151,12 @@ func getImageValues(image *v1alpha1.Image) *helmImage {
 	}
 
 	helmImage := &helmImage{
-		Registry:   ptr.To(image.Registry),
-		Repository: ptr.To(image.Repository),
-		Tag:        ptr.To(image.Tag),
-		Digest:     ptr.To(image.Digest),
+		Registry:   ptr.To(getDefaultValue(image.Registry)),
+		Repository: ptr.To(getDefaultValue(image.Repository)),
+		Tag:        ptr.To(getDefaultValue(image.Tag)),
+		Digest:     ptr.To(getDefaultValue(image.Digest)),
 	}
-	setPullPolicy(image.PullPolicy, helmImage)
+	setPullPolicy(getDefaultValue(image.PullPolicy), helmImage)
 	return helmImage
 }
 

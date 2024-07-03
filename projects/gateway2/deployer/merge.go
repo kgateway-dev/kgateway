@@ -543,23 +543,25 @@ func deepMergeImage(dst, src *v1alpha1.Image) *v1alpha1.Image {
 	// because all fields are not nullable, we treat empty strings as empty values
 	// and do not override with them
 
-	if src.Registry != "" {
+	if src.Registry != nil {
 		dst.Registry = src.Registry
 	}
 
-	if src.Repository != "" {
+	if src.Repository != nil {
 		dst.Repository = src.Repository
 	}
 
-	if src.Tag != "" {
+	if src.Tag != nil {
 		dst.Tag = src.Tag
 	}
 
-	if src.Digest != "" {
+	if src.Digest != nil {
 		dst.Digest = src.Digest
 	}
 
-	dst.PullPolicy = src.PullPolicy
+	if src.PullPolicy != nil {
+		dst.PullPolicy = src.PullPolicy
+	}
 
 	return dst
 }

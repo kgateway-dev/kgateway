@@ -40,11 +40,11 @@ type helmGateway struct {
 	Istio *helmIstio `json:"istio,omitempty"`
 
 	// envoy container values
-	LogLevel          *string                            `json:"logLevel,omitempty"`
-	ComponentLogLevel *string                            `json:"componentLogLevel,omitempty"`
-	Image             *helmImage                         `json:"image,omitempty"`
+	LogLevel          *string                      `json:"logLevel,omitempty"`
+	ComponentLogLevel *string                      `json:"componentLogLevel,omitempty"`
+	Image             *helmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext   *corev1.SecurityContext            `json:"securityContext,omitempty"`
+	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
 
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`

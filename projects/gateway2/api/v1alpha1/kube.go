@@ -10,6 +10,7 @@ type Autoscaling struct {
 	// workload to match demand. See
 	// https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 	// for details.
+	// +optional
 	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty"`
 }
 
@@ -26,17 +27,21 @@ func (in *Autoscaling) GetHorizontalPodAutoscaler() *HorizontalPodAutoscaler {
 type HorizontalPodAutoscaler struct {
 	// The lower limit for the number of replicas to which the autoscaler can
 	// scale down. Defaults to 1.
+	// +optional
 	MinReplicas *uint32 `json:"minReplicas,omitempty"`
 	// The upper limit for the number of replicas to which the autoscaler can
 	// scale up. Cannot be less than `minReplicas`. Defaults to 100.
+	// +optional
 	MaxReplicas *uint32 `json:"maxReplicas,omitempty"`
 	// The target value of the average CPU utilization across all relevant pods,
 	// represented as a percentage of the requested value of the resource for the
 	// pods. Defaults to 80.
+	// +optional
 	TargetCpuUtilizationPercentage *uint32 `json:"targetCpuUtilizationPercentage,omitempty"`
 	// The target value of the average memory utilization across all relevant
 	// pods, represented as a percentage of the requested value of the resource
 	// for the pods. Defaults to 80.
+	// +optional
 	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
@@ -72,82 +77,90 @@ func (in *HorizontalPodAutoscaler) GetTargetMemoryUtilizationPercentage() *uint3
 // for details.
 type Image struct {
 	// The image registry.
-	Registry string `json:"registry,omitempty"`
+	// +optional
+	Registry *string `json:"registry,omitempty"`
 	// The image repository (name).
-	Repository string `json:"repository,omitempty"`
+	// +optional
+	Repository *string `json:"repository,omitempty"`
 	// The image tag.
-	Tag string `json:"tag,omitempty"`
+	// +optional
+	Tag *string `json:"tag,omitempty"`
 	// The hash digest of the image, e.g. `sha256:12345...`
-	Digest string `json:"digest,omitempty"`
+	// +optional
+	Digest *string `json:"digest,omitempty"`
 	// The image pull policy for the container. See
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
-	PullPolicy corev1.PullPolicy `json:"pull_policy,omitempty"`
+	// +optional
+	PullPolicy *corev1.PullPolicy `json:"pull_policy,omitempty"`
 }
 
-func (in *Image) GetRegistry() string {
+func (in *Image) GetRegistry() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Registry
 }
 
-func (in *Image) GetRepository() string {
+func (in *Image) GetRepository() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Repository
 }
 
-func (in *Image) GetTag() string {
+func (in *Image) GetTag() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Tag
 }
 
-func (in *Image) GetDigest() string {
+func (in *Image) GetDigest() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Digest
 }
 
-func (in *Image) GetPullPolicy() corev1.PullPolicy {
+func (in *Image) GetPullPolicy() *corev1.PullPolicy {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.PullPolicy
 }
 
 // Configuration for a Kubernetes Service.
 type Service struct {
-
 	// The Kubernetes Service type.
-	Type corev1.ServiceType `json:"type,omitempty"`
+	// +optional
+	Type *corev1.ServiceType `json:"type,omitempty"`
 	// The manually specified IP address of the service, if a randomly assigned
 	// IP is not desired. See
 	// https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address
 	// and
 	// https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
 	// on the implications of setting `clusterIP`.
-	ClusterIP string `json:"clusterIP,omitempty"`
+	// +optional
+	ClusterIP *string `json:"clusterIP,omitempty"`
 	// Additional labels to add to the Service object metadata.
+	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Service object metadata.
+	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
-func (in *Service) GetType() corev1.ServiceType {
+func (in *Service) GetType() *corev1.ServiceType {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Type
 }
 
-func (in *Service) GetClusterIP() string {
+func (in *Service) GetClusterIP() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.ClusterIP
 }
@@ -169,29 +182,36 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
+	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Additional annotations to add to the Pod object metadata.
+	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	// The pod security context. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core
 	// for details.
+	// +optional
 	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty"`
 	// An optional list of references to secrets in the same namespace to use for
 	// pulling any of the images used by this Pod spec. See
 	// https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 	// for details.
+	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// A selector which must be true for the pod to fit on a node. See
 	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
 	// details.
+	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// If specified, the pod's scheduling constraints. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#affinity-v1-core
 	// for details.
+	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 	// If specified, the pod's tolerations. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
+	// +optional
 	Tolerations []*corev1.Toleration `json:"tolerations,omitempty"`
 }
 

@@ -137,10 +137,10 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Image: &gw2_v1alpha1.Image{
-								Registry:   "scooby",
-								Repository: "dooby",
-								Tag:        "doo",
-								PullPolicy: corev1.PullAlways,
+								Registry:   ptr.To("scooby"),
+								Repository: ptr.To("dooby"),
+								Tag:        ptr.To("doo"),
+								PullPolicy: ptr.To(corev1.PullAlways),
 							},
 						},
 						PodTemplate: &gw2_v1alpha1.Pod{
@@ -153,8 +153,8 @@ var _ = Describe("Deployer", func() {
 							},
 						},
 						Service: &gw2_v1alpha1.Service{
-							Type:      corev1.ServiceTypeClusterIP,
-							ClusterIP: "99.99.99.99",
+							Type:      ptr.To(corev1.ServiceTypeClusterIP),
+							ClusterIP: ptr.To("99.99.99.99"),
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
@@ -399,10 +399,10 @@ var _ = Describe("Deployer", func() {
 									},
 								},
 								Image: &gw2_v1alpha1.Image{
-									Registry:   "foo",
-									Repository: "bar",
-									Tag:        "bat",
-									PullPolicy: corev1.PullAlways,
+									Registry:   ptr.To("foo"),
+									Repository: ptr.To("bar"),
+									Tag:        ptr.To("bat"),
+									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
 							PodTemplate: &gw2_v1alpha1.Pod{
@@ -415,8 +415,8 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &gw2_v1alpha1.Service{
-								Type:      corev1.ServiceTypeClusterIP,
-								ClusterIP: "99.99.99.99",
+								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								ClusterIP: ptr.To("99.99.99.99"),
 								ExtraAnnotations: map[string]string{
 									"foo": "bar",
 								},
@@ -441,17 +441,17 @@ var _ = Describe("Deployer", func() {
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							SdsContainer: &gw2_v1alpha1.SdsContainer{
 								Image: &gw2_v1alpha1.Image{
-									Registry:   "foo",
-									Repository: "bar",
-									Tag:        "baz",
+									Registry:   ptr.To("foo"),
+									Repository: ptr.To("bar"),
+									Tag:        ptr.To("baz"),
 								},
 							},
 							Istio: &gw2_v1alpha1.IstioIntegration{
 								IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
 									Image: &gw2_v1alpha1.Image{
-										Registry:   "scooby",
-										Repository: "dooby",
-										Tag:        "doo",
+										Registry:   ptr.To("scooby"),
+										Repository: ptr.To("dooby"),
+										Tag:        ptr.To("doo"),
 									},
 									IstioDiscoveryAddress: ptr.To("can't"),
 									IstioMetaMeshId:       ptr.To("be"),
@@ -461,9 +461,9 @@ var _ = Describe("Deployer", func() {
 							AiExtension: &gw2_v1alpha1.AiExtension{
 								Enabled: ptr.To(true),
 								Image: &gw2_v1alpha1.Image{
-									Registry:   "foo",
-									Repository: "bar",
-									Tag:        "baz",
+									Registry:   ptr.To("foo"),
+									Repository: ptr.To("bar"),
+									Tag:        ptr.To("baz"),
 								},
 								Ports: []*corev1.ContainerPort{
 									{
@@ -533,16 +533,16 @@ var _ = Describe("Deployer", func() {
 				Expect(dep.Spec.Replicas).ToNot(BeNil())
 				Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
 				expectedImage := fmt.Sprintf("%s/%s",
-					expectedGwp.EnvoyContainer.Image.Registry,
-					expectedGwp.EnvoyContainer.Image.Repository,
+					*expectedGwp.EnvoyContainer.Image.Registry,
+					*expectedGwp.EnvoyContainer.Image.Repository,
 				)
 				Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(expectedImage))
-				if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; expectedTag != "" {
-					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + expectedTag))
+				if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; expectedTag != nil {
+					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + *expectedTag))
 				} else {
 					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + version.Version))
 				}
-				Expect(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy).To(Equal(expectedGwp.EnvoyContainer.Image.PullPolicy))
+				Expect(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
 				Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 				Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "true"))
 				Expect(*dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(*expectedGwp.PodTemplate.SecurityContext.RunAsUser))
@@ -552,8 +552,8 @@ var _ = Describe("Deployer", func() {
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
 				Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
-				Expect(svc.Spec.Type).To(Equal(expectedGwp.Service.Type))
-				Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.Service.ClusterIP))
+				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
+				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
@@ -569,7 +569,7 @@ var _ = Describe("Deployer", func() {
 
 				argsMatchers := []interface{}{
 					"--log-level",
-					expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
+					*expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
 					"--component-log-level",
 					And(levels...),
 				}
@@ -665,33 +665,33 @@ var _ = Describe("Deployer", func() {
 
 					// assert envoy container
 					expectedEnvoyImage := fmt.Sprintf("%s/%s",
-						expectedGwp.EnvoyContainer.Image.Registry,
-						expectedGwp.EnvoyContainer.Image.Repository,
+						*expectedGwp.EnvoyContainer.Image.Registry,
+						*expectedGwp.EnvoyContainer.Image.Repository,
 					)
 					envoyContainer := dep.Spec.Template.Spec.Containers[0]
 					Expect(envoyContainer.Image).To(ContainSubstring(expectedEnvoyImage))
-					if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; expectedTag != "" {
-						Expect(envoyContainer.Image).To(ContainSubstring(":" + expectedTag))
+					if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; expectedTag != nil {
+						Expect(envoyContainer.Image).To(ContainSubstring(":" + *expectedTag))
 					} else {
 						Expect(envoyContainer.Image).To(ContainSubstring(":" + version.Version))
 					}
-					Expect(envoyContainer.ImagePullPolicy).To(Equal(expectedGwp.EnvoyContainer.Image.PullPolicy))
+					Expect(envoyContainer.ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
 					Expect(envoyContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.EnvoyContainer.Resources.Limits.Cpu()))
 					Expect(envoyContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.EnvoyContainer.Resources.Requests.Cpu()))
 
 					// assert sds container
 					expectedSdsImage := fmt.Sprintf("%s/%s",
-						expectedGwp.SdsContainer.Image.Registry,
-						expectedGwp.SdsContainer.Image.Repository,
+						*expectedGwp.SdsContainer.Image.Registry,
+						*expectedGwp.SdsContainer.Image.Repository,
 					)
 					sdsContainer := dep.Spec.Template.Spec.Containers[1]
 					Expect(sdsContainer.Image).To(ContainSubstring(expectedSdsImage))
-					if expectedTag := expectedGwp.SdsContainer.Image.Tag; expectedTag != "" {
-						Expect(sdsContainer.Image).To(ContainSubstring(":" + expectedTag))
+					if expectedTag := expectedGwp.SdsContainer.Image.Tag; expectedTag != nil {
+						Expect(sdsContainer.Image).To(ContainSubstring(":" + *expectedTag))
 					} else {
 						Expect(sdsContainer.Image).To(ContainSubstring(":" + version.Version))
 					}
-					Expect(sdsContainer.ImagePullPolicy).To(Equal(expectedGwp.SdsContainer.Image.PullPolicy))
+					Expect(sdsContainer.ImagePullPolicy).To(Equal(*expectedGwp.SdsContainer.Image.PullPolicy))
 					Expect(*sdsContainer.SecurityContext.RunAsUser).To(Equal(*expectedGwp.SdsContainer.SecurityContext.RunAsUser))
 					Expect(sdsContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.SdsContainer.Resources.Limits.Cpu()))
 					Expect(sdsContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.SdsContainer.Resources.Requests.Cpu()))
@@ -703,17 +703,17 @@ var _ = Describe("Deployer", func() {
 
 					// assert istio container
 					istioExpectedImage := fmt.Sprintf("%s/%s",
-						expectedGwp.Istio.IstioProxyContainer.Image.Registry,
-						expectedGwp.Istio.IstioProxyContainer.Image.Repository,
+						*expectedGwp.Istio.IstioProxyContainer.Image.Registry,
+						*expectedGwp.Istio.IstioProxyContainer.Image.Repository,
 					)
 					istioContainer := dep.Spec.Template.Spec.Containers[2]
 					Expect(istioContainer.Image).To(ContainSubstring(istioExpectedImage))
-					if expectedTag := expectedGwp.Istio.IstioProxyContainer.Image.Tag; expectedTag != "" {
-						Expect(istioContainer.Image).To(ContainSubstring(":" + expectedTag))
+					if expectedTag := expectedGwp.Istio.IstioProxyContainer.Image.Tag; expectedTag != nil {
+						Expect(istioContainer.Image).To(ContainSubstring(":" + *expectedTag))
 					} else {
 						Expect(istioContainer.Image).To(ContainSubstring(":" + version.Version))
 					}
-					Expect(istioContainer.ImagePullPolicy).To(Equal(expectedGwp.Istio.IstioProxyContainer.Image.PullPolicy))
+					Expect(istioContainer.ImagePullPolicy).To(Equal(*expectedGwp.Istio.IstioProxyContainer.Image.PullPolicy))
 					Expect(*istioContainer.SecurityContext.RunAsUser).To(Equal(*expectedGwp.Istio.IstioProxyContainer.SecurityContext.RunAsUser))
 					Expect(istioContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Limits.Cpu()))
 					Expect(istioContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Requests.Cpu()))
@@ -721,8 +721,8 @@ var _ = Describe("Deployer", func() {
 
 					// assert AI extension container
 					expectedAIExtension := fmt.Sprintf("%s/%s",
-						expectedGwp.AiExtension.Image.Registry,
-						expectedGwp.AiExtension.Image.Repository,
+						*expectedGwp.AiExtension.Image.Registry,
+						*expectedGwp.AiExtension.Image.Repository,
 					)
 					aiExt := dep.Spec.Template.Spec.Containers[3]
 					Expect(aiExt.Image).To(ContainSubstring(expectedAIExtension))
@@ -733,8 +733,8 @@ var _ = Describe("Deployer", func() {
 					Expect(svc).ToNot(BeNil())
 					Expect(svc.GetAnnotations()).ToNot(BeNil())
 					Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
-					Expect(svc.Spec.Type).To(Equal(expectedGwp.Service.Type))
-					Expect(svc.Spec.ClusterIP).To(Equal(expectedGwp.Service.ClusterIP))
+					Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
+					Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
 					sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 					Expect(sa).ToNot(BeNil())
@@ -750,7 +750,7 @@ var _ = Describe("Deployer", func() {
 
 					argsMatchers := []interface{}{
 						"--log-level",
-						expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
+						*expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
 						"--component-log-level",
 						And(levels...),
 					}
@@ -799,9 +799,9 @@ var _ = Describe("Deployer", func() {
 					Expect(clusters).To(ContainElement(HaveField("Name", "gateway_proxy_sds")))
 
 					sdsImg := inp.overrideGwp.Spec.Kube.SdsContainer.Image
-					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", sdsImg.Registry, sdsImg.Repository, sdsImg.Tag)))
+					Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", *sdsImg.Registry, *sdsImg.Repository, *sdsImg.Tag)))
 					istioProxyImg := inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.Image
-					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", istioProxyImg.Registry, istioProxyImg.Repository, istioProxyImg.Tag)))
+					Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", *istioProxyImg.Registry, *istioProxyImg.Repository, *istioProxyImg.Tag)))
 
 					return nil
 				},
@@ -1054,10 +1054,10 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 						},
 					},
 					Image: &gw2_v1alpha1.Image{
-						Registry:   "foo",
-						Repository: "bar",
-						Tag:        "bat",
-						PullPolicy: corev1.PullAlways,
+						Registry:   ptr.To("foo"),
+						Repository: ptr.To("bar"),
+						Tag:        ptr.To("bat"),
+						PullPolicy: ptr.To(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser: ptr.To(int64(111)),
@@ -1069,11 +1069,11 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 				},
 				SdsContainer: &gw2_v1alpha1.SdsContainer{
 					Image: &gw2_v1alpha1.Image{
-						Registry:   "sds-registry",
-						Repository: "sds-repository",
-						Tag:        "sds-tag",
-						Digest:     "sds-digest",
-						PullPolicy: corev1.PullAlways,
+						Registry:   ptr.To("sds-registry"),
+						Repository: ptr.To("sds-repository"),
+						Tag:        ptr.To("sds-tag"),
+						Digest:     ptr.To("sds-digest"),
+						PullPolicy: ptr.To(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser: ptr.To(int64(222)),
@@ -1129,8 +1129,8 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 					}},
 				},
 				Service: &gw2_v1alpha1.Service{
-					Type:      corev1.ServiceTypeClusterIP,
-					ClusterIP: "99.99.99.99",
+					Type:      ptr.To(corev1.ServiceTypeClusterIP),
+					ClusterIP: ptr.To("99.99.99.99"),
 					ExtraAnnotations: map[string]string{
 						"service-anno": "foo",
 					},
@@ -1141,11 +1141,11 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 				Istio: &gw2_v1alpha1.IstioIntegration{
 					IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
 						Image: &gw2_v1alpha1.Image{
-							Registry:   "istio-registry",
-							Repository: "istio-repository",
-							Tag:        "istio-tag",
-							Digest:     "istio-digest",
-							PullPolicy: corev1.PullAlways,
+							Registry:   ptr.To("istio-registry"),
+							Repository: ptr.To("istio-repository"),
+							Tag:        ptr.To("istio-tag"),
+							Digest:     ptr.To("istio-digest"),
+							PullPolicy: ptr.To(corev1.PullAlways),
 						},
 						SecurityContext: &corev1.SecurityContext{
 							RunAsUser: ptr.To(int64(444)),
@@ -1169,11 +1169,11 @@ func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayPara
 						},
 					},
 					Image: &gw2_v1alpha1.Image{
-						Registry:   "ai-extension-registry",
-						Repository: "ai-extension-repository",
-						Tag:        "ai-extension-tag",
-						Digest:     "ai-extension-digest",
-						PullPolicy: corev1.PullAlways,
+						Registry:   ptr.To("ai-extension-registry"),
+						Repository: ptr.To("ai-extension-repository"),
+						Tag:        ptr.To("ai-extension-tag"),
+						Digest:     ptr.To("ai-extension-digest"),
+						PullPolicy: ptr.To(corev1.PullAlways),
 					},
 				},
 			},
