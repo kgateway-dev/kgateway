@@ -6,7 +6,7 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=gateway-gloo,shortName=gwp
+// +kubebuilder:resource:categories=gloo-gateway,shortName=gwp
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -23,6 +23,7 @@ type GatewayParametersList struct {
 	Items           []GatewayParameters `json:"items"`
 }
 
+// +kubebuilder:validation:XValidation:message="only one of 'kube' or 'selfManaged' may be set",rule="(has(self.kube) && !has(self.selfManaged)) || (!has(self.kube) && has(self.selfManaged))"
 type GatewayParametersSpec struct {
 	SelfManaged *SelfManagedGateway    `json:"selfManaged,omitempty"`
 	Kube        *KubernetesProxyConfig `json:"kube,omitempty"`

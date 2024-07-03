@@ -9,7 +9,7 @@ spec:
   group: gateway.gloo.solo.io
   names:
     categories:
-    - gateway-gloo
+    - gloo-gateway
     kind: GatewayParameters
     listKind: GatewayParametersList
     plural: gatewayparameters
@@ -1755,6 +1755,10 @@ spec:
               selfManaged:
                 type: object
             type: object
+            x-kubernetes-validations:
+            - message: only one of 'kube' or 'selfManaged' may be set
+              rule: (has(self.kube) && !has(self.selfManaged)) || (!has(self.kube)
+                && has(self.selfManaged))
           status:
             type: object
         type: object
