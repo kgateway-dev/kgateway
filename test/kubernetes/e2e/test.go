@@ -154,6 +154,7 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 		err := installFn(ctx)
 		i.Assertions.Require.NoError(err)
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
+		i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 	}
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
@@ -175,6 +176,7 @@ func (i *TestInstallation) UpgradeGlooGateway(ctx context.Context, serverVersion
 	err := upgradeFn(ctx)
 	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyUpgradeSucceeded(ctx, serverVersion)
+	i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
