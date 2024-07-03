@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"

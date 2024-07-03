@@ -8,10 +8,10 @@ import (
 
 	"github.com/solo-io/skv2/codegen/util"
 
-	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 )
 
 // TestK8sGatewayNoValidation executes tests against a K8s Gateway gloo install with validation disabled
