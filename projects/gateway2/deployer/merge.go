@@ -71,20 +71,20 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube := dst.Spec.Kube
 	srcKube := src.Spec.Kube
 
-	dstKube.EnvoyContainer = deepMergeEnvoyContainer(dstKube.EnvoyContainer, srcKube.EnvoyContainer)
+	dstKube.EnvoyContainer = deepMergeEnvoyContainer(dstKube.GetEnvoyContainer(), srcKube.GetEnvoyContainer())
 
-	dstKube.PodTemplate = deepMergePodTemplate(dstKube.PodTemplate, srcKube.PodTemplate)
+	dstKube.PodTemplate = deepMergePodTemplate(dstKube.GetPodTemplate(), srcKube.GetPodTemplate())
 
-	dstKube.Service = deepMergeService(dstKube.Service, srcKube.Service)
+	dstKube.Service = deepMergeService(dstKube.GetService(), srcKube.GetService())
 
 	// TODO: removed until autoscaling reimplemented
 	// see: https://github.com/solo-io/solo-projects/issues/5948
 	// dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
 
-	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.SdsContainer, srcKube.SdsContainer)
-	dstKube.Istio = deepMergeIstioIntegration(dstKube.Istio, srcKube.Istio)
-	dstKube.AiExtension = deepMergeAIExtension(dstKube.AiExtension, srcKube.AiExtension)
-	dstKube.Stats = deepMergeStatsConfig(dstKube.Stats, srcKube.Stats)
+	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
+	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
+	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
+	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
 
 	if srcKube.Deployment == nil {
 		return dst
@@ -141,19 +141,19 @@ func deepMergePodTemplate(dst, src *v1alpha1.Pod) *v1alpha1.Pod {
 		return src
 	}
 
-	dst.ExtraLabels = deepMergeMaps(dst.ExtraLabels, src.ExtraLabels)
+	dst.ExtraLabels = deepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
 
-	dst.ExtraAnnotations = deepMergeMaps(dst.ExtraAnnotations, src.ExtraAnnotations)
+	dst.ExtraAnnotations = deepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 
-	dst.SecurityContext = deepMergePodSecurityContext(dst.SecurityContext, src.SecurityContext)
+	dst.SecurityContext = deepMergePodSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 
-	dst.ImagePullSecrets = deepMergeSlices(dst.ImagePullSecrets, src.ImagePullSecrets)
+	dst.ImagePullSecrets = deepMergeSlices(dst.GetImagePullSecrets(), src.GetImagePullSecrets())
 
-	dst.NodeSelector = deepMergeMaps(dst.NodeSelector, src.NodeSelector)
+	dst.NodeSelector = deepMergeMaps(dst.GetNodeSelector(), src.GetNodeSelector())
 
-	dst.Affinity = deepMergeAffinity(dst.Affinity, src.Affinity)
+	dst.Affinity = deepMergeAffinity(dst.GetAffinity(), src.GetAffinity())
 
-	dst.Tolerations = deepMergeSlices(dst.Tolerations, src.Tolerations)
+	dst.Tolerations = deepMergeSlices(dst.GetTolerations(), src.GetTolerations())
 
 	return dst
 }
@@ -360,9 +360,9 @@ func deepMergeService(dst, src *v1alpha1.Service) *v1alpha1.Service {
 	// TODO(jbohanon) note this for documentation
 	dst.ClusterIP = src.ClusterIP
 
-	dst.ExtraLabels = deepMergeMaps(dst.ExtraLabels, src.ExtraLabels)
+	dst.ExtraLabels = deepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
 
-	dst.ExtraAnnotations = deepMergeMaps(dst.ExtraAnnotations, src.ExtraAnnotations)
+	dst.ExtraAnnotations = deepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 
 	return dst
 }
@@ -377,10 +377,10 @@ func deepMergeSdsContainer(dst, src *v1alpha1.SdsContainer) *v1alpha1.SdsContain
 		return src
 	}
 
-	dst.Image = deepMergeImage(dst.Image, src.Image)
-	dst.SecurityContext = deepMergeSecurityContext(dst.SecurityContext, src.SecurityContext)
-	dst.Resources = deepMergeResourceRequirements(dst.Resources, src.Resources)
-	dst.Bootstrap = deepMergeSdsBootstrap(dst.Bootstrap, src.Bootstrap)
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+	dst.Bootstrap = deepMergeSdsBootstrap(dst.GetBootstrap(), src.GetBootstrap())
 
 	return dst
 }
@@ -412,9 +412,9 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 		return src
 	}
 
-	dst.IstioProxyContainer = deepMergeIstioContainer(dst.IstioProxyContainer, src.IstioProxyContainer)
+	dst.IstioProxyContainer = deepMergeIstioContainer(dst.GetIstioProxyContainer(), src.GetIstioProxyContainer())
 
-	dst.CustomSidecars = mergeCustomSidecars(dst.CustomSidecars, src.CustomSidecars)
+	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
 
 	return dst
 }
@@ -484,13 +484,13 @@ func deepMergeEnvoyContainer(dst, src *v1alpha1.EnvoyContainer) *v1alpha1.EnvoyC
 		return src
 	}
 
-	dst.Image = deepMergeImage(dst.Image, src.Image)
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
 
-	dst.Bootstrap = deepMergeEnvoyBootstrap(dst.Bootstrap, src.Bootstrap)
+	dst.Bootstrap = deepMergeEnvoyBootstrap(dst.GetBootstrap(), src.GetBootstrap())
 
-	dst.Resources = deepMergeResourceRequirements(dst.Resources, src.Resources)
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 
-	dst.SecurityContext = deepMergeSecurityContext(dst.SecurityContext, src.SecurityContext)
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 
 	return dst
 }
@@ -640,7 +640,7 @@ func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig) *
 	}
 
 	// we can use the getter here since the value is a pb wrapper
-	dstDeployment.Replicas = mergePointers(dst.Deployment.Replicas, src.Deployment.Replicas)
+	dstDeployment.Replicas = mergePointers(dst.GetDeployment().GetReplicas(), src.GetDeployment().GetReplicas())
 
 	return dst
 }
@@ -655,12 +655,12 @@ func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension 
 		return src
 	}
 
-	dst.Enabled = mergePointers(dst.Enabled, src.Enabled)
-	dst.Image = deepMergeImage(dst.Image, src.Image)
-	dst.SecurityContext = deepMergeSecurityContext(dst.SecurityContext, src.SecurityContext)
-	dst.Resources = deepMergeResourceRequirements(dst.Resources, src.Resources)
-	dst.Env = deepMergeSlices(dst.Env, src.Env)
-	dst.Ports = deepMergeSlices(dst.Ports, src.Ports)
+	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+	dst.Env = deepMergeSlices(dst.GetEnv(), src.GetEnv())
+	dst.Ports = deepMergeSlices(dst.GetPorts(), src.GetPorts())
 
 	return dst
 }
