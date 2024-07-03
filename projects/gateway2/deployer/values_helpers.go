@@ -7,7 +7,6 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
@@ -72,7 +71,7 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 // }
 
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
-func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
+func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	svcType := string(svcConfig.Type)
@@ -91,47 +90,35 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 		return nil
 	}
 
-	sdsConfigImage := sdsContainerConfig.Image
-	sdsImage := &helmImage{
-		Registry:   ptr.To(sdsConfigImage.Registry),
-		Repository: ptr.To(sdsConfigImage.Repository),
-		Tag:        ptr.To(sdsConfigImage.Tag),
-		Digest:     ptr.To(sdsConfigImage.Digest),
-	}
-	setPullPolicy(sdsConfigImage.PullPolicy, sdsImage)
-
-	return &helmSdsContainer{
-		Image:           sdsImage,
+	vals := &helmSdsContainer{
+		Image:           getImageValues(sdsContainerConfig.Image),
 		Resources:       sdsContainerConfig.Resources,
 		SecurityContext: sdsContainerConfig.SecurityContext,
-		SdsBootstrap: &sdsBootstrap{
-			LogLevel: sdsContainerConfig.SdsBootstrap.LogLevel,
-		},
+		SdsBootstrap:    &sdsBootstrap{},
 	}
+
+	if bootstrap := sdsContainerConfig.Bootstrap; bootstrap != nil {
+		vals.SdsBootstrap = &sdsBootstrap{
+			LogLevel: bootstrap.LogLevel,
+		}
+	}
+
+	return vals
 }
 
-func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *helmIstioContainer {
-	if istioContainerConfig == nil {
+func getIstioContainerValues(config *v1alpha1.IstioContainer) *helmIstioContainer {
+	if config == nil {
 		return nil
 	}
 
-	istioConfigImage := istioContainerConfig.Image
-	istioImage := &helmImage{
-		Registry:   ptr.To(istioConfigImage.Registry),
-		Repository: ptr.To(istioConfigImage.Repository),
-		Tag:        ptr.To(istioConfigImage.Tag),
-		Digest:     ptr.To(istioConfigImage.Digest),
-	}
-	setPullPolicy(istioConfigImage.PullPolicy, istioImage)
-
 	return &helmIstioContainer{
-		Image:                 istioImage,
-		LogLevel:              istioContainerConfig.LogLevel,
-		Resources:             &istioContainerConfig.Resources,
-		SecurityContext:       istioContainerConfig.SecurityContext,
-		IstioDiscoveryAddress: istioContainerConfig.IstioDiscoveryAddress,
-		IstioMetaMeshId:       istioContainerConfig.IstioMetaMeshId,
-		IstioMetaClusterId:    istioContainerConfig.IstioMetaClusterId,
+		Image:                 getImageValues(config.Image),
+		LogLevel:              config.LogLevel,
+		Resources:             config.Resources,
+		SecurityContext:       config.SecurityContext,
+		IstioDiscoveryAddress: config.IstioDiscoveryAddress,
+		IstioMetaMeshId:       config.IstioMetaMeshId,
+		IstioMetaClusterId:    config.IstioMetaClusterId,
 	}
 }
 
@@ -150,19 +137,26 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 }
 
 // Get the image values for the envoy container in the proxy deployment.
-func getEnvoyImageValues(envoyImage *v1alpha1.Image) *helmImage {
-	helmImage := &helmImage{
-		Registry:   ptr.To(envoyImage.Registry),
-		Repository: ptr.To(envoyImage.Repository),
-		Tag:        ptr.To(envoyImage.Tag),
-		Digest:     ptr.To(envoyImage.Digest),
+func getImageValues(image *v1alpha1.Image) *helmImage {
+	if image == nil {
+		return &helmImage{}
 	}
-	setPullPolicy(envoyImage.PullPolicy, helmImage)
+
+	helmImage := &helmImage{
+		Registry:   ptr.To(image.Registry),
+		Repository: ptr.To(image.Repository),
+		Tag:        ptr.To(image.Tag),
+		Digest:     ptr.To(image.Digest),
+	}
+	setPullPolicy(image.PullPolicy, helmImage)
 	return helmImage
 }
 
 // Get the stats values for the envoy listener in the configmap for bootstrap.
 func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
+	if statsConfig == nil {
+		return nil
+	}
 	return &helmStatsConfig{
 		Enabled:            statsConfig.Enabled,
 		RoutePrefixRewrite: statsConfig.RoutePrefixRewrite,
@@ -201,20 +195,11 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 		return nil
 	}
 
-	configImage := config.Image
-	image := &helmImage{
-		Registry:   ptr.To(configImage.Registry),
-		Repository: ptr.To(configImage.Repository),
-		Tag:        ptr.To(configImage.Tag),
-		Digest:     ptr.To(configImage.Digest),
-	}
-	setPullPolicy(configImage.PullPolicy, image)
-
 	return &helmAIExtension{
 		Enabled:         *config.Enabled,
-		Image:           image,
+		Image:           getImageValues(config.Image),
 		SecurityContext: config.SecurityContext,
-		Resources:       &config.Resources,
+		Resources:       config.Resources,
 		Env:             config.Env,
 		Ports:           config.Ports,
 	}

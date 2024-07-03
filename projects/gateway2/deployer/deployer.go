@@ -274,9 +274,13 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	envoyContainerConfig := kubeProxyConfig.EnvoyContainer
 	svcConfig := kubeProxyConfig.Service
 	istioConfig := kubeProxyConfig.Istio
+	if istioConfig == nil {
+		istioConfig = &v1alpha1.IstioIntegration{}
+	}
+
 	sdsContainerConfig := kubeProxyConfig.SdsContainer
 	statsConfig := kubeProxyConfig.Stats
-	istioContainerConfig := istioConfig.IstioContainer
+	istioContainerConfig := istioConfig.IstioProxyContainer
 	aiExtensionConfig := kubeProxyConfig.AiExtension
 
 	gateway := vals.Gateway
@@ -323,9 +327,9 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 	gateway.AIExtension = getAIExtensionValues(aiExtensionConfig)
 
-	gateway.Resources = &envoyContainerConfig.Resources
+	gateway.Resources = envoyContainerConfig.Resources
 	gateway.SecurityContext = envoyContainerConfig.SecurityContext
-	gateway.Image = getEnvoyImageValues(&envoyContainerConfig.Image)
+	gateway.Image = getImageValues(envoyContainerConfig.Image)
 
 	gateway.Stats = getStatsValues(statsConfig)
 

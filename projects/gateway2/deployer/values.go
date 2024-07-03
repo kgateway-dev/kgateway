@@ -1,7 +1,6 @@
 package deployer
 
 import (
-	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -44,7 +43,7 @@ type helmGateway struct {
 	LogLevel          *string                            `json:"logLevel,omitempty"`
 	ComponentLogLevel *string                            `json:"componentLogLevel,omitempty"`
 	Image             *helmImage                         `json:"image,omitempty"`
-	Resources         *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
+	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext            `json:"securityContext,omitempty"`
 
 	// xds values
@@ -100,10 +99,10 @@ type helmIstio struct {
 }
 
 type helmSdsContainer struct {
-	Image           *helmImage                         `json:"image,omitempty"`
-	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext *corev1.SecurityContext            `json:"securityContext,omitempty"`
-	SdsBootstrap    *sdsBootstrap                      `json:"sdsBootstrap,omitempty"`
+	Image           *helmImage                   `json:"image,omitempty"`
+	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	SdsBootstrap    *sdsBootstrap                `json:"sdsBootstrap,omitempty"`
 }
 
 type sdsBootstrap struct {
@@ -114,8 +113,8 @@ type helmIstioContainer struct {
 	Image    *helmImage `json:"image,omitempty"`
 	LogLevel *string    `json:"logLevel,omitempty"`
 
-	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext *corev1.SecurityContext            `json:"securityContext,omitempty"`
+	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
 
 	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
 	IstioMetaMeshId       *string `json:"istioMetaMeshId,omitempty"`
@@ -130,10 +129,10 @@ type helmStatsConfig struct {
 }
 
 type helmAIExtension struct {
-	Enabled         bool                               `json:"enabled,omitempty"`
-	Image           *helmImage                         `json:"image,omitempty"`
-	SecurityContext *corev1.SecurityContext            `json:"securityContext,omitempty"`
-	Resources       *v1alpha1kube.ResourceRequirements `json:"resources,omitempty"`
-	Env             []*corev1.EnvVar                   `json:"env,omitempty"`
-	Ports           []*corev1.ContainerPort            `json:"ports,omitempty"`
+	Enabled         bool                         `json:"enabled,omitempty"`
+	Image           *helmImage                   `json:"image,omitempty"`
+	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Env             []*corev1.EnvVar             `json:"env,omitempty"`
+	Ports           []*corev1.ContainerPort      `json:"ports,omitempty"`
 }

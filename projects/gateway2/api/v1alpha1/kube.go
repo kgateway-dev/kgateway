@@ -50,16 +50,6 @@ type Image struct {
 	PullPolicy corev1.PullPolicy `json:"pull_policy,omitempty"`
 }
 
-// Compute resources required by this container. See
-// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-// for details.
-type ResourceRequirements struct {
-	// The maximum amount of compute resources allowed.
-	Limits corev1.ResourceList `json:"limits,omitempty"`
-	// The minimum amount of compute resources required.
-	Requests corev1.ResourceList `json:"requests,omitempty"`
-}
-
 // Configuration for a Kubernetes Service.
 type Service struct {
 

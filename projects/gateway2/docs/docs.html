@@ -9,11 +9,110 @@
 </div>
 Resource Types:
 <ul></ul>
-<h3 id="gateway.gloo.solo.io/v1alpha1.Autoscaling">Autoscaling
+<h3 id="gateway.gloo.solo.io/v1alpha1.AiExtension">AiExtension
 </h3>
 <p>
 (<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
 </p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enabled</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>image</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.Image">
+Image
+</a>
+</em>
+</td>
+<td>
+<p>The envoy container image. See
+<a href="https://kubernetes.io/docs/concepts/containers/images">https://kubernetes.io/docs/concepts/containers/images</a>
+for details.</p>
+<p>Default values, which may be overridden individually:</p>
+<pre><code>registry: quay.io/solo-io
+repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
+tag: &lt;gloo version&gt; (OSS) / &lt;gloo-ee version&gt; (EE)
+pullPolicy: IfNotPresent
+</code></pre>
+</td>
+</tr>
+<tr>
+<td>
+<code>securityContext</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
+Kubernetes core/v1.SecurityContext
+</a>
+</em>
+</td>
+<td>
+<p>The security context for this container. See
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>resources</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#resourcerequirements-v1-core">
+Kubernetes core/v1.ResourceRequirements
+</a>
+</em>
+</td>
+<td>
+<p>The compute resources required by this container. See
+<a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>env</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#envvar-v1-core">
+[]Kubernetes core/v1.EnvVar
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>ports</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#containerport-v1-core">
+[]Kubernetes core/v1.ContainerPort
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.Autoscaling">Autoscaling
+</h3>
 <div>
 <p>Kubernetes autoscaling configuration.</p>
 </div>
@@ -166,8 +265,8 @@ for details.</p>
 <td>
 <code>resources</code><br/>
 <em>
-<a href="#gateway.gloo.solo.io/v1alpha1.ResourceRequirements">
-ResourceRequirements
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#resourcerequirements-v1-core">
+Kubernetes core/v1.ResourceRequirements
 </a>
 </em>
 </td>
@@ -220,6 +319,18 @@ GatewayParametersSpec
 <table>
 <tr>
 <td>
+<code>selfManaged</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.SelfManagedGateway">
+SelfManagedGateway
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
 <code>kube</code><br/>
 <em>
 <a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">
@@ -262,6 +373,18 @@ GatewayParametersStatus
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<code>selfManaged</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.SelfManagedGateway">
+SelfManagedGateway
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
 <tr>
 <td>
 <code>kube</code><br/>
@@ -356,7 +479,7 @@ for the pods. Defaults to 80.</p>
 <h3 id="gateway.gloo.solo.io/v1alpha1.Image">Image
 </h3>
 <p>
-(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer</a>)
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.AiExtension">AiExtension</a>, <a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer</a>, <a href="#gateway.gloo.solo.io/v1alpha1.IstioContainer">IstioContainer</a>, <a href="#gateway.gloo.solo.io/v1alpha1.SdsContainer">SdsContainer</a>)
 </p>
 <div>
 <p>A container image. See <a href="https://kubernetes.io/docs/concepts/containers/images">https://kubernetes.io/docs/concepts/containers/images</a>
@@ -431,6 +554,155 @@ for details.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.IstioContainer">IstioContainer
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.IstioIntegration">IstioIntegration</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>image</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.Image">
+Image
+</a>
+</em>
+</td>
+<td>
+<p>The envoy container image. See
+<a href="https://kubernetes.io/docs/concepts/containers/images">https://kubernetes.io/docs/concepts/containers/images</a>
+for details.</p>
+<p>Default values, which may be overridden individually:</p>
+<pre><code>registry: quay.io/solo-io
+repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
+tag: &lt;gloo version&gt; (OSS) / &lt;gloo-ee version&gt; (EE)
+pullPolicy: IfNotPresent
+</code></pre>
+</td>
+</tr>
+<tr>
+<td>
+<code>securityContext</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
+Kubernetes core/v1.SecurityContext
+</a>
+</em>
+</td>
+<td>
+<p>The security context for this container. See
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core">https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>resources</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#resourcerequirements-v1-core">
+Kubernetes core/v1.ResourceRequirements
+</a>
+</em>
+</td>
+<td>
+<p>The compute resources required by this container. See
+<a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</a>
+for details.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>logLevel</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>istioDiscoveryAddress</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>istioMetaMeshId</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>istioMetaClusterId</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.IstioIntegration">IstioIntegration
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>istioProxyContainer</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.IstioContainer">
+IstioContainer
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>customSidecars</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#container-v1-core">
+[]Kubernetes core/v1.Container
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig
 </h3>
 <p>
@@ -475,6 +747,19 @@ EnvoyContainer
 </tr>
 <tr>
 <td>
+<code>sdsContainer</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.SdsContainer">
+SdsContainer
+</a>
+</em>
+</td>
+<td>
+<p>Configuration for the container running the Secret Discovery Service (SDS).</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>podTemplate</code><br/>
 <em>
 <a href="#gateway.gloo.solo.io/v1alpha1.Pod">
@@ -502,15 +787,43 @@ the network.</p>
 </tr>
 <tr>
 <td>
-<code>autoscaling</code><br/>
+<code>istioIntegration</code><br/>
 <em>
-<a href="#gateway.gloo.solo.io/v1alpha1.Autoscaling">
-Autoscaling
+<a href="#gateway.gloo.solo.io/v1alpha1.IstioIntegration">
+IstioIntegration
 </a>
 </em>
 </td>
 <td>
-<p>Autoscaling configuration.</p>
+<p>Autoscaling configuration.
+Autoscaling Autoscaling <code>json:&quot;autoscaling,omitempty&quot;</code>
+Configuration for the Istio integration.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>statsConfig</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.StatsConfig">
+StatsConfig
+</a>
+</em>
+</td>
+<td>
+<p>Configuration for the stats server.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>aiExtension</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.AiExtension">
+AiExtension
+</a>
+</em>
+</td>
+<td>
+<p>Configuration for the AI extension.</p>
 </td>
 </tr>
 </tbody>
@@ -657,15 +970,12 @@ uint32
 </tr>
 </tbody>
 </table>
-<h3 id="gateway.gloo.solo.io/v1alpha1.ResourceRequirements">ResourceRequirements
+<h3 id="gateway.gloo.solo.io/v1alpha1.SdsBootstrap">SdsBootstrap
 </h3>
 <p>
-(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.EnvoyContainer">EnvoyContainer</a>)
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.SdsContainer">SdsContainer</a>)
 </p>
 <div>
-<p>Compute resources required by this container. See
-<a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</a>
-for details.</p>
 </div>
 <table>
 <thead>
@@ -677,28 +987,88 @@ for details.</p>
 <tbody>
 <tr>
 <td>
-<code>limits</code><br/>
+<code>logLevel</code><br/>
 <em>
-map[string]string
+string
 </em>
 </td>
 <td>
-<p>The maximum amount of compute resources allowed.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>requests</code><br/>
-<em>
-map[string]string
-</em>
-</td>
-<td>
-<p>The minimum amount of compute resources required.</p>
 </td>
 </tr>
 </tbody>
 </table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.SdsContainer">SdsContainer
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>image</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.Image">
+Image
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>securityContext</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#securitycontext-v1-core">
+Kubernetes core/v1.SecurityContext
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>resources</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#resourcerequirements-v1-core">
+Kubernetes core/v1.ResourceRequirements
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>bootstrap</code><br/>
+<em>
+<a href="#gateway.gloo.solo.io/v1alpha1.SdsBootstrap">
+SdsBootstrap
+</a>
+</em>
+</td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.SelfManagedGateway">SelfManagedGateway
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.GatewayParametersSpec">GatewayParametersSpec</a>)
+</p>
+<div>
+</div>
 <h3 id="gateway.gloo.solo.io/v1alpha1.Service">Service
 </h3>
 <p>
@@ -764,6 +1134,63 @@ map[string]string
 </td>
 <td>
 <p>Additional annotations to add to the Service object metadata.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gateway.gloo.solo.io/v1alpha1.StatsConfig">StatsConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#gateway.gloo.solo.io/v1alpha1.KubernetesProxyConfig">KubernetesProxyConfig</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enabled</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>routePrefixRewrite</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>enableStatsRoute</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<code>statsRoutePrefixRewrite</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
 </td>
 </tr>
 </tbody>

@@ -65,7 +65,7 @@ type ProxyDeployment struct {
 type EnvoyContainer struct {
 
 	// Initial envoy configuration.
-	Bootstrap EnvoyBootstrap `json:"bootstrap,omitempty"`
+	Bootstrap *EnvoyBootstrap `json:"bootstrap,omitempty"`
 	// The envoy container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
@@ -76,7 +76,7 @@ type EnvoyContainer struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	Image Image `json:"image,omitempty"`
+	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
@@ -84,7 +84,7 @@ type EnvoyContainer struct {
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	Resources ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 type EnvoyBootstrap struct {
@@ -114,10 +114,10 @@ type EnvoyBootstrap struct {
 }
 
 type SdsContainer struct {
-	Image           *Image                  `json:"image,omitempty"`
-	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
-	Resources       *ResourceRequirements   `json:"resources,omitempty"`
-	SdsBootstrap    *SdsBootstrap           `json:"sdsBootstrap,omitempty"`
+	Image           *Image                       `json:"image,omitempty"`
+	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Bootstrap       *SdsBootstrap                `json:"bootstrap,omitempty"`
 }
 
 type SdsBootstrap struct {
@@ -125,8 +125,8 @@ type SdsBootstrap struct {
 }
 
 type IstioIntegration struct {
-	IstioContainer *IstioContainer     `json:"istioContainer,omitempty"`
-	CustomSidecars []*corev1.Container `json:"customSidecars,omitempty"`
+	IstioProxyContainer *IstioContainer     `json:"istioProxyContainer,omitempty"`
+	CustomSidecars      []*corev1.Container `json:"customSidecars,omitempty"`
 }
 
 type IstioContainer struct {
@@ -140,7 +140,7 @@ type IstioContainer struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	Image Image `json:"image,omitempty"`
+	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
@@ -148,7 +148,7 @@ type IstioContainer struct {
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	Resources ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	LogLevel *string `json:"logLevel,omitempty"`
 
@@ -181,7 +181,7 @@ type AiExtension struct {
 	//	repository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)
 	//	tag: <gloo version> (OSS) / <gloo-ee version> (EE)
 	//	pullPolicy: IfNotPresent
-	Image Image `json:"image,omitempty"`
+	Image *Image `json:"image,omitempty"`
 	// The security context for this container. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
 	// for details.
@@ -189,7 +189,7 @@ type AiExtension struct {
 	// The compute resources required by this container. See
 	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// for details.
-	Resources ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	Env []*corev1.EnvVar `json:"env,omitempty"`
 
