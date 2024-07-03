@@ -143,7 +143,7 @@ func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
 }
 
 func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context) error {
-	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
+	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, "1-22-1", "minimal")
 }
 
 func (i *TestInstallation) UninstallIstio() error {

@@ -13,10 +13,12 @@ import (
 	glooruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
-var istioRevisionSetup = filepath.Join(util.MustGetThisDir(), "istio-revision-setup.yaml")
+const (
+	// TODO(npolshak): Add support for other profiles (ambient, etc.)
+	minimalProfile = "minimal"
+)
 
 func GetIstioctl(ctx context.Context) (string, error) {
 	// Download istioctl binary
@@ -33,14 +35,51 @@ func InstallMinimalIstio(
 	ctx context.Context,
 	istioctlBinary, kubeContext string,
 ) error {
+	operatorFileContent := generateIstioOperatorFileContent("", minimalProfile)
+	operatorFile := "/tmp/istio-operator.yaml"
+
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write operator file: %w", err)
+	}
+
 	return installIstioOperator(ctx, istioctlBinary, kubeContext, "")
 }
 
 func InstallRevisionedIstio(
 	ctx context.Context,
-	istioctlBinary, kubeContext string,
+	istioctlBinary, kubeContext, revision, profile string,
 ) error {
-	return installIstioOperator(ctx, istioctlBinary, kubeContext, istioRevisionSetup)
+	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
+	operatorFile := "/tmp/istio-operator.yaml"
+
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write operator file: %w", err)
+	}
+
+	return installIstioOperator(ctx, istioctlBinary, kubeContext, operatorFile)
+}
+
+// TODO(npolshak): Add Istio dependency to define operator in code instead of writing file
+func generateIstioOperatorFileContent(revision, profile string) string {
+	// use minimal as the default profile if none is provided
+	if profile == "" {
+		profile = minimalProfile
+	}
+
+	baseContent := `
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+spec:
+  profile: %s
+`
+	if revision != "" {
+		return fmt.Sprintf(baseContent+"  revision: %s\n", profile, revision)
+	}
+	return fmt.Sprintf(baseContent, profile)
 }
 
 func installIstioOperator(
@@ -50,15 +89,8 @@ func installIstioOperator(
 		return nil
 	}
 
-	var cmd *exec.Cmd
-	if operatorFile == "" {
-		// use the minimal profile by default if no operator file is provided
-		// istioctl install -y --context <kube-context> --set profile=minimal
-		cmd = exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "--set", "profile=minimal")
-	} else {
-		//  istioctl install -y --context <kube-context> -f <operator-file>
-		cmd = exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "-f", operatorFile)
-	}
+	//  istioctl install -y --context <kube-context> -f <operator-file>
+	cmd := exec.Command(istioctlBinary, "install", "-y", "--context", kubeContext, "-f", operatorFile)
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("istioctl install failed: %w", err)
