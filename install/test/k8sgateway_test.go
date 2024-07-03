@@ -303,23 +303,23 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
 
-					Expect(gwpKube.GetDeployment().GetReplicas()).To(Equal(uint32(5)))
+					Expect(*gwpKube.GetDeployment().GetReplicas()).To(Equal(uint32(5)))
 
-					Expect(gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullAlways))
-					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRegistry()).To(Equal("envoy-override-registry"))
-					Expect(gwpKube.GetEnvoyContainer().GetImage().GetRepository()).To(Equal("envoy-override-repository"))
-					Expect(gwpKube.GetEnvoyContainer().GetImage().GetTag()).To(Equal("envoy-override-tag"))
+					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullAlways))
+					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetRegistry()).To(Equal("envoy-override-registry"))
+					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetRepository()).To(Equal("envoy-override-repository"))
+					Expect(*gwpKube.GetEnvoyContainer().GetImage().GetTag()).To(Equal("envoy-override-tag"))
 
 					Expect(gwpKube.GetIstio().GetCustomSidecars()[0].Name).To(Equal("custom-sidecar"))
 					Expect(gwpKube.GetPodTemplate().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"gloo": "kube-gateway"}))
 
-					Expect(gwpKube.GetSdsContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullNever))
-					Expect(gwpKube.GetSdsContainer().GetImage().GetRegistry()).To(Equal("sds-override-registry"))
-					Expect(gwpKube.GetSdsContainer().GetImage().GetRepository()).To(Equal("sds-override-repository"))
-					Expect(gwpKube.GetSdsContainer().GetImage().GetTag()).To(Equal("sds-override-tag"))
-					Expect(gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
+					Expect(*gwpKube.GetSdsContainer().GetImage().GetPullPolicy()).To(Equal(corev1.PullNever))
+					Expect(*gwpKube.GetSdsContainer().GetImage().GetRegistry()).To(Equal("sds-override-registry"))
+					Expect(*gwpKube.GetSdsContainer().GetImage().GetRepository()).To(Equal("sds-override-repository"))
+					Expect(*gwpKube.GetSdsContainer().GetImage().GetTag()).To(Equal("sds-override-tag"))
+					Expect(*gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
 
-					Expect(gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
+					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 				})
 			})
 		})

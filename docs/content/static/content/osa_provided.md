@@ -70,12 +70,8 @@ Name|Version|License
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20230726121419-3b25d923346b|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-<<<<<<< HEAD
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.16.3|Apache License 2.0
-[sigs.k8s.io/controller-tools](https://sigs.k8s.io/controller-tools)|v0.14.0|Apache License 2.0
-=======
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.17.4|Apache License 2.0
->>>>>>> ed1dbf08542b51888cbb66a7f134dad8be94b05c
+[sigs.k8s.io/controller-tools](https://sigs.k8s.io/controller-tools)|v0.14.0|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.0.1-0.20231102234148-3b5969669194|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.4.1|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.4.0|MIT License
