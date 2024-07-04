@@ -18,8 +18,10 @@ We define all tests in the [features](./features) package. This is done for a va
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
 2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
 
+Many examples of testing features may be found in the [features](./features) package. The general pattern for adding a new feature should be to create a directory for the feature under `features/`, write manifest files for the resources the tests will need into `features/my_feature/testdata/`, define Go objects for them in a file called `features/my_feature/types.go`, and finally define the test suite in `features/my_feature/suite.go`. There are occasions where multiple suites will need to be created under a single feature. See [Suites](#test-suites) for more info on this case. 
+
 ## Test Suites
-A Test Suite is a subset of the Feature concept. A single Feature has at minimum one Test Suite, and can have many. Each Test Suite within the feature must have a function which satisfies the signature `NewSuiteFunc` found in [suite.go](./suite.go).
+A Test Suite is a subset of the Feature concept. A single Feature has at minimum one Test Suite, and can have many. Each Test Suite should have its own appropriately named `.go` file from which is exported an appropriately named function which satisfies the signature `NewSuiteFunc` found in [suite.go](./suite.go).
 
 These test suites are registered by a name and this func in [Tests](#tests) to be run against various `TestInstallation`s.
 
