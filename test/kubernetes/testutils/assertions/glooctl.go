@@ -44,10 +44,11 @@ func (p *Provider) EventuallyCheckResourcesOk(ctx context.Context) {
 func (p *Provider) EventuallyMatchesVersion(ctx context.Context, serverVersion string) {
 	p.expectGlooGatewayContextDefined()
 
+	k := version.NewKube(p.glooGatewayContext.InstallNamespace, p.clusterContext.KubeContext)
+
 	p.Gomega.Eventually(func(innerG Gomega) {
 		contextWithCancel, cancel := context.WithCancel(ctx)
 		defer cancel()
-		k := version.NewKube(p.glooGatewayContext.InstallNamespace, p.clusterContext.KubeContext)
 		csv, err := version.GetClientServerVersions(contextWithCancel, k)
 		innerG.Expect(err).NotTo(HaveOccurred(), "can get client server versions with glooctl")
 		innerG.Expect(csv.GetServer()).To(HaveLen(1), "has detected gloo deployment")

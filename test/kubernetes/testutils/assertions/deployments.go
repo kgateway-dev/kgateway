@@ -32,6 +32,7 @@ func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta
 
 func (p *Provider) EventuallyGlooReachesConsistentState(installNamespace string) {
 	// We port-forward the Gloo deployment stats port to inspect the metrics and log settings
+	// TODO(jbohanon) clean this up with newer style portforwarder
 	glooStatsForwardConfig := assertions.StatsPortFwd{
 		ResourceName:      "deployment/gloo",
 		ResourceNamespace: installNamespace,
@@ -48,9 +49,8 @@ func (p *Provider) EventuallyGlooReachesConsistentState(installNamespace string)
 	identicalResultInARow := 4
 	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", identicalResultInARow)
 
-	offset := 1 // This method is called directly from a TestSuite
-	assertions.EventuallyWithOffsetStatisticsMatchAssertions(offset, glooStatsForwardConfig,
-		logLevelAssertion.WithOffset(offset),
-		emitterMetricAssertion.WithOffset(offset),
+	assertions.EventuallyStatisticsMatchAssertions(glooStatsForwardConfig,
+		logLevelAssertion,
+		emitterMetricAssertion,
 	)
 }

@@ -2,90 +2,31 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
+	"time"
 
-	"github.com/onsi/ginkgo/v2"
+	"github.com/google/go-github/v32/github"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/gloo/test/gomega/assertions"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
-	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/go-utils/stats"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"go.uber.org/zap/zapcore"
+	"github.com/solo-io/gloo/test/testutils/version"
+	"github.com/solo-io/go-utils/changelogutils"
+	"github.com/solo-io/go-utils/githubutils"
+	"github.com/solo-io/go-utils/versionutils"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
-const (
-	// UniqueTestResourceLabel can be assigned to the resources used by kube2e tests
-	// This unique label per test run ensures that the generated snapshot is different on subsequent runs
-	// We have previously seen flakes where a resource is deleted and re-created with the same hash and thus
-	// the emitter can miss the update
-	UniqueTestResourceLabel = "gloo-kube2e-test-id"
-)
-
+// Deprecated; if this is needed create a resource yaml for it.
 func GetHttpEchoImage() string {
 	httpEchoImage := "hashicorp/http-echo"
 	if runtime.GOARCH == "arm64" {
 		httpEchoImage = "gcr.io/solo-test-236622/http-echo"
 	}
 	return httpEchoImage
-}
-
-// GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
-func GlooctlCheckEventuallyHealthy(offset int, testHelper *SoloTestHelper, timeoutInterval string) {
-	EventuallyWithOffset(offset, func() error {
-		contextWithCancel, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		opts := &options.Options{
-			Metadata: core.Metadata{
-				Namespace: testHelper.InstallNamespace,
-			},
-			Top: options.Top{
-				Ctx: contextWithCancel,
-			},
-		}
-		err := check.CheckResources(contextWithCancel, printers.P{}, opts)
-		if err != nil {
-			return errors.Wrap(err, "glooctl check detected a problem with the installation")
-		}
-		return nil
-	}, timeoutInterval, "5s").Should(BeNil())
-}
-
-func EventuallyReachesConsistentState(installNamespace string) {
-	// We port-forward the Gloo deployment stats port to inspect the metrics and log settings
-	glooStatsForwardConfig := assertions.StatsPortFwd{
-		ResourceName:      "deployment/gloo",
-		ResourceNamespace: installNamespace,
-		LocalPort:         stats.DefaultPort,
-		TargetPort:        stats.DefaultPort,
-	}
-
-	// Gloo components are configured to log to the Info level by default
-	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
-
-	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
-	// We choose 4 here as a bit of a magic number, but we feel comfortable that if 4 consecutive polls of the metrics
-	// endpoint returns that same value, then we have stabilized
-	identicalResultInARow := 4
-	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", identicalResultInARow)
-
-	ginkgo.By("Gloo eventually reaches a consistent state")
-	offset := 1 // This method is called directly from a TestSuite
-	assertions.EventuallyWithOffsetStatisticsMatchAssertions(offset, glooStatsForwardConfig,
-		logLevelAssertion.WithOffset(offset),
-		emitterMetricAssertion.WithOffset(offset),
-	)
-}
-
-// This response is given by the nginx pod defined in test/kubernetes/e2e/defaults/
-func TestServerHttpResponse() string {
-	return e2edefaults.NginxResponse
 }
 
 // For nightly runs, we want to install a released version rather than using a locally built chart
@@ -100,7 +41,7 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	}
 
 	if releasedVersion == "LATEST" {
-		_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
+		_, current, err := GetUpgradeVersions(ctx, repoName)
 		Expect(err).NotTo(HaveOccurred())
 		return current.String()
 	}
@@ -128,4 +69,79 @@ func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*S
 			return defaults
 		})
 	}
+}
+
+// GetUpgradeVersions returns two semantic versions of a repository:
+//   - prevLtsRelease: the latest patch release of v1.m-1.x
+//   - latestRelease:  the latest patch release of v1.m.x
+//
+// Originally intended for use in upgrade testing, it can return any of:
+//   - (prevLtsRelease, latestRelease, nil): all release versions computable
+//   - (prevLtsRelease, nil, nil):           only prevLtsRelease computable (ie current branch has never been released)
+//   - (nil, nil, err):                      unable to fetch versions for upgrade test
+func GetUpgradeVersions(ctx context.Context, repoName string) (*versionutils.Version, *versionutils.Version, error) {
+	// get the latest and upcoming releases of the current branch
+	files, changelogReadErr := os.ReadDir(filepath.Join(util.GetModuleRoot(), changelogutils.ChangelogDirectory))
+	if changelogReadErr != nil {
+		return nil, nil, changelogutils.ReadChangelogDirError(changelogReadErr)
+	}
+	latestRelease, upcomingRelease, upcomingReleaseErr := version.ChangelogDirForLatestRelease(files...)
+	if upcomingReleaseErr != nil && !errors.Is(upcomingReleaseErr, version.FirstReleaseError) {
+		return nil, nil, upcomingReleaseErr
+	}
+
+	// get latest release of previous LTS branch
+	// TODO(nfuden): Update goutils to not use a struct but rather interface so we can test this more easily.
+	client, githubClientErr := githubutils.GetClient(ctx)
+	if githubClientErr != nil {
+		return nil, nil, errors.Wrapf(githubClientErr, "unable to create github client")
+	}
+	prevLtsRelease, prevLtsReleaseErr := getLatestReleasedPatchVersion(ctx, client, repoName, upcomingRelease.Major, upcomingRelease.Minor-1)
+	if prevLtsReleaseErr != nil {
+		return nil, nil, prevLtsReleaseErr
+	}
+
+	if upcomingReleaseErr != nil {
+		// if we don't yet have a release for the current branch, we can only upgrade from prevLtsRelease
+		return prevLtsRelease, nil, nil
+	} else {
+		// otherwise, we can upgrade from both prevLtsRelease -and- latestRelease
+		return prevLtsRelease, latestRelease, nil
+	}
+}
+
+type latestPatchForMinorPredicate struct {
+	versionPrefix string
+}
+
+func (s *latestPatchForMinorPredicate) Apply(release *github.RepositoryRelease) bool {
+	return strings.HasPrefix(*release.Name, s.versionPrefix) &&
+		!release.GetPrerelease() && // we don't want a prerelease version
+		!strings.Contains(release.GetBody(), "This release build failed") && // we don't want a failed build
+		release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-60)*time.Minute))
+}
+
+func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorPredicate {
+	return &latestPatchForMinorPredicate{
+		versionPrefix: versionPrefix,
+	}
+}
+
+// getLatestReleasedPatchVersion will return the latest released patch version for the given major and minor version
+// NOTE: this attempts to reach out to github to get the latest release
+func getLatestReleasedPatchVersion(ctx context.Context, client *github.Client, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
+
+	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get releases")
+	}
+	if len(releases) == 0 {
+		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
+	}
+	v, err := versionutils.ParseVersion(*releases[0].Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error parsing release name")
+	}
+	return v, nil
 }

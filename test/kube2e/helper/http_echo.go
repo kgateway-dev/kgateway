@@ -6,6 +6,7 @@ const (
 	HttpEchoPort         = 3000
 )
 
+// Deprecated
 // ported to test/kubernetes/e2e/defaults/testdata/http_echo.yaml
 func NewEchoHttp(namespace string) (TestContainer, error) {
 	return newTestContainer(namespace, defaultHttpEchoImage, HttpEchoName, HttpEchoPort)
@@ -17,6 +18,7 @@ const (
 	TcpEchoPort         = 1025
 )
 
+// Deprecated
 // ported to test/kubernetes/e2e/defaults/testdata/tcp_echo.yaml
 func NewEchoTcp(namespace string) (TestContainer, error) {
 	return newTestContainer(namespace, defaultTcpEchoImage, TcpEchoName, TcpEchoPort)
