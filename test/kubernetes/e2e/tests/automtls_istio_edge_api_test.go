@@ -62,7 +62,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	AutomtlsIstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)

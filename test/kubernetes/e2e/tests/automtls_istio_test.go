@@ -64,7 +64,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	// Install Gloo Gateway
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		// istio proxy and sds are added to gateway and take a little longer to start up
-		return testHelper.InstallGloo(ctx, 10*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+		return testHelper.InstallGloo(ctx, 10*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
