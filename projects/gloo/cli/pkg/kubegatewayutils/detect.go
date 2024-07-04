@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	cliconstants "github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -43,6 +42,11 @@ func DetectKubeGatewayCrds(cfg *rest.Config) (bool, error) {
 // Returns true if the GG_K8S_GW_CONTROLLER env var is true in the gloo deployment.
 // Note: This is tied up with the GG implementation and will need to be updated if it changes
 func DetectKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, error) {
+	glooDeploymentName, err := helpers.GetGlooDeploymentName(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	if err != nil {
+		return false, err
+	}
+
 	// check if Kubernetes Gateway integration is enabled by checking if the controller env variable is set in the
 	// gloo deployment
 	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
@@ -50,7 +54,7 @@ func DetectKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool,
 		return false, eris.Wrapf(err, "could not get kubernetes client")
 	}
 
-	glooDeployment, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, kubeutils.GlooDeploymentName, metav1.GetOptions{})
+	glooDeployment, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(ctx, glooDeploymentName, metav1.GetOptions{})
 	if err != nil {
 		return false, eris.Wrapf(err, "could not get gloo deployment")
 	}
