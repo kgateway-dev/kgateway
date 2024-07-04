@@ -49,6 +49,16 @@ func deepMergeSlices[T any](dst, src []T) []T {
 	return dst
 }
 
+// Check against base value
+func mergeComparable[T comparable](dst, src T) T {
+	var t T
+	if src == t {
+		return dst
+	}
+
+	return src
+}
+
 func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.GatewayParameters {
 	if src != nil && src.Spec.SelfManaged != nil {
 		// The src override specifies a self-managed gateway, set this on the dst
@@ -71,44 +81,14 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube := dst.Spec.Kube
 	srcKube := src.Spec.Kube
 
+	dstKube.Deployment = deepMergeDeployment(dstKube.GetDeployment(), srcKube.GetDeployment())
 	dstKube.EnvoyContainer = deepMergeEnvoyContainer(dstKube.GetEnvoyContainer(), srcKube.GetEnvoyContainer())
-
-	dstKube.PodTemplate = deepMergePodTemplate(dstKube.GetPodTemplate(), srcKube.GetPodTemplate())
-
-	dstKube.Service = deepMergeService(dstKube.GetService(), srcKube.GetService())
-
-	// TODO: removed until autoscaling reimplemented
-	// see: https://github.com/solo-io/solo-projects/issues/5948
-	// dstKube.Autoscaling = deepMergeAutoscaling(dstKube.GetAutoscaling(), srcKube.GetAutoscaling())
-
 	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
+	dstKube.PodTemplate = deepMergePodTemplate(dstKube.GetPodTemplate(), srcKube.GetPodTemplate())
+	dstKube.Service = deepMergeService(dstKube.GetService(), srcKube.GetService())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
-	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
-
-	if srcKube.Deployment == nil {
-		return dst
-	}
-
-	dst.Spec.Kube = deepMergeDeploymentWorkloadType(dstKube, srcKube)
-
-	// TODO: Figure out ONEOF behavior
-	// if srcKube.GetWorkloadType() == nil {
-	// 	return dst
-	// }
-
-	// switch dstWorkload := dstKube.GetWorkloadType().(type) {
-	// case *v1alpha1.KubernetesProxyConfig_Deployment:
-	// 	srcWorkload, ok := srcKube.GetWorkloadType().(*v1alpha1.KubernetesProxyConfig_Deployment)
-	// 	if !ok {
-	// 		dstWorkload = srcWorkload
-	// 		break
-	// 	}
-	// 	dstWorkload = deepMergeDeploymentWorkloadType(dstWorkload, srcWorkload)
-	// default:
-	// 	// TODO(jbohanon) log or something? Shouldn't happen unless a new type is added
-	// 	break
-	// }
+	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
 
 	return dst
 }
@@ -123,10 +103,10 @@ func deepMergeStatsConfig(dst *v1alpha1.StatsConfig, src *v1alpha1.StatsConfig) 
 		return src
 	}
 
-	dst.EnableStatsRoute = mergeComparable(dst.EnableStatsRoute, src.EnableStatsRoute)
-	dst.Enabled = mergePointers(dst.Enabled, src.Enabled)
-	dst.RoutePrefixRewrite = mergeComparable(dst.RoutePrefixRewrite, src.RoutePrefixRewrite)
-	dst.StatsRoutePrefixRewrite = mergeComparable(dst.StatsRoutePrefixRewrite, src.StatsRoutePrefixRewrite)
+	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
+	dst.RoutePrefixRewrite = mergeComparable(dst.GetRoutePrefixRewrite(), src.GetRoutePrefixRewrite())
+	dst.EnableStatsRoute = mergeComparable(dst.GetEnableStatsRoute(), src.GetEnableStatsRoute())
+	dst.StatsRoutePrefixRewrite = mergeComparable(dst.GetStatsRoutePrefixRewrite(), src.GetStatsRoutePrefixRewrite())
 
 	return dst
 }
@@ -142,17 +122,11 @@ func deepMergePodTemplate(dst, src *v1alpha1.Pod) *v1alpha1.Pod {
 	}
 
 	dst.ExtraLabels = deepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
-
 	dst.ExtraAnnotations = deepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
-
 	dst.SecurityContext = deepMergePodSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
-
 	dst.ImagePullSecrets = deepMergeSlices(dst.GetImagePullSecrets(), src.GetImagePullSecrets())
-
 	dst.NodeSelector = deepMergeMaps(dst.GetNodeSelector(), src.GetNodeSelector())
-
 	dst.Affinity = deepMergeAffinity(dst.GetAffinity(), src.GetAffinity())
-
 	dst.Tolerations = deepMergeSlices(dst.GetTolerations(), src.GetTolerations())
 
 	return dst
@@ -165,43 +139,21 @@ func deepMergePodSecurityContext(dst, src *corev1.PodSecurityContext) *corev1.Po
 	}
 
 	if dst == nil {
-		dst = src
 		return src
 	}
 
 	dst.SELinuxOptions = deepMergeSELinuxOptions(dst.SELinuxOptions, src.SELinuxOptions)
-
 	dst.WindowsOptions = deepMergeWindowsSecurityContextOptions(dst.WindowsOptions, src.WindowsOptions)
-
-	// We don't use getter here because getter returns zero value for nil, but we need
-	// to know if it was nil
 	dst.RunAsUser = mergePointers(dst.RunAsUser, src.RunAsUser)
-
 	dst.RunAsGroup = mergePointers(dst.RunAsGroup, src.RunAsGroup)
-
 	dst.RunAsNonRoot = mergePointers(dst.RunAsNonRoot, src.RunAsNonRoot)
-
 	dst.SupplementalGroups = deepMergeSlices(dst.SupplementalGroups, src.SupplementalGroups)
-
 	dst.FSGroup = mergePointers(dst.FSGroup, src.FSGroup)
-
 	dst.Sysctls = deepMergeSlices(dst.Sysctls, src.Sysctls)
-
 	dst.FSGroupChangePolicy = mergePointers(dst.FSGroupChangePolicy, src.FSGroupChangePolicy)
-
 	dst.SeccompProfile = deepMergeSeccompProfile(dst.SeccompProfile, src.SeccompProfile)
 
 	return dst
-}
-
-// Check against base value
-func mergeComparable[T comparable](dst, src T) T {
-	var t T
-	if src == t {
-		return dst
-	}
-
-	return src
 }
 
 func deepMergeSELinuxOptions(dst, src *corev1.SELinuxOptions) *corev1.SELinuxOptions {
@@ -229,7 +181,6 @@ func deepMergeWindowsSecurityContextOptions(dst, src *corev1.WindowsSecurityCont
 	}
 
 	if dst == nil {
-		dst = src
 		return src
 	}
 
@@ -268,9 +219,7 @@ func deepMergeAffinity(dst, src *corev1.Affinity) *corev1.Affinity {
 	}
 
 	dst.NodeAffinity = deepMergeNodeAffinity(dst.NodeAffinity, src.NodeAffinity)
-
 	dst.PodAffinity = deepMergePodAffinity(dst.PodAffinity, src.PodAffinity)
-
 	dst.PodAntiAffinity = deepMergePodAntiAffinity(dst.PodAntiAffinity, src.PodAntiAffinity)
 
 	return dst
@@ -287,7 +236,6 @@ func deepMergeNodeAffinity(dst, src *corev1.NodeAffinity) *corev1.NodeAffinity {
 	}
 
 	dst.RequiredDuringSchedulingIgnoredDuringExecution = deepMergeNodeSelector(dst.RequiredDuringSchedulingIgnoredDuringExecution, src.RequiredDuringSchedulingIgnoredDuringExecution)
-
 	dst.PreferredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.PreferredDuringSchedulingIgnoredDuringExecution, src.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return dst
@@ -319,7 +267,6 @@ func deepMergePodAffinity(dst, src *corev1.PodAffinity) *corev1.PodAffinity {
 	}
 
 	dst.RequiredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.RequiredDuringSchedulingIgnoredDuringExecution, src.RequiredDuringSchedulingIgnoredDuringExecution)
-
 	dst.PreferredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.PreferredDuringSchedulingIgnoredDuringExecution, src.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return dst
@@ -336,7 +283,6 @@ func deepMergePodAntiAffinity(dst, src *corev1.PodAntiAffinity) *corev1.PodAntiA
 	}
 
 	dst.RequiredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.RequiredDuringSchedulingIgnoredDuringExecution, src.RequiredDuringSchedulingIgnoredDuringExecution)
-
 	dst.PreferredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.PreferredDuringSchedulingIgnoredDuringExecution, src.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return dst
@@ -352,16 +298,15 @@ func deepMergeService(dst, src *v1alpha1.Service) *v1alpha1.Service {
 		return src
 	}
 
-	// This is not nullable and as such is a required field for overrides
-	// TODO(jbohanon) note this for documentation
-	dst.Type = src.Type
+	if src.GetType() != nil {
+		dst.Type = src.GetType()
+	}
 
-	// This is not nullable and as such is a required field for overrides
-	// TODO(jbohanon) note this for documentation
-	dst.ClusterIP = src.ClusterIP
+	if src.GetClusterIP() != nil {
+		dst.ClusterIP = src.GetClusterIP()
+	}
 
 	dst.ExtraLabels = deepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
-
 	dst.ExtraAnnotations = deepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 
 	return dst
@@ -395,8 +340,8 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 		return src
 	}
 
-	if src.LogLevel != nil {
-		dst.LogLevel = src.LogLevel
+	if src.GetLogLevel() != nil {
+		dst.LogLevel = src.GetLogLevel()
 	}
 
 	return dst
@@ -413,7 +358,6 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 	}
 
 	dst.IstioProxyContainer = deepMergeIstioContainer(dst.GetIstioProxyContainer(), src.GetIstioProxyContainer())
-
 	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
 
 	return dst
@@ -440,35 +384,29 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 		return src
 	}
 
-	dst.Image = deepMergeImage(dst.Image, src.Image)
-	dst.SecurityContext = deepMergeSecurityContext(dst.SecurityContext, src.SecurityContext)
-	dst.Resources = deepMergeResourceRequirements(dst.Resources, src.Resources)
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
+	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 
-	if logLevel := src.LogLevel; logLevel != nil {
-		dst.LogLevel = logLevel
+	if src.GetLogLevel() != nil {
+		dst.LogLevel = src.GetLogLevel()
 	}
 
 	// Do not allow per-gateway overrides of these values if they are set in the default
 	// GatewayParameters populated by helm values
-	dstIstioDiscoveryAddress := dst.IstioDiscoveryAddress
-	srcIstioDiscoveryAddress := src.IstioDiscoveryAddress
-	if dstIstioDiscoveryAddress == nil {
+	if dst.GetIstioDiscoveryAddress() == nil {
 		// Doesn't matter if we're overriding empty with empty
-		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
+		dst.IstioDiscoveryAddress = src.GetIstioDiscoveryAddress()
 	}
 
-	dstIstioMetaMeshId := dst.IstioMetaMeshId
-	srcIstioMetaMeshId := src.IstioMetaMeshId
-	if dstIstioMetaMeshId == nil {
+	if dst.GetIstioMetaMeshId() == nil {
 		// Doesn't matter if we're overriding empty with empty
-		dstIstioMetaMeshId = srcIstioMetaMeshId
+		dst.IstioMetaMeshId = src.GetIstioMetaMeshId()
 	}
 
-	dstIstioMetaClusterId := dst.IstioMetaClusterId
-	srcIstioMetaClusterId := src.IstioMetaClusterId
-	if dstIstioMetaClusterId == nil {
+	if dst.GetIstioMetaClusterId() == nil {
 		// Doesn't matter if we're overriding empty with empty
-		dstIstioMetaClusterId = srcIstioMetaClusterId
+		dst.IstioMetaClusterId = src.GetIstioMetaClusterId()
 	}
 
 	return dst
@@ -484,13 +422,10 @@ func deepMergeEnvoyContainer(dst, src *v1alpha1.EnvoyContainer) *v1alpha1.EnvoyC
 		return src
 	}
 
-	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
-
 	dst.Bootstrap = deepMergeEnvoyBootstrap(dst.GetBootstrap(), src.GetBootstrap())
-
-	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
-
+	dst.Image = deepMergeImage(dst.GetImage(), src.GetImage())
 	dst.SecurityContext = deepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
+	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 
 	return dst
 }
@@ -505,27 +440,24 @@ func deepMergeImage(dst, src *v1alpha1.Image) *v1alpha1.Image {
 		return src
 	}
 
-	// because all fields are not nullable, we treat empty strings as empty values
-	// and do not override with them
-
-	if src.Registry != nil {
-		dst.Registry = src.Registry
+	if src.GetRegistry() != nil {
+		dst.Registry = src.GetRegistry()
 	}
 
-	if src.Repository != nil {
-		dst.Repository = src.Repository
+	if src.GetRepository() != nil {
+		dst.Repository = src.GetRepository()
 	}
 
-	if src.Tag != nil {
-		dst.Tag = src.Tag
+	if src.GetTag() != nil {
+		dst.Tag = src.GetTag()
 	}
 
-	if src.Digest != nil {
-		dst.Digest = src.Digest
+	if src.GetDigest() != nil {
+		dst.Digest = src.GetDigest()
 	}
 
-	if src.PullPolicy != nil {
-		dst.PullPolicy = src.PullPolicy
+	if src.GetPullPolicy() != nil {
+		dst.PullPolicy = src.GetPullPolicy()
 	}
 
 	return dst
@@ -540,11 +472,11 @@ func deepMergeEnvoyBootstrap(dst, src *v1alpha1.EnvoyBootstrap) *v1alpha1.EnvoyB
 	if dst == nil {
 		return src
 	}
-	if src.LogLevel != nil {
-		dst.LogLevel = src.LogLevel
+	if src.GetLogLevel() != nil {
+		dst.LogLevel = src.GetLogLevel()
 	}
 
-	dst.ComponentLogLevels = deepMergeMaps(dst.ComponentLogLevels, src.ComponentLogLevels)
+	dst.ComponentLogLevels = deepMergeMaps(dst.GetComponentLogLevels(), src.GetComponentLogLevels())
 
 	return dst
 }
@@ -560,7 +492,6 @@ func deepMergeResourceRequirements(dst, src *corev1.ResourceRequirements) *corev
 	}
 
 	dst.Limits = deepMergeMaps(dst.Limits, src.Limits)
-
 	dst.Requests = deepMergeMaps(dst.Requests, src.Requests)
 
 	return dst
@@ -577,27 +508,15 @@ func deepMergeSecurityContext(dst, src *corev1.SecurityContext) *corev1.Security
 	}
 
 	dst.Capabilities = deepMergeCapabilities(dst.Capabilities, src.Capabilities)
-
 	dst.SELinuxOptions = deepMergeSELinuxOptions(dst.SELinuxOptions, src.SELinuxOptions)
-
 	dst.WindowsOptions = deepMergeWindowsSecurityContextOptions(dst.WindowsOptions, src.WindowsOptions)
-
-	// We don't use getter here because getter returns zero value for nil, but we need
-	// to know if it was nil
 	dst.RunAsUser = mergePointers(dst.RunAsUser, src.RunAsUser)
-
 	dst.RunAsGroup = mergePointers(dst.RunAsGroup, src.RunAsGroup)
-
 	dst.RunAsNonRoot = mergePointers(dst.RunAsNonRoot, src.RunAsNonRoot)
-
 	dst.Privileged = mergePointers(dst.Privileged, src.Privileged)
-
 	dst.ReadOnlyRootFilesystem = mergePointers(dst.ReadOnlyRootFilesystem, src.ReadOnlyRootFilesystem)
-
 	dst.AllowPrivilegeEscalation = mergePointers(dst.AllowPrivilegeEscalation, src.AllowPrivilegeEscalation)
-
 	dst.ProcMount = mergePointers(dst.ProcMount, src.ProcMount)
-
 	dst.SeccompProfile = deepMergeSeccompProfile(dst.SeccompProfile, src.SeccompProfile)
 
 	return dst
@@ -619,7 +538,7 @@ func deepMergeCapabilities(dst, src *corev1.Capabilities) *corev1.Capabilities {
 	return dst
 }
 
-func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig) *v1alpha1.KubernetesProxyConfig {
+func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDeployment {
 	// nil src override means just use dst
 	if src == nil {
 		return dst
@@ -629,18 +548,7 @@ func deepMergeDeploymentWorkloadType(dst, src *v1alpha1.KubernetesProxyConfig) *
 		return src
 	}
 
-	dstDeployment := dst.Deployment
-	srcDeployment := src.Deployment
-
-	if srcDeployment == nil {
-		return dst
-	}
-	if dstDeployment == nil {
-		return src
-	}
-
-	// we can use the getter here since the value is a pb wrapper
-	dstDeployment.Replicas = mergePointers(dst.GetDeployment().GetReplicas(), src.GetDeployment().GetReplicas())
+	dst.Replicas = mergePointers(dst.GetReplicas(), src.GetReplicas())
 
 	return dst
 }
@@ -664,10 +572,3 @@ func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension 
 
 	return dst
 }
-
-// The following exists only to exclude this file from the gettercheck.
-// This is a hacky workaround to disable gettercheck, but the current version of gettercheck
-// complains due to needing to pass pointers into `mergePointers` by field
-// access instead of by getter. We should add a way to exclude lines from the gettercheck.
-
-// Code generated DO NOT EDIT.

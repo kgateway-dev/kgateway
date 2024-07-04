@@ -74,15 +74,14 @@ func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	var svcType *string
-	if svcConfig.Type != nil {
-		svcType = ptr.To(string(*svcConfig.Type))
+	if svcConfig.GetType() != nil {
+		svcType = ptr.To(string(*svcConfig.GetType()))
 	}
-	clusterIp := svcConfig.ClusterIP
 	return &helmService{
 		Type:             svcType,
-		ClusterIP:        clusterIp,
-		ExtraAnnotations: svcConfig.ExtraAnnotations,
-		ExtraLabels:      svcConfig.ExtraLabels,
+		ClusterIP:        svcConfig.GetClusterIP(),
+		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
+		ExtraLabels:      svcConfig.GetExtraLabels(),
 	}
 }
 
@@ -93,15 +92,15 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 	}
 
 	vals := &helmSdsContainer{
-		Image:           getImageValues(sdsContainerConfig.Image),
-		Resources:       sdsContainerConfig.Resources,
-		SecurityContext: sdsContainerConfig.SecurityContext,
+		Image:           getImageValues(sdsContainerConfig.GetImage()),
+		Resources:       sdsContainerConfig.GetResources(),
+		SecurityContext: sdsContainerConfig.GetSecurityContext(),
 		SdsBootstrap:    &sdsBootstrap{},
 	}
 
-	if bootstrap := sdsContainerConfig.Bootstrap; bootstrap != nil {
+	if bootstrap := sdsContainerConfig.GetBootstrap(); bootstrap != nil {
 		vals.SdsBootstrap = &sdsBootstrap{
-			LogLevel: bootstrap.LogLevel,
+			LogLevel: bootstrap.GetLogLevel(),
 		}
 	}
 
@@ -114,13 +113,13 @@ func getIstioContainerValues(config *v1alpha1.IstioContainer) *helmIstioContaine
 	}
 
 	return &helmIstioContainer{
-		Image:                 getImageValues(config.Image),
-		LogLevel:              config.LogLevel,
-		Resources:             config.Resources,
-		SecurityContext:       config.SecurityContext,
-		IstioDiscoveryAddress: config.IstioDiscoveryAddress,
-		IstioMetaMeshId:       config.IstioMetaMeshId,
-		IstioMetaClusterId:    config.IstioMetaClusterId,
+		Image:                 getImageValues(config.GetImage()),
+		LogLevel:              config.GetLogLevel(),
+		Resources:             config.GetResources(),
+		SecurityContext:       config.GetSecurityContext(),
+		IstioDiscoveryAddress: config.GetIstioDiscoveryAddress(),
+		IstioMetaMeshId:       config.GetIstioMetaMeshId(),
+		IstioMetaClusterId:    config.GetIstioMetaClusterId(),
 	}
 }
 
@@ -145,13 +144,13 @@ func getImageValues(image *v1alpha1.Image) *helmImage {
 	}
 
 	helmImage := &helmImage{
-		Registry:   image.Registry,
-		Repository: image.Repository,
-		Tag:        image.Tag,
-		Digest:     image.Digest,
+		Registry:   image.GetRegistry(),
+		Repository: image.GetRepository(),
+		Tag:        image.GetTag(),
+		Digest:     image.GetDigest(),
 	}
-	if image.PullPolicy != nil {
-		helmImage.PullPolicy = ptr.To(string(*image.PullPolicy))
+	if image.GetPullPolicy() != nil {
+		helmImage.PullPolicy = ptr.To(string(*image.GetPullPolicy()))
 	}
 
 	return helmImage
@@ -163,10 +162,10 @@ func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
 		return nil
 	}
 	return &helmStatsConfig{
-		Enabled:            statsConfig.Enabled,
-		RoutePrefixRewrite: statsConfig.RoutePrefixRewrite,
-		EnableStatsRoute:   statsConfig.EnableStatsRoute,
-		StatsPrefixRewrite: statsConfig.StatsRoutePrefixRewrite,
+		Enabled:            statsConfig.GetEnabled(),
+		RoutePrefixRewrite: statsConfig.GetRoutePrefixRewrite(),
+		EnableStatsRoute:   statsConfig.GetEnableStatsRoute(),
+		StatsPrefixRewrite: statsConfig.GetStatsRoutePrefixRewrite(),
 	}
 }
 
@@ -197,11 +196,11 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 	}
 
 	return &helmAIExtension{
-		Enabled:         *config.Enabled,
-		Image:           getImageValues(config.Image),
-		SecurityContext: config.SecurityContext,
-		Resources:       config.Resources,
-		Env:             config.Env,
-		Ports:           config.Ports,
+		Enabled:         *config.GetEnabled(),
+		Image:           getImageValues(config.GetImage()),
+		SecurityContext: config.GetSecurityContext(),
+		Resources:       config.GetResources(),
+		Env:             config.GetEnv(),
+		Ports:           config.GetPorts(),
 	}
 }
