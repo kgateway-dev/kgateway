@@ -180,7 +180,7 @@ func GetGlooDeploymentName(ctx context.Context, namespace string) (string, error
 	for _, d := range deployments.Items {
 		if d.Name != GlooDeploymentName {
 			// At least 1 deployment exists, in case we dont find default update our error message
-			errMessage = "too many app=gloo deployments, cannot decide which to target"
+			errMessage = "too many deployments labeled gloo=gloo; cannot decide which to target"
 			continue
 		}
 		// TODO: (nfuden) Remove this, while we should generally avoid println in our formatted output we already have alot of these
