@@ -395,7 +395,7 @@ func deepMergeSdsBootstrap(dst, src *v1alpha1.SdsBootstrap) *v1alpha1.SdsBootstr
 		return src
 	}
 
-	if src.LogLevel != "" {
+	if src.LogLevel != nil {
 		dst.LogLevel = src.LogLevel
 	}
 
@@ -444,7 +444,7 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	dst.SecurityContext = deepMergeSecurityContext(dst.SecurityContext, src.SecurityContext)
 	dst.Resources = deepMergeResourceRequirements(dst.Resources, src.Resources)
 
-	if logLevel := src.LogLevel; logLevel != "" {
+	if logLevel := src.LogLevel; logLevel != nil {
 		dst.LogLevel = logLevel
 	}
 
@@ -452,21 +452,21 @@ func deepMergeIstioContainer(dst, src *v1alpha1.IstioContainer) *v1alpha1.IstioC
 	// GatewayParameters populated by helm values
 	dstIstioDiscoveryAddress := dst.IstioDiscoveryAddress
 	srcIstioDiscoveryAddress := src.IstioDiscoveryAddress
-	if dstIstioDiscoveryAddress == "" {
+	if dstIstioDiscoveryAddress == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioDiscoveryAddress = srcIstioDiscoveryAddress
 	}
 
 	dstIstioMetaMeshId := dst.IstioMetaMeshId
 	srcIstioMetaMeshId := src.IstioMetaMeshId
-	if dstIstioMetaMeshId == "" {
+	if dstIstioMetaMeshId == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaMeshId = srcIstioMetaMeshId
 	}
 
 	dstIstioMetaClusterId := dst.IstioMetaClusterId
 	srcIstioMetaClusterId := src.IstioMetaClusterId
-	if dstIstioMetaClusterId == "" {
+	if dstIstioMetaClusterId == nil {
 		// Doesn't matter if we're overriding empty with empty
 		dstIstioMetaClusterId = srcIstioMetaClusterId
 	}
@@ -508,23 +508,23 @@ func deepMergeImage(dst, src *v1alpha1.Image) *v1alpha1.Image {
 	// because all fields are not nullable, we treat empty strings as empty values
 	// and do not override with them
 
-	if src.Registry != "" {
+	if src.Registry != nil {
 		dst.Registry = src.Registry
 	}
 
-	if src.Repository != "" {
+	if src.Repository != nil {
 		dst.Repository = src.Repository
 	}
 
-	if src.Tag != "" {
+	if src.Tag != nil {
 		dst.Tag = src.Tag
 	}
 
-	if src.Digest != "" {
+	if src.Digest != nil {
 		dst.Digest = src.Digest
 	}
 
-	if src.PullPolicy != "" {
+	if src.PullPolicy != nil {
 		dst.PullPolicy = src.PullPolicy
 	}
 
@@ -540,7 +540,7 @@ func deepMergeEnvoyBootstrap(dst, src *v1alpha1.EnvoyBootstrap) *v1alpha1.EnvoyB
 	if dst == nil {
 		return src
 	}
-	if src.LogLevel != "" {
+	if src.LogLevel != nil {
 		dst.LogLevel = src.LogLevel
 	}
 

@@ -309,7 +309,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-	gateway.LogLevel = &logLevel
+	gateway.LogLevel = logLevel
 	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
 	if err != nil {
 		return nil, err

@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -74,11 +73,14 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
-	svcType := string(svcConfig.Type)
+	var svcType *string
+	if svcConfig.Type != nil {
+		svcType = ptr.To(string(*svcConfig.Type))
+	}
 	clusterIp := svcConfig.ClusterIP
 	return &helmService{
-		Type:             &svcType,
-		ClusterIP:        ptr.To(clusterIp),
+		Type:             svcType,
+		ClusterIP:        clusterIp,
 		ExtraAnnotations: svcConfig.ExtraAnnotations,
 		ExtraLabels:      svcConfig.ExtraLabels,
 	}
@@ -99,7 +101,7 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 
 	if bootstrap := sdsContainerConfig.Bootstrap; bootstrap != nil {
 		vals.SdsBootstrap = &sdsBootstrap{
-			LogLevel: ptr.To(bootstrap.LogLevel),
+			LogLevel: bootstrap.LogLevel,
 		}
 	}
 
@@ -113,12 +115,12 @@ func getIstioContainerValues(config *v1alpha1.IstioContainer) *helmIstioContaine
 
 	return &helmIstioContainer{
 		Image:                 getImageValues(config.Image),
-		LogLevel:              ptr.To(config.LogLevel),
+		LogLevel:              config.LogLevel,
 		Resources:             config.Resources,
 		SecurityContext:       config.SecurityContext,
-		IstioDiscoveryAddress: ptr.To(config.IstioDiscoveryAddress),
-		IstioMetaMeshId:       ptr.To(config.IstioMetaMeshId),
-		IstioMetaClusterId:    ptr.To(config.IstioMetaClusterId),
+		IstioDiscoveryAddress: config.IstioDiscoveryAddress,
+		IstioMetaMeshId:       config.IstioMetaMeshId,
+		IstioMetaClusterId:    config.IstioMetaClusterId,
 	}
 }
 
@@ -143,12 +145,15 @@ func getImageValues(image *v1alpha1.Image) *helmImage {
 	}
 
 	helmImage := &helmImage{
-		Registry:   ptr.To(image.Registry),
-		Repository: ptr.To(image.Repository),
-		Tag:        ptr.To(image.Tag),
-		Digest:     ptr.To(image.Digest),
+		Registry:   image.Registry,
+		Repository: image.Repository,
+		Tag:        image.Tag,
+		Digest:     image.Digest,
 	}
-	setPullPolicy(image.PullPolicy, helmImage)
+	if image.PullPolicy != nil {
+		helmImage.PullPolicy = ptr.To(string(*image.PullPolicy))
+	}
+
 	return helmImage
 }
 
@@ -159,9 +164,9 @@ func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
 	}
 	return &helmStatsConfig{
 		Enabled:            statsConfig.Enabled,
-		RoutePrefixRewrite: ptr.To(statsConfig.RoutePrefixRewrite),
+		RoutePrefixRewrite: statsConfig.RoutePrefixRewrite,
 		EnableStatsRoute:   statsConfig.EnableStatsRoute,
-		StatsPrefixRewrite: ptr.To(statsConfig.StatsRoutePrefixRewrite),
+		StatsPrefixRewrite: statsConfig.StatsRoutePrefixRewrite,
 	}
 }
 
@@ -184,10 +189,6 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ","), nil
-}
-
-func setPullPolicy(pullPolicy corev1.PullPolicy, helmImage *helmImage) {
-	helmImage.PullPolicy = ptr.To(string(pullPolicy))
 }
 
 func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
