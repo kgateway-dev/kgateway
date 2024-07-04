@@ -29,7 +29,7 @@ var (
 			"Gloo will not be able to process any other configuration updates until these errors are resolved.", resourceNames)
 	}
 
-	// Initialize the custom deployment name that is overwritten later on
+	// Initialize the custom deployment name that is overwritten later on in the `CheckResources` function
 	customGlooDeploymentName = helpers.GlooDeploymentName
 )
 
