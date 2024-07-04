@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 
 	"github.com/solo-io/skv2/codegen/util"
 )
@@ -66,7 +66,7 @@ func TestIstioRegression(t *testing.T) {
 
 	// Install Gloo Gateway with only Edge APIs enabled
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
 	IstioRegressionSuiteRunner().Run(ctx, t, testInstallation)

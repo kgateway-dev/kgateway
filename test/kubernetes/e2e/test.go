@@ -8,12 +8,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/gloo/test/testutils"
 )
@@ -22,12 +21,12 @@ import (
 // The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
 // in favor of using the exact tool that users rely on
 func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
-	testHelper, err := kube2e.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
+	testHelper, err := helper.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
 	}
 
-	testHelper.DeployTestServer = false
+	testHelper.SetKubeCli(installation.ClusterContext.Cli)
 
 	return testHelper
 }
@@ -155,6 +154,7 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 		err := installFn(ctx)
 		i.Assertions.Require.NoError(err)
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
+		i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 	}
 
 	// We can only create the ResourceClients after the CRDs exist in the Cluster
@@ -170,6 +170,13 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 	err := uninstallFn(ctx)
 	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
+}
+
+func (i *TestInstallation) UpgradeGlooGateway(ctx context.Context, serverVersion string, upgradeFn func(ctx context.Context) error) {
+	err := upgradeFn(ctx)
+	i.Assertions.Require.NoError(err)
+	i.Assertions.EventuallyUpgradeSucceeded(ctx, serverVersion)
+	i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
