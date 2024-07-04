@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6303
+    resolvesIssue: false
+    description: >-
+      Migrate test utilities from kube2e to facilitate test migration.
+
+      skipCI-docs-build:true
