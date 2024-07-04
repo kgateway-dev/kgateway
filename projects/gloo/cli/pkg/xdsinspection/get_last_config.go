@@ -25,6 +25,7 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
 	_ "github.com/solo-io/gloo/projects/envoyinit/hack/filter_types"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -40,6 +41,11 @@ const (
 // According to gloo
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
 
+	glooDeploymentName, err := helpers.GetGlooDeploymentName(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
+
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
 	// If gloo is in MTLS mode
 	glooMtlsCheck := exec.Command("kubectl", "get", "configmap", envoySidecarConfig, "-n", namespace)
@@ -47,7 +53,7 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 		xdsPort = strconv.Itoa(int(defaults.GlooMtlsModeXdsPort))
 	}
 	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
-		"deployment/gloo", xdsPort)
+		"deployment/"+glooDeploymentName, xdsPort)
 	mergedPortForwardOutput := bytes.NewBuffer([]byte{})
 	portFwd.Stdout = mergedPortForwardOutput
 	portFwd.Stderr = mergedPortForwardOutput

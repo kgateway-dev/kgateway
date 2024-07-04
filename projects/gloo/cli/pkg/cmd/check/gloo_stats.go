@@ -8,12 +8,12 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
 )
 
 const (
-	glooDeployment      = "gloo"
 	rateLimitDeployment = "rate-limit"
 	glooStatsPath       = "/metrics"
 
@@ -28,6 +28,9 @@ var (
 		return fmt.Sprintf("Gloo has detected that the data plane is out of sync. The following types of resources have not been accepted: %v. "+
 			"Gloo will not be able to process any other configuration updates until these errors are resolved.", resourceNames)
 	}
+
+	// Initialize the custom deployment name that is overwritten later on
+	customGlooDeploymentName = helpers.GlooDeploymentName
 )
 
 func ResourcesSyncedOverXds(stats, deploymentName string) bool {
@@ -83,7 +86,7 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, deployments *v1
 		printer.AppendCheck("Warning: checking xds with port forwarding is disabled\n")
 		return nil
 	}
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
+	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, opts.Metadata.GetNamespace(), "deploy/"+customGlooDeploymentName,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		return err
@@ -94,12 +97,12 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, deployments *v1
 	}
 
 	if strings.TrimSpace(stats) == "" {
-		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
+		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+customGlooDeploymentName+" deployment")
 		fmt.Println(err)
 		return fmt.Errorf(err)
 	}
 
-	if !ResourcesSyncedOverXds(stats, glooDeployment) {
+	if !ResourcesSyncedOverXds(stats, customGlooDeploymentName) {
 		fmt.Println(errMessage)
 		return fmt.Errorf(errMessage)
 	}
