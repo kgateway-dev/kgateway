@@ -10,62 +10,62 @@ type Image struct {
 	// The image registry.
 	//
 	// +kubebuilder:validation:Optional
-	Registry string `json:"registry,omitempty"`
+	Registry *string `json:"registry,omitempty"`
 
 	// The image repository (name).
 	//
 	// +kubebuilder:validation:Optional
-	Repository string `json:"repository,omitempty"`
+	Repository *string `json:"repository,omitempty"`
 
 	// The image tag.
 	//
 	// +kubebuilder:validation:Optional
-	Tag string `json:"tag,omitempty"`
+	Tag *string `json:"tag,omitempty"`
 
 	// The hash digest of the image, e.g. `sha256:12345...`
 	//
 	// +kubebuilder:validation:Optional
-	Digest string `json:"digest,omitempty"`
+	Digest *string `json:"digest,omitempty"`
 
 	// The image pull policy for the container. See
 	// https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// for details.
 	//
 	// +kubebuilder:validation:Optional
-	PullPolicy corev1.PullPolicy `json:"pullPolicy,omitempty"`
+	PullPolicy *corev1.PullPolicy `json:"pullPolicy,omitempty"`
 }
 
-func (in *Image) GetRegistry() string {
+func (in *Image) GetRegistry() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Registry
 }
 
-func (in *Image) GetRepository() string {
+func (in *Image) GetRepository() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Repository
 }
 
-func (in *Image) GetTag() string {
+func (in *Image) GetTag() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Tag
 }
 
-func (in *Image) GetDigest() string {
+func (in *Image) GetDigest() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Digest
 }
 
-func (in *Image) GetPullPolicy() corev1.PullPolicy {
+func (in *Image) GetPullPolicy() *corev1.PullPolicy {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.PullPolicy
 }
@@ -75,7 +75,7 @@ type Service struct {
 	// The Kubernetes Service type.
 	//
 	// +kubebuilder:validation:Optional
-	Type corev1.ServiceType `json:"type,omitempty"`
+	Type *corev1.ServiceType `json:"type,omitempty"`
 
 	// The manually specified IP address of the service, if a randomly assigned
 	// IP is not desired. See
@@ -85,7 +85,7 @@ type Service struct {
 	// on the implications of setting `clusterIP`.
 	//
 	// +kubebuilder:validation:Optional
-	ClusterIP string `json:"clusterIP,omitempty"`
+	ClusterIP *string `json:"clusterIP,omitempty"`
 
 	// Additional labels to add to the Service object metadata.
 	//
@@ -98,16 +98,16 @@ type Service struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
-func (in *Service) GetType() corev1.ServiceType {
+func (in *Service) GetType() *corev1.ServiceType {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.Type
 }
 
-func (in *Service) GetClusterIP() string {
+func (in *Service) GetClusterIP() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.ClusterIP
 }

@@ -241,7 +241,7 @@ type EnvoyBootstrap struct {
 	// for more information.
 	//
 	// +kubebuilder:validation:Optional
-	LogLevel string `json:"logLevel,omitempty"`
+	LogLevel *string `json:"logLevel,omitempty"`
 
 	// Envoy log levels for specific components. The keys are component names and
 	// the values are one of "trace", "debug", "info", "warn", "error",
@@ -264,9 +264,9 @@ type EnvoyBootstrap struct {
 	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
 }
 
-func (in *EnvoyBootstrap) GetLogLevel() string {
+func (in *EnvoyBootstrap) GetLogLevel() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.LogLevel
 }
@@ -341,12 +341,12 @@ type SdsBootstrap struct {
 	// Default level is "info".
 	//
 	// +kubebuilder:validation:Optional
-	LogLevel string `json:"logLevel,omitempty"`
+	LogLevel *string `json:"logLevel,omitempty"`
 }
 
-func (in *SdsBootstrap) GetLogLevel() string {
+func (in *SdsBootstrap) GetLogLevel() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.LogLevel
 }
@@ -407,22 +407,22 @@ type IstioContainer struct {
 	// Default level is info Default is "warning".
 	//
 	// +kubebuilder:validation:Optional
-	LogLevel string `json:"logLevel,omitempty"`
+	LogLevel *string `json:"logLevel,omitempty"`
 
 	// The address of the istio discovery service. Defaults to "istiod.istio-system.svc:15012".
 	//
 	// +kubebuilder:validation:Optional
-	IstioDiscoveryAddress string `json:"istioDiscoveryAddress,omitempty"`
+	IstioDiscoveryAddress *string `json:"istioDiscoveryAddress,omitempty"`
 
 	// The mesh id of the istio mesh. Defaults to "cluster.local".
 	//
 	// +kubebuilder:validation:Optional
-	IstioMetaMeshId string `json:"istioMetaMeshId,omitempty"`
+	IstioMetaMeshId *string `json:"istioMetaMeshId,omitempty"`
 
 	// The cluster id of the istio cluster. Defaults to "Kubernetes".
 	//
 	// +kubebuilder:validation:Optional
-	IstioMetaClusterId string `json:"istioMetaClusterId,omitempty"`
+	IstioMetaClusterId *string `json:"istioMetaClusterId,omitempty"`
 }
 
 func (in *IstioContainer) GetImage() *Image {
@@ -446,30 +446,30 @@ func (in *IstioContainer) GetResources() *corev1.ResourceRequirements {
 	return in.Resources
 }
 
-func (in *IstioContainer) GetLogLevel() string {
+func (in *IstioContainer) GetLogLevel() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.LogLevel
 }
 
-func (in *IstioContainer) GetIstioDiscoveryAddress() string {
+func (in *IstioContainer) GetIstioDiscoveryAddress() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.IstioDiscoveryAddress
 }
 
-func (in *IstioContainer) GetIstioMetaMeshId() string {
+func (in *IstioContainer) GetIstioMetaMeshId() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.IstioMetaMeshId
 }
 
-func (in *IstioContainer) GetIstioMetaClusterId() string {
+func (in *IstioContainer) GetIstioMetaClusterId() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.IstioMetaClusterId
 }
@@ -484,7 +484,7 @@ type StatsConfig struct {
 	// The Envoy stats endpoint to which the metrics are written
 	//
 	// +kubebuilder:validation:Optional
-	RoutePrefixRewrite string `json:"routePrefixRewrite,omitempty"`
+	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
 
 	// Enables an additional route to the stats cluster defaulting to /stats
 	//
@@ -494,7 +494,7 @@ type StatsConfig struct {
 	// The Envoy stats endpoint with general metrics for the additional stats route
 	//
 	// +kubebuilder:validation:Optional
-	StatsRoutePrefixRewrite string `json:"statsRoutePrefixRewrite,omitempty"`
+	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty"`
 }
 
 func (in *StatsConfig) GetEnabled() *bool {
@@ -504,9 +504,9 @@ func (in *StatsConfig) GetEnabled() *bool {
 	return in.Enabled
 }
 
-func (in *StatsConfig) GetRoutePrefixRewrite() string {
+func (in *StatsConfig) GetRoutePrefixRewrite() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.RoutePrefixRewrite
 }
@@ -518,9 +518,9 @@ func (in *StatsConfig) GetEnableStatsRoute() *bool {
 	return in.EnableStatsRoute
 }
 
-func (in *StatsConfig) GetStatsRoutePrefixRewrite() string {
+func (in *StatsConfig) GetStatsRoutePrefixRewrite() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.StatsRoutePrefixRewrite
 }
