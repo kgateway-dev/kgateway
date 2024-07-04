@@ -13,6 +13,10 @@ import "google/protobuf/descriptor.proto";
 // "solo.io.envoy.annotation.disallowed_by_default"
 extend google.protobuf.FieldOptions {
   bool disallowed_by_default = 246172783;
+
+  // The API major and minor version on which the field was deprecated
+  // (e.g., "3.5" for major version 3 and minor version 5).
+  string deprecated_at_minor_version = 246172784;
 }
 
 // Magic number in this file derived from top 28bit of SHA256 digest of

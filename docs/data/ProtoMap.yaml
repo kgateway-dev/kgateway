@@ -1838,6 +1838,45 @@ apis:
   solo.io.envoy.extensions.wasm.v3.WasmService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
     package: solo.io.envoy.extensions.wasm.v3
+  solo.io.envoy.service.ext_proc.v3.BodyMutation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#BodyMutation
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.BodyResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#BodyResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.CommonResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#CommonResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.GrpcStatus:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#GrpcStatus
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HeaderMutation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HeaderMutation
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HeadersResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HeadersResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HttpBody:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HttpBody
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HttpHeaders:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HttpHeaders
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HttpTrailers:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HttpTrailers
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.ImmediateResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#ImmediateResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.ProcessingRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#ProcessingRequest
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.ProcessingResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#ProcessingResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.TrailersResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#TrailersResponse
+    package: solo.io.envoy.service.ext_proc.v3
   solo.io.envoy.type.DoubleRange:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto.sk/#DoubleRange
     package: solo.io.envoy.type
@@ -1879,6 +1918,9 @@ apis:
     package: solo.io.envoy.type.v3
   solo.io.envoy.type.v3.FractionalPercent:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/percent.proto.sk/#FractionalPercent
+    package: solo.io.envoy.type.v3
+  solo.io.envoy.type.v3.HttpStatus:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/http_status.proto.sk/#HttpStatus
     package: solo.io.envoy.type.v3
   solo.io.envoy.type.v3.Int32Range:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/range.proto.sk/#Int32Range
