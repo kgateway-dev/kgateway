@@ -1,3 +1,4 @@
+changelog:
 - type: FIX
   issueLink: https://github.com/solo-io/gloo/issues/9163
   resolvesIssue: false
