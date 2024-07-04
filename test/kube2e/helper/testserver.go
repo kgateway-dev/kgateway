@@ -80,6 +80,8 @@ const (
 </html>`
 )
 
+// tests relying on the test server should be ported using the default nginx deployment located at
+// test/kubernetes/e2e/defaults/testdata/nginx_pod.yaml
 func NewTestServer(namespace string) (TestUpstreamServer, error) {
 	testContainer, err := newTestContainer(namespace, defaultTestServerImage, TestServerName, TestServerPort)
 	if err != nil {
