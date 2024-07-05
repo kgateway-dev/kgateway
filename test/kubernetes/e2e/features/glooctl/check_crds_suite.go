@@ -48,7 +48,7 @@ func (s *checkCrdsSuite) TestValidatesCorrectCrds() {
 			"--version", s.testInstallation.Metadata.ChartVersion)
 		s.NoError(err)
 	} else {
-		chartUri := filepath.Join(testutils.GitRootDirectory(), s.testInstallation.Metadata.TestAssetDir, s.testInstallation.Metadata.HelmRepoIndexFileName+"-"+s.testInstallation.Metadata.ChartVersion+".tgz")
+		chartUri := filepath.Join(testutils.GitRootDirectory(), s.testInstallation.Metadata.TestAssetDir, s.testInstallation.Metadata.HelmChartName+"-"+s.testInstallation.Metadata.ChartVersion+".tgz")
 		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
 			"-n", s.testInstallation.Metadata.InstallNamespace,
 			"--kube-context", s.testInstallation.ClusterContext.KubeContext,
