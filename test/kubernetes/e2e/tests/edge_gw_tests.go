@@ -14,7 +14,7 @@ func EdgeGwSuiteRunner() e2e.SuiteRunner {
 	edgeGwSuiteRunner.Register("PortRouting", port_routing.NewEdgeGatewayApiTestingSuite)
 	edgeGwSuiteRunner.Register("GlooctlCheck", glooctl.NewCheckSuite)
 	edgeGwSuiteRunner.Register("GlooctlCheckCrds", glooctl.NewCheckCrdsSuite)
-	edgeGwSuiteRunner.Register("GlooctlCheckCrds", glooctl.NewDebugSuite)
+	edgeGwSuiteRunner.Register("GlooctlDebug", glooctl.NewDebugSuite)
 
 	return edgeGwSuiteRunner
 }
