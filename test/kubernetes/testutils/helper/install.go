@@ -22,17 +22,11 @@ import (
 	"github.com/solo-io/go-utils/testutils/exec"
 )
 
-const (
-	DefaultTestAssetDir          = "_test"
-	DefaultBuildAssetDir         = "_output"
-	DefaultHelmRepoIndexFileName = "index.yaml"
-)
-
 // Default test configuration
 var defaults = TestConfig{
-	TestAssetDir:          DefaultTestAssetDir,
-	BuildAssetDir:         DefaultBuildAssetDir,
-	HelmRepoIndexFileName: DefaultHelmRepoIndexFileName,
+	TestAssetDir:          "_test",
+	BuildAssetDir:         "_output",
+	HelmRepoIndexFileName: "index.yaml",
 }
 
 // supportedArchs is represents the list of architectures we build glooctl for
@@ -352,31 +346,23 @@ func (h *SoloTestHelper) uninstallGloo(all bool) error {
 
 // Parses the Helm index file and returns the version of the chart.
 func getChartVersion(config TestConfig) (string, error) {
+
 	// Find helm index file in test asset directory
 	helmIndexFile := filepath.Join(config.RootDir, config.TestAssetDir, config.HelmRepoIndexFileName)
-	return GetChartVersionForHelmFile(helmIndexFile, config.HelmChartName)
-}
-
-func GetChartVersionForHelmFile(helmIndexFile, helmChartName string) (string, error) {
 	helmIndex, err := repo.LoadIndexFile(helmIndexFile)
 	if err != nil {
-		{
-			return "", errors.Wrapf(err, "parsing Helm index file")
-		}
+		return "", errors.Wrapf(err, "parsing Helm index file")
 	}
 	log.Printf("found Helm index file at: %s", helmIndexFile)
-	return getChartVersionForHelm(helmChartName, helmIndex)
-}
 
-func getChartVersionForHelm(helmChartName string, helmIndex *repo.IndexFile) (string, error) {
 	// Read and return version from helm index file
-	if chartVersions, ok := helmIndex.Entries[helmChartName]; !ok {
-		return "", eris.Errorf("index file does not contain entry with key: %s", helmChartName)
+	if chartVersions, ok := helmIndex.Entries[config.HelmChartName]; !ok {
+		return "", eris.Errorf("index file does not contain entry with key: %s", config.HelmChartName)
 	} else if len(chartVersions) == 0 || len(chartVersions) > 1 {
-		return "", eris.Errorf("expected a single entry with name [%s], found: %v", helmChartName, len(chartVersions))
+		return "", eris.Errorf("expected a single entry with name [%s], found: %v", config.HelmChartName, len(chartVersions))
 	} else {
 		version := chartVersions[0].Version
-		log.Printf("version of [%s] Helm chart is: %s", helmChartName, version)
+		log.Printf("version of [%s] Helm chart is: %s", config.HelmChartName, version)
 		return version, nil
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/stretchr/testify/suite"
 )
@@ -42,17 +41,12 @@ func (s *checkCrdsSuite) TearDownSuite() {
 }
 
 func (s *checkCrdsSuite) TestValidatesCorrectCrds() {
-	// TODO(npolshak): make helm index file configurable from test installation
-	helmIndexFile := filepath.Join(testutils.GitRootDirectory(), helper.DefaultTestAssetDir, helper.DefaultHelmRepoIndexFileName)
-	chartVersion, err := helper.GetChartVersionForHelmFile(helmIndexFile, helper.DefaultHelmRepoIndexFileName)
-	s.NoError(err)
-
-	if helper.GetTestReleasedVersion(s.ctx, "gloo") != "" {
-		err = s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx, "--version", "-n", s.testInstallation.Metadata.InstallNamespace, chartVersion)
+	if s.testInstallation.Metadata.ReleasedVersion != "" {
+		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx, "--version", "-n", s.testInstallation.Metadata.InstallNamespace, s.testInstallation.Metadata.ChartVersion)
 		s.NoError(err)
 	} else {
-		chartUri := filepath.Join(testutils.GitRootDirectory(), helper.DefaultTestAssetDir, helper.DefaultHelmRepoIndexFileName+"-"+chartVersion+".tgz")
-		err = s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
+		chartUri := filepath.Join(testutils.GitRootDirectory(), s.testInstallation.Metadata.TestAssetDir, s.testInstallation.Metadata.HelmRepoIndexFileName+"-"+s.testInstallation.Metadata.ChartVersion+".tgz")
+		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
 			"-n", s.testInstallation.Metadata.InstallNamespace, "--local-chart", chartUri)
 		s.NoError(err)
 	}
