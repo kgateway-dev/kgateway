@@ -28,10 +28,5 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestUpdateValidationServerGrpcMaxSizeBytes() {
-}
-
-func (s *testingSuite) TestAddGatewayProxyInSeparateNamespace() {
-}
-func (s *testingSuite) TestSetValidationWebhookCaBundle() {
-}
+// TestUpgradeSucceeds is just a placeholder for a smoke-test upgrade.
+func (s *testingSuite) TestUpgradeSucceeds() {}

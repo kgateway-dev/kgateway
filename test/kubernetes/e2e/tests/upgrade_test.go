@@ -8,10 +8,10 @@ import (
 
 	"github.com/solo-io/skv2/codegen/util"
 
-	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 )
 
 // The previous kube2e upgrade tests ran no meaningful assertions against the installation
@@ -30,7 +30,13 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 		},
 	)
 
+	// Get the last released patch of the minor version prior to the one being tested.
+	lastPatchPreviousMinorVersion, _, err := helper.GetUpgradeVersions(ctx, "gloo")
+	testInstallation.Assertions.Require.NoError(err)
+
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
+
+	testHelper.ReleasedVersion = lastPatchPreviousMinorVersion.String()
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
@@ -46,7 +52,12 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 
 	// Install Gloo Gateway
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
+	})
+
+	// If specific upgrade cases need to be tested, values overrides should be defined in manifests/ and passed into the upgrade fn here.
+	testInstallation.UpgradeGlooGateway(ctx, testHelper.ChartVersion(), func(ctx context.Context) (func() error, error) {
+		return testHelper.UpgradeGloo(ctx, 5*time.Minute, testHelper.ChartVersion(), true, filepath.Join(testHelper.RootDir, "install", "helm", "gloo", "crds"))
 	})
 
 	UpgradeSuiteRunner().Run(ctx, t, testInstallation)
@@ -56,5 +67,26 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 // and finally executes tests against the upgraded version. This will be skipped if there
 // has not yet been a patch release for the most current minor version.
 func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
-	// TODO: skip if no patches
+	ctx := context.Background()
+	testInstallation := e2e.CreateTestInstallation(
+		t,
+		&gloogateway.Context{
+			InstallNamespace:       "upgrade-from-current-patch-latest-minor",
+			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "upgrade-base-test-helm.yaml"),
+			ValidationAlwaysAccept: false,
+		},
+	)
+
+	// Get the last released patch of the minor version being tested.
+	_, currentPatchMostRecentMinorVersion, err := helper.GetUpgradeVersions(ctx, "gloo")
+	testInstallation.Assertions.Require.NoError(err)
+	if currentPatchMostRecentMinorVersion == nil {
+		// This test case is not valid because there are no released patch versions of the minor
+		// we are currently branched from.
+		return
+	}
+
+	testHelper := e2e.MustTestHelper(ctx, testInstallation)
+
+	testHelper.ReleasedVersion = currentPatchMostRecentMinorVersion.String()
 }

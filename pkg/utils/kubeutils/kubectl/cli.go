@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -99,6 +100,38 @@ func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...strin
 	return err
 }
 
+// ApplyRemoteFiles applies the resources defined at the URL provided, and returns an error if one occurred.
+// An error is returned if the provided URL is not able to be parsed (i.e. is invalid).
+func (c *Cli) ApplyRemoteFiles(ctx context.Context, uri string, extraArgs ...string) error {
+	_, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	args := append([]string{"apply", "-f", uri}, extraArgs...)
+	return c.Command(ctx, args...).
+		Run().
+		Cause()
+}
+
+// ApplyFilePath applies the resources defined at the file path, and returns an error if one occurred.
+// If filePath is a directory, this will apply all of the files in the directory.
+func (c *Cli) ApplyFilePath(ctx context.Context, filePath string, extraArgs ...string) error {
+	stat, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	if !stat.IsDir() {
+		_, err := c.ApplyFileWithOutput(ctx, filePath, extraArgs...)
+		return err
+	}
+
+	args := append([]string{"apply", "-f", filePath}, extraArgs...)
+	return c.Command(ctx, args...).
+		Run().
+		Cause()
+}
+
 // ApplyFileWithOutput applies the resources defined in a file,
 // if an error occurred, it will be returned along with the output of the command
 func (c *Cli) ApplyFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
@@ -108,9 +141,7 @@ func (c *Cli) ApplyFileWithOutput(ctx context.Context, fileName string, extraArg
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_ = fileInput.Close()
-	}()
+	defer fileInput.Close()
 
 	runErr := c.Command(ctx, applyArgs...).
 		WithStdin(fileInput).
