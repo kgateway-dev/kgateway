@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -222,36 +223,32 @@ func (s *checkSuite) TestEdgeGatewayScaled() {
 	gomega.Expect(output).To(GlooctlEdgeHealthyCheck())
 }
 
-//
-//func (s *checkSuite) TestEdgeResourceError() {
-//	s.T().Cleanup(func() {
-//		// Delete invalid config
-//		err := s.testInstallation.ClusterContext.Cli.DeleteFileSafe(s.ctx, invalidVSKubeDest)
-//		s.NoError(err)
-//		err = s.testInstallation.ClusterContext.Cli.DeleteFileSafe(s.ctx, invalidVSUpstreamDest, "-n", s.testInstallation.Metadata.InstallNamespace)
-//		s.NoError(err)
-//	})
-//
-//	// Apply invalid config
-//	err := s.testInstallation.ClusterContext.Cli.ApplyFile(s.ctx, invalidVSKubeDest)
-//	s.NoError(err)
-//	err = s.testInstallation.ClusterContext.Cli.ApplyFile(s.ctx, invalidVSUpstreamDest, "-n", s.testInstallation.Metadata.InstallNamespace)
-//	s.NoError(err)
-//
-//	// Run check
-//	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
-//		"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.ClusterContext.KubeContext)
-//	s.Error(err)
-//	println(err.Error())
-//	gomega.Expect(err.Error()).To(
-//		gomega.And(
-//			gomega.ContainSubstring(fmt.Sprintf("* Found rejected virtual service by '%s': default reject-me-too (Reason: 2 errors occurred:", s.testInstallation.Metadata.InstallNamespace)),
-//			gomega.ContainSubstring(fmt.Sprintf("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [%s.reject-me]", s.testInstallation.Metadata.InstallNamespace)),
-//			gomega.ContainSubstring(fmt.Sprintf("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too %s.reject-me]", s.testInstallation.Metadata.InstallNamespace)),
-//
-//			gomega.ContainSubstring(fmt.Sprintf("* Found rejected virtual service by '%s': %s reject-me (Reason: 2 errors occurred:", s.testInstallation.Metadata.InstallNamespace, s.testInstallation.Metadata.InstallNamespace)),
-//			gomega.ContainSubstring(fmt.Sprintf("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.reject-me-too]")),
-//			gomega.ContainSubstring(fmt.Sprintf("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too %s.reject-me]", s.testInstallation.Metadata.InstallNamespace)),
-//		),
-//	)
-//}
+func (s *checkSuite) TestEdgeResourceError() {
+	s.T().Cleanup(func() {
+		// Delete invalid config
+		err := s.testInstallation.ClusterContext.Cli.DeleteFileSafe(s.ctx, invalidVSKubeDest)
+		s.NoError(err)
+		err = s.testInstallation.ClusterContext.Cli.DeleteFileSafe(s.ctx, invalidVSUpstreamDest, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.NoError(err)
+	})
+
+	// Apply invalid config
+	err := s.testInstallation.ClusterContext.Cli.ApplyFile(s.ctx, invalidVSKubeDest)
+	s.NoError(err)
+	err = s.testInstallation.ClusterContext.Cli.ApplyFile(s.ctx, invalidVSUpstreamDest, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.NoError(err)
+
+	// Run check. This needs to run in eventually to get all errors reported
+	gomega.Eventually(func() error {
+		_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
+			"-n", s.testInstallation.Metadata.InstallNamespace, "--kube-context", s.testInstallation.ClusterContext.KubeContext)
+		return err
+	}, time.Minute*2, time.Second*10).Should(gomega.SatisfyAll(
+		gomega.MatchError(gomega.ContainSubstring(fmt.Sprintf("* Found rejected virtual service by '%s': default reject-me-too (Reason: 2 errors occurred:", s.testInstallation.Metadata.InstallNamespace))),
+		gomega.MatchError(gomega.ContainSubstring(fmt.Sprintf("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [%s.reject-me]", s.testInstallation.Metadata.InstallNamespace))),
+		gomega.MatchError(gomega.ContainSubstring(fmt.Sprintf("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too %s.reject-me]", s.testInstallation.Metadata.InstallNamespace))),
+		gomega.MatchError(gomega.ContainSubstring(fmt.Sprintf("* Found rejected virtual service by '%s': %s reject-me (Reason: 2 errors occurred:", s.testInstallation.Metadata.InstallNamespace, s.testInstallation.Metadata.InstallNamespace))),
+		gomega.MatchError(gomega.ContainSubstring(fmt.Sprintf("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [default.reject-me-too]"))),
+		gomega.MatchError(gomega.ContainSubstring(fmt.Sprintf("* VirtualHost Error: DomainsNotUniqueError. Reason: domain * is shared by the following virtual hosts: [default.reject-me-too %s.reject-me]", s.testInstallation.Metadata.InstallNamespace))),
+	))
+}
