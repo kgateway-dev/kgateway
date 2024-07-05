@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6303
+    resolvesIssue: false
+    description: >-
+      Migrate glooctl tests from kube2e to new framework.
+      skipCI-docs-build:true

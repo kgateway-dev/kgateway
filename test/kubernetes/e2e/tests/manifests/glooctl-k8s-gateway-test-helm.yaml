@@ -1,3 +1,5 @@
+# Gloo k8s Gateway helm setup where k8s Gateway controller is enabled AND default Gloo Edge gateway is present.
+# An additional gateway "publicGw" is defined in gatewayProxies.
 global:
   image:
     pullPolicy: IfNotPresent

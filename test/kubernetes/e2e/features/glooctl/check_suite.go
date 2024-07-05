@@ -220,7 +220,16 @@ func (s *checkSuite) TestEdgeGatewayScaled() {
 	s.NoError(err)
 	s.Contains(output, fmt.Sprintf("Warning: %s:gateway-proxy has zero replicas", s.testInstallation.Metadata.InstallNamespace))
 	s.Contains(output, "No problems detected.")
-	gomega.Expect(output).To(GlooctlEdgeHealthyCheck())
+	// Check healthy output
+	for _, expectedOutput := range checkCommonGlooGatewayOutputByKey {
+		gomega.Expect(output).To(expectedOutput.include)
+	}
+
+	if s.testInstallation.Metadata.K8sGatewayEnabled {
+		for _, expectedOutput := range checkK8sGatewayOutputByKey {
+			gomega.Expect(output).To(expectedOutput.include)
+		}
+	}
 }
 
 func (s *checkSuite) TestEdgeResourceError() {

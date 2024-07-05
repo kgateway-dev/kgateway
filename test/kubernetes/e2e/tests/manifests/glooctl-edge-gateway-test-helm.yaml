@@ -1,5 +1,5 @@
 # Gloo Edge Gateway helm setup where k8s Gateway controller is disabled. An additional gateway "publicGw" is
-# defined in gatewayProxies. These tests are used for Gloo Edge Gateway tests and Edge Gateway specific glooctl tests
+# defined in gatewayProxies.
 global:
   podSecurityStandards:
     container:
