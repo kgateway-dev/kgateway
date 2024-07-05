@@ -12,7 +12,7 @@ spec:
           single:
             kube:
               ref:
-                name: petstore
+                name: nginx
                 namespace: default
               port: 8080
         options:

@@ -6,7 +6,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/test/gomega/assertions"
-
 	"github.com/solo-io/go-utils/stats"
 
 	. "github.com/onsi/gomega"
@@ -25,7 +24,7 @@ func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta
 		WithContext(ctx).
 		// It may take some time for pods to initialize and pull images from remote registries.
 		// Therefore, we set a longer timeout, to account for latency that may exist.
-		WithTimeout(time.Second * 30).
+		WithTimeout(time.Second * 60).
 		WithPolling(time.Millisecond * 200).
 		Should(Succeed())
 }

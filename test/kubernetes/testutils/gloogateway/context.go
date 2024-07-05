@@ -6,6 +6,9 @@ type Context struct {
 
 	ValuesManifestFile string
 
+	// whether or not the K8s Gateway controller is enabled
+	K8sGatewayEnabled bool
+
 	// whether or not the validation webhook is configured to always accept resources,
 	// i.e. if this is set to true, the webhook will accept regardless of errors found during validation
 	ValidationAlwaysAccept bool

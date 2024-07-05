@@ -1,9 +1,4 @@
-# Gloo Edge Gateway helm setup where k8s Gateway controller is disabled. An additional gateway "publicGw" is
-# defined in gatewayProxies. These tests are used for Gloo Edge Gateway tests and Edge Gateway specific glooctl tests
 global:
-  podSecurityStandards:
-    container:
-      enableRestrictedContainerDefaults: true
   image:
     pullPolicy: IfNotPresent
 settings:
@@ -18,9 +13,11 @@ gateway:
   logLevel: info
   validation:
     allowWarnings: true
-    # These tests validate the glooctl properly reports errors and warnings on resources
-    # Therefore, we accept all resources in our webhook
-    alwaysAcceptResources: true
+    alwaysAcceptResources: false
+    # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+    webhook:
+      skipDeleteValidationResources:
+        - upstreams
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: false
@@ -31,28 +28,8 @@ gloo:
     replicas: 1
     livenessProbeEnabled: true
 gatewayProxies:
-  publicGw: # Proxy name for public access (Internet facing)
-    disabled: false # overwrite the "default" value in the merge step
-    kind:
-      deployment:
-        replicas: 2
-    service:
-      kubeResourceOverride: # workaround for https://github.com/solo-io/gloo/issues/5297
-        spec:
-          ports:
-            - port: 443
-              protocol: TCP
-              name: https
-              targetPort: 8443
-          type: LoadBalancer
-    gatewaySettings:
-      customHttpsGateway: # using the default HTTPS Gateway
-        virtualServiceSelector:
-          gateway-type: public # label set on the VirtualService
-      disableHttpGateway: true # disable the default HTTP Gateway
   gatewayProxy:
     healthyPanicThreshold: 0
-    disabled: false # disable the default gateway-proxy deployment and its 2 default Gateway CRs
 # Disable discovery, not recommended for production. NOTE: Upstreams must be statically defined in the manfiests.
 discovery:
   enabled: false

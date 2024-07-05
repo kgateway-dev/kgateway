@@ -42,19 +42,25 @@ func (s *checkCrdsSuite) TearDownSuite() {
 
 func (s *checkCrdsSuite) TestValidatesCorrectCrds() {
 	if s.testInstallation.Metadata.ReleasedVersion != "" {
-		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx, "--version", "-n", s.testInstallation.Metadata.InstallNamespace, s.testInstallation.Metadata.ChartVersion)
+		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
+			"-n", s.testInstallation.Metadata.InstallNamespace,
+			"--kube-context", s.testInstallation.ClusterContext.KubeContext,
+			"--version", s.testInstallation.Metadata.ChartVersion)
 		s.NoError(err)
 	} else {
 		chartUri := filepath.Join(testutils.GitRootDirectory(), s.testInstallation.Metadata.TestAssetDir, s.testInstallation.Metadata.HelmRepoIndexFileName+"-"+s.testInstallation.Metadata.ChartVersion+".tgz")
 		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
-			"-n", s.testInstallation.Metadata.InstallNamespace, "--local-chart", chartUri)
+			"-n", s.testInstallation.Metadata.InstallNamespace,
+			"--kube-context", s.testInstallation.ClusterContext.KubeContext,
+			"--local-chart", chartUri)
 		s.NoError(err)
 	}
 }
 
 func (s *checkCrdsSuite) TestCrdMismatch() {
 	err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
-		"-n", s.testInstallation.Metadata.InstallNamespace, "--file",
+		"-n", s.testInstallation.Metadata.InstallNamespace,
+		"--kube-context", s.testInstallation.ClusterContext.KubeContext,
 		"--version", "1.9.0")
 	s.Error(err)
 	s.Contains(err.Error(), "One or more CRDs are out of date")

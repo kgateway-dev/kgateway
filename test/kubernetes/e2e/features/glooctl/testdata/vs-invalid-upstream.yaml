@@ -2,7 +2,7 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: reject-me
-  namespace: gloo-system
+  # This resource will be in the installation namespace
 spec:
   virtualHost:
     routes:
@@ -14,4 +14,3 @@ spec:
           single:
             upstream:
               name: does-not-exist
-              namespace: gloo-system

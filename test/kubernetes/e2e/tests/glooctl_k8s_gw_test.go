@@ -6,23 +6,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/skv2/codegen/util"
-
+	"github.com/solo-io/gloo/pkg/utils/env"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
+	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
-// TestK8sGatewayNoValidation executes tests against a K8s Gateway gloo install with validation disabled
-func TestK8sGatewayNoValidation(t *testing.T) {
+// TestGlooctlK8sGateway is the function which executes a series of glooctl tests against a given installation with
+// the k8s gateway controller enabled
+func TestGlooctlK8sGateway(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:       "k8s-gw-test-no-validation",
-			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-no-webhook-validation-test-helm.yaml"),
-			ValidationAlwaysAccept: true,
+			InstallNamespace:       env.GetOrDefault(testutils.InstallNamespace, "glooctl-k8s-gw-test"),
+			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "glooctl-k8s-gateway-test-helm.yaml"),
+			ValidationAlwaysAccept: false,
 			K8sGatewayEnabled:      true,
 		},
 	)
@@ -46,5 +48,5 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	KubeGatewayNoValidationSuiteRunner().Run(ctx, t, testInstallation)
+	GlooctlKubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }
