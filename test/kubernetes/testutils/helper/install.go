@@ -285,6 +285,8 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 	}
 
 	currentCrdsOpts := h.generateOpts(currentCrdsCommand)
+	// we explicitly do not allow verbose because the output of printing CRDs is >60k lines
+	currentCrdsOpts.Verbose = false
 	currentCrds, err := runWithTimeoutOutput(h.RootDir, currentCrdsOpts, timeout, "get crds")
 	currentCrdsFile := filepath.Join(tmpDir, "old_crds.yaml")
 	err = os.WriteFile(currentCrdsFile, []byte(currentCrds), os.ModePerm)

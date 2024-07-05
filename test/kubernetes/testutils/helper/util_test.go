@@ -21,7 +21,8 @@ func TestGetUpgradeVersionsErrOrNilLastMinor(t *testing.T) {
 
 func TestReturnsLatestPatchForMinor(t *testing.T) {
 	ctx := context.Background()
-	client, _ := githubutils.GetClient(ctx)
+	// this is fine because this is a public repo
+	client := githubutils.GetClientWithOrWithoutToken(ctx)
 	minor, err := getLatestReleasedPatchVersion(ctx, client, "gloo", 1, 8)
 	require.NoError(t, err)
 

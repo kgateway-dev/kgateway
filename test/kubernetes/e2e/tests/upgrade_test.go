@@ -2,11 +2,13 @@ package tests_test
 
 import (
 	"context"
+	"log"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/solo-io/skv2/codegen/util"
+	"github.com/stretchr/testify/require"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
@@ -68,6 +70,16 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 // has not yet been a patch release for the most current minor version.
 func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 	ctx := context.Background()
+
+	// Get the last released patch of the minor version being tested.
+	_, currentPatchMostRecentMinorVersion, err := helper.GetUpgradeVersions(ctx, "gloo")
+	require.NoError(t, err)
+	if currentPatchMostRecentMinorVersion == nil {
+		logMsg := "This test case is not valid because there are no released patch versions of the minor we are currently branched from."
+		log.Println(logMsg)
+		return
+	}
+
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
@@ -76,15 +88,6 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 			ValidationAlwaysAccept: false,
 		},
 	)
-
-	// Get the last released patch of the minor version being tested.
-	_, currentPatchMostRecentMinorVersion, err := helper.GetUpgradeVersions(ctx, "gloo")
-	testInstallation.Assertions.Require.NoError(err)
-	if currentPatchMostRecentMinorVersion == nil {
-		// This test case is not valid because there are no released patch versions of the minor
-		// we are currently branched from.
-		return
-	}
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
