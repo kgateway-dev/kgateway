@@ -33,7 +33,7 @@ gloo:
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
-    disabled: true
+    healthyPanicThreshold: 0
 # Disable discovery, not recommended for production. NOTE: Upstreams must be statically defined in the manfiests.
 discovery:
   enabled: false
