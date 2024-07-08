@@ -134,8 +134,12 @@ func (p *plugin) translateCommonUserCorsConfig(
 		})
 	}
 	for _, ao := range in.GetAllowOriginRegex() {
+		regexStruct, err := regexutils.NewCheckedRegex(ctx, ao)}
+		if err != nil {
+			return err
+		}
 		out.AllowOriginStringMatch = append(out.GetAllowOriginStringMatch(), &envoy_type_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{SafeRegex: regexutils.NewRegex(ctx, ao)},
+			MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{SafeRegex: regexStruct},
 		})
 	}
 	out.AllowMethods = strings.Join(in.GetAllowMethods(), ",")
