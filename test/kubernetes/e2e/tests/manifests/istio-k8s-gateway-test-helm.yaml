@@ -39,7 +39,8 @@ gloo:
     replicas: 1
     livenessProbeEnabled: true
 gatewayProxies:
-  disabled: true
+  gatewayProxy:
+    disabled: true
 # Disable discovery, not recommended for production
 discovery:
   enabled: false
