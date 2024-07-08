@@ -387,6 +387,7 @@ data:
 
 {{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- if not $gatewaySpec.disabled }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
 ---
 {{- $kubeResourceOverride := dict -}}
@@ -398,5 +399,6 @@ data:
 {{- $checksum := $configmap | sha256sum -}}
 {{- $_ := set $gatewaySpec "checksum" $checksum -}}
 {{- $configmap -}}
+{{- end }}{{/* if not $gatewaySpec.disabled */}}
 {{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }}{{/* if .Values.gateway.enabled */}}
