@@ -2,6 +2,7 @@ package gloomtls
 
 import (
 	"context"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -25,21 +26,12 @@ type gloomtlsEdgeGatewayTestingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
-
-	// maps test name to a list of manifests to apply before the test
-	//manifests map[string][]testManifest
 }
 
 func NewGloomtlsEdgeGatewayApiTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &gloomtlsEdgeGatewayTestingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		//manifests: map[string][]testManifest{
-		//	"TestInvalidPortAndValidTargetport": {
-		//		{manifestFile: upstreamInvalidPortAndValidTargetportManifest, extraArgs: []string{"-n", testInst.Metadata.InstallNamespace}},
-		//		{manifestFile: svcInvalidPortAndValidTargetportManifest},
-		//	},
-		//},
 	}
 }
 
@@ -54,41 +46,24 @@ func (s *gloomtlsEdgeGatewayTestingSuite) TearDownSuite() {
 	s.NoError(err, "can delete setup manifest")
 }
 
-//func (s *gloomtlsEdgeGatewayTestingSuite) BeforeTest(suiteName, testName string) {
-//	manifests, ok := s.manifests[testName]
-//	if !ok {
-//		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
-//	}
-//
-//	for _, manifest := range manifests {
-//		// apply gloo gateway resources to gloo installation namespace
-//		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest.manifestFile, manifest.extraArgs...)
-//		s.NoError(err, "can apply "+manifest.manifestFile)
-//	}
-//}
-//
-//func (s *gloomtlsEdgeGatewayTestingSuite) AfterTest(suiteName, testName string) {
-//	manifests, ok := s.manifests[testName]
-//	if !ok {
-//		s.FailNow("no manifests found for " + testName)
-//	}
-//
-//	for _, manifest := range manifests {
-//		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest.manifestFile, manifest.extraArgs...)
-//		s.NoError(err, "can delete "+manifest.manifestFile)
-//	}
-//}
-
 func (s *gloomtlsEdgeGatewayTestingSuite) TestRouteSecureRequestToUpstream() {
-	// Check sds containter is present
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, edgeRoutingResources, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.NoError(err)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeRoutingResources, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.NoError(err)
+
+	// Check sds container is present
 	listOpts := metav1.ListOptions{
-		LabelSelector: "gloo",
+		LabelSelector: "gloo=gateway-proxy",
 	}
 	matcher := gomega.And(
 		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.SDSContainerName}),
 	)
 
-	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), listOpts, matcher, time.Minute*2)
+	s.testInstallation.Assertions.EventuallyPodsMatches(s.ctx, s.testInstallation.Metadata.InstallNamespace, listOpts, matcher, time.Minute*2)
 
 	// Check curl works
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
