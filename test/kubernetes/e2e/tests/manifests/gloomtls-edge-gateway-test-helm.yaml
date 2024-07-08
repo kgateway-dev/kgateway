@@ -1,0 +1,37 @@
+global:
+  glooMtls:
+    enabled: true
+  image:
+    pullPolicy: IfNotPresent
+settings:
+  create: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+gateway:
+  enabled: true
+  persistProxySpec: false
+  logLevel: info
+  validation:
+    allowWarnings: true
+    alwaysAcceptResources: false
+    # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+    webhook:
+      skipDeleteValidationResources:
+        - upstreams
+kubeGateway:
+  # This is the field that enables the K8s Gateway Integration in Gloo Gateway
+  enabled: false
+gloo:
+  logLevel: info
+  disableLeaderElection: true
+  deployment:
+    replicas: 1
+    livenessProbeEnabled: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+# Disable discovery, not recommended for production. NOTE: Upstreams must be statically defined in the manfiests.
+discovery:
+  enabled: false
