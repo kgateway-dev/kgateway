@@ -17,9 +17,7 @@ func GlooctlKubeGatewaySuiteRunner() e2e.SuiteRunner {
 	// 4. Upgrade Edge with kubeGateway enabled
 	// 5. Verify it checks kubeGateway resources
 	// This verifies that we are not relying on any logic / resources that can be left behind after an upgrade or when the user switches between gateway modes
-	// Doing so will also eliminate the need for the kube2e/glooctl/exclude tests
 	kubeGatewaySuiteRunner.Register("Check", glooctl.NewCheckSuite)
-
 	kubeGatewaySuiteRunner.Register("CheckCrds", glooctl.NewCheckCrdsSuite)
 	kubeGatewaySuiteRunner.Register("Debug", glooctl.NewDebugSuite)
 	kubeGatewaySuiteRunner.Register("GetProxy", glooctl.NewGetProxySuite)
