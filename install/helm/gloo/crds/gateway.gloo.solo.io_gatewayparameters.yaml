@@ -4,6 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
+  labels:
+    app: gloo-gateway
+    app.kubernetes.io/name: gloo-gateway
   name: gatewayparameters.gateway.gloo.solo.io
 spec:
   group: gateway.gloo.solo.io

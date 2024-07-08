@@ -10,6 +10,7 @@ import (
 // Kubernetes Gateway.
 //
 // +kubebuilder:object:root=true
+// +kubebuilder:metadata:labels={app=gloo-gateway,app.kubernetes.io/name=gloo-gateway}
 // +kubebuilder:resource:categories=gloo-gateway,shortName=gwp
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
