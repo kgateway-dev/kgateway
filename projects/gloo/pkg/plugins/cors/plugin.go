@@ -134,7 +134,7 @@ func (p *plugin) translateCommonUserCorsConfig(
 		})
 	}
 	for _, ao := range in.GetAllowOriginRegex() {
-		regexStruct, err := regexutils.NewCheckedRegex(ctx, ao)}
+		regexStruct, err := regexutils.NewCheckedRegex(ctx, ao)
 		if err != nil {
 			return err
 		}
