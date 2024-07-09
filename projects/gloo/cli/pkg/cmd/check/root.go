@@ -134,6 +134,11 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
+	// Fetch the gloo deployment name even if check deployments is disabled as it is used in other checks
+	customGlooDeploymentName, err = helpers.GetGlooDeploymentName(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+	}
 
 	if included := doesNotContain(opts.Top.CheckName, constants.Pods); included {
 		err := checkPods(ctx, printer, opts)

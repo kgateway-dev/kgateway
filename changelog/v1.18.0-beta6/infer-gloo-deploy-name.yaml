@@ -1,0 +1,9 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9163
+  resolvesIssue: false
+  description: Infer the gloo deployment name in cases where the deployment name is not the default `gloo`. The gloo deployment is identified by the `gloo=gloo` label.
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9644
+  resolvesIssue: false
+  description: Fix a bug where the service and function names of a discovered gRPC service are not printed when running glooctl get upstreams
