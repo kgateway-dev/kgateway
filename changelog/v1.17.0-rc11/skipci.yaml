@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Just moving changelogs.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
