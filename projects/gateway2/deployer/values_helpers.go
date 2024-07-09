@@ -6,14 +6,12 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/ports"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
-	v1alpha1kube "github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
-	"github.com/solo-io/gloo/projects/gateway2/ports"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
 // This file contains helper functions that generate helm values in the format needed
@@ -53,8 +51,8 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 // TODO: Removing until autoscaling is re-added.
 // See: https://github.com/solo-io/solo-projects/issues/5948
 // Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
-// func getAutoscalingValues(autoscaling *v1alpha1kube.Autoscaling) *helmAutoscaling {
-// 	hpaConfig := autoscaling.GetHorizontalPodAutoscaler()
+// func getAutoscalingValues(autoscaling *v1.Autoscaling) *helmAutoscaling {
+// 	hpaConfig := autoscaling.HorizontalPodAutoscaler
 // 	if hpaConfig == nil {
 // 		return nil
 // 	}
@@ -63,35 +61,25 @@ func getPortsValues(gw *api.Gateway) []helmPort {
 // 	autoscalingVals := &helmAutoscaling{
 // 		Enabled: &trueVal,
 // 	}
-// 	if hpaConfig.GetMinReplicas() != nil {
-// 		minReplicas := hpaConfig.GetMinReplicas().GetValue()
-// 		autoscalingVals.MinReplicas = &minReplicas
-// 	}
-// 	if hpaConfig.GetMaxReplicas() != nil {
-// 		maxReplicas := hpaConfig.GetMaxReplicas().GetValue()
-// 		autoscalingVals.MaxReplicas = &maxReplicas
-// 	}
-// 	if hpaConfig.GetTargetCpuUtilizationPercentage() != nil {
-// 		cpuPercent := hpaConfig.GetTargetCpuUtilizationPercentage().GetValue()
-// 		autoscalingVals.TargetCPUUtilizationPercentage = &cpuPercent
-// 	}
-// 	if hpaConfig.GetTargetMemoryUtilizationPercentage() != nil {
-// 		memPercent := hpaConfig.GetTargetMemoryUtilizationPercentage().GetValue()
-// 		autoscalingVals.TargetMemoryUtilizationPercentage = &memPercent
-// 	}
+// 	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
+// 	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
+// 	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
+// 	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
 
 // 	return autoscalingVals
 // }
 
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
-func getServiceValues(svcConfig *v1alpha1kube.Service) *helmService {
+func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
-	svcType := v1alpha1kube.Service_ServiceType_name[int32(svcConfig.GetType())]
-	clusterIp := svcConfig.GetClusterIP().GetValue()
+	var svcType *string
+	if svcConfig.GetType() != nil {
+		svcType = ptr.To(string(*svcConfig.GetType()))
+	}
 	return &helmService{
-		Type:             &svcType,
-		ClusterIP:        &clusterIp,
+		Type:             svcType,
+		ClusterIP:        svcConfig.GetClusterIP(),
 		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
 		ExtraLabels:      svcConfig.GetExtraLabels(),
 	}
@@ -103,47 +91,35 @@ func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsCo
 		return nil
 	}
 
-	sdsConfigImage := sdsContainerConfig.GetImage()
-	sdsImage := &helmImage{
-		Registry:   ptr.To(sdsConfigImage.GetRegistry().GetValue()),
-		Repository: ptr.To(sdsConfigImage.GetRepository().GetValue()),
-		Tag:        ptr.To(sdsConfigImage.GetTag().GetValue()),
-		Digest:     ptr.To(sdsConfigImage.GetDigest().GetValue()),
-	}
-	setPullPolicy(sdsConfigImage.GetPullPolicy(), sdsImage)
-
-	return &helmSdsContainer{
-		Image:           sdsImage,
+	vals := &helmSdsContainer{
+		Image:           getImageValues(sdsContainerConfig.GetImage()),
 		Resources:       sdsContainerConfig.GetResources(),
 		SecurityContext: sdsContainerConfig.GetSecurityContext(),
-		SdsBootstrap: &sdsBootstrap{
-			LogLevel: ptr.To(sdsContainerConfig.GetBootstrap().GetLogLevel().GetValue()),
-		},
+		SdsBootstrap:    &sdsBootstrap{},
 	}
+
+	if bootstrap := sdsContainerConfig.GetBootstrap(); bootstrap != nil {
+		vals.SdsBootstrap = &sdsBootstrap{
+			LogLevel: bootstrap.GetLogLevel(),
+		}
+	}
+
+	return vals
 }
 
-func getIstioContainerValues(istioContainerConfig *v1alpha1.IstioContainer) *helmIstioContainer {
-	if istioContainerConfig == nil {
+func getIstioContainerValues(config *v1alpha1.IstioContainer) *helmIstioContainer {
+	if config == nil {
 		return nil
 	}
 
-	istioConfigImage := istioContainerConfig.GetImage()
-	istioImage := &helmImage{
-		Registry:   ptr.To(istioConfigImage.GetRegistry().GetValue()),
-		Repository: ptr.To(istioConfigImage.GetRepository().GetValue()),
-		Tag:        ptr.To(istioConfigImage.GetTag().GetValue()),
-		Digest:     ptr.To(istioConfigImage.GetDigest().GetValue()),
-	}
-	setPullPolicy(istioConfigImage.GetPullPolicy(), istioImage)
-
 	return &helmIstioContainer{
-		Image:                 istioImage,
-		LogLevel:              ptr.To(istioContainerConfig.GetLogLevel().GetValue()),
-		Resources:             istioContainerConfig.GetResources(),
-		SecurityContext:       istioContainerConfig.GetSecurityContext(),
-		IstioDiscoveryAddress: ptr.To(istioContainerConfig.GetIstioDiscoveryAddress().GetValue()),
-		IstioMetaMeshId:       ptr.To(istioContainerConfig.GetIstioMetaMeshId().GetValue()),
-		IstioMetaClusterId:    ptr.To(istioContainerConfig.GetIstioMetaClusterId().GetValue()),
+		Image:                 getImageValues(config.GetImage()),
+		LogLevel:              config.GetLogLevel(),
+		Resources:             config.GetResources(),
+		SecurityContext:       config.GetSecurityContext(),
+		IstioDiscoveryAddress: config.GetIstioDiscoveryAddress(),
+		IstioMetaMeshId:       config.GetIstioMetaMeshId(),
+		IstioMetaClusterId:    config.GetIstioMetaClusterId(),
 	}
 }
 
@@ -162,24 +138,34 @@ func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.Ist
 }
 
 // Get the image values for the envoy container in the proxy deployment.
-func getEnvoyImageValues(envoyImage *v1alpha1kube.Image) *helmImage {
-	helmImage := &helmImage{
-		Registry:   ptr.To(envoyImage.GetRegistry().GetValue()),
-		Repository: ptr.To(envoyImage.GetRepository().GetValue()),
-		Tag:        ptr.To(envoyImage.GetTag().GetValue()),
-		Digest:     ptr.To(envoyImage.GetDigest().GetValue()),
+func getImageValues(image *v1alpha1.Image) *helmImage {
+	if image == nil {
+		return &helmImage{}
 	}
-	setPullPolicy(envoyImage.GetPullPolicy(), helmImage)
+
+	helmImage := &helmImage{
+		Registry:   image.GetRegistry(),
+		Repository: image.GetRepository(),
+		Tag:        image.GetTag(),
+		Digest:     image.GetDigest(),
+	}
+	if image.GetPullPolicy() != nil {
+		helmImage.PullPolicy = ptr.To(string(*image.GetPullPolicy()))
+	}
+
 	return helmImage
 }
 
 // Get the stats values for the envoy listener in the configmap for bootstrap.
 func getStatsValues(statsConfig *v1alpha1.StatsConfig) *helmStatsConfig {
+	if statsConfig == nil {
+		return nil
+	}
 	return &helmStatsConfig{
-		Enabled:            ptr.To(statsConfig.GetEnabled().GetValue()),
-		RoutePrefixRewrite: ptr.To(statsConfig.GetRoutePrefixRewrite().GetValue()),
-		EnableStatsRoute:   ptr.To(statsConfig.GetEnableStatsRoute().GetValue()),
-		StatsPrefixRewrite: ptr.To(statsConfig.GetStatsRoutePrefixRewrite().GetValue()),
+		Enabled:            statsConfig.GetEnabled(),
+		RoutePrefixRewrite: statsConfig.GetRoutePrefixRewrite(),
+		EnableStatsRoute:   statsConfig.GetEnableStatsRoute(),
+		StatsPrefixRewrite: statsConfig.GetStatsRoutePrefixRewrite(),
 	}
 }
 
@@ -204,31 +190,14 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	return strings.Join(parts, ","), nil
 }
 
-func setPullPolicy(pullPolicy v1alpha1kube.Image_PullPolicy, helmImage *helmImage) {
-	// don't do anything if pull policy is unspecified
-	if pullPolicy == v1alpha1kube.Image_Unspecified {
-		return
-	}
-	helmImage.PullPolicy = ptr.To(pullPolicy.String())
-}
-
 func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 	if config == nil {
 		return nil
 	}
 
-	configImage := config.GetImage()
-	image := &helmImage{
-		Registry:   ptr.To(configImage.GetRegistry().GetValue()),
-		Repository: ptr.To(configImage.GetRepository().GetValue()),
-		Tag:        ptr.To(configImage.GetTag().GetValue()),
-		Digest:     ptr.To(configImage.GetDigest().GetValue()),
-	}
-	setPullPolicy(configImage.GetPullPolicy(), image)
-
 	return &helmAIExtension{
-		Enabled:         config.GetEnabled().GetValue(),
-		Image:           image,
+		Enabled:         *config.GetEnabled(),
+		Image:           getImageValues(config.GetImage()),
 		SecurityContext: config.GetSecurityContext(),
 		Resources:       config.GetResources(),
 		Env:             config.GetEnv(),
