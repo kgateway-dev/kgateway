@@ -6,6 +6,11 @@ import (
 	"os"
 	"sort"
 
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
@@ -50,7 +55,6 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 				table.Append([]string{"", "", "", line})
 			}
 		}
-
 	}
 
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -224,13 +228,47 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 				add(fmt.Sprintf("  - %v", fn))
 			}
 		}
+	case *plugins.ServiceSpec_GrpcJsonTranscoder:
+		add("gRPC service:")
+		descriptorBin := plug.GrpcJsonTranscoder.GetProtoDescriptorBin()
+		for _, grpcService := range plug.GrpcJsonTranscoder.GetServices() {
+			add(fmt.Sprintf("  %v", grpcService))
+			methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
+			for i := 0; i < methodDescriptors.Len(); i++ {
+				add(fmt.Sprintf("  - %v", methodDescriptors.Get(i).Name()))
+			}
+		}
 	}
-
 	return spec
 }
 
+func getMethodDescriptors(service string, descriptorSet []byte) protoreflect.MethodDescriptors {
+	fds := &descriptor.FileDescriptorSet{}
+	err := proto.Unmarshal(descriptorSet, fds)
+	if err != nil {
+		fmt.Println("unable to unmarshal descriptor")
+		return nil
+	}
+	files, err := protodesc.NewFiles(fds)
+	if err != nil {
+		fmt.Println("unable to create proto registry files")
+		return nil
+	}
+	descriptor, err := files.FindDescriptorByName(protoreflect.FullName(service))
+	if err != nil {
+		fmt.Println("unable to fin descriptor")
+		return nil
+	}
+	serviceDescriptor, ok := descriptor.(protoreflect.ServiceDescriptor)
+	if !ok {
+		fmt.Println("unable to decode service descriptor")
+		return nil
+	}
+	return serviceDescriptor.Methods()
+}
+
 // stringifyKey for a resource likely could be done more nicely with spew
-// or a better accessor but minimall this avoids panicing on nested references to nils
+// or a better accessor but minimal this avoids panicing on nested references to nils
 func stringifyKey(plausiblyNilRef *core.ResourceRef) string {
 
 	if plausiblyNilRef == nil {

@@ -47,6 +47,10 @@ var (
 	lock sync.Mutex
 )
 
+const (
+	GlooDeploymentName = "gloo"
+)
+
 // iterates over all the factory overrides, returning the first non-nil
 // mem > consul
 // if none set, return nil (callers will default to Kube CRD)
@@ -146,6 +150,44 @@ func KubeClientWithKubecontext(kubecontext string) (kubernetes.Interface, error)
 	}
 
 	return clientset, nil
+}
+
+func GetGlooDeploymentName(ctx context.Context, namespace string) (string, error) {
+	client, err := GetKubernetesClient(contextoptions.KubecontextFrom(ctx))
+	if err != nil {
+		errMessage := "error getting KubeClient"
+		fmt.Println(errMessage)
+		return "", fmt.Errorf(errMessage+": %v", err)
+	}
+	_, err = client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		errMessage := "Gloo namespace does not exist"
+		fmt.Println(errMessage)
+		return "", fmt.Errorf(errMessage+": %v", err)
+	}
+	deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "gloo=gloo",
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(deployments.Items) == 1 {
+		return deployments.Items[0].Name, nil
+	}
+	errMessage := "Unable to find the gloo deployment"
+	// if there are multiple we can reasonably use the default variant
+	for _, d := range deployments.Items {
+		if d.Name != GlooDeploymentName {
+			// At least 1 deployment exists, in case we dont find default update our error message
+			errMessage = "too many app=gloo deployments, cannot decide which to target"
+			continue
+		}
+		// TODO: (nfuden) Remove this, while we should generally avoid println in our formatted output we already have alot of these
+		fmt.Println("multiple gloo labeled apps found, defaulting to", GlooDeploymentName)
+		return GlooDeploymentName, nil
+	}
+	fmt.Println(errMessage)
+	return "", fmt.Errorf(errMessage+": %v", err)
 }
 
 func MustGetNamespaces(ctx context.Context) []string {
