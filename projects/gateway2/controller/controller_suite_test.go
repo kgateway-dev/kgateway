@@ -11,12 +11,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1/kube"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -124,8 +124,8 @@ var _ = BeforeSuite(func() {
 		Spec: api.GatewayClassSpec{
 			ControllerName: api.GatewayController(gatewayControllerName),
 			ParametersRef: &api.ParametersReference{
-				Group:     api.Group(v1alpha1.GatewayParametersGVK.Group),
-				Kind:      api.Kind(v1alpha1.GatewayParametersGVK.Kind),
+				Group:     api.Group(v1alpha1.GroupVersion.Group),
+				Kind:      api.Kind("GatewayParameters"),
 				Name:      wellknown.DefaultGatewayParametersName,
 				Namespace: ptr.To(api.Namespace("default")),
 			},
@@ -139,13 +139,11 @@ var _ = BeforeSuite(func() {
 			Namespace: "default",
 		},
 		Spec: v1alpha1.GatewayParametersSpec{
-			EnvironmentType: &v1alpha1.GatewayParametersSpec_Kube{
-				Kube: &v1alpha1.KubernetesProxyConfig{
-					Service: &kube.Service{
-						Type: kube.Service_LoadBalancer,
-					},
-					Istio: &v1alpha1.IstioIntegration{},
+			Kube: &v1alpha1.KubernetesProxyConfig{
+				Service: &v1alpha1.Service{
+					Type: ptr.To(corev1.ServiceTypeLoadBalancer),
 				},
+				Istio: &v1alpha1.IstioIntegration{},
 			},
 		},
 	})
