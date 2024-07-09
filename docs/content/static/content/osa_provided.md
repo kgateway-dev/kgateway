@@ -2,6 +2,7 @@ Name|Version|License
 ---|---|---
 [semver/v3](https://github.com/Masterminds/semver)|v3.2.1|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
+[ahmetb/gen-crd-api-reference-docs](https://github.com/ahmetb/gen-crd-api-reference-docs)|v0.3.1-0.20240214155107-6cf1ede4da61|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
@@ -70,6 +71,7 @@ Name|Version|License
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.17.4|Apache License 2.0
+[sigs.k8s.io/controller-tools](https://sigs.k8s.io/controller-tools)|v0.14.0|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.0.1-0.20231102234148-3b5969669194|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.4.1|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.4.0|MIT License
