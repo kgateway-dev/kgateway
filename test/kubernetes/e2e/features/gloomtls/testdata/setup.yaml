@@ -15,7 +15,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: example-svc
+  name: nginx-svc
 spec:
   selector:
     app.kubernetes.io/name: nginx

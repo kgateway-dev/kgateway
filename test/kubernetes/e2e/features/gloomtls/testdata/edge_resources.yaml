@@ -23,6 +23,6 @@ spec:
   kube:
     selector:
       app.kubernetes.io/name: nginx
-    serviceName: example-svc
+    serviceName: nginx-svc
     serviceNamespace: default
-    servicePort: 80
+    servicePort: 8080
