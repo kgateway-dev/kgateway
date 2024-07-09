@@ -41,6 +41,7 @@ type GatewayParametersSpec struct {
 	// The proxy will be self-managed and not auto-provisioned.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:pruning:PreserveUnknownFields
 	SelfManaged *SelfManagedGateway `json:"selfManaged,omitempty"`
 }
 
