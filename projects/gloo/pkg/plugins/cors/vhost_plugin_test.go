@@ -27,7 +27,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 
 		// values used in first example
 		allowOrigin1      = []string{"solo.io", "github.com"}
-		allowOriginRegex1 = []string{`*\.solo\.io`, `git.*\.com`}
+		allowOriginRegex1 = []string{`.*\.solo\.io`, `git.*\.com`}
 		allowMethods1     = []string{"GET", "POST"}
 		allowHeaders1     = []string{"allowH1", "allow2"}
 		exposeHeaders1    = []string{"exHeader", "eh2"}
