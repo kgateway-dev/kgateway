@@ -90,11 +90,6 @@ type KubernetesProxyConfig struct {
 	//
 	// +kubebuilder:validation:Optional
 	Stats *StatsConfig `json:"stats,omitempty"`
-
-	// Configuration for the AI extension.
-	//
-	// +kubebuilder:validation:Optional
-	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -144,13 +139,6 @@ func (in *KubernetesProxyConfig) GetStats() *StatsConfig {
 		return nil
 	}
 	return in.Stats
-}
-
-func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
-	if in == nil {
-		return nil
-	}
-	return in.AiExtension
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
