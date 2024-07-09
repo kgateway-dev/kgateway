@@ -11,8 +11,8 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/helm"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/api/gateway.gloo.solo.io/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
@@ -268,12 +268,13 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	// extract all the custom values from the GatewayParameters
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
-	kubeProxyConfig := gwParam.Spec.GetKube()
+	kubeProxyConfig := gwParam.Spec.Kube
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
 	istioConfig := kubeProxyConfig.GetIstio()
+
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
@@ -282,8 +283,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway := vals.Gateway
 
 	// deployment values
-	replicas := deployConfig.GetReplicas().GetValue()
-	gateway.ReplicaCount = &replicas
+	gateway.ReplicaCount = deployConfig.GetReplicas()
 
 	// TODO: The follow stanza has been commented out as autoscaling support has been removed.
 	// see https://github.com/solo-io/solo-projects/issues/5948 for more info.
@@ -297,7 +297,6 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 
 	// service values
 	gateway.Service = getServiceValues(svcConfig)
-
 	// pod template values
 	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
 	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
@@ -308,24 +307,24 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.Tolerations = podConfig.GetTolerations()
 
 	// envoy container values
-	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel().GetValue()
+	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-	gateway.LogLevel = &logLevel
+	gateway.LogLevel = logLevel
 	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
 	if err != nil {
 		return nil, err
 	}
 	gateway.ComponentLogLevel = &compLogLevelStr
 
+	gateway.Resources = envoyContainerConfig.GetResources()
+	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	gateway.Image = getImageValues(envoyContainerConfig.GetImage())
+
 	// istio values
 	gateway.Istio = getIstioValues(d.inputs.IstioValues, istioConfig)
 	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
 	gateway.AIExtension = getAIExtensionValues(aiExtensionConfig)
-
-	gateway.Resources = envoyContainerConfig.GetResources()
-	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	gateway.Image = getEnvoyImageValues(envoyContainerConfig.GetImage())
 
 	gateway.Stats = getStatsValues(statsConfig)
 
@@ -378,7 +377,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, gw *api.Gateway) ([]clie
 		return nil, err
 	}
 	// If this is a self-managed Gateway, skip gateway auto provisioning
-	if gwParam != nil && gwParam.Spec.GetSelfManaged() != nil {
+	if gwParam != nil && gwParam.Spec.SelfManaged != nil {
 		return nil, nil
 	}
 
