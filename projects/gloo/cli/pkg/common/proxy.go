@@ -11,9 +11,9 @@ import (
 
 	"github.com/avast/retry-go/v4"
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -109,6 +109,11 @@ func getSelectorFromOpts(opts options.GetProxy) string {
 // Proxies are an intermediate resource that are often persisted in-memory in the Control Plane.
 // To improve debuggability, we expose an API to return the current proxies, and rely on this CLI method to expose that to users
 func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyEndpointRequest, proxyEndpointPort string) (gloov1.ProxyList, error) {
+	glooDeploymentName, err := helpers.GetGlooDeploymentName(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	if err != nil {
+		return nil, err
+	}
+
 	remotePort, err := strconv.Atoi(proxyEndpointPort)
 	if err != nil {
 		return nil, err
@@ -127,7 +132,7 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 	defer cancel()
 
 	portForwarder := portforward.NewPortForwarder(
-		portforward.WithDeployment(kubeutils.GlooDeploymentName, opts.Metadata.GetNamespace()),
+		portforward.WithDeployment(glooDeploymentName, opts.Metadata.GetNamespace()),
 		portforward.WithRemotePort(remotePort),
 		portforward.WithWriters(outWriter, errWriter),
 	)
