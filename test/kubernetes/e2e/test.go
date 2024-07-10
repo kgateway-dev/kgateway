@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
@@ -180,18 +181,49 @@ func (i *TestInstallation) UpgradeGlooGateway(ctx context.Context, serverVersion
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler(ctx context.Context) {
+func (i *TestInstallation) PreFailHandler(ctx context.Context, testNamespace string) {
 	// This is a work in progress
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
 
-	glooLogFilePath := filepath.Join(i.GeneratedFiles.FailureDir, "gloo.log")
+	failureDir := filepath.Join(i.GeneratedFiles.FailureDir, testNamespace)
+	err := os.Mkdir(failureDir, os.ModePerm)
+	i.Assertions.Require.NoError(err)
+
+	glooLogFilePath := filepath.Join(failureDir, "gloo.log")
 	glooLogFile, err := os.Create(glooLogFilePath)
 	i.Assertions.Require.NoError(err)
 	defer glooLogFile.Close()
 
 	logsCmd := i.Actions.Kubectl().Command(ctx, "logs", "-n", i.Metadata.InstallNamespace, "deployments/gloo")
 	_ = logsCmd.WithStdout(glooLogFile).WithStderr(glooLogFile).Run()
+
+	clusterStateFilePath := filepath.Join(failureDir, "cluster_state.log")
+	clusterStateFile, err := os.Create(clusterStateFilePath)
+	i.Assertions.Require.NoError(err)
+	defer clusterStateFile.Close()
+
+	kubectlGetAllCmd := i.Actions.Kubectl().Command(ctx, "get", "all", "-A")
+	_ = kubectlGetAllCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
+	clusterStateFile.Write([]byte{'\n'})
+
+	resourcesToGet := []string{
+		"gateways",
+		"gatewayclasses",
+		"gatewayparameters",
+		"routeoptions",
+		"virtualhostoptions",
+		"upstreams",
+		"upstreamgroups",
+		"authconfigs",
+		"ratelimitconfigs",
+		"virtualservices",
+		"httproutes",
+		"secrets",
+	}
+	kubectlGetResourcesCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGet, ","), "-A")
+	_ = kubectlGetResourcesCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
+	clusterStateFile.Write([]byte{'\n'})
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
