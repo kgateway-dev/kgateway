@@ -76,7 +76,7 @@ func (p *plugin) ProcessVirtualHost(
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
 	corsPolicy := &envoy_config_cors_v3.CorsPolicy{}
 	if err := p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, corsPolicy); err != nil {
-		return err
+		return errors.Join(errors.New("invalid cors config"), err)
 	}
 
 	return pluginutils.SetVhostPerFilterConfig(out, wellknown.CORS, corsPolicy)
