@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
-// gloomtlsEdgeGatewayTestingSuite is the entire Suite of tests for the "PortRouting" cases
+// gloomtlsEdgeGatewayTestingSuite is the entire Suite of tests for the "Gloo mtls" cases
 type gloomtlsEdgeGatewayTestingSuite struct {
 	suite.Suite
 
