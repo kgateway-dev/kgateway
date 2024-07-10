@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/9740
+    resolvesIssue: false
+    description: >-
+      Allow GatewayParameters with selfManaged to be applied successfully on k8s versions below 1.29.
