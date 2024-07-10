@@ -1,0 +1,28 @@
+# Don't set namespace, apply to test installation namespace
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: example-vs
+spec:
+  virtualHost:
+    domains:
+      - "example.com"
+    routes:
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: nginx-upstream
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: nginx-upstream
+spec:
+  kube:
+    selector:
+      app.kubernetes.io/name: nginx
+    serviceName: nginx-svc
+    serviceNamespace: default
+    servicePort: 8080
