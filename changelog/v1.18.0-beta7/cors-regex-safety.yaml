@@ -1,6 +1,6 @@
 changelog:
   - type: FIX
-    issueLink:
+    issueLink: https://github.com/solo-io/gloo/issues/7524
     resolvesIssue: false
     description: >-
       Fix regex safety check for CORS allowed origins. 
