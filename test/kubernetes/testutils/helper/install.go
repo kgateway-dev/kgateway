@@ -252,6 +252,8 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 		h.HelmChartName,
 		h.ChartPath(),
 		"-n", h.InstallNamespace,
+		"--history-max",
+		"0",
 	}
 
 	if h.Verbose {
@@ -303,6 +305,8 @@ func (h *SoloTestHelper) RevertGlooUpgrade(ctx context.Context, timeout time.Dur
 		"rollback",
 		h.HelmChartName,
 		"-n", h.InstallNamespace,
+		"--history-max",
+		"0",
 	}
 
 	if h.Verbose {
