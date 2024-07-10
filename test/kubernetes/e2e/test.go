@@ -204,19 +204,25 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context, testNamespace str
 	defer edgeGatewayLogFile.Close()
 
 	// TODO figure out namespaces? probably safe to use provided namespace for this one
-	edgeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "-n", testNamespace, "--prefix", "-l", "gloo=gateway-proxy")
-	_ = edgeGatewayLogsCmd.WithStdout(edgeGatewayLogFile).WithStderr(edgeGatewayLogFile).Run()
-
-	kubeGatewayLogFilePath := filepath.Join(failureDir, "edge_gateway.log")
-	kubeGatewayLogFile, err := os.Create(kubeGatewayLogFilePath)
+	namespaces, err := i.Actions.Kubectl().Namespaces()
 	i.Assertions.Require.NoError(err)
-	defer kubeGatewayLogFile.Close()
+	for _, n := range namespaces {
+		if n == "default" {
+			continue
+		}
+		edgeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "-n", testNamespace, "--prefix", "-l", "gloo=gateway-proxy")
+		_ = edgeGatewayLogsCmd.WithStdout(edgeGatewayLogFile).WithStderr(edgeGatewayLogFile).Run()
 
-	// TODO figure out namespaces? for now we can expect all kube gateways to be in default
-	// since all currently written are
-	kubeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "--prefix", "-l", "gloo=kube-gateway")
-	_ = kubeGatewayLogsCmd.WithStdout(kubeGatewayLogFile).WithStderr(kubeGatewayLogFile).Run()
+		kubeGatewayLogFilePath := filepath.Join(failureDir, fmt.Sprintf("%s_edge_gateway.log", n))
+		kubeGatewayLogFile, err := os.Create(kubeGatewayLogFilePath)
+		i.Assertions.Require.NoError(err)
+		defer kubeGatewayLogFile.Close()
 
+		// TODO figure out namespaces? for now we can expect all kube gateways to be in default
+		// since all currently written are
+		kubeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "--prefix", "-l", "gloo=kube-gateway")
+		_ = kubeGatewayLogsCmd.WithStdout(kubeGatewayLogFile).WithStderr(kubeGatewayLogFile).Run()
+	}
 	clusterStateFilePath := filepath.Join(failureDir, "cluster_state.log")
 	clusterStateFile, err := os.Create(clusterStateFilePath)
 	i.Assertions.Require.NoError(err)
