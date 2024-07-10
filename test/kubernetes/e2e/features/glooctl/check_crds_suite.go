@@ -2,7 +2,6 @@ package glooctl
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -16,8 +15,6 @@ var _ e2e.NewSuiteFunc = NewDebugSuite
 type checkCrdsSuite struct {
 	suite.Suite
 
-	tmpDir string
-
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
 }
@@ -27,17 +24,6 @@ func NewCheckCrdsSuite(ctx context.Context, testInst *e2e.TestInstallation) suit
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
-}
-
-func (s *checkCrdsSuite) SetupSuite() {
-	var err error
-
-	s.tmpDir, err = os.MkdirTemp(s.testInstallation.GeneratedFiles.TempDir, "debug-suite-dir")
-	s.Require().NoError(err)
-}
-
-func (s *checkCrdsSuite) TearDownSuite() {
-	_ = os.RemoveAll(s.tmpDir)
 }
 
 func (s *checkCrdsSuite) TestValidatesCorrectCrds() {
