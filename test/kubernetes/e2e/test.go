@@ -181,12 +181,12 @@ func (i *TestInstallation) UpgradeGlooGateway(ctx context.Context, serverVersion
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler(ctx context.Context, testNamespace string) {
+func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	// This is a work in progress
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
 
-	failureDir := filepath.Join(i.GeneratedFiles.FailureDir, testNamespace)
+	failureDir := i.GeneratedFiles.FailureDir
 	err := os.Mkdir(failureDir, os.ModePerm)
 	i.Assertions.Require.NoError(err)
 

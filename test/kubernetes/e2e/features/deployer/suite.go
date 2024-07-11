@@ -75,9 +75,6 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
-	// DO_NOT_SUBMIT testing failure behavior
-	s.Require().Zero(1)
-
 	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
 	if s.testInstallation.RuntimeContext.RunSource == runtime.LocalDevelopment {
 		// There are failures when opening port-forwards to the Envoy Admin API in CI

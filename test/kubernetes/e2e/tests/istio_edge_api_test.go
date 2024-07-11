@@ -39,7 +39,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx, testInstallation.Metadata.InstallNamespace)
+			testInstallation.PreFailHandler(ctx)
 
 			// Generate istioctl bug report
 			testInstallation.CreateIstioBugReport(ctx)
