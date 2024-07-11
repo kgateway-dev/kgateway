@@ -16,7 +16,7 @@ var _ = Describe("Check", func() {
 
 		BeforeAll(func() {
 			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		It("all checks pass with OK status", func() {
@@ -217,7 +217,7 @@ var _ = Describe("Check", func() {
 
 		BeforeAll(func() {
 			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		It("can set timeouts (too short)", func() {
@@ -247,7 +247,7 @@ var _ = Describe("Check", func() {
 
 		BeforeAll(func() {
 			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		It("can run a read only check", func() {
@@ -274,7 +274,7 @@ var _ = Describe("Check", func() {
 
 		BeforeAll(func() {
 			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		It("fails when scanning with invalid kubecontext", func() {
@@ -299,7 +299,7 @@ var _ = Describe("Check", func() {
 
 		BeforeAll(func() {
 			// Check that everything is OK
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		It("connection fails on incorrect namespace check", func() {
@@ -327,7 +327,7 @@ var _ = Describe("Check", func() {
 
 		BeforeEach(func() {
 			// We scale up/down deployments in each test, so we need to be sure we are starting from a healthy point
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		When("there are 0 replicas of any gateway-proxy pod", func() {
@@ -385,7 +385,7 @@ var _ = Describe("Check", func() {
 
 		BeforeEach(func() {
 			// We apply resources in these tests, so we need to be sure we are starting from a healthy point
-			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 		})
 
 		It("reports multiple errors at one time", func() {

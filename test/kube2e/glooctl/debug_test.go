@@ -17,7 +17,7 @@ var _ = Describe("Debug", Ordered, func() {
 
 	BeforeAll(func() {
 		// Check that everything is OK
-		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 	})
 
 	Context("Logs", func() {

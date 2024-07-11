@@ -46,13 +46,13 @@ func GetHttpEchoImage() string {
 }
 
 // GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
-func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
+func GlooctlCheckEventuallyHealthy(offset int, namespace string, timeoutInterval string) {
 	EventuallyWithOffset(offset, func() error {
 		contextWithCancel, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		opts := &options.Options{
 			Metadata: core.Metadata{
-				Namespace: testHelper.InstallNamespace,
+				Namespace: namespace,
 			},
 			Top: options.Top{
 				Ctx: contextWithCancel,
