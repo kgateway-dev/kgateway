@@ -2,7 +2,6 @@ package tests_test
 
 import (
 	"context"
-	"log"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,7 +15,7 @@ import (
 )
 
 // TestRevisionIstioRegression is the function which executes a series of tests against a given installation where
-// the k8s Gateway controller is disabled and the deprecated Istio integration values are used to check for regressions
+// the k8s Gateway controller is disabled and the Istio integration values are enabled with Istio revisions
 func TestRevisionIstioRegression(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
@@ -31,9 +30,7 @@ func TestRevisionIstioRegression(t *testing.T) {
 
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
-		log.Printf("failed to add istioctl: %v\n", err)
-		// immediately stop if Istio installation fails
-		t.Error()
+		t.Errorf("failed to add istioctl: %v\n", err)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
@@ -53,18 +50,14 @@ func TestRevisionIstioRegression(t *testing.T) {
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
 		if err != nil {
-			log.Printf("failed to uninstall: %v\n", err)
-			// immediately stop if Istio installation fails
-			t.Error()
+			t.Errorf("failed to add istioctl: %v\n", err)
 		}
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
-	err = testInstallation.InstallRevisionedIstio(ctx)
+	err = testInstallation.InstallRevisionedIstio(ctx, "1-22-1", "minimal")
 	if err != nil {
-		log.Printf("failed to install: %v\n", err)
-		// immediately stop if Istio installation fails
-		t.Error()
+		t.Errorf("failed to add istioctl: %v\n", err)
 	}
 
 	// Install Gloo Gateway with only Edge APIs enabled

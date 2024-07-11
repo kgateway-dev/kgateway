@@ -53,7 +53,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
-	err = testInstallation.InstallRevisionedIstio(ctx)
+	err = testInstallation.InstallRevisionedIstio(ctx, "1-22-1", "minimal")
 	if err != nil {
 		t.Fatalf("failed to install: %v", err)
 	}
