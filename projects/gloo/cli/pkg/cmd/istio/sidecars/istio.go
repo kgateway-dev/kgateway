@@ -8,7 +8,7 @@ import (
 )
 
 // Sidecar for Istio 1.7.x releases, also works for Istio 1.8.x, 1.9.x and 1.10.x releases
-func generateIstioSidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) *corev1.Container {
+func generateIstioSidecar(version, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress string) *corev1.Container {
 	sidecar := &corev1.Container{
 		Name:  "istio-proxy",
 		Image: "docker.io/istio/proxyv2:" + version,
@@ -33,7 +33,6 @@ func generateIstioSidecar(version, jwtPolicy string, istioMetaMeshID string, ist
 			"NONE",
 			"--dnsRefreshRate",
 			"300s",
-			"--trust-domain=cluster.local",
 			"--controlPlaneBootstrap=false",
 		},
 		Env: []corev1.EnvVar{
