@@ -38,6 +38,7 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	installation.Metadata.ReleasedVersion = testHelper.ReleasedVersion
 	installation.Metadata.HelmChartName = testHelper.HelmChartName
 	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
+	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
 
 	return testHelper
 }

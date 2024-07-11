@@ -27,4 +27,7 @@ type Context struct {
 
 	// The version of the Helm chart. Calculated from either the chart or the released version. It will not have a leading 'v'
 	ChartVersion string
+
+	// The path to the local helm chart used for testing. Based on the TestAssertDir and relative to RootDir.
+	ChartUri string
 }

@@ -2,10 +2,8 @@ package glooctl
 
 import (
 	"context"
-	"path/filepath"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -34,11 +32,10 @@ func (s *checkCrdsSuite) TestValidatesCorrectCrds() {
 			"--version", s.testInstallation.Metadata.ChartVersion)
 		s.NoError(err)
 	} else {
-		chartUri := filepath.Join(testutils.GitRootDirectory(), s.testInstallation.Metadata.TestAssetDir, s.testInstallation.Metadata.HelmChartName+"-"+s.testInstallation.Metadata.ChartVersion+".tgz")
 		err := s.testInstallation.Actions.Glooctl().CheckCrds(s.ctx,
 			"-n", s.testInstallation.Metadata.InstallNamespace,
 			"--kube-context", s.testInstallation.ClusterContext.KubeContext,
-			"--local-chart", chartUri)
+			"--local-chart", s.testInstallation.Metadata.ChartUri)
 		s.NoError(err)
 	}
 }
