@@ -2,7 +2,9 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -188,7 +190,12 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 
 	failureDir := i.GeneratedFiles.FailureDir
 	err := os.Mkdir(failureDir, os.ModePerm)
-	i.Assertions.Require.NoError(err)
+	// We don't want to fail on the output directory already existing. This could occur
+	// if multiple tests running in the same cluster from the same installation namespace
+	// fail.
+	if err != nil && !errors.Is(err, fs.ErrExist) {
+		i.Assertions.Require.NoError(err)
+	}
 
 	glooLogFilePath := filepath.Join(failureDir, "gloo.log")
 	glooLogFile, err := os.OpenFile(glooLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
@@ -247,7 +254,7 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	}
 	kubectlGetResourcesCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGet, ","), "-A")
 	_ = kubectlGetResourcesCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
-	clusterStateFile.Write([]byte{'\n'})
+	clusterStateFile.WriteString("\n")
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
