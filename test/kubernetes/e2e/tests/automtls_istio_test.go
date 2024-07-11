@@ -29,7 +29,8 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		log.Printf("failed to install: %v\n", err)
-		t.Fail()
+		// immediately stop if Istio installation fails
+		t.Error()
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
@@ -50,7 +51,8 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 		err = testInstallation.UninstallIstio()
 		if err != nil {
 			log.Printf("failed to uninstall: %v\n", err)
-			t.Fail()
+			// immediately stop if Istio installation fails
+			t.Error()
 		}
 	})
 
@@ -58,7 +60,8 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	err = testInstallation.InstallMinimalIstio(ctx)
 	if err != nil {
 		log.Printf("failed to install: %v\n", err)
-		t.Fail()
+		// immediately stop if Istio installation fails
+		t.Error()
 	}
 
 	// Install Gloo Gateway
