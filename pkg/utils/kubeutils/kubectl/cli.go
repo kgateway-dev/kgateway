@@ -84,9 +84,9 @@ func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 
-// Namespaces returns a list of namespaces or an error if one occurred
+// Namespaces returns a sorted list of namespaces or an error if one occurred
 func (c *Cli) Namespaces(ctx context.Context) ([]string, error) {
-	stdout, _, err := c.Execute(ctx, "get", "namespaces", "-o", "jsonpath={.items[*].metadata.name}")
+	stdout, _, err := c.Execute(ctx, "get", "namespaces", "--sort-by", "metadata.name", "-o", "jsonpath={.items[*].metadata.name}")
 	if err != nil {
 		return nil, err
 	}

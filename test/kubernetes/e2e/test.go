@@ -238,25 +238,41 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	i.Assertions.Require.NoError(err)
 	defer clusterStateFile.Close()
 
-	kubectlGetAllCmd := i.Actions.Kubectl().Command(ctx, "get", "all", "-A")
+	kubectlGetAllCmd := i.Actions.Kubectl().Command(ctx, "get", "all", "-A", "-owide")
 	_ = kubectlGetAllCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
 	clusterStateFile.WriteString("\n")
 
 	resourcesToGet := []string{
-		"gateways",
-		"gatewayclasses",
-		"gatewayparameters",
-		"routeoptions",
-		"virtualhostoptions",
-		"upstreams",
-		"upstreamgroups",
-		"authconfigs",
-		"ratelimitconfigs",
-		"virtualservices",
-		"httproutes",
+		// Kubernetes resources
 		"secrets",
+		// Kube GW API resources
+		"gateways.gateway.networking.k8s.io",
+		"gatewayclasses.gateway.networking.k8s.io",
+		"httproutes.gateway.networking.k8s.io",
+		"referencegrants.gateway.networking.k8s.io",
+		// GG Kube GW resources
+		"gatewayparameters.gateway.gloo.solo.io",
+		"listeneroptions.gateway.solo.io",     // only implemented for kube gw as of now
+		"httplisteneroptions.gateway.solo.io", // only implemented for kube gw as of now
+		// GG Gloo resources
+		"graphqlapis.graphql.gloo.solo.io",
+		"proxies.gloo.solo.io",
+		"settings.gloo.solo.io",
+		"upstreamgroups.gloo.solo.io",
+		"upstreams.gloo.solo.io",
+		// GG Edge GW resources
+		"gateways.gateway.solo.io",
+		"httpgateways.gateway.solo.io",
+		"tcpgateways.gateway.solo.io",
+		"virtualservices.gateway.solo.io",
+		// Shared GW resources
+		"routeoptions.gateway.solo.io",
+		"virtualhostoptions.gateway.solo.io",
+		// Dataplane extensions resources
+		"authconfigs.enterprise.gloo.solo.io",
+		"ratelimitconfigs.ratelimit.solo.io",
 	}
-	kubectlGetResourcesCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGet, ","), "-A")
+	kubectlGetResourcesCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	_ = kubectlGetResourcesCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
 	clusterStateFile.WriteString("\n")
 }
