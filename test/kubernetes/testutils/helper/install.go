@@ -170,6 +170,7 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, timeout time.Duration,
 	glooctlCommand := []string{
 		filepath.Join(h.BuildAssetDir, h.GlooctlExecName),
 		"install", deploymentType,
+		"--release-name", h.HelmChartName,
 	}
 	if h.LicenseKey != "" {
 		glooctlCommand = append(glooctlCommand, "enterprise", "--license-key", h.LicenseKey)
