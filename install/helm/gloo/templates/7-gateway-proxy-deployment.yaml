@@ -393,7 +393,6 @@ spec:
         - NONE
         - --dnsRefreshRate
         - 300s
-        - --trust-domain=cluster.local
         - --controlPlaneBootstrap=false
         env:
           - name: OUTPUT_CERTS
