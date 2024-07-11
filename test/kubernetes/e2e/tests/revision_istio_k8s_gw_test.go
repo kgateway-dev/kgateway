@@ -21,7 +21,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-rev-k8s-gw-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-k8s-gateway.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-k8s-gateway-helm.yaml"),
 		},
 	)
 
