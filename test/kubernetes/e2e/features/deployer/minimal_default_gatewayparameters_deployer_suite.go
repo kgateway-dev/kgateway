@@ -42,6 +42,9 @@ func (s *minimalDefaultGatewayParametersDeployerSuite) TestConfigureProxiesFromG
 	s.Require().NoError(err, "can apply basic gateway manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams, proxyService, proxyDeployment)
 
+	// DO_NOT_SUBMIT testing failure behavior
+	s.Require().Zero(1)
+
 	deployment, err := s.testInstallation.ClusterContext.Clientset.AppsV1().Deployments(proxyDeployment.GetNamespace()).Get(s.ctx, proxyDeployment.GetName(), metav1.GetOptions{})
 	s.Require().NoError(err, "can get deployment")
 	s.Require().Len(deployment.Spec.Template.Spec.Containers, 1)
