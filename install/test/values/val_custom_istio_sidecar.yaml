@@ -31,7 +31,6 @@ global:
         - 300s
         - --statusPort
         - "15021"
-        - --trust-domain=cluster.local
         - --controlPlaneBootstrap=false
         env:
           - name: OUTPUT_CERTS

@@ -38,7 +38,7 @@ gloo:
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
-    healthyPanicThreshold: 0
+    disabled: true
 # Disable discovery, not recommended for production
 discovery:
   enabled: false
