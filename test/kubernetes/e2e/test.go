@@ -191,7 +191,7 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context, testNamespace str
 	i.Assertions.Require.NoError(err)
 
 	glooLogFilePath := filepath.Join(failureDir, "gloo.log")
-	glooLogFile, err := os.Create(glooLogFilePath)
+	glooLogFile, err := os.OpenFile(glooLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	i.Assertions.Require.NoError(err)
 	defer glooLogFile.Close()
 
@@ -199,38 +199,37 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context, testNamespace str
 	_ = glooLogsCmd.WithStdout(glooLogFile).WithStderr(glooLogFile).Run()
 
 	edgeGatewayLogFilePath := filepath.Join(failureDir, "edge_gateway.log")
-	edgeGatewayLogFile, err := os.Create(edgeGatewayLogFilePath)
+	edgeGatewayLogFile, err := os.OpenFile(edgeGatewayLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	i.Assertions.Require.NoError(err)
 	defer edgeGatewayLogFile.Close()
 
-	// TODO figure out namespaces? probably safe to use provided namespace for this one
-	namespaces, err := i.Actions.Kubectl().Namespaces()
+	kubeGatewayLogFilePath := filepath.Join(failureDir, "kube_gateway.log")
+	kubeGatewayLogFile, err := os.OpenFile(kubeGatewayLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	i.Assertions.Require.NoError(err)
+	defer kubeGatewayLogFile.Close()
+
+	namespaces, err := i.Actions.Kubectl().Namespaces(ctx)
 	i.Assertions.Require.NoError(err)
 	for _, n := range namespaces {
-		if n == "default" {
-			continue
-		}
-		edgeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "-n", testNamespace, "--prefix", "-l", "gloo=gateway-proxy")
+		edgeGatewayLogFile.WriteString(fmt.Sprintf("Logs for edge gateway proxies in namespace %s\n", n))
+		edgeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "--namespace", n, "--prefix", "-l", "gloo=gateway-proxy")
 		_ = edgeGatewayLogsCmd.WithStdout(edgeGatewayLogFile).WithStderr(edgeGatewayLogFile).Run()
+		edgeGatewayLogFile.WriteString("----------------------------------------------------------------------------------------------------------\n")
 
-		kubeGatewayLogFilePath := filepath.Join(failureDir, fmt.Sprintf("%s_edge_gateway.log", n))
-		kubeGatewayLogFile, err := os.Create(kubeGatewayLogFilePath)
-		i.Assertions.Require.NoError(err)
-		defer kubeGatewayLogFile.Close()
-
-		// TODO figure out namespaces? for now we can expect all kube gateways to be in default
-		// since all currently written are
-		kubeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "--prefix", "-l", "gloo=kube-gateway")
+		kubeGatewayLogFile.WriteString(fmt.Sprintf("Logs for kube gateway proxies in namespace %s\n", n))
+		kubeGatewayLogsCmd := i.Actions.Kubectl().Command(ctx, "logs", "--all-containers", "--namespace", n, "--prefix", "-l", "gloo=kube-gateway")
 		_ = kubeGatewayLogsCmd.WithStdout(kubeGatewayLogFile).WithStderr(kubeGatewayLogFile).Run()
+		kubeGatewayLogFile.WriteString("----------------------------------------------------------------------------------------------------------\n")
 	}
+
 	clusterStateFilePath := filepath.Join(failureDir, "cluster_state.log")
-	clusterStateFile, err := os.Create(clusterStateFilePath)
+	clusterStateFile, err := os.OpenFile(clusterStateFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	i.Assertions.Require.NoError(err)
 	defer clusterStateFile.Close()
 
 	kubectlGetAllCmd := i.Actions.Kubectl().Command(ctx, "get", "all", "-A")
 	_ = kubectlGetAllCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
-	clusterStateFile.Write([]byte{'\n'})
+	clusterStateFile.WriteString("\n")
 
 	resourcesToGet := []string{
 		"gateways",
@@ -249,8 +248,6 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context, testNamespace str
 	kubectlGetResourcesCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGet, ","), "-A")
 	_ = kubectlGetResourcesCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
 	clusterStateFile.Write([]byte{'\n'})
-
-	edgeGwLogsFile
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
