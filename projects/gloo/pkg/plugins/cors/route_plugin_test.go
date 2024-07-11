@@ -138,7 +138,7 @@ var _ = Describe("Route Plugin", func() {
 		})
 		It("should reject  bad CORS", func() {
 			inRoute := routeWithCors(&cors.CorsPolicy{
-				AllowOrigin: badOriginRegex1,
+				AllowOriginRegex: badOriginRegex1,
 			})
 			outRoute := basicEnvoyRoute()
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)

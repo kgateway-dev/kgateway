@@ -140,7 +140,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 			inRoute := &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
-						AllowOrigin: badOriginRegex1,
+						AllowOriginRegex: badOriginRegex1,
 					},
 				},
 			}
