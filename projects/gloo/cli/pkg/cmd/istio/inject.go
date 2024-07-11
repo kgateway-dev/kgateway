@@ -179,7 +179,7 @@ func addSdsSidecar(ctx context.Context, deployment *appsv1.Deployment, glooNames
 }
 
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
-func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) error {
+func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress string) error {
 	// Get current istio version & JWT policy from cluster
 	istioPilotContainer, err := getIstiodContainer(ctx, istioNamespace)
 	if err != nil {
