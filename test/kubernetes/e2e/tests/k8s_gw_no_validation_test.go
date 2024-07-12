@@ -23,6 +23,7 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 			InstallNamespace:       "k8s-gw-test-no-validation",
 			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-no-webhook-validation-test-helm.yaml"),
 			ValidationAlwaysAccept: true,
+			K8sGatewayEnabled:      true,
 		},
 	)
 
