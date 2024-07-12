@@ -2776,6 +2776,30 @@ spec:
 						})
 					}
 
+					checkSpiffeCertProviderAddressEqual := func(expected string) {
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), "Deployment should be able to convert from unstructured")
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), "Deployment should be able to cast to a structured deployment")
+							isCAAddrSet := false
+
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, env := range container.Env {
+									if env.Name == "CA_ADDR" {
+										isCAAddrSet = true
+										Expect(env.Value).To(Equal(expected), fmt.Sprintf("SPIFFE cert address should be value: %v", expected))
+										break
+									}
+								}
+							}
+
+							Expect(isCAAddrSet).To(BeTrue(), "Istio's CA_ADDR was not set")
+						})
+					}
+
 					BeforeEach(func() {
 						selector = map[string]string{
 							"gloo":             "gateway-proxy",
@@ -3807,6 +3831,21 @@ spec:
 						})
 
 						checkDiscoveryAddressEqual(val)
+						checkSpiffeCertProviderAddressEqual(val)
+					})
+
+					It("can set spiffeCertProviderAddress value in CA_ADDR env var", func() {
+						val := "istiod-1-8-6.istio-system.svc:15012"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioIntegration.enabled=true",
+								"gatewayProxies.gatewayProxy.istioSpiffeCertProviderAddress=" + val,
+							},
+						})
+
+						checkSpiffeCertProviderAddressEqual(val)
 					})
 
 					It("istio's discoveryAddress default value set", func() {
@@ -3820,6 +3859,19 @@ spec:
 						})
 
 						checkDiscoveryAddressEqual(def)
+					})
+
+					It("istio's spiffeCertProviderAddress default value set", func() {
+						def := "istiod.istio-system.svc:15012"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true",
+								"global.istioIntegration.enabled=true",
+							},
+						})
+
+						checkSpiffeCertProviderAddressEqual(def)
 					})
 
 					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
