@@ -1,0 +1,15 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains: 
+    - matcher: {}
+    httpResources: {}
+  bindAddress: '::'
+  bindPort: 8080
+  name: http-httpbin~http-bookinfo
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: default
+  name: default-http
+  namespace: gloo-system

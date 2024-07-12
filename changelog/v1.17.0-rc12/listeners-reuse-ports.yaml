@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6559
+    resolvesIssue: false
+    description: >-
+      Resolves issue of HTTPS listeners not aggregating appropriately when defined using the
+      same port on a kube gateway.
