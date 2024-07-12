@@ -153,9 +153,13 @@ func (ml *mergedListeners) appendHttpsListener(
 		queries:             ml.queries,
 	}
 
+	// Perform the port transformation away from privileged ports only once to use
+	// during both lookup and when appending the listener.
+	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+
 	listenerName := string(listener.Name)
 	for _, lis := range ml.listeners {
-		if lis.port == listener.Port {
+		if lis.port == finalPort {
 			// concatenate the names on the parent output listener
 			// TODO is this valid listener name?
 			lis.name += "~" + listenerName
@@ -166,7 +170,7 @@ func (ml *mergedListeners) appendHttpsListener(
 	ml.listeners = append(ml.listeners, &mergedListener{
 		name:              listenerName,
 		gatewayNamespace:  ml.gatewayNamespace,
-		port:              gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port))),
+		port:              finalPort,
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,
 		listener:          listener,
