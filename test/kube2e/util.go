@@ -11,6 +11,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/fsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -152,13 +153,10 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 }
 
 func ToFile(content string) string {
-	f, err := os.CreateTemp("", "")
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	n, err := f.WriteString(content)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, n).To(Equal(len(content)))
-	_ = f.Close()
-	return f.Name()
+	fname, err := fsutils.ToTempFile(content)
+	Expect(err).ToNot(HaveOccurred())
+
+	return fname
 }
 
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
