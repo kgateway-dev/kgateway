@@ -68,6 +68,60 @@ var _ = Describe("GatewayTranslator", func() {
 		}]).To(BeTrue())
 	})
 
+	It("should translate a gateway with http routing with multiple listeners on the same port", func() {
+		results, err := TestCase{
+			Name:       "multiple-listeners-http-routing",
+			InputFiles: []string{dir + "/testutils/inputs/multiple-listeners-http-routing"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "http",
+				}: {
+					Proxy: dir + "/testutils/outputs/multiple-listeners-http-routing-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results).To(HaveKey(types.NamespacedName{
+			Namespace: "default",
+			Name:      "http",
+		}))
+		Expect(results[types.NamespacedName{
+			Namespace: "default",
+			Name:      "http",
+		}]).To(BeTrue())
+	})
+
+	It("should translate a gateway with https routing with multiple listeners on the same port", func() {
+		results, err := TestCase{
+			Name:       "multiple-listeners-https-routing",
+			InputFiles: []string{dir + "/testutils/inputs/multiple-listeners-https-routing"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "http",
+				}: {
+					Proxy: dir + "/testutils/outputs/multiple-listeners-https-routing-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		Expect(results).To(HaveKey(types.NamespacedName{
+			Namespace: "default",
+			Name:      "http",
+		}))
+		Expect(results[types.NamespacedName{
+			Namespace: "default",
+			Name:      "http",
+		}]).To(BeTrue())
+	})
+
 	It("should translate an http gateway with multiple routing rules and use the HeaderModifier filter", func() {
 		results, err := TestCase{
 			Name:       "http-routing-with-header-modifier-filter",
