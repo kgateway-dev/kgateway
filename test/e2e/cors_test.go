@@ -51,144 +51,226 @@ var _ = Describe("CORS", func() {
 
 	var (
 		allowedOrigins = []string{allowedOrigin}
-		allowedMethods = []string{http.MethodGet, http.MethodGet}
+		allowedMethods = []string{http.MethodGet, http.MethodPost}
+
+		routeAllowedOrigins = []string{"routeAllowThisOne.solo.io"}
 	)
 
-	Context("With CORS", func() {
-		BeforeEach(func() {
-			vsWithCors := gloohelpers.NewVirtualServiceBuilder().
-				WithNamespace(writeNamespace).
-				WithName("vs-cors").
-				WithDomain(e2e.DefaultHost).
-				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher("route", "/cors").
-				WithRouteOptions("route", &gloov1.RouteOptions{
-					Cors: &cors.CorsPolicy{
-						AllowOrigin:      allowedOrigins,
-						AllowOriginRegex: allowedOrigins,
-						AllowMethods:     allowedMethods,
-					}}).
-				Build()
+	When("CORS is defined on VirtualHost", func() {
 
-			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
-				vsWithCors,
-			}
+		When("RouteAction is Upstream", func() {
+			BeforeEach(func() {
+				vsWithCors := gloohelpers.NewVirtualServiceBuilder().
+					WithNamespace(writeNamespace).
+					WithName("vs-cors").
+					WithDomain(e2e.DefaultHost).
+					WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
+					WithRoutePrefixMatcher("route", "/cors").
+					WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+						Cors: &cors.CorsPolicy{
+							AllowOrigin:      allowedOrigins,
+							AllowOriginRegex: allowedOrigins,
+							AllowMethods:     allowedMethods,
+						}}).
+					Build()
+
+				testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+					vsWithCors,
+				}
+			})
+
+			It("should respect CORS", func() {
+				Eventually(func(g Gomega) {
+					cfg, err := testContext.EnvoyInstance().ConfigDump()
+					g.Expect(err).NotTo(HaveOccurred())
+
+					g.Expect(cfg).To(MatchRegexp(corsFilterString))
+					g.Expect(cfg).To(MatchRegexp(corsActiveConfigString))
+					g.Expect(cfg).To(MatchRegexp(allowedOrigin))
+				}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
+
+				allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+					WithOptionsMethod().
+					WithPath("cors").
+					WithHeader("Origin", allowedOrigins[0]).
+					WithHeader("Access-Control-Request-Method", http.MethodGet).
+					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:  Equal(allowedOrigins[0]),
+					}))
+				}).Should(Succeed(), "Request with allowed origin")
+
+				disallowedOriginRequestBuilder := allowedOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: BeEmpty(),
+					}))
+				}).Should(Succeed(), "Request with disallowed origin")
+			})
+
 		})
 
-		It("should run with cors", func() {
-			Eventually(func(g Gomega) {
-				cfg, err := testContext.EnvoyInstance().ConfigDump()
-				g.Expect(err).NotTo(HaveOccurred())
+		When("RouteAction is DirectResponseAction", func() {
 
-				g.Expect(cfg).To(MatchRegexp(corsFilterString))
-				g.Expect(cfg).To(MatchRegexp(corsActiveConfigString))
-				g.Expect(cfg).To(MatchRegexp(allowedOrigin))
-			}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
+			BeforeEach(func() {
+				vs := gloohelpers.NewVirtualServiceBuilder().
+					WithNamespace(writeNamespace).
+					WithName(e2e.DefaultVirtualServiceName).
+					WithDomain(e2e.DefaultHost).
+					WithRouteDirectResponseAction("route", &gloov1.DirectResponseAction{
+						Status: 200,
+					}).
+					WithRoutePrefixMatcher("route", "/cors").
+					WithRouteOptions("route", &gloov1.RouteOptions{
+						Cors: &cors.CorsPolicy{
+							AllowOrigin:      allowedOrigins,
+							AllowOriginRegex: allowedOrigins,
+							AllowMethods:     allowedMethods,
+						}}).
+					Build()
 
-			allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
-				WithOptionsMethod().
-				WithPath("cors").
-				WithHeader("Origin", allowedOrigins[0]).
-				WithHeader("Access-Control-Request-Method", http.MethodGet).
-				WithHeader("Access-Control-Request-Headers", "X-Requested-With")
-			Eventually(func(g Gomega) {
-				g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
-					requestACHOrigin:  Equal(allowedOrigins[0]),
-				}))
-			}).Should(Succeed(), "Request with allowed origin")
+				testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+					vs,
+				}
+			})
 
-			disallowedOriginRequestBuilder := allowedOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
-			Eventually(func(g Gomega) {
-				g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-					requestACHMethods: BeEmpty(),
-				}))
-			}).Should(Succeed(), "Request with disallowed origin")
+			It("should respect CORS", func() {
+				Eventually(func(g Gomega) {
+					cfg, err := testContext.EnvoyInstance().ConfigDump()
+					g.Expect(err).NotTo(HaveOccurred())
+
+					g.Expect(cfg).To(MatchRegexp(corsFilterString))
+					g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
+				}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
+
+				allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+					WithOptionsMethod().
+					WithPath("cors").
+					WithHeader("Origin", allowedOrigins[0]).
+					WithHeader("Access-Control-Request-Method", http.MethodGet).
+					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:  Equal(allowedOrigins[0]),
+					}))
+				}).Should(Succeed(), "Request with allowed origin")
+
+				disallowedOriginRequestBuilder := allowedOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:  Equal(allowedOrigins[0]),
+					}))
+				}).Should(Succeed(), "Request with disallowed origin")
+			})
+
+		})
+
+		When("CORS is defined on RouteOptions and VirtualHostOptions", func() {
+			BeforeEach(func() {
+				vsWithCors := gloohelpers.NewVirtualServiceBuilder().
+					WithNamespace(writeNamespace).
+					WithName("vs-cors").
+					WithDomain(e2e.DefaultHost).
+					WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
+					WithRoutePrefixMatcher("route", "/cors").
+					WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+						Cors: &cors.CorsPolicy{
+							AllowOrigin:      allowedOrigins,
+							AllowOriginRegex: allowedOrigins,
+							AllowMethods:     allowedMethods,
+						}}).
+					WithRouteOptions("route", &gloov1.RouteOptions{
+						Cors: &cors.CorsPolicy{
+							AllowOrigin:      routeAllowedOrigins,
+							AllowOriginRegex: routeAllowedOrigins,
+							AllowMethods:     allowedMethods,
+						}}).
+					Build()
+
+				testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+					vsWithCors,
+				}
+			})
+
+			It("should respect CORS", func() {
+				Eventually(func(g Gomega) {
+					cfg, err := testContext.EnvoyInstance().ConfigDump()
+					g.Expect(err).NotTo(HaveOccurred())
+
+					g.Expect(cfg).To(MatchRegexp(corsFilterString))
+					g.Expect(cfg).To(MatchRegexp(corsActiveConfigString))
+					g.Expect(cfg).To(MatchRegexp(allowedOrigin))
+				}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
+
+				allowedRouteOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+					WithOptionsMethod().
+					WithPath("cors").
+					WithHeader("Origin", routeAllowedOrigins[0]).
+					WithHeader("Access-Control-Request-Method", http.MethodGet).
+					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(allowedRouteOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:  Equal(routeAllowedOrigins[0]),
+					}))
+				}).Should(Succeed(), "Request with allowed route origin")
+
+				// This demonstrates that when you define options both on the VirtualHost and Route levels,
+				// only the route definition is respected
+				allowedVhostOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+					WithOptionsMethod().
+					WithPath("cors").
+					// use the allowed origins defined on the vhost, not the route
+					WithHeader("Origin", allowedOrigins[0]).
+					WithHeader("Access-Control-Request-Method", http.MethodGet).
+					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(allowedVhostOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: BeEmpty(),
+					}))
+				}).Should(Succeed(), "Request with allowed origin from vhost is not allowed, since route overrides it")
+
+				disallowedOriginRequestBuilder := allowedRouteOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: BeEmpty(),
+					}))
+				}).Should(Succeed(), "Request with disallowed origin")
+			})
+
 		})
 
 	})
 
-	Context("With Direct Response Action", func() {
-		var (
-			vs *gatewayv1.VirtualService
-		)
+	When("CORS is not defined on VirtualHost", func() {
 
-		BeforeEach(func() {
-			vs = gloohelpers.NewVirtualServiceBuilder().
-				WithNamespace(writeNamespace).
-				WithName(e2e.DefaultVirtualServiceName).
-				WithDomain(e2e.DefaultHost).
-				WithRouteDirectResponseAction("route", &gloov1.DirectResponseAction{Status: 200}).
-				WithRoutePrefixMatcher("route", "/cors").
-				WithRouteOptions("route", &gloov1.RouteOptions{
-					Cors: &cors.CorsPolicy{
-						AllowOrigin:      allowedOrigins,
-						AllowOriginRegex: allowedOrigins,
-						AllowMethods:     allowedMethods,
-					}}).
-				Build()
+		When("RouteAction is Upstream", func() {
+			BeforeEach(func() {
+				vsWithoutCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
+					WithName("vs-cors").
+					WithDomain("cors.com").
+					WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
+					WithRoutePrefixMatcher("route", "/cors").
+					Build()
 
-			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
-				vs,
-			}
+				testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+					vsWithoutCors,
+				}
+			})
 
-		})
+			It("should run without cors", func() {
+				Eventually(func(g Gomega) {
+					cfg, err := testContext.EnvoyInstance().ConfigDump()
+					g.Expect(err).NotTo(HaveOccurred())
 
-		It("should run with cors", func() {
-			Eventually(func(g Gomega) {
-				cfg, err := testContext.EnvoyInstance().ConfigDump()
-				g.Expect(err).NotTo(HaveOccurred())
-
-				g.Expect(cfg).To(MatchRegexp(corsFilterString))
-				g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
-			}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
-
-			allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
-				WithOptionsMethod().
-				WithPath("cors").
-				WithHeader("Origin", allowedOrigins[0]).
-				WithHeader("Access-Control-Request-Method", http.MethodGet).
-				WithHeader("Access-Control-Request-Headers", "X-Requested-With")
-			Eventually(func(g Gomega) {
-				g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
-					requestACHOrigin:  Equal(allowedOrigins[0]),
-				}))
-			}).Should(Succeed(), "Request with allowed origin")
-
-			disallowedOriginRequestBuilder := allowedOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
-			Eventually(func(g Gomega) {
-				g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
-					requestACHOrigin:  Equal(allowedOrigins[0]),
-				}))
-			}).Should(Succeed(), "Request with disallowed origin")
-		})
-	})
-
-	Context("Without CORS", func() {
-
-		BeforeEach(func() {
-			vsWithoutCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
-				WithName("vs-cors").
-				WithDomain("cors.com").
-				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher("route", "/cors").
-				Build()
-
-			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
-				vsWithoutCors,
-			}
-		})
-
-		It("should run without cors", func() {
-			Eventually(func(g Gomega) {
-				cfg, err := testContext.EnvoyInstance().ConfigDump()
-				g.Expect(err).NotTo(HaveOccurred())
-
-				g.Expect(cfg).To(MatchRegexp(corsFilterString))
-				g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
-			}).Should(Succeed(), "Envoy config does not contain CORS filer")
+					g.Expect(cfg).To(MatchRegexp(corsFilterString))
+					g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
+				}).Should(Succeed(), "Envoy config does not contain CORS filer")
+			})
 		})
 	})
 
