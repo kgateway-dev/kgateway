@@ -21,7 +21,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   "istio-rev-k8s-gw-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-k8s-gateway.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-k8s-gateway-helm.yaml"),
 		},
 	)
 
@@ -53,7 +53,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
-	err = testInstallation.InstallRevisionedIstio(ctx)
+	err = testInstallation.InstallRevisionedIstio(ctx, "1-22-1", "minimal")
 	if err != nil {
 		t.Fatalf("failed to install: %v", err)
 	}

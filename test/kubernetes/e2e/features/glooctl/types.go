@@ -16,6 +16,8 @@ var (
 	edgeGatewaysManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-gateways.yaml")
 	edgeRoutesManifestFile   = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-routes.yaml")
 	kubeGatewaysManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "kube-gateway-routes.yaml")
+	invalidVSKubeDest        = filepath.Join(util.MustGetThisDir(), "testdata", "vs-invalid-kube-dest.yaml")
+	invalidVSUpstreamDest    = filepath.Join(util.MustGetThisDir(), "testdata", "vs-invalid-upstream.yaml")
 
 	// resources created by backend manifest
 	nginxSvc = &corev1.Service{
@@ -108,4 +110,7 @@ var (
 	// expected kube proxies
 	kubeProxy1Name = "default-gw1"
 	kubeProxy2Name = "default-gw2"
+
+	// expected edge proxies defined in helm
+	helmEdgeProxyName = "public-gw"
 )

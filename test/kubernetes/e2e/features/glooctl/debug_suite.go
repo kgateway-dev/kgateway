@@ -41,6 +41,7 @@ func (s *debugSuite) TearDownSuite() {
 }
 
 func (s *debugSuite) TestLogsNoPanic() {
+	// check logs to stdout do not crash
 	err := s.testInstallation.Actions.Glooctl().DebugLogs(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace)
 	s.NoError(err)
