@@ -49,6 +49,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddVersionFlag(pflags, &opts.CheckCRD.Version)
 	flagutils.AddLocalChartFlag(pflags, &opts.CheckCRD.LocalChart)
 	flagutils.AddShowYamlFlag(pflags, &opts.CheckCRD.ShowYaml)
+	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

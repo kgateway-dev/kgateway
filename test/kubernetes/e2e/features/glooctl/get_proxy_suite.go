@@ -69,13 +69,24 @@ func (s *getProxySuite) SetupSuite() {
 		g.Expect(err).NotTo(HaveOccurred())
 		proxies, err := parseProxyOutput(output)
 		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(proxies).To(ConsistOf(
-			matchers.HaveNameAndNamespace(edgeProxy1Name, ns),
-			matchers.HaveNameAndNamespace(edgeProxy2Name, ns),
-			matchers.HaveNameAndNamespace(edgeDefaultProxyName, ns),
-			matchers.HaveNameAndNamespace(kubeProxy1Name, ns),
-			matchers.HaveNameAndNamespace(kubeProxy2Name, ns),
-		))
+		if s.testInstallation.Metadata.K8sGatewayEnabled {
+			g.Expect(proxies).To(ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, ns),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, ns),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, ns),
+				matchers.HaveNameAndNamespace(kubeProxy1Name, ns),
+				matchers.HaveNameAndNamespace(kubeProxy2Name, ns),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, ns),
+			))
+		} else {
+			// K8s Gateway Controller disabled, should only create Edge proxies
+			g.Expect(proxies).To(ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, ns),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, ns),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, ns),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, ns),
+			))
+		}
 	}).
 		WithContext(s.ctx).
 		WithTimeout(time.Second*10).
@@ -130,14 +141,26 @@ func (s *getProxySuite) TearDownSuite() {
 func (s *getProxySuite) TestGetProxy() {
 	// test `glooctl get proxy` with various args. set the output type to kube-yaml for each request, so that we can parse the response into Proxies
 	outputTypeArgs := []string{"-o", "kube-yaml"}
-	for _, testCase := range getTestCases(s.testInstallation.Metadata.InstallNamespace) {
-		s.Run(testCase.name, func() {
-			output, err := s.testInstallation.Actions.Glooctl().GetProxy(s.ctx, slices.Concat(testCase.args, outputTypeArgs)...)
-			Expect(err).To(testCase.errorMatcher)
-			proxies, err := parseProxyOutput(output)
-			s.NoError(err)
-			Expect(proxies).To(testCase.proxiesMatcher)
-		})
+	if s.testInstallation.Metadata.K8sGatewayEnabled {
+		for _, testCase := range getK8sGatewayTestCases(s.testInstallation.Metadata.InstallNamespace) {
+			s.Run(testCase.name, func() {
+				output, err := s.testInstallation.Actions.Glooctl().GetProxy(s.ctx, slices.Concat(testCase.args, outputTypeArgs)...)
+				Expect(err).To(testCase.errorMatcher)
+				proxies, err := parseProxyOutput(output)
+				s.NoError(err)
+				Expect(proxies).To(testCase.proxiesMatcher)
+			})
+		}
+	} else {
+		for _, testCase := range getEdgeGatewayTestCases(s.testInstallation.Metadata.InstallNamespace) {
+			s.Run(testCase.name, func() {
+				output, err := s.testInstallation.Actions.Glooctl().GetProxy(s.ctx, slices.Concat(testCase.args, outputTypeArgs)...)
+				Expect(err).To(testCase.errorMatcher)
+				proxies, err := parseProxyOutput(output)
+				s.NoError(err)
+				Expect(proxies).To(testCase.proxiesMatcher)
+			})
+		}
 	}
 }
 
@@ -148,7 +171,7 @@ type getProxyTestCase struct {
 	proxiesMatcher types.GomegaMatcher
 }
 
-func getTestCases(installNamespace string) []getProxyTestCase {
+func getK8sGatewayTestCases(installNamespace string) []getProxyTestCase {
 	return []getProxyTestCase{
 		{
 			// glooctl get proxy (no args) => should return error (defaults to gloo-system ns)
@@ -168,6 +191,7 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
 				matchers.HaveNameAndNamespace(kubeProxy1Name, installNamespace),
 				matchers.HaveNameAndNamespace(kubeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, installNamespace),
 			),
 		},
 		{
@@ -205,6 +229,7 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
 				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
 				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, installNamespace),
 			),
 		},
 		{
@@ -228,6 +253,81 @@ func getTestCases(installNamespace string) []getProxyTestCase {
 				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
 				matchers.HaveNameAndNamespace(kubeProxy1Name, installNamespace),
 				matchers.HaveNameAndNamespace(kubeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, installNamespace),
+			),
+		},
+	}
+}
+
+func getEdgeGatewayTestCases(installNamespace string) []getProxyTestCase {
+	return []getProxyTestCase{
+		{
+			// glooctl get proxy (no args) => should return error (defaults to gloo-system ns)
+			name:           "InvalidNamespace",
+			args:           []string{},
+			errorMatcher:   MatchError(ContainSubstring("Gloo installation namespace does not exist")),
+			proxiesMatcher: gstruct.Ignore(),
+		},
+		{
+			// glooctl get proxy -n <installNs> => should get all proxies
+			name:         "AllProxiesInNamespace",
+			args:         []string{"-n", installNamespace},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, installNamespace),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --name proxy1 => should get proxy with name
+			name:         "ProxyName",
+			args:         []string{"-n", installNamespace, "--name", "proxy1"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --name nonexistent => should return error
+			name:           "InvalidProxyName",
+			args:           []string{"-n", installNamespace, "--name", "nonexistent"},
+			errorMatcher:   MatchError(ContainSubstring(fmt.Sprintf("%s.%s does not exist", installNamespace, "nonexistent"))),
+			proxiesMatcher: gstruct.Ignore(),
+		},
+		{
+			// glooctl get proxy -n <installNs> --name proxy1 --kube => should ignore kube flag, and return proxy with name
+			// (even though it's an edge proxy)
+			name:         "ProxyNameIgnoreSelector",
+			args:         []string{"-n", installNamespace, "--name", "proxy1", "--kube"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --edge => should return only edge proxies
+			name:         "EdgeProxies",
+			args:         []string{"-n", installNamespace, "--edge"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, installNamespace),
+			),
+		},
+		{
+			// glooctl get proxy -n <installNs> --edge --kube => should return both kube and edge proxies
+			name:         "EdgeAndKubeProxies",
+			args:         []string{"-n", installNamespace, "--edge", "--kube"},
+			errorMatcher: BeNil(),
+			proxiesMatcher: ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeProxy2Name, installNamespace),
+				matchers.HaveNameAndNamespace(edgeDefaultProxyName, installNamespace),
+				matchers.HaveNameAndNamespace(helmEdgeProxyName, installNamespace),
 			),
 		},
 	}

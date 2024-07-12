@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	installcmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
@@ -41,7 +42,11 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 	storageClient := debugutils.NewFileStorageClient(fs)
 
 	// if writing to a non-zipped file, create a channel to collect logs
-	var fileBuf chan string
+	// Need fileBufLock here because eg.Go() can create concurrent goroutines, which can access shared fileBuf concurrently.
+	var (
+		fileBuf     chan string
+		fileBufLock sync.Mutex
+	)
 	if !opts.Top.Zip && opts.Top.File != "" {
 		fileBuf = make(chan string, len(responses))
 	}
@@ -50,6 +55,9 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 	for _, response := range responses {
 		response := response
 		eg.Go(func() error {
+			fileBufLock.Lock()
+			defer fileBufLock.Unlock()
+
 			defer response.Response.Close()
 			var logs strings.Builder
 			if opts.Top.ErrorsOnly {

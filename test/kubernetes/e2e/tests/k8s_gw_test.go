@@ -24,6 +24,7 @@ func TestK8sGateway(t *testing.T) {
 			InstallNamespace:       env.GetOrDefault(testutils.InstallNamespace, "k8s-gw-test"),
 			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-test-helm.yaml"),
 			ValidationAlwaysAccept: false,
+			K8sGatewayEnabled:      true,
 		},
 	)
 
