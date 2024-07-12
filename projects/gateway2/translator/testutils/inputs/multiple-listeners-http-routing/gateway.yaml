@@ -12,12 +12,6 @@ spec:
     name: http-httpbin
     port: 80
     protocol: HTTP
-    tls:
-      certificateRefs:
-      - group: ""
-        kind: Secret
-        name: httpbin-tls-secret
-      mode: Terminate
   - allowedRoutes:
       namespaces:
         from: All
@@ -25,9 +19,3 @@ spec:
     name: http-bookinfo
     port: 80
     protocol: HTTP
-    tls:
-      certificateRefs:
-      - group: ""
-        kind: Secret
-        name: bookinfo-tls-secret
-      mode: Terminate
