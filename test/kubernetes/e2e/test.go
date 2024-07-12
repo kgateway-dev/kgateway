@@ -31,6 +31,15 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 
 	testHelper.SetKubeCli(installation.ClusterContext.Cli)
 
+	// TODO(npolshak) We should remove the test helper and have the test installation own this
+	// set installation metadata
+	installation.Metadata.TestAssetDir = testHelper.TestAssetDir
+	installation.Metadata.ChartVersion = testHelper.ChartVersion()
+	installation.Metadata.ReleasedVersion = testHelper.ReleasedVersion
+	installation.Metadata.HelmChartName = testHelper.HelmChartName
+	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
+	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
+
 	return testHelper
 }
 
@@ -144,8 +153,8 @@ func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
 	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
 }
 
-func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context) error {
-	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, "1-22-1", "minimal")
+func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context, rev, profile string) error {
+	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, rev, profile)
 }
 
 func (i *TestInstallation) UninstallIstio() error {

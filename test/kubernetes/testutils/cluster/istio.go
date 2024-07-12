@@ -36,7 +36,7 @@ func InstallMinimalIstio(
 	istioctlBinary, kubeContext string,
 ) error {
 	operatorFileContent := generateIstioOperatorFileContent("", minimalProfile)
-	operatorFile := "/tmp/istio-operator.yaml"
+	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
 	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
 	if err != nil {
@@ -51,7 +51,7 @@ func InstallRevisionedIstio(
 	istioctlBinary, kubeContext, revision, profile string,
 ) error {
 	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
-	operatorFile := "/tmp/istio-operator.yaml"
+	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
 	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0644)
 	if err != nil {
