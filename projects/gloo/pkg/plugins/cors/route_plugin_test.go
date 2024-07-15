@@ -30,7 +30,8 @@ var _ = Describe("Route Plugin", func() {
 
 		// values used in first example
 		allowOrigin1      = []string{"solo.io", "github.com"}
-		allowOriginRegex1 = []string{`*\.solo\.io`, `git.*\.com`}
+		allowOriginRegex1 = []string{`.*\.solo\.io`, `git.*\.com`}
+		badOriginRegex1   = []string{`*\.solo\.io`, `git.*\.com`} // has a * at the front which is invalid
 		allowMethods1     = []string{"GET", "POST"}
 		allowHeaders1     = []string{"allowH1", "allow2"}
 		exposeHeaders1    = []string{"exHeader", "eh2"}
@@ -134,6 +135,14 @@ var _ = Describe("Route Plugin", func() {
 			Expect(outCorsConfig).NotTo(BeNil())
 			Expect(outRoute.TypedPerFilterConfig).To(Equal(expected.TypedPerFilterConfig))
 
+		})
+		It("should reject  bad CORS", func() {
+			inRoute := routeWithCors(&cors.CorsPolicy{
+				AllowOriginRegex: badOriginRegex1,
+			})
+			outRoute := basicEnvoyRoute()
+			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
+			Expect(err).To(HaveOccurred(), "any regex starting with a * should not be RE2 compliant")
 		})
 		It("should process empty specification", func() {
 			inRoute := routeWithCors(&cors.CorsPolicy{})
