@@ -1,4 +1,8 @@
 global:
+  # Set up gloo with istio integration enabled
+  istioIntegration:
+    enabled: true
+    enableAutoMtls: false # Automtls is disabled in this test setup
   image:
     pullPolicy: IfNotPresent
   # Note: glooRbac.namespaced settings are not supported with Gloo Gateway https://github.com/solo-io/solo-projects/issues/6064
@@ -28,6 +32,11 @@ gateway:
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true
+  gatewayParameters:
+    glooGateway:
+      istio:
+        istioProxyContainer:
+          istioDiscoveryAddress: istiod-1-22-1.istio-system.svc:15012 # this needs to be set for Istio integration to work with revisions
 gloo:
   logLevel: info
   disableLeaderElection: true
@@ -36,8 +45,7 @@ gloo:
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
-    # TODO(npolshak): Add disabled=true here once glooctl tests are in the new framework: https://github.com/solo-io/solo-projects/issues/6303
-    healthyPanicThreshold: 0
+    disabled: true
 # Disable discovery, not recommended for production
 discovery:
   enabled: false

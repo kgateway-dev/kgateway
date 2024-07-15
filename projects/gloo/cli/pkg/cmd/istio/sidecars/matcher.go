@@ -7,6 +7,6 @@ import (
 // GetIstioSidecar will return an Istio sidecar for the given
 // version of Istio, with the given jwtPolicy, to run
 // in the gateway-proxy pod
-func GetIstioSidecar(istioVersion, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string, istioDiscoveryAddress string) (*corev1.Container, error) {
+func GetIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress string) (*corev1.Container, error) {
 	return generateIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID, istioDiscoveryAddress), nil
 }

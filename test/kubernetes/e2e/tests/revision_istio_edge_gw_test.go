@@ -15,15 +15,15 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-// TestIstioEdgeApiGateway is the function which executes a series of tests against a given installation where
-// the k8s Gateway controller is disabled
-func TestIstioEdgeApiGateway(t *testing.T) {
+// TestRevisionIstioRegression is the function which executes a series of tests against a given installation where
+// the k8s Gateway controller is disabled and the deprecated Istio integration values are used to check for regressions
+func TestRevisionIstioRegression(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "istio-edge-api-gateway-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-gateway-test-helm.yaml"),
+			InstallNamespace:   "istio-rev-regression-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-helm.yaml"),
 		},
 	)
 
@@ -60,7 +60,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	})
 
 	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
-	err = testInstallation.InstallMinimalIstio(ctx)
+	err = testInstallation.InstallRevisionedIstio(ctx)
 	if err != nil {
 		log.Printf("failed to install: %v\n", err)
 		// immediately stop if Istio installation fails
@@ -72,5 +72,5 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	IstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)
+	RevisionIstioEdgeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }
