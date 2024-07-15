@@ -2,10 +2,11 @@ package printers
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"io"
 	"os"
 	"sort"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"google.golang.org/protobuf/proto"
@@ -321,7 +322,7 @@ func addMethodsFromGrpcJsonTranscoder(up *v1.Upstream) {
 	switch usType := up.GetUpstreamType().(type) {
 	case *v1.Upstream_Kube:
 		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
-			if gjt.MethodMap == nil {
+			if gjt.GetMethodMap() == nil {
 				gjt.MethodMap = map[string]*grpc_json.GrpcJsonTranscoderMethodList{}
 			}
 
@@ -330,11 +331,11 @@ func addMethodsFromGrpcJsonTranscoder(up *v1.Upstream) {
 			for _, grpcService := range gjt.GetServices() {
 				methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
 				for i := 0; i < methodDescriptors.Len(); i++ {
-					if gjt.MethodMap[grpcService] == nil {
-						gjt.MethodMap[grpcService] = &grpc_json.GrpcJsonTranscoderMethodList{}
+					if gjt.GetMethodMap()[grpcService] == nil {
+						gjt.GetMethodMap()[grpcService] = &grpc_json.GrpcJsonTranscoderMethodList{}
 					}
 
-					gjt.MethodMap[grpcService].Methods = append(gjt.MethodMap[grpcService].Methods, fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
+					gjt.GetMethodMap()[grpcService].Methods = append(gjt.GetMethodMap()[grpcService].GetMethods(), fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
 				}
 			}
 		}

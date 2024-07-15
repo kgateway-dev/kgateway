@@ -7,12 +7,13 @@
 package stateful_session
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
