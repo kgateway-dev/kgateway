@@ -34,21 +34,21 @@ func CheckRegexString(candidateRegex string) error {
 // It is tightly coupled to envoy's implementation of regex.
 // Wraps NewRegexFromSettings which wraps NewRegexWithProgramSize which leads to the tight coupling.
 // NOTE: Call this after having checked regex with CheckRegexString.
-func NewRegex(ctx context.Context, regex string) *envoy_type_matcher_v3.RegexMatcher {
+func NewRegex(ctx context.Context, candidateRegex string) *envoy_type_matcher_v3.RegexMatcher {
 	settings := settingsutil.MaybeFromContext(ctx)
-	return NewRegexFromSettings(settings, regex)
+	return NewRegexFromSettings(settings, candidateRegex)
 }
 
 // NewRegexFromSettings wraps NewRegexWithProgramSize with the program size from the settings.
 // NOTE: Call this after having checked regex with CheckRegexString.
-func NewRegexFromSettings(settings *v1.Settings, regex string) *envoy_type_matcher_v3.RegexMatcher {
+func NewRegexFromSettings(settings *v1.Settings, candidateRegex string) *envoy_type_matcher_v3.RegexMatcher {
 	var programsize *uint32
 	if settings != nil {
 		if max_size := settings.GetGloo().GetRegexMaxProgramSize(); max_size != nil {
 			programsize = &max_size.Value
 		}
 	}
-	return NewRegexWithProgramSize(regex, programsize)
+	return NewRegexWithProgramSize(candidateRegex, programsize)
 }
 
 // NewRegexWithProgramSize creates a new regex matcher with the given program size.
