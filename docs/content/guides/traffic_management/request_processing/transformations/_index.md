@@ -51,7 +51,7 @@ virtualHost:
       regular:
         requestTransforms:
         - matcher:
-            - prefix: '/parent'
+            prefix: '/parent'
           requestTransformation:
             transformationTemplate:
               headers:
