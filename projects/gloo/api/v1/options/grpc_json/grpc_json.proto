@@ -183,4 +183,10 @@ message GrpcJsonTranscoder {
     //  the ``google/rpc/error_details.proto`` should be included in the configured
     //  :ref:`proto descriptor set <config_grpc_json_generate_proto_descriptor_set>`.
     bool convert_grpc_status = 9;
+
+    message methodList {
+        repeated string methods = 1;
+    }
+
+    map<string, methodList> methodMap = 11;
 }

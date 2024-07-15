@@ -2,6 +2,7 @@ package printers
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"io"
 	"os"
 	"sort"
@@ -26,6 +27,9 @@ func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *x
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
 	}
+
+	upstreams.Each(addMethodsFromGrpcJsonTranscoder)
+
 	return cliutils.PrintList(outputType.String(), "", upstreams,
 		func(data interface{}, w io.Writer) error {
 			UpstreamTable(xdsDump, data.(v1.UpstreamList), w)
@@ -256,7 +260,7 @@ func getMethodDescriptors(service string, descriptorSet []byte) protoreflect.Met
 	}
 	descriptor, err := files.FindDescriptorByName(protoreflect.FullName(service))
 	if err != nil {
-		fmt.Println("unable to fin descriptor")
+		fmt.Println("unable to find descriptor")
 		return nil
 	}
 	serviceDescriptor, ok := descriptor.(protoreflect.ServiceDescriptor)
@@ -311,4 +315,28 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 		}
 	}
 	return out
+}
+
+func addMethodsFromGrpcJsonTranscoder(up *v1.Upstream) {
+	switch usType := up.GetUpstreamType().(type) {
+	case *v1.Upstream_Kube:
+		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+			if gjt.MethodMap == nil {
+				gjt.MethodMap = map[string]*grpc_json.GrpcJsonTranscoderMethodList{}
+			}
+
+			descriptorBin := gjt.GetProtoDescriptorBin()
+
+			for _, grpcService := range gjt.GetServices() {
+				methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
+				for i := 0; i < methodDescriptors.Len(); i++ {
+					if gjt.MethodMap[grpcService] == nil {
+						gjt.MethodMap[grpcService] = &grpc_json.GrpcJsonTranscoderMethodList{}
+					}
+
+					gjt.MethodMap[grpcService].Methods = append(gjt.MethodMap[grpcService].Methods, fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
+				}
+			}
+		}
+	}
 }

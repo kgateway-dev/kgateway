@@ -94,6 +94,23 @@ func (m *GrpcJsonTranscoder) Equal(that interface{}) bool {
 		return false
 	}
 
+	if len(m.GetMethodMap()) != len(target.GetMethodMap()) {
+		return false
+	}
+	for k, v := range m.GetMethodMap() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMethodMap()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetMethodMap()[k]) {
+				return false
+			}
+		}
+
+	}
+
 	switch m.DescriptorSet.(type) {
 
 	case *GrpcJsonTranscoder_ProtoDescriptor:
@@ -212,6 +229,41 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcJsonTranscoderMethodList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcJsonTranscoderMethodList)
+	if !ok {
+		that2, ok := that.(GrpcJsonTranscoderMethodList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetMethods()) != len(target.GetMethods()) {
+		return false
+	}
+	for idx, v := range m.GetMethods() {
+
+		if strings.Compare(v, target.GetMethods()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

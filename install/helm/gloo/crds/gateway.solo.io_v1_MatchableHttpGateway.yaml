@@ -742,6 +742,15 @@ spec:
                             type: array
                           matchIncomingRequestRoute:
                             type: boolean
+                          methodMap:
+                            additionalProperties:
+                              properties:
+                                methods:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: object
                           printOptions:
                             properties:
                               addWhitespace:
