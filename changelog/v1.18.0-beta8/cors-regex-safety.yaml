@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7524
+    resolvesIssue: false
+    description: >-
+      Fix regex safety check for CORS allowed origins. 
+      Other instances in gloo already checked the regex either through compile or envoy validate.

@@ -27,7 +27,8 @@ var _ = Describe("VirtualHost Plugin", func() {
 
 		// values used in first example
 		allowOrigin1      = []string{"solo.io", "github.com"}
-		allowOriginRegex1 = []string{`*\.solo\.io`, `git.*\.com`}
+		allowOriginRegex1 = []string{`.*\.solo\.io`, `git.*\.com`}
+		badOriginRegex1   = []string{`*\.solo\.io`, `git.*\.com`} // has a * at the front which is invalid
 		allowMethods1     = []string{"GET", "POST"}
 		allowHeaders1     = []string{"allowH1", "allow2"}
 		exposeHeaders1    = []string{"exHeader", "eh2"}
@@ -133,6 +134,18 @@ var _ = Describe("VirtualHost Plugin", func() {
 				},
 			}
 			Expect(out).To(Equal(envoy1min))
+		})
+		It("should reject bad CORS virtual hosts - minimal specification", func() {
+			out := &envoy_config_route_v3.VirtualHost{}
+			inRoute := &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					Cors: &cors.CorsPolicy{
+						AllowOriginRegex: badOriginRegex1,
+					},
+				},
+			}
+			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
+			Expect(err).To(HaveOccurred(), "any regex starting with a * should not be RE2 compliant")
 		})
 		It("should process virtual hosts - empty specification", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
