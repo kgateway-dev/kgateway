@@ -251,7 +251,7 @@ var _ = Describe("CORS", func() {
 					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: BeEmpty(),
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")), // show that methods are still coming through despite being on the vhost only
 					}))
 				}).Should(Succeed(), "Request with disallowed method via vhost")
 
