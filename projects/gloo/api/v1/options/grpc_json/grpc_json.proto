@@ -18,7 +18,7 @@ import "validate/validate.proto";
 // gRPC-JSON transcoder :ref:`configuration overview <config_http_filters_grpc_json_transcoder>`.
 // [#extension: envoy.filters.http.grpc_json_transcoder]
 
-// [#next-free-field: 10]
+// [#next-free-field: 12]
 message GrpcJsonTranscoder {
 
     message PrintOptions {
@@ -184,9 +184,17 @@ message GrpcJsonTranscoder {
     //  :ref:`proto descriptor set <config_grpc_json_generate_proto_descriptor_set>`.
     bool convert_grpc_status = 9;
 
-    message methodList {
-        repeated string methods = 1;
+    // The following message and fields are exclusively used by the CLI to print functions that are stored in the
+    // descriptor bin and are otherwise not human-readable
+    // They are not consumed or written to by the Gloo controller
+
+    message functionList {
+        // functions is used exclusively by glooctl to print gRPC function names stored in in-line descriptor bins
+        // if this is populated in a k8s resource it will be ignored
+        repeated string functions = 1;
     }
 
-    map<string, methodList> methodMap = 11;
+    // grpcFunctions is used exclusively by glooctl to print gRPC function names stored in in-line descriptor bins
+    // if this is populated in a k8s resource it will be ignored
+    map<string, functionList> grpcFunctions = 11;
 }

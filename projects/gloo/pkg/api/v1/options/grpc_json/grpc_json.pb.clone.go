@@ -67,14 +67,14 @@ func (m *GrpcJsonTranscoder) Clone() proto.Message {
 
 	target.ConvertGrpcStatus = m.GetConvertGrpcStatus()
 
-	if m.GetMethodMap() != nil {
-		target.MethodMap = make(map[string]*GrpcJsonTranscoderMethodList, len(m.GetMethodMap()))
-		for k, v := range m.GetMethodMap() {
+	if m.GetGrpcFunctions() != nil {
+		target.GrpcFunctions = make(map[string]*GrpcJsonTranscoderFunctionList, len(m.GetGrpcFunctions()))
+		for k, v := range m.GetGrpcFunctions() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.MethodMap[k] = h.Clone().(*GrpcJsonTranscoderMethodList)
+				target.GrpcFunctions[k] = h.Clone().(*GrpcJsonTranscoderFunctionList)
 			} else {
-				target.MethodMap[k] = proto.Clone(v).(*GrpcJsonTranscoderMethodList)
+				target.GrpcFunctions[k] = proto.Clone(v).(*GrpcJsonTranscoderFunctionList)
 			}
 
 		}
@@ -158,18 +158,18 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Clone() proto.Message {
 }
 
 // Clone function
-func (m *GrpcJsonTranscoderMethodList) Clone() proto.Message {
-	var target *GrpcJsonTranscoderMethodList
+func (m *GrpcJsonTranscoderFunctionList) Clone() proto.Message {
+	var target *GrpcJsonTranscoderFunctionList
 	if m == nil {
 		return target
 	}
-	target = &GrpcJsonTranscoderMethodList{}
+	target = &GrpcJsonTranscoderFunctionList{}
 
-	if m.GetMethods() != nil {
-		target.Methods = make([]string, len(m.GetMethods()))
-		for idx, v := range m.GetMethods() {
+	if m.GetFunctions() != nil {
+		target.Functions = make([]string, len(m.GetFunctions()))
+		for idx, v := range m.GetFunctions() {
 
-			target.Methods[idx] = v
+			target.Functions[idx] = v
 
 		}
 	}

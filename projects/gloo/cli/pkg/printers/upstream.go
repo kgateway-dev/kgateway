@@ -342,8 +342,8 @@ func addMethodsFromGrpcJsonTranscoder(up *v1.Upstream) {
 }
 
 func addMethodsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) {
-	if gjt.GetMethodMap() == nil {
-		gjt.MethodMap = map[string]*grpc_json.GrpcJsonTranscoderMethodList{}
+	if gjt.GetGrpcFunctions() == nil {
+		gjt.GrpcFunctions = map[string]*grpc_json.GrpcJsonTranscoderFunctionList{}
 	}
 
 	descriptorBin := gjt.GetProtoDescriptorBin()
@@ -351,11 +351,11 @@ func addMethodsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) {
 	for _, grpcService := range gjt.GetServices() {
 		methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
 		for i := 0; i < methodDescriptors.Len(); i++ {
-			if gjt.GetMethodMap()[grpcService] == nil {
-				gjt.GetMethodMap()[grpcService] = &grpc_json.GrpcJsonTranscoderMethodList{}
+			if gjt.GetGrpcFunctions()[grpcService] == nil {
+				gjt.GetGrpcFunctions()[grpcService] = &grpc_json.GrpcJsonTranscoderFunctionList{}
 			}
 
-			gjt.GetMethodMap()[grpcService].Methods = append(gjt.GetMethodMap()[grpcService].GetMethods(), fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
+			gjt.GetGrpcFunctions()[grpcService].Functions = append(gjt.GetGrpcFunctions()[grpcService].GetFunctions(), fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
 		}
 	}
 }

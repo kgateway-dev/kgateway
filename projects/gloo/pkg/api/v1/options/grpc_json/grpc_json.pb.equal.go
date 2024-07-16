@@ -94,17 +94,17 @@ func (m *GrpcJsonTranscoder) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetMethodMap()) != len(target.GetMethodMap()) {
+	if len(m.GetGrpcFunctions()) != len(target.GetGrpcFunctions()) {
 		return false
 	}
-	for k, v := range m.GetMethodMap() {
+	for k, v := range m.GetGrpcFunctions() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetMethodMap()[k]) {
+			if !h.Equal(target.GetGrpcFunctions()[k]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetMethodMap()[k]) {
+			if !proto.Equal(v, target.GetGrpcFunctions()[k]) {
 				return false
 			}
 		}
@@ -235,14 +235,14 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GrpcJsonTranscoderMethodList) Equal(that interface{}) bool {
+func (m *GrpcJsonTranscoderFunctionList) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GrpcJsonTranscoderMethodList)
+	target, ok := that.(*GrpcJsonTranscoderFunctionList)
 	if !ok {
-		that2, ok := that.(GrpcJsonTranscoderMethodList)
+		that2, ok := that.(GrpcJsonTranscoderFunctionList)
 		if ok {
 			target = &that2
 		} else {
@@ -255,12 +255,12 @@ func (m *GrpcJsonTranscoderMethodList) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetMethods()) != len(target.GetMethods()) {
+	if len(m.GetFunctions()) != len(target.GetFunctions()) {
 		return false
 	}
-	for idx, v := range m.GetMethods() {
+	for idx, v := range m.GetFunctions() {
 
-		if strings.Compare(v, target.GetMethods()[idx]) != 0 {
+		if strings.Compare(v, target.GetFunctions()[idx]) != 0 {
 			return false
 		}
 

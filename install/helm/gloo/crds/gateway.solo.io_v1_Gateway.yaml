@@ -740,6 +740,15 @@ spec:
                             type: boolean
                           convertGrpcStatus:
                             type: boolean
+                          grpcFunctions:
+                            additionalProperties:
+                              properties:
+                                functions:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: object
                           ignoreUnknownQueryParameters:
                             type: boolean
                           ignoredQueryParameters:
@@ -748,15 +757,6 @@ spec:
                             type: array
                           matchIncomingRequestRoute:
                             type: boolean
-                          methodMap:
-                            additionalProperties:
-                              properties:
-                                methods:
-                                  items:
-                                    type: string
-                                  type: array
-                              type: object
-                            type: object
                           printOptions:
                             properties:
                               addWhitespace:
@@ -2674,6 +2674,15 @@ spec:
                                       type: boolean
                                     convertGrpcStatus:
                                       type: boolean
+                                    grpcFunctions:
+                                      additionalProperties:
+                                        properties:
+                                          functions:
+                                            items:
+                                              type: string
+                                            type: array
+                                        type: object
+                                      type: object
                                     ignoreUnknownQueryParameters:
                                       type: boolean
                                     ignoredQueryParameters:
@@ -2682,15 +2691,6 @@ spec:
                                       type: array
                                     matchIncomingRequestRoute:
                                       type: boolean
-                                    methodMap:
-                                      additionalProperties:
-                                        properties:
-                                          methods:
-                                            items:
-                                              type: string
-                                            type: array
-                                        type: object
-                                      type: object
                                     printOptions:
                                       properties:
                                         addWhitespace:

@@ -97,7 +97,7 @@ func (m *GrpcJsonTranscoder) Hash(hasher hash.Hash64) (uint64, error) {
 	{
 		var result uint64
 		innerHash := fnv.New64()
-		for k, v := range m.GetMethodMap() {
+		for k, v := range m.GetGrpcFunctions() {
 			innerHash.Reset()
 
 			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
@@ -251,7 +251,7 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Hash(hasher hash.Hash64) (uint6
 }
 
 // Hash function
-func (m *GrpcJsonTranscoderMethodList) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *GrpcJsonTranscoderFunctionList) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -259,11 +259,11 @@ func (m *GrpcJsonTranscoderMethodList) Hash(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json.GrpcJsonTranscoderMethodList")); err != nil {
+	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json.GrpcJsonTranscoderFunctionList")); err != nil {
 		return 0, err
 	}
 
-	for _, v := range m.GetMethods() {
+	for _, v := range m.GetFunctions() {
 
 		if _, err = hasher.Write([]byte(v)); err != nil {
 			return 0, err
