@@ -98,7 +98,7 @@ You can use the changelogs' built-in [comparison tool]({{< versioned_link_path f
 Review the following summary of important new, deprecated, or removed features.
 
 {{% notice note %}}
-The following lists consist of the changes that were initially introduced with the {{< readfile file="static/content/version_gee_latest_minor.md" markdown="true">}}.0 release. These changes might be backported to earlier versions of Gloo Edge. Additionally, there might be other changes that are introduced in later {{< readfile file="static/content/version_gee_latest_minor.md" markdown="true">}} patch releases. For patch release changes, check the [changelogs](#changelogs).
+The following lists consist of the changes that were initially introduced with the {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.0 release. These changes might be backported to earlier versions of Gloo Edge. Additionally, there might be other changes that are introduced in later {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} patch releases. For patch release changes, check the [changelogs](#changelogs).
 {{% /notice %}}
 
 **New or improved features**:
