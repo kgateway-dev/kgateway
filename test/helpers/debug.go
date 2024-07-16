@@ -38,7 +38,7 @@ func DeferredGoroutineLeakDetector(t *testing.T) func(...goleak.Option) {
 }
 
 // GoRoutineMonitor is a helper for monitoring goroutine leaks in tests
-// This is useful for individual tests, and does not need `t *testing.T` which is unavailable in ginkgo tests
+// This is useful for individual tests and does not need `t *testing.T` which is unavailable in ginkgo tests
 //
 // It also allows for more fine-grained control over the leak detection by allowing arguments to be passed to the
 //`ExpectNoLeaks` function, in order to allow certain "safe" or expected goroutines to be ignored
@@ -61,27 +61,40 @@ type GoRoutineMonitor struct {
 }
 
 func NewGoRoutineMonitor() *GoRoutineMonitor {
-	// this is a workaround for the fact that the wasm plugin creates goroutines
-	// by calling this before the initial goroutines are recorded, we can ignore them in the leak check
-	//_ = wasm.NewPlugin()
-
+	// Store the initial goroutines
 	return &GoRoutineMonitor{
 		goroutines: gleak.Goroutines(),
 	}
 }
 
-func (m *GoRoutineMonitor) ExpectNoLeaks(allowedRoutines ...types.GomegaMatcher) {
+type ExpectNoLeaksArgs struct {
+	AllowedRoutines []types.GomegaMatcher
+	Timeouts        []time.Duration
+}
+
+func (m *GoRoutineMonitor) ExpectNoLeaks(args ExpectNoLeaksArgs) {
 	// Need to gather up the arguments to pass to the leak detector, so need to make sure they are all interface{}s
 	// Arguments are the initial goroutines, and any additional allowed goroutines passed in
-	notLeaks := make([]interface{}, len(allowedRoutines)+1)
+	notLeaks := make([]interface{}, len(args.AllowedRoutines)+1)
 	// First element is the initial goroutines
 	notLeaks[0] = m.goroutines
 	// Cast the rest of the elements to interface{}
-	for i, v := range allowedRoutines {
+	for i, v := range args.AllowedRoutines {
 		notLeaks[i+1] = v
 	}
 
-	Eventually(gleak.Goroutines, 5*time.Second).ShouldNot(
+	var timeouts []interface{}
+	if len(args.Timeouts) > 0 {
+		timeouts = make([]interface{}, len(args.Timeouts))
+		for i, v := range args.Timeouts {
+			timeouts[i] = v
+		}
+	} else {
+		timeouts = make([]interface{}, 1)
+		timeouts[0] = 5 * time.Second
+	}
+	//defaultTimeout := [1]interface{time.Second}
+	Eventually(gleak.Goroutines, timeouts...).ShouldNot(
 		gleak.HaveLeaked(
 			notLeaks...,
 		),
@@ -89,6 +102,7 @@ func (m *GoRoutineMonitor) ExpectNoLeaks(allowedRoutines ...types.GomegaMatcher)
 }
 
 var CommonLeakOptions = []types.GomegaMatcher{
+	// We are running
 	gleak.IgnoringTopFunction("os/exec..."),
 	gleak.IgnoringTopFunction("internal/poll.runtime_pollWait"),
 }
