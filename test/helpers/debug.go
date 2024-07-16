@@ -68,8 +68,8 @@ func NewGoRoutineMonitor() *GoRoutineMonitor {
 }
 
 type ExpectNoLeaksArgs struct {
-	AllowedRoutines []types.GomegaMatcher
-	Timeouts        []time.Duration
+	AllowedRoutines []types.GomegaMatcher // Additional allowed goroutines to ignore. See CommonLeakOptions for example.
+	Timeouts        []time.Duration       // Additional arguments to pass to Eventually to control the timeout/polling interval
 }
 
 func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
@@ -83,7 +83,11 @@ func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
 		notLeaks[i+1] = v
 	}
 
-	var timeouts []interface{}
+	// Determine the time intervals to pass to Eventually
+	var (
+		timeouts                 []interface{}
+		defaultEventuallyTimeout = 5 * time.Second
+	)
 	if len(args.Timeouts) > 0 {
 		timeouts = make([]interface{}, len(args.Timeouts))
 		for i, v := range args.Timeouts {
@@ -91,9 +95,9 @@ func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
 		}
 	} else {
 		timeouts = make([]interface{}, 1)
-		timeouts[0] = 5 * time.Second
+		timeouts[0] = defaultEventuallyTimeout
 	}
-	//defaultTimeout := [1]interface{time.Second}
+
 	Eventually(gleak.Goroutines, timeouts...).ShouldNot(
 		gleak.HaveLeaked(
 			notLeaks...,
@@ -101,8 +105,9 @@ func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
 	)
 }
 
+// CommonLeakOptions are options to ignore in the goroutine leak detector
+// If we are running tests, we will likely have the test framework running and will expect to see these goroutines
 var CommonLeakOptions = []types.GomegaMatcher{
-	// We are running
 	gleak.IgnoringTopFunction("os/exec..."),
 	gleak.IgnoringTopFunction("internal/poll.runtime_pollWait"),
 }
