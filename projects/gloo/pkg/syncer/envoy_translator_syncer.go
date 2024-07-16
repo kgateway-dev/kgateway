@@ -201,7 +201,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 // Deprecated: https://github.com/solo-io/gloo/issues/6494
 // Prefer to use the iosnapshot.History
 func (s *translatorSyncer) ServeXdsSnapshots() error {
-	return s.ContextuallyServeXdsSnapshots(context.TODO())
+	return s.ContextuallyServeXdsSnapshots(context.Background())
 }
 
 func (s *translatorSyncer) ContextuallyServeXdsSnapshots(ctx context.Context) error {
