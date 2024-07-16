@@ -36,30 +36,3 @@ CVE-2023-2253
 # https://github.com/solo-io/gloo/issues/9187
 # https://github.com/solo-io/gloo/issues/9189
 CVE-2024-26147
-
-
-# ON_LTS_UPDATE - delete below here when MIN_SCANNED_VERSION in Makefile/trivy-analysis-scheduled.yaml is updated past 1.13x - issues identified in https://github.com/solo-io/gloo/issues/9443
-# https://github.com/advisories/GHSA-4374-p667-p6c8
-# This HTTP2 vulnerability is not exploitable in Gloo Edge as the kubectl image is only used for jobs, not serving traffic
-# A fix is not available for the Kubernetes versions supported in 1.13
-# https://github.com/solo-io/gloo/issues/9443
-CVE-2023-39325
-
-# https://github.com/advisories/GHSA-vvjp-q62m-2vph
-# A fix is not available for the Kubernetes versions supported in 1.13 and only affects Windows filepaths
-# https://github.com/solo-io/gloo/issues/9443
-CVE-2023-45283
-
-# https://github.com/advisories/GHSA-4v7x-pqxf-cx7m
-# This vulnerability is resolved on all images except kubectl.
-# This HTTP2 vulnerability is not exploitable in Gloo Edge as the kubectl image is only used for jobs, not serving traffic.
-# A fix is not available for the Kubernetes versions supported in 1.13
-# https://github.com/solo-io/gloo/issues/9443
-CVE-2023-45288
-
-# https://github.com/advisories/GHSA-49gw-vxvf-fc2g
-# This vulnerability is resolved on all images except kubectl.
-# This vulnerability is in the netip package which is not used by kubectl
-# A fix is not available for the Kubernetes versions supported in 1.13
-# https://github.com/solo-io/gloo/issues/9672
-CVE-2024-24790
