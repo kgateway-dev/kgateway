@@ -184,10 +184,10 @@ var _ = Describe("CORS", func() {
 							AllowMethods:     allowedMethods,
 						}}).
 					WithRouteOptions("route", &gloov1.RouteOptions{
+						// We dont set allowed methods to show that we still get this from VirtualHost
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
-							AllowMethods:     allowedMethods,
 						}}).
 					Build()
 
@@ -240,6 +240,21 @@ var _ = Describe("CORS", func() {
 						requestACHMethods: BeEmpty(),
 					}))
 				}).Should(Succeed(), "Request with disallowed origin")
+
+				// request with disallowed method
+				// shows that vhost field is respected iff route field is not set
+				allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+					WithOptionsMethod().
+					WithPath("cors").
+					WithHeader("Origin", routeAllowedOrigins[0]).
+					WithHeader("Access-Control-Request-Method", http.MethodDelete).
+					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+						requestACHMethods: BeEmpty(),
+					}))
+				}).Should(Succeed(), "Request with disallowed method via vhost")
+
 			})
 
 		})

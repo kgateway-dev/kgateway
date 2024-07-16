@@ -269,8 +269,8 @@ message VirtualHostOptions {
     // Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 2;
     // Defines a CORS policy for the virtual host
-    // If a CORS policy is also defined on the route matched by the request, the route policy is
-    // respected and the virtual host policy is ignored
+    // If a CORS policy is also defined on the route matched by the request, the route policy
+    // overrides the virtual host policy for any configured field.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
