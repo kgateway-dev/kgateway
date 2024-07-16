@@ -29,8 +29,7 @@ import (
 // If the child route is invalid, it will be ignored and its Status will be updated accordingly.
 func flattenDelegatedRoutes(
 	ctx context.Context,
-	queries query.GatewayQueries,
-	parent *gwv1.HTTPRoute,
+	parent *query.HTTPRouteInfo,
 	backendRef gwv1.HTTPBackendRef,
 	parentReporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -51,13 +50,14 @@ func flattenDelegatedRoutes(
 	lRef := delegationChain.PushFront(delegationCtx)
 	defer delegationChain.Remove(lRef)
 
-	children, err := queries.GetDelegatedRoutes(ctx, backendRef.BackendObjectReference, parentMatch, parentRef)
-	if err != nil {
+	rawChildren, err := parent.GetChildrenForRef(backendRef.BackendObjectReference)
+	if len(rawChildren) == 0 || err != nil {
+		if err == nil {
+			err = eris.Errorf("unresolved reference %s", backendref.ToString(backendRef.BackendObjectReference))
+		}
 		return err
 	}
-	if len(children) == 0 {
-		return eris.Errorf("unresolved reference %s", backendref.ToString(backendRef.BackendObjectReference))
-	}
+	children := filterDelegatedChildren(parentRef, parentMatch, rawChildren)
 
 	// Child routes inherit the hostnames from the parent route
 	hostnames := make([]gwv1.Hostname, len(parent.Spec.Hostnames))
@@ -68,6 +68,7 @@ func flattenDelegatedRoutes(
 		childRef := types.NamespacedName{Namespace: child.Namespace, Name: child.Name}
 		if routesVisited.Has(childRef) {
 			// Loop detected, ignore child route
+			// This is an _extra_ safety check, but the given HTTPRouteInfo shouldn't ever contain cycles.
 			msg := fmt.Sprintf("cyclic reference detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
 				parentRef, childRef)
 			contextutils.LoggerFrom(ctx).Warn(msg)
@@ -81,14 +82,14 @@ func flattenDelegatedRoutes(
 		}
 
 		// Create a new reporter for the child route
-		reporter := baseReporter.Route(&child).ParentRef(&gwv1.ParentReference{
+		reporter := baseReporter.Route(&child.HTTPRoute).ParentRef(&gwv1.ParentReference{
 			Group:     ptr.To(gwv1.Group(wellknown.GatewayGroup)),
 			Kind:      ptr.To(gwv1.Kind(wellknown.HTTPRouteKind)),
 			Name:      gwv1.ObjectName(parentRef.Name),
 			Namespace: ptr.To(gwv1.Namespace(parentRef.Namespace)),
 		})
 
-		if err := validateChildRoute(child); err != nil {
+		if err := validateChildRoute(child.HTTPRoute); err != nil {
 			reporter.SetCondition(reports.HTTPRouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
@@ -99,7 +100,7 @@ func flattenDelegatedRoutes(
 		}
 
 		translateGatewayHTTPRouteRulesUtil(
-			ctx, pluginRegistry, queries, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames, delegationChain)
+			ctx, pluginRegistry, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames, delegationChain)
 	}
 
 	return nil

@@ -47,8 +47,7 @@ func (t *translator) TranslateProxy(
 	writeNamespace string,
 	reporter reports.Reporter,
 ) *v1.Proxy {
-
-	routesForGw, err := t.queries.GetRoutesForGw(ctx, gateway)
+	routesForGw, err := t.queries.GetRoutesForGateway(ctx, gateway)
 	if err != nil {
 		// TODO(ilackarms): fill in the specific error / validation
 		// reporter.Gateway(gateway).Err(err.Error())
@@ -66,6 +65,7 @@ func (t *translator) TranslateProxy(
 	for _, listener := range gateway.Spec.Listeners {
 		availRoutes := 0
 		if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
+			// TODO we've never checked if the ListenerResult has an error.. is it already on RouteErrors?
 			availRoutes = len(res.Routes)
 		}
 		reporter.Gateway(gateway).Listener(&listener).SetAttachedRoutes(uint(availRoutes))

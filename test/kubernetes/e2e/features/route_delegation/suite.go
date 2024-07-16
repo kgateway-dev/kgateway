@@ -253,7 +253,7 @@ func (s *tsuite) TestUnresolvedChild() {
 			types.NamespacedName{Name: routeRoot.Name, Namespace: routeRoot.Namespace},
 			route)
 		assert.NoError(c, err, "route not found")
-		s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(route, "unresolved reference")
+		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonBackendNotFound))
 	}, 10*time.Second, 1*time.Second)
 }
 

@@ -19,62 +19,80 @@ import (
 // This function will also set the appropriate condition on the parent via the reporter.
 func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefReporter, backendRef gwv1.BackendObjectReference) *string {
 	if err != nil {
-		switch {
-		case errors.Is(err, ErrUnknownKind):
+		ProcessBackendError(err, reporter)
+		return nil
+	}
+	var port uint32
+	if backendRef.Port != nil {
+		port = uint32(*backendRef.Port)
+	}
+	switch cli := obj.(type) {
+	// TODO(ilackarms): consider converging all backend ref handling to a single package and remove the various switches. Or at least document all locations where we have multiple switches.
+	case *gloov1.Upstream:
+		name := cli.GetName()
+		return &name
+	case *corev1.Service:
+		if port == 0 {
 			reporter.SetCondition(reports.HTTPRouteCondition{
 				Type:   gwv1.RouteConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonInvalidKind,
+				Reason: gwv1.RouteReasonUnsupportedValue,
 			})
-		case errors.Is(err, ErrMissingReferenceGrant):
-			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:    gwv1.RouteConditionResolvedRefs,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteReasonRefNotPermitted,
-				Message: err.Error(),
-			})
-		case apierrors.IsNotFound(err):
-			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonBackendNotFound,
-			})
-		default:
-			// setting other errors to not found. not sure if there's a better option.
-			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonBackendNotFound,
-			})
-		}
-	} else {
-		var port uint32
-		if backendRef.Port != nil {
-			port = uint32(*backendRef.Port)
-		}
-		switch cli := obj.(type) {
-		// TODO(ilackarms): consider converging all backend ref handling to a single package and remove the various switches. Or at least document all locations where we have multiple switches.
-		case *gloov1.Upstream:
+		} else {
 			name := cli.GetName()
 			return &name
-		case *corev1.Service:
-			if port == 0 {
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:   gwv1.RouteConditionResolvedRefs,
-					Status: metav1.ConditionFalse,
-					Reason: gwv1.RouteReasonUnsupportedValue,
-				})
-			} else {
-				name := cli.GetName()
-				return &name
-			}
-		default:
-			reporter.SetCondition(reports.HTTPRouteCondition{
-				Type:   gwv1.RouteConditionResolvedRefs,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonInvalidKind,
-			})
 		}
+	default:
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:   gwv1.RouteConditionResolvedRefs,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.RouteReasonInvalidKind,
+		})
 	}
 	return nil
+}
+
+func ProcessBackendError(err error, reporter reports.ParentRefReporter) {
+	switch {
+	case errors.Is(err, ErrUnknownKind):
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:   gwv1.RouteConditionResolvedRefs,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.RouteReasonInvalidKind,
+		})
+	case errors.Is(err, ErrMissingReferenceGrant):
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:    gwv1.RouteConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.RouteReasonRefNotPermitted,
+			Message: err.Error(),
+		})
+	case errors.Is(err, ErrCyclicReference):
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:    gwv1.RouteConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.RouteReasonRefNotPermitted,
+			Message: err.Error(),
+		})
+	case errors.Is(err, ErrUnresolvedReference):
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:    gwv1.RouteConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.RouteReasonBackendNotFound,
+			Message: err.Error(),
+		})
+	case apierrors.IsNotFound(err):
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:   gwv1.RouteConditionResolvedRefs,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.RouteReasonBackendNotFound,
+		})
+	default:
+		// setting other errors to not found. not sure if there's a better option.
+		reporter.SetCondition(reports.HTTPRouteCondition{
+			Type:   gwv1.RouteConditionResolvedRefs,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.RouteReasonBackendNotFound,
+		})
+	}
 }
