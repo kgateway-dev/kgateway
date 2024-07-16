@@ -184,7 +184,7 @@ var _ = Describe("CORS", func() {
 							AllowMethods:     allowedMethods,
 						}}).
 					WithRouteOptions("route", &gloov1.RouteOptions{
-						// We dont set allowed methods to show that we still get this from
+						// We dont set allowed methods to show that we still get this from VirtualHost
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
