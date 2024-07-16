@@ -1,20 +1,17 @@
 package utils_test
 
 import (
-	"reflect"
-
-	"google.golang.org/protobuf/types/known/durationpb"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
+	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 var _ = Describe("UpdateUpstream", func() {
@@ -122,10 +119,7 @@ var _ = Describe("UpdateUpstream", func() {
 		// This test is important as it checks whether the upstream struct/proto have a new top level field.
 		// This should happen very rarely, and should be used as an indication that the `UpdateUpstream` function
 		// most likely needs to change.
-		Expect(reflect.TypeOf(gloov1.Upstream{}).NumField()).To(
-			Equal(29),
-			"wrong number of fields found",
-		)
+		assertions.ExpectNumFields(gloov1.Upstream{}, 29)
 	})
 
 })
