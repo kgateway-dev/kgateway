@@ -90,8 +90,5 @@ func (m *GoRoutineMonitor) ExpectNoLeaks(allowedRoutines ...types.GomegaMatcher)
 
 var CommonLeakOptions = []types.GomegaMatcher{
 	gleak.IgnoringTopFunction("os/exec..."),
-	gleak.IgnoringInBacktrace("github.com/solo-io/solo-projects/test/v1helpers.RunTestServer..."),
-	gleak.IgnoringTopFunction("github.com/solo-io/solo-projects/test/v1helpers.RunTestServer.func2"),
 	gleak.IgnoringTopFunction("internal/poll.runtime_pollWait"),
-	gleak.IgnoringInBacktrace("github.com/solo-io/gloo/test/services.MustStopAndRemoveContainer"),
 }
