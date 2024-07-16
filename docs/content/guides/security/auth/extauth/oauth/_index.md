@@ -81,7 +81,7 @@ glooctl create secret oauth --namespace gloo-system --name oidc --client-secret 
 {{< /tab >}}
 {{< tab name="kubectl create secret" codelang="shell">}}
 kubectl create secret generic oidc --from-literal=client-secret=<client_secret>
-kubectl annotate secret oidc resource_kind='*v1.Secret' # Important, since gloo-edge does not watch for opaque secrets without this setting
+kubectl annotate secret oidc resource_kind='*v1.Secret' # Important, since gloo does not watch for opaque secrets without this setting
 {{< /tab >}}
 {{< tab name="kubectl apply" codelang="yaml">}}
 apiVersion: v1

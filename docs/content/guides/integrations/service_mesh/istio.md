@@ -317,7 +317,7 @@ Upgrade your Gloo Gateway installation to enable the Istio integration.
         "8189f0a6c4e3582792744e97e79d8f22"
       ],
       "X-Forwarded-Client-Cert": [
-        "By=spiffe://gloo-edge-docs-mgt/ns/httpbin/sa/httpbin;Hash=3a57f9d8fddea59614b4ade84fcc186edeffb47794c06608068a3553e811bdfe;Subject=\"\";URI=spiffe://gloo-edge-docs-mgt/ns/gloo-system/sa/gloo-proxy-http"
+        "By=spiffe://gloo-gateway-docs-mgt/ns/httpbin/sa/httpbin;Hash=3a57f9d8fddea59614b4ade84fcc186edeffb47794c06608068a3553e811bdfe;Subject=\"\";URI=spiffe://gloo-gatewa-docs-mgt/ns/gloo-system/sa/gloo-proxy-http"
       ],
       "X-Forwarded-Proto": [
         "http"

@@ -284,7 +284,7 @@ Another common requirement is to have the HTTP traffic redirected to HTTPS. You 
 
 ![HTTPS redirect with NLB doing TLS offloading]({{< versioned_link_path fromRoot="/img/https-redirect-tls-offloading.png" >}})
 
-If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out this guide: https://docs.solo.io/gloo-edge/main/installation/advanced_configuration/multi-gw-deployment/
+If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out [this guide](https://docs.solo.io/gloo-edge/main/installation/advanced_configuration/multi-gw-deployment/).
 
 Below is a configuration example:
 
@@ -387,7 +387,7 @@ gloo:
           # Access logs - will be soon deprecated in favor of "aws-load-balancer-attributes"
           service.beta.kubernetes.io/aws-load-balancer-access-log-enabled: "true"
           service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-name: "nlb-access-logs"
-          service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-prefix: "gloo-edge-gw"
+          service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-prefix: "gloo-gateway"
 
           # Target group attributes
           service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "deregistration_delay.timeout_seconds=15,deregistration_delay.connection_termination.enabled=true"

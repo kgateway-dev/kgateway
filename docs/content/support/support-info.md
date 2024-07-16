@@ -70,9 +70,9 @@ Get the Argo CD applications that define the installation of Gloo Gateway by usi
       - `RouteTable`
       - `Upstream`
 
-  - Use the following script to dump all Gloo Gateway custom resources into a file. Attach the `gloo-edge-configuration.yaml` file to your support request. 
+  - Use the following script to dump all Gloo Gateway custom resources into a file. Attach the `gloo-gateway-configuration.yaml` file to your support request. 
     ```shell
-    for n in $(kubectl get crds | grep solo.io | awk '{print $1}'); do kubectl get $n --all-namespaces -o yaml >> gloo-edge-configuration.yaml; echo "---" >> gloo-edge-configuration.yaml; done
+    for n in $(kubectl get crds | grep solo.io | awk '{print $1}'); do kubectl get $n --all-namespaces -o yaml >> gloo-gateway-configuration.yaml; echo "---" >> gloo-gateway-configuration.yaml; done
     ```
   {{% /tab %}}
   {{% tab name="Istio resources"%}}
