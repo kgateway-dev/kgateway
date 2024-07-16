@@ -1,18 +1,18 @@
 ---
 title: TCP Proxy
 weight: 30
-description: Learn how to use Gloo Edge as a simple TCP proxy
+description: Learn how to use Gloo Gateway as a simple TCP proxy
 ---
 
-In this tutorial, we'll take a look at using Gloo Edge as a TCP proxy. Envoy is an L4 proxy by default and is therefore
-more than up to the task. Gloo Edge's TCP routing features are slightly different than the rest of Gloo Edge's routing as a result
+In this tutorial, we'll take a look at using Gloo Gateway as a TCP proxy. Envoy is an L4 proxy by default and is therefore
+more than up to the task. Gloo Gateway's TCP routing features are slightly different than the rest of Gloo Gateway's routing as a result
 of the relative simplicity of TCP level routing. Current features include standard routing, SSL, and Server Name Indication (SNI) domain matching.
 
 ---
 
 ## Resources 
 
-Gloo Edge uses the gateway Custom Resource (CR) to configure the TCP proxy settings. The gateway CRs are combined to form a Proxy CR, which is used to generate the configuration for the Envoy proxy. You can read more about the gateway and proxy API at the links below.
+Gloo Gateway uses the gateway Custom Resource (CR) to configure the TCP proxy settings. The gateway CRs are combined to form a Proxy CR, which is used to generate the configuration for the Envoy proxy. You can read more about the gateway and proxy API at the links below.
 
 - {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}}
 - {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}}
@@ -23,7 +23,7 @@ Gloo Edge uses the gateway Custom Resource (CR) to configure the TCP proxy setti
 
 To complete this guide you will need the following items:
 
-* Gloo Edge installed on Kubernetes and access to that Kubernetes cluster. Please refer to the [Gloo Edge installation]({{< versioned_link_path fromRoot="/installation" >}}) for guidance on installing Gloo Edge into Kubernetes.
+* Gloo Gateway installed on Kubernetes and access to that Kubernetes cluster. Please refer to the [Gloo Gateway installation]({{< versioned_link_path fromRoot="/installation" >}}) for guidance on installing Gloo Gateway into Kubernetes.
 
 * Access from the Kubernetes cluster to an external API. 
 
@@ -108,7 +108,7 @@ gloo-system   gateway-ssl   26h
 gloo-system   tcp           5s
 ```
 
-Gloo Edge reads and combines the gateway configuration with the other gateways into an Envoy proxy configuration. To make sure that the configuration has been translated properly, check the proxy.
+Gloo Gateway reads and combines the gateway configuration with the other gateways into an Envoy proxy configuration. To make sure that the configuration has been translated properly, check the proxy.
 
 ```shell script
 glooctl get proxy <proxy> -o yaml
@@ -215,4 +215,4 @@ Now the terminal is waiting for input. All input entered will be echo'd back. An
 
 ## Next Steps
 
-In this guide you saw how Gloo Edge can be configured as a TCP proxy for services that do not use HTTP/S. Gloo Edge can also handle [gRPC-Web clients]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" >}}) and [Websockets]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" >}}). Check out those guides for more information.
+In this guide you saw how Gloo Gateway can be configured as a TCP proxy for services that do not use HTTP/S. Gloo Gateway can also handle [gRPC-Web clients]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" >}}) and [Websockets]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" >}}). Check out those guides for more information.

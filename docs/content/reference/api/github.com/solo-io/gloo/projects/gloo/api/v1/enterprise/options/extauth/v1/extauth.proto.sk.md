@@ -226,7 +226,7 @@ Auth configurations defined on virtual hosts, routes, and weighted destinations 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `disable` | `bool` | Set to true to disable auth on the virtual host/route. Only one of `disable`, `configRef`, or `customAuth` can be set. |
-| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to an AuthConfig. This is used to configure the Gloo Edge Enterprise extauth server. Only one of `configRef`, `disable`, or `customAuth` can be set. |
+| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to an AuthConfig. This is used to configure the Gloo Gateway Enterprise extauth server. Only one of `configRef`, `disable`, or `customAuth` can be set. |
 | `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk/#customauth) | Use this field if you are running your own custom extauth server. Only one of `customAuth`, `disable`, or `configRef` can be set. |
 
 
@@ -422,7 +422,7 @@ This is used with custom auth servers.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | `string` | Name of the plugin. |
-| `pluginFileName` | `string` | Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin. |
+| `pluginFileName` | `string` | Name of the compiled plugin file. If not specified, Gloo Gateway will look for an ".so" file with same name as the plugin. |
 | `exportedSymbolName` | `string` | Name of the exported symbol that implements the plugin interface in the plugin. If not specified, defaults to the name of the plugin. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | +kubebuilder:validation:Required. |
 
@@ -1471,7 +1471,7 @@ added to the `AuthorizationRequest` state under the "api_key_value" key name.
 | ----- | ---- | ----------- | 
 | `labelSelector` | `map<string, string>` | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. Identify all valid API key secrets that match the provided label selector. API key secrets must be in one of the watch namespaces for gloo to locate them. |
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
-| `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
+| `headerName` | `string` | When receiving a request, the Gloo Gateway Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>` | DEPRECATED: use headers_from_metadata_entry. |
 | `headersFromMetadataEntry` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. When the provided API key token has been successfully validated, and this field has been configured, then any extra API key metadata fields that were able to be discovered will be added to the `AuthorizationRequest` state under the key name that was configured. For example, using the `x-user-name` string as the header name, and referencing an existing "user-email" API key metadata entry will result in the value of this "user-email" metadata entry being accessable in other auth modules in the `AuthorizationRequest.State["x-user-name"]` key. This behavior allows other modules (e.g. OPA) to build more powerful rules to further validate the contents of the extra API key metadata than what's possible using the standalone API key module. |
 | `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
@@ -1568,7 +1568,7 @@ For the Aerospike backend, this data is stored as bins on the key's record
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `hostname` | `string` | The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster. The client automatically discovers other members of the cluster after establishing a connection. |
+| `hostname` | `string` | The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Gateway, such as in a virtual machine with a public IP address or in a pod in the cluster. The client automatically discovers other members of the cluster after establishing a connection. |
 | `namespace` | `string` | The Aerospike namespace of the database. Defaults to "solo-namespace". |
 | `set` | `string` | The Aerospike set to use for storage of API keys. Defaults to "apikeys". |
 | `port` | `int` | The port on which to connect to the Aerospike server. Defaults to 3000. |
@@ -1703,7 +1703,7 @@ DEPRECATED: use ApiKey
 ### OpaAuth
 
  
-Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+Enforce Open Policy Agent (OPA) policies in Gloo Gateway environments.
 For Gloo Platform environments, use OpaServerAuth instead.
 
 ```yaml
@@ -1746,7 +1746,7 @@ For Gloo Platform environments, use OpaServerAuth instead.
 
  
 Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external
-auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+auth server in Gloo Platform environments. For Gloo Gateway environments, use OpaAuth instead.
 
 ```yaml
 "package": string
@@ -2008,7 +2008,7 @@ JSON marshalling.
 | `headersToAdd` | `map<string, string>` | These headers that will be included to the request to authorization service. Note that client request of the same key will be overridden. Pseudo-headers such as `:Path`, and `:Method` can not be specified here. |
 | `passThroughState` | `bool` | Whether or not to include the ext-auth state object in the passthrough request body. If this is set to true, it is expected that the state is returned in the HTTP response from the passthrough service. The state received from the response will be the state that is shared with other ext-auth service methods. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the extauth state is needed in the auth request. |
 | `passThroughFilterMetadata` | `bool` | Whether or not to include the filter metadata in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the filter metadata is needed in the auth request. |
-| `passThroughBody` | `bool` | Whether or not to include the body in the passthrough request body. In order for this to work, the settings.extauth.requestBody must be set in the Gloo Edge Settings CRD so that the request body is buffered and sent to the ext-auth service. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the request body is needed in the auth request. |
+| `passThroughBody` | `bool` | Whether or not to include the body in the passthrough request body. In order for this to work, the settings.extauth.requestBody must be set in the Gloo Gateway Settings CRD so that the request body is buffered and sent to the ext-auth service. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the request body is needed in the auth request. |
 
 
 
@@ -2662,7 +2662,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKey`s. Currently this is only configured when using the k8s Secret storage backend. |
-| `headerName` | `string` | (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
+| `headerName` | `string` | (Optional) When receiving a request, the Gloo Gateway Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |
 | `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
 | `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
@@ -2714,7 +2714,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 ### OpaServerAuthConfig
 
  
-Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Gateway environments, use OpaAuth instead.
 
 ```yaml
 "package": string

@@ -1,10 +1,10 @@
 ---
 title: Session Affinity
 weight: 48
-description: Configure Gloo Edge session affinity (sticky sessions)
+description: Configure Gloo Gateway session affinity (sticky sessions)
 ---
 
-For certain applications deployed across multiple replicas, it may be desirable to route all traffic from a single client session to the same instance of the application. This can help reduce latency through better use of caches. This load balancer behavior is referred to as Session Affinity or Sticky Sessions. Gloo Edge exposes Envoy's full session affinity capabilities, as described below.
+For certain applications deployed across multiple replicas, it may be desirable to route all traffic from a single client session to the same instance of the application. This can help reduce latency through better use of caches. This load balancer behavior is referred to as Session Affinity or Sticky Sessions. Gloo Gateway exposes Envoy's full session affinity capabilities, as described below.
 
 ---
 ## Configuration overview
@@ -17,13 +17,13 @@ There are two steps to configuring session affinity:
   - This can include any combination of headers, cookies, and source IP address.
 
 
-Below, we show how to configure Gloo Edge to use hashing load balancers and demonstrate a common cookie-based hashing strategy using a Ring Hash load balancer.
+Below, we show how to configure Gloo Gateway to use hashing load balancers and demonstrate a common cookie-based hashing strategy using a Ring Hash load balancer.
 
 ---
 
 ## Upstream Plugin Configuration
 
-- Whether an upstream was discovered by Gloo Edge or created manually, just add the `loadBalancerConfig` spec to your upstream.
+- Whether an upstream was discovered by Gloo Gateway or created manually, just add the `loadBalancerConfig` spec to your upstream.
 - Either a `ringHash` or `maglev` load balancer must be specified to achieve session affinity. Some examples are shown below.
   - To determine whether a Ring Hash or Maglev load balancer is best for your use case, please review
 the details in Envoy's [load balancer selection docs](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers#ring-hash).
@@ -153,9 +153,9 @@ The following tutorial walks through the steps involved in configuring and verif
 
 ### Requirements
 
-- Kubernetes cluster with Gloo Edge installed
+- Kubernetes cluster with Gloo Gateway installed
 - At least two nodes in the cluster.
-- Permission to deploy a DaemonSet and edit Gloo Edge resources.
+- Permission to deploy a DaemonSet and edit Gloo Gateway resources.
 
 ### Deploy a sample app in a DaemonSet
 
@@ -186,7 +186,7 @@ func main() {
 
 var (
 	countUrl = "/count"
-	helpMsg  = fmt.Sprintf(`Simple counter app for testing Gloo Edge
+	helpMsg  = fmt.Sprintf(`Simple counter app for testing Gloo Gateway
 
 %v - reports number of times the %v path was queried`, countUrl, countUrl)
 )
@@ -258,7 +258,7 @@ EOF
 If you deployed the app to a namespace other than the default namespace you will need to adjust the following commands accordingly.
 {{% /notice %}}
 
-Gloo Edge will have discovered the `session-affinity-app` service and created an Upstream from it.
+Gloo Gateway will have discovered the `session-affinity-app` service and created an Upstream from it.
 
 Now create a route to the app with `glooctl`:
 
@@ -350,8 +350,8 @@ This example uses the session affinity app resources that are created in the [Ap
 
 ### Requirements
 
-- A Kubernetes cluster with at least two nodes with Gloo Edge Enterprise installed.
-- Permission to deploy a DaemonSet and edit Gloo Edge resources.
+- A Kubernetes cluster with at least two nodes with Gloo Gateway Enterprise installed.
+- Permission to deploy a DaemonSet and edit Gloo Gateway resources.
 
 ### Cookie-based stateful session filter
 

@@ -7,14 +7,14 @@ description: Copy contents of HTTP requests and responses to an external tap ser
 Copy contents of HTTP or gRPC requests and responses to an external tap server. A tap server is a simple device that connects directly to your infrastructure and receives copies of actual traffic from your network so that this traffic can be further monitored, analyzed, or tested with. 
 
 {{% notice warning %}}
-Traffic tapping support in Gloo Edge is introduced as an **alpha feature**. Alpha features are likely to change, are not fully tested, and are not supported for production.
+Traffic tapping support in Gloo Gateway is introduced as an **alpha feature**. Alpha features are likely to change, are not fully tested, and are not supported for production.
 {{% /notice %}}
 
 {{% notice note %}}
 Traffic tapping is an Enterprise-only feature. 
 {{% /notice %}}
 
-## About traffic tapping in Gloo Edge
+## About traffic tapping in Gloo Gateway
 
 * Traffic tapping can be applied to a listener in a `Gateway` resource. As such, traffic tapping is applied to all routes that the gateway serves. Tapping traffic for a specific route is not currently supported.
 * Users are responsible for writing their own tap servers. The tap server definitions can be found in the [`tap-extension-examples` repository](https://github.com/solo-io/tap-extension-examples). To receive tap traces, the tap server must implement the [tap service protobuf definitions](https://github.com/solo-io/tap-extension-examples/tree/main/pkg/tap_service) and be configured to receive data over the gRPC or HTTP protocol.
@@ -30,7 +30,7 @@ Data that is tapped from the data plane might contain sensitive information, inc
 
 ## Before you begin
 
-1. [Set up Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) in your cluster. During the Gloo Edge installation, a gateway resource is created for you that you later use to configure traffic tapping. 
+1. [Set up Gloo Gateway Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) in your cluster. During the Gloo Gateway installation, a gateway resource is created for you that you later use to configure traffic tapping. 
 2. Follow the steps to [deploy and expose the Petstore sample app]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
 
 ## Deploy a tap server
@@ -98,7 +98,7 @@ Data that is tapped from the data plane might contain sensitive information, inc
 
 ## Set up traffic tapping
 
-1. Configure the `gateway-proxy` gateway resource for traffic tapping. In the following example, you instruct Gloo Edge to tap all incoming traffic on the gateway and to send it to the tap server that you previously configured by using the HTTP protocol. 
+1. Configure the `gateway-proxy` gateway resource for traffic tapping. In the following example, you instruct Gloo Gateway to tap all incoming traffic on the gateway and to send it to the tap server that you previously configured by using the HTTP protocol. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
