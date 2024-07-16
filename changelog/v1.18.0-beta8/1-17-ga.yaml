@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Promote 1.17.x LTS branch as latest stable branch.
+      
+      skipCI-kube-tests:true
