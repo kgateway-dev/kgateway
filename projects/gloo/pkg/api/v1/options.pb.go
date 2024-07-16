@@ -728,8 +728,8 @@ type VirtualHostOptions struct {
 	// Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
 	HeaderManipulation *headers.HeaderManipulation `protobuf:"bytes,2,opt,name=header_manipulation,json=headerManipulation,proto3" json:"header_manipulation,omitempty"`
 	// Defines a CORS policy for the virtual host
-	// If a CORS policy is also defined on the route matched by the request, the route policy is
-	// respected and the virtual host policy is ignored
+	// If a CORS policy is also defined on the route matched by the request, the route policy
+	// overrides the virtual host policy for any configured field.
 	Cors *cors.CorsPolicy `protobuf:"bytes,3,opt,name=cors,proto3" json:"cors,omitempty"`
 	// Transformations to apply. Note: this field is superseded by `staged_transformations`.
 	// If `staged_transformations.regular` is set, this field will be ignored.
