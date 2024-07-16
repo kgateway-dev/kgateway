@@ -2,7 +2,6 @@ package helpers_test
 
 import (
 	"hash"
-	"reflect"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -10,6 +9,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
 )
@@ -20,11 +20,7 @@ var _ = Describe("VirtualServiceBuilder", func() {
 		// This test is important as it checks whether the virtual service builder has a new top level field.
 		// This should happen very rarely, and should be used as an indication that the `Clone` function
 		// most likely needs to change to support this new field
-
-		Expect(reflect.TypeOf(helpers.VirtualServiceBuilder{}).NumField()).To(
-			Equal(7),
-			"wrong number of fields found",
-		)
+		assertions.ExpectNumFields(helpers.VirtualServiceBuilder{}, 7)
 	})
 
 	It("clones all fields", func() {
