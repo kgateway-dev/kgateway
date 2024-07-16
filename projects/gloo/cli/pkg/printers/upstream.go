@@ -322,22 +322,40 @@ func addMethodsFromGrpcJsonTranscoder(up *v1.Upstream) {
 	switch usType := up.GetUpstreamType().(type) {
 	case *v1.Upstream_Kube:
 		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
-			if gjt.GetMethodMap() == nil {
-				gjt.MethodMap = map[string]*grpc_json.GrpcJsonTranscoderMethodList{}
+			if gjt.GetProtoDescriptorBin() != nil {
+				addMethodsFromDescriptorBin(gjt)
+			}
+		}
+	case *v1.Upstream_Consul:
+		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+			if gjt.GetProtoDescriptorBin() != nil {
+				addMethodsFromDescriptorBin(gjt)
+			}
+		}
+	case *v1.Upstream_Static:
+		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+			if gjt.GetProtoDescriptorBin() != nil {
+				addMethodsFromDescriptorBin(gjt)
+			}
+		}
+	}
+}
+
+func addMethodsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) {
+	if gjt.GetMethodMap() == nil {
+		gjt.MethodMap = map[string]*grpc_json.GrpcJsonTranscoderMethodList{}
+	}
+
+	descriptorBin := gjt.GetProtoDescriptorBin()
+
+	for _, grpcService := range gjt.GetServices() {
+		methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
+		for i := 0; i < methodDescriptors.Len(); i++ {
+			if gjt.GetMethodMap()[grpcService] == nil {
+				gjt.GetMethodMap()[grpcService] = &grpc_json.GrpcJsonTranscoderMethodList{}
 			}
 
-			descriptorBin := gjt.GetProtoDescriptorBin()
-
-			for _, grpcService := range gjt.GetServices() {
-				methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
-				for i := 0; i < methodDescriptors.Len(); i++ {
-					if gjt.GetMethodMap()[grpcService] == nil {
-						gjt.GetMethodMap()[grpcService] = &grpc_json.GrpcJsonTranscoderMethodList{}
-					}
-
-					gjt.GetMethodMap()[grpcService].Methods = append(gjt.GetMethodMap()[grpcService].GetMethods(), fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
-				}
-			}
+			gjt.GetMethodMap()[grpcService].Methods = append(gjt.GetMethodMap()[grpcService].GetMethods(), fmt.Sprintf("%s", methodDescriptors.Get(i).Name()))
 		}
 	}
 }
