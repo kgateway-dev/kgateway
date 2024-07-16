@@ -72,7 +72,7 @@ type ExpectNoLeaksArgs struct {
 	Timeouts        []time.Duration
 }
 
-func (m *GoRoutineMonitor) ExpectNoLeaks(args ExpectNoLeaksArgs) {
+func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
 	// Need to gather up the arguments to pass to the leak detector, so need to make sure they are all interface{}s
 	// Arguments are the initial goroutines, and any additional allowed goroutines passed in
 	notLeaks := make([]interface{}, len(args.AllowedRoutines)+1)
