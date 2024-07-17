@@ -106,10 +106,10 @@
 |kubeGateway.gatewayParameters.glooGateway.stats.routePrefixRewrite|string|/stats/prometheus|Set the prefix rewrite used for the prometheus endpoint|
 |kubeGateway.gatewayParameters.glooGateway.stats.enableStatsRoute|bool|true|Enable the stats endpoint|
 |kubeGateway.gatewayParameters.glooGateway.stats.statsRoutePrefixRewrite|string|/stats|Set the prefix rewrite used for the stats endpoint|
-|settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Gateway to watch for services and CRDs. Empty list means all namespaces|
-|settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Gateway Discovery.|
+|settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
+|settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
-|settings.integrations.knative.version|string|0.10.0|the version of knative installed to the cluster. if using version < 0.8.0, Gloo Gateway will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
+|settings.integrations.knative.version|string|0.10.0|the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
 |settings.integrations.knative.proxy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |settings.integrations.knative.proxy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |settings.integrations.knative.proxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -210,34 +210,34 @@
 |settings.integrations.consul.keyFile|string||KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile.|
 |settings.integrations.consul.insecureSkipVerify|bool||InsecureSkipVerify if set to true will disable TLS host verification.|
 |settings.integrations.consul.waitTime|string||WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used.|
-|settings.integrations.consul.serviceDiscovery.dataCenters[]|string||Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo Gateway will use all available data centers.|
+|settings.integrations.consul.serviceDiscovery.dataCenters[]|string||Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo Edge will use all available data centers.|
 |settings.integrations.consul.httpAddress|string||The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.|
 |settings.integrations.consul.dnsAddress|string||The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)|
-|settings.integrations.consul.dnsPollingInterval|string||The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Gateway will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s.|
-|settings.integrations.consulUpstreamDiscovery.useTlsTagging|bool||Allow Gloo Gateway to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true.|
-|settings.integrations.consulUpstreamDiscovery.tlsTagName|string||The tag Gloo Gateway should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'.|
+|settings.integrations.consul.dnsPollingInterval|string||The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Edge will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s.|
+|settings.integrations.consulUpstreamDiscovery.useTlsTagging|bool||Allow Gloo Edge to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true.|
+|settings.integrations.consulUpstreamDiscovery.tlsTagName|string||The tag Gloo Edge should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'.|
 |settings.integrations.consulUpstreamDiscovery.splitTlsServices|bool||If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without.|
 |settings.integrations.consulUpstreamDiscovery.rootCa.namespace|string||The namespace of this resource.|
 |settings.integrations.consulUpstreamDiscovery.rootCa.name|string||The name of this resource.|
-|settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo Gateway controllers|
+|settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool||Enable to use install namespace as WatchNamespace and WriteNamespace|
-|settings.invalidConfigPolicy.replaceInvalidRoutes|bool|false|Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo Gateway will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid.|
+|settings.invalidConfigPolicy.replaceInvalidRoutes|bool|false|Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo Edge will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid.|
 |settings.invalidConfigPolicy.invalidRouteResponseCode|int64|404|the response code for the direct response|
 |settings.invalidConfigPolicy.invalidRouteResponseBody|string|Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.|the response body for the direct response|
-|settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo Gateway|
-|settings.disableProxyGarbageCollection|bool|false|Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Gateway will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Gateway will keep serving the routes from the last applied valid configuration.|
+|settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo Edge|
+|settings.disableProxyGarbageCollection|bool|false|Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration.|
 |settings.regexMaxProgramSize|uint32|1024|Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 1024.|
-|settings.disableKubernetesDestinations|bool|false|Enable or disable Gloo Gateway to scan Kubernetes services in the cluster and create in-memory Upstream resources to represent them. These resources enable Gloo Gateway to route requests to a Kubernetes service. Note that if you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Gateway watches, the API snapshot increases which can have a negative impact on the Gloo Gateway translation time. In addition, load balancing is done in kube-proxy which can have further performance impacts. Using Gloo Upstreams as a routing destination bypasses kube-proxy as the request is routed to the pod directly. Alternatively, you can use [Kubernetes](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) Upstream resources as a routing destination to forward requests to the pod directly. For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).|
-|settings.aws.enableCredentialsDiscovery|bool||Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo Gateway|
-|settings.aws.enableServiceAccountCredentials|bool||Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Gateway|
+|settings.disableKubernetesDestinations|bool|false|Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Edge watches, the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load balancing is done in kube-proxy which can have further performance impacts. Using Gloo Upstreams as a routing destination bypasses kube-proxy as the request is routed to the pod directly. Alternatively, you can use [Kubernetes](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) Upstream resources as a routing destination to forward requests to the pod directly. For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).|
+|settings.aws.enableCredentialsDiscovery|bool||Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo Edge|
+|settings.aws.enableServiceAccountCredentials|bool||Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Edge|
 |settings.aws.stsCredentialsRegion|string||Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint.|
 |settings.aws.propagateOriginalRouting|bool||Send downstream path and method as x-envoy-original-path and x-envoy-original-method headers on the request to AWS lambda.|
 |settings.aws.credential_refresh_delay.seconds|int32||The value of this duration in seconds.|
 |settings.aws.credential_refresh_delay.nanos|int32||The value of this duration in nanoseconds.|
 |settings.aws.fallbackToFirstFunction|bool||It will use the first function which if discovery is enabled the first function is the first function name alphabetically from the last discovery run. Defaults to false.|
-|settings.rateLimit|interface||Partial config for Gloo Gateway Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
-|settings.ratelimitServer|interface||External Ratelimit Server configuration for Gloo Gateway Open Sources’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://docs.solo.io/gloo-edge/main/guides/security/rate_limiting/)|
+|settings.rateLimit|interface||Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
+|settings.ratelimitServer|interface||External Ratelimit Server configuration for Gloo Edge Open Sources’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://docs.solo.io/gloo-edge/main/guides/security/rate_limiting/)|
 |settings.circuitBreakers.maxConnections|uint32||Set this field to specify the maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
 |settings.circuitBreakers.maxPendingRequests|uint32||Set this field to specfify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024.|
 |settings.circuitBreakers.maxRequests|uint32||Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
@@ -280,7 +280,7 @@
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service.|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
-|gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Gateway (default is false).|
+|gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
 |gloo.deployment.ossImageTag|string|<release_version, ex: 1.2.3>|Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with.|
 |gloo.deployment.podSecurityContext.seLinuxOptions.user|string|||
 |gloo.deployment.podSecurityContext.seLinuxOptions.role|string|||
@@ -465,13 +465,13 @@
 |discovery.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |discovery.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |discovery.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info.|
-|gateway.enabled|bool|true|enable Gloo Gateway API Gateway features|
-|gateway.validation.enabled|bool|true|enable Gloo Gateway API Gateway validation hook (default true)|
+|gateway.enabled|bool|true|enable Gloo Edge API Gateway features|
+|gateway.validation.enabled|bool|true|enable Gloo Edge API Gateway validation hook (default true)|
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
 |gateway.validation.allowWarnings|bool|true|set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected.|
 |gateway.validation.serverEnabled|bool|true|By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as warn_route_short_circuiting and disable_transformation_validation.|
 |gateway.validation.disableTransformationValidation|bool|false|set this to true to disable transformation validation. This may bring signifigant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations.|
-|gateway.validation.warnRouteShortCircuiting|bool|false|Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo Gateway will start assigning warnings to resources that would result in route short-circuiting within a virtual host.|
+|gateway.validation.warnRouteShortCircuiting|bool|false|Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo Edge will start assigning warnings to resources that would result in route short-circuiting within a virtual host.|
 |gateway.validation.secretName|string|gateway-validation-certs|Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled.|
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
 |gateway.validation.webhook.enabled|bool|true|enable validation webhook (default true)|
@@ -589,7 +589,7 @@
 |gateway.rolloutJob.containerSecurityContext.seccompProfile.type|string|||
 |gateway.rolloutJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.rolloutJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
-|gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Gateway custom resources at install and upgrade time (default true).|
+|gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
 |gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.rolloutJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.rolloutJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -646,7 +646,7 @@
 |gateway.cleanupJob.containerSecurityContext.seccompProfile.type|string|||
 |gateway.cleanupJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.cleanupJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
-|gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Gateway custom resources when Gloo Gateway is uninstalled (default true).|
+|gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
 |gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
 |gateway.cleanupJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1240,7 +1240,7 @@
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
 |ingress.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass.|
-|ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Gateway Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
+|ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |ingressProxy.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1421,7 +1421,7 @@
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
-|global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo Gateway RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
+|global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo Edge RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
 |global.glooStats.enabled|bool|true|Controls whether or not Envoy stats are enabled|
 |global.glooStats.routePrefixRewrite|string|/stats/prometheus|The Envoy stats endpoint to which the metrics are written|
 |global.glooStats.setDatadogAnnotations|bool|false|Sets the default datadog annotations|
@@ -1536,8 +1536,8 @@
 |global.glooMtls.sdsResources.requests.cpu|string||amount of CPUs|
 |global.istioSDS.enabled|bool|false|Enables SDS cert-rotator sidecar for istio mTLS cert rotation. Warning: this value is deprecated and will be removed in a future release. Use global.istioIntegration.enabled instead.|
 |global.istioSDS.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false|
-|global.istioIntegration.enabled|bool|false|Enables Istio integration for Gloo Gateway, adding the sds and istio-proxy containers to gateways for Istio mTLS cert rotation.|
-|global.istioIntegration.enableAutoMtls|bool|false|Enables Istio auto mtls configuration for Gloo Gateway upstreams.|
+|global.istioIntegration.enabled|bool|false|Enables Istio integration for Gloo Edge, adding the sds and istio-proxy containers to gateways for Istio mTLS cert rotation.|
+|global.istioIntegration.enableAutoMtls|bool|false|Enables Istio auto mtls configuration for Gloo Edge upstreams.|
 |global.istioIntegration.disableAutoinjection|bool|false|Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true, as some pods do not immediately work with an Istio sidecar without extra manual configuration. Warning: this value is not supported with Kubernetes Gateway API proxy. |
 |global.istioIntegration.labelInstallNamespace|bool|false|Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. If creating a namespace for Gloo, include the 'istio-injection: enabled' label (or 'istio.io/rev=' if 'istioSidecarRevTag' field is also set) to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended.|
 |global.istioIntegration.whitelistDiscovery|bool|false|Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled.|
@@ -1549,7 +1549,7 @@
 |global.console|interface||Configuration options for the Enterprise Console (UI).|
 |global.graphql|interface||(Enterprise Only): GraphQL configuration options.|
 |global.configMaps[].name|string||Name of the ConfigMap to create (required).|
-|global.configMaps[].namespace|string||Namespace in which to create the ConfigMap. If empty, defaults to Gloo Gateway install namespace.|
+|global.configMaps[].namespace|string||Namespace in which to create the ConfigMap. If empty, defaults to Gloo Edge install namespace.|
 |global.configMaps[].data.NAME|string||Key-value pairs of ConfigMap data.|
 |global.extraCustomResources|bool||Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise.|
 |global.additionalLabels.NAME|string||Additional labels to add to all gloo resources.|
