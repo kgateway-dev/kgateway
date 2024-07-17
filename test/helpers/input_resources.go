@@ -94,18 +94,4 @@ func EventuallyResourceDeletedWithOffset(offset int, getter InputResourceGetter,
 	}, timeoutInterval, pollingInterval).Should(gomega.BeTrue())
 }
 
-func getTimeoutAndPollingIntervalsOrDefault(intervals ...interface{}) (interface{}, interface{}) {
-	var timeoutInterval, pollingInterval interface{}
-
-	timeoutInterval = defaultEventuallyTimeout
-	pollingInterval = defaultEventuallyPollingInterval
-
-	if len(intervals) > 0 {
-		timeoutInterval = intervals[0]
-	}
-	if len(intervals) > 1 {
-		pollingInterval = intervals[1]
-	}
-
-	return timeoutInterval, pollingInterval
-}
+var getTimeoutAndPollingIntervalsOrDefault = GetEventuallyTimingsTransform(defaultEventuallyTimeout, defaultEventuallyPollingInterval)
