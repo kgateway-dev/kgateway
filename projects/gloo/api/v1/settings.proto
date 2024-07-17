@@ -149,7 +149,7 @@ message Settings {
         string path_prefix = 10;
 
         // Configure TLS options for client connection to Vault. This is only available when running
-        // Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad.
+        // Gloo Gateway outside of an container orchestration tool such as Kubernetes or Nomad.
         VaultTlsConfig tls_config = 11;
 
         // Support for multiple authentication methods
@@ -246,7 +246,7 @@ message Settings {
     }
 
     // Configuration options for the Clusteringress Controller (for Knative).
-    // Deprecated: Will not be available in Gloo Edge 1.11
+    // Deprecated: Will not be available in Gloo Gateway 1.11
     KnativeOptions knative = 18 [deprecated=true];
 
     message DiscoveryOptions {
@@ -553,7 +553,7 @@ message Settings {
     // When these properties are defined on an upstream, this configuration will be ignored
     UpstreamOptions upstreamOptions = 32;
 
-    // Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI)
+    // Enterprise-only: Settings for the Gloo Gateway Enterprise Console (UI)
     ConsoleOptions console_options = 35;
 
     // Enterprise-only: GraphQL settings
@@ -669,10 +669,10 @@ message GlooOptions {
     // set these options to fine-tune the way Gloo handles invalid user configuration
     InvalidConfigPolicy invalid_config_policy = 6;
 
-    // Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources 
-    // to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if  
-    // you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Edge watches,
-    // the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load 
+    // Enable or disable Gloo Gateway to scan Kubernetes services in the cluster and create in-memory Upstream resources 
+    // to represent them. These resources enable Gloo Gateway to route requests to a Kubernetes service. Note that if  
+    // you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Gateway watches,
+    // the API snapshot increases which can have a negative impact on the Gloo Gateway translation time. In addition, load 
     // balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing
     // destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use 
     // [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) 
@@ -879,11 +879,11 @@ message ConsoleOptions {
     // If true, then custom resources can only be viewed in read-only mode in the UI.
     // If false, then resources can be created, updated, and deleted via the UI.
     // Currently, create/update/delete operations are only supported for GraphQL resources.
-    // This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+    // This feature requires a Gloo Gateway Enterprise license with GraphQL enabled.
     // Defaults to true.
     google.protobuf.BoolValue read_only = 1;
 
-    // Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+    // Whether to enable the GraphQL API Explorer. This feature requires a Gloo Gateway Enterprise license with GraphQL enabled.
     // Defaults to true.
     google.protobuf.BoolValue api_explorer_enabled = 2;
 }
