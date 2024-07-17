@@ -231,7 +231,7 @@ Checking MatchableTcpGateways... OK
 Checking Proxies... OK
 ```
 
-Note that it is best to have `gloo-edge` installed on this admin cluster. To do so, if needed, you can use the following values and command.
+Note that it is best to have `gloo` installed on this admin cluster. To do so, if needed, you can use the following values and command.
 ````shell
 cat <<EOF > values-local.yaml
 gloo:
