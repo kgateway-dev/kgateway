@@ -135,6 +135,16 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 	return resources, nil
 }
 
+// standalone func to convert Settings (which is not part of the ApiSnapshot)
+// into a solo-kit Kubernetes resource
+func settingsToKubeResource(settings *gloov1.Settings) (*crdv1.Resource, error) {
+	kubeSettings, err := gloov1.SettingsCrd.KubeResource(settings)
+	if err != nil {
+		return nil, err
+	}
+	return kubeSettings, nil
+}
+
 // This converts a solo-kit VersionedResource to a solo-kit Kubernetes resource. It mirrors the
 // solo-kit [KubeResource](https://github.com/solo-io/solo-kit/blob/1baf6de465942dc5be44e7f28f0f739dcd0b967b/pkg/api/v1/clients/kube/crd/crd.go#L78)
 // func, except that it accepts "fake" resources such as Endpoints, which don't implement
