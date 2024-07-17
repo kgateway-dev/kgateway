@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 )
 
@@ -62,30 +63,16 @@ var (
 	errCannotCurl = func(imageName, imageTag string) error {
 		return errors.Wrapf(ErrCannotCurl, "testContainer from image %s:%s", imageName, imageTag)
 	}
+	defaultCurlTimeout        = time.Second * 20
+	defaultCurlPollingTimeout = time.Second * 2
 )
 
+var getTimeoutsAsInterfaces = helpers.GetDefaultTimingsTransform(defaultCurlTimeout, defaultCurlPollingTimeout)
+
 func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
-	defaultTimeout := time.Second * 20
-	defaultPollingTimeout := time.Second * 2
-	switch len(timeout) {
-	case 0:
-		currentTimeout = defaultTimeout
-		pollingInterval = defaultPollingTimeout
-	default:
-		fallthrough
-	case 2:
-		pollingInterval = timeout[1]
-		if pollingInterval == 0 {
-			pollingInterval = defaultPollingTimeout
-		}
-		fallthrough
-	case 1:
-		currentTimeout = timeout[0]
-		if currentTimeout == 0 {
-			// for backwards compatability, leave this zero check
-			currentTimeout = defaultTimeout
-		}
-	}
+	timeoutAny, pollingIntervalAny := getTimeoutsAsInterfaces(currentTimeout, pollingInterval)
+	currentTimeout = timeoutAny.(time.Duration)
+	pollingInterval = pollingIntervalAny.(time.Duration)
 	return currentTimeout, pollingInterval
 }
 

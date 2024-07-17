@@ -47,7 +47,7 @@ var _ = Describe("transforms for eventually/consistency timing parameters", func
 		overridePolling = 314 * time.Millisecond
 	)
 
-	DescribeTable("getDefaultTimingsTransform", func(getTimeouts func(intervals ...interface{}) (interface{}, interface{}), defaultTimeout, defaultPolling interface{}) {
+	DescribeTable("GetDefaultTimingsTransform", func(getTimeouts func(intervals ...interface{}) (interface{}, interface{}), defaultTimeout, defaultPolling interface{}) {
 		timeout, pollingInterval := getTimeouts()
 		Expect(timeout).To(Equal(defaultTimeout))
 		Expect(pollingInterval).To(Equal(defaultPolling))
@@ -59,6 +59,10 @@ var _ = Describe("transforms for eventually/consistency timing parameters", func
 		timeout, pollingInterval = getTimeouts(10*time.Second, 20*time.Second)
 		Expect(timeout).To(Equal(10 * time.Second))
 		Expect(pollingInterval).To(Equal(20 * time.Second))
+
+		timeout, pollingInterval = getTimeouts(0, 0)
+		Expect(timeout).To(Equal(defaultTimeout))
+		Expect(pollingInterval).To(Equal(defaultPolling))
 	},
 		Entry("no defaults are provided for Eventually",
 			helpers.GetEventuallyTimingsTransform(),

@@ -74,7 +74,7 @@ var (
 // timeout, pollingInterval := getTimeouts(10*time.Second, 200*time.Millisecond) // returns 10*time.Second, 200*time.Millisecond
 // See tests for more examples
 func GetEventuallyTimingsTransform(defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
-	return getDefaultTimingsTransform(GomegaDefaultEventuallyTimeout, GomegaDefaultEventuallyPollingInterval, defaults...)
+	return GetDefaultTimingsTransform(GomegaDefaultEventuallyTimeout, GomegaDefaultEventuallyPollingInterval, defaults...)
 }
 
 // GetConsistentlyTimingsTransform returns timeout and polling interval values to use with a gomega consistently call
@@ -88,19 +88,21 @@ func GetEventuallyTimingsTransform(defaults ...interface{}) func(intervals ...in
 // timeout, pollingInterval := getTimeouts(10*time.Second, 200*time.Millisecond) // returns 10*time.Second, 200*time.Millisecond
 // See tests for more examples
 func GetConsistentlyTimingsTransform(defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
-	return getDefaultTimingsTransform(GomegaDefaultConsistentlyTimeout, GomegaDefaultConsistentlyPollingInterval, defaults...)
+	return GetDefaultTimingsTransform(GomegaDefaultConsistentlyTimeout, GomegaDefaultConsistentlyPollingInterval, defaults...)
 }
 
-// Used for more examples
-func getDefaultTimingsTransform(timeout, polling interface{}, defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
+// GetDefaultTimingsTransform is used to return the timeout and polling interval values to use with a gomega eventually or consistently call
+// It can also be called directly with just 2 arguments if both timeout and polling interval are known and there is no need to default to Gomega values
+func GetDefaultTimingsTransform(timeout, polling interface{}, defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
 	var defaultTimeoutInterval, defaultPollingInterval interface{}
 	defaultTimeoutInterval = timeout
 	defaultPollingInterval = polling
 
-	if len(defaults) > 0 {
+	// The curl helper doesn't let you set the intervals to 0, so we need to check for that
+	if len(defaults) > 0 && defaults[0] != 0 {
 		defaultTimeoutInterval = defaults[0]
 	}
-	if len(defaults) > 1 {
+	if len(defaults) > 1 && defaults[1] != 0 {
 		defaultPollingInterval = defaults[1]
 	}
 
@@ -110,10 +112,10 @@ func getDefaultTimingsTransform(timeout, polling interface{}, defaults ...interf
 		timeoutInterval = defaultTimeoutInterval
 		pollingInterval = defaultPollingInterval
 
-		if len(intervals) > 0 {
+		if len(intervals) > 0 && intervals[0] != 0 {
 			timeoutInterval = intervals[0]
 		}
-		if len(intervals) > 1 {
+		if len(intervals) > 1 && intervals[1] != 0 {
 			pollingInterval = intervals[1]
 		}
 
