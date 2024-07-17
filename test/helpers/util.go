@@ -54,3 +54,69 @@ func PercentileIndex(length, pct int) int {
 
 	return int(math.Ceil(float64(length)*(float64(pct)/float64(100)))) - 1
 }
+
+var (
+	// Gomega defaults from https://github.com/onsi/gomega/blob/master/internal/duration_bundle.go#L27
+	GomegaDefaultEventuallyTimeout           = 1 * time.Second
+	GomegaDefaultEventuallyPollingInterval   = 10 * time.Millisecond
+	GomegaDefaultConsistentlyTimeout         = 100 * time.Millisecond
+	GomegaDefaultConsistentlyPollingInterval = 10 * time.Millisecond
+)
+
+// GetDefaultEventuallyTimeoutsTransform returns timeout and polling interval values to use with a gomega eventually call
+// The `defaults` parameter can be used to override the default Gomega values.
+// The first value in the `defaults` slice will be used as the timeout, and the second value will be used as the polling interval (if present)
+//
+// Example usage:
+// getTimeouts := GetEventuallyTimingsTransform(5*time.Second, 100*time.Millisecond)
+// timeout, pollingInterval := getTimeouts() // returns 5*time.Second, 100*time.Millisecond
+// timeout, pollingInterval := getTimeouts(10*time.Second) // returns 10*time.Second, 100*time.Millisecond
+// timeout, pollingInterval := getTimeouts(10*time.Second, 200*time.Millisecond) // returns 10*time.Second, 200*time.Millisecond
+// See tests for more examples
+func GetEventuallyTimingsTransform(defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
+	return getDefaultTimingsTransform(GomegaDefaultEventuallyTimeout, GomegaDefaultEventuallyPollingInterval, defaults...)
+}
+
+// GetConsistentlyTimingsTransform returns timeout and polling interval values to use with a gomega consistently call
+// The `defaults` parameter can be used to override the default Gomega values.
+// The first value in the `defaults` slice will be used as the timeout, and the second value will be used as the polling interval (if present)
+//
+// Example usage:
+// getTimeouts := GetConsistentlyTimingsTransform(5*time.Second, 100*time.Millisecond)
+// timeout, pollingInterval := getTimeouts() // returns 5*time.Second, 100*time.Millisecond
+// timeout, pollingInterval := getTimeouts(10*time.Second) // returns 10*time.Second, 100*time.Millisecond
+// timeout, pollingInterval := getTimeouts(10*time.Second, 200*time.Millisecond) // returns 10*time.Second, 200*time.Millisecond
+// See tests for more examples
+func GetConsistentlyTimingsTransform(defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
+	return getDefaultTimingsTransform(GomegaDefaultConsistentlyTimeout, GomegaDefaultConsistentlyPollingInterval, defaults...)
+}
+
+// Used for more examples
+func getDefaultTimingsTransform(timeout, polling interface{}, defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
+	var defaultTimeoutInterval, defaultPollingInterval interface{}
+	defaultTimeoutInterval = timeout
+	defaultPollingInterval = polling
+
+	if len(defaults) > 0 {
+		defaultTimeoutInterval = defaults[0]
+	}
+	if len(defaults) > 1 {
+		defaultPollingInterval = defaults[1]
+	}
+
+	// This function is a closure that will return the timeout and polling intervals
+	return func(intervals ...interface{}) (interface{}, interface{}) {
+		var timeoutInterval, pollingInterval interface{}
+		timeoutInterval = defaultTimeoutInterval
+		pollingInterval = defaultPollingInterval
+
+		if len(intervals) > 0 {
+			timeoutInterval = intervals[0]
+		}
+		if len(intervals) > 1 {
+			pollingInterval = intervals[1]
+		}
+
+		return timeoutInterval, pollingInterval
+	}
+}

@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/solo-io/gloo/test/helpers"
 )
 
 // GoRoutineMonitor is a helper for monitoring goroutine leaks in tests
@@ -44,8 +44,13 @@ type ExpectNoLeaksArgs struct {
 	AllowedRoutines []types.GomegaMatcher
 	// Additional arguments to pass to Eventually to control the timeout/polling interval.
 	// If not set, defaults to 5 second timeout and the Gomega default polling interval (10ms)
-	Timeouts []time.Duration
+	Timeouts []interface{}
 }
+
+var (
+	defaultEventuallyTimeout = 5 * time.Second
+	getEventuallyTimings     = helpers.GetEventuallyTimingsTransform(defaultEventuallyTimeout)
+)
 
 func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
 	// Need to gather up the arguments to pass to the leak detector, so need to make sure they are all interface{}s
@@ -58,19 +63,8 @@ func (m *GoRoutineMonitor) ExpectNoLeaks(args *ExpectNoLeaksArgs) {
 		notLeaks[i+1] = v
 	}
 
-	// Determine the time intervals to pass to Eventually
-	var (
-		timeouts                 []interface{}
-		defaultEventuallyTimeout = 5 * time.Second
-	)
-	if len(args.Timeouts) > 0 {
-		timeouts = transforms.DurationsToInterfaces(args.Timeouts...)
-	} else {
-		timeouts = make([]interface{}, 1)
-		timeouts[0] = defaultEventuallyTimeout
-	}
-
-	Eventually(gleak.Goroutines, timeouts...).ShouldNot(
+	timeout, pollingInterval := getEventuallyTimings(args.Timeouts...)
+	Eventually(gleak.Goroutines, timeout, pollingInterval).ShouldNot(
 		gleak.HaveLeaked(
 			notLeaks...,
 		),
