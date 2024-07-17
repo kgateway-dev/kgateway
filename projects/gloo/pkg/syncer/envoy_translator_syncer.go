@@ -201,6 +201,11 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 // Deprecated: https://github.com/solo-io/gloo/issues/6494
 // Prefer to use the iosnapshot.History
 func (s *translatorSyncer) ServeXdsSnapshots() error {
+	return s.ContextuallyServeXdsSnapshots(context.Background())
+}
+
+func (s *translatorSyncer) ContextuallyServeXdsSnapshots(ctx context.Context) error {
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +225,15 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
 	})
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
+	server := &http.Server{Addr: fmt.Sprintf(":%d", devModePort), Handler: r}
+
+	go func() {
+		<-ctx.Done()
+		_ = server.Close()
+	}()
+
+	return server.ListenAndServe()
+
 }
 
 func prettify(original interface{}) string {
