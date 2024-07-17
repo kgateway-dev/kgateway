@@ -9,7 +9,6 @@ Before you upgrade Gloo Edge, complete the following preparatory steps:
 * [Review important changes](#review-changes) made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, including CRD, Helm, CLI, and feature changes.
 * [Review frequently-asked questions](#faqs) about the upgrade process.
 
-
 ## Prepare your environment {#prepare}
 
 Review the following preparatory steps that might be required for your environment.
@@ -44,6 +43,10 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 ## Review version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} changes {#review-changes}
 
 Review the following changes made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. For some changes, you might be required to complete additional steps during the upgrade process.
+
+### Kubernetes Gateway API support
+
+Gloo Gateway is now a fully conformant Kubernetes Gateway API implementation. The existing Gloo Edge APIs were not changed and continue to be fully supported. To deploy a gateway proxy that is based on the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gateway). 
 
 ### Breaking changes 
 
