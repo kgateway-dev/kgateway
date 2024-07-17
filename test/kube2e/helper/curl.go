@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 )
 
@@ -62,30 +63,22 @@ var (
 	errCannotCurl = func(imageName, imageTag string) error {
 		return errors.Wrapf(ErrCannotCurl, "testContainer from image %s:%s", imageName, imageTag)
 	}
+	DefaultCurlTimeout        = time.Second * 20 // DefaultCurlTimeout is the default timeout for "Eventually" curl assertions
+	DefaultCurlPollingTimeout = time.Second * 2  // DefaultCurlPollingTimeout is the default pollinginterval for "Eventually" curl assertions
 )
 
+var getTimeoutsAsInterfaces = helpers.GetDefaultTimingsTransform(DefaultCurlTimeout, DefaultCurlPollingTimeout)
+
 func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
-	defaultTimeout := time.Second * 20
-	defaultPollingTimeout := time.Second * 2
-	switch len(timeout) {
-	case 0:
-		currentTimeout = defaultTimeout
-		pollingInterval = defaultPollingTimeout
-	default:
-		fallthrough
-	case 2:
-		pollingInterval = timeout[1]
-		if pollingInterval == 0 {
-			pollingInterval = defaultPollingTimeout
-		}
-		fallthrough
-	case 1:
-		currentTimeout = timeout[0]
-		if currentTimeout == 0 {
-			// for backwards compatability, leave this zero check
-			currentTimeout = defaultTimeout
-		}
+	// Convert the timeouts to interface{}s
+	interfaceTimeouts := make([]interface{}, len(timeout))
+	for i, t := range timeout {
+		interfaceTimeouts[i] = t
 	}
+
+	timeoutAny, pollingIntervalAny := getTimeoutsAsInterfaces(interfaceTimeouts...)
+	currentTimeout = timeoutAny.(time.Duration)
+	pollingInterval = pollingIntervalAny.(time.Duration)
 	return currentTimeout, pollingInterval
 }
 
