@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 
 	. "github.com/onsi/gomega"
 	"golang.org/x/exp/maps"
@@ -67,15 +66,4 @@ func BytesToInt(b []byte) int {
 	i, err := strconv.Atoi(string(b))
 	Expect(err).NotTo(HaveOccurred())
 	return i
-}
-
-// DurationsToInterfaces converts a slice of time.Durations to a slice of interfaces
-// This is used mostly with test helpers to pass durations as arguments that get converted to interfaces
-// before being passed to the test helper
-func DurationsToInterfaces(durations ...time.Duration) []interface{} {
-	interfaceArray := make([]interface{}, len(durations))
-	for i, duration := range durations {
-		interfaceArray[i] = duration
-	}
-	return interfaceArray
 }
