@@ -894,7 +894,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
 	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
-	snapshotHistory := iosnapshot.NewHistory(opts.ControlPlane.SnapshotCache)
+	snapshotHistory := iosnapshot.NewHistory(opts.ControlPlane.SnapshotCache, opts.Settings)
 
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
