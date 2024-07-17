@@ -82,3 +82,18 @@ func (p *Provider) AssertHTTPRouteStatusContainsSubstring(route *gwv1.HTTPRoute,
 	})
 	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
 }
+
+// AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
+// the given reason substring.
+func (p *Provider) AssertHTTPRouteStatusContainsReason(route *gwv1.HTTPRoute, reason string) {
+	matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
+		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Reason": matchers.ContainSubstrings([]string{reason}),
+				})),
+			})),
+		}),
+	})
+	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+}
