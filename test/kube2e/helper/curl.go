@@ -63,14 +63,20 @@ var (
 	errCannotCurl = func(imageName, imageTag string) error {
 		return errors.Wrapf(ErrCannotCurl, "testContainer from image %s:%s", imageName, imageTag)
 	}
-	defaultCurlTimeout        = time.Second * 20
-	defaultCurlPollingTimeout = time.Second * 2
+	DefaultCurlTimeout        = time.Second * 20
+	DefaultCurlPollingTimeout = time.Second * 2
 )
 
-var getTimeoutsAsInterfaces = helpers.GetDefaultTimingsTransform(defaultCurlTimeout, defaultCurlPollingTimeout)
+var getTimeoutsAsInterfaces = helpers.GetDefaultTimingsTransform(DefaultCurlTimeout, DefaultCurlPollingTimeout)
 
 func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
-	timeoutAny, pollingIntervalAny := getTimeoutsAsInterfaces(currentTimeout, pollingInterval)
+	// Convert the timeouts to interface{}s
+	interfaceTimeouts := make([]interface{}, len(timeout))
+	for i, t := range timeout {
+		interfaceTimeouts[i] = t
+	}
+
+	timeoutAny, pollingIntervalAny := getTimeoutsAsInterfaces(interfaceTimeouts...)
 	currentTimeout = timeoutAny.(time.Duration)
 	pollingInterval = pollingIntervalAny.(time.Duration)
 	return currentTimeout, pollingInterval
