@@ -1,25 +1,25 @@
 ---
-title: Gloo Edge and Istio
-menuTitle: Configure your Gloo Edge gateway to run an Istio sidecar 
+title: Gloo Gateway and Istio
+menuTitle: Configure your Gloo Gateway gateway to run an Istio sidecar 
 weight: 1
 ---
 
-You can configure your Gloo Edge gateway with an Istio sidecar to secure the connection between your gateway and the services in your Istio service mesh. The sidecar in your Gloo Edge gateway uses mutual TLS (mTLS) to prove its identity to the services in the mesh and vice versa.
+You can configure your Gloo Gateway gateway with an Istio sidecar to secure the connection between your gateway and the services in your Istio service mesh. The sidecar in your Gloo Gateway gateway uses mutual TLS (mTLS) to prove its identity to the services in the mesh and vice versa.
 
 ## Before you begin
 
-Complete the following tasks before configuring an Istio sidecar for your Gloo Edge gateway: 
+Complete the following tasks before configuring an Istio sidecar for your Gloo Gateway gateway: 
 
 1. Create or use an existing cluster that runs Kubernetes a version supported by both [your version of Edge]({{< versioned_link_path fromRoot="/reference/support" >}}) and the [version of Istio you intend to install](https://istio.io/latest/docs/releases/supported-releases/). 
-2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.14 through 1.20 are supported in Gloo Edge 1.16. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
+2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.14 through 1.20 are supported in Gloo Gateway 1.16. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
 3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/) to configure a service mesh that is based on Envoy and Istio, and that can span across multiple service meshes and clusters. 
 4. Install [Helm version 3](https://helm.sh/docs/intro/install/) on your local machine.
 
-## Configure the Gloo Edge gateway with an Istio sidecar
+## Configure the Gloo Gateway gateway with an Istio sidecar
 
-Install the Gloo Edge gateway and inject it with an Istio sidecar. 
+Install the Gloo Gateway gateway and inject it with an Istio sidecar. 
 
-1. Add the Gloo Edge Helm repo. 
+1. Add the Gloo Gateway Helm repo. 
    ```shell
    helm repo add gloo https://storage.googleapis.com/solo-public-helm
    ```
@@ -31,8 +31,8 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
       
 3. Create a `value-overrides.yaml` file with the following content:
 - Set `istioIntegration.disableAutoinjection` to `true` so that Istio does not automatically inject a sidecar to the gateway proxy pods. This way, Gloo can configure the sidecar.
-- Set `global.istioIntegration.enabled` to `true` so that the Istio proxy is added to the gateway deployment. This way, the gateway proxy can use Istio certs despite not being in the mesh. Gloo uses a default sidecar configuration, which you can review in the [`gloo` project on GitHub](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/7-gateway-proxy-deployment.yaml). You can also use the `global.istioSDS.customSidecars[]` setting to provide your own sidecar configuration for the Gloo Edge Gateway.
-- Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
+- Set `global.istioIntegration.enabled` to `true` so that the Istio proxy is added to the gateway deployment. This way, the gateway proxy can use Istio certs despite not being in the mesh. Gloo uses a default sidecar configuration, which you can review in the [`gloo` project on GitHub](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/7-gateway-proxy-deployment.yaml). You can also use the `global.istioSDS.customSidecars[]` setting to provide your own sidecar configuration for the Gloo Gateway Gateway.
+- Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Gateway installed respectively
   - The default Istio version is 1.22.0
    ```yaml
    global:
@@ -60,17 +60,17 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    Although the `istioProxy` values are defined in the `glooMtls` block, the values are also used to configure `istioMtls`.
    {{% /notice %}}
    
-1. Install or upgrade Gloo Edge. 
+1. Install or upgrade Gloo Gateway. 
    {{< tabs >}} 
-   {{< tab name="Install Gloo Edge">}}
+   {{< tab name="Install Gloo Gateway">}}
 
-   Install Gloo Edge with the settings in the `value-overrides.yaml` file. This command creates the `gloo-system` namespace and installs the Gloo Edge components into it.
+   Install Gloo Gateway with the settings in the `value-overrides.yaml` file. This command creates the `gloo-system` namespace and installs the Gloo Gateway components into it.
    ```shell
     helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f value-overrides.yaml
    ```
    {{< /tab >}}
-   {{< tab name="Upgrade Gloo Edge">}}
-   Upgrade Gloo Edge with the settings in the `value-overrides.yaml` file.
+   {{< tab name="Upgrade Gloo Gateway">}}
+   Upgrade Gloo Gateway with the settings in the `value-overrides.yaml` file.
    ```shell
    helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
@@ -99,7 +99,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    kubectl describe <gateway-pod-name> -n gloo-system
    ```
 
-Congratulations! You have successfully configured an Istio sidecar for your Gloo Edge gateway. 
+Congratulations! You have successfully configured an Istio sidecar for your Gloo Gateway gateway. 
 
 ## Set up and verify the mTLS connection 
 
@@ -123,7 +123,7 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    deployment.apps/httpbin created
    ```
 
-2. Create a virtual service to set up the routing rules for your httpbin app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
+2. Create a virtual service to set up the routing rules for your httpbin app. In the following example, you instruct the Gloo Gateway gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -228,5 +228,5 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    {{</highlight>}}
 
 {{% notice note %}} 
-If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the httpbin app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
+If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Gateway upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the httpbin app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
 {{% /notice %}}

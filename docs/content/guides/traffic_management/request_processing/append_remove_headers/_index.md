@@ -5,7 +5,7 @@ weight: 70
 description: Append and Remove Headers from Requests and Responses using Route configuration.
 ---
 
-Gloo Edge can add and remove headers to/from requests and responses. We refer to this feature as "Header Manipulation".
+Gloo Gateway can add and remove headers to/from requests and responses. We refer to this feature as "Header Manipulation".
 
 Header Manipulation is configured via the 
 {{< protobuf name="headers.options.gloo.solo.io.HeaderManipulation" display="headerManipulation">}} struct.
@@ -88,7 +88,7 @@ If you would like to use the `headerSecretRef` with `requestHeadersToAdd`, you c
 glooctl create secret header my-headers --headers x-header-1=one,x-header-2=two
 ```
 
-The secret will be created in the same namespace as the Gloo Edge installation by default. Inspecting the secret will show that the type is set to `gloo.solo.io/header`. Each key/value pair in the secret will be added as a header to the request.
+The secret will be created in the same namespace as the Gloo Gateway installation by default. Inspecting the secret will show that the type is set to `gloo.solo.io/header`. Each key/value pair in the secret will be added as a header to the request.
 
 {{% notice note %}}
 Referencing a secret in a different namespace than the upstream is not recommended. Instead, ensure secrets are in the same namespace as the upstream. You can additionally set the `gloo.headerSecretRefNsMatchesUs` Helm field to true, which requires any secrets that are sent in headers to come from the same namespace as the destination upstream.

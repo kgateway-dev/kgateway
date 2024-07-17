@@ -1,10 +1,10 @@
 ---
 title: Buffering
 weight: 105
-description: Set buffering limits on different Gloo Edge resources.
+description: Set buffering limits on different Gloo Gateway resources.
 ---
 
-You can set buffering limits on different Gloo Edge resources to help fine-tune connection read and write speeds.
+You can set buffering limits on different Gloo Gateway resources to help fine-tune connection read and write speeds.
 
 ## Gateway listener
 

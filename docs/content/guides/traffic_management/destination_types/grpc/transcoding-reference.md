@@ -1,10 +1,10 @@
 ---
 title: Transcoding reference
 weight: 40
-description: Find examples for how to annotate your proto files with HTTP rule mappings so that Gloo Edge can correctly transform incoming HTTP requests. 
+description: Find examples for how to annotate your proto files with HTTP rule mappings so that Gloo Gateway can correctly transform incoming HTTP requests. 
 ---
 
-Review examples for how to annotate your proto files to add HTTP mappings. These HTTP mappings are used by Gloo Edge to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of the [Transcode HTTP requests to gRPC]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding/">}}) guide. 
+Review examples for how to annotate your proto files to add HTTP mappings. These HTTP mappings are used by Gloo Gateway to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of the [Transcode HTTP requests to gRPC]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding/">}}) guide. 
 
 {{% notice tip %}}
 To find more examples for how to add HTTP mappings to proto files and their syntax, refer to [Transcoding HTTP/JSON to gRPC](https://cloud.google.com/endpoints/docs/grpc/transcoding) in the Google Cloud documentation. 
@@ -99,7 +99,7 @@ message Author {
 
 In this example: 
 * The GetAuthor gRPC method is mapped to an HTTP GET request.
-* `/authors/{author}` is the URL path for the HTTP request. The `{author}` portion of the URL path instructs Gloo Edge to take the value that is provided in `{author}` and put it in the `author` parameter of the GetAuthorRequest. Because no other fields are defined in the GetAuthorRequest, any query parameters that are provided in the HTTP request are not mapped. 
+* `/authors/{author}` is the URL path for the HTTP request. The `{author}` portion of the URL path instructs Gloo Gateway to take the value that is provided in `{author}` and put it in the `author` parameter of the GetAuthorRequest. Because no other fields are defined in the GetAuthorRequest, any query parameters that are provided in the HTTP request are not mapped. 
 * If the author is found, the details of the author are returned as specified in `message Author`. For example, information such as the ID, gender, and first name is returned in the HTTP response body. 
 
 

@@ -1,15 +1,15 @@
 ---
 title: Quick upgrade
 weight: 20
-description: Quickly upgrade Gloo Edge in testing or sandbox environments.
+description: Quickly upgrade Gloo Gateway in testing or sandbox environments.
 ---
 
-Quickly upgrade your Gloo Edge Enterprise or Gloo Edge Open Source installation to the latest version of {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} in testing or sandbox environments.
+Quickly upgrade your Gloo Gateway Enterprise or Gloo Gateway Open Source installation to the latest version of {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} in testing or sandbox environments.
 
 ## Step 1: Prepare to upgrade {#prepare}
 
 Before you begin, follow the [Prepare to upgrade]({{% versioned_link_path fromRoot="/operations/upgrading/faq" %}}) guide to complete these preparatory steps:
-* Review important changes made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, including CRD, Helm, CLI, and feature changes.
+* Review important changes made to Gloo Gateway in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, including CRD, Helm, CLI, and feature changes.
 * Upgrade your current version to the latest patch.
 * Upgrade any dependencies to the required supported versions.
 * Consider other steps to prepare for upgrading.
@@ -23,12 +23,12 @@ Follow the steps in [Update glooctl CLI version]({{% versioned_link_path fromRoo
 
 Each minor version might add custom resource definitions (CRDs) or otherwise have changes that Helm upgrades cannot handle seamlessly. For these changes, you must make any necessary adjustments before you upgrade.
 
-1. Update the Gloo Edge Helm repositories.
+1. Update the Gloo Gateway Helm repositories.
    ```sh
    helm repo update
    ```
 
-2. Set the version to upgrade Gloo Edge to in an environment variable, such as the latest patch version for open source (`{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`) or enterprise (`{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}`).
+2. Set the version to upgrade Gloo Gateway to in an environment variable, such as the latest patch version for open source (`{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`) or enterprise (`{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}`).
    ```sh
    export NEW_VERSION=<version>
    ```
@@ -77,9 +77,9 @@ open values.yaml
       {{< /tabs >}}
    1. Edit the Helm values file or prepare the `--set` flags to make any changes that you want. If you do not want to use certain settings, comment them out.
 
-## Step 4: Upgrade Gloo Edge {#upgrade}
+## Step 4: Upgrade Gloo Gateway {#upgrade}
 
-Upgrade your Gloo Edge installation. The following example upgrade commands assume that Gloo Edge is installed with Helm, the Helm release exists in the `gloo-system` namespace of a Kubernetes cluster that uses the Kubernetes load balancer, and that the Kubernetes context is set to the cluster.
+Upgrade your Gloo Gateway installation. The following example upgrade commands assume that Gloo Gateway is installed with Helm, the Helm release exists in the `gloo-system` namespace of a Kubernetes cluster that uses the Kubernetes load balancer, and that the Kubernetes context is set to the cluster.
 
 1. Upgrade the Helm release. Include your installation values in a Helm values file (such as `-f values.yaml`) or in `--set` flags.
    {{< tabs >}}
@@ -91,7 +91,7 @@ Upgrade your Gloo Edge installation. The following example upgrade commands assu
    ```
    {{% /tab %}}
    {{% tab name="Enterprise" %}}
-   Note that you must set your license key by using the `--set-string license_key=$LICENSE_KEY` flag or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+   Note that you must set your license key by using the `--set-string license_key=$LICENSE_KEY` flag or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Gateway Enterprise trial](https://www.solo.io/gloo-trial).
    ```shell script
    helm upgrade -n gloo-system gloo glooe/gloo-ee \
      -f values.yaml \
@@ -101,7 +101,7 @@ Upgrade your Gloo Edge installation. The following example upgrade commands assu
    {{% /tab %}}
    {{< /tabs >}}
 
-2. Verify that Gloo Edge runs the upgraded version.
+2. Verify that Gloo Gateway runs the upgraded version.
    ```shell script
    kubectl -n gloo-system get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
    ```
@@ -116,7 +116,7 @@ Upgrade your Gloo Edge installation. The following example upgrade commands assu
    glooctl version
    ```
 
-4. Check that your Gloo Edge components are **OK**. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
+4. Check that your Gloo Gateway components are **OK**. If a problem is reported by `glooctl check`, Gloo Gateway might not work properly or Envoy might not get the updated configuration.
    ```bash
    glooctl check
    ```

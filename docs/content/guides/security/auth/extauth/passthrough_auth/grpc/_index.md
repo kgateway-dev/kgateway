@@ -5,10 +5,10 @@ description: Authenticating using an external grpc service that implements [Envo
 ---
 
 {{% notice note %}}
-The gRPC Passthrough feature was introduced with **Gloo Edge Enterprise**, release 1.6.0. If you are using an earlier version, this tutorial will not work.
+The gRPC Passthrough feature was introduced with **Gloo Gateway Enterprise**, release 1.6.0. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
-When using Gloo Edge's external authentication server, it may be convenient to integrate authentication with a component that implements [Envoy's authorization service API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html?highlight=authorization%20service#service-definition). This guide will walk through the process of setting up Gloo Edge's external authentication server to pass through requests to the provided component for authenticating requests. 
+When using Gloo Gateway's external authentication server, it may be convenient to integrate authentication with a component that implements [Envoy's authorization service API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html?highlight=authorization%20service#service-definition). This guide will walk through the process of setting up Gloo Gateway's external authentication server to pass through requests to the provided component for authenticating requests. 
 
 Make sure to check out the pros and cons of using passthrough auth [here]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth" >}})
 
@@ -57,7 +57,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-The source code for the gRPC service can be found in the Gloo Edge repository [here](https://github.com/solo-io/gloo/tree/main/docs/examples/grpc-passthrough-auth).
+The source code for the gRPC service can be found in the Gloo Gateway repository [here](https://github.com/solo-io/gloo/tree/main/docs/examples/grpc-passthrough-auth).
 
 Once we create the authentication service, we also want to apply the following Service to assign it a static cluster IP.
 {{< highlight shell >}}
@@ -78,7 +78,7 @@ EOF
 {{< /highlight >}}
 
 ## Creating a Virtual Service
-Now let's configure Gloo Edge to route requests to the upstream we just created. To do that, we define a simple Virtual 
+Now let's configure Gloo Gateway to route requests to the upstream we just created. To do that, we define a simple Virtual 
 Service to match all requests that:
 
 - contain a `Host` header with value `foo` and
@@ -87,7 +87,7 @@ Service to match all requests that:
 Apply the following virtual service:
 {{< readfile file="guides/security/auth/extauth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
 
-Let's send a request that matches the above route to the Gloo Edge gateway and make sure it works:
+Let's send a request that matches the above route to the Gloo Gateway gateway and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1
@@ -108,7 +108,7 @@ If you are getting a connection error, make sure you are port-forwarding the `gl
 
 # Securing the Virtual Service 
 As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
-Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+Gloo Gateway allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that all requests will be authenticated by our own auth service.
 
 {{< highlight shell "hl_lines=9-14" >}}
@@ -170,7 +170,7 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_
 
 ### Logging
 
-If Gloo Edge is running on kubernetes, the extauth server logs can be viewed with:
+If Gloo Gateway is running on kubernetes, the extauth server logs can be viewed with:
 ```
 kubectl logs -n gloo-system deploy/extauth -f
 ```
@@ -182,7 +182,7 @@ If the auth config has been received successfully, you should see the log line:
 ### Metrics
 
 {{% notice note %}}
-For more information on how Gloo Edge handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
+For more information on how Gloo Gateway handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
 {{% /notice %}}
 
 * Failure Mode Allow
@@ -247,12 +247,12 @@ spec:
 ## Sharing state with other auth steps
 
 {{% notice note %}}
-The sharing state feature was introduced with **Gloo Edge Enterprise**, release 1.6.10. If you are using an earlier version, this will not work.
+The sharing state feature was introduced with **Gloo Gateway Enterprise**, release 1.6.10. If you are using an earlier version, this will not work.
 {{% /notice %}}
 
 A common requirement is to be able to share state between the passthrough service, and other auth steps (either custom plugins, or our built-in authentication) . When writing a custom auth plugin, this is possible, and the steps to achieve it are [outlined here]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#sharing-state-between-steps" >}}). We support this requirement by leveraging request and response metadata.
 
-We provide some example implementations in the Gloo Edge repository at `docs/examples/grpc-passthrough-auth/pkg/auth/v3/auth-with-state.go`.
+We provide some example implementations in the Gloo Gateway repository at `docs/examples/grpc-passthrough-auth/pkg/auth/v3/auth-with-state.go`.
 
 ### Reading state from other auth steps
 
@@ -264,7 +264,7 @@ State from the passthrough service can be sent to other auth steps via [CheckRes
 
 ### Passing in custom configuration to Passthrough Auth Service from AuthConfigs
 {{% notice note %}}
-This feature was introduced with **Gloo Edge Enterprise**, release 1.6.15. If you are using an earlier version, this will not work.
+This feature was introduced with **Gloo Gateway Enterprise**, release 1.6.15. If you are using an earlier version, this will not work.
 {{% /notice %}}
 
 Custom config can be passed from gloo to the passthrough authentication service. This can be achieved using the `config` field under Passthrough Auth in the AuthConfig:
@@ -294,4 +294,4 @@ This config is accessible via the [CheckRequest FilterMetadata](https://github.c
 
 ## Summary
 
-In this guide, we installed Gloo Edge Enterprise and created an unauthenticated Virtual Service that routes requests to a static upstream. We spun up an example gRPC authentication service that uses a simple header for authentication. We then created an `AuthConfig` and configured it to use Passthrough Auth, pointing it to the IP of our example gRPC service. In doing so, we instructed gloo to pass through requests from the external authentication server to the grpc authentication service provided by the user.
+In this guide, we installed Gloo Gateway Enterprise and created an unauthenticated Virtual Service that routes requests to a static upstream. We spun up an example gRPC authentication service that uses a simple header for authentication. We then created an `AuthConfig` and configured it to use Passthrough Auth, pointing it to the IP of our example gRPC service. In doing so, we instructed gloo to pass through requests from the external authentication server to the grpc authentication service provided by the user.

@@ -1,10 +1,10 @@
 ---
-title: Debugging Gloo Edge
-description: This document shows how some common ways to debug Gloo Edge and Envoy
+title: Debugging Gloo Gateway
+description: This document shows how some common ways to debug Gloo Gateway and Envoy
 weight: 10
 ---
 
-At times, you may need to debug Gloo Edge misconfigurations. Gloo Edge is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo Edge and Envoy. 
+At times, you may need to debug Gloo Gateway misconfigurations. Gloo Gateway is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo Gateway and Envoy. 
 
 The guide is broken into three main sections:
 
@@ -12,15 +12,15 @@ The guide is broken into three main sections:
 * Debugging the data plane 
 * Debugging the control plane
 
-This guide is intended to help you understand where to look if things aren't working as expected. After going through, if [all else fails](#all-else-fails), you can capture the state of Gloo Edge configurations and logs and join us on our [Slack](https://slack.solo.io) and one of our engineers will be able to help.
+This guide is intended to help you understand where to look if things aren't working as expected. After going through, if [all else fails](#all-else-fails), you can capture the state of Gloo Gateway configurations and logs and join us on our [Slack](https://slack.solo.io) and one of our engineers will be able to help.
 
 ## General debugging tools and tips
 
-Review general troubleshooting steps that you can take to start troubleshooting your Gloo Edge setup. 
+Review general troubleshooting steps that you can take to start troubleshooting your Gloo Gateway setup. 
 
-### Check the Gloo Edge installation and resources {#glooctl-check}
+### Check the Gloo Gateway installation and resources {#glooctl-check}
 
-If you experience issues with Gloo Edge, the first thing you can do is to verify your Gloo Edge setup and resources. You can do that by using the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}) that quickly checks the health of Gloo Edge deployments, pods, and custom resources, and verifies Gloo resource configuration. Any issues that are found are reported back in the CLI output.
+If you experience issues with Gloo Gateway, the first thing you can do is to verify your Gloo Gateway setup and resources. You can do that by using the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}) that quickly checks the health of Gloo Gateway deployments, pods, and custom resources, and verifies Gloo resource configuration. Any issues that are found are reported back in the CLI output.
 
 A common issue that you can detect with the `glooctl check` command is a misconfigured or rejected upstream. For example, if [dynamic upstream discovery]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" >}}) is enabled in your environment, and you introduced a faulty upstream configuration, such as by adding a misconfigured TLS section, the resources that reference the misconfigured upstream, such as a virtual service or route table, start reporting errors. These errors can be seen in the output of the `glooctl check` command. 
 
@@ -49,11 +49,11 @@ Checking Proxies... OK
 No problems detected.
 ```
 
-### Verify the Envoy configuration in the Gloo Edge xDS server
+### Verify the Envoy configuration in the Gloo Gateway xDS server
 
-When you deploy virtual service, gateway, or route table resources, these resources are translated into valid Envoy configuration and made available to the gateway proxies in your cluster. As part of the translation process, Gloo Edge creates an internal proxy resource that includes all of the Envoy configuration that you want to apply to the proxies. This proxy is sent to the Gloo Edge xDS server. 
+When you deploy virtual service, gateway, or route table resources, these resources are translated into valid Envoy configuration and made available to the gateway proxies in your cluster. As part of the translation process, Gloo Gateway creates an internal proxy resource that includes all of the Envoy configuration that you want to apply to the proxies. This proxy is sent to the Gloo Gateway xDS server. 
 
-To see the Envoy configuration that is currently served by the Gloo Edge xDS server, you can use the following command. Note that this command returns a lot of information and can be hard to decrypt. However, if you cannot find a specific configuration in the command output, the configuration was likely rejected by Gloo Edge due to errors or conflicts. 
+To see the Envoy configuration that is currently served by the Gloo Gateway xDS server, you can use the following command. Note that this command returns a lot of information and can be hard to decrypt. However, if you cannot find a specific configuration in the command output, the configuration was likely rejected by Gloo Gateway due to errors or conflicts. 
 
 ```bash
 glooctl proxy served-config
@@ -61,7 +61,7 @@ glooctl proxy served-config
 
 ## Debugging the data plane
 
-Gloo Edge is based on Envoy proxies. If requests are handled incorrectly, use the following `glooctl` CLI tools to debug your Envoy configuration.  
+Gloo Gateway is based on Envoy proxies. If requests are handled incorrectly, use the following `glooctl` CLI tools to debug your Envoy configuration.  
 
 ### General steps
 
@@ -87,12 +87,12 @@ Gloo Edge is based on Envoy proxies. If requests are handled incorrectly, use th
    kubectl get pod <pod-name> -n <namespace> -o yaml
    ```
 
-4. Next, check the proxy configuration that is served by the Gloo Edge xDS server. When you create Gloo Edge resources, these resources are translated into Envoy configuration and sent to the xDS server. If Gloo Edge resources are configured correctly, the configuration must be included in the proxy configuration that is served by the xDS server. 
+4. Next, check the proxy configuration that is served by the Gloo Gateway xDS server. When you create Gloo Gateway resources, these resources are translated into Envoy configuration and sent to the xDS server. If Gloo Gateway resources are configured correctly, the configuration must be included in the proxy configuration that is served by the xDS server. 
    ```sh
    glooctl proxy served config
    ```
 
-5. If the Gloo Edge xDS server has the correct configuration, you can then check what configuration is served by the gateway proxies in your cluster. 
+5. If the Gloo Gateway xDS server has the correct configuration, you can then check what configuration is served by the gateway proxies in your cluster. 
    ```sh
    glooctl proxy dump
    ```
@@ -103,7 +103,7 @@ Gloo Edge is based on Envoy proxies. If requests are handled incorrectly, use th
    * [Viewing Envoy stats](#viewing-envoy-stats)
    * [View Envoy bootstrap config and access the Admin API](#view-envoy-bootstrap-config-and-access-the-admin-api)
 
-6. If you find that the Envoy proxy serves incorrect configuration, you can increase the number of gateway proxy replicas so that new gateway proxy pods are created. The new gateway proxy pods pull the latest Envoy configuration from the Gloo Edge xDS server. You can then use the `glooctl proxy dump` command to verify that the correct Envoy configuration is applied. Then, you can remove replicas with stale configuration and scale down the number of gateway proxies again. 
+6. If you find that the Envoy proxy serves incorrect configuration, you can increase the number of gateway proxy replicas so that new gateway proxy pods are created. The new gateway proxy pods pull the latest Envoy configuration from the Gloo Gateway xDS server. You can then use the `glooctl proxy dump` command to verify that the correct Envoy configuration is applied. Then, you can remove replicas with stale configuration and scale down the number of gateway proxies again. 
    1. Scale the gateway proxy deployment. 
       ```sh
       kubectl scale deployment gateway-proxy -n gloo-system replicas=2
@@ -234,7 +234,7 @@ Now you can `curl localhost:19000` and get access to the Envoy Admin API.
 
 ## Debugging the control plane
 
-The Gloo Edge control plane is made up of the following components:
+The Gloo Gateway control plane is made up of the following components:
 
 ```bash
 NAME                             READY   STATUS    RESTARTS   AGE
@@ -279,7 +279,7 @@ Likely you just want to see each individual components logs. You can use `kubect
 kubectl logs -f -n gloo-system -l gloo=gloo
 ```
 
-To follow the logs of other Gloo Edge deployments, simply change the value of the `gloo` label as shown in the table below.
+To follow the logs of other Gloo Gateway deployments, simply change the value of the `gloo` label as shown in the table below.
 
 | Component | Command |
 | ------------- | ------------- |
@@ -291,7 +291,7 @@ To follow the logs of other Gloo Edge deployments, simply change the value of th
 
 ### Changing logging levels and more
 
-Each Gloo Edge control plane component comes with an optional debug port that you can enable with the `START_STATS_SERVER` environment variable. To get access to the port, you can forward the port of the Kubernetes deployment such as with the following command:
+Each Gloo Gateway control plane component comes with an optional debug port that you can enable with the `START_STATS_SERVER` environment variable. To get access to the port, you can forward the port of the Kubernetes deployment such as with the following command:
 
 ```bash
 kubectl port-forward -n gloo-system deploy/gloo 9091:9091
@@ -306,7 +306,7 @@ Now you can navigate to `http://localhost:9091` and you get a simple page with s
 
 With these endpoints, you can profile the behavior of the component, adjust its logging, view the prometheus-style telemetry signals, as well as view tracing spans within the process. This is a very handy page to understand the behavior of a particular component. 
 
-To change the log levels of individual Gloo Edge deployments from the CLI instead of the Admin UI, use commands similar to the following example with the `discovery` deployment.
+To change the log levels of individual Gloo Gateway deployments from the CLI instead of the Admin UI, use commands similar to the following example with the `discovery` deployment.
 
 ```bash
 kubectl port-forward -n gloo-system deploy/discovery 9091:9091
@@ -320,7 +320,7 @@ kubectl port-forward -n gloo-system deploy/discovery 9091:9091
 
 Setting the `LOG_LEVEL` environment variable within `gloo`, `discovery`, or gateway proxy deployments will change the level at which the stats server logs. The default log level for the stats server is `info`.
 
-Other acceptable log levels for Gloo Edge components are:
+Other acceptable log levels for Gloo Gateway components are:
 
 * `debug`
 * `error`
@@ -391,11 +391,11 @@ The following endpoints are then available:
 
 ### All else fails
 
-Again, if all else fails, you can capture the state of Gloo Edge configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
+Again, if all else fails, you can capture the state of Gloo Gateway configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
 
 ```bash
 glooctl debug logs -f gloo-logs.log
 glooctl debug yaml -f gloo-yamls.yaml
 ```
 
-These commands dump all the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Edge deployment. 
+These commands dump all the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Gateway deployment. 

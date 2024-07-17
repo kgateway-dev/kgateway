@@ -6,7 +6,7 @@ weight: 7
 
 # Overview
 
-Gloo Edge can integrate with HashiCorp Vault to provide an alternative way to manage secrets.
+Gloo Gateway can integrate with HashiCorp Vault to provide an alternative way to manage secrets.
 
 Managing secrets using HashiCorp Vault has many benefits such as:
 - **Centralized Secret Management**: Vault provides a centralized solution for managing secrets which can be accessed across different environments. When you only store secrets in Kubernetes, secret access is limited to a single cluster, which might not be sufficient for complex or multi-cloud architectures.

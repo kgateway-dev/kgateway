@@ -1,10 +1,10 @@
 ---
 title: HTTP Connection Manager
 weight: 10
-description: Refine the behavior of Envoy for each listener that you manage with Gloo Edge
+description: Refine the behavior of Envoy for each listener that you manage with Gloo Gateway
 ---
 
-The HTTP Connection Manager lets you refine the behavior of Envoy for each listener that you manage with Gloo Edge.
+The HTTP Connection Manager lets you refine the behavior of Envoy for each listener that you manage with Gloo Gateway.
 
 ---
 
@@ -16,7 +16,7 @@ You can configure the Http Connection Manager on a listener to enable or disable
 
 One of the fields in the HTTP Connection Manager Plugin is `tracing`. This specifies the listener-specific tracing configuration.
 
-For documentation on configuring and using tracing with Gloo Edge, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
+For documentation on configuring and using tracing with Gloo Gateway, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
 
 A tracing upstream or cluster can be specified using `collectorUpstreamRef` or `clusterName` respectively. The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted here:
 
@@ -73,14 +73,14 @@ status: # collapsed for brevity
 
 {{% notice note %}}
 If you provide an invalid clusterName, the error will not show up in Gloo.
-However, if you are using Gloo Edge Enterprise you can use our [observability]({{% versioned_link_path fromRoot="/guides/observability" %}}) features to track the `glooe.solo.io/xds/outofsync` statistic
+However, if you are using Gloo Gateway Enterprise you can use our [observability]({{% versioned_link_path fromRoot="/guides/observability" %}}) features to track the `glooe.solo.io/xds/outofsync` statistic
 {{% /notice %}}
 {{< /tab >}}
 {{< /tabs >}}
 
 ### Advanced listener configuration
 
-Gloo Edge exposes Envoy's powerful configuration capabilities with the HTTP Connection Manager. The details of these fields can be found [here](https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man) and [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-api-msg-core-http1protocoloptions)
+Gloo Gateway exposes Envoy's powerful configuration capabilities with the HTTP Connection Manager. The details of these fields can be found [here](https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man) and [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-api-msg-core-http1protocoloptions)
 
 Below, see a reference configuration specification to demonstrate the structure of the expected YAML.
 
