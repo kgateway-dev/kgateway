@@ -92,7 +92,7 @@ message ExtAuthExtension {
     oneof spec {
         //  Set to true to disable auth on the virtual host/route.
         bool disable = 1;
-        // A reference to an AuthConfig. This is used to configure the Gloo Edge Enterprise extauth server.
+        // A reference to an AuthConfig. This is used to configure the Gloo Gateway Enterprise extauth server.
         core.solo.io.ResourceRef config_ref = 2;
         // Use this field if you are running your own custom extauth server.
         CustomAuth custom_auth = 3;
@@ -250,7 +250,7 @@ message CustomAuth {
 message AuthPlugin {
     // Name of the plugin
     string name = 1;
-    // Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin.
+    // Name of the compiled plugin file. If not specified, Gloo Gateway will look for an ".so" file with same name as the plugin.
     string plugin_file_name = 2;
     // Name of the exported symbol that implements the plugin interface in the plugin.
     // If not specified, defaults to the name of the plugin
@@ -1107,7 +1107,7 @@ message ApiKeyAuth {
     // but in general the more flexible label selector should be preferred.
     repeated core.solo.io.ResourceRef api_key_secret_refs = 2 [deprecated = true];
 
-    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
+    // When receiving a request, the Gloo Gateway Enterprise external auth server will look for an API key in a header
     // with this name. This field is optional; if not provided it defaults to `api-key`.
     string header_name = 3;
 
@@ -1168,7 +1168,7 @@ message K8sSecretApiKeyStorage {
 }
 
 message AerospikeApiKeyStorage {
-    // The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
+    // The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Gateway, such as in a virtual machine with a public IP address or in a pod in the cluster.
     // The client automatically discovers other members of the cluster after establishing a connection.
 	string hostname = 1;
     // The Aerospike namespace of the database. Defaults to "solo-namespace".
@@ -1277,7 +1277,7 @@ message ApiKeySecret {
     map<string, string> metadata = 4;
 }
 
-// Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+// Enforce Open Policy Agent (OPA) policies in Gloo Gateway environments.
 // For Gloo Platform environments, use OpaServerAuth instead.
 message OpaAuth {
     // An optional resource reference to config maps containing modules to assist in the resolution of `query`.
@@ -1319,7 +1319,7 @@ message OpaAuthOptions {
 }
 
 // Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external
-// auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+// auth server in Gloo Platform environments. For Gloo Gateway environments, use OpaAuth instead.
 message OpaServerAuth {
     // The package from your Rego policy bundle used to query the OPA data API.
     //
@@ -1529,7 +1529,7 @@ message PassThroughHttp {
         bool pass_through_filter_metadata = 4;
 
         // Whether or not to include the body in the passthrough request body.
-        // In order for this to work, the settings.extauth.requestBody must be set in the Gloo Edge Settings CRD so that
+        // In order for this to work, the settings.extauth.requestBody must be set in the Gloo Gateway Settings CRD so that
         // the request body is buffered and sent to the ext-auth service.
         // If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
         // the authorization request body will be empty. A non-empty body will increase latency times
@@ -2085,7 +2085,7 @@ message ExtAuthConfig {
         // Currently this is only configured when using the k8s Secret storage backend
         map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive) = true];
 
-        // (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
+        // (Optional) When receiving a request, the Gloo Gateway Enterprise external auth server will look for an API key
         // in a header with this name. This field is optional; if not provided it defaults to `api-key`.
         string header_name = 2;
 
@@ -2113,7 +2113,7 @@ message ExtAuthConfig {
         OpaAuthOptions options = 3;
     }
 
-    // Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+    // Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Gateway environments, use OpaAuth instead.
     message OpaServerAuthConfig {
         string package = 1;
 
