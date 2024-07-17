@@ -106,20 +106,36 @@ func GetDefaultTimingsTransform(timeout, polling interface{}, defaults ...interf
 		pollingInterval = defaultPollingInterval
 
 		if len(intervals) > 0 && intervals[0] != 0 {
-			durationInterval, ok := intervals[0].(time.Duration)
-			Expect(ok).To(BeTrue(), "timeout interval must be a time.Duration")
+			durationInterval, err := asDuration(intervals[0])
+			Expect(err).NotTo(HaveOccurred())
 			if durationInterval != 0 {
-				timeoutInterval = intervals[0]
+				timeoutInterval = durationInterval
 			}
 		}
 		if len(intervals) > 1 && intervals[1] != 0 {
-			durationInterval, ok := intervals[1].(time.Duration)
-			Expect(ok).To(BeTrue(), "timeout interval must be a time.Duration")
+			durationInterval, err := asDuration(intervals[1])
+			Expect(err).NotTo(HaveOccurred())
 			if durationInterval != 0 {
-				pollingInterval = intervals[1]
+				pollingInterval = durationInterval
 			}
 		}
 
 		return timeoutInterval, pollingInterval
 	}
+}
+
+func asDuration(d interface{}) (time.Duration, error) {
+	if duration, ok := d.(time.Duration); ok {
+		return duration, nil
+	}
+
+	if duration, ok := d.(string); ok {
+		parsedDuration, err := time.ParseDuration(duration)
+		if err != nil {
+			return 0, err
+		}
+		return parsedDuration, nil
+	}
+
+	return 0, fmt.Errorf("could not convert %v to time.Duration", d)
 }

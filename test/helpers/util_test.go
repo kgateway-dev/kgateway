@@ -44,26 +44,42 @@ var _ = Describe("PercentileIndex", func() {
 var _ = Describe("transforms for eventually/consistency timing parameters", func() {
 
 	const (
-		overrideTimeout = 4 * time.Second
-		overridePolling = 314 * time.Millisecond
+		overrideTimeout       = 4 * time.Second
+		overridePolling       = 314 * time.Millisecond
+		overrideTimeoutString = "4s"
+		overridePollingString = "314ms"
 	)
 
 	DescribeTable("GetDefaultTimingsTransform", func(getTimeouts func(intervals ...interface{}) (interface{}, interface{}), defaultTimeout, defaultPolling interface{}) {
+		// Use defaults
 		timeout, pollingInterval := getTimeouts()
 		Expect(timeout).To(Equal(defaultTimeout))
 		Expect(pollingInterval).To(Equal(defaultPolling))
 
+		// Specify timeout
 		timeout, pollingInterval = getTimeouts(10 * time.Second)
 		Expect(timeout).To(Equal(10 * time.Second))
 		Expect(pollingInterval).To(Equal(defaultPolling))
 
+		// Specify timout and polling interval
 		timeout, pollingInterval = getTimeouts(10*time.Second, 20*time.Second)
 		Expect(timeout).To(Equal(10 * time.Second))
 		Expect(pollingInterval).To(Equal(20 * time.Second))
 
+		// Check 0's are handled correctly
 		timeout, pollingInterval = getTimeouts(0, 0)
 		Expect(timeout).To(Equal(defaultTimeout))
 		Expect(pollingInterval).To(Equal(defaultPolling))
+
+		// Check 0 durations are handled correctly
+		timeout, pollingInterval = getTimeouts(0*time.Second, 0*time.Second)
+		Expect(timeout).To(Equal(defaultTimeout))
+		Expect(pollingInterval).To(Equal(defaultPolling))
+
+		// Check string durations are handled correctly
+		timeout, pollingInterval = getTimeouts(overrideTimeoutString, overridePollingString)
+		Expect(timeout).To(Equal(overrideTimeout))
+		Expect(pollingInterval).To(Equal(overridePolling))
 	},
 		Entry("no defaults are provided for Eventually",
 			helpers.GetEventuallyTimingsTransform(),
@@ -96,13 +112,5 @@ var _ = Describe("transforms for eventually/consistency timing parameters", func
 			overridePolling,
 		),
 	)
-
-	It("Handles 0s correctly", func() {
-		getTimeouts := helpers.GetDefaultTimingsTransform(overrideTimeout, overridePolling)
-		timeout, pollingInterval := getTimeouts(0*time.Second, 0*time.Second)
-		Expect(timeout).To(Equal(overrideTimeout))
-		Expect(pollingInterval).To(Equal(overridePolling))
-
-	})
 
 })
