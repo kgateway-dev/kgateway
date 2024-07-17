@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
-func TestHelpers(t *testing.T) {
+func TestAssertions(t *testing.T) {
 	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Assertions Suite")
 }
