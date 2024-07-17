@@ -1,8 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/8115
-    resolvesIssue: false
-    description: >-
-      Clarify the inheritance behavior of CORS APIs defined on the VirtualHost and Route level. Previously,
-      there was a claim that when properties were defined at both levels, they were merged. However, the accurate
-      behavior is that RouteOptions fields entirely override VirtualHostOptions when RouteOptions are defined.
