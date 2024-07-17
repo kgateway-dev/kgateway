@@ -1,4 +1,4 @@
-package query
+package httproute
 
 import (
 	"testing"

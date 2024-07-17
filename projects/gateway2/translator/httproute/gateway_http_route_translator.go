@@ -37,9 +37,8 @@ var (
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
-	queries query.GatewayQueries,
 	gwListener gwv1.Listener,
-	route gwv1.HTTPRoute,
+	route *query.HTTPRouteInfo,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
 ) []*v1.Route {
@@ -55,7 +54,7 @@ func TranslateGatewayHTTPRouteRules(
 	delegationChain := list.New()
 
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, pluginRegistry, queries, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
+		ctx, pluginRegistry, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
 	return finalRoutes
 }
 
@@ -64,9 +63,8 @@ func TranslateGatewayHTTPRouteRules(
 func translateGatewayHTTPRouteRulesUtil(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
-	queries query.GatewayQueries,
 	gwListener gwv1.Listener,
-	route gwv1.HTTPRoute,
+	route *query.HTTPRouteInfo,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
 	outputs *[]*v1.Route,
@@ -85,9 +83,8 @@ func translateGatewayHTTPRouteRulesUtil(
 		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
 			pluginRegistry,
-			queries,
 			gwListener,
-			&route,
+			route,
 			rule,
 			reporter,
 			baseReporter,
@@ -111,9 +108,8 @@ func translateGatewayHTTPRouteRulesUtil(
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
-	queries query.GatewayQueries,
 	gwListener gwv1.Listener,
-	gwroute *gwv1.HTTPRoute,
+	gwroute *query.HTTPRouteInfo,
 	rule gwv1.HTTPRouteRule,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
@@ -136,7 +132,6 @@ func translateGatewayHTTPRouteRule(
 		if len(rule.BackendRefs) > 0 {
 			delegates = setRouteAction(
 				ctx,
-				queries,
 				gwroute,
 				rule,
 				outputRoute,
@@ -153,7 +148,7 @@ func translateGatewayHTTPRouteRule(
 
 		rtCtx := &plugins.RouteContext{
 			Listener:        &gwListener,
-			Route:           gwroute,
+			Route:           &gwroute.HTTPRoute,
 			Hostnames:       hostnames,
 			DelegationChain: delegationChain,
 			Rule:            &rule,
@@ -287,8 +282,7 @@ func parsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 
 func setRouteAction(
 	ctx context.Context,
-	queries query.GatewayQueries,
-	gwroute *gwv1.HTTPRoute,
+	gwroute *query.HTTPRouteInfo,
 	rule gwv1.HTTPRouteRule,
 	outputRoute *v1.Route,
 	reporter reports.ParentRefReporter,
@@ -311,14 +305,9 @@ func setRouteAction(
 			delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
-				ctx, queries, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
+				ctx, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
 			if err != nil {
-				reporter.SetCondition(reports.HTTPRouteCondition{
-					Type:    gwv1.RouteConditionResolvedRefs,
-					Status:  metav1.ConditionFalse,
-					Reason:  gwv1.RouteReasonRefNotPermitted,
-					Message: err.Error(),
-				})
+				query.ProcessBackendError(err, reporter)
 			}
 			continue
 		}
@@ -326,7 +315,7 @@ func setRouteAction(
 		clusterName := "blackhole_cluster"
 		ns := "blackhole_ns"
 
-		obj, err := queries.GetBackendForRef(ctx, queries.ObjToFrom(gwroute), &backendRef.BackendObjectReference)
+		obj, err := gwroute.GetBackendForRef(backendRef.BackendObjectReference)
 		ptrClusterName := query.ProcessBackendRef(obj, err, reporter, backendRef.BackendObjectReference)
 		if ptrClusterName != nil {
 			clusterName = *ptrClusterName

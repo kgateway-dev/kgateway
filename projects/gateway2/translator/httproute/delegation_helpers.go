@@ -1,16 +1,15 @@
-package query
+package httproute
 
 import (
-	"context"
 	"path"
 	"reflect"
 	"slices"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -19,8 +18,9 @@ import (
 // the route matcher from the parent route.
 const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matcher"
 
-// GetDelegatedRoutes returns the child routes that match the specified selector using
-// backend ref and the parent route matcher.
+// filterDelegatedChildren filters the referenced children and their rules based
+// on parent matchers, filters their hostnames, and applies parent matcher
+// inheritance
 //
 // A child route may other match a parent rule matcher or may opt to use inherit the parent's matcher.
 // In the case of rule inheritance, a child route does not need to match the parent matcher. By default.
@@ -36,49 +36,18 @@ const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matc
 //   - The child route's query parameters must be a superset of the parent's query parameters
 //
 // If a child route's rule does not match the given parent match, it is not included in the route returned.
-func (r *gatewayQueries) GetDelegatedRoutes(
-	ctx context.Context,
-	backendRef gwv1.BackendObjectReference,
-	parentMatch gwv1.HTTPRouteMatch,
+func filterDelegatedChildren(
 	parentRef types.NamespacedName,
-) ([]gwv1.HTTPRoute, error) {
-	if parentMatch.Path == nil || parentMatch.Path.Type == nil || *parentMatch.Path.Type != gwv1.PathMatchPathPrefix {
-		return nil, nil
-	}
-
-	// Lookup the delegated routes; default to parent namespace
-	delegatedNs := parentRef.Namespace
-	if backendRef.Namespace != nil {
-		delegatedNs = string(*backendRef.Namespace)
-	}
-
-	var children []gwv1.HTTPRoute
-	if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
-		// consider this to be a wildcard
-		var hrlist gwv1.HTTPRouteList
-		err := r.client.List(ctx, &hrlist, client.InNamespace(delegatedNs))
-		if err != nil {
-			return nil, err
-		}
-		children = append(children, hrlist.Items...)
-	} else {
-		delegatedRef := types.NamespacedName{
-			Namespace: delegatedNs,
-			Name:      string(backendRef.Name),
-		}
-		// Lookup the child route
-		child := &gwv1.HTTPRoute{}
-		err := r.client.Get(ctx, types.NamespacedName{Namespace: delegatedRef.Namespace, Name: delegatedRef.Name}, child)
-		if err != nil {
-			return nil, err
-		}
-		children = append(children, *child)
-	}
-
+	parentMatch gwv1.HTTPRouteMatch,
+	children []*query.HTTPRouteInfo,
+) []*query.HTTPRouteInfo {
 	// Select the child routes that match the parent
-	var selected []gwv1.HTTPRoute
+	var selected []*query.HTTPRouteInfo
 	for _, child := range children {
-		inheritMatcher := shouldInheritMatcher(child)
+		// make a copy; multiple parents can delegate to the same child so we can't modify a shared reference
+		child := child.Clone()
+
+		inheritMatcher := shouldInheritMatcher(&child.HTTPRoute)
 		matched := false
 
 		// Check if the child route has a prefix that matches the parent.
@@ -94,19 +63,16 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 			}
 
 			for _, match := range rule.Matches {
-				// When inheriting the parent's matcher, all matches are valid.
-				// In this case, the child inherits the parents matcher so we merge
-				// the parent's matcher with the child's.
 				if inheritMatcher {
+					// When inheriting the parent's matcher, all matches are valid.
+					// In this case, the child inherits the parents matcher so we merge
+					// the parent's matcher with the child's.
 					mergeParentChildRouteMatch(&parentMatch, &match)
 					validMatches = append(validMatches, match)
 					matched = true
-					continue
-				}
-
-				// Non-inherited matcher delegation requires matching child matcher to parent matcher
-				// to delegate from the parent route to the child.
-				if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, child.Namespace, child.Spec.ParentRefs); ok {
+				} else if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, child.Namespace, child.Spec.ParentRefs); ok {
+					// Non-inherited matcher delegation requires matching child matcher to parent matcher
+					// to delegate from the parent route to the child.
 					validMatches = append(validMatches, match)
 					matched = true
 				}
@@ -120,7 +86,7 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 		}
 	}
 
-	return selected, nil
+	return selected
 }
 
 func isDelegatedRouteMatch(
@@ -202,7 +168,7 @@ func isDelegatedRouteMatch(
 
 // shouldInheritMatcher returns true if the route indicates that it should inherit
 // its parent's matcher.
-func shouldInheritMatcher(route gwv1.HTTPRoute) bool {
+func shouldInheritMatcher(route *gwv1.HTTPRoute) bool {
 	val, ok := route.Annotations[inheritMatcherAnnotation]
 	if !ok {
 		return false
