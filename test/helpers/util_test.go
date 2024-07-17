@@ -96,4 +96,12 @@ var _ = Describe("transforms for eventually/consistency timing parameters", func
 		),
 	)
 
+	It("Handles 0s correctly", func() {
+		getTimeouts := helpers.GetDefaultTimingsTransform(overrideTimeout, overridePolling)
+		timeout, pollingInterval := getTimeouts(0*time.Second, 0*time.Second)
+		Expect(timeout).To(Equal(overrideTimeout))
+		Expect(pollingInterval).To(Equal(overridePolling))
+
+	})
+
 })

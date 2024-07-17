@@ -113,10 +113,18 @@ func GetDefaultTimingsTransform(timeout, polling interface{}, defaults ...interf
 		pollingInterval = defaultPollingInterval
 
 		if len(intervals) > 0 && intervals[0] != 0 {
-			timeoutInterval = intervals[0]
+			durationInterval, ok := intervals[0].(time.Duration)
+			Expect(ok).To(BeTrue(), "timeout interval must be a time.Duration")
+			if durationInterval != 0 {
+				timeoutInterval = intervals[0]
+			}
 		}
 		if len(intervals) > 1 && intervals[1] != 0 {
-			pollingInterval = intervals[1]
+			durationInterval, ok := intervals[1].(time.Duration)
+			Expect(ok).To(BeTrue(), "timeout interval must be a time.Duration")
+			if durationInterval != 0 {
+				pollingInterval = intervals[1]
+			}
 		}
 
 		return timeoutInterval, pollingInterval
