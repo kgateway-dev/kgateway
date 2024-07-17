@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -66,13 +67,13 @@ var _ = Describe("transforms for eventually/consistency timing parameters", func
 	},
 		Entry("no defaults are provided for Eventually",
 			helpers.GetEventuallyTimingsTransform(),
-			helpers.GomegaDefaultEventuallyTimeout,
-			helpers.GomegaDefaultEventuallyPollingInterval,
+			gomega.DefaultEventuallyTimeout,
+			gomega.DefaultEventuallyPollingInterval,
 		),
 		Entry("timeout default is provided for Eventually",
 			helpers.GetEventuallyTimingsTransform(overrideTimeout),
 			overrideTimeout,
-			helpers.GomegaDefaultEventuallyPollingInterval,
+			gomega.DefaultEventuallyPollingInterval,
 		),
 		Entry("timeout and polling interval defaults are provided for Eventually",
 			helpers.GetEventuallyTimingsTransform(overrideTimeout, overridePolling),
@@ -81,13 +82,13 @@ var _ = Describe("transforms for eventually/consistency timing parameters", func
 		),
 		Entry("no defaults are provided for Consistently",
 			helpers.GetConsistentlyTimingsTransform(),
-			helpers.GomegaDefaultConsistentlyTimeout,
-			helpers.GomegaDefaultConsistentlyPollingInterval,
+			gomega.DefaultConsistentlyDuration,
+			gomega.DefaultConsistentlyPollingInterval,
 		),
 		Entry("timeout default is provided for Consistently",
 			helpers.GetConsistentlyTimingsTransform(overrideTimeout),
 			overrideTimeout,
-			helpers.GomegaDefaultConsistentlyPollingInterval,
+			gomega.DefaultConsistentlyPollingInterval,
 		),
 		Entry("timeout and polling interval defaults are provided for Consistently",
 			helpers.GetConsistentlyTimingsTransform(overrideTimeout, overridePolling),

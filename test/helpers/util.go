@@ -7,6 +7,7 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -55,14 +56,6 @@ func PercentileIndex(length, pct int) int {
 	return int(math.Ceil(float64(length)*(float64(pct)/float64(100)))) - 1
 }
 
-var (
-	// Gomega defaults from https://github.com/onsi/gomega/blob/master/internal/duration_bundle.go#L27
-	GomegaDefaultEventuallyTimeout           = 1 * time.Second
-	GomegaDefaultEventuallyPollingInterval   = 10 * time.Millisecond
-	GomegaDefaultConsistentlyTimeout         = 100 * time.Millisecond
-	GomegaDefaultConsistentlyPollingInterval = 10 * time.Millisecond
-)
-
 // GetDefaultEventuallyTimeoutsTransform returns timeout and polling interval values to use with a gomega eventually call
 // The `defaults` parameter can be used to override the default Gomega values.
 // The first value in the `defaults` slice will be used as the timeout, and the second value will be used as the polling interval (if present)
@@ -74,7 +67,7 @@ var (
 // timeout, pollingInterval := getTimeouts(10*time.Second, 200*time.Millisecond) // returns 10*time.Second, 200*time.Millisecond
 // See tests for more examples
 func GetEventuallyTimingsTransform(defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
-	return GetDefaultTimingsTransform(GomegaDefaultEventuallyTimeout, GomegaDefaultEventuallyPollingInterval, defaults...)
+	return GetDefaultTimingsTransform(gomega.DefaultEventuallyTimeout, gomega.DefaultEventuallyPollingInterval, defaults...)
 }
 
 // GetConsistentlyTimingsTransform returns timeout and polling interval values to use with a gomega consistently call
@@ -88,7 +81,7 @@ func GetEventuallyTimingsTransform(defaults ...interface{}) func(intervals ...in
 // timeout, pollingInterval := getTimeouts(10*time.Second, 200*time.Millisecond) // returns 10*time.Second, 200*time.Millisecond
 // See tests for more examples
 func GetConsistentlyTimingsTransform(defaults ...interface{}) func(intervals ...interface{}) (interface{}, interface{}) {
-	return GetDefaultTimingsTransform(GomegaDefaultConsistentlyTimeout, GomegaDefaultConsistentlyPollingInterval, defaults...)
+	return GetDefaultTimingsTransform(gomega.DefaultConsistentlyDuration, gomega.DefaultConsistentlyPollingInterval, defaults...)
 }
 
 // GetDefaultTimingsTransform is used to return the timeout and polling interval values to use with a gomega eventually or consistently call
