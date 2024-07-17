@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("Query", func() {
-
 	var (
 		scheme  *runtime.Scheme
 		builder *fake.ClientBuilder
@@ -150,7 +149,6 @@ var _ = Describe("Query", func() {
 	})
 
 	Describe("GetSecretRef", func() {
-
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
 			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
@@ -168,7 +166,6 @@ var _ = Describe("Query", func() {
 	})
 
 	Describe("Get Routes", func() {
-
 		It("should get http routes for listener", func() {
 			gwWithListener := gw()
 			gwWithListener.Spec.Listeners = []apiv1.Listener{
@@ -186,10 +183,10 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes).NotTo(BeNil())
+			Expect(routes.RouteErrors).To(BeEmpty())
 			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
 		})
@@ -219,10 +216,11 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes).NotTo(BeNil())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
 		})
 
@@ -248,7 +246,8 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Error).To(MatchError("selector must be set"))
 		})
@@ -278,7 +277,8 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNotAllowedByListeners))
@@ -307,11 +307,14 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
 			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults["foo2"].Error).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Routes).To(BeEmpty())
+			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
 		})
 
 		It("should error when listeners don't match route", func() {
@@ -337,7 +340,8 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
@@ -367,7 +371,8 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
 			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
@@ -400,7 +405,8 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingListenerHostname))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingListenerHostname))
@@ -433,7 +439,8 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
 			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
@@ -462,20 +469,21 @@ var _ = Describe("Query", func() {
 
 			fakeClient := builder.WithObjects(hr).Build()
 			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
-			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(hr.Spec.ParentRefs[1]))
+			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(apiv1.ParentReference{
+				Name: hr.Spec.ParentRefs[1].Name,
+			}))
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
 		Context("test host intersection", func() {
-
 			expectHostnamesToMatch := func(lh string, rh []string, expectedHostnames ...string) {
-
 				gwWithListener := gw()
 				gwWithListener.Spec.Listeners = []apiv1.Listener{
 					{
@@ -499,9 +507,13 @@ var _ = Describe("Query", func() {
 
 				fakeClient := builder.WithObjects(hr).Build()
 				gq := query.NewData(fakeClient, scheme)
-				routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+				routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes.ListenerResults["foo"].Routes[0].Hostnames).To(Equal(expectedHostnames))
+				if expectedHostnames == nil {
+					expectedHostnames = []string{}
+				}
+				Expect(routes.ListenerResults["foo"].Routes[0].Hostnames()).To(Equal(expectedHostnames))
 			}
 
 			It("should work with identical names", func() {
@@ -584,7 +596,6 @@ func httpRoute() *apiv1.HTTPRoute {
 			Name:      "test",
 		},
 	}
-
 }
 
 func gw() *apiv1.Gateway {
@@ -594,7 +605,6 @@ func gw() *apiv1.Gateway {
 			Name:      "test",
 		},
 	}
-
 }
 
 func secret(ns string) *corev1.Secret {

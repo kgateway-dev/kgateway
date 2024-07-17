@@ -4,7 +4,12 @@ import (
 	"context"
 	"sync"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	ratelimitv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -34,10 +39,11 @@ type History interface {
 }
 
 // NewHistory returns an implementation of the History interface
-func NewHistory(cache cache.SnapshotCache) History {
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings) History {
 	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
+		settings:          settings,
 		kubeGatewayClient: nil,
 	}
 }
@@ -49,6 +55,7 @@ type historyImpl struct {
 	sync.RWMutex
 	latestApiSnapshot *v1snap.ApiSnapshot
 	xdsCache          cache.SnapshotCache
+	settings          *gloov1.Settings
 	kubeGatewayClient client.Client
 }
 
@@ -83,19 +90,44 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 	// "input snapshot" since they are the product (output) of translation
 	snap.Proxies = nil
 
-	// get the resources from the edge input snapshot
+	// If kubernetes gateway integration is enabled, we remove resource types from the ApiSnapshot
+	// that are shared between the edge and kube gateway controllers. Since the kube gateway controller
+	// watches all resources of the relevant types on the cluster (rather than only ones in the snapshot),
+	// the resources returned by getKubeGatewayResources below is a superset of what's in the edge api snapshot.
+	// So we remove the duplicate resource types from the api snapshot here.
+	kubeGatewayClient := h.getKubeGatewayClientSafe()
+	if kubeGatewayClient != nil {
+		// kube gateway integration is enabled
+		snap.RouteOptions = nil
+		snap.VirtualHostOptions = nil
+		snap.AuthConfigs = nil
+		snap.Ratelimitconfigs = nil
+	}
+
+	// get the resources from the edge api snapshot
 	resources, err := snapshotToKubeResources(snap)
 	if err != nil {
 		return nil, err
 	}
 
+	// get settings, which is not part of the api snapshot
+	if h.settings != nil {
+		settings, err := settingsToKubeResource(h.settings)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, *settings)
+	}
+
 	// get the resources that the kubernetes gateway controller watches
+	// (if kube gateway integration is enabled)
 	kubeResources, err := h.getKubeGatewayResources(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resources = append(resources, kubeResources...)
 
+	// sort all the resources before formatting
 	sortResources(resources)
 
 	return formatOutput("json_compact", resources)
@@ -182,10 +214,22 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 
 	resources := []crdv1.Resource{}
 	gvks := []schema.GroupVersionKind{
+		// Kubernetes Gateway API resources
 		wellknown.GatewayClassListGVK,
 		wellknown.GatewayListGVK,
 		wellknown.HTTPRouteListGVK,
 		wellknown.ReferenceGrantListGVK,
+
+		// Gloo resources used in Kubernetes Gateway integration
+		v1alpha1.GatewayParametersGVK,
+		gatewayv1.ListenerOptionGVK,
+		gatewayv1.HttpListenerOptionGVK,
+
+		// resources shared between Edge and Kubernetes Gateway integration
+		gatewayv1.RouteOptionGVK,
+		gatewayv1.VirtualHostOptionGVK,
+		extauthv1.AuthConfigGVK,
+		ratelimitv1alpha1.RateLimitConfigGVK,
 	}
 	for _, gvk := range gvks {
 		// populate an unstructured list for each resource type
