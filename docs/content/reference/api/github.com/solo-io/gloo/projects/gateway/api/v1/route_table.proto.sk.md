@@ -26,7 +26,7 @@ weight: 5
 ### RouteTable
 
  
-The **RouteTable** is a child routing object for the Gloo Gateway.
+The **RouteTable** is a child routing object for the Gloo Edge.
 
 A **RouteTable** gets built into the complete routing configuration when it is referenced by a `delegateAction`,
 either in a parent VirtualService or another RouteTable.
