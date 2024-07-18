@@ -417,7 +417,7 @@ type ExtAuthExtension_Disable struct {
 }
 
 type ExtAuthExtension_ConfigRef struct {
-	// A reference to an AuthConfig. This is used to configure the Gloo Edge Enterprise extauth server.
+	// A reference to an AuthConfig. This is used to configure the Gloo Gateway Enterprise extauth server.
 	ConfigRef *core.ResourceRef `protobuf:"bytes,2,opt,name=config_ref,json=configRef,proto3,oneof"`
 }
 
@@ -875,7 +875,7 @@ type AuthPlugin struct {
 
 	// Name of the plugin
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin.
+	// Name of the compiled plugin file. If not specified, Gloo Gateway will look for an ".so" file with same name as the plugin.
 	PluginFileName string `protobuf:"bytes,2,opt,name=plugin_file_name,json=pluginFileName,proto3" json:"plugin_file_name,omitempty"`
 	// Name of the exported symbol that implements the plugin interface in the plugin.
 	// If not specified, defaults to the name of the plugin
@@ -3160,7 +3160,7 @@ type ApiKeyAuth struct {
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	ApiKeySecretRefs []*core.ResourceRef `protobuf:"bytes,2,rep,name=api_key_secret_refs,json=apiKeySecretRefs,proto3" json:"api_key_secret_refs,omitempty"`
-	// When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
+	// When receiving a request, the Gloo Gateway Enterprise external auth server will look for an API key in a header
 	// with this name. This field is optional; if not provided it defaults to `api-key`.
 	HeaderName string `protobuf:"bytes,3,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
 	// DEPRECATED: use headers_from_metadata_entry
@@ -3359,7 +3359,7 @@ type AerospikeApiKeyStorage struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
+	// The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Gateway, such as in a virtual machine with a public IP address or in a pod in the cluster.
 	// The client automatically discovers other members of the cluster after establishing a connection.
 	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
 	// The Aerospike namespace of the database. Defaults to "solo-namespace".
@@ -3724,7 +3724,7 @@ func (x *ApiKeySecret) GetMetadata() map[string]string {
 	return nil
 }
 
-// Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+// Enforce Open Policy Agent (OPA) policies in Gloo Gateway environments.
 // For Gloo Platform environments, use OpaServerAuth instead.
 type OpaAuth struct {
 	state         protoimpl.MessageState
@@ -3867,7 +3867,7 @@ func (x *OpaAuthOptions) GetReturnDecisionReason() bool {
 }
 
 // Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external
-// auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+// auth server in Gloo Platform environments. For Gloo Gateway environments, use OpaAuth instead.
 type OpaServerAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -7298,7 +7298,7 @@ type PassThroughHttp_Request struct {
 	// filter metadata is needed in the auth request.
 	PassThroughFilterMetadata bool `protobuf:"varint,4,opt,name=pass_through_filter_metadata,json=passThroughFilterMetadata,proto3" json:"pass_through_filter_metadata,omitempty"`
 	// Whether or not to include the body in the passthrough request body.
-	// In order for this to work, the settings.extauth.requestBody must be set in the Gloo Edge Settings CRD so that
+	// In order for this to work, the settings.extauth.requestBody must be set in the Gloo Gateway Settings CRD so that
 	// the request body is buffered and sent to the ext-auth service.
 	// If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
 	// the authorization request body will be empty. A non-empty body will increase latency times
@@ -8601,7 +8601,7 @@ type ExtAuthConfig_ApiKeyAuthConfig struct {
 	// This map is automatically populated with the information from the relevant `ApiKey`s.
 	// Currently this is only configured when using the k8s Secret storage backend
 	ValidApiKeys map[string]*ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata `protobuf:"bytes,1,rep,name=valid_api_keys,json=validApiKeys,proto3" json:"valid_api_keys,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
+	// (Optional) When receiving a request, the Gloo Gateway Enterprise external auth server will look for an API key
 	// in a header with this name. This field is optional; if not provided it defaults to `api-key`.
 	HeaderName string `protobuf:"bytes,2,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
 	// Determines the key metadata that will be included as headers on the upstream request.
@@ -8775,7 +8775,7 @@ func (x *ExtAuthConfig_OpaAuthConfig) GetOptions() *OpaAuthOptions {
 	return nil
 }
 
-// Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+// Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Gateway environments, use OpaAuth instead.
 type ExtAuthConfig_OpaServerAuthConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

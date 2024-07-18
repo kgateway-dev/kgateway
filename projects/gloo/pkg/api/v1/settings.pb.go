@@ -202,7 +202,7 @@ type Settings struct {
 	// Enable automatic linkerd upstream header addition for easier routing to linkerd services
 	Linkerd bool `protobuf:"varint,17,opt,name=linkerd,proto3" json:"linkerd,omitempty"`
 	// Configuration options for the Clusteringress Controller (for Knative).
-	// Deprecated: Will not be available in Gloo Edge 1.11
+	// Deprecated: Will not be available in Gloo Gateway 1.11
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.
 	Knative *Settings_KnativeOptions `protobuf:"bytes,18,opt,name=knative,proto3" json:"knative,omitempty"`
@@ -260,7 +260,7 @@ type Settings struct {
 	// Default configuration to use for upstreams, when not provided by specific upstream
 	// When these properties are defined on an upstream, this configuration will be ignored
 	UpstreamOptions *UpstreamOptions `protobuf:"bytes,32,opt,name=upstreamOptions,proto3" json:"upstreamOptions,omitempty"`
-	// Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI)
+	// Enterprise-only: Settings for the Gloo Gateway Enterprise Console (UI)
 	ConsoleOptions *ConsoleOptions `protobuf:"bytes,35,opt,name=console_options,json=consoleOptions,proto3" json:"console_options,omitempty"`
 	// Enterprise-only: GraphQL settings
 	GraphqlOptions *GraphqlOptions `protobuf:"bytes,37,opt,name=graphql_options,json=graphqlOptions,proto3" json:"graphql_options,omitempty"`
@@ -721,10 +721,10 @@ type GlooOptions struct {
 	AwsOptions              *GlooOptions_AWSOptions `protobuf:"bytes,5,opt,name=aws_options,json=awsOptions,proto3" json:"aws_options,omitempty"`
 	// set these options to fine-tune the way Gloo handles invalid user configuration
 	InvalidConfigPolicy *GlooOptions_InvalidConfigPolicy `protobuf:"bytes,6,opt,name=invalid_config_policy,json=invalidConfigPolicy,proto3" json:"invalid_config_policy,omitempty"`
-	// Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources
-	// to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if
-	// you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Edge watches,
-	// the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load
+	// Enable or disable Gloo Gateway to scan Kubernetes services in the cluster and create in-memory Upstream resources
+	// to represent them. These resources enable Gloo Gateway to route requests to a Kubernetes service. Note that if
+	// you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Gateway watches,
+	// the API snapshot increases which can have a negative impact on the Gloo Gateway translation time. In addition, load
 	// balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing
 	// destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use
 	// [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/)
@@ -1143,10 +1143,10 @@ type ConsoleOptions struct {
 	// If true, then custom resources can only be viewed in read-only mode in the UI.
 	// If false, then resources can be created, updated, and deleted via the UI.
 	// Currently, create/update/delete operations are only supported for GraphQL resources.
-	// This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+	// This feature requires a Gloo Gateway Enterprise license with GraphQL enabled.
 	// Defaults to true.
 	ReadOnly *wrappers.BoolValue `protobuf:"bytes,1,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	// Whether to enable the GraphQL API Explorer. This feature requires a Gloo Edge Enterprise license with GraphQL enabled.
+	// Whether to enable the GraphQL API Explorer. This feature requires a Gloo Gateway Enterprise license with GraphQL enabled.
 	// Defaults to true.
 	ApiExplorerEnabled *wrappers.BoolValue `protobuf:"bytes,2,opt,name=api_explorer_enabled,json=apiExplorerEnabled,proto3" json:"api_explorer_enabled,omitempty"`
 }
@@ -1415,7 +1415,7 @@ type Settings_VaultSecrets struct {
 	// Defaults to 'secret'
 	PathPrefix string `protobuf:"bytes,10,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
 	// Configure TLS options for client connection to Vault. This is only available when running
-	// Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad.
+	// Gloo Gateway outside of an container orchestration tool such as Kubernetes or Nomad.
 	TlsConfig *Settings_VaultTlsConfig `protobuf:"bytes,11,opt,name=tls_config,json=tlsConfig,proto3" json:"tls_config,omitempty"`
 	// Support for multiple authentication methods
 	//

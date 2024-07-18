@@ -30,7 +30,7 @@ const (
 	GlooType_Unknown GlooType = 0
 	GlooType_Gateway GlooType = 1
 	GlooType_Ingress GlooType = 2
-	// Deprecated: Will not be available in Gloo Edge 1.11
+	// Deprecated: Will not be available in Gloo Gateway 1.11
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.
 	GlooType_Knative GlooType = 3

@@ -1170,7 +1170,7 @@ type RouteOptions struct {
 	Extensions *Extensions `protobuf:"bytes,6,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	// Defines route-specific tracing configuration.
 	// See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
-	// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
+	// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Gateway.
 	Tracing *tracing.RouteTracingSettings `protobuf:"bytes,7,opt,name=tracing,proto3" json:"tracing,omitempty"`
 	// Specifies traffic shadowing configuration for the route.
 	// See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy

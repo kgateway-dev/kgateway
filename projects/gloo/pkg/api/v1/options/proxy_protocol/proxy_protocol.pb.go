@@ -34,7 +34,7 @@ type ProxyProtocol struct {
 	//
 	// .. attention::
 	//
-	//	The true setting is only honored in Gloo Edge Enterprise.
+	//	The true setting is only honored in Gloo Gateway Enterprise.
 	//	This breaks conformance with the specification.
 	//	Only enable if ALL traffic to the listener comes from a trusted source.
 	//	For more information on the security implications of this feature, see

@@ -28,7 +28,7 @@ const (
 
 // Contains settings for configuring Envoy's tracing capabilities at the listener level.
 // See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) for additional information on Envoy's tracing capabilities.
-// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
+// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Gateway.
 type ListenerTracingSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -190,7 +190,7 @@ func (*ListenerTracingSettings_OpenCensusConfig) isListenerTracingSettings_Provi
 // Contains settings for configuring Envoy's tracing capabilities at the route level.
 // Note: must also specify ListenerTracingSettings for the associated listener.
 // See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) for additional information on Envoy's tracing capabilities.
-// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
+// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Gateway.
 type RouteTracingSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

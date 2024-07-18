@@ -364,7 +364,7 @@ type GrpcJsonTranscoder_DescriptorConfigMap struct {
 	unknownFields protoimpl.UnknownFields
 
 	// A reference to a ConfigMap containing the base64-encoded binary content of a proto descriptor set.
-	// The ConfigMap must be in a namespace watched by Gloo Edge.
+	// The ConfigMap must be in a namespace watched by Gloo Gateway.
 	ConfigMapRef *core.ResourceRef `protobuf:"bytes,1,opt,name=config_map_ref,json=configMapRef,proto3" json:"config_map_ref,omitempty"`
 	// The ConfigMap data key whose value contains the proto descriptor set.
 	// If the ConfigMap contains multiple key-value pairs, this field is required.
