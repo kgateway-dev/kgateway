@@ -332,6 +332,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "maxStreamDuration": .gloo.solo.io.RouteOptions.MaxStreamDuration
 "idleTimeout": .google.protobuf.Duration
 "extProc": .extproc.options.gloo.solo.io.RouteSettings
+"ai": .ai.options.gloo.solo.io.RouteSettings
 
 ```
 
@@ -375,6 +376,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `maxStreamDuration` | [.gloo.solo.io.RouteOptions.MaxStreamDuration](../options.proto.sk/#maxstreamduration) | Settings for maximum durations and timeouts for streams on the route. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration). |
 | `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout, although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings) wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout). |
 | `extProc` | [.extproc.options.gloo.solo.io.RouteSettings](../enterprise/options/extproc/extproc.proto.sk/#routesettings) | Enterprise-only: External Processing filter settings for the route. This can be used to override certain HttpListenerOptions or VirtualHostOptions settings. |
+| `ai` | [.ai.options.gloo.solo.io.RouteSettings](../enterprise/options/ai/ai.proto.sk/#routesettings) | Enterprise-only: Settings to configure ai settings for a route. These settings will only apply if the backend is an `ai` Upstream. |
 
 
 
