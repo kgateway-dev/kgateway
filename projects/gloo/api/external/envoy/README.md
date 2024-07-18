@@ -1,7 +1,7 @@
-### Envoy Protos in Gloo Gateway
+### Envoy Protos in Gloo Edge
 
-The envoy api in Gloo Gateway is now taken directly from the envoy protos and then copied into the relevant directory
-here in the Gloo Gateway repo. In order to allow for seamless addition of envoy protos directly into the gloo repo simply
+The envoy api in Gloo Edge is now taken directly from the envoy protos and then copied into the relevant directory
+here in the Gloo Edge repo. In order to allow for seamless addition of envoy protos directly into the gloo repo simply
 change the go_package option to the appropriate `go-control-plane` package, or if none exists than add the `go-control-plane` one
 
 For example:
