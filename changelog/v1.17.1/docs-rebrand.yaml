@@ -5,4 +5,4 @@ changelog:
       Rebrands Gloo Edge to Gloo Gateway.
       Updates logo.
       Bumps versions.
-      skipCI-kube-tests:true
+      skipCI-kube-tests:false
