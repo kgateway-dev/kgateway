@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Adds release notes for 1.17.
+      skipCI-kube-tests:true
