@@ -132,3 +132,29 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 		WithContext(ctx).
 		Should(Succeed())
 }
+
+func (p *Provider) AssertEventualCurlError(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	curlOptions []curl.Option,
+	timeout ...time.Duration,
+) {
+	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
+	p.EventuallyObjectsExist(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podOpts.Name, Namespace: podOpts.Namespace,
+		},
+	})
+
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+
+	p.Gomega.Eventually(func(g Gomega) {
+		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+		fmt.Printf("wanted an error:\nstdout:\n%s\nstderr:%s\n\n", curlResponse.StdOut, curlResponse.StdErr)
+		g.Expect(err).To(HaveOccurred())
+	}).
+		WithTimeout(currentTimeout).
+		WithPolling(pollingInterval).
+		WithContext(ctx).
+		Should(Succeed(), "failed to get a curl error")
+}
