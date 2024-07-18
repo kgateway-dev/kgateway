@@ -4,11 +4,11 @@ weight: 50
 description: Enable a health check plugin to respond with common HTTP codes
 ---
 
-Gloo Edge includes an HTTP health checking plug-in that you can enable in a {{< protobuf display="Gateway" name="gateway.solo.io.Gateway" >}} (which becomes an [Envoy Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners)). This plug-in responds to health check requests directly with either a `200 OK` or `503 Service Unavailable` message, depending on the current draining state of Envoy.
+Gloo Gateway includes an HTTP health checking plug-in that you can enable in a {{< protobuf display="Gateway" name="gateway.solo.io.Gateway" >}} (which becomes an [Envoy Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners)). This plug-in responds to health check requests directly with either a `200 OK` or `503 Service Unavailable` message, depending on the current draining state of Envoy.
 
 **Before you begin**: To activate a health check endpoint on a Gateway, you must first configure a virtual service. For example, you can follow one of the [destination selection guides]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_selection/" %}}) to create a virtual service.
  
-1. Edit the gateway proxy that you want to add the health check to. **Note**: If you use TLS termination in Gloo Edge, use the `gateway-proxy-ssl` tab to configure the Gateway Proxy SSL.
+1. Edit the gateway proxy that you want to add the health check to. **Note**: If you use TLS termination in Gloo Gateway, use the `gateway-proxy-ssl` tab to configure the Gateway Proxy SSL.
    {{< tabs >}} 
 {{% tab name="gateway-proxy" %}}
 ```shell

@@ -1,12 +1,12 @@
 ---
 title: Open Policy Agent (OPA)
 weight: 80
-description: Define fine-grained policies to control Gloo Edge configuration itself.
+description: Define fine-grained policies to control Gloo Gateway configuration itself.
 ---
 
-In Kubernetes, Gloo Edge stores its configuration as Custom Resource Definitions (CRDs). Because these CRDs are Kubernetes objects, you can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create Gloo Edge resources, such as a VirtualService object. 
+In Kubernetes, Gloo Gateway stores its configuration as Custom Resource Definitions (CRDs). Because these CRDs are Kubernetes objects, you can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create Gloo Gateway resources, such as a VirtualService object. 
 
-However, RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent (OPA), you can specify fine-grained control over Gloo Edge objects. Compare the differences in the following examples.
+However, RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent (OPA), you can specify fine-grained control over Gloo Gateway objects. Compare the differences in the following examples.
 
 * **RBAC**: User `john@example.com` is allowed to create virtual service. 
 * **OPA**: User `john@example.com` is allowed to create virtual services that only point to the domain `example.com`.
@@ -19,10 +19,10 @@ In this guide, you create a simple OPA policy that dictates that all virtual ser
 
 ## Before you begin
 
-1. [Install Gloo Edge in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
-2. [Follow the OPA documentation](https://www.openpolicyagent.org/docs/latest/kubernetes-tutorial/) to set up OPA as an admission controller in your cluster. Then, OPA validates Kubernetes objects before they become visible to other controllers that act on them, including Gloo Edge.
+1. [Install Gloo Gateway in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+2. [Follow the OPA documentation](https://www.openpolicyagent.org/docs/latest/kubernetes-tutorial/) to set up OPA as an admission controller in your cluster. Then, OPA validates Kubernetes objects before they become visible to other controllers that act on them, including Gloo Gateway.
 
-Depending on your security preferences, you might want to create a separate cluster role and role binding to restrict Gloo Edge resources to view-only permissions, such as in the following example.
+Depending on your security preferences, you might want to create a separate cluster role and role binding to restrict Gloo Gateway resources to view-only permissions, such as in the following example.
 
 {{% expand "Click for an example YAML file for a cluster role and cluster role binding you might add to your OPA admission controller setup." %}}
 
@@ -169,7 +169,7 @@ If you no longer want the OPA admission controller, you can uninstall it from yo
 
 ## Next Steps
 
-Now that you know how to configure a basic policy with OPA, you can continue learning about policies, or check out some of the other security features in Gloo Edge.
+Now that you know how to configure a basic policy with OPA, you can continue learning about policies, or check out some of the other security features in Gloo Gateway.
 
 * [**Web Application Firewall**]({{% versioned_link_path fromRoot="/guides/security/waf/" %}})
 * [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}})

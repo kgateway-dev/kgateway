@@ -1,7 +1,7 @@
 ---
 title: About external processing
 weight: 40
-description: Learn about what external processing is, how it works, and how to enable it in Gloo Edge. 
+description: Learn about what external processing is, how it works, and how to enable it in Gloo Gateway. 
 ---
 
 Envoy offers multiple filters that you can use to manage, monitor, and secure traffic to your apps. Although Envoy is extensible via C++ and WebAssembly modules, it might not be practical to implement these extensions for all of your apps. You might also have very specific requirements for how to process a request or response to allow traffic routing between different types of apps, such as adding specific headers to new and legacy apps. 
@@ -32,11 +32,11 @@ The following diagram shows an example for how request header manipulation works
 
 ## ExtProc server considerations
 
-The ExtProc server is a gRPC interface that must be able to respond to events in the lifecycle of an HTTP request. When the ExtProc filter is enabled in Gloo Edge and a request or response is received on the gateway, the filter communicates with the ExtProc server by using bidirectional gRPC streams.
+The ExtProc server is a gRPC interface that must be able to respond to events in the lifecycle of an HTTP request. When the ExtProc filter is enabled in Gloo Gateway and a request or response is received on the gateway, the filter communicates with the ExtProc server by using bidirectional gRPC streams.
 
-To implement your own ExtProc server, make sure that you follow [Envoy's technical specification for an external processor](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#extensions-filters-http-ext-proc-v3-externalprocessor). You can also follow the [Header manipulation example]({{% versioned_link_path fromRoot="/guides/traffic_management/extproc/header-manipulation/" %}}) to try out ExtProc in Gloo Edge with a sample ExtProc server.
+To implement your own ExtProc server, make sure that you follow [Envoy's technical specification for an external processor](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#extensions-filters-http-ext-proc-v3-externalprocessor). You can also follow the [Header manipulation example]({{% versioned_link_path fromRoot="/guides/traffic_management/extproc/header-manipulation/" %}}) to try out ExtProc in Gloo Gateway with a sample ExtProc server.
 
-## Enable ExtProc in Gloo Edge
+## Enable ExtProc in Gloo Gateway
 
 You can enable ExtProc for all requests and responses that the gateway processes by using the [Settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/" %}}) custom resource. Alternatively, you can enable ExtProc for a specific gateway listener, virtual host, or route. 
 

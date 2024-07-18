@@ -4,13 +4,13 @@ weight: 20
 description: Visualize your GraphQL API and services in the GraphQL UI.
 ---
 
-Use the Gloo Edge UI to review the health and configuration of your GraphQL APIs, test out your GraphQL API functionality, and create new GraphQL APIs.
+Use the Gloo Gateway UI to review the health and configuration of your GraphQL APIs, test out your GraphQL API functionality, and create new GraphQL APIs.
 
-## List GraphQL APIs in the Gloo Edge UI
+## List GraphQL APIs in the Gloo Gateway UI
 
-The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For more information about how to use the UI, see the [UI documentation]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/" >}}).
+The Gloo Gateway UI is served from the `gloo-fed-console` service on port 8090. For more information about how to use the UI, see the [UI documentation]({{< versioned_link_path fromRoot="/guides/gloo_federation/read_only_console/" >}}).
 
-1. Open the Gloo Edge UI.
+1. Open the Gloo Gateway UI.
    * `glooctl`: For more information, see the [CLI documentation]({{< versioned_link_path fromRoot="/reference/cli/glooctl_dashboard/" >}}).
      ```shell
      glooctl dashboard
@@ -21,7 +21,7 @@ The Gloo Edge UI is served from the `gloo-fed-console` service on port 8090. For
      ```
 2. Open your browser and connect to [http://localhost:8090](http://localhost:8090).
 3. Optional: If authentication is enabled, sign in.
-4. In the navigation bar, click **APIs**. The GraphQL, REST, and gRPC APIs in your Gloo Edge environment are listed.
+4. In the navigation bar, click **APIs**. The GraphQL, REST, and gRPC APIs in your Gloo Gateway environment are listed.
 5. Under _API Type_, select the GraphQL filter.
 6. Review the overview details for each API, such as the namespace it is deployed in, the number of resolvers defined in the API, and the current status of the API.
 7. In the **Actions** column, you can optionally download the configuration files for the API, or delete the API configuration from your environment.
@@ -65,7 +65,7 @@ Define a new GraphQL API by using the UI.
    1. In the **API Details** tab, expand a configuration _Schema_ section. For example, you might start with the section for the top-level query.
    2. In the **Resolver** column, click **Resolver**.
    3. For the Resolver Type, choose a REST or gRPC resolver. 
-   4. For the Upstream, choose a service for the upstream reference. The drop-down list is populated by the upstream services that are currently defined in your Gloo Edge environment.
+   4. For the Upstream, choose a service for the upstream reference. The drop-down list is populated by the upstream services that are currently defined in your Gloo Gateway environment.
    5. For the Resolver Config, fill out values for the provided fields. Note that you might not require all provided fields. Additionally, you can choose an existing resolver configuration that you already created from the drop-down list to modify for this field. For more information about how to configure each type of resolver, see [Manual schema configuration]({{< versioned_link_path fromRoot="/guides/graphql/resolver_config/" >}}).
    6. Click **Submit**.
    7. You can optionally click the **View Raw Config** button to verify that the resolver was added to your configuration.

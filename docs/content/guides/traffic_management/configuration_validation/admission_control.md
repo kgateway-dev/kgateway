@@ -2,25 +2,25 @@
 menuTitle: Admission control
 title: Admission control
 weight: 10
-description: (Kubernetes Only) Gloo Edge can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
+description: (Kubernetes Only) Gloo Gateway can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
-Prevent invalid Gloo configuration from being applied to your Kubernetes cluster by using the Gloo Edge validating admission webhook. 
+Prevent invalid Gloo configuration from being applied to your Kubernetes cluster by using the Gloo Gateway validating admission webhook. 
 
 ## About the validating admission webhook
 
-The [validating admission webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default when you install Gloo Edge with the Helm chart or the `glooctl install gateway` command. By default, the webhook only logs the validation result without rejecting invalid Gloo resource configuration. If the configuration you provide is written in valid YAML format, it is accepted by the Kubernetes API server and written to etcd. However, the configuration might contain invalid settings or inconsistencies that Gloo Edge cannot interpret or process. This mode is also referred to as permissive validation. 
+The [validating admission webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default when you install Gloo Gateway with the Helm chart or the `glooctl install gateway` command. By default, the webhook only logs the validation result without rejecting invalid Gloo resource configuration. If the configuration you provide is written in valid YAML format, it is accepted by the Kubernetes API server and written to etcd. However, the configuration might contain invalid settings or inconsistencies that Gloo Gateway cannot interpret or process. This mode is also referred to as permissive validation. 
 
 You can enable strict validation by setting the `alwaysAcceptResources` Helm option to false. Note that only resources that result in a `rejected` status are rejected on admission. Resources that result in a `warning` status are still admitted. To also reject resources with a `warning` status, set `alwaysAcceptResources=false` and `allowWarnings=false` in your Helm file. 
 
-For more information about how resource configuration validation works in Gloo Edge, see [Resource validation in Gloo Edge]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/#resource-validation-in-gloo-edge" %}}). 
+For more information about how resource configuration validation works in Gloo Gateway, see [Resource validation in Gloo Gateway]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/#resource-validation-in-gloo-edge" %}}). 
 
 ## Enable strict resource validation
 
 Configure the validating admission webhook to reject invalid Gloo custom resources before they are applied in the cluster. 
 
 1. Enable strict resource validation by using one of the following options: 
-   * **Update the Helm settings**: Update your Gloo Edge installation and set the following Helm values.
+   * **Update the Helm settings**: Update your Gloo Gateway installation and set the following Helm values.
      ```bash
      --set gateway.validation.alwaysAcceptResources=false
      --set gateway.validation.enabled=true
@@ -77,7 +77,7 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
 
    2. Verify that the Gloo resource is rejected. You see an error message similar to the following.
       ```noop
-      Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo Edge snapshot: [Route 
+      Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo Gateway snapshot: [Route 
       Error: InvalidMatcherError. Reason: no path specifier provided]
       ```
 
@@ -88,20 +88,20 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
 
 ## View the current validating admission webhook configuration
 
-You can check whether strict or permissive validation is enabled in your Gloo Edge installation by checking the {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource. 
+You can check whether strict or permissive validation is enabled in your Gloo Gateway installation by checking the {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource. 
 
 1. Get the details of the default settings resource. 
    ```sh
    kubectl get settings default -n gloo-system -o yaml
    ```
 
-2. In your CLI output, find the `spec.gateway.validation.alwaysAccept` setting. If set to `true`, permissive mode is enabled in your Gloo Edge setup and invalid Gloo resources are only logged, but not rejected. If set to `false`, strict validation mode is enabled and invalid resource configuration is rejected before being applied in the cluster. If `allowWarnings=false` is set alongside `alwaysAccept=false`, resources that result in a `Warning` status are also rejected. 
+2. In your CLI output, find the `spec.gateway.validation.alwaysAccept` setting. If set to `true`, permissive mode is enabled in your Gloo Gateway setup and invalid Gloo resources are only logged, but not rejected. If set to `false`, strict validation mode is enabled and invalid resource configuration is rejected before being applied in the cluster. If `allowWarnings=false` is set alongside `alwaysAccept=false`, resources that result in a `Warning` status are also rejected. 
 
 ## Monitor the validation status of Gloo resources
 
-When Gloo Edge fails to process a resource, the error is reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}. You can run `glooctl check` to easily view any configuration errors on resources that have been admitted to your cluster.
+When Gloo Gateway fails to process a resource, the error is reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}. You can run `glooctl check` to easily view any configuration errors on resources that have been admitted to your cluster.
 
-Additionally, you can configure Gloo Edge to publish metrics that record the configuration status of the resources.
+Additionally, you can configure Gloo Gateway to publish metrics that record the configuration status of the resources.
 
 In the `observabilityOptions` of the Settings CRD, you can enable status metrics by specifying the resource type and any labels to apply
 to the metric. The following example adds metrics for virtual services and upstreams, which both have labels that include the namespace and name of each individual resource:
@@ -128,7 +128,7 @@ validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",n
 
 ## Test resource configurations
 
-You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration or [send requests directly to the Gloo Edge validation API](#validation-api). 
+You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration or [send requests directly to the Gloo Gateway validation API](#validation-api). 
 
 {{% notice note %}}
 The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, run `kubectl edit settings default -n gloo-system` and set `alwaysAccept: false` and `allowWarnings: false` in the `spec.gateway.validation` section. 
@@ -357,7 +357,7 @@ The validation API currently assumes that all configuration that is sent to the 
    kubectl -n gloo-system port-forward service/gloo 8443:443
    ```
 
-2. Send a request with your resource configuration to the Gloo Edge validation API. The following example shows successful and unsuccessful resource configuration validation for the upstream, gateway, and virtual service resources.
+2. Send a request with your resource configuration to the Gloo Gateway validation API. The following example shows successful and unsuccessful resource configuration validation for the upstream, gateway, and virtual service resources.
    {{< tabs >}}
    {{% tab name="Upstream" %}}
 
@@ -504,9 +504,9 @@ The validation API currently assumes that all configuration that is sent to the 
    {{< /tabs >}}
 
    
-## Disable resource validation in Gloo Edge
+## Disable resource validation in Gloo Gateway
 
-Because the validation admission webhook is set up automatically in Gloo Edge, a `ValidationWebhookConfiguration` resource is created in your cluster. You can disable the webhook, which prevents the `ValidationWebhookConfiguration` resource from being created. When validation is disabled, any Gloo resources that you create in your cluster are translated to Envoy proxy config, even if the config has errors or warnings. 
+Because the validation admission webhook is set up automatically in Gloo Gateway, a `ValidationWebhookConfiguration` resource is created in your cluster. You can disable the webhook, which prevents the `ValidationWebhookConfiguration` resource from being created. When validation is disabled, any Gloo resources that you create in your cluster are translated to Envoy proxy config, even if the config has errors or warnings. 
 
 To disable validation, use the following `--set` options during installation, or configure your Helm values file accordingly.
 
@@ -518,4 +518,4 @@ To disable validation, use the following `--set` options during installation, or
 
 ## Questions or feedback
 
-If you have questions or feedback regarding the Gloo Edge resource validation or any other feature, reach out via the [Slack](https://slack.solo.io/) or open an issue in the [Gloo Edge GitHub repository](https://github.com/solo-io/gloo).
+If you have questions or feedback regarding the Gloo Gateway resource validation or any other feature, reach out via the [Slack](https://slack.solo.io/) or open an issue in the [Gloo Gateway GitHub repository](https://github.com/solo-io/gloo).

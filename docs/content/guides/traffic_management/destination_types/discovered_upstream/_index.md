@@ -1,10 +1,10 @@
 ---
 title: Discovered Upstreams
 weight: 20
-description: Route to a single Upstream automatically detected by Gloo Edge's built-in discovery system
+description: Route to a single Upstream automatically detected by Gloo Gateway's built-in discovery system
 ---
 
-Let's configure Gloo Edge to route to a single upstream that was automatically detected by Gloo Edge's built in discovery system. 
+Let's configure Gloo Gateway to route to a single upstream that was automatically detected by Gloo Gateway's built in discovery system. 
 In this case, we'll deploy an application to Kubernetes and discovery will create a new `Upstream` CRD for the service
 that was created. We'll then configure a virtual service to route to that upstream. 
 
@@ -20,7 +20,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/
 {{< /tab >}}
 {{< /tabs >}}
 
-This should deploy the petstore service to the default namespace. Gloo Edge's discovery system is watching that namespace 
+This should deploy the petstore service to the default namespace. Gloo Gateway's discovery system is watching that namespace 
 and should immediately create an upstream for the petstore service.  
 
 ## Look at discovered Upstream
@@ -58,7 +58,7 @@ Here, we can see an upstream was created and accepted. The upstream points to th
 default namespace. 
 
 By default the upstream created is rather simple. It represents a specific Kubernetes service. However, the petstore
-application is an OpenAPI (Swagger) service. Gloo Edge can discover this OpenAPI spec, but by default Gloo Edge's function
+application is an OpenAPI (Swagger) service. Gloo Gateway can discover this OpenAPI spec, but by default Gloo Gateway's function
 discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore,
 we need to label the namespace.
 
@@ -66,7 +66,7 @@ we need to label the namespace.
 kubectl label namespace default  discovery.solo.io/function_discovery=enabled
 ```
 
-Gloo Edge discovered that it was a REST service and, using it's function discovery system, 
+Gloo Gateway discovered that it was a REST service and, using it's function discovery system, 
 added the functions it found in the OpenAPI definition to the upstream.
 
 {{% notice note %}}
@@ -169,7 +169,7 @@ status:
 ```
 
 Note that the discovered upstream also has this label: `discovered_by: kubernetesplugin`. This is an easy way 
-to determine that the upstream was created by Gloo Edge discovery. 
+to determine that the upstream was created by Gloo Gateway discovery. 
 
 ## Create a route to this service
 
@@ -202,7 +202,7 @@ This should return:
 
 ## Summary
 
-We deployed an application to Kubernetes and Gloo Edge automatically discovered upstreams from it, including specific 
+We deployed an application to Kubernetes and Gloo Gateway automatically discovered upstreams from it, including specific 
 functions off of an OpenAPI definition. We created a virtual service and routed requests to one of those endpoints. 
 
 Let's clean up the virtual service we created: 
