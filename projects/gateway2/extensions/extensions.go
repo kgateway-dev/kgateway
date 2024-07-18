@@ -7,7 +7,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
@@ -22,7 +21,6 @@ type K8sGatewayExtensions interface {
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
 type K8sGatewayExtensionsFactoryParameters struct {
 	Mgr                     controllerruntime.Manager
-	SnapshotHistory         iosnapshot.History
 	AuthConfigClient        v1.AuthConfigClient
 	RouteOptionClient       gatewayv1.RouteOptionClient
 	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
@@ -43,7 +41,6 @@ func NewK8sGatewayExtensions(
 ) (K8sGatewayExtensions, error) {
 	return &k8sGatewayExtensions{
 		mgr:                     params.Mgr,
-		snapshotHistory:         params.SnapshotHistory,
 		routeOptionClient:       params.RouteOptionClient,
 		virtualHostOptionClient: params.VirtualHostOptionClient,
 		statusReporter:          params.StatusReporter,
@@ -52,7 +49,6 @@ func NewK8sGatewayExtensions(
 
 type k8sGatewayExtensions struct {
 	mgr                     controllerruntime.Manager
-	snapshotHistory         iosnapshot.History
 	routeOptionClient       gatewayv1.RouteOptionClient
 	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
 	statusReporter          reporter.StatusReporter

@@ -27,20 +27,9 @@ type History interface {
 	// resources will be returned from `GetInputSnapshot`.
 	SetKubeGatewayClient(kubeGatewayClient client.Client)
 
-	// SetExtraKubeGvks optionally sets a list of extra GVKs to return in the input snapshot when
-	// Kubernetes Gateway integration is enabled, in addition to the default GVKs specified by
-	// `KubeGatewayDefaultGVKs`.
-	//
-	// For example, this may include additional Gateway API resources, Portal resources, or other
-	// resources specific to the Kubernetes Gateway integration.
-	//
-	// If this is not set, then only the default GVKs specified by `KubeGatewayDefaultGVKs` will
-	// be returned from `GetInputSnapshot` (in addition to Edge ApiSnapshot resources).
-	SetExtraKubeGvks(extraGvks []schema.GroupVersionKind)
-
 	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
 	// Gateway integration is enabled, it additionally returns all resources on the cluster
-	// with types specified by `KubeGatewayDefaultGVKs` and `SetExtraKubeGvks`.
+	// with types specified by `kubeGvks`.
 	GetInputSnapshot(ctx context.Context) ([]byte, error)
 
 	// GetProxySnapshot returns the Proxies generated for all components.
@@ -51,12 +40,30 @@ type History interface {
 	GetXdsSnapshot(ctx context.Context) ([]byte, error)
 }
 
-// NewHistory returns an implementation of the History interface
-func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings) History {
-	// initialize kube gvks to contain a copy of the default gvks
-	kubeGvks := []schema.GroupVersionKind{}
-	kubeGvks = append(kubeGvks, KubeGatewayDefaultGVKs...)
+// HistoryFactoryParameters are the inputs used to create a History object
+type HistoryFactoryParameters struct {
+	Settings *gloov1.Settings
+	Cache    cache.SnapshotCache
+}
 
+// HistoryFactory is a function that produces a History object
+type HistoryFactory func(params HistoryFactoryParameters) History
+
+// GetHistoryFactory returns a default HistoryFactory implementation
+func GetHistoryFactory() HistoryFactory {
+	return func(params HistoryFactoryParameters) History {
+		return NewHistory(params.Cache, params.Settings, KubeGatewayDefaultGVKs)
+	}
+}
+
+// NewHistory returns an implementation of the History interface
+//   - `cache` is the control plane's xDS snapshot cache
+//   - `settings` specifies the Settings for this control plane instance
+//   - `kubeGvks` specifies the list of resource types to return in the input snapshot when
+//     Kubernetes Gateway integration is enabled. For example, this may include Gateway API
+//     resources, Portal resources, or other resources specific to the Kubernetes Gateway integration.
+//     If not set, then only Edge ApiSnapshot resources will be returned from `GetInputSnapshot`.
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGvks []schema.GroupVersionKind) History {
 	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
@@ -75,8 +82,8 @@ type historyImpl struct {
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
 	kubeGatewayClient client.Client
-	// this will hold all the kube gvks (default + any extras that are set) that we want to
-	// show in the input snapshot when kube gateway integration is enabled
+	// this will hold all the kube gvks that we want to show in the input snapshot when kube gateway
+	// integration is enabled
 	kubeGvks []schema.GroupVersionKind
 }
 
@@ -100,23 +107,6 @@ func (h *historyImpl) SetKubeGatewayClient(kubeGatewayClient client.Client) {
 		defer h.Unlock()
 
 		h.kubeGatewayClient = kubeGatewayClient
-	}()
-}
-
-func (h *historyImpl) SetExtraKubeGvks(extraGvks []schema.GroupVersionKind) {
-	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
-	// any contention/issues, from impacting the runtime of the system
-	go func() {
-		h.Lock()
-		defer h.Unlock()
-
-		// whenever etraGvks is set, we re-initialize kubeGvks to a list containing the default gvks
-		// + the extra gvks
-		gvks := []schema.GroupVersionKind{}
-		gvks = append(gvks, KubeGatewayDefaultGVKs...)
-		gvks = append(gvks, extraGvks...)
-
-		h.kubeGvks = gvks
 	}()
 }
 
@@ -249,8 +239,7 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 	}
 
 	resources := []crdv1.Resource{}
-	gvks := h.getKubeGatewayInputGvksSafe()
-	for _, gvk := range gvks {
+	for _, gvk := range h.kubeGvks {
 		// populate an unstructured list for each resource type
 		list := &unstructured.UnstructuredList{}
 		list.SetGroupVersionKind(gvk)
@@ -279,14 +268,6 @@ func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 	h.RLock()
 	defer h.RUnlock()
 	return h.kubeGatewayClient
-}
-
-// getKubeGatewayInputGvksSafe gets the list of GVKs to return in the input
-// snapshot when Kubernetes Gateway integration is enabled
-func (h *historyImpl) getKubeGatewayInputGvksSafe() []schema.GroupVersionKind {
-	h.RLock()
-	defer h.RUnlock()
-	return h.kubeGvks
 }
 
 // redactApiSnapshot accepts an ApiSnapshot, and mutates it to remove sensitive data.

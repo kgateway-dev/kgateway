@@ -107,7 +107,6 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
 		Mgr:                     mgr,
-		SnapshotHistory:         cfg.SnapshotHistory,
 		RouteOptionClient:       cfg.RouteOptionClient,
 		VirtualHostOptionClient: cfg.VirtualHostOptionClient,
 		StatusReporter:          cfg.StatusReporter,
