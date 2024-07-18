@@ -2,9 +2,8 @@ package printers
 
 import (
 	"fmt"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
-	_structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"os"
 	"sort"
@@ -320,7 +319,7 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 }
 
 func addFunctionsFromGrpcTranscoder(up *v1.Upstream) {
-	var functionNames map[string][]string
+	var functionNames map[string]any
 
 	switch usType := up.GetUpstreamType().(type) {
 	case *v1.Upstream_Kube:
@@ -344,56 +343,46 @@ func addFunctionsFromGrpcTranscoder(up *v1.Upstream) {
 	}
 
 	if functionNames != nil {
-		for svc, funcs := range functionNames {
-			// TODO choose correct namespaced status
-			for _, status := range up.NamespacedStatuses.GetStatuses() {
-				addFunctionNamesToStatus(status, svc, funcs)
-			}
+		// TODO choose correct namespaced status
+		for _, status := range up.NamespacedStatuses.GetStatuses() {
+			addFunctionNamesToStatus(status, functionNames)
 		}
 	}
 }
 
-func getFunctionsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) map[string][]string {
-	grpcFunctions := make(map[string][]string)
+func getFunctionsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) map[string]any {
+	grpcFunctions := make(map[string]any)
 
 	descriptorBin := gjt.GetProtoDescriptorBin()
 
 	for _, grpcService := range gjt.GetServices() {
 		methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
-		grpcFunctions[grpcService] = make([]string, methodDescriptors.Len())
 
+		funcList := make([]any, methodDescriptors.Len())
 		for i := 0; i < methodDescriptors.Len(); i++ {
-			grpcFunctions[grpcService][i] = fmt.Sprintf("%s", methodDescriptors.Get(i).Name())
+			funcList[i] = fmt.Sprintf("%s", methodDescriptors.Get(i).Name())
 		}
+		grpcFunctions[grpcService] = funcList
 	}
 
 	return grpcFunctions
 }
 
-func addFunctionNamesToStatus(status *core.Status, service string, functionNames []string) {
+func addFunctionNamesToStatus(status *core.Status, functionNames map[string]any) {
 	if status.GetDetails() == nil {
 		status.Details = &structpb.Struct{
-			Fields: make(map[string]*_structpb.Value),
-		}
-	}
-	if status.GetDetails().GetFields()["functionNames"] == nil {
-		status.Details.Fields["functionNames"] = &structpb.Value{
-			Kind: &structpb.Value_StructValue{
-				StructValue: &structpb.Struct{
-					Fields: make(map[string]*_structpb.Value),
-				},
-			},
+			Fields: make(map[string]*structpb.Value),
 		}
 	}
 
-	listVal := &structpb.ListValue{}
-	for _, name := range functionNames {
-		listVal.Values = append(listVal.Values, &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: name}})
+	functionNamesStruct, err := structpb.NewStruct(functionNames)
+	if err != nil {
+		panic(err)
 	}
 
-	status.GetDetails().GetFields()["functionNames"].GetStructValue().Fields[service] = &structpb.Value{
-		Kind: &structpb.Value_ListValue{
-			ListValue: listVal,
+	status.Details.Fields["functionNames"] = &structpb.Value{
+		Kind: &structpb.Value_StructValue{
+			StructValue: functionNamesStruct,
 		},
 	}
 }
