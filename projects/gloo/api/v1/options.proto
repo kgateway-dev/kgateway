@@ -270,7 +270,8 @@ message VirtualHostOptions {
     // Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 2;
     // Defines a CORS policy for the virtual host
-    // If a CORS policy is also defined on the route matched by the request, the policies are merged.
+    // If a CORS policy is also defined on the route matched by the request, the route policy
+    // overrides the virtual host policy for any configured field.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
@@ -437,7 +438,7 @@ message RouteOptions {
     // If true and there is a host rewrite, appends the x-forwarded-host header to requests.
     google.protobuf.BoolValue append_x_forwarded_host = 146;
     // Defines a CORS policy for the route
-    // If a CORS policy is also defined on the route's virtual host, the policies are merged.
+    // If a CORS policy is also defined on the route's virtual host any fields set here override the virtual host configuration 
     cors.options.gloo.solo.io.CorsPolicy cors = 11;
     // For routes served by a hashing load balancer, this defines the input to the hash key
     // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
