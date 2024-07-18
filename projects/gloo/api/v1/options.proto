@@ -51,6 +51,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rba
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto";
@@ -583,6 +584,10 @@ message RouteOptions {
     // Enterprise-only: External Processing filter settings for the route. This can be used to
     // override certain HttpListenerOptions or VirtualHostOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
+
+    // Enterprise-only: Settings to configure ai settings for a route.
+    // These settings will only apply if the backend is an `ai` Upstream.
+    ai.options.gloo.solo.io.RouteSettings ai = 31;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
