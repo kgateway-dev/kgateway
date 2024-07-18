@@ -25,6 +25,7 @@ func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
 			InstallNamespace:       env.GetOrDefault(testutils.InstallNamespace, "k8s-gateway-minimal-default-gatewayparameters-test"),
 			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
 			ValidationAlwaysAccept: false,
+			K8sGatewayEnabled:      true,
 		},
 	)
 

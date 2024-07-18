@@ -1,0 +1,61 @@
+# Gloo k8s Gateway helm setup where k8s Gateway controller is enabled AND default Gloo Edge gateway is present.
+# An additional gateway "publicGw" is defined in gatewayProxies.
+global:
+  image:
+    pullPolicy: IfNotPresent
+  # Note: glooRbac.namespaced settings are not supported with Gloo Gateway https://github.com/solo-io/solo-projects/issues/6064
+  # Gateway API fundamentally expects HTTPRoutes and Gateways in any namespace and cross-namespace references to be supported
+  # Currently we are explicitly disabled namespaced roles for Gloo Gateway tests, but this can be left unset.
+  glooRbac:
+    namespaced: false
+settings:
+  # Gloo Gateway requires access to namespaces outside of the install namespace to watch and create Gateway resources
+  # singleNamespace=false must be set for namespace watch to work correctly. See: https://github.com/solo-io/solo-projects/issues/6058
+  singleNamespace: false
+  create: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+gateway:
+  persistProxySpec: false
+  logLevel: info
+  validation:
+    # These tests validate the glooctl properly reports errors and warnings on resources
+    # Therefore, we accept all resources in our webhook
+    alwaysAcceptResources: true
+kubeGateway:
+  # This is the field that enables the K8s Gateway Integration in Gloo Gateway
+  enabled: true
+gloo:
+  logLevel: info
+  disableLeaderElection: true
+  deployment:
+    replicas: 1
+    livenessProbeEnabled: true
+gatewayProxies: # k8s gateway glooctl tests have gloo edge gateway enabled
+  publicGw: # Proxy name for public access (Internet facing)
+    disabled: false # overwrite the "default" value in the merge step
+    kind:
+      deployment:
+        replicas: 2
+    service:
+      kubeResourceOverride: # workaround for https://github.com/solo-io/gloo/issues/5297
+        spec:
+          ports:
+            - port: 443
+              protocol: TCP
+              name: https
+              targetPort: 8443
+          type: LoadBalancer
+    gatewaySettings:
+      customHttpsGateway: # using the default HTTPS Gateway
+        virtualServiceSelector:
+          gateway-type: public # label set on the VirtualService
+      disableHttpGateway: true # disable the default HTTP Gateway
+  gatewayProxy:
+    healthyPanicThreshold: 0
+    disabled: false # disable the default gateway-proxy deployment and its 2 default Gateway CRs
+# Disable discovery, not recommended for production. NOTE: Upstreams must be statically defined in the manfiests.
+discovery:
+  enabled: false
