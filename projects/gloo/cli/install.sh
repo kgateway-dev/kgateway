@@ -79,7 +79,7 @@ fi
 
 rm -r "$tmp"
 
-echo "Gloo Edge was successfully installed 🎉"
+echo "Gloo Gateway was successfully installed 🎉"
 echo ""
 echo "Add the gloo CLI to your path with:"
 echo "  export PATH=\$HOME/.gloo/bin:\$PATH"
