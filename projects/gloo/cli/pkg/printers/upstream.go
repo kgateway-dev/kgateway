@@ -2,6 +2,9 @@ package printers
 
 import (
 	"fmt"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
+	_structpb "google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"os"
 	"sort"
@@ -26,6 +29,9 @@ func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *x
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
 	}
+
+	upstreams.Each(addFunctionsFromGrpcTranscoder)
+
 	return cliutils.PrintList(outputType.String(), "", upstreams,
 		func(data interface{}, w io.Writer) error {
 			UpstreamTable(xdsDump, data.(v1.UpstreamList), w)
@@ -311,4 +317,83 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 		}
 	}
 	return out
+}
+
+func addFunctionsFromGrpcTranscoder(up *v1.Upstream) {
+	var functionNames map[string][]string
+
+	switch usType := up.GetUpstreamType().(type) {
+	case *v1.Upstream_Kube:
+		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+			if gjt.GetProtoDescriptorBin() != nil {
+				functionNames = getFunctionsFromDescriptorBin(gjt)
+			}
+		}
+	case *v1.Upstream_Consul:
+		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+			if gjt.GetProtoDescriptorBin() != nil {
+				functionNames = getFunctionsFromDescriptorBin(gjt)
+			}
+		}
+	case *v1.Upstream_Static:
+		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+			if gjt.GetProtoDescriptorBin() != nil {
+				functionNames = getFunctionsFromDescriptorBin(gjt)
+			}
+		}
+	}
+
+	if functionNames != nil {
+		for svc, funcs := range functionNames {
+			// TODO choose correct namespaced status
+			for _, status := range up.NamespacedStatuses.GetStatuses() {
+				addFunctionNamesToStatus(status, svc, funcs)
+			}
+		}
+	}
+}
+
+func getFunctionsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) map[string][]string {
+	grpcFunctions := make(map[string][]string)
+
+	descriptorBin := gjt.GetProtoDescriptorBin()
+
+	for _, grpcService := range gjt.GetServices() {
+		methodDescriptors := getMethodDescriptors(grpcService, descriptorBin)
+		grpcFunctions[grpcService] = make([]string, methodDescriptors.Len())
+
+		for i := 0; i < methodDescriptors.Len(); i++ {
+			grpcFunctions[grpcService][i] = fmt.Sprintf("%s", methodDescriptors.Get(i).Name())
+		}
+	}
+
+	return grpcFunctions
+}
+
+func addFunctionNamesToStatus(status *core.Status, service string, functionNames []string) {
+	if status.GetDetails() == nil {
+		status.Details = &structpb.Struct{
+			Fields: make(map[string]*_structpb.Value),
+		}
+	}
+	if status.GetDetails().GetFields()["functionNames"] == nil {
+		status.Details.Fields["functionNames"] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: &structpb.Struct{
+					Fields: make(map[string]*_structpb.Value),
+				},
+			},
+		}
+	}
+
+	listVal := &structpb.ListValue{}
+	for _, name := range functionNames {
+		listVal.Values = append(listVal.Values, &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: name}})
+	}
+
+	status.GetDetails().GetFields()["functionNames"].GetStructValue().Fields[service] = &structpb.Value{
+		Kind: &structpb.Value_ListValue{
+			ListValue: listVal,
+		},
+	}
 }
