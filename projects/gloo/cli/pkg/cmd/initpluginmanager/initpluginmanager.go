@@ -51,7 +51,7 @@ Add the glooctl plugins to your path with:
   export PATH=%s/bin:$PATH
 Now run:
   glooctl plugin --help     # see the commands available to you
-Please see visit the Gloo Gateway website for more info:  https://www.solo.io/products/gloo-gateway/
+Please see visit the Gloo Gateway website for more info: https://docs.solo.io/gloo-edge/
 `, homeStr)
 			return nil
 		},
