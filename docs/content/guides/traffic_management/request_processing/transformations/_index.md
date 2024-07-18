@@ -170,9 +170,9 @@ Let's go ahead and describe each one of these attributes in detail.
 By default, `transformationTemplate` parses the request/response body as JSON, depending on whether you configure a `requestTransformation` or `responseTransformation`. If Gloo Gateway fails to parse the request/response body as JSON, it returns a `400 Bad Request` error.
 
 If you want to skip this behavior, you can:
-* Set the [`parseBodyBehavior`](#parsebodybehavior) attribute to `DontParse`. Edge buffers the body as plain text and does not parse it.
-* Set the [`ignoreErrorOnParse`](#ignoreerroronparse) attribute to `true`. Edge parses the body as JSON, but does not return an error if the body is not valid JSON.
-* Enable [`passthrough`](#passthrough). Edge does not parse or buffer the body.
+* Set the [`parseBodyBehavior`](#parsebodybehavior) attribute to `DontParse`. Gloo Gateway buffers the body as plain text and does not parse it.
+* Set the [`ignoreErrorOnParse`](#ignoreerroronparse) attribute to `true`. Gloo Gateway parses the body as JSON, but does not return an error if the body is not valid JSON.
+* Enable [`passthrough`](#passthrough). Gloo Gateway does not parse or buffer the body.
 {{% /notice %}}
 ##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
