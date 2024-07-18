@@ -305,6 +305,9 @@ func getMetadata(ctx context.Context, spec *v1static.UpstreamSpec, in *v1static.
 			contextutils.LoggerFrom(ctx).Warnf("metadata key %s is reserved and cannot be overridden", k)
 			continue
 		}
+		if meta == nil {
+			meta = &envoy_config_core_v3.Metadata{FilterMetadata: map[string]*pbgostruct.Struct{}}
+		}
 		// Set the filter meta
 		meta.GetFilterMetadata()[k] = v
 	}
