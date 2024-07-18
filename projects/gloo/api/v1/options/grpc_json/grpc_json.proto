@@ -48,7 +48,7 @@ message GrpcJsonTranscoder {
     message DescriptorConfigMap {
 
         // A reference to a ConfigMap containing the base64-encoded binary content of a proto descriptor set.
-        // The ConfigMap must be in a namespace watched by Gloo Gateway.
+        // The ConfigMap must be in a namespace watched by Gloo Edge.
         core.solo.io.ResourceRef config_map_ref = 1;
         
         // The ConfigMap data key whose value contains the proto descriptor set.
