@@ -358,7 +358,6 @@ func setRouteAction(
 				Weight:  weight,
 				Options: nil,
 			})
-
 		case backendref.RefIsUpstream(backendRef.BackendObjectReference):
 			upstream, ok := obj.(*gloov1.Upstream)
 			if !ok {

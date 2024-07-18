@@ -426,6 +426,21 @@ func (m *Upstream) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Upstream_Ai:
+		if _, ok := target.UpstreamType.(*Upstream_Ai); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAi()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAi()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAi(), target.GetAi()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.UpstreamType != target.UpstreamType {
