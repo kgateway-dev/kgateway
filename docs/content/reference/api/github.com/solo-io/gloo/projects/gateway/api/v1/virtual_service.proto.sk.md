@@ -33,7 +33,7 @@ weight: 5
 ### VirtualService
 
  
-The **VirtualService** is the root routing object for the Gloo Edge.
+The **VirtualService** is the root routing object for the Gloo Gateway.
 A virtual service describes the set of routes to match for a set of domains.
 
 It defines:
