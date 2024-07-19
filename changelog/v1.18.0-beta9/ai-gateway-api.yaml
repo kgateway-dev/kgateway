@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6570
+    resolvesIssue: false
+    description: >-
+      Add initial version of the API for the AI Gateway functionality.

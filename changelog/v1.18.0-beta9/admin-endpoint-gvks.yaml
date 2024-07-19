@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6391
+    resolvesIssue: false
+    description: >-
+      Allow the list of Kubernetes Gateway-related resource types returned by the Admin input snapshot endpoint
+      to be configured via the History object.
