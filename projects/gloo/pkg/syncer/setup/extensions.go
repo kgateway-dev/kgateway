@@ -46,7 +46,9 @@ func (e Extensions) Validate() error {
 	if e.K8sGatewayExtensionsFactory == nil {
 		return ErrNilExtension("K8sGatewayExtensionsFactory")
 	}
-
+	if e.SnapshotHistoryFactory == nil {
+		return ErrNilExtension("SnapshotHistoryFactory")
+	}
 	if e.PluginRegistryFactory == nil {
 		return ErrNilExtension("PluginRegistryFactory")
 	}
