@@ -157,7 +157,7 @@ func (p *Provider) AssertEventualCurlError(
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 
 		if err == nil {
-			if curlResponse == nil {
+			if curlResponse == nil { // This is not expected to happen, but adding for safety/future-proofing
 				fmt.Printf("wanted curl error, got no error and no response\n")
 				testMessage = fmt.Sprintf("Expected curl error %d, got no error and no response\n", expectedErrorCode)
 			} else {
