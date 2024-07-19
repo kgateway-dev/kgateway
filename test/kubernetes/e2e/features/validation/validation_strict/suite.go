@@ -5,6 +5,7 @@ import (
 
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -30,7 +31,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // TestInvalidUpstream tests behaviors when Gloo rejects an invalid upstream
 func (s *testingSuite) TestInvalidUpstream() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, invalidUpstream)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.InvalidUpstreamInvalidHost)
 	s.Assert().Error(err, "admission webhook error exists")
 	s.Assert().Contains(err.Error(), "admission webhook error")
 	s.Assert().Contains(err.Error(), "port cannot be empty for host")
@@ -38,16 +39,16 @@ func (s *testingSuite) TestInvalidUpstream() {
 
 func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 	// VS with secret should be accepted
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, upstream)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleUpstream)
 	s.Assert().NoError(err)
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleVS)
 	s.Assert().NoError(err)
 
 	// Rejecting resource patches due to existing warnings
 
 	// failing to delete a secret that is in use
 	s.Assert().Error(err, "expect failure when deleting secret in use")
-	s.Assert().Contains(err.Error(), testmatchers.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+	s.Assert().Contains(err.Error(), testmatchers.ContainSubstrings([]string{"admission webhook", "SSL secret not found", validation_types.SecretName}))
 
 	// deleting a secret that is not in use
 }

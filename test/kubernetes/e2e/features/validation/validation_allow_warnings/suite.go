@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -41,17 +42,17 @@ To create the Kubernetes secrets to hold this cert:
 	   --cert tls.crt --namespace gloo-system
 */
 func (s *testingSuite) TestInvalidUpstream() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, upstream)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleUpstream)
 	s.Assert().NoError(err)
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleUpstream)
 	s.Assert().NoError(err)
 }
 
 func (s *testingSuite) TestVirtualServiceWithSecret() {
 	// VS with secret should be accepted
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, upstream)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleUpstream)
 	s.Assert().NoError(err)
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.SecretVS)
 	s.Assert().NoError(err)
 
 	// Rejecting resource patches due to existing warnings
@@ -59,4 +60,14 @@ func (s *testingSuite) TestVirtualServiceWithSecret() {
 	// when allowWarnings=true, should be able to delete a secret that is in use
 
 	// deleting a secret that is not in use
+}
+
+// TODO: map behavior for other cases
+// TestRejectTransformation checks webhook rejects invalid transformation when server_enabled=true
+func (s *testingSuite) TestRejectTransformation() {
+	// accepts invalid inja template in transformation
+
+	// accepts invalid subgroup in transformation
+
+	// accepts invalid subgroup in transformation
 }
