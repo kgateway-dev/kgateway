@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6437
-    resolvesIssue: false
-    description: >-
-     Add `AssertEventualCurlError` assertion for kubernetes e2e tests to assert that a curl command eventually fails.
-     This is useful for validating that a route is not reachable/a deletion has taken effect.
