@@ -157,10 +157,15 @@ func (p *Provider) AssertEventualCurlError(
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 
 		if err == nil {
-			fmt.Printf("wanted curl error, got response:\nstdout:\n%s\nstderr:%s\n", curlResponse.StdOut, curlResponse.StdErr)
-			curlHttpResponse := transforms.WithCurlResponse(curlResponse)
-			curlHttpResponse.Body.Close()
-			testMessage = fmt.Sprintf("failed to get a curl error, got response code: %d", curlHttpResponse.StatusCode)
+			if curlResponse == nil {
+				fmt.Printf("wanted curl error, got no error and no response\n")
+				testMessage = fmt.Sprintf("Expected curl error %d, got no error and no response\n", expectedErrorCode)
+			} else {
+				fmt.Printf("wanted curl error, got response:\nstdout:\n%s\nstderr:%s\n", curlResponse.StdOut, curlResponse.StdErr)
+				curlHttpResponse := transforms.WithCurlResponse(curlResponse)
+				curlHttpResponse.Body.Close()
+				testMessage = fmt.Sprintf("failed to get a curl error, got response code: %d", curlHttpResponse.StatusCode)
+			}
 			g.Expect(err).To(HaveOccurred())
 		}
 
