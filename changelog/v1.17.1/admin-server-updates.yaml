@@ -1,0 +1,18 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6391
+    resolvesIssue: false
+    description: >-
+      Admin endpoint now returns snapshot resources in Kubernetes format (with apiVersion,
+      kind, metadata, spec), and returns all resources as a flat list.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6391
+    resolvesIssue: false
+    description: >-
+      Return Settings, GatewayParameters, and other resources from Admin input snapshot endpoint.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6391
+    resolvesIssue: false
+    description: >-
+      Allow the list of Kubernetes Gateway-related resource types returned by the Admin input snapshot endpoint
+      to be configured via the History object.
