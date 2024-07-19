@@ -2021,6 +2021,26 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAi()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Ai")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAi(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Ai")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:

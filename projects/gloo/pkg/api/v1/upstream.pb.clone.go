@@ -21,6 +21,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/gcp"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
@@ -316,6 +318,18 @@ func (m *Upstream) Clone() proto.Message {
 		} else {
 			target.UpstreamType = &Upstream_Gcp{
 				Gcp: proto.Clone(m.GetGcp()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp.UpstreamSpec),
+			}
+		}
+
+	case *Upstream_Ai:
+
+		if h, ok := interface{}(m.GetAi()).(clone.Cloner); ok {
+			target.UpstreamType = &Upstream_Ai{
+				Ai: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai.UpstreamSpec),
+			}
+		} else {
+			target.UpstreamType = &Upstream_Ai{
+				Ai: proto.Clone(m.GetAi()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai.UpstreamSpec),
 			}
 		}
 
