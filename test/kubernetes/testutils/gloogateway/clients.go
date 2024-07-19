@@ -21,6 +21,7 @@ type ResourceClients interface {
 	VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient
 	ServiceClient() skkube.ServiceClient
 	UpstreamClient() v1.UpstreamClient
+	VirtualServiceClient() gatewayv1.VirtualServiceClient
 }
 
 type Clients struct {
@@ -28,6 +29,7 @@ type Clients struct {
 	serviceClient           skkube.ServiceClient
 	upstreamClient          v1.UpstreamClient
 	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
+	virtualServiceClient    gatewayv1.VirtualServiceClient
 }
 
 func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (ResourceClients, error) {
@@ -53,6 +55,16 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		return nil, err
 	}
 
+	virtualServiceClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.VirtualServiceCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, virtualServiceClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
 	kubeCoreCache, err := cache.NewKubeCoreCache(ctx, clusterCtx.Clientset)
 	if err != nil {
 		return nil, err
@@ -74,6 +86,7 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		serviceClient:           serviceClient,
 		upstreamClient:          upstreamClient,
 		virtualHostOptionClient: virtualHostOptionClient,
+		virtualServiceClient:    virtualServiceClient,
 	}, nil
 }
 
@@ -91,4 +104,8 @@ func (c *Clients) ServiceClient() skkube.ServiceClient {
 
 func (c *Clients) UpstreamClient() v1.UpstreamClient {
 	return c.upstreamClient
+}
+
+func (c *Clients) VirtualServiceClient() gatewayv1.VirtualServiceClient {
+	return c.virtualServiceClient
 }

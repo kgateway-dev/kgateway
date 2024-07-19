@@ -1,0 +1,88 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+  name: gloo-gateway-validation-webhook-gloo-system
+webhooks:
+  - admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURNakNDQWhxZ0F3SUJBZ0lJUUdCUHFNYzF6SE13RFFZSktvWklodmNOQVFFTEJRQXdKREVpTUNBR0ExVUUKQXhNWmMzVndaWEpuYkc5dkxYZGxZbWh2YjJzdFkyVnlkQzFqWVRBZUZ3MHlOREEzTVRjeE56UXhNamhhRncwegpOREEzTVRVeE56UXhNamhhTUNReElqQWdCZ05WQkFNVEdYTjFjR1Z5WjJ4dmJ5MTNaV0pvYjI5ckxXTmxjblF0ClkyRXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFESmk3WGliSWo4VzNGTnUzVkEKYlFBRFVxK2lNVmNScFJQYWlxRUs2c2MwdHlpS2hhNStQV0pyL2pNZHpGS2lmZVN1VWxGdTZ6ZFZkRk5uUW4rOQpjL28vM0FIMTJMSVBGeDhOR1R0ajNWMCtlQW9KTGs4RVNpd050K0orN09TUmVEWmRZOEc3Wk90enBQZEJwUVFwCnV4SmhBOXRoOHhpcm5CYmhieEs5eitOYUs2UENCaWVzT1ZLVXRxZEJOdXRaWnJ1QUpudzZaWGNKdW9nZXNQbHoKb1dTUEF3NVVpMVVVQ1MxM2RZMC9mZVFQVk1iRzF3YXNYeVZ0VmRrdFV0TVQvbWoxRVlHYllGMHVkK2R1bW9nawpTUTB2SVhJcTI2REE4V0dzRG9IalBGeXJpSGgvcWduR3gxbVpzZ1YwTjRQN0ZjYUxLbSt4bkUvcHE2aWRBTmVICnFHTUhBZ01CQUFHamFEQm1NQTRHQTFVZER3RUIvd1FFQXdJQ3BEQVBCZ05WSFJNQkFmOEVCVEFEQVFIL01CMEcKQTFVZERnUVdCQlNmM3Z5MTQ3NzEzbmxrZGYvTHBHcTZyN1ZibVRBa0JnTlZIUkVFSFRBYmdobHpkWEJsY21kcwpiMjh0ZDJWaWFHOXZheTFqWlhKMExXTmhNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUNSSlpWYVlpRldINVViCjRkcG1YQi9HNm8xUTJXSnZranFxVDAzUEpvWXpEQUhzdGoySktiMG56ODNINzZPa2NDM0hnVnNYM2lyRzJHaXQKblFiVE5YeGhIQU9HSFZvWXFUMXlBblpLWW9XY3JyejExWWlZVkpHdW05MG93WUIxbTgwd3RGZUVLWkZyR3lSUQprVlFUZ0I4YVlCRVFKTTVjeGdiaTlubFp0eEhzMVBqeEZSZWJCb0MwQ09WM01VREUxVEtLVnV2eVJvZk1vdEs1ClBwWWlGd2lpRUNGTkhnN0t3RTh2d2I2emwzUUxBMmVkNFhOUGtRVy9FblMwMTVyNjh5UWJ0TFhkMHM1bWZQV1MKNzNSMHcrYUsvNEFaTjlIVGQxUFJjZFgxYmZ1NEUwY1lqbGw2ejY3VUhYL1RLQ1pnTHhwN1dKWUdZU3BDbUx4SQpDL3RCVlZSTAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      service:
+        name: gloo
+        namespace: gloo-system
+        path: /validation
+        port: 443
+    failurePolicy: Fail
+    matchPolicy: Exact
+    name: gloo.gloo-system.svc
+    namespaceSelector: {}
+    objectSelector: {}
+    rules:
+      - apiGroups:
+          - gateway.solo.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - virtualservices
+        scope: '*'
+      - apiGroups:
+          - gateway.solo.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - routetables
+        scope: '*'
+      - apiGroups:
+          - gateway.solo.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - gateways
+        scope: '*'
+      - apiGroups:
+          - gloo.solo.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - upstreams
+        scope: '*'
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - DELETE
+        resources:
+          - secrets
+        scope: '*'
+      - apiGroups:
+          - ratelimit.solo.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - ratelimitconfigs
+        scope: '*'
+    sideEffects: None
+    timeoutSeconds: 10

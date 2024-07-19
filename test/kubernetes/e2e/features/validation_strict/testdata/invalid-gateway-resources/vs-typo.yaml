@@ -1,0 +1,6 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+spec:
+  virtualHoost: {}

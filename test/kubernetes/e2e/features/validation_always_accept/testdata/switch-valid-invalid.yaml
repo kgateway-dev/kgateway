@@ -1,0 +1,27 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: i-am-valid
+spec:
+  virtualHost:
+    domains:
+      - 'invalid.com'
+    routes:
+      - routeAction:
+          options:
+            prefixRewrite: matcher and action are missing
+        name: route
+---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: i-am-invalid
+spec:
+  virtualHost:
+    domains:
+      - 'all-good-in-the-hood.com'
+    routes:
+      - routeAction:
+          options:
+            prefixRewrite: matcher and action are missing
+        name: route

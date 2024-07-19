@@ -1,0 +1,8 @@
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: invalid-placeholder-us
+spec:
+  static:
+    hosts:
+      - addr: ~
