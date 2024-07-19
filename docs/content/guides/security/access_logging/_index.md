@@ -64,7 +64,7 @@ The following steps show an example for Gloo Gateway Enterprise installations. B
    ```
 2. Upgrade or install the Gloo Gateway Enterprise Helm chart with your override settings.
    ```bash
-   helm upgrade --install gloo-edge gloo-ee/gloo-ee --namespace gloo-system --set-string license_key=$YOUR_LICENSE_KEY --version $VERSION -f value-overrides.yaml
+   helm upgrade --install gloo-gateway gloo-ee/gloo-ee --namespace gloo-system --set-string license_key=$YOUR_LICENSE_KEY --version $VERSION -f value-overrides.yaml
    ```
 3. Verify that the `gateway-proxy` deployment mounts the logs volumes.
    ```bash

@@ -46,7 +46,7 @@ helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
 helm repo update
 
 # Create the helm values file (or merge into existing)
-cat > gloo-edge-bring-cert-values.yaml <<EOF
+cat > gloo-gateway-bring-cert-values.yaml <<EOF
 global:
   extensions:
     extAuth:
@@ -69,7 +69,7 @@ Include the `--install` flag to upgrade the existing installation or install a n
 ```bash
 helm upgrade --install gloo glooe/gloo-ee --namespace gloo-system \
   --set-string license_key=LICENSE_KEY \
-  -f gloo-edge-bring-cert-values.yaml
+  -f gloo-gateway-bring-cert-values.yaml
 ```
 
 Once the installation is complete, we can validate our change with the following command:
