@@ -23,6 +23,8 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
+const functionNamesKey = "functionNames"
+
 // PrintUpstreams
 func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump, namespace string) error {
 	if outputType == KUBE_YAML {
@@ -378,12 +380,9 @@ func addFunctionNamesToStatus(status *core.Status, functionNames map[string]any)
 		}
 	}
 
-	functionNamesStruct, err := structpb.NewStruct(functionNames)
-	if err != nil {
-		panic(err)
-	}
+	functionNamesStruct, _ := structpb.NewStruct(functionNames)
 
-	status.Details.Fields["functionNames"] = &structpb.Value{
+	status.Details.Fields[functionNamesKey] = &structpb.Value{
 		Kind: &structpb.Value_StructValue{
 			StructValue: functionNamesStruct,
 		},
