@@ -24,12 +24,12 @@ import (
 )
 
 // PrintUpstreams
-func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump) error {
+func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump, namespace string) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
 	}
 
-	upstreams.Each(addFunctionsFromGrpcTranscoder)
+	upstreams.Each(addFunctionsFromGrpcTranscoder(namespace))
 
 	return cliutils.PrintList(outputType.String(), "", upstreams,
 		func(data interface{}, w io.Writer) error {
@@ -318,34 +318,37 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 	return out
 }
 
-func addFunctionsFromGrpcTranscoder(up *v1.Upstream) {
-	var functionNames map[string]any
+func addFunctionsFromGrpcTranscoder(namespace string) func(*v1.Upstream) {
+	return func(up *v1.Upstream) {
+		var functionNames map[string]any
 
-	switch usType := up.GetUpstreamType().(type) {
-	case *v1.Upstream_Kube:
-		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
-			if gjt.GetProtoDescriptorBin() != nil {
-				functionNames = getFunctionsFromDescriptorBin(gjt)
+		switch usType := up.GetUpstreamType().(type) {
+		case *v1.Upstream_Kube:
+			if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+				if gjt.GetProtoDescriptorBin() != nil {
+					functionNames = getFunctionsFromDescriptorBin(gjt)
+				}
+			}
+		case *v1.Upstream_Consul:
+			if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+				if gjt.GetProtoDescriptorBin() != nil {
+					functionNames = getFunctionsFromDescriptorBin(gjt)
+				}
+			}
+		case *v1.Upstream_Static:
+			if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
+				if gjt.GetProtoDescriptorBin() != nil {
+					functionNames = getFunctionsFromDescriptorBin(gjt)
+				}
 			}
 		}
-	case *v1.Upstream_Consul:
-		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
-			if gjt.GetProtoDescriptorBin() != nil {
-				functionNames = getFunctionsFromDescriptorBin(gjt)
-			}
-		}
-	case *v1.Upstream_Static:
-		if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
-			if gjt.GetProtoDescriptorBin() != nil {
-				functionNames = getFunctionsFromDescriptorBin(gjt)
-			}
-		}
-	}
 
-	if functionNames != nil {
-		// TODO choose correct namespaced status
-		for _, status := range up.NamespacedStatuses.GetStatuses() {
-			addFunctionNamesToStatus(status, functionNames)
+		if functionNames != nil {
+			for ns, status := range up.NamespacedStatuses.GetStatuses() {
+				if ns == namespace {
+					addFunctionNamesToStatus(status, functionNames)
+				}
+			}
 		}
 	}
 }
