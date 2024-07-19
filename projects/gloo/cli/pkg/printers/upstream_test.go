@@ -3,6 +3,7 @@ package printers
 import (
 	"bytes"
 	"fmt"
+
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/gcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"

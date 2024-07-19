@@ -2,11 +2,12 @@ package printers
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
-	"google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"os"
 	"sort"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"google.golang.org/protobuf/proto"
@@ -356,7 +357,7 @@ func addFunctionsFromGrpcTranscoder(namespace string) func(*v1.Upstream) {
 		// the function names are the same regardless of namespace, so adding to multiple statuses would be redundant
 		// we therefore only add to the given namespace's status
 		if functionNames != nil {
-			for ns, status := range up.NamespacedStatuses.GetStatuses() {
+			for ns, status := range up.GetNamespacedStatuses().GetStatuses() {
 				if ns == namespace {
 					addFunctionNamesToStatus(status, functionNames)
 				}
@@ -425,7 +426,7 @@ func addFunctionNamesToStatus(status *core.Status, functionNames map[string]any)
 
 	functionNamesStruct, _ := structpb.NewStruct(functionNames)
 
-	status.Details.Fields[functionNamesKey] = &structpb.Value{
+	status.GetDetails().GetFields()[functionNamesKey] = &structpb.Value{
 		Kind: &structpb.Value_StructValue{
 			StructValue: functionNamesStruct,
 		},
