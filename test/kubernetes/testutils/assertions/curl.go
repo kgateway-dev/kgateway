@@ -150,7 +150,12 @@ func (p *Provider) AssertEventualCurlError(
 		},
 	})
 
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	pollTimeout := 5 * time.Second
+	pollInterval := 500 * time.Millisecond
+	if len(timeout) > 0 {
+		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+	}
+
 	testMessage := fmt.Sprintf("Expected curl error %d", expectedErrorCode)
 
 	p.Gomega.Eventually(func(g Gomega) {
@@ -163,8 +168,8 @@ func (p *Provider) AssertEventualCurlError(
 			} else {
 				fmt.Printf("wanted curl error, got response:\nstdout:\n%s\nstderr:%s\n", curlResponse.StdOut, curlResponse.StdErr)
 				curlHttpResponse := transforms.WithCurlResponse(curlResponse)
-				curlHttpResponse.Body.Close()
 				testMessage = fmt.Sprintf("failed to get a curl error, got response code: %d", curlHttpResponse.StatusCode)
+				curlHttpResponse.Body.Close()
 			}
 			g.Expect(err).To(HaveOccurred())
 		}
@@ -179,8 +184,8 @@ func (p *Provider) AssertEventualCurlError(
 		}
 
 	}).
-		WithTimeout(currentTimeout).
-		WithPolling(pollingInterval).
+		WithTimeout(pollTimeout).
+		WithPolling(pollInterval).
 		WithContext(ctx).
 		Should(Succeed(), testMessage)
 }
