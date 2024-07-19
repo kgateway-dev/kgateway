@@ -140,7 +140,7 @@ func (p *Provider) AssertEventualCurlError(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
-	expectedErrorCode int,
+	expectedErrorCode int, // This is an application error code not an HTTP error code
 	timeout ...time.Duration,
 ) {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
@@ -151,22 +151,33 @@ func (p *Provider) AssertEventualCurlError(
 	})
 
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	var testMessage string
 
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
-		fmt.Printf("wanted error code")
+		expectedCodeDetails := ""
 		if expectedErrorCode > 0 {
-			fmt.Printf(" %d", expectedErrorCode)
+			expectedCodeDetails = fmt.Sprintf(" %d", expectedErrorCode)
 		}
-		fmt.Printf(":\nstdout:\n%s\nstderr:%s\nerr:%s", curlResponse.StdOut, curlResponse.StdErr, err.Error())
-		g.Expect(err).To(HaveOccurred())
+		fmt.Printf("wanted error code%s:\nstdout:\n%s\nstderr:%s\nerr: %s\n", expectedCodeDetails, curlResponse.StdOut, curlResponse.StdErr, err.Error())
+
+		if err != nil {
+			curlHttpResponse := transforms.WithCurlResponse(curlResponse)
+			testMessage = fmt.Sprintf("failed to get a curl error, got response code: %d", curlHttpResponse.StatusCode)
+			g.Expect(err).To(HaveOccurred())
+		}
+
 		if expectedErrorCode > 0 {
-			g.Expect(err.Error()).To(Equal(fmt.Sprintf("exit status %d", expectedErrorCode)))
+			expectedCurlError := fmt.Sprintf("exit status %d", expectedErrorCode)
+			testMessage = fmt.Sprintf("got curl error: %s, expected %s", err.Error(), expectedCurlError)
+			g.Expect(err.Error()).To(Equal(expectedCurlError))
 		}
+
+		testMessage = "got expected curl error"
 
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
 		WithContext(ctx).
-		Should(Succeed(), "failed to get a curl error")
+		Should(Succeed(), testMessage)
 }
