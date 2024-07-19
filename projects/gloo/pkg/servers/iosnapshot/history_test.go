@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	types2 "k8s.io/apimachinery/pkg/types"
 	"slices"
 	"time"
 
@@ -79,55 +82,110 @@ var _ = Describe("History", func() {
 
 	Context("GetInputSnapshot", func() {
 
-		It("returns ApiSnapshot without sensitive data", func() {
+		It("Includes Settings", func() {
+			// Settings CR is not part of the APISnapshot, but should be returned by the input snapshot endpoint
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.SettingsGVK),
+				matchers.HaveObjectMeta(types2.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					// This matches the name of the Settings resource that we construct the History object with
+					Name: "my-settings",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include Settings")
+		})
+
+		It("Includes Endpoints", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Secrets: v1.SecretList{
-					{Metadata: &core.Metadata{Name: "secret-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "secret-west", Namespace: defaults.GlooSystem}},
-				},
-				Artifacts: v1.ArtifactList{
-					{Metadata: &core.Metadata{Name: "artifact-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "artifact-west", Namespace: defaults.GlooSystem}},
+				Endpoints: v1.EndpointList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "ep-snap",
+							Namespace: defaults.GlooSystem,
+						},
+						Address: "2.3.4.5",
+						Upstreams: []*core.ResourceRef{
+							{
+								Name:      "us1",
+								Namespace: "ns1",
+							},
+						},
+					},
 				},
 			})
 
-			inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-			Expect(err).NotTo(HaveOccurred())
-
-			returnedResources := []crdv1.Resource{}
-			err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(containsResourceType(returnedResources, v1.SecretGVK)).To(BeFalse(), "input snapshot should not contain secrets")
-			Expect(containsResourceType(returnedResources, v1.ArtifactGVK)).To(BeFalse(), "input snapshot should not contain artifacts")
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.EndpointGVK),
+				matchers.HaveObjectMeta(types2.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "ep-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include endpoints")
 		})
 
-		It("returns ApiSnapshot without Proxies", func() {
+		It("Includes Secrets", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Secrets: v1.SecretList{{
+					Metadata: &core.Metadata{Name: "secret", Namespace: defaults.GlooSystem},
+				}},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.SecretGVK),
+				matchers.HaveObjectMeta(types2.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "secret",
+				}),
+				// We want to ensure that the entire Spec of the Secret CR is removed
+				BeEmpty(),
+			), "returned resources include secrets")
+		})
+
+		It("Includes Artifacts", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Artifacts: v1.ArtifactList{
+					{Metadata: &core.Metadata{Name: "artifact", Namespace: defaults.GlooSystem}},
+				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.ArtifactGVK),
+				matchers.HaveObjectMeta(types2.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "artifact",
+				}),
+				// We want to ensure that the entire Spec of the Artifact CR is removed
+				BeEmpty(),
+			), "returned resources include artifacts")
+		})
+
+		It("Excludes Proxies", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Proxies: v1.ProxyList{
-					{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}},
-				},
-				Upstreams: v1.UpstreamList{
-					{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "proxy", Namespace: defaults.GlooSystem}},
 				},
 			})
 
-			inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-			Expect(err).NotTo(HaveOccurred())
-
-			returnedResources := []crdv1.Resource{}
-			err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-			Expect(err).NotTo(HaveOccurred())
-
-			// proxies should not be included in input snapshot
-			Expect(containsResourceType(returnedResources, v1.ProxyGVK)).To(BeFalse(), "input snapshot should not contain proxies")
-
-			// upstreams should be included in input snapshot
-			expectContainsResource(returnedResources, v1.UpstreamGVK, defaults.GlooSystem, "upstream-east")
-			expectContainsResource(returnedResources, v1.UpstreamGVK, defaults.GlooSystem, "upstream-west")
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).NotTo(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.ProxyGVK),
+				matchers.HaveObjectMeta(types2.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "proxy",
+				}),
+				gstruct.Ignore(),
+			), "returned resources exclude proxies")
 		})
+		
+		// additional test ideas:
+		// - sorting
+		// - secrets and artifacts are returned but redact data (requires inspecting spec of returned resource)
 
 		It("returns all Edge api snapshot resources", func() {
 			// make sure each resource type can be successfully converted from snapshot
@@ -368,18 +426,6 @@ var _ = Describe("History", func() {
 			expectContainsResource(returnedResources, gatewayv1.MatchableHttpGatewayGVK, defaults.GlooSystem, "hgw-snap")
 			expectContainsResource(returnedResources, gatewayv1.MatchableTcpGatewayGVK, defaults.GlooSystem, "tgw-snap")
 			expectContainsResource(returnedResources, graphqlv1beta1.GraphQLApiGVK, defaults.GlooSystem, "gql-snap")
-		})
-
-		It("returns Settings", func() {
-			// settings is not part of the api snapshot, but should be returned by the input snapshot endpoint
-			inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-			Expect(err).NotTo(HaveOccurred())
-
-			returnedResources := []crdv1.Resource{}
-			err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-			Expect(err).NotTo(HaveOccurred())
-
-			expectContainsResource(returnedResources, v1.SettingsGVK, defaults.GlooSystem, "my-settings")
 		})
 
 		Context("kube gateway integration", func() {
@@ -671,6 +717,17 @@ var _ = Describe("History", func() {
 	})
 
 })
+
+func getTypedInputSnapshot(ctx context.Context, history History) []crdv1.Resource {
+	inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
+	Expect(err).NotTo(HaveOccurred())
+
+	returnedResources := []crdv1.Resource{}
+	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
+	Expect(err).NotTo(HaveOccurred())
+
+	return returnedResources
+}
 
 // setSnapshotOnHistory sets the ApiSnapshot on the history, and blocks until it has been processed
 // This is a utility method to help developers write tests, without having to worry about the asynchronous
