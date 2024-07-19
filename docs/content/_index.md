@@ -3,12 +3,15 @@ weight: 99
 title: Gloo Gateway
 ---
 
-# An Envoy-Powered API Gateway
+# Gloo Gateway (Gloo Edge API)
 
+Welcome to the Gloo Gateway (Gloo Edge API) documentation. 
 
-## What is Gloo Gateway
+## What is Gloo Gateway?
 
 Gloo Gateway is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
+
+{{% notice tip %}}Want to use Gloo Gateway with the Kubernetes Gateway API? Check out the [separate product documentation set](https://docs.solo.io/gateway/latest/). This product documentation set is to use Gloo Gateway with Solo's `Gateway` API custom resource.{{% /notice %}}
 
 ![Gloo Gateway Architecture]({{% versioned_link_path fromRoot="/img/gloo-architecture-envoys.png" %}})
 
