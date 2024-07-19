@@ -1,10 +1,10 @@
 ---
-title: Debugging Gloo Edge
-description: This document shows how some common ways to debug Gloo Edge and Envoy
+title: Debugging Gloo Gateway
+description: This document shows how some common ways to debug Gloo Gateway and Envoy
 weight: 10
 ---
 
-At times, you may need to debug Gloo Edge misconfigurations. Gloo Edge is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo Edge and Envoy. 
+At times, you may need to debug Gloo Gateway misconfigurations. Gloo Gateway is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo Gateway and Envoy. 
 
 The guide is broken into three main sections:
 
@@ -12,13 +12,13 @@ The guide is broken into three main sections:
 * Debugging the data plane 
 * Debugging the control plane
 
-This guide is intended to help you understand where to look if things aren't working as expected. After going through, if [all else fails](#all-else-fails), you can capture the state of Gloo Edge configurations and logs and join us on our [Slack](https://slack.solo.io) and one of our engineers will be able to help.
+This guide is intended to help you understand where to look if things aren't working as expected. After going through, if [all else fails](#all-else-fails), you can capture the state of Gloo Gateway configurations and logs and join us on our [Slack](https://slack.solo.io) and one of our engineers will be able to help.
 
 
 
 ## General debugging tools and tips
 
-If you're experiencing unexpected behavior after installing and configuring Gloo Edge, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo Edge resources to make sure they're in a healthy/Accepted/OK status. Typically if there are problems syncing resources, you would find an issue here.
+If you're experiencing unexpected behavior after installing and configuring Gloo Gateway, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo Gateway resources to make sure they're in a healthy/Accepted/OK status. Typically if there are problems syncing resources, you would find an issue here.
 
 ```bash
 glooctl check
@@ -59,7 +59,7 @@ glooctl proxy served-config
 
 ## Debugging the data plane
 
-Gloo Edge is based on the Envoy proxy. So, when you find unexpected behaviors with your request handling, here are a few areas to look in Envoy that can aid in debugging. Note, we've created some convenience tooling in the `glooctl` CLI tool which is tremendously helpful here.
+Gloo Gateway is based on the Envoy proxy. So, when you find unexpected behaviors with your request handling, here are a few areas to look in Envoy that can aid in debugging. Note, we've created some convenience tooling in the `glooctl` CLI tool which is tremendously helpful here.
 
 
 ### Dumping Envoy configuration
@@ -151,7 +151,7 @@ Now you can `curl localhost:19000` and get access to the Envoy Admin API.
 
 ## Debugging the control plane
 
-The Gloo Edge control plane is made up of the following components:
+The Gloo Gateway control plane is made up of the following components:
 
 ```bash
 NAME                             READY   STATUS    RESTARTS   AGE
@@ -198,7 +198,7 @@ Likely you just want to see each individual components logs. You can use `kubect
 kubectl logs -f -n gloo-system -l gloo=gloo
 ```
 
-To follow the logs of other Gloo Edge deployments, simply change the value of the `gloo` label as shown in the table below.
+To follow the logs of other Gloo Gateway deployments, simply change the value of the `gloo` label as shown in the table below.
 
 | Component | Command |
 | ------------- | ------------- |
@@ -211,7 +211,7 @@ To follow the logs of other Gloo Edge deployments, simply change the value of th
 
 ### Changing logging levels and more
 
-Each Gloo Edge control plane component comes with an optional debug port that you can enable with the `START_STATS_SERVER` environment variable. To get access to the port, you can forward the port of the Kubernetes deployment such as with the following command:
+Each Gloo Gateway control plane component comes with an optional debug port that you can enable with the `START_STATS_SERVER` environment variable. To get access to the port, you can forward the port of the Kubernetes deployment such as with the following command:
 
 ```bash
 kubectl port-forward -n gloo-system deploy/gloo 9091:9091
@@ -226,7 +226,7 @@ Now you can navigate to `http://localhost:9091` and you get a simple page with s
 
 With these endpoints, you can profile the behavior of the component, adjust its logging, view the prometheus-style telemetry signals, as well as view tracing spans within the process. This is a very handy page to understand the behavior of a particular component. 
 
-To change the log levels of individual Gloo Edge deployments from the CLI instead of the Admin UI, use commands similar to the following example with the `discovery` deployment.
+To change the log levels of individual Gloo Gateway deployments from the CLI instead of the Admin UI, use commands similar to the following example with the `discovery` deployment.
 
 ```bash
 kubectl port-forward -n gloo-system deploy/discovery 9091:9091
@@ -240,7 +240,7 @@ kubectl port-forward -n gloo-system deploy/discovery 9091:9091
 
 Setting the `LOG_LEVEL` environment variable within `gloo`, `discovery`, `gateway` or gateway proxy deployments will change the level at which the stats server logs. The default log level for the stats server is `info`.
 
-Other acceptable log levels for Gloo Edge components are:
+Other acceptable log levels for Gloo Gateway components are:
 
 * `debug`
 * `error`
@@ -310,11 +310,11 @@ The following endpoints are then available:
 
 ### All else fails
 
-Again, if all else fails, you can capture the state of Gloo Edge configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
+Again, if all else fails, you can capture the state of Gloo Gateway configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
 
 ```bash
 glooctl debug logs -f gloo-logs.log
 glooctl debug yaml -f gloo-yamls.yaml
 ```
 
-These commands dump all of the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Edge deployment. 
+These commands dump all of the relevant configuration into `gloo-logs.log` and `gloo-yamls.yaml` files, which gives a complete picture of your Gloo Gateway deployment. 

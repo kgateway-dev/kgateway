@@ -3,16 +3,16 @@ title: Multi-gateway deployment
 weight: 80
 description: Deploying more gateways and gateway-proxies
 ---
-Create multiple Envoy gateway proxies with Gloo Edge to segregate and customize traffic controls in an environment with multiple types of traffic, such as public internet and a private intranet.
+Create multiple Envoy gateway proxies with Gloo Gateway to segregate and customize traffic controls in an environment with multiple types of traffic, such as public internet and a private intranet.
 
 {{% notice note %}}
-Gloo Edge offers an alternative to deploying multiple gateways called [Hybrid Gateways]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/hybrid_gateway/" >}}). With a hybrid gateway, you can define multiple HTTP or TCP gateways in a single gateway with distinct matching criteria. Hybrid gateways work best in situations where the matching criteria are based on client IP address or SSL config. If so, you can get the benefits of multiple gateways with fewer moving parts and simpler configuration.
+Gloo Gateway offers an alternative to deploying multiple gateways called [Hybrid Gateways]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/hybrid_gateway/" >}}). With a hybrid gateway, you can define multiple HTTP or TCP gateways in a single gateway with distinct matching criteria. Hybrid gateways work best in situations where the matching criteria are based on client IP address or SSL config. If so, you can get the benefits of multiple gateways with fewer moving parts and simpler configuration.
 {{% /notice %}}
 
 ## Multiple gateway architecture and terminology
 
-Gloo Edge offers a flexible architecture by providing custom resource definitions (CRDs) that you can use to configure _proxies_ and _gateways_. These two terms describe the physical and logical architecture of a gateway system.
-- **Proxies**: The _physical_ gateways, or reverse proxies, that are running instances of Envoy as the `gateway-proxy` pods in your cluster. You define these gateway proxies in the Helm configuration file when you install or upgrade your Gloo Edge deployment.
+Gloo Gateway offers a flexible architecture by providing custom resource definitions (CRDs) that you can use to configure _proxies_ and _gateways_. These two terms describe the physical and logical architecture of a gateway system.
+- **Proxies**: The _physical_ gateways, or reverse proxies, that are running instances of Envoy as the `gateway-proxy` pods in your cluster. You define these gateway proxies in the Helm configuration file when you install or upgrade your Gloo Gateway deployment.
 - **Gateways**: The _logical_ gateway that is an Envoy _listener_, which represents a server socket and a protocol. By default, your cluster gets two gateways for handling plain text HTTP and HTTPS connections. To generate more Envoy listeners such as for other protocols, you can create more `Gateway` _Custom Resources_.
 
 See the following diagram for more information about [Custom Resource Usage]({{< versioned_link_path fromRoot="/introduction/architecture/custom_resources/" >}}). The blue squares are Kubernetes _Custom Resources_ (CRs), and the **Gateway** and **Gloo** circles are Kubernetes deployments that function as controllers for the CRs.

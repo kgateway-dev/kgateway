@@ -1,6 +1,6 @@
-# Security posture for Gloo Edge Envoy extensions
+# Security posture for Gloo Gateway Envoy extensions
 # This file includes information for both Open Source 
-# and Enterprise versions of Gloo Edge.
+# and Enterprise versions of Gloo Gateway.
 # For more information, see the docs: 
 # https://docs.solo.io/gloo-edge/main/reference/security-posture/
 #

@@ -33,7 +33,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Finally, test that Gloo Edge picked up the configuration by sending a request with a base64-encoded header.
+Finally, test that Gloo Gateway picked up the configuration by sending a request with a base64-encoded header.
 
 ```shell
 curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" $(glooctl proxy url)/get | jq
@@ -60,7 +60,7 @@ Review the JSON output similar to the following `200` status response. Note that
 {{< /highlight >}}
 
 ## Modifying the request header
-As confirmed in the test request of the setup, the upstream service echoes the headers that you include in the request inside the `headers` response body attribute. Now, you can configure Gloo Edge to decode and modify the value of this header before sending it to the upstream.
+As confirmed in the test request of the setup, the upstream service echoes the headers that you include in the request inside the `headers` response body attribute. Now, you can configure Gloo Gateway to decode and modify the value of this header before sending it to the upstream.
 
 ### Update the Virtual Service
 To implement this behavior, add a `responseTransformation` stanza to the original Virtual Service definition. Note that the `request_header`, `base64_decode`, and `substring` functions are used in an [Inja template]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#templating-language" %}}) to:
