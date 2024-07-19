@@ -132,3 +132,60 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 		WithContext(ctx).
 		Should(Succeed())
 }
+
+// AssertEventualCurlError asserts that the response from a curl command is an error such as `Failed to connect`
+// as opposed to an http error from the server. This is useful when testing that a service is not reachable,
+// for example to validate that a delete operation has taken effect.
+func (p *Provider) AssertEventualCurlError(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	curlOptions []curl.Option,
+	expectedErrorCode int, // This is an application error code not an HTTP error code
+	timeout ...time.Duration,
+) {
+	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
+	p.EventuallyObjectsExist(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podOpts.Name, Namespace: podOpts.Namespace,
+		},
+	})
+
+	pollTimeout := 5 * time.Second
+	pollInterval := 500 * time.Millisecond
+	if len(timeout) > 0 {
+		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+	}
+
+	testMessage := fmt.Sprintf("Expected curl error %d", expectedErrorCode)
+
+	p.Gomega.Eventually(func(g Gomega) {
+		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
+
+		if err == nil {
+			if curlResponse == nil { // This is not expected to happen, but adding for safety/future-proofing
+				fmt.Printf("wanted curl error, got no error and no response\n")
+				testMessage = fmt.Sprintf("Expected curl error %d, got no error and no response\n", expectedErrorCode)
+			} else {
+				fmt.Printf("wanted curl error, got response:\nstdout:\n%s\nstderr:%s\n", curlResponse.StdOut, curlResponse.StdErr)
+				curlHttpResponse := transforms.WithCurlResponse(curlResponse)
+				testMessage = fmt.Sprintf("failed to get a curl error, got response code: %d", curlHttpResponse.StatusCode)
+				curlHttpResponse.Body.Close()
+			}
+			g.Expect(err).To(HaveOccurred())
+		}
+
+		if expectedErrorCode > 0 {
+			expectedCurlError := fmt.Sprintf("exit status %d", expectedErrorCode)
+			fmt.Printf("wanted curl error: %s, got error: %s\n", expectedCurlError, err.Error())
+			testMessage = fmt.Sprintf("Expected curl error: %s, got: %s", expectedCurlError, err.Error())
+			g.Expect(err.Error()).To(Equal(expectedCurlError))
+		} else {
+			fmt.Printf("wanted any curl error, got error: %s\n", err.Error())
+		}
+
+	}).
+		WithTimeout(pollTimeout).
+		WithPolling(pollInterval).
+		WithContext(ctx).
+		Should(Succeed(), testMessage)
+}
