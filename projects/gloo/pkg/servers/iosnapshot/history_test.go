@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
-	types2 "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
 	"slices"
 	"time"
 
@@ -42,6 +42,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+)
+
+var (
+	deploymentGvk = schema.GroupVersionKind{
+		Group:   appsv1.GroupName,
+		Version: "v1",
+		Kind:    "Deployment",
+	}
 )
 
 var _ = Describe("History", func() {
@@ -88,7 +96,7 @@ var _ = Describe("History", func() {
 			returnedResources := getTypedInputSnapshot(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
 				matchers.HaveTypeMeta(v1.SettingsGVK),
-				matchers.HaveObjectMeta(types2.NamespacedName{
+				matchers.HaveObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					// This matches the name of the Settings resource that we construct the History object with
 					Name: "my-settings",
@@ -119,7 +127,7 @@ var _ = Describe("History", func() {
 			returnedResources := getTypedInputSnapshot(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
 				matchers.HaveTypeMeta(v1.EndpointGVK),
-				matchers.HaveObjectMeta(types2.NamespacedName{
+				matchers.HaveObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "ep-snap",
 				}),
@@ -127,7 +135,9 @@ var _ = Describe("History", func() {
 			), "returned resources include endpoints")
 		})
 
-		It("Includes Secrets", func() {
+		It("Excludes Secrets", func() {
+			// TODO: We want to update the implementation to include secrets, but redact the contents of them
+
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Secrets: v1.SecretList{{
 					Metadata: &core.Metadata{Name: "secret", Namespace: defaults.GlooSystem},
@@ -135,18 +145,16 @@ var _ = Describe("History", func() {
 			})
 
 			returnedResources := getTypedInputSnapshot(ctx, history)
-			Expect(returnedResources).To(matchers.ContainCustomResource(
+			Expect(returnedResources).NotTo(matchers.ContainCustomResource(
 				matchers.HaveTypeMeta(v1.SecretGVK),
-				matchers.HaveObjectMeta(types2.NamespacedName{
-					Namespace: defaults.GlooSystem,
-					Name:      "secret",
-				}),
-				// We want to ensure that the entire Spec of the Secret CR is removed
-				BeEmpty(),
-			), "returned resources include secrets")
+				gstruct.Ignore(),
+				gstruct.Ignore(),
+			), "returned resources exclude secrets")
 		})
 
-		It("Includes Artifacts", func() {
+		It("Excludes Artifacts", func() {
+			// TODO: We want to update the implementation to include artifacts, but redact the contents of them
+
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Artifacts: v1.ArtifactList{
 					{Metadata: &core.Metadata{Name: "artifact", Namespace: defaults.GlooSystem}},
@@ -154,58 +162,15 @@ var _ = Describe("History", func() {
 			})
 
 			returnedResources := getTypedInputSnapshot(ctx, history)
-			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.ArtifactGVK),
-				matchers.HaveObjectMeta(types2.NamespacedName{
-					Namespace: defaults.GlooSystem,
-					Name:      "artifact",
-				}),
-				// We want to ensure that the entire Spec of the Artifact CR is removed
-				BeEmpty(),
-			), "returned resources include artifacts")
-		})
-
-		It("Excludes Proxies", func() {
-			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Proxies: v1.ProxyList{
-					{Metadata: &core.Metadata{Name: "proxy", Namespace: defaults.GlooSystem}},
-				},
-			})
-
-			returnedResources := getTypedInputSnapshot(ctx, history)
 			Expect(returnedResources).NotTo(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.ProxyGVK),
-				matchers.HaveObjectMeta(types2.NamespacedName{
-					Namespace: defaults.GlooSystem,
-					Name:      "proxy",
-				}),
+				matchers.HaveTypeMeta(v1.ArtifactGVK),
 				gstruct.Ignore(),
-			), "returned resources exclude proxies")
+				gstruct.Ignore(),
+			), "returned resources exclude artifacts")
 		})
-		
-		// additional test ideas:
-		// - sorting
-		// - secrets and artifacts are returned but redact data (requires inspecting spec of returned resource)
 
-		It("returns all Edge api snapshot resources", func() {
-			// make sure each resource type can be successfully converted from snapshot
-			// to kubernetes format
+		It("Includes UpstreamGroups", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Endpoints: v1.EndpointList{
-					{
-						Metadata: &core.Metadata{
-							Name:      "ep-snap",
-							Namespace: defaults.GlooSystem,
-						},
-						Address: "2.3.4.5",
-						Upstreams: []*core.ResourceRef{
-							{
-								Name:      "us1",
-								Namespace: "ns1",
-							},
-						},
-					},
-				},
 				UpstreamGroups: v1.UpstreamGroupList{
 					{
 						Metadata: &core.Metadata{
@@ -228,6 +193,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.UpstreamGroupGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "ug-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include upstream groups")
+		})
+
+		It("Includes Upstreams", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Upstreams: v1.UpstreamList{
 					{
 						Metadata: &core.Metadata{
@@ -248,6 +228,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.UpstreamGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "us-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include upstreams")
+		})
+
+		It("Includes AuthConfigs", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				AuthConfigs: extauthv1.AuthConfigList{
 					{
 						Metadata: &core.Metadata{
@@ -259,6 +254,21 @@ var _ = Describe("History", func() {
 						}},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(extauthv1.AuthConfigGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "ac-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include auth configs")
+		})
+
+		It("Includes RateLimitConfigs", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Ratelimitconfigs: ratelimitv1alpha1.RateLimitConfigList{
 					{
 						RateLimitConfig: ratelimit.RateLimitConfig{
@@ -292,6 +302,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "rlc-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include rate limit configs")
+		})
+
+		It("Includes VirtualServices", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				VirtualServices: gatewayv1.VirtualServiceList{
 					{
 						Metadata: &core.Metadata{
@@ -303,6 +328,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.VirtualServiceGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "vs-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include virtual services")
+		})
+
+		It("Includes RouteTables", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				RouteTables: gatewayv1.RouteTableList{
 					{
 						Metadata: &core.Metadata{
@@ -321,6 +361,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.RouteTableGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "rt-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include route tables")
+		})
+
+		It("Includes Gateways (Edge API)", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Gateways: gatewayv1.GatewayList{
 					{
 						Metadata: &core.Metadata{
@@ -331,6 +386,77 @@ var _ = Describe("History", func() {
 						ProxyNames:  []string{"proxy1"},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.GatewayGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "gw-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include gateways")
+		})
+
+		It("Includes HttpGateways", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				HttpGateways: gatewayv1.MatchableHttpGatewayList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "hgw-snap",
+							Namespace: defaults.GlooSystem,
+						},
+						Matcher: &gatewayv1.MatchableHttpGateway_Matcher{
+							SourcePrefixRanges: []*envoycorev3.CidrRange{
+								{
+									AddressPrefix: "abc",
+								},
+							},
+						},
+					},
+				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.MatchableHttpGatewayGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "hgw-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include http gateways")
+		})
+
+		It("Includes TcpGateways", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				TcpGateways: gatewayv1.MatchableTcpGatewayList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "tgw-snap",
+							Namespace: defaults.GlooSystem,
+						},
+						Matcher: &gatewayv1.MatchableTcpGateway_Matcher{
+							PassthroughCipherSuites: []string{"a", "b", "c"},
+						},
+					},
+				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.MatchableTcpGatewayGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "tgw-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include tcp gateways")
+		})
+
+		It("Includes VirtualHostOptions", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				VirtualHostOptions: gatewayv1.VirtualHostOptionList{
 					{
 						Metadata: &core.Metadata{
@@ -348,6 +474,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.VirtualHostOptionGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "vho-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include virtual host options")
+		})
+
+		It("Includes RouteOptions", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				RouteOptions: gatewayv1.RouteOptionList{
 					{
 						Metadata: &core.Metadata{
@@ -365,32 +506,21 @@ var _ = Describe("History", func() {
 						},
 					},
 				},
-				HttpGateways: gatewayv1.MatchableHttpGatewayList{
-					{
-						Metadata: &core.Metadata{
-							Name:      "hgw-snap",
-							Namespace: defaults.GlooSystem,
-						},
-						Matcher: &gatewayv1.MatchableHttpGateway_Matcher{
-							SourcePrefixRanges: []*envoycorev3.CidrRange{
-								{
-									AddressPrefix: "abc",
-								},
-							},
-						},
-					},
-				},
-				TcpGateways: gatewayv1.MatchableTcpGatewayList{
-					{
-						Metadata: &core.Metadata{
-							Name:      "tgw-snap",
-							Namespace: defaults.GlooSystem,
-						},
-						Matcher: &gatewayv1.MatchableTcpGateway_Matcher{
-							PassthroughCipherSuites: []string{"a", "b", "c"},
-						},
-					},
-				},
+			})
+
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(gatewayv1.RouteOptionGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "rto-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include virtual host options")
+		})
+
+		It("Includes GraphQLApis", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				GraphqlApis: graphqlv1beta1.GraphQLApiList{
 					{
 						Metadata: &core.Metadata{
@@ -406,26 +536,34 @@ var _ = Describe("History", func() {
 				},
 			})
 
-			inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-			Expect(err).NotTo(HaveOccurred())
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(graphqlv1beta1.GraphQLApiGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "gql-snap",
+				}),
+				gstruct.Ignore(),
+			), "returned resources include graphql apis")
+		})
 
-			returnedResources := []crdv1.Resource{}
-			err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-			Expect(err).NotTo(HaveOccurred())
+		It("Excludes Proxies", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Proxies: v1.ProxyList{
+					{Metadata: &core.Metadata{Name: "proxy", Namespace: defaults.GlooSystem}},
+				},
+			})
 
-			expectContainsResource(returnedResources, v1.EndpointGVK, defaults.GlooSystem, "ep-snap")
-			expectContainsResource(returnedResources, v1.UpstreamGroupGVK, defaults.GlooSystem, "ug-snap")
-			expectContainsResource(returnedResources, v1.UpstreamGVK, defaults.GlooSystem, "us-snap")
-			expectContainsResource(returnedResources, extauthv1.AuthConfigGVK, defaults.GlooSystem, "ac-snap")
-			expectContainsResource(returnedResources, ratelimitv1alpha1.RateLimitConfigGVK, defaults.GlooSystem, "rlc-snap")
-			expectContainsResource(returnedResources, gatewayv1.VirtualServiceGVK, defaults.GlooSystem, "vs-snap")
-			expectContainsResource(returnedResources, gatewayv1.RouteTableGVK, defaults.GlooSystem, "rt-snap")
-			expectContainsResource(returnedResources, gatewayv1.GatewayGVK, defaults.GlooSystem, "gw-snap")
-			expectContainsResource(returnedResources, gatewayv1.VirtualHostOptionGVK, defaults.GlooSystem, "vho-snap")
-			expectContainsResource(returnedResources, gatewayv1.RouteOptionGVK, defaults.GlooSystem, "rto-snap")
-			expectContainsResource(returnedResources, gatewayv1.MatchableHttpGatewayGVK, defaults.GlooSystem, "hgw-snap")
-			expectContainsResource(returnedResources, gatewayv1.MatchableTcpGatewayGVK, defaults.GlooSystem, "tgw-snap")
-			expectContainsResource(returnedResources, graphqlv1beta1.GraphQLApiGVK, defaults.GlooSystem, "gql-snap")
+			returnedResources := getTypedInputSnapshot(ctx, history)
+			Expect(returnedResources).NotTo(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.ProxyGVK),
+				gstruct.Ignore(),
+				gstruct.Ignore(),
+			), "returned resources exclude proxies")
+		})
+
+		It("Sorts resources by GVK", func() {
+			// TODO
 		})
 
 		Context("kube gateway integration", func() {
@@ -593,12 +731,7 @@ var _ = Describe("History", func() {
 				}
 				setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 
-				inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-				Expect(err).NotTo(HaveOccurred())
-
-				returnedResources := []crdv1.Resource{}
-				err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-				Expect(err).NotTo(HaveOccurred())
+				returnedResources := getTypedInputSnapshot(ctx, history)
 
 				// should contain the kube resources
 				expectContainsResource(returnedResources, gatewayv1.RouteOptionGVK, "h", "kube-rto")
@@ -625,31 +758,17 @@ var _ = Describe("History", func() {
 
 				setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 
-				inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-				Expect(err).NotTo(HaveOccurred())
-
-				returnedResources := []crdv1.Resource{}
-				err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-				Expect(err).NotTo(HaveOccurred())
+				returnedResources := getTypedInputSnapshot(ctx, history)
 
 				// a Deployment is not one of the resource types we return in the input snapshot by default, so
 				// the deployment should not appear in the results
-				deploymentGvk := schema.GroupVersionKind{
-					Group:   appsv1.GroupName,
-					Version: "v1",
-					Kind:    "Deployment",
-				}
 				Expect(containsResourceType(returnedResources, deploymentGvk)).To(BeFalse(),
 					"input snapshot should not contain deployments")
 			})
 
 			It("respects extra kube gvks", func() {
 				// create a new History that adds deployments to the kube input snapshot gvks
-				deploymentGvk := schema.GroupVersionKind{
-					Group:   appsv1.GroupName,
-					Version: "v1",
-					Kind:    "Deployment",
-				}
+
 				gvks := []schema.GroupVersionKind{}
 				gvks = append(gvks, KubeGatewayDefaultGVKs...)
 				gvks = append(gvks, deploymentGvk)
@@ -674,15 +793,15 @@ var _ = Describe("History", func() {
 				}
 				setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 
-				inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-				Expect(err).NotTo(HaveOccurred())
-
-				returnedResources := []crdv1.Resource{}
-				err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-				Expect(err).NotTo(HaveOccurred())
-
-				// we should now see the deployment in the input snapshot results
-				expectContainsResource(returnedResources, deploymentGvk, "a", "kube-deploy")
+				returnedResources := getTypedInputSnapshot(ctx, history)
+				Expect(returnedResources).To(matchers.ContainCustomResource(
+					matchers.HaveTypeMeta(deploymentGvk),
+					matchers.HaveObjectMeta(types.NamespacedName{
+						Namespace: "a",
+						Name:      "kube-deploy",
+					}),
+					gstruct.Ignore(),
+				), "we should now see the deployment in the input snapshot results")
 			})
 		})
 	})
@@ -701,17 +820,31 @@ var _ = Describe("History", func() {
 				},
 			})
 
-			proxySnapshotBytes, err := history.GetProxySnapshot(ctx)
-			Expect(err).NotTo(HaveOccurred())
+			returnedResources := getTypedProxySnapshot(ctx, history)
+			Expect(returnedResources).To(And(
+				matchers.ContainCustomResource(
+					matchers.HaveTypeMeta(v1.ProxyGVK),
+					matchers.HaveObjectMeta(types.NamespacedName{
+						Namespace: defaults.GlooSystem,
+						Name:      "proxy-east",
+					}),
+					gstruct.Ignore(),
+				),
+				matchers.ContainCustomResource(
+					matchers.HaveTypeMeta(v1.ProxyGVK),
+					matchers.HaveObjectMeta(types.NamespacedName{
+						Namespace: defaults.GlooSystem,
+						Name:      "proxy-west",
+					}),
+					gstruct.Ignore(),
+				),
+			))
 
-			returnedResources := []crdv1.Resource{}
-			err = json.Unmarshal(proxySnapshotBytes, &returnedResources)
-			Expect(err).NotTo(HaveOccurred())
-
-			expectContainsResource(returnedResources, v1.ProxyGVK, defaults.GlooSystem, "proxy-east")
-			expectContainsResource(returnedResources, v1.ProxyGVK, defaults.GlooSystem, "proxy-west")
-
-			Expect(containsResourceType(returnedResources, v1.UpstreamGVK)).To(BeFalse(), "proxy snapshot should not contain upstreams")
+			Expect(returnedResources).NotTo(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.UpstreamGVK),
+				gstruct.Ignore(),
+				gstruct.Ignore(),
+			))
 		})
 
 	})
@@ -722,7 +855,18 @@ func getTypedInputSnapshot(ctx context.Context, history History) []crdv1.Resourc
 	inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
 	Expect(err).NotTo(HaveOccurred())
 
-	returnedResources := []crdv1.Resource{}
+	var returnedResources []crdv1.Resource
+	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
+	Expect(err).NotTo(HaveOccurred())
+
+	return returnedResources
+}
+
+func getTypedProxySnapshot(ctx context.Context, history History) []crdv1.Resource {
+	inputSnapshotBytes, err := history.GetProxySnapshot(ctx)
+	Expect(err).NotTo(HaveOccurred())
+
+	var returnedResources []crdv1.Resource
 	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -768,12 +912,7 @@ func eventuallyInputSnapshotContainsResource(
 	namespace string,
 	name string) {
 	Eventually(func(g Gomega) {
-		inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		returnedResources := []crdv1.Resource{}
-		err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
-		g.Expect(err).NotTo(HaveOccurred())
+		returnedResources := getTypedInputSnapshot(ctx, history)
 
 		g.Expect(containsResource(returnedResources, gvk, namespace, name)).To(BeTrue())
 	}).
@@ -782,22 +921,36 @@ func eventuallyInputSnapshotContainsResource(
 		Should(Succeed(), fmt.Sprintf("snapshot should eventually contain resource %v %s.%s", gvk, namespace, name))
 }
 
+// Deprecated: Prefer matchers.ContainCustomResource (gomega/matchers/custom_resource.go)
 func expectContainsResource(
 	resources []crdv1.Resource,
 	gvk schema.GroupVersionKind,
 	namespace string,
 	name string) {
-	Expect(containsResource(resources, gvk, namespace, name)).
-		To(BeTrue(), fmt.Sprintf("results should contain %v %s.%s", gvk, namespace, name))
+	Expect(resources).To(matchers.ContainCustomResource(
+		matchers.HaveTypeMeta(gvk),
+		matchers.HaveObjectMeta(types.NamespacedName{
+			Namespace: namespace,
+			Name:      name,
+		}),
+		gstruct.Ignore(),
+	), fmt.Sprintf("results should contain %v %s.%s", gvk, namespace, name))
 }
 
+// Deprecated: Prefer matchers.ContainCustomResource (gomega/matchers/custom_resource.go)
 func expectDoesNotContainResource(
 	resources []crdv1.Resource,
 	gvk schema.GroupVersionKind,
 	namespace string,
 	name string) {
-	Expect(containsResource(resources, gvk, namespace, name)).
-		To(BeFalse(), fmt.Sprintf("results should not contain %v %s.%s", gvk, namespace, name))
+	Expect(resources).NotTo(matchers.ContainCustomResource(
+		matchers.HaveTypeMeta(gvk),
+		matchers.HaveObjectMeta(types.NamespacedName{
+			Namespace: namespace,
+			Name:      name,
+		}),
+		gstruct.Ignore(),
+	), fmt.Sprintf("results should not contain %v %s.%s", gvk, namespace, name))
 }
 
 // return true if the list of resources contains a resource with the given gvk, namespace, and name
