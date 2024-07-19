@@ -32,7 +32,7 @@ weight: 5
  
 Contains settings for configuring Envoy's tracing capabilities at the listener level.
 See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) for additional information on Envoy's tracing capabilities. 
-See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Gateway.
+See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
 
 ```yaml
 "requestHeadersForTags": []google.protobuf.StringValue
@@ -69,7 +69,7 @@ See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) 
 Contains settings for configuring Envoy's tracing capabilities at the route level.
 Note: must also specify ListenerTracingSettings for the associated listener.
 See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) for additional information on Envoy's tracing capabilities.
-See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Gateway.
+See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
 
 ```yaml
 "routeDescriptor": string
