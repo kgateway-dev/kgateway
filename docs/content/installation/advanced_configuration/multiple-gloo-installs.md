@@ -1,36 +1,36 @@
 ---
-title: Installing Gloo Edge to Multiple Namespaces
+title: Installing Gloo Gateway to Multiple Namespaces
 weight: 20
-description: Multi-tenant Gloo Edge installations by installing to multiple namespaces
+description: Multi-tenant Gloo Gateway installations by installing to multiple namespaces
 ---
 
-In the default deployment scenario, a single deployment of the Gloo Edge control plane and Envoy proxy are installed for the entire cluster. However, in some cases, it may be desirable to deploy multiple instances of the Gloo Edge control plane and proxies in a single cluster.
+In the default deployment scenario, a single deployment of the Gloo Gateway control plane and Envoy proxy are installed for the entire cluster. However, in some cases, it may be desirable to deploy multiple instances of the Gloo Gateway control plane and proxies in a single cluster.
 
-This is useful when multiple tenants or applications want control over their own instance of Gloo Edge. Some deployment scenarios may involve a Gloo Edge per-application architecture. Additionally, different Gloo Edge instances living in their own namespace may be given different levels of RBAC permissions.
+This is useful when multiple tenants or applications want control over their own instance of Gloo Gateway. Some deployment scenarios may involve a Gloo Gateway per-application architecture. Additionally, different Gloo Gateway instances living in their own namespace may be given different levels of RBAC permissions.
 
-In this document, we will review how to deploy multiple instances of Gloo Edge to their own namespaces within a single Kubernetes cluster. 
+In this document, we will review how to deploy multiple instances of Gloo Gateway to their own namespaces within a single Kubernetes cluster. 
 
 ---
 
-## Scoping Gloo Edge to specific namespaces
+## Scoping Gloo Gateway to specific namespaces
 
-When using the default installation, Gloo Edge will watch all namespaces for Kubernetes services and Gloo Edge CRDs. This means that any Kubernetes service can be a destination for any VirtualService in the cluster.
+When using the default installation, Gloo Gateway will watch all namespaces for Kubernetes services and Gloo Gateway CRDs. This means that any Kubernetes service can be a destination for any VirtualService in the cluster.
 
-Gloo Edge can be configured to only watch specific namespaces, meaning Gloo Edge will not see services and CRDs in any namespaces other than those provided in the {{< protobuf name="gloo.solo.io.Settings" display="watchNamespaces setting">}}.
+Gloo Gateway can be configured to only watch specific namespaces, meaning Gloo Gateway will not see services and CRDs in any namespaces other than those provided in the {{< protobuf name="gloo.solo.io.Settings" display="watchNamespaces setting">}}.
 
-By leveraging this option, we can install Gloo Edge to as many namespaces we need, ensuring that the `watchNamespaces` do not overlap.
+By leveraging this option, we can install Gloo Gateway to as many namespaces we need, ensuring that the `watchNamespaces` do not overlap.
 
 {{% notice note %}}
-`watchNamespaces` can be shared between Gloo Edge instances, so long as any Virtual Services are not written to a shared namespace. When this happens, both Gloo Edge instances will attempt to apply the same routing config, which can cause domain conflicts.
+`watchNamespaces` can be shared between Gloo Gateway instances, so long as any Virtual Services are not written to a shared namespace. When this happens, both Gloo Gateway instances will attempt to apply the same routing config, which can cause domain conflicts.
 {{% /notice %}}
 
-Currently, installing Gloo Edge with specific `watchNamespaces` requires installation via the Helm chart.
+Currently, installing Gloo Gateway with specific `watchNamespaces` requires installation via the Helm chart.
 
 ---
 
-## Installing Namespace-Scoped Gloo Edge with Helm
+## Installing Namespace-Scoped Gloo Gateway with Helm
 
-In this section we'll deploy Gloo Edge twice, each instance to a different namespace, with two different Helm value files. For Gloo Edge Enterprise users, we have included a settings for the Grafana RBAC configuration. Gloo Edge Open Source users can safely remove those settings.
+In this section we'll deploy Gloo Gateway twice, each instance to a different namespace, with two different Helm value files. For Gloo Gateway Enterprise users, we have included a settings for the Grafana RBAC configuration. Gloo Gateway Open Source users can safely remove those settings.
 
 Create a file named `gloo1-overrides.yaml` and paste the following inside:
 
@@ -41,20 +41,20 @@ settings:
   watchNamespaces:
   - default
   - gloo1
-grafana: # The grafana settings can be removed for Gloo Edge OSS
+grafana: # The grafana settings can be removed for Gloo Gateway OSS
   rbac:
     namespaced: true
 ```
 
-Now, let's install Gloo Edge. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) if you need a refresher.
+Now, let's install Gloo Gateway. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) if you need a refresher.
 
-First create the namespace for our first Gloo Edge deployment:
+First create the namespace for our first Gloo Gateway deployment:
 
 ```shell script
 kubectl create ns gloo1
 ```
 
-Then install Gloo Edge using one of the following methods:
+Then install Gloo Gateway using one of the following methods:
 
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell" >}}
@@ -66,7 +66,7 @@ helm install gloo gloo/gloo --namespace gloo1 -f gloo1-overrides.yaml
 {{< /tabs >}}
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge.
+Using Helm 2 is not supported in Gloo Gateway.
 {{% /notice %}}
 
 Check that gloo pods are running: 
@@ -83,7 +83,7 @@ gateway-proxy-67f4c7dfb6-hc5kg   1/1     Running   0          27s
 gloo-dd5bcdc8f-bvtjh             1/1     Running   0          39s
 ```
 
-And we should see that Gloo Edge is only creating Upstreams from services in `default` and `gloo1`:
+And we should see that Gloo Gateway is only creating Upstreams from services in `default` and `gloo1`:
 
 ```bash
 kubectl get us -n gloo1                                              
@@ -108,12 +108,12 @@ settings:
   watchNamespaces:
   - default
   - gloo2
-grafana: # The grafana settings can be removed for Gloo Edge OSS
+grafana: # The grafana settings can be removed for Gloo Gateway OSS
   rbac:
     namespaced: true
 ```
 
-Now, let's install Gloo Edge for the second time. First create the second namespace:
+Now, let's install Gloo Gateway for the second time. First create the second namespace:
 
 ```shell script
 # create the namespace for our second gloo deployment
@@ -145,7 +145,7 @@ gateway-proxy-67f4c7dfb6-284wv   1/1     Running   0          8s
 gloo-dd5bcdc8f-krp5p             1/1     Running   0          9s
 ```
 
-And we should see that the second installation of Gloo Edge is only creating Upstreams from services in `default` and `gloo2`:
+And we should see that the second installation of Gloo Gateway is only creating Upstreams from services in `default` and `gloo2`:
 
 ```bash
 kubectl get us -n gloo2
@@ -159,8 +159,8 @@ gloo2-gateway-proxy-80    53s
 gloo2-gloo-9977           53s
 ```
 
-And that's it! We can now create routes for Gloo Edge #1 by creating our Virtual Services in the `gloo1` namespace, and routes for Gloo Edge #2 by creating Virtual Services in the `gloo2` namespace. We can add `watchNamespaces` to our liking; the only catch is that a Virtual Service which lives in a shared namespace will be applied to both gateways (which can lead to undesired behavior if this was not the intended effect).
+And that's it! We can now create routes for Gloo Gateway #1 by creating our Virtual Services in the `gloo1` namespace, and routes for Gloo Gateway #2 by creating Virtual Services in the `gloo2` namespace. We can add `watchNamespaces` to our liking; the only catch is that a Virtual Service which lives in a shared namespace will be applied to both gateways (which can lead to undesired behavior if this was not the intended effect).
 
 {{% notice warning %}}
-When uninstalling a single instance of Gloo Edge when multiple instances are installed, you should only delete the namespace into which that instance is installed. Running `glooctl uninstall` can cause cluster-wide resources to be deleted, which will break any remaining Gloo Edge installation in your cluster
+When uninstalling a single instance of Gloo Gateway when multiple instances are installed, you should only delete the namespace into which that instance is installed. Running `glooctl uninstall` can cause cluster-wide resources to be deleted, which will break any remaining Gloo Gateway installation in your cluster
 {{% /notice %}}

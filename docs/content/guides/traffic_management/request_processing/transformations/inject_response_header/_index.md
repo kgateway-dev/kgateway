@@ -33,7 +33,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
+Let's test that the configuration was correctly picked up by Gloo Gateway by executing the following command:
 
 ```shell
 curl -v -H "x-solo-hdr1: val1" $(glooctl proxy url)/get -i
@@ -54,7 +54,7 @@ server: envoy
 ```
 
 ### Injecting the response header
-As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo Edge to change the response status to 400 if the `data.error` attribute is present; otherwise, the original status code should be preserved.
+As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo Gateway to change the response status to 400 if the `data.error` attribute is present; otherwise, the original status code should be preserved.
 
 #### Update the Virtual Service
 To implement this behavior, we need to add a `responseTransformation` stanza to our original Virtual Service definition. Note that the `request_header` function is used in an [Inja template]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#templating-language" %}}) to extract the value of the `x-solo-hdr` header from the request. Then it injects that value into a new response header `x-solo-resp-hdr1`.

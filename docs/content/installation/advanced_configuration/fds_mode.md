@@ -4,7 +4,7 @@ weight: 10
 description: Using automatic function discovery (ie, discovering and understanding Swagger/OAS docs or gRPC reflection)
 ---
 
-Gloo Edge's **Function Discovery Service** (FDS) attempts to poll endpoints for:
+Gloo Gateway's **Function Discovery Service** (FDS) attempts to poll endpoints for:
 
 * A path serving an [OpenAPI (Swagger) document](https://swagger.io/specification/).
 * gRPC Services with [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) enabled.
@@ -56,9 +56,9 @@ Note, Function Discovery needs to be enabled for this to work. See the next sect
 
 ## Function Discovery Service (FDS)
 
-Using FDS means that the Gloo Edge `discovery` component will make HTTP requests to all `Upstreams` known to Gloo Edge trying to discover functions. This behavior causes increased network traffic and may be undesirable if it causes unexpected behavior or logs to appear in the services Gloo Edge is attempting to poll. For this reason, we may want to restrict the manner in which FDS polls services.
+Using FDS means that the Gloo Gateway `discovery` component will make HTTP requests to all `Upstreams` known to Gloo Gateway trying to discover functions. This behavior causes increased network traffic and may be undesirable if it causes unexpected behavior or logs to appear in the services Gloo Gateway is attempting to poll. For this reason, we may want to restrict the manner in which FDS polls services.
 
-Gloo Edge allows whitelisting/blacklisting services, either by namespace or on the individual service level.
+Gloo Gateway allows whitelisting/blacklisting services, either by namespace or on the individual service level.
 
 We can use these configuration settings to restrict FDS to discover only the namespaces or individual services we choose.
 
@@ -72,7 +72,7 @@ FDS can run in one of 3 modes:
 * `WHITELIST`: A more restricted FDS polling policy. Using this mode, FDS will poll only those services who either live in an explicitly whitelisted namespace, or themselves are are explicitly whitelisted. *`WHITELIST` is the default mode for FDS*.
 * `DISABLED`: FDS will not run. **Upstream Discovery Service** (UDS) will still run as normal.
 
-Setting the `fdsMode` can be done either via the Helm Chart, or by directly modifying the `default` `gloo.solo.io/v1.Settings` custom resource in Gloo Edge's installation namespace (`gloo-system`).
+Setting the `fdsMode` can be done either via the Helm Chart, or by directly modifying the `default` `gloo.solo.io/v1.Settings` custom resource in Gloo Gateway's installation namespace (`gloo-system`).
 
 (Enterprise Only) Automated schema generation for GraphQL is enabled by default. This can be disabled by modifying the `gloo.solo.io/v1.Settings` custom resource as seen [below](#setting-fdsmode-by-editing-the-gloosoloiov1settings-custom-resource)
 

@@ -4,22 +4,22 @@ weight: 50
 description: Deploy the caching server and start caching responses from upstream services. 
 ---
 
-Set up the Gloo Edge caching server to cache responses from upstream services for quicker response times.
+Set up the Gloo Gateway caching server to cache responses from upstream services for quicker response times.
 
 {{% notice note %}}
-This feature is available only for Gloo Edge Enterprise v1.12.x and later.
+This feature is available only for Gloo Gateway Enterprise v1.12.x and later.
 {{% /notice %}}
 
-When caching is enabled during installation, a caching server deployment is automatically created for you and managed by Gloo Edge. Then you must configure an HTTP or HTTPS listener on your gateway to cache responses for upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached by the caching server if it contains a `cache-control` repsonse header. All subsequent requests receive the cached response, until the cache entry expires.
+When caching is enabled during installation, a caching server deployment is automatically created for you and managed by Gloo Gateway. Then you must configure an HTTP or HTTPS listener on your gateway to cache responses for upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached by the caching server if it contains a `cache-control` repsonse header. All subsequent requests receive the cached response, until the cache entry expires.
 
 ## Deploy the caching server
 
-Create a caching server during Gloo Edge Enterprise installation time, and specify any Redis overrides. 
+Create a caching server during Gloo Gateway Enterprise installation time, and specify any Redis overrides. 
 
-1. [Install Gloo Edge Enterprise version 1.12.x or later by using Helm]({{% versioned_link_path fromRoot="/installation/enterprise/#customizing-your-installation-with-helm" %}}). In your `values.yaml` file, specify the following settings:
+1. [Install Gloo Gateway Enterprise version 1.12.x or later by using Helm]({{% versioned_link_path fromRoot="/installation/enterprise/#customizing-your-installation-with-helm" %}}). In your `values.yaml` file, specify the following settings:
       
    * Caching server: Set `global.extensions.caching.enabled: true` to enable the caching server deployment.
-   * Redis overrides: By default, the caching server uses the Redis instance that is deployed with Gloo Edge. To use your own Redis instance, such as in production deployments:
+   * Redis overrides: By default, the caching server uses the Redis instance that is deployed with Gloo Gateway. To use your own Redis instance, such as in production deployments:
      * Set `redis.disabled` to `true` to disable the default Redis instance.
      * Set `redis.service.name` to the name of the Redis service instance. If the instace is an external service, set the endpoint of the external service as the value.
      * For other Redis override settings, see the Redis section of the [Enterprise Helm chart values]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}).
@@ -88,10 +88,10 @@ Configure your gateway to cache responses for all upstreams that are served by a
 ## Verify response caching with httpbin and the Envoy caching service {#try-caching}
 
 To illustrate how caching works with and without response validation, the following apps are used: 
-- **httpbin**: The `/cache/{value}` endpoint is used to show how caching works in Gloo Edge Enterprise without response validation. 
-- **Envoy caching service**: The `/valid-for-minute` endpoint is used to show how caching works in Gloo Edge Enterprise with response validation. 
+- **httpbin**: The `/cache/{value}` endpoint is used to show how caching works in Gloo Gateway Enterprise without response validation. 
+- **Envoy caching service**: The `/valid-for-minute` endpoint is used to show how caching works in Gloo Gateway Enterprise with response validation. 
 
-Follow the steps to set up `httpbin` and the Envoy caching service, and to try out caching in Gloo Edge Enterprise. 
+Follow the steps to set up `httpbin` and the Envoy caching service, and to try out caching in Gloo Gateway Enterprise. 
 
 1. Deploy and configure `httpbin`. 
    1. Create the `httpbin` namespace and deploy the app. 
@@ -226,7 +226,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
    ```
    
 5. Try out caching without response validation by using the `/cache/{value}` endpoint of the `httpbin` app. 
-   1. Send a request to the `/cache/{value}` endpoint. The `{value}` variable specifies the number of seconds that you want to cache the response for. In this example, the response is cached for 30 seconds. In your CLI output, verify that you get back the `cache-control` response header with a `max-age=30` value. This response header triggers Gloo Edge to cache the response. 
+   1. Send a request to the `/cache/{value}` endpoint. The `{value}` variable specifies the number of seconds that you want to cache the response for. In this example, the response is cached for 30 seconds. In your CLI output, verify that you get back the `cache-control` response header with a `max-age=30` value. This response header triggers Gloo Gateway to cache the response. 
       ```shell
       curl -vik "$(glooctl proxy url)/httpbin/cache/30"
       ```
@@ -382,7 +382,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
       {{< /highlight >}}
       
-   3. After the 1 minute passes and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a `304 Not Modified` HTTP response code to indicate that the response has not changed. When the `304` HTTP response code is received by the Gloo Edge caching server, the caching server fetches the original response from Redis, and sends it back to the client. 
+   3. After the 1 minute passes and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a `304 Not Modified` HTTP response code to indicate that the response has not changed. When the `304` HTTP response code is received by the Gloo Gateway caching server, the caching server fetches the original response from Redis, and sends it back to the client. 
       
       You can verify that the response validation succeeded when the `date` response header is updated with the time and date of your new request, the `age` response header is removed, and the response body contains the same information as in the original response. 
       ```shell

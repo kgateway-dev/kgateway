@@ -159,7 +159,7 @@ With Hybrid Gateways, you can define multiple HTTP and TCP Gateways, each with d
 
 However, condensing all listener and routing configuration onto a single object can be cumbersome when dealing with a large number of matching and routing criteria.
 
-Similar to how Gloo Edge provides delegation between Virtual Services and Route Tables, Hybrid Gateways can be assembled from separate resources. The root Gateway resource selects HttpGateways and assembles the Hybrid Gateway, as though it were defined in a single resource.
+Similar to how Gloo Gateway provides delegation between Virtual Services and Route Tables, Hybrid Gateways can be assembled from separate resources. The root Gateway resource selects HttpGateways and assembles the Hybrid Gateway, as though it were defined in a single resource.
 
 
 ### Only accept requests from a particular CIDR range

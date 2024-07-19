@@ -5,7 +5,7 @@ description: Additional examples of JWT verification and Access Control (without
 ---
 
 {{% notice note %}}
-The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+The JWT feature was introduced with **Gloo Gateway Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
 ## Table of Contents

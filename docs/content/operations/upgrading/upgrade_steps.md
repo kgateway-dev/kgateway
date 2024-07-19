@@ -1,13 +1,13 @@
 ---
 title: Upgrade Steps
 weight: 10
-description: Steps for upgrading Gloo Edge components
+description: Steps for upgrading Gloo Gateway components
 ---
 
-Upgrade your Gloo Edge Enterprise or Gloo Edge Open Source installations, such as from one minor version to the latest version.
+Upgrade your Gloo Gateway Enterprise or Gloo Gateway Open Source installations, such as from one minor version to the latest version.
 
 {{% notice warning %}}
-The basic Gloo Edge upgrade process is not suitable in environments where downtime is unacceptable. You might need to take additional steps to account for other factors such as Gloo Edge version changes, probe configurations, and external infrastructure like the load balancer that Gloo Edge uses. This guide is targeted toward users who are upgrading Gloo Edge while experimenting in development or staging environments.
+The basic Gloo Gateway upgrade process is not suitable in environments where downtime is unacceptable. You might need to take additional steps to account for other factors such as Gloo Gateway version changes, probe configurations, and external infrastructure like the load balancer that Gloo Gateway uses. This guide is targeted toward users who are upgrading Gloo Gateway while experimenting in development or staging environments.
 {{% /notice %}}
 
 The general upgrade process involves preparing to upgrade and then upgrading two main components, the `glooctl` CLI and the `gloo` components that are deployed in your cluster.
@@ -18,7 +18,7 @@ The general upgrade process involves preparing to upgrade and then upgrading two
     3.  Consider settings to avoid downtime.
 2.  Upgrade [`glooctl`](#step-2-upgrade-glooctl).
 3.  Apply any [minor version-specific changes](#step-3-apply-minor-version-specific-changes), like adding and removing CRDs.
-4.  Upgrade the [Gloo Edge server components](#step-4-upgrade-gloo-edge) via Helm.
+4.  Upgrade the [Gloo Gateway server components](#step-4-upgrade-gloo-edge) via Helm.
 
 ## Step 1: Prepare to upgrade
 
@@ -27,7 +27,7 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
 ### Familiarize yourself with information about the version that you want to upgrade to.
 
 1. Make sure you understand the [Changelog entry types]({{% versioned_link_path fromRoot="/reference/changelog/changelog_types/" %}}). 
-2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
+2. Check the changelogs for the type of Gloo Gateway deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Gateway Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
 3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.13 from 1.11 or older, you must upgrade incrementally. For example, you must first upgrade from 1.11 to 1.12, and then upgrade from 1.12 to 1.13.
@@ -39,23 +39,23 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
 
 ### Enterprise-only: Understand the open source dependencies.
 
-Keep in mind that Gloo Edge Enterprise pulls in Gloo Edge Open Source as a dependency. Although the major and minor version numbers are the same for open source and enterprise, their patch versions often differ.
+Keep in mind that Gloo Gateway Enterprise pulls in Gloo Gateway Open Source as a dependency. Although the major and minor version numbers are the same for open source and enterprise, their patch versions often differ.
 For example, open source might use version `x.y.a` but enterprise uses version `x.y.b`. Because of the differing patch versions, you might notice different output when checking your version with `glooctl version`. If you are unfamiliar with these versioning concepts, see [Semantic versioning](https://semver.org/).
 
-Example of differing open source and enterprise versions for Gloo Edge:
+Example of differing open source and enterprise versions for Gloo Gateway:
 
 ```bash
 ~ > glooctl version
 Client: {"version":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}"}
 Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}","Name":"grpcserver-ee","Registry":"quay.io/solo-io"},...,{"Tag":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},...}
 
-# The API server runs the Gloo Edge Enterprise version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}},
-# which pulls in Gloo Edge Open Source version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} as a dependency.
+# The API server runs the Gloo Gateway Enterprise version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}},
+# which pulls in Gloo Gateway Open Source version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} as a dependency.
 ```
 
 ### Consider settings to avoid downtime.
 
-You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes load balancer, or in non-Kubernetes environments. Depending on your setup, you can take additional steps to avoid downtime during the upgrade process.
+You might deploy Gloo Gateway in Kubernetes environments that use the Kubernetes load balancer, or in non-Kubernetes environments. Depending on your setup, you can take additional steps to avoid downtime during the upgrade process.
 
 * **Kubernetes**: Enable [Envoy readiness and liveness probes]({{< versioned_link_path fromRoot="/operations/production_deployment/#enable-health-checks" >}}) during the upgrade. When these probes are set, Kubernetes sends requests only to the healthy Envoy proxy during the upgrade process, which helps to prevent potential downtime. The probes are not enabled in default installations because they can lead to timeouts or other poor getting started experiences. 
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
@@ -66,10 +66,10 @@ Try a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/c
 
 ## Step 2: Upgrade glooctl
 
-Install or upgrade `glooctl`. When you upgrade, specify the Gloo Edge OSS version that corresponds to the Gloo Edge Enterprise version you want to upgrade to. To find the OSS version that corresponds to each Gloo Edge Enterprise release, see the [Gloo Edge Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
+Install or upgrade `glooctl`. When you upgrade, specify the Gloo Gateway OSS version that corresponds to the Gloo Gateway Enterprise version you want to upgrade to. To find the OSS version that corresponds to each Gloo Gateway Enterprise release, see the [Gloo Gateway Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
 
 {{% notice warning %}}
-Because `glooctl` can create resources in your cluster, such as with commands like `glooctl add route`, you might have errors in Gloo Edge if you create resources with an older version of `glooctl`.
+Because `glooctl` can create resources in your cluster, such as with commands like `glooctl add route`, you might have errors in Gloo Gateway if you create resources with an older version of `glooctl`.
 {{% /notice %}}
 
 You can upgrade `glooctl` in the following ways:
@@ -111,7 +111,7 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
    Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/version_geoss_n-1.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
    ```
 
-4. Check that your Gloo Edge components are **OK**. If `glooctl check` reports a problem, Gloo Edge might not work properly or Envoy might not get the updated configuration.
+4. Check that your Gloo Gateway components are **OK**. If `glooctl check` reports a problem, Gloo Gateway might not work properly or Envoy might not get the updated configuration.
    ```bash
    glooctl check
    ```
@@ -142,12 +142,12 @@ Each minor version might add custom resource definitions (CRDs) that Helm upgrad
 * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
 * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
 
-## Step 4: Upgrade Gloo Edge
+## Step 4: Upgrade Gloo Gateway
 
-The following example upgrade process assumes that Gloo Edge is installed with Helm in a Kubernetes cluster and uses the Kubernetes load balancer.
+The following example upgrade process assumes that Gloo Gateway is installed with Helm in a Kubernetes cluster and uses the Kubernetes load balancer.
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge.
+Using Helm 2 is not supported in Gloo Gateway.
 {{% /notice %}}
 
 {{% notice note %}}
@@ -158,12 +158,12 @@ upgrade attempts to change the `gateway-certgen` job, but the change fails becau
 you can delete the job, which already completed, and re-apply the upgrade.
 {{% /notice %}}
 
-### Helm upgrades for Gloo Edge Enterprise
+### Helm upgrades for Gloo Gateway Enterprise
 
-The process to upgrade Gloo Edge Enterprise is similar to Gloo Edge Open Source. However, you also need to set your license key during the upgrade by using the `--set license_key="$license"` flag (or include the line `license_key: $LICENSE-KEY` in
+The process to upgrade Gloo Gateway Enterprise is similar to Gloo Gateway Open Source. However, you also need to set your license key during the upgrade by using the `--set license_key="$license"` flag (or include the line `license_key: $LICENSE-KEY` in
 your values file).
 
-If you do not have a license key, [Request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+If you do not have a license key, [Request a Gloo Gateway Enterprise trial](https://www.solo.io/gloo-trial).
 
 {{% notice note %}}
 Looking to upgrade from an open source to an enterprise deployment? You can use still `helm upgrade` with a `--set license_key` flag, but you might need to take additional steps to help avoid downtime. The open source and enterprise Helm chart values differ.
@@ -171,11 +171,11 @@ Looking to upgrade from an open source to an enterprise deployment? You can use 
 
 ### Upgrade steps
 
-The following steps assume that you already installed Gloo Edge as a Helm release in the `gloo-system` namespace, and have set the Kubernetes context to the cluster.
+The following steps assume that you already installed Gloo Gateway as a Helm release in the `gloo-system` namespace, and have set the Kubernetes context to the cluster.
 
 1. Upgrade the Helm release.
 
-   * **Gloo Edge Open Source example:**
+   * **Gloo Gateway Open Source example:**
      ```shell script
      helm repo update
      helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
@@ -192,7 +192,7 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
      TEST SUITE: None
      ```
 
-   * **Gloo Edge Enterprise example:**
+   * **Gloo Gateway Enterprise example:**
      ```shell script
      helm repo update
      helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
@@ -209,7 +209,7 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
      TEST SUITE: None
      ```
 
-2. Verify that Gloo Edge runs the upgraded version.
+2. Verify that Gloo Gateway runs the upgraded version.
    ```shell script
    kubectl -n gloo-system get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
    ```
@@ -224,7 +224,7 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
    glooctl version
    ```
 
-4. Check that your Gloo Edge components are **OK**. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
+4. Check that your Gloo Gateway components are **OK**. If a problem is reported by `glooctl check`, Gloo Gateway might not work properly or Envoy might not get the updated configuration.
    ```bash
    glooctl check
    ```

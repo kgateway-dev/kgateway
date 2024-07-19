@@ -4,13 +4,13 @@ weight: 80
 description: Configuring a custom certificate authority for extauth to use.
 ---
 
-Gloo Edge Enterprise includes external authentication, which allows you to offload authentication responsibilities from Envoy to an external authentication server. There may be cases where you need the external authentication server to trust certificates issued from a custom certificate authority. In this guide, we will show you how to add the certificate authority during Gloo Edge Enterprise installation or after installation is complete.
+Gloo Gateway Enterprise includes external authentication, which allows you to offload authentication responsibilities from Envoy to an external authentication server. There may be cases where you need the external authentication server to trust certificates issued from a custom certificate authority. In this guide, we will show you how to add the certificate authority during Gloo Gateway Enterprise installation or after installation is complete.
 
 The external authentication server runs as its own Kubernetes pod or as a sidecar to the `gateway-proxy` pods. The certificate authority public certificate will be saved as Kubernetes secret, and then an initialization container will be used to inject the CA certificate into the list of trusted certificate authorities for the external authentication pods. 
 
 For this guide, we will create a temporary certificate authority using OpenSSL. In a production scenario, you would retrieve the public certificate from an existing certificate authority you wish to be trusted.
 
-This guide assumes that you already have a Kubernetes cluster available for installation of Gloo Edge Enterprise, or that you have a running instance of Gloo Edge Enterprise.
+This guide assumes that you already have a Kubernetes cluster available for installation of Gloo Gateway Enterprise, or that you have a running instance of Gloo Gateway Enterprise.
 
 ## Create a certificate authority
 
@@ -34,14 +34,14 @@ kubectl create namespace gloo-system
 kubectl create secret generic trusted-ca --from-file=tls.crt=ca.cert.pem -n gloo-system
 ```
 
-Now we are ready to either [install Gloo Edge Enterprise](#install-gloo-edge-enterprise) or [update an existing Gloo Edge Enterprise installation](#update-gloo-edge-enterprise).
+Now we are ready to either [install Gloo Gateway Enterprise](#install-gloo-edge-enterprise) or [update an existing Gloo Gateway Enterprise installation](#update-gloo-edge-enterprise).
 
-## Install Gloo Edge Enterprise
+## Install Gloo Gateway Enterprise
 
-To add the customization of a trusted certificate authority to the Gloo Edge Enterprise installation, we are going to need to use Helm for the installation and customization.
+To add the customization of a trusted certificate authority to the Gloo Gateway Enterprise installation, we are going to need to use Helm for the installation and customization.
 
 ```bash
-# Add the Gloo Edge Enterprise repo to Helm if you haven't already
+# Add the Gloo Gateway Enterprise repo to Helm if you haven't already
 helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
 helm repo update
 
@@ -63,7 +63,7 @@ global:
 EOF
 ```
 
-Finally, we'll install Gloo Edge Enterprise with Helm. Be sure to update the value for the license key.
+Finally, we'll install Gloo Gateway Enterprise with Helm. Be sure to update the value for the license key.
 Include the `--install` flag to upgrade the existing installation or install a new release if one does not already exist.
 
 ```bash

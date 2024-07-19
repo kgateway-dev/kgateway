@@ -1,10 +1,10 @@
 ---
 title: "Google Cloud Load Balancers"
-description: Use Gloo Edge to complement Google Cloud load balancers
+description: Use Gloo Gateway to complement Google Cloud load balancers
 weight: 8
 ---
 
-This document shows how to instantiate Google Cloud Load Balancers to complement Gloo Edge.
+This document shows how to instantiate Google Cloud Load Balancers to complement Gloo Gateway.
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ This document shows how to instantiate Google Cloud Load Balancers to complement
 
 ### Introduction
 
-You can use Gloo Edge with a Google Cloud Platform (GCP) Load Balancer, to get get benefits such as failover across availability zones.
+You can use Gloo Gateway with a Google Cloud Platform (GCP) Load Balancer, to get get benefits such as failover across availability zones.
 
 GCP provides these different types of Load Balancers:
 
@@ -33,7 +33,7 @@ GCP provides these different types of Load Balancers:
 Google pushed load balancing out to the edge network on front-end servers, as opposed to using the traditional DNS-based approach. Thus, global load-balancing capacity can be behind a single Anycast virtual IPv4 or IPv6 address. This means you can deploy capacity in multiple regions without having to modify the DNS entries or add a new load balancer IP address for new regions.
 {{% /notice %}}
 
-#### Combining with Gloo Edge
+#### Combining with Gloo Gateway
 
 Standard load balancers still route the traffic to machine instances where iptables are used to route traffic to individual pods running on these machines. This introduces at least one additional network hop thereby introducing latency in the packet’s journey from load balancer to the pod.
 
@@ -151,7 +151,7 @@ kubectl -n gloo-system port-forward svc/gateway-proxy 8443:443
 curl -k -s https://localhost:8443/get -H "Host: my-gloo-edge.com"
 ```
 
-Upgrade your Gloo Edge installation with the following Helm `values.yaml` file. This example creates 3 replicas for the default gateway proxy and adds specific GCP annotations.
+Upgrade your Gloo Gateway installation with the following Helm `values.yaml` file. This example creates 3 replicas for the default gateway proxy and adds specific GCP annotations.
 
 ```yaml
 [...]
@@ -330,7 +330,7 @@ The application should be accessible through the Load Balancer.
 
 ### HTTPS Load Balancer
 
-To connect a HTTPS Load Balancer, first, you will configure a Gloo Edge Virtual Service.
+To connect a HTTPS Load Balancer, first, you will configure a Gloo Gateway Virtual Service.
 
 ```bash
 kubectl apply -f - << 'EOF' 
@@ -406,7 +406,7 @@ kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 curl -k -s http://localhost:8080/get -H "Host: my-gloo-edge.com"
 ```
 
-Upgrade your Gloo Edge installation with the following Helm `values.yaml` file. This example creates 3 replicas for the default gateway proxy and adds specific GCP annotations.
+Upgrade your Gloo Gateway installation with the following Helm `values.yaml` file. This example creates 3 replicas for the default gateway proxy and adds specific GCP annotations.
 
 ```yaml
 [...]
@@ -601,7 +601,7 @@ The application should be accessible through the Load Balancer.
 
 ### Preserve Client IP Address
 
-1. To preserve the Client IP Address, update your gateway component (`gateway-proxy-ssl` if you installed the system with default values) in your Gloo Edge configuration to include the settings.
+1. To preserve the Client IP Address, update your gateway component (`gateway-proxy-ssl` if you installed the system with default values) in your Gloo Gateway configuration to include the settings.
 
 ```yaml
 [...]

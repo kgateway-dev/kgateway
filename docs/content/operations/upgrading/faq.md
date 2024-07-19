@@ -4,37 +4,37 @@ weight: 20
 description: Frequently-Asked Questions about our upgrade steps
 ---
 
-- **Is the upgrade procedure any different if I'm playing with Gloo Edge in a non-production/sandbox environment?**
+- **Is the upgrade procedure any different if I'm playing with Gloo Gateway in a non-production/sandbox environment?**
 
 If downtime is not a concern for your use case, the easiest upgrade procedure is simply to completely
-uninstall Gloo Edge and start from scratch, thereby avoiding any annoyances around breaking changes.
+uninstall Gloo Gateway and start from scratch, thereby avoiding any annoyances around breaking changes.
 Use `glooctl uninstall --all` followed by the normal installation procedure for the version of your choice.
  
-- **What is the recommended way to upgrade if I'm running Gloo Edge in a production environment, where downtime is unacceptable?**
+- **What is the recommended way to upgrade if I'm running Gloo Gateway in a production environment, where downtime is unacceptable?**
 
-In Gloo Edge 1.2 and newer, we recommend `helm upgrade` with the proper readiness probes and healthchecks configured (see
+In Gloo Gateway 1.2 and newer, we recommend `helm upgrade` with the proper readiness probes and healthchecks configured (see
 the [1.3.0+ upgrade guide]({{< versioned_link_path fromRoot="/operations/upgrading/v1.3" >}})). For versions prior
-to Gloo Edge 1.2, enterprise customers have found success performing a blue/green deployment using two simultaneous deployments
-of Gloo Edge. For a brief example, see the
+to Gloo Gateway 1.2, enterprise customers have found success performing a blue/green deployment using two simultaneous deployments
+of Gloo Gateway. For a brief example, see the
 [1.0.0 example upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/v1.0#example-upgrade-process" >}}).
 
 If you have concerns not addressed in the docs here, reach out to us on our [public Slack](https://slack.solo.io/).
 
-- **What will happen to my upstreams, virtual services, settings, and Gloo Edge state in general?**
+- **What will happen to my upstreams, virtual services, settings, and Gloo Gateway state in general?**
 
-A normal upgrade of Gloo Edge across minor versions should not cause any disruption to existing Gloo Edge state. In
+A normal upgrade of Gloo Gateway across minor versions should not cause any disruption to existing Gloo Gateway state. In
 the case of a breaking change, we will communicate through the changelog or other channels if some other
 adjustment must be made to perform the upgrade.
 
-As of open-source Gloo Edge version 0.21.1, there is a command available in `glooctl` that can help mitigate
-some concern about Gloo Edge state: `glooctl debug yaml` can be used to dump the current Gloo Edge state to one
+As of open-source Gloo Gateway version 0.21.1, there is a command available in `glooctl` that can help mitigate
+some concern about Gloo Gateway state: `glooctl debug yaml` can be used to dump the current Gloo Gateway state to one
 large YAML manifest. While this command is not yet really suitable as a robust backup tool, it is
 a useful debug tool to have available.
 
 - **How do I handle upgrading across a breaking change?**
 
 See above; the short answer is that we will try to clearly communicate what, if anything, should be
-done to accommodate preserving Gloo Edge state during an upgrade.
+done to accommodate preserving Gloo Gateway state during an upgrade.
 
 - **Is the upgrade procedure any different if I am not an administrator of the cluster being installed to?**
 
@@ -48,7 +48,7 @@ global:
     create: false
 ```
 
-You may also try performing an installation of Gloo Edge that is scoped to a single namespace:
+You may also try performing an installation of Gloo Gateway that is scoped to a single namespace:
 
 ```yaml
 global:

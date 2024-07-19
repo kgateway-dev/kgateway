@@ -44,7 +44,7 @@ spec:
 {{< /highlight >}}
 
 {{% notice note %}} 
-Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Edge. 
+Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Gateway. 
 {{% /notice %}}
 
 ### Available Fields
@@ -54,7 +54,7 @@ The following fields are available when specifying CORS on your `VirtualService`
 | Field              | Type       | Description                                                                                                                                                      | Default |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `allowOrigin`      | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match.                       |         |
-| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either `allow_origin` or `allow_origin_regex` match. Note that Gloo Edge uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar. For example, to match all subdomains `https://example.com`, do not use `https://*.example.com`, but instead use `https://[a-zA-Z0-9]*.example.com`.   |         |
+| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either `allow_origin` or `allow_origin_regex` match. Note that Gloo Gateway uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar. For example, to match all subdomains `https://example.com`, do not use `https://*.example.com`, but instead use `https://[a-zA-Z0-9]*.example.com`.   |         |
 | `allowMethods`     | `[]string` | Specifies the content for the *access-control-allow-methods* header.                                                                                             |         |
 | `allowHeaders`     | `[]string` | Specifies the content for the *access-control-allow-headers* header.                                                                                             |         |
 | `exposeHeaders`    | `[]string` | Specifies the content for the *access-control-expose-headers* header.                                                                                            |         |

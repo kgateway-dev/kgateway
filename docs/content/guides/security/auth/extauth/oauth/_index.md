@@ -8,17 +8,17 @@ description: External Auth with OAuth
 {{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
-Gloo Edge supports authentication via **OpenID Connect (OIDC)**. OIDC is an identity layer on top of the **OAuth 2.0** protocol. In OAuth 2.0 flows, authentication is performed by an external **Identity Provider** (IdP) which, in case of success, returns an **Access Token** representing the user identity. The protocol does not define the contents and structure of the Access Token, which greatly reduces the portability of OAuth 2.0 implementations.
+Gloo Gateway supports authentication via **OpenID Connect (OIDC)**. OIDC is an identity layer on top of the **OAuth 2.0** protocol. In OAuth 2.0 flows, authentication is performed by an external **Identity Provider** (IdP) which, in case of success, returns an **Access Token** representing the user identity. The protocol does not define the contents and structure of the Access Token, which greatly reduces the portability of OAuth 2.0 implementations.
 
-The goal of OIDC is to address this ambiguity by additionally requiring Identity Providers to return a well-defined **ID Token**. OIDC ID tokens follow the [JSON Web Token]({{% versioned_link_path fromRoot="/guides/security/auth/jwt" %}}) standard and contain specific fields that your applications can expect and handle. This standardization allows you to switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your downstream services; it also allows you to consistently apply additional security measures like _Role-based Access Control (RBAC)_ based on the identity of your users, i.e. the contents of their ID token (check out [this guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control" %}}) for an example of how to use Gloo Edge to apply RBAC policies to JWTs). 
+The goal of OIDC is to address this ambiguity by additionally requiring Identity Providers to return a well-defined **ID Token**. OIDC ID tokens follow the [JSON Web Token]({{% versioned_link_path fromRoot="/guides/security/auth/jwt" %}}) standard and contain specific fields that your applications can expect and handle. This standardization allows you to switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your downstream services; it also allows you to consistently apply additional security measures like _Role-based Access Control (RBAC)_ based on the identity of your users, i.e. the contents of their ID token (check out [this guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control" %}}) for an example of how to use Gloo Gateway to apply RBAC policies to JWTs). 
 
-In this guide, we will focus on the format of the Gloo Edge API for OIDC authentication.
+In this guide, we will focus on the format of the Gloo Gateway API for OIDC authentication.
 
 {{% notice warning %}}
-This feature requires Gloo Edge's external auth server to communicate with an external OIDC provider/authorization server.
+This feature requires Gloo Gateway's external auth server to communicate with an external OIDC provider/authorization server.
 Because of this interaction, the OIDC flow may take longer than the default timeout of 200ms.
 You can increase this timeout by setting the {{% protobuf name="enterprise.gloo.solo.io.Settings" display="`requestTimeout` value on external auth settings"%}}.
-The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo Edge `Settings` object"%}}.
+The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo Gateway `Settings` object"%}}.
 {{% /notice %}}
 
 ## Configuration format
@@ -54,17 +54,17 @@ spec:
 
 The `AuthConfig` consists of a single `config` of type `oauth`. Let's go through each of its attributes:
 
-- `issuer_url`: The url of the OpenID Connect identity provider. Gloo Edge will automatically discover OpenID Connect 
+- `issuer_url`: The url of the OpenID Connect identity provider. Gloo Gateway will automatically discover OpenID Connect 
 configuration by querying the `.well-known/openid-configuration` endpoint on the `issuer_url`. For example, if you are 
-using Google as an identity provider, Gloo Edge will expect to find OIDC discovery information at 
+using Google as an identity provider, Gloo Gateway will expect to find OIDC discovery information at 
 `https://accounts.google.com/.well-known/openid-configuration`.
 - `auth_endpoint_query_params`: A map of query parameters appended to the issuer url in the form
  `issuer_url`?`paramKey`:`paramValue`. These query parameters are sent to the [authorization endpoint](https://auth0.com/docs/protocols/oauth2#oauth-endpoints)
-  when Gloo Edge initiates the OIDC flow. This can be useful when integrating Gloo Edge with some identity providers that require
+  when Gloo Gateway initiates the OIDC flow. This can be useful when integrating Gloo Gateway with some identity providers that require
   custom parameters to be sent to the authorization endpoint.
 - `app_url`: This is the public URL of your application. It is used in combination with the `callback_path` attribute.
 - `callback_path`: The callback path relative to the `app_url`. Once a user has been authenticated, the identity provider 
-will redirect them to this URL. Gloo Edge will intercept requests with this path, exchange the authorization code received from 
+will redirect them to this URL. Gloo Gateway will intercept requests with this path, exchange the authorization code received from 
 the Identity Provider for an ID token, place the ID token in a cookie on the request, and forward the request to its original destination. 
 
 {{% notice note %}}
@@ -74,7 +74,7 @@ The callback path must have a matching route in the VirtualService associated wi
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
 - `client_secret_ref`: This is a reference to a Kubernetes secret containing the **client secret** that you obtained 
 when you registered your application with the identity provider. The easiest way to create the Kubernetes secret in the 
-expected format is to use `glooctl`, but you can use `kubectl create secret` or `kubectl apply` as well. If you use `kubectl create secret`, be sure to annotate the secret with `*v1.Secret` so that Gloo Edge detects the secret. {{% notice note %}}In Gloo Edge versions 1.11 and later, specify a secret of `type: extauth.solo.io/oauth`. If your `glooctl` client still runs version 1.10 or earlier, the `glooctl create secret` command creates a secret of `type: Opaque`. To ensure that you create an `extauth.solo.io/oauth` secret, either [update `glooctl` to 1.11 or later]({{< versioned_link_path fromRoot="/installation/preparation/#update-glooctl" >}}) before using `glooctl create secret`, or use the `kubectl` tabs.{{% /notice %}}
+expected format is to use `glooctl`, but you can use `kubectl create secret` or `kubectl apply` as well. If you use `kubectl create secret`, be sure to annotate the secret with `*v1.Secret` so that Gloo Gateway detects the secret. {{% notice note %}}In Gloo Gateway versions 1.11 and later, specify a secret of `type: extauth.solo.io/oauth`. If your `glooctl` client still runs version 1.10 or earlier, the `glooctl create secret` command creates a secret of `type: Opaque`. To ensure that you create an `extauth.solo.io/oauth` secret, either [update `glooctl` to 1.11 or later]({{< versioned_link_path fromRoot="/installation/preparation/#update-glooctl" >}}) before using `glooctl create secret`, or use the `kubectl` tabs.{{% /notice %}}
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
 glooctl create secret oauth --namespace gloo-system --name oidc --client-secret <client_secret_value>
@@ -93,7 +93,7 @@ metadata:
 data:
   # The value is a base64 encoding of the following YAML:
   # client_secret: secretvalue
-  # Gloo Edge expects OAuth client secrets in this format.
+  # Gloo Gateway expects OAuth client secrets in this format.
   client-secret: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
@@ -211,7 +211,7 @@ spec:
 By default, the tokens that are sent in the cookie header are not encrypted and can be manipulated through malicious attacks. To encrypt the cookie values, you can add a `cipherConfig` section to your session configuration as shown in the following example. 
 
 {{% notice note %}}
-Setting the `cipherConfig` attribute is supported in Gloo Edge version 1.14 and later and can be used only to encrypt cookie sessions. You cannot use this feature to encrypt Redis sessions. 
+Setting the `cipherConfig` attribute is supported in Gloo Gateway version 1.14 and later and can be used only to encrypt cookie sessions. You cannot use this feature to encrypt Redis sessions. 
 {{% /notice %}}
 
 1. Create a secret with your encryption key. Note that the key must be 32 bytes in length. 
@@ -240,7 +240,7 @@ Setting the `cipherConfig` attribute is supported in Gloo Edge version 1.14 and 
 
 By default, the tokens will be saved in a secure client side cookie.
 Gloo can instead use Redis to save the OIDC tokens, and set a randomly generated session id in the user's cookie.
-Going forward in the Gloo Edge documentation, we will be using examples of OIDC using a redis session.
+Going forward in the Gloo Gateway documentation, we will be using examples of OIDC using a redis session.
 
 Example configuration:
 
@@ -303,6 +303,6 @@ spec:
 
 ## Examples
 We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
-Gloo Edge, check out the following guides:
+Gloo Gateway, check out the following guides:
 
 {{% children description="true" %}}

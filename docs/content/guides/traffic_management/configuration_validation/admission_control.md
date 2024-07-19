@@ -2,34 +2,34 @@
 menuTitle: Admission Control
 title: Admission Control
 weight: 10
-description: (Kubernetes Only) Gloo Edge can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
+description: (Kubernetes Only) Gloo Gateway can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
 ## Motivation
 
-Gloo Edge can prevent invalid configuration from being written to Kubernetes with the use of a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/).
+Gloo Gateway can prevent invalid configuration from being written to Kubernetes with the use of a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/).
 
-This document explains how to enable and configure admission control in Gloo Edge.
+This document explains how to enable and configure admission control in Gloo Gateway.
 
 ## Using the Validating Admission Webhook
 
-Admission Validation provides a safeguard to ensure Gloo Edge does not halt processing of configuration. If a resource 
-would be written or modified in such a way to cause Gloo Edge to report an error, it is instead rejected by the Kubernetes 
+Admission Validation provides a safeguard to ensure Gloo Gateway does not halt processing of configuration. If a resource 
+would be written or modified in such a way to cause Gloo Gateway to report an error, it is instead rejected by the Kubernetes 
 API Server before it is written to persistent storage.
 
-Gloo Edge runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+Gloo Gateway runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes
 {{< protobuf name="gateway.solo.io.Gateway" display="Gateways">}},
 {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}},
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
-The [validating webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Edge's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
+The [validating webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Gateway's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
 by removing the `ValidatingWebhookConfiguration`.
 
 The webhook can be configured to perform strict or permissive validation, depending on the `gateway.validation.alwaysAccept` setting in the 
 {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
-When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo Edge fails to 
+When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo Gateway fails to 
 deserialize them (due to invalid JSON/YAML).
 
 To enable "strict" admission control (rejection of resources with invalid config), set `alwaysAccept` to false.
@@ -104,7 +104,7 @@ EOF
 
 ## Test resource configurations
 
-You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration<!-- or [send requests directly to the Gloo Edge validation API](#validation-api)-->. 
+You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration<!-- or [send requests directly to the Gloo Gateway validation API](#validation-api)-->. 
 
 {{% notice note %}}
 The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, run `kubectl edit settings default -n gloo-system` and set `alwaysAccept: false` and `allowWarnings: false` in the `spec.gateway.validation` section. 
@@ -331,7 +331,7 @@ If an empty response <code>{}</code> is from the validation API, you might need 
    kubectl -n gloo-system port-forward service/gloo 8443:443
    ```
 
-2. Send a request with your resource configuration to the Gloo Edge validation API. The following example shows successful and unsuccessful resource configuration validation for the upstream, gateway, and virtual service resources.
+2. Send a request with your resource configuration to the Gloo Gateway validation API. The following example shows successful and unsuccessful resource configuration validation for the upstream, gateway, and virtual service resources.
    {{< tabs >}}
    {{% tab name="Upstream" %}}
 
@@ -489,15 +489,15 @@ If an empty response <code>{}</code> is from the validation API, you might need 
 
 -->
    
-## Disable resource validation in Gloo Edge
+## Disable resource validation in Gloo Gateway
 
 ```noop
-Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo Edge snapshot: [Route Error: InvalidMatcherError. Reason: no path specifier provided]
+Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo Gateway snapshot: [Route Error: InvalidMatcherError. Reason: no path specifier provided]
 ```
 
-Great! Validation is working, providing us a quick feedback mechanism and preventing Gloo Edge from receiving invalid config.
+Great! Validation is working, providing us a quick feedback mechanism and preventing Gloo Gateway from receiving invalid config.
 
 Another way to use the validation webhook is via `kubectl apply --server-dry-run`, which allows users to test
 configuration before attempting to apply it to their cluster.
 
-We appreciate questions and feedback on Gloo Edge validation or any other feature on [the solo.io slack channel](https://slack.solo.io/) as well as our [GitHub issues page](https://github.com/solo-io/gloo).
+We appreciate questions and feedback on Gloo Gateway validation or any other feature on [the solo.io slack channel](https://slack.solo.io/) as well as our [GitHub issues page](https://github.com/solo-io/gloo).
