@@ -133,10 +133,14 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 		Should(Succeed())
 }
 
+// AssertEventualCurlError asserts that the response from a curl command is an error such as `Failed to connect`
+// as opposed to an http error from the server. This is useful when testing that a service is not reachable,
+// for example to validate that a delete operation has taken effect.
 func (p *Provider) AssertEventualCurlError(
 	ctx context.Context,
 	podOpts kubectl.PodExecOptions,
 	curlOptions []curl.Option,
+	expectedErrorCode int,
 	timeout ...time.Duration,
 ) {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
@@ -150,8 +154,16 @@ func (p *Provider) AssertEventualCurlError(
 
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
-		fmt.Printf("wanted an error:\nstdout:\n%s\nstderr:%s\n\n", curlResponse.StdOut, curlResponse.StdErr)
+		fmt.Printf("wanted error code")
+		if expectedErrorCode > 0 {
+			fmt.Printf(" %d", expectedErrorCode)
+		}
+		fmt.Printf(":\nstdout:\n%s\nstderr:%s\nerr:%s", curlResponse.StdOut, curlResponse.StdErr, err.Error())
 		g.Expect(err).To(HaveOccurred())
+		if expectedErrorCode > 0 {
+			g.Expect(err.Error()).To(Equal(fmt.Sprintf("exit status %d", expectedErrorCode)))
+		}
+
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
