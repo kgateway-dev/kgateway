@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
+	"time"
+
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"k8s.io/apimachinery/pkg/types"
-	"slices"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
