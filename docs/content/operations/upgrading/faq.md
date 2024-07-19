@@ -48,9 +48,10 @@ Review the following changes made to Gloo Edge in version {{< readfile file="sta
 
 Gloo Gateway is now a fully conformant Kubernetes Gateway API implementation. The existing Gloo Edge APIs were not changed and continue to be fully supported. To deploy a gateway proxy that is based on the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gateway). 
 
-### Breaking changes 
+### Breaking changes
 
-**ExtProc attribute processing** {#extproc}
+<a id="extproc"></a>
+**ExtProc attribute processing**
 
 The Gloo Gateway extProc filter implementation was changed to comply with the latest extProc implementation in Envoy. Previously, request and response attributes were included only in a [header processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-httpheaders), and were therefore sent to the extProc server only when request header processing messages were configured to be sent. Starting in Gloo Gateway version 1.17.0, the Gloo extProc filter sends request and response attributes as part of the top level [processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-processingrequest). That way, attributes can be processed on the first processing request regardless of its type.  
 
