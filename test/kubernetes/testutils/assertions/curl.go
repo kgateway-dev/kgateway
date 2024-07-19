@@ -151,29 +151,27 @@ func (p *Provider) AssertEventualCurlError(
 	})
 
 	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
-	var testMessage string
+	testMessage := fmt.Sprintf("Expected curl error %d", expectedErrorCode)
 
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
-		expectedCodeDetails := ""
-		if expectedErrorCode > 0 {
-			expectedCodeDetails = fmt.Sprintf(" %d", expectedErrorCode)
-		}
-		fmt.Printf("wanted error code%s:\nstdout:\n%s\nstderr:%s\nerr: %s\n", expectedCodeDetails, curlResponse.StdOut, curlResponse.StdErr, err.Error())
 
-		if err != nil {
+		if err == nil {
+			fmt.Printf("wanted curl error, got response:\nstdout:\n%s\nstderr:%s\n", curlResponse.StdOut, curlResponse.StdErr)
 			curlHttpResponse := transforms.WithCurlResponse(curlResponse)
+			curlHttpResponse.Body.Close()
 			testMessage = fmt.Sprintf("failed to get a curl error, got response code: %d", curlHttpResponse.StatusCode)
 			g.Expect(err).To(HaveOccurred())
 		}
 
 		if expectedErrorCode > 0 {
 			expectedCurlError := fmt.Sprintf("exit status %d", expectedErrorCode)
-			testMessage = fmt.Sprintf("got curl error: %s, expected %s", err.Error(), expectedCurlError)
+			fmt.Printf("wanted curl error: %s, got error: %s\n", expectedCurlError, err.Error())
+			testMessage = fmt.Sprintf("Expected curl error: %s, got: %s", expectedCurlError, err.Error())
 			g.Expect(err.Error()).To(Equal(expectedCurlError))
+		} else {
+			fmt.Printf("wanted any curl error, got error: %s\n", err.Error())
 		}
-
-		testMessage = "got expected curl error"
 
 	}).
 		WithTimeout(currentTimeout).
