@@ -23,9 +23,11 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
+// key for the functionNames within the Details field of statuses, to be populated with the names of functions
+// retrieved from gRPC descriptors if applicable
 const functionNamesKey = "functionNames"
 
-// PrintUpstreams
+// PrintUpstreams prints an UpstreamList, leveraging cliutils.PrintList()
 func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump, namespace string) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
@@ -40,7 +42,7 @@ func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *x
 		}, os.Stdout)
 }
 
-// PrintTable prints upstreams using tables to io.Writer
+// UpstreamTable prints upstreams in table format to io.Writer
 func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Upstream", "type", "status", "details"})
@@ -320,10 +322,15 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 	return out
 }
 
+// returns a function that, if applicable, augments a given Upstream's status to contain the names of gRPC functions
+// extracted from the GrpcJsonTranscoder
+// this is a no-op if the Upstream doesn't have a GrpcJsonTranscoder
+// TODO: retrieve function names from GrpcJsonTranscoder descriptor sources other than in-line bin (see https://github.com/solo-io/gloo/issues/9798)
 func addFunctionsFromGrpcTranscoder(namespace string) func(*v1.Upstream) {
 	return func(up *v1.Upstream) {
 		var functionNames map[string]any
 
+		// retrieve function names if applicable
 		switch usType := up.GetUpstreamType().(type) {
 		case *v1.Upstream_Kube:
 			if gjt := usType.GetServiceSpec().GetGrpcJsonTranscoder(); gjt != nil {
@@ -345,6 +352,9 @@ func addFunctionsFromGrpcTranscoder(namespace string) func(*v1.Upstream) {
 			}
 		}
 
+		// if we got any function names, add them to the status for the given namespace
+		// the function names are the same regardless of namespace, so adding to multiple statuses would be redundant
+		// we therefore only add to the given namespace's status
 		if functionNames != nil {
 			for ns, status := range up.NamespacedStatuses.GetStatuses() {
 				if ns == namespace {
@@ -355,6 +365,8 @@ func addFunctionsFromGrpcTranscoder(namespace string) func(*v1.Upstream) {
 	}
 }
 
+// returns a map of service names to lists of function names
+// the values in the map are of `any` type, which is supported by structpb.NewStruct(), while []string is not
 func getFunctionsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) map[string]any {
 	grpcFunctions := make(map[string]any)
 
@@ -373,6 +385,37 @@ func getFunctionsFromDescriptorBin(gjt *grpc_json.GrpcJsonTranscoder) map[string
 	return grpcFunctions
 }
 
+// add a struct created from the functionNames map to the given status under the Details field for function names
+// note that this will result in an object in the following format:
+//
+//	{
+//	  "fields": {
+//	    "functionNames": {
+//	      "structValue": {
+//	        "fields": {
+//	          "solo.examples.v1.StoreService": {
+//	            "listValue": {
+//	              "values": [
+//	                {
+//	                  "stringValue": "CreateItem"
+//	                },
+//	                {
+//	                  "stringValue": "ListItems"
+//	                },
+//	                {
+//	                  "stringValue": "DeleteItem"
+//	                },
+//	                {
+//	                  "stringValue": "GetItem"
+//	                }
+//	              ]
+//	            }
+//	          }
+//	        }
+//	      }
+//	    }
+//	  }
+//	}
 func addFunctionNamesToStatus(status *core.Status, functionNames map[string]any) {
 	if status.GetDetails() == nil {
 		status.Details = &structpb.Struct{

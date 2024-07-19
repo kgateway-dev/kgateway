@@ -2,6 +2,7 @@ package printers
 
 import (
 	"bytes"
+	"fmt"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/gcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
@@ -21,9 +22,12 @@ import (
 )
 
 var (
-	testNamespace      = "gloo-system"
-	service            = "helloworld.Greeter"
+	testNamespace = "gloo-system"
+
+	// this descriptorBin contains descriptors for one servcie, hellowowrld.Greeter, with one function, SayHello
 	protoDescriptorBin = []byte{10, 230, 1, 10, 16, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 46, 112, 114, 111, 116, 111, 18, 10, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 34, 28, 10, 12, 72, 101, 108, 108, 111, 82, 101, 113, 117, 101, 115, 116, 18, 12, 10, 4, 110, 97, 109, 101, 24, 1, 32, 1, 40, 9, 34, 29, 10, 10, 72, 101, 108, 108, 111, 82, 101, 112, 108, 121, 18, 15, 10, 7, 109, 101, 115, 115, 97, 103, 101, 24, 1, 32, 1, 40, 9, 50, 73, 10, 7, 71, 114, 101, 101, 116, 101, 114, 18, 62, 10, 8, 83, 97, 121, 72, 101, 108, 108, 111, 18, 24, 46, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 46, 72, 101, 108, 108, 111, 82, 101, 113, 117, 101, 115, 116, 26, 22, 46, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 46, 72, 101, 108, 108, 111, 82, 101, 112, 108, 121, 34, 0, 66, 54, 10, 27, 105, 111, 46, 103, 114, 112, 99, 46, 101, 120, 97, 109, 112, 108, 101, 115, 46, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 66, 15, 72, 101, 108, 108, 111, 87, 111, 114, 108, 100, 80, 114, 111, 116, 111, 80, 1, 162, 2, 3, 72, 76, 87, 98, 6, 112, 114, 111, 116, 111, 51}
+	service            = "helloworld.Greeter"
+	functionName       = "SayHello"
 )
 
 var _ = Describe("Upstream", func() {
@@ -63,12 +67,16 @@ var _ = Describe("Upstream", func() {
 			UpstreamTable(nil, []*v1.Upstream{us}, &out)
 			// The `SayHello` method exists in the ProtoDescriptorBin. This should be printed when listing upstreams.
 			// Since there is only one service, it is safe to assume that this method belongs to it
-			Expect(out.String()).To(ContainSubstring("- SayHello"))
+			Expect(out.String()).To(ContainSubstring(fmt.Sprintf("- %s", functionName)))
 		})
 	})
 
+	// The addFunctionsFromGrpcTranscoder helper function has the only interesting logic for JSON and YAML printing
+	// Other than applying this function to each Upstream, all logic is handled by cliutils.PrintList()
+	// We therefore test the helper function, which is easier to reason about than the marshalled output
 	Describe("addFunctionsFromGrpcTranscoder", func() {
 		var (
+			// We assume a namespaced status already exists for the given namespace
 			initialStatuses = func() *core.NamespacedStatuses {
 				return &core.NamespacedStatuses{
 					Statuses: map[string]*core.Status{
@@ -77,6 +85,8 @@ var _ = Describe("Upstream", func() {
 				}
 			}
 
+			// the expected value of the Details field of the status when augmented with the function names from the
+			// test file descriptor
 			expDetails = &structpb.Struct{
 				Fields: map[string]*structpb.Value{
 					functionNamesKey: {
@@ -89,7 +99,7 @@ var _ = Describe("Upstream", func() {
 												Values: []*structpb.Value{
 													{
 														Kind: &structpb.Value_StringValue{
-															StringValue: "SayHello",
+															StringValue: functionName,
 														},
 													},
 												},
@@ -104,6 +114,7 @@ var _ = Describe("Upstream", func() {
 			}
 		)
 
+		// this table represents all permutations of Upstreams that should get an augmented status
 		DescribeTable("adds function names to namespaced status when there is a grpcJsonTranscoder with descriptors", func(us *v1.Upstream) {
 			addFunctionsFromGrpcTranscoder(testNamespace)(us)
 			Expect(us.NamespacedStatuses.GetStatuses()[testNamespace].GetDetails()).To(BeEquivalentTo(expDetails))
@@ -158,6 +169,7 @@ var _ = Describe("Upstream", func() {
 				}}),
 		)
 
+		// this table represents all permutations of Upstreams that should get an augmented status
 		DescribeTable("does not modify Upstream when there is no grpcJsonTranscoder with selected descriptors", func(us *v1.Upstream) {
 			addFunctionsFromGrpcTranscoder(testNamespace)(us)
 			Expect(us.NamespacedStatuses.GetStatuses()[testNamespace].GetDetails()).To(BeNil())
