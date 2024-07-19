@@ -118,7 +118,7 @@ Represents global settings for all the Gloo components.
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |
-| `devMode` | `bool` | Enable serving debug data on port 9090. |
+| `devMode` | `bool` | DEPRECATED: In the past DevMode was used to expose endpoints that behave as an Admin API https://github.com/solo-io/gloo/issues/6494 We now support an Admin API on port 9091. See the following guide for more details https://docs.solo.io/gloo-edge/latest/operations/debugging_gloo/#debugging-the-control-plane. |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). Deprecated: Will not be available in Gloo Edge 1.11. |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk/#discoveryoptions) | Options for configuring Gloo's Discovery service. |
