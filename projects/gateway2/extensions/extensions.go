@@ -3,11 +3,10 @@ package extensions
 import (
 	"context"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )

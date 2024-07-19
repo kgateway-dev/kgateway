@@ -1,9 +1,6 @@
 package iosnapshot
 
 import (
-	"cmp"
-	"slices"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	ratelimitv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -167,15 +164,4 @@ func convertToKube(resource resources.VersionedResource, crd crd.Crd) (*crdv1.Re
 		Spec:       &spec,
 		Status:     crdv1.Status{},
 	}, nil
-}
-
-func sortResources(resources []crdv1.Resource) {
-	slices.SortStableFunc(resources, func(a, b crdv1.Resource) int {
-		return cmp.Or(
-			cmp.Compare(a.APIVersion, b.APIVersion),
-			cmp.Compare(a.Kind, b.Kind),
-			cmp.Compare(a.GetNamespace(), b.GetNamespace()),
-			cmp.Compare(a.GetName(), b.GetName()),
-		)
-	})
 }
