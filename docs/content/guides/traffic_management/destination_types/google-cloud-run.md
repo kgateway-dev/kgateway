@@ -12,7 +12,7 @@ Route traffic requests directly to a Google Cloud Platform (GCP) service, such a
 
 ## Before you begin
 
-Make sure that your Google Cloud account is ready to use with the Cloud Run and Kubernetes Engine (GKE) services.
+Prepare your Google Cloud account for use with the Cloud Run and Kubernetes Engine (GKE) services.
 
 1. Identify a Google Cloud project with billing enabled that you plan to use for both the Cloud Run and Kubernetes Engine instances.
 2. Verify that you have the appropriate permissions to create Cloud Run and Kubernetes Engine instances.
@@ -21,7 +21,7 @@ Make sure that your Google Cloud account is ready to use with the Cloud Run and 
 
 Create a sample Cloud Run workload. Then, use Google Workload Identity to authorize Gloo Gateway to send requests to the Cloud Run workload.
 
-1. In your Google Cloud project, identify or create a Kubernetes Engine cluster. For an example, follow the [Kubernetes Engine quickstart in the Google Cloud docs](https://cloud.google.com/kubernetes-engine/docs/quickstarts/create-cluster).
+1. In your Google Cloud project, identify or create a Google Kubernetes Engine (GKE) cluster. For an example, follow the [Kubernetes Engine quickstart in the Google Cloud docs](https://cloud.google.com/kubernetes-engine/docs/quickstarts/create-cluster).
 
 2. [Install Gloo Gateway Enterprise **version 1.17 or later** in your GKE cluster]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#google-kubernetes-engine-gke" %}}).
 
@@ -33,9 +33,9 @@ Create a sample Cloud Run workload. Then, use Google Workload Identity to author
 
 ## Step 2: Create the Upstream for the Google Cloud Run service {#upstream}
 
-The following examples create a basic VirtualService that routes to an Upstream for your Cloud Run workload.
+The following examples create a basic VirtualService that routes traffic to an Upstream that represents your Cloud Run workload.
 
-1. Create an Upstream that represents your Cloud Run workload. Replace the `host` with the Cloud Run endpoint that your GKE cluster can access. For more options, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/gcp/gcp.proto.sk/#upstreamspec" %}}).
+1. Create an Upstream that represents your Cloud Run workload. Replace the `host` with the Cloud Run endpoint that your GKE cluster can access. In the Google Cloud console, the host is the **URL** on the services detail page for your Cloud Run workload. For more options, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/gcp/gcp.proto.sk/#upstreamspec" %}}).
    
    ```yaml
    kubectl apply -f - <<EOF
