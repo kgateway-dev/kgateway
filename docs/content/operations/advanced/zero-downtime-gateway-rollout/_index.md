@@ -1,10 +1,10 @@
 ---
 title: Zero-downtime Gateway rollout
 weight: 25
-description: Properly configure Gloo Edge and your Load-Balancer to minimize the downtime when bouncing Envoy proxies.
+description: Properly configure Gloo Gateway and your Load-Balancer to minimize the downtime when bouncing Envoy proxies.
 ---
 
-Configure Gloo Edge and your load balancer to minimize downtime when bouncing Envoy proxies.
+Configure Gloo Gateway and your load balancer to minimize downtime when bouncing Envoy proxies.
 
 ## Principles
 
@@ -33,7 +33,7 @@ From right to left:
 This guide shows how to configure these different elements and demonstrates the benefits during a gateway rollout.
 
 
-## Configuring the Gloo Edge Proxies
+## Configuring the Gloo Gateway Proxies
 
 ### Upstream options
 
@@ -111,17 +111,17 @@ spec:
 
 ### Envoy Listener options
 
-First, you want to know when exactly Gloo Edge is ready to route client requests. They are several conditions, and the most important one is to have a `VirtualService` correctly configured.
+First, you want to know when exactly Gloo Gateway is ready to route client requests. They are several conditions, and the most important one is to have a `VirtualService` correctly configured.
 
 While `glooctl check` will help you check some fundamentals, this command will not show if the _gateway-proxy_ is listening to new connections. Only its internal engine - Envoy - knows about that.
 
 It's fair to quickly remember here that Envoy can be listening to multiple hosts and ports simultaneously. For that to happen, you need to define different `VirtualServices` and `Gateways`. If you want to better understand how these objects work together, please check out this [article]({{% versioned_link_path fromRoot="/installation/advanced_configuration/multi-gw-deployment/" %}}).
 
-Once you have these `Gateways` and `VirtualServices` configured, Gloo Edge will generate `Proxy` _Custom Resources_ that will, in turn, generate Envoy **Listeners**, **Routes**, and more. From this point, Envoy is ready to accept new connections. 
+Once you have these `Gateways` and `VirtualServices` configured, Gloo Gateway will generate `Proxy` _Custom Resources_ that will, in turn, generate Envoy **Listeners**, **Routes**, and more. From this point, Envoy is ready to accept new connections. 
 
 The goal here is to know when these [Envoy Listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) are ready. Luckily, Envoy comes with a handy [Health Check filter]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks/" %}}) which helps with that.
 
-For example, you can add the following `healthCheck` setting to your Helm configuration file. Then, upgrade your Helm installation of Gloo Edge to set up health checking for the Envoy proxy.
+For example, you can add the following `healthCheck` setting to your Helm configuration file. Then, upgrade your Helm installation of Gloo Gateway to set up health checking for the Envoy proxy.
 
 ```yaml
 gloo:

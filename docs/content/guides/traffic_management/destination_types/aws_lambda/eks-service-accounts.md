@@ -1,13 +1,13 @@
 ---
 title: AWS Lambda with EKS ServiceAccounts
 weight: 101
-description: Using EKS ServiceAccounts with Gloo Edge for AWS Lambda
+description: Using EKS ServiceAccounts with Gloo Gateway for AWS Lambda
 ---
 
 AWS offers the ability to associate Kubernetes **Service Accounts** with **IAM Roles**.
 This [AWS article](https://docs.aws.amazon.com/eks/latest/userguide/specify-service-account-role.html) 
 explains the feature in more detail.  
-Gloo Edge supports discovering and invoking **AWS Lambdas** using these projected **Service Accounts**.
+Gloo Gateway supports discovering and invoking **AWS Lambdas** using these projected **Service Accounts**.
 
 The following list describes the different resources that are involved in this setup:
 * an EKS cluster with an attached IAM **OpenID Provider** (OP) 
@@ -98,9 +98,9 @@ The Role ARN will be of the form: `arn:aws:iam::<AWS ACCOUNT ID>:role/<ROLE NAME
 For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 
 
-## Deploying Gloo Edge
+## Deploying Gloo Gateway
 
-For the purpose of this tutorial we will be installing open source Gloo Edge, but Gloo Edge Enterpise
+For the purpose of this tutorial we will be installing open source Gloo Gateway, but Gloo Gateway Enterpise
 will work exactly the same, with slightly different helm values as specified below.
 
 {{< tabs >}}
@@ -153,7 +153,7 @@ kubectl rollout status deployment -n gloo-system discovery
 
 ## Routing to your Lambda(s)
 
-Now that Gloo Edge is running with our credentials set up, you can go ahead and create the Gloo Edge config to enable routing to your AWS Lambdas.
+Now that Gloo Gateway is running with our credentials set up, you can go ahead and create the Gloo Gateway config to enable routing to your AWS Lambdas.
 
 First create an Upstream CR:
 
@@ -171,7 +171,7 @@ spec:
 EOF
 ```
 
-Since FDS is enabled, Gloo Edge will go ahead and discover all available lambdas using the ServicaAccount credentials. 
+Since FDS is enabled, Gloo Gateway will go ahead and discover all available lambdas using the ServicaAccount credentials. 
 The lambda we will be using for the purposes of this demo will be called `uppercase`, and it is a very simple lambda
 which will uppercase any text in the request body.
 ```shell script

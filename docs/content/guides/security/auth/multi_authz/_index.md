@@ -4,14 +4,14 @@ weight: 50
 description: Configure multiple External Authorization servers. Decide which one to use at the route level.
 ---
 
-Gloo Edge Enterprise comes with an External Authorization service, with full-featured security policies, like OpenID Connect, Open Policy Agent, OAuth 2 scopes and a few more. Also, using the so-called **passthrough** system, you can extend the authorization logic and call your own authentication or authorization service.
+Gloo Gateway Enterprise comes with an External Authorization service, with full-featured security policies, like OpenID Connect, Open Policy Agent, OAuth 2 scopes and a few more. Also, using the so-called **passthrough** system, you can extend the authorization logic and call your own authentication or authorization service.
 
 There are certain cases where it's more relevant to directly plug the `ext_authz` Envoy filter to your own authorization service. This article describes how to configure such connections between the Envoy data-plane and third-party authorization services.
 
 ## Calling an external authorization service
 
 Say you are running a corporate access management service that is in charge of returning new claims, like the `role` of the user who is authenticated.
-With Gloo Edge Enterprise, you can call the external service in two, non-exclusive ways, as shown in the following figure.
+With Gloo Gateway Enterprise, you can call the external service in two, non-exclusive ways, as shown in the following figure.
 - Option A: use the **Passthrough Auth** [plug-in]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/" >}}), which comes with all the ExtAuth options (see `AuthConfig > passthrough`)
 - Option B: define an additional ExtAuth server with the `namedExtAuth` setting, and call the additional ExtAuth server on the routes of your choice
 
@@ -38,7 +38,7 @@ You can use either the [gRPC Passthrough Auth]({{% versioned_link_path fromRoot=
 
 ### Option B - Using namedExtAuth
 
-In Gloo Edge Enterprise, you can define additional ExtAuthZ servers in the Gloo Edge settings.
+In Gloo Gateway Enterprise, you can define additional ExtAuthZ servers in the Gloo Gateway settings.
 For that, you must register your authorization servers in the "default" `Settings` custom resource, as shown in the following example. For more information, see the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#settings).
 
 

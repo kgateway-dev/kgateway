@@ -1,12 +1,12 @@
 ---
 title: Schema stitching
 weight: 50
-description: Use Gloo Edge to stitch together schemas for multiple GraphQL services.
+description: Use Gloo Gateway to stitch together schemas for multiple GraphQL services.
 ---
 
-When you use GraphQL in Gloo Edge, you can stitch multiple schemas together to expose one unified GraphQL server to your clients.
+When you use GraphQL in Gloo Gateway, you can stitch multiple schemas together to expose one unified GraphQL server to your clients.
 
-Consider a cluster that has two existing GraphQL APIs, `user-svc` and `product-svc`. Each service has similar information that you might want to provide as part of a unified data model. Typically, clients must stitch together the services in the frontend. With Gloo Edge, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This stitching frees your clients to consider only what data that they want to fetch, not how to fetch the data.
+Consider a cluster that has two existing GraphQL APIs, `user-svc` and `product-svc`. Each service has similar information that you might want to provide as part of a unified data model. Typically, clients must stitch together the services in the frontend. With Gloo Gateway, you can instead stitch the GraphQL schemas for these services together in the backend, and expose a unified GraphQL server to your clients. This stitching frees your clients to consider only what data that they want to fetch, not how to fetch the data.
 
 Follow along with the user and product service example.
 
@@ -137,7 +137,7 @@ What if a client wants the full name of the seller for a product, instead of the
 
 When you have different services with data that you want clients to be able to request, you can stitch the services together. In a separate `GraphQLApi` resource, specify a `stitchedSchema` section that indicates how to merge the types between the services. 
 
-In the user service subschema, you can specify which fields are unique to the `User` type, and how to get these fields. For example, in the following `typeMerge`, Gloo Edge can use the `GetUser` query to provide the full name from the user service.
+In the user service subschema, you can specify which fields are unique to the `User` type, and how to get these fields. For example, in the following `typeMerge`, Gloo Gateway can use the `GetUser` query to provide the full name from the user service.
 
 ```yaml
 apiVersion: graphql.gloo.solo.io/v1beta1
@@ -160,7 +160,7 @@ spec:
       namespace: product-app
 ```
 
-As a result, Gloo Edge generates a **stitched service**. From this one stitched service, a client can provide the product ID, and recieve the product name, the username of the seller, the user ID of the seller, _and_ the full name of the seller.
+As a result, Gloo Gateway generates a **stitched service**. From this one stitched service, a client can provide the product ID, and recieve the product name, the username of the seller, the user ID of the seller, _and_ the full name of the seller.
 ```yaml
 type User {
   username: String
@@ -182,9 +182,9 @@ type Query {
 
 ## Querying the stitched service
 
-Based on the stitched service, Gloo Edge generates the following schema definition, which incorporates all the types and queries from each of the respective services.
+Based on the stitched service, Gloo Gateway generates the following schema definition, which incorporates all the types and queries from each of the respective services.
 
-Clients can query the stitched service. In the background, Gloo Edge uses this schema to create the requests to the stitched service, and then stitches the responses back together into one response to the client.
+Clients can query the stitched service. In the background, Gloo Gateway uses this schema to create the requests to the stitched service, and then stitches the responses back together into one response to the client.
 
 {{< tabs >}}
 {{< tab name="Query" codelang="yaml">}}

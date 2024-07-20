@@ -1,14 +1,14 @@
 ---
 title: "Deployment Options"
 weight: 20
-description: Infrastructure Options for Installing Gloo Edge
+description: Infrastructure Options for Installing Gloo Gateway
 ---
 
-Gloo Edge is a flexible architecture that can be deployed on a range of infrastructure stacks. If you'll recall from the Architecture document, Gloo Edge contains the following components at a logical level.
+Gloo Gateway is a flexible architecture that can be deployed on a range of infrastructure stacks. If you'll recall from the Architecture document, Gloo Gateway contains the following components at a logical level.
 
 ![Component Architecture]({{% versioned_link_path fromRoot="/img/component_architecture.png" %}})
 
-In an actual deployment of Gloo Edge, components like storage, secrets, and endpoint discovery must be supplied by the infrastructure stack. Gloo Edge also requires a place to launch the containers that comprise both Gloo Edge and Envoy. The following sections detail potential deployment options along with links to the installation guide for each option.
+In an actual deployment of Gloo Gateway, components like storage, secrets, and endpoint discovery must be supplied by the infrastructure stack. Gloo Gateway also requires a place to launch the containers that comprise both Gloo Gateway and Envoy. The following sections detail potential deployment options along with links to the installation guide for each option.
 
 The options included are:
 
@@ -21,13 +21,13 @@ It is also possible to use Docker Compose for container management and the local
 
 ## Kubernetes using Kubernetes primitives
 
-The simplest and most common deployment option for Gloo Edge is using Kubernetes to orchestrate the deployment of Gloo Edge, and using Kubernetes primitives like *Custom Resources* and *Config Maps*. The diagram below shows an example of how Gloo Edge might be deployed on Kubernetes and how each primitive is leveraged to match the component architecture.
+The simplest and most common deployment option for Gloo Gateway is using Kubernetes to orchestrate the deployment of Gloo Gateway, and using Kubernetes primitives like *Custom Resources* and *Config Maps*. The diagram below shows an example of how Gloo Gateway might be deployed on Kubernetes and how each primitive is leveraged to match the component architecture.
 
 ![Kubernetes Architecture]({{% versioned_link_path fromRoot="/img/deployments/kubernetes-deployment-architecture.png" %}})
 
 ### Pods and Deployments
 
-The following components of Gloo Edge are deployed as separate pods and deployments:
+The following components of Gloo Gateway are deployed as separate pods and deployments:
 
 * Gloo
 * Discovery
@@ -43,7 +43,7 @@ Along with the pods and deployments, three services are created.
 * `gateway`: Type ClusterIP exposing the port 443
 * `gateway-proxy`: Type LoadBalancer exposing the ports 80, 443
 
-The *gloo* service is what exposes the xDS Server running in Gloo Edge.
+The *gloo* service is what exposes the xDS Server running in Gloo Gateway.
 
 ### ConfigMaps
 
@@ -56,7 +56,7 @@ The `gateway-proxy-envoy-config` ConfigMap does not contain information about th
 
 ### Secrets
 
-Gloo Edge makes use of secrets in Kubernetes to store tokens, certificates, and Helm release info. The following secrets should be present by default.
+Gloo Gateway makes use of secrets in Kubernetes to store tokens, certificates, and Helm release info. The following secrets should be present by default.
 
 * default-token
 * discovery-token: Mounted as a volume on `discovery` pods.
@@ -66,30 +66,30 @@ Gloo Edge makes use of secrets in Kubernetes to store tokens, certificates, and 
 * gloo-token: Mounted as a volume on `gloo` pods.
 * sh.helm.release.v1.gloo.v1
 
-Gloo Edge makes use of certificates for validation and authentication. When Gloo Edge is installed in gateway mode, it runs a job to generate certificates. The resulting certificate is stored in a Kubernetes secret called `gateway-validation-certs`, and mapped as a volume to the `gloo` pods.
+Gloo Gateway makes use of certificates for validation and authentication. When Gloo Gateway is installed in gateway mode, it runs a job to generate certificates. The resulting certificate is stored in a Kubernetes secret called `gateway-validation-certs`, and mapped as a volume to the `gloo` pods.
 
 ### Custom Resource Definitions
 
-When Gloo Edge is installed on Kubernetes, it creates a number of Custom Resource Definitions that Gloo Edge can use to store data. The following table describes each Custom Resource Definition, its grouping, and its purpose.
+When Gloo Gateway is installed on Kubernetes, it creates a number of Custom Resource Definitions that Gloo Gateway can use to store data. The following table describes each Custom Resource Definition, its grouping, and its purpose.
 
 | Name | Grouping | Purpose |
 |------|----------|---------|
-| {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} | gloo.solo.io | Global settings for all Gloo Edge components. |
+| {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} | gloo.solo.io | Global settings for all Gloo Gateway components. |
 | {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}} | gateway.solo.io | Describes a single Listener and the routing Upstreams reachable via the Gateway Proxy. |
 | {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}} | gateway.solo.io | Describes the set of routes to match for a set of domains. |
-| {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for the Gloo Edge. |
-| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be pushed by Gloo Edge to the Envoy proxy. |
+| {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for the Gloo Gateway. |
+| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be pushed by Gloo Gateway to the Envoy proxy. |
 | {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing HTTP requests. |
 | {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Defining multiple Upstreams or external endpoints for a Virtual Service. |
 | {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration |
 
-You can find out more about deploying Gloo Edge on Kubernetes by [following this guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+You can find out more about deploying Gloo Gateway on Kubernetes by [following this guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
 ---
 
 ## HashiCorp Consul, Vault, and Nomad
 
-Gloo Edge can use some of the HashiCorp products to provide the necessary primitives for container management, persistent storage, and secrets management. The diagram below provides and example of how HashiCorp products could be used to host a Gloo Edge deployment.
+Gloo Gateway can use some of the HashiCorp products to provide the necessary primitives for container management, persistent storage, and secrets management. The diagram below provides and example of how HashiCorp products could be used to host a Gloo Gateway deployment.
 
 ![HashiCorp Example]({{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}})
 
@@ -97,7 +97,7 @@ Gloo Edge can use some of the HashiCorp products to provide the necessary primit
 
 HashiCorp's [Nomad](https://www.nomadproject.io/) is a a popular workload scheduler that can be used in place of, or in combination with Kubernetes as a way of running long-lived processes on a cluster of hosts. Nomad supports native integration with Consul and Vault, making configuration, service discovery, and credential management easy for application developers. 
 
-Nomad is used to deploy the Gloo Edge containers by using Gloo Edge deployment jobs. Similar to a Kubernetes deployment, each Nomad job defines a set of deployment tasks for the various Gloo Edge components. There are four jobs in total which deploy the following container groups:
+Nomad is used to deploy the Gloo Gateway containers by using Gloo Gateway deployment jobs. Similar to a Kubernetes deployment, each Nomad job defines a set of deployment tasks for the various Gloo Gateway components. There are four jobs in total which deploy the following container groups:
 
 * gloo
 * discovery
@@ -107,7 +107,7 @@ Within the definition of each task is the port mappings and service names for ea
 
 ### Services and Configuration
 
-HashiCorps's [Consul](https://www.consul.io/) is a service networking solution to connect and secure services across multiple platforms. It can also store arbitrary key/value pairs. In the case of a Gloo Edge deployment, Consul is used to publish and resolve the networking services published by the Gloo Edge container groups and hold configuration information about Gloo Edge objects like Upstreams, Envoy configs, and Virtual Services.
+HashiCorps's [Consul](https://www.consul.io/) is a service networking solution to connect and secure services across multiple platforms. It can also store arbitrary key/value pairs. In the case of a Gloo Gateway deployment, Consul is used to publish and resolve the networking services published by the Gloo Gateway container groups and hold configuration information about Gloo Gateway objects like Upstreams, Envoy configs, and Virtual Services.
 
 The **Services** component of Consul publishes the services: consul, gateway-proxy, gloo-xds, nomad, and nomad-client. It will also publish other services deployed through Nomad, which the Discovery service can find and push into the Upstream listing.
 
@@ -120,21 +120,21 @@ The **Key/Value** component of Consul holds data at the following paths:
 
 The configuration data that would typically be housed in a ConfigMap or Custom Resource on Kubernetes is instead held in one of the above paths on Consul's Key/Value store.
 
-Consul also supports service discovery, which is added to Gloo Edge by publishing a Key/Value entry to the path `gloo/gloo.solo.io/v1/Upstream`.
+Consul also supports service discovery, which is added to Gloo Gateway by publishing a Key/Value entry to the path `gloo/gloo.solo.io/v1/Upstream`.
 
 ### Secrets
 
 HashiCorp's Vault is secrets lifecycle management solution providing secure, tightly controlled access to tokens, passwords, certificates, and encryption keys.
 
-You can find out more about deploying Gloo Edge using HashiCorp solutions by [following Gateway guides]({{% versioned_link_path fromRoot="/installation/gateway/" %}}).
+You can find out more about deploying Gloo Gateway using HashiCorp solutions by [following Gateway guides]({{% versioned_link_path fromRoot="/installation/gateway/" %}}).
 
 ---
 
 ## Next Steps
 
-Now that you have a basic understanding of the deployment options for Gloo Edge, there are number of potential next steps that we'd like to recommend.
+Now that you have a basic understanding of the deployment options for Gloo Gateway, there are number of potential next steps that we'd like to recommend.
 
-* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself.
-* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Edge on different software stacks.
-* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Edge and how they interact.
-* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Edge's functionality for your use case through various plugins.
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Gateway yourself.
+* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Gateway on different software stacks.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Gateway and how they interact.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Gateway's functionality for your use case through various plugins.

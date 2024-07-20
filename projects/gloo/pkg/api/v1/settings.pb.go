@@ -3111,7 +3111,7 @@ type GlooOptions_InvalidConfigPolicy struct {
 	// default is 404.
 	InvalidRouteResponseCode uint32 `protobuf:"varint,2,opt,name=invalid_route_response_code,json=invalidRouteResponseCode,proto3" json:"invalid_route_response_code,omitempty"`
 	// replaced routes reply to clients with this response body.
-	// default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
+	// default is 'Gloo Edge has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
 	InvalidRouteResponseBody string `protobuf:"bytes,3,opt,name=invalid_route_response_body,json=invalidRouteResponseBody,proto3" json:"invalid_route_response_body,omitempty"`
 }
 
