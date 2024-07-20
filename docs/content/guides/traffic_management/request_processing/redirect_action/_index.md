@@ -1,10 +1,10 @@
 ---
 title: Host Redirect
 weight: 30
-description: Configure Gloo Edge to redirect requests to a route instead of routing to a destination. 
+description: Configure Gloo Gateway to redirect requests to a route instead of routing to a destination. 
 ---
 
-Gloo Edge allows you to specify redirects instead of routes to a destination. 
+Gloo Gateway allows you to specify redirects instead of routes to a destination. 
 
 ## Setup 
 

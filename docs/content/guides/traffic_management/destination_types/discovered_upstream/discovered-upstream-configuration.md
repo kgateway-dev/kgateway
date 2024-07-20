@@ -3,7 +3,7 @@ title: Discovered Upstream Configuration via Annotations
 weight: 101
 ---
 
-Gloo Edge looks for discovered upstream configuration in the annotations of any Kubernetes service that it identifies. For Gloo Edge to discover the upstream configuration, include an annotation in the service in a key-value format. The key is `gloo.solo.io/upstream_config` and the value is the upstream configuration, formatted as JSON.
+Gloo Gateway looks for discovered upstream configuration in the annotations of any Kubernetes service that it identifies. For Gloo Gateway to discover the upstream configuration, include an annotation in the service in a key-value format. The key is `gloo.solo.io/upstream_config` and the value is the upstream configuration, formatted as JSON.
 
 For example, we can set the initial stream window size on the discovered upstream using the a modified version of the pet store manifest provided in the parent document:
 
@@ -104,7 +104,7 @@ As you can see, the configuration set `spec.initialStreamWindowSize` to `2048` o
 
 By default, discovered upstreams configured via the `gloo.solo.io/upstream_config` annotation will completely overwrite top-level upstream fields for which configuration has been specified.
 
-By setting the `gloo.solo.io/upstream_config.deep_merge` annotation to `true` on the service for which an upstream is to be discovered, you can configure Gloo Edge to merge the provided configuration with the default upstream config. This can be useful if you rely on certain default values present when a new upstream is discovered.
+By setting the `gloo.solo.io/upstream_config.deep_merge` annotation to `true` on the service for which an upstream is to be discovered, you can configure Gloo Gateway to merge the provided configuration with the default upstream config. This can be useful if you rely on certain default values present when a new upstream is discovered.
 
 ## Global annotations for upstreams
 
@@ -118,7 +118,7 @@ When using global annotations, keep in mind the following considerations:
 Review the following example configuration and description. For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#upstreamoptions" >}}).
 
 ```yaml
-# Gloo Edge Settings configuration
+# Gloo Gateway Settings configuration
               upstreamOptions:
                 properties:
                   globalAnnotations:
@@ -130,7 +130,7 @@ metadata:
     gloo.solo.io/upstream_config: '{"use_http2": false, "initial_stream_window_size": 2048}'
 ```
 
-In the Gloo Edge settings, two global annotations are defined:
+In the Gloo Gateway settings, two global annotations are defined:
 * `"initial_stream_window_size": 1024`
 * `"max_concurrent_streams": 64`
 

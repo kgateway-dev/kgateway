@@ -4,7 +4,7 @@ description: Run a quick demo of Gloo Federation in a local environment
 weight: 10
 ---
 
-With Gloo Edge Federation, you can manage multiple Gloo Edge instances in multiple Kubernetes clusters. In this guide, you use `glooctl` to create a demonstration environment that federates Gloo Edge across clusters.
+With Gloo Gateway Federation, you can manage multiple Gloo Gateway instances in multiple Kubernetes clusters. In this guide, you use `glooctl` to create a demonstration environment that federates Gloo Gateway across clusters.
 
 ## Before you begin
 
@@ -13,14 +13,14 @@ Make sure that you have the following tools installed.
 * **Docker** - Runs the containers for Kind and all pods inside the clusters.
 * **Kubectl** - Executes commands against the Kubernetes clusters.
 * **[Kind](https://kind.sigs.k8s.io/)** - Deploys two Kubernetes clusters by using containers that run on Docker.
-* **Helm** - Deploys the Gloo Edge Federation and Gloo Edge charts.
+* **Helm** - Deploys the Gloo Gateway Federation and Gloo Gateway charts.
 * **Glooctl** - Sets up the demonstration environment.
-* **Gloo Edge Enterprise license** - You need a license key to deploy the demonstration environment. To request a license, [contact Sales](https://www.solo.io/company/contact/).
+* **Gloo Gateway Enterprise license** - You need a license key to deploy the demonstration environment. To request a license, [contact Sales](https://www.solo.io/company/contact/).
 
 
 ## Deploy the demonstration environment
 
-Use the `glooctl demo` to set up the environment. The end result is a fully functioning local environment that runs two Kubernetes clusters, Gloo Edge Enterprise, and Gloo Edge Federation. 
+Use the `glooctl demo` to set up the environment. The end result is a fully functioning local environment that runs two Kubernetes clusters, Gloo Gateway Enterprise, and Gloo Gateway Federation. 
 
 You can generate the demo environment by running the following command:
 
@@ -31,19 +31,19 @@ glooctl demo federation --license-key <license key>
 That command performs the following actions: 
 
 1. Deploys two kind clusters called local and remote
-2. Installs Gloo Edge Enterprise on both clusters in the `gloo-system` namespace
-3. Installs Gloo Edge Federation on the local cluster in the `gloo-system` namespace
-4. Registers both Gloo Edge Enterprise instances with Gloo Edge Federation
+2. Installs Gloo Gateway Enterprise on both clusters in the `gloo-system` namespace
+3. Installs Gloo Gateway Federation on the local cluster in the `gloo-system` namespace
+4. Registers both Gloo Gateway Enterprise instances with Gloo Gateway Federation
 5. Federates configuration resources
-6. Creates a Failover Service configuration using both Gloo Edge Enterprise instances
+6. Creates a Failover Service configuration using both Gloo Gateway Enterprise instances
 
 After the demo environment provisions, explore the environment in the following sections.
 
 ## Explore the demo environment
 
-The local demo environment is a sandbox for you to explore the functionality of Gloo Edge Federation. Let's take a look at what is deployed.
+The local demo environment is a sandbox for you to explore the functionality of Gloo Gateway Federation. Let's take a look at what is deployed.
 
-### Kubernetes clusters and Gloo Edge installations
+### Kubernetes clusters and Gloo Gateway installations
 
 1. View the local and remote kind clusters.
 
@@ -65,7 +65,7 @@ The local demo environment is a sandbox for you to explore the functionality of 
    *         kind-local  kind-local  kind-local
              kind-remote kind-remote kind-remote  
    ```
-3. Verify that the Gloo Edge components are running on each cluster.
+3. Verify that the Gloo Gateway components are running on each cluster.
 
    ```
    kubectl get deployment -l app=gloo -n gloo-system --context kind-local
@@ -88,7 +88,7 @@ The local demo environment is a sandbox for you to explore the functionality of 
    gateway-proxy   1/1     1            1           17m
    gloo            1/1     1            1           17m
    ```
-4. Verify the Gloo Edge Federation installation is running in the local cluster.
+4. Verify the Gloo Gateway Federation installation is running in the local cluster.
 
    ```
    kubectl get deployment -l app=gloo-fed -n gloo-system --context kind-local
@@ -102,9 +102,9 @@ The local demo environment is a sandbox for you to explore the functionality of 
 
 ### Cluster registration
 
-For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enterprise must be registered. After a cluster is registered, Gloo Edge Federation automatically discovers all instances of Gloo Edge on the cluster. The `glooctl federation demo` command registered the clusters for you. 
+For Gloo Gateway to be federated, each Kubernetes cluster that runs Gloo Gateway Enterprise must be registered. After a cluster is registered, Gloo Gateway Federation automatically discovers all instances of Gloo Gateway on the cluster. The `glooctl federation demo` command registered the clusters for you. 
 
-1. Verify that Gloo Edge Federation automatically discovered each instance of Gloo on the registered clusters. The discovered instances are stored in a Custom Resource of type `glooinstances.fed.solo.io` in the `gloo-system` namespace. The naming of each resource follows the convention `clustername-gloo-namespace`. 
+1. Verify that Gloo Gateway Federation automatically discovered each instance of Gloo on the registered clusters. The discovered instances are stored in a Custom Resource of type `glooinstances.fed.solo.io` in the `gloo-system` namespace. The naming of each resource follows the convention `clustername-gloo-namespace`. 
 
    ```
    kubectl get glooinstances -n gloo-system --context kind-local
@@ -115,7 +115,7 @@ For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enter
    kind-local-gloo-system    4m33s
    kind-remote-gloo-system   4m1s
    ```
-2. Check that Gloo Edge Federation automatically created the necessary credentials for the remote cluster. These credentials include the service account, cluster role, and cluster role binding in the remote cluster.
+2. Check that Gloo Gateway Federation automatically created the necessary credentials for the remote cluster. These credentials include the service account, cluster role, and cluster role binding in the remote cluster.
    ```
    kubectl get serviceaccount kind-remote -n gloo-system --context kind-remote
    kubectl get clusterrole gloo-federation-controller --context kind-remote
@@ -133,7 +133,7 @@ For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enter
 
 ### Federated configuration
 
-Gloo Edge Federation lets you create consistent configurations across multiple Gloo Edge instances. You can configure Gloo resources such as Upstreams, UpstreamGroups, and Virtual Services. Then, Gloo creates federated versions with separate Custom Resource Definitions, like FederatedUpstream and FederatedVirtualService. The federated versions target one or more clusters and a namespace within each cluster.
+Gloo Gateway Federation lets you create consistent configurations across multiple Gloo Gateway instances. You can configure Gloo resources such as Upstreams, UpstreamGroups, and Virtual Services. Then, Gloo creates federated versions with separate Custom Resource Definitions, like FederatedUpstream and FederatedVirtualService. The federated versions target one or more clusters and a namespace within each cluster.
 
 In the demo environment, two Kubernetes apps are created:
 * A federated `echo-blue` deployment and related services in the local cluster.
@@ -180,11 +180,11 @@ Check the federated resources:
    simple-route   10m
    ```
 
-You can use these federated resources to configure service failover across federated Gloo Edge instances.
+You can use these federated resources to configure service failover across federated Gloo Gateway instances.
 
 ### Service failover
 
-When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically shift traffic over to a different Gloo Edge instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The `echo-blue` deployment is running in the local cluster and the `echo-green` deployment is running in the remote cluster. 
+When an Upstream fails or becomes unhealthy, Gloo Gateway Federation can automatically shift traffic over to a different Gloo Gateway instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The `echo-blue` deployment is running in the local cluster and the `echo-green` deployment is running in the remote cluster. 
 
 1. Review the FailoverScheme that configures the upstream for the `echo-blue` deployment as the primary service and the upstream for the `echo-green` deployment as a failover target. In the FailoverScheme, you can also configure multiple failover targets in different clusters and namespaces with different priorities. For more information, see the [Service Failover guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}).
 
@@ -269,4 +269,4 @@ kind delete cluster --name remote
 
 ## Next Steps
 
-Now that you've had a chance to investigate some of the features of Gloo Edge Federation, now might be a good time to read a bit more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Edge Federation or you can try [installing]({{% versioned_link_path fromRoot="/installation/gloo_federation/" %}}) it in your own environment.
+Now that you've had a chance to investigate some of the features of Gloo Gateway Federation, now might be a good time to read a bit more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Gateway Federation or you can try [installing]({{% versioned_link_path fromRoot="/installation/gloo_federation/" %}}) it in your own environment.
