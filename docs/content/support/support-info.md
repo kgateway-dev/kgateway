@@ -8,7 +8,7 @@ Collect valuable information for Solo to review and troubleshoot your support re
 
 ## Environment
 
-1. Get your Gloo Edge version. 
+1. Get your Gloo Gateway version. 
     ```shell
     glooctl version -o yaml
     ```
@@ -20,11 +20,11 @@ Collect valuable information for Solo to review and troubleshoot your support re
 
 ## Setup
 
-Share the installation method that you used to install Gloo Edge, such as Helm, `glooctl`, or Argo CD, and the configuration that you used during the installation. 
+Share the installation method that you used to install Gloo Gateway, such as Helm, `glooctl`, or Argo CD, and the configuration that you used during the installation. 
 
 {{< tabs >}}
 {{% tab name="Helm" %}}
-Use the following command to extract the Helm manifests that were used for the Gloo Edge installation and the state of each manifest. Replace `releaseName` and `namespaceName` with the values that you used for your installation.
+Use the following command to extract the Helm manifests that were used for the Gloo Gateway installation and the state of each manifest. Replace `releaseName` and `namespaceName` with the values that you used for your installation.
 ```shell
 helm get all <releaseName> --namespace <namespaceName> > gloo_edge_helm.yaml
 ```
@@ -32,14 +32,14 @@ helm get all <releaseName> --namespace <namespaceName> > gloo_edge_helm.yaml
 {{% /tab %}}
 
 {{% tab name="glooctl"%}}
-Share the complete command that you used to install Gloo Edge. The following command shows an example command that you might have used. 
+Share the complete command that you used to install Gloo Gateway. The following command shows an example command that you might have used. 
 ```shell
 glooctl install gateway enterprise --license-key <license> --values foo,bar
 ```
 {{% /tab %}}
 
 {{% tab name="Argo CD"%}}
-Get the Argo CD applications that define the installation of Gloo Edge by using one of the following methods. 
+Get the Argo CD applications that define the installation of Gloo Gateway by using one of the following methods. 
 * `kubectl`: 
   ```shell
   kubectl get applications.argoproj.io/<applicationName> -n <namespaceName> -o yaml
@@ -62,21 +62,21 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
 2. Describe the impact of the issue. For example, the issue might block an update or a demo, or cause the loss of data or an entire system.
 3. Export the relevant configuration files that are related to the issue.
   {{< tabs >}}
-  {{% tab name="Gloo Edge resources"%}}
-  - Typically, the Gloo Edge `Settings` object is useful to understand the configuration of Gloo Edge.
-  - For traffic management issues, include the following list of Gloo Edge resources:
+  {{% tab name="Gloo Gateway resources"%}}
+  - Typically, the Gloo Gateway `Settings` object is useful to understand the configuration of Gloo Gateway.
+  - For traffic management issues, include the following list of Gloo Gateway resources:
       - `Gateway`
       - `VirtualService`
       - `RouteTable`
       - `Upstream`
 
-  - Use the following script to dump all Gloo Edge custom resources into a file. Attach the `gloo-edge-configuration.yaml` file to your support request. 
+  - Use the following script to dump all Gloo Gateway custom resources into a file. Attach the `gloo-gateway-configuration.yaml` file to your support request. 
     ```shell
-    for n in $(kubectl get crds | grep solo.io | awk '{print $1}'); do kubectl get $n --all-namespaces -o yaml >> gloo-edge-configuration.yaml; echo "---" >> gloo-edge-configuration.yaml; done
+    for n in $(kubectl get crds | grep solo.io | awk '{print $1}'); do kubectl get $n --all-namespaces -o yaml >> gloo-gateway-configuration.yaml; echo "---" >> gloo-gateway-configuration.yaml; done
     ```
   {{% /tab %}}
   {{% tab name="Istio resources"%}}
-  If you use Gloo Edge as a gateway to an Istio service mesh, provide details about how Istio is configured. You can use the following command to create an Istio bug report that you can attach to your support request. 
+  If you use Gloo Gateway as a gateway to an Istio service mesh, provide details about how Istio is configured. You can use the following command to create an Istio bug report that you can attach to your support request. 
 
   ```shell
   istioctl bug-report --istio-namespace <istioControlPlaneNamespace>
@@ -112,7 +112,7 @@ Get the Argo CD applications that define the installation of Gloo Edge by using 
     * proxy check was skipped due to an error in checking deployments
     * xds metrics check was skipped due to an error in checking deployment
     ```
-2. Collect the logs for various control plane components, such as `gloo`, `gloo-fed`, `redis`, or `observability` by using the `debug` log level (if possible). The components vary depending on your Gloo Edge setup and can be found in the `gloo-system` namespace. At a minimum, include the logs for the `gloo` pod in your support request. 
+2. Collect the logs for various control plane components, such as `gloo`, `gloo-fed`, `redis`, or `observability` by using the `debug` log level (if possible). The components vary depending on your Gloo Gateway setup and can be found in the `gloo-system` namespace. At a minimum, include the logs for the `gloo` pod in your support request. 
     <br>To enable the `debug` log level, see [Debugging control plane]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#debugging-the-control-plane" >}}).
     <br><br>Follow the steps below to get the logs for the `gloo` controller pod.
     1. Set the log level to `debug`.

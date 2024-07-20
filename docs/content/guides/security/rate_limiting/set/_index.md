@@ -5,12 +5,12 @@ weight: 15
 ---
 
 {{% notice note %}}
-Set-style rate limiting was introduced with **Gloo Edge Enterprise**, release `v1.6.0-beta9`. 
+Set-style rate limiting was introduced with **Gloo Gateway Enterprise**, release `v1.6.0-beta9`. 
 If you are using an earlier version, this feature will not be available.
 {{% /notice %}}
 
 As we saw in the [Envoy API guide]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" %}}), 
-Gloo Edge Enterprise exposes a fine-grained API that allows you to configure a vast number of rate limiting use cases
+Gloo Gateway Enterprise exposes a fine-grained API that allows you to configure a vast number of rate limiting use cases
 by defining [`actions`]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy//#actions" %}})
 that specify an ordered tuple of descriptor keys to attach to a request and
 [`descriptors`]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy//#descriptors" %}}) that match
@@ -25,7 +25,7 @@ While this is certainly doable, it can quickly become verbose with enough descri
 We might need to enumerate all the combinations of descriptors when we want to rate limit based on several different subsets.
 
 To address these shortcomings, we introduced a new API.
-Starting with Gloo Edge Enterprise `v1.6.0-beta9` you can define rate limits using set-style descriptors.
+Starting with Gloo Gateway Enterprise `v1.6.0-beta9` you can define rate limits using set-style descriptors.
 These are treated as an unordered set such that a given rule will apply if all the specified descriptors match,
 regardless of the presence and value of the other descriptors and regardless of descriptor order.
 For example, a rule may match `type: a` and `number: one` but the `color` descriptor can have any value.
@@ -48,7 +48,7 @@ and can optionally include a value.
 Let's run through a simple example that uses set-style rate limiting.
 
 #### Initial setup
-First, we need to install Gloo Edge Enterprise (minimum version `1.6.0-beta9`). Please refer to the corresponding
+First, we need to install Gloo Gateway Enterprise (minimum version `1.6.0-beta9`). Please refer to the corresponding
 [installation guide]({{< versioned_link_path fromRoot="/installation/enterprise" >}}) for details.
  
 Let's also deploy a simple application called petstore:

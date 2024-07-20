@@ -52,7 +52,7 @@ In the previous section, you used local execution to resolve GraphQL queries to 
    EOF
    ```
 
-2. After the deployment is ready, verify that Gloo Edge created a `graphqlapi` resource for the upstream.
+2. After the deployment is ready, verify that Gloo Gateway created a `graphqlapi` resource for the upstream.
    ```sh
    kubectl get graphqlapis -n gloo-system
    ```

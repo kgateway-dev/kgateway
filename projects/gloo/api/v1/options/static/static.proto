@@ -68,7 +68,7 @@ message Host {
 
     // Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
     // or other specific Envoy configurations.
-    // The following keys are added by Gloo Gateway and are ignored if set:
+    // The following keys are added by Gloo Edge and are ignored if set:
     // - "envoy.transport_socket_match"
     // - "io.solo.health_checkers.advanced_http"
     map<string, google.protobuf.Struct> metadata = 6;

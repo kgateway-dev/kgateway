@@ -3,7 +3,7 @@ title: Dynamic Forward Proxy
 weight: 10
 ---
 
-You can set up an [HTTP Dynamic Forward Proxy (DFP) filter](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy) in Gloo Edge.
+You can set up an [HTTP Dynamic Forward Proxy (DFP) filter](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy) in Gloo Gateway.
 
 In a highly dynamic environment with services coming up and down and with no service registry being able to list the available endpoints, one option is to somehow "blindly" route the client requests upstream. 
 
@@ -20,7 +20,7 @@ Before implementing a dynamic forward proxy, consider the downsides to such flex
 Of course, you might still decide to use a dynamic forward proxy in an API Gateway for benefits such as the following:
 - You easily get metrics on the egress traffic that goes through the forward proxy.
 - You can enforce authentication and authorization policies.
-- You can leverage other policies available in Gloo Edge Enterprise, like Web Application Firewall (WAF) or Data Loss Prevention (DLP).
+- You can leverage other policies available in Gloo Gateway Enterprise, like Web Application Firewall (WAF) or Data Loss Prevention (DLP).
 
 ## Enabling the Dynamic Forward Proxy
 

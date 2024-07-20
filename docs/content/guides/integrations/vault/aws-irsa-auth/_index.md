@@ -216,9 +216,9 @@ kubectl -n vault exec vault-0 -- vault write auth/aws/role/${VAULT_AUTH_ROLE_NAM
 
 If this command fails, see [Access denied due to identity-based policies – implicit denial](#access-denied-due-to-identity-based-policies--implicit-denial).
 
-## Gloo Edge
+## Gloo Gateway
 
-Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching.
+Lastly, install Gloo Gateway by using a configuration that allows Vault and IRSA credential fetching.
 
 ### Step 1: Prepare Helm overrides
 
@@ -254,7 +254,7 @@ EOF
 ```
 
 {{% notice note %}}
-If you use Gloo Edge Enterprise, nest these Helm settings within the `gloo` section.
+If you use Gloo Gateway Enterprise, nest these Helm settings within the `gloo` section.
 {{% /notice %}}
 
 ### Step 2: Install Gloo using Helm
@@ -269,7 +269,7 @@ helm install gloo gloo/gloo --namespace gloo-system --create-namespace --version
 
 ## Summary
 
-Gloo Edge now securely accesses Vault secrets using temporary credentials obtained through AWS IAM Roles for Service Accounts (IRSA).
+Gloo Gateway now securely accesses Vault secrets using temporary credentials obtained through AWS IAM Roles for Service Accounts (IRSA).
 This enhances security, streamlines access control, and simplifies authorization within your Kubernetes environment.
 
 ## Troubleshooting

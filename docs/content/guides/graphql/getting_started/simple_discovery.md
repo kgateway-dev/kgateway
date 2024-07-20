@@ -74,7 +74,7 @@ Explore basic GraphQL service discovery with the Pet Store sample application.
       {"id":10,"category":{"id":3,"name":"Rabbits"},"name":"Rabbit 1","photoUrls":["url1","url2"],"tags":[{"id":1,"name":"tag3"},{"id":2,"name":"tag4"}],"status":"available"}
       ```
 
-3. Verify that OpenAPI specification discovery is enabled, and that Gloo Edge created a corresponding GraphQL custom resource.
+3. Verify that OpenAPI specification discovery is enabled, and that Gloo Gateway created a corresponding GraphQL custom resource.
    ```sh
    kubectl get graphqlapis -n gloo-system
    ```

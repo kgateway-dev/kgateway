@@ -22,7 +22,7 @@ func Command(ctx context.Context) *cobra.Command {
 	opts := &options{}
 	cmd := &cobra.Command{
 		Use:   "init-plugin-manager",
-		Short: "Install the Gloo Edge Enterprise CLI plugin manager",
+		Short: "Install the Gloo Gateway Enterprise CLI plugin manager",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			home, err := opts.getHome()
 			if err != nil {
@@ -51,7 +51,7 @@ Add the glooctl plugins to your path with:
   export PATH=%s/bin:$PATH
 Now run:
   glooctl plugin --help     # see the commands available to you
-Please see visit the Gloo Edge website for more info:  https://www.solo.io/products/gloo-edge/
+Please see visit the Gloo Gateway website for more info: https://docs.solo.io/gloo-edge/
 `, homeStr)
 			return nil
 		},

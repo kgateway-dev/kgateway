@@ -1,16 +1,16 @@
 ---
-title: Gloo Edge mTLS mode
+title: Gloo Gateway mTLS mode
 weight: 40
-description: Ensure that communications between Gloo Edge and Envoy is secure with mTLS
+description: Ensure that communications between Gloo Gateway and Envoy is secure with mTLS
 ---
 
 {{% notice note %}}
-This feature was introduced in version 1.3.6 of Gloo Edge and version 1.3.0-beta3 of Gloo Edge Enterprise. If you are using earlier versions of Gloo Edge, this feature will not be available.
+This feature was introduced in version 1.3.6 of Gloo Gateway and version 1.3.0-beta3 of Gloo Gateway Enterprise. If you are using earlier versions of Gloo Gateway, this feature will not be available.
 {{% /notice %}}
 
-Gloo Edge and Envoy communicate through the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#streaming-grpc-subscriptions). Since the Envoy configuration can contain secret data, plaintext communication between Gloo Edge and Envoy may be too insecure. This is especially true if your setup has the Gloo Edge control plane and Envoy instances running in separate clusters.
+Gloo Gateway and Envoy communicate through the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#streaming-grpc-subscriptions). Since the Envoy configuration can contain secret data, plaintext communication between Gloo Gateway and Envoy may be too insecure. This is especially true if your setup has the Gloo Gateway control plane and Envoy instances running in separate clusters.
 
-Mutual TLS authentication (mTLS) ensures that both the client and server in a session are presenting valid certificates to each other. Turning on mTLS will encrypt the xDS communication between Gloo Edge and Envoy and validate the identity of both parties in the session.
+Mutual TLS authentication (mTLS) ensures that both the client and server in a session are presenting valid certificates to each other. Turning on mTLS will encrypt the xDS communication between Gloo Gateway and Envoy and validate the identity of both parties in the session.
 
 ---
 
@@ -28,19 +28,19 @@ Then, we run:
 
 `glooctl install gateway --values helm-override.yaml`
 
-This will ensure that Envoy initializes the connection to Gloo Edge using mTLS. Gloo Edge will now answer through a TCP proxy that communicates with the TLS protocol. We do this by attaching an envoy sidecar to the gloo pod to do TLS termination.
+This will ensure that Envoy initializes the connection to Gloo Gateway using mTLS. Gloo Gateway will now answer through a TCP proxy that communicates with the TLS protocol. We do this by attaching an envoy sidecar to the gloo pod to do TLS termination.
 
-For Gloo Edge Enterprise users, the extauth and rate-limiting servers also need to communicate with Gloo Edge in order to get configuration. These pods will now start up a gRPC connection with additional TLS credentials.
+For Gloo Gateway Enterprise users, the extauth and rate-limiting servers also need to communicate with Gloo Gateway in order to get configuration. These pods will now start up a gRPC connection with additional TLS credentials.
 
 ---
 
 ## Detailed Explanation
 
-This is a step-by step-guide to what the `global.glooMtls.enabled=true` Helm value does to the Gloo Edge installation.
+This is a step-by step-guide to what the `global.glooMtls.enabled=true` Helm value does to the Gloo Gateway installation.
 
 ### Secret Creation
 
-The first step is to create a Kubernetes secret object of type 'kubernetes.io/tls'. If Gloo Edge is installed with the Helm override flag, a Job called 'gloo-mtls-certgen' is created to automatically generate the 'gloo-mtls-certs' secret for you. The secret object has the following structure:
+The first step is to create a Kubernetes secret object of type 'kubernetes.io/tls'. If Gloo Gateway is installed with the Helm override flag, a Job called 'gloo-mtls-certgen' is created to automatically generate the 'gloo-mtls-certs' secret for you. The secret object has the following structure:
 
 ```yaml
 apiVersion: v1
@@ -55,7 +55,7 @@ metadata:
 type: kubernetes.io/tls
 ```
 
-### Gloo Edge Deployment (the xDS server)
+### Gloo Gateway Deployment (the xDS server)
 
 In the gloo deployment, two sidecars are added: the envoy sidecar and the SDS sidecar.
 
@@ -115,7 +115,7 @@ Finally, the 'gloo-mtls-certs' secret is added to the volumes to make it accessi
           secretName: gloo-mtls-certs
 ```
 
-### Gloo Edge Settings
+### Gloo Gateway Settings
 
 The default Settings custom resource (CR) changes such that the gloo.xdsBindAddr will only listen to incoming requests from localhost.
 
@@ -126,15 +126,15 @@ The default Settings custom resource (CR) changes such that the gloo.xdsBindAddr
     xdsBindAddr: 127.0.0.1:9999
 {{< /highlight >}}
 
-The address 127.0.0.1 binds all incoming connections to Gloo Edge to localhost. This ensures that only the envoy sidecar can connect to the Gloo Edge, but not any other malicious sources.
+The address 127.0.0.1 binds all incoming connections to Gloo Gateway to localhost. This ensures that only the envoy sidecar can connect to the Gloo Gateway, but not any other malicious sources.
 
-The Gloo Edge Settings CR gets picked up automatically within ~5 seconds, so there’s no need to restart the Gloo Edge pod.
+The Gloo Gateway Settings CR gets picked up automatically within ~5 seconds, so there’s no need to restart the Gloo Gateway pod.
 
 ### Changes to the xDS clients
 
 #### Gateway-Proxy
 
-The gateway-proxy pod is changed so that Envoy will initialize the connection to Gloo Edge using TLS.
+The gateway-proxy pod is changed so that Envoy will initialize the connection to Gloo Gateway using TLS.
 
 The configmap has the following change:
 
@@ -217,12 +217,12 @@ An SDS sidecar is also added to the gateway-proxy deployment:
 To make the default extauth server work with mTLS, the extauth deployment adds in an Envoy sidecar and SDS sidecar.
 
 The envoy sidecar is responsible for TLS termination and outgoing encryption, and uses the SDS sidecar to handle cert rotation.
-The SDS sidecar watches the gloo-mtls-certs kube secret and provides those certs when the envoy sidecar is sending the request for Gloo Edge configuration.
+The SDS sidecar watches the gloo-mtls-certs kube secret and provides those certs when the envoy sidecar is sending the request for Gloo Gateway configuration.
 
 The configuration for the extauth envoy sidecar can be found in the extauth-sidecar-config confimap in the gloo-system
 namespace. It:
 
-1) listens to 127.0.0.1:9955 and routes to Gloo Edge's XDS port.
+1) listens to 127.0.0.1:9955 and routes to Gloo Gateway's XDS port.
 2) listens to 0.0.0.0:8083 and routes to 127.0.0.1:8084, extauth's Server Port.
 
 ### Rate-limiting Server
@@ -231,11 +231,11 @@ To make the default rate-limiting server work with mTLS, the rate-limit deployme
 and SDS sidecar.
 
 The envoy sidecar is responsible for TLS termination and outgoing encryption, and uses the SDS sidecar to handle cert rotation.
-The SDS sidecar watches the gloo-mtls-certs kube secret and provides those certs when the envoy sidecar is sending the request for Gloo Edge configuration.
+The SDS sidecar watches the gloo-mtls-certs kube secret and provides those certs when the envoy sidecar is sending the request for Gloo Gateway configuration.
 
 The configuration for the extauth envoy sidecar can be found in the rate-limit-sidecar-config confimap. It:
 
-1) listens to 127.0.0.1:9955 and routes to Gloo Edge's XDS port.
+1) listens to 127.0.0.1:9955 and routes to Gloo Gateway's XDS port.
 
 ---
 
@@ -243,16 +243,16 @@ The configuration for the extauth envoy sidecar can be found in the rate-limit-s
 
 Cert rotation can be done by updating the `gloo-mtls-certs` secret. The SDS sidecar automatically picks up the change.
 
-If you want to automatically rotate certificates based on a schedule, you can use the Gloo Edge `gloo-mtls-certgen-cronjob` CronJob. The job is configured to rotate certificates in stages to minimize the downtime for your apps. You have the option to instruct Gloo Edge to wait between stages to ensure that your workloads have enough time to pick up certificate changes. The job follows the following steps: 
+If you want to automatically rotate certificates based on a schedule, you can use the Gloo Gateway `gloo-mtls-certgen-cronjob` CronJob. The job is configured to rotate certificates in stages to minimize the downtime for your apps. You have the option to instruct Gloo Gateway to wait between stages to ensure that your workloads have enough time to pick up certificate changes. The job follows the following steps: 
 
 1. The cert rotation job creates new TLS credentials, including a Certificate Authority (CA) certificate that is used to sign the new server certificate and private key.
 2. The new PEM-encoded CA certificate is added to the `gloo-mtls-certs secret` alongside the old CA certificate that is about to be rotated out, so that both CA certificates are accepted temporarily.
-3. Gloo Edge waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step so that workloads in the cluster can pick up this change.
+3. Gloo Gateway waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step so that workloads in the cluster can pick up this change.
 4. The old PEM-encoded server certificate and private key are replaced with the new server certificate and private key.
-5. Gloo Edge waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step.
+5. Gloo Gateway waits for the duration that is set in `gateway.certGenJob.rotationDuration` before continuing to the next step.
 6. The old CA certificate is removed from the `gloo-mtls-certs` secret. All workloads now use the new TLS credentials.
 
-To enable the `gloo-mtls-certgen-cronjob` CronJob, set the `gateway.certGenJob.cron.enabled` option to `true` and specify a rotation schedule in your Gloo Edge Helm values file as shown in the following example. If you also want to configure the wait time between stages, use the `gateway.certGenJob.rotationDuration` option. The default wait time is 65s. 
+To enable the `gloo-mtls-certgen-cronjob` CronJob, set the `gateway.certGenJob.cron.enabled` option to `true` and specify a rotation schedule in your Gloo Gateway Helm values file as shown in the following example. If you also want to configure the wait time between stages, use the `gateway.certGenJob.rotationDuration` option. The default wait time is 65s. 
 
 ```yaml
 global:
@@ -272,7 +272,7 @@ gateway:
 
 ### SDS sidecar
 
-The gloo, gateway-proxy, extauth and rate-limiting pods will have SDS sidecars when Gloo Edge is running in mTLS mode. To see the logs for the sds server, run:
+The gloo, gateway-proxy, extauth and rate-limiting pods will have SDS sidecars when Gloo Gateway is running in mTLS mode. To see the logs for the sds server, run:
 
 ```
 kubectl logs -n gloo-system deploy/gloo sds
