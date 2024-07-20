@@ -20,7 +20,7 @@ Gloo is shipped by default with grafana 5.x charts, and provides a set of defaul
 For a complete set of options, please refer to: https://github.com/grafana/helm-charts/tree/main/charts/grafana
 {{% /notice %}}
 
-No special configuration is needed to use the instance of Grafana that ships by default with Gloo Edge. Find the deployment and port-forward to it:
+No special configuration is needed to use the instance of Grafana that ships by default with Gloo Gateway. Find the deployment and port-forward to it:
 
 ```bash
 ~ > kubectl -n gloo-system get deployment glooe-grafana
@@ -54,7 +54,7 @@ kind: Secret
 If you create an API key in Grafana, you can make the pod use it instead of basic auth by setting the key `GRAFANA_API_KEY` in that same secret and then restarting the `observability` pod. If an API key is present, the pod will prefer to use that over any username/password combo that may be set.
 
 ### Custom Deployment
-If you'd like Gloo Edge to talk to your pre-existing instance of Grafana, there are a few helm values that you'll need to set at install time. See the code snippet below for the bare minimum, but in general you'll need to set several values in the `observability.customGrafana` object; see a complete list of those fields [here]({{% versioned_link_path fromRoot="/installation/enterprise/#list-of-gloo-helm-chart-values" %}}).
+If you'd like Gloo Gateway to talk to your pre-existing instance of Grafana, there are a few helm values that you'll need to set at install time. See the code snippet below for the bare minimum, but in general you'll need to set several values in the `observability.customGrafana` object; see a complete list of those fields [here]({{% versioned_link_path fromRoot="/installation/enterprise/#list-of-gloo-helm-chart-values" %}}).
 
 ```bash
 helm install ... \
@@ -62,5 +62,5 @@ helm install ... \
     --set observability.customGrafana.enabled=true
 
 # the first --set ensures that the default deployment of Grafana is not created
-# the second --set tells Gloo Edge to expect to find configuration related to your own Grafana instance
+# the second --set tells Gloo Gateway to expect to find configuration related to your own Grafana instance
 ```

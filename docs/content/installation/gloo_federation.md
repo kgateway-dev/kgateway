@@ -1,43 +1,43 @@
 ---
-title: Gloo Edge Federation
+title: Gloo Gateway Federation
 weight: 65
 ---
 
-Gloo Edge Federation allows users to manage the configuration for all of their Gloo Edge instances from one place, no matter what platform they run on. In addition Gloo Edge Federation elevates Gloo Edge’s powerful routing features beyond the environment they live in, allowing users to create all new global routing features between different Gloo Edge instances. Gloo Edge Federation enables consistent configuration, service failover, unified debugging, and automated Gloo Edge discovery across all of your Gloo Edge instances.
+Gloo Gateway Federation allows users to manage the configuration for all of their Gloo Gateway instances from one place, no matter what platform they run on. In addition Gloo Gateway Federation elevates Gloo Gateway’s powerful routing features beyond the environment they live in, allowing users to create all new global routing features between different Gloo Gateway instances. Gloo Gateway Federation enables consistent configuration, service failover, unified debugging, and automated Gloo Gateway discovery across all of your Gloo Gateway instances.
 
-Gloo Edge Federation is installed using the `glooctl` command line tool or a Helm chart. The following document will take you through the process of performing the installation of Gloo Edge Federation, verifying the components, and removing Gloo Edge Federation if necessary.
+Gloo Gateway Federation is installed using the `glooctl` command line tool or a Helm chart. The following document will take you through the process of performing the installation of Gloo Gateway Federation, verifying the components, and removing Gloo Gateway Federation if necessary.
 
 ## Prerequisites
 
-Gloo Edge Federation is an enterprise feature of Gloo Edge. You will need at least one instance of Gloo Edge Enterprise running on a Kubernetes cluster to follow the installation guide. Full details on setting up your Kubernetes cluster are available [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) and installing Gloo Edge Enterprise [here]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}).
+Gloo Gateway Federation is an enterprise feature of Gloo Gateway. You will need at least one instance of Gloo Gateway Enterprise running on a Kubernetes cluster to follow the installation guide. Full details on setting up your Kubernetes cluster are available [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) and installing Gloo Gateway Enterprise [here]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}).
 
 You should also have `glooctl` and `kubectl` installed. The `glooctl` version should be the most recent release, as the federation features were added in version 1.5. 
 
-You also need a license key to install Gloo Edge Federation. To request a license, [contact Sales](https://www.solo.io/company/contact/).
+You also need a license key to install Gloo Gateway Federation. To request a license, [contact Sales](https://www.solo.io/company/contact/).
 
 ## Installation
 
-Gloo Edge Federation is installed in an admin cluster, which may or may not include Gloo Edge instances. You can perform the installation using `glooctl` or helm. 
+Gloo Gateway Federation is installed in an admin cluster, which may or may not include Gloo Gateway instances. You can perform the installation using `glooctl` or helm. 
 
 ### Install using glooctl
 
-The `glooctl` tool uses Helm in the background to perform the deployment of Gloo Edge Federation. By default, the deployment will create the `gloo-system` namespace and instantiate the Gloo Edge Federation components in that namespace.  You can override the default settings by specify the `--values` argument and providing a yaml file with the necessary values.
+The `glooctl` tool uses Helm in the background to perform the deployment of Gloo Gateway Federation. By default, the deployment will create the `gloo-system` namespace and instantiate the Gloo Gateway Federation components in that namespace.  You can override the default settings by specify the `--values` argument and providing a yaml file with the necessary values.
 
-Gloo Edge Federation is installed alongside Gloo Enterprise automatically. With your kubectl context set to the admin cluster, run the following command:
+Gloo Gateway Federation is installed alongside Gloo Enterprise automatically. With your kubectl context set to the admin cluster, run the following command:
 
 ```
 glooctl install gateway enterprise --license-key <LICENSE_KEY>
 ```
 
-The `--with-gloo-fed=false` flag can be used to install only Gloo Enterprise without Gloo Edge Federation.
+The `--with-gloo-fed=false` flag can be used to install only Gloo Enterprise without Gloo Gateway Federation.
 
-Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Edge Enterprise.
+Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Gateway Enterprise.
 
-The installation will create the necessary Kubernetes components for running Gloo Edge Federation.
+The installation will create the necessary Kubernetes components for running Gloo Gateway Federation.
 
 ### Install using Helm
 
-You can also install Gloo Edge Federation by using Helm directly. The default values of the chart can be overridden by using the `--set` argument.
+You can also install Gloo Gateway Federation by using Helm directly. The default values of the chart can be overridden by using the `--set` argument.
 
 With your kubectl context set to the admin cluster, run the following commands:
 
@@ -52,9 +52,9 @@ helm repo update
 helm install -n gloo-system --create-namespace gloo-fed gloo-fed/gloo-fed --set license_key=<LICENSE_KEY>
 ```
 
-Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Edge Federation.
+Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Gateway Federation.
 
-The installation will create the necessary Kubernetes components for running Gloo Edge Federation.
+The installation will create the necessary Kubernetes components for running Gloo Gateway Federation.
 
 ## Verification
 
@@ -119,11 +119,11 @@ multiclusterrolebindings.multicluster.solo.io      2021-06-18T17:18:42Z
 multiclusterroles.multicluster.solo.io             2021-06-18T17:18:42Z
 ```
 
-Your instance of Gloo Edge Federation has now been successfully deployed. The next step is to register clusters with Gloo Edge Federation.
+Your instance of Gloo Gateway Federation has now been successfully deployed. The next step is to register clusters with Gloo Gateway Federation.
 
 ## Uninstall {#uninstall}
 
-To uninstall Gloo Edge Enterprise, Federation and all related components, simply run the following.
+To uninstall Gloo Gateway Enterprise, Federation and all related components, simply run the following.
 
 ```shell
 glooctl uninstall --all
@@ -131,6 +131,6 @@ glooctl uninstall --all
 
 ## Next Steps
 
-As a next step, we recommend [registering the Kubernetes clusters]({{% versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" %}}) running Gloo Edge instances with Gloo Edge Federation. Then you can move onto creating [federated configurations]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) or [service failover]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}). You can also read more about Gloo Edge Federation in the [concepts area]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) of the docs.
+As a next step, we recommend [registering the Kubernetes clusters]({{% versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" %}}) running Gloo Gateway instances with Gloo Gateway Federation. Then you can move onto creating [federated configurations]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) or [service failover]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}). You can also read more about Gloo Gateway Federation in the [concepts area]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) of the docs.
 
 {{< readfile file="static/content/upgrade-note.md" markdown="true">}}

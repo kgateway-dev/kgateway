@@ -1,22 +1,22 @@
 ---
 title: "Architecture"
 weight: 20
-description: A description of the high-level architecture behind Gloo Edge.
+description: A description of the high-level architecture behind Gloo Gateway.
 ---
 
 ## Overview
 
-Gloo Edge aggregates back-end services and provides function-to-function translation for clients, allowing decoupling from back-end APIs. Gloo Edge sits in the control plane and leverages Envoy to provide the data plane proxy for back-end services.
+Gloo Gateway aggregates back-end services and provides function-to-function translation for clients, allowing decoupling from back-end APIs. Gloo Gateway sits in the control plane and leverages Envoy to provide the data plane proxy for back-end services.
 
 ![Overview]({{% versioned_link_path fromRoot="/img/gloo-architecture-envoys.png" %}})
 
-End users issue requests or [emit events](https://github.com/solo-io/gloo-sdk-go) to routes defined on Gloo Edge. These routes are mapped to functions on *Upstream* services by Gloo Edge's configuration. The routes are provided by clients through the Gloo Edge API.
+End users issue requests or [emit events](https://github.com/solo-io/gloo-sdk-go) to routes defined on Gloo Gateway. These routes are mapped to functions on *Upstream* services by Gloo Gateway's configuration. The routes are provided by clients through the Gloo Gateway API.
 
-End users connect to Envoy cluster proxies managed by Gloo Edge, which transform requests into function invocations for a variety of functional back-ends. Non-functional back-ends are supported via a traditional Gateway-to-Service routing model.
+End users connect to Envoy cluster proxies managed by Gloo Gateway, which transform requests into function invocations for a variety of functional back-ends. Non-functional back-ends are supported via a traditional Gateway-to-Service routing model.
 
-Gloo Edge performs the necessary transformation between the routes defined by clients and the back-end functions. Gloo Edge is able to support various upstream functions through its extendable [function plugin interface](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/plugins/plugins.go).
+Gloo Gateway performs the necessary transformation between the routes defined by clients and the back-end functions. Gloo Gateway is able to support various upstream functions through its extendable [function plugin interface](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/plugins/plugins.go).
 
-Gloo Edge offers first-class API management features on all functions:
+Gloo Gateway offers first-class API management features on all functions:
 
 * Timeouts
 * Metrics & Tracing
@@ -30,13 +30,13 @@ Gloo Edge offers first-class API management features on all functions:
 
 ## Component Architecture
 
-In the most basic sense, Gloo Edge is a translation engine and [Envoy xDS server](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) providing advanced configuration for Envoy (including Gloo Edge's custom Envoy filters). Gloo Edge follows an event-based architecture, watching various sources of configuration for updates and responding immediately with v2 gRPC updates to Envoy.
+In the most basic sense, Gloo Gateway is a translation engine and [Envoy xDS server](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) providing advanced configuration for Envoy (including Gloo Gateway's custom Envoy filters). Gloo Gateway follows an event-based architecture, watching various sources of configuration for updates and responding immediately with v2 gRPC updates to Envoy.
 
 ![Component Architecture]({{% versioned_link_path fromRoot="/img/component_architecture.png" %}})
 
-At the logical layer, Gloo Edge is comprised of several different services that perform unique functions. Gloo Edge's control plane sits outside the request path, providing the control layer for Envoy and other services through its transformation plug-in.
+At the logical layer, Gloo Gateway is comprised of several different services that perform unique functions. Gloo Gateway's control plane sits outside the request path, providing the control layer for Envoy and other services through its transformation plug-in.
 
-The following sections describe the various logical components of Gloo Edge. The [Deployment Architecture guide]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}}) provides examples and guidance for specific implementations of Gloo Edge on different software stacks.
+The following sections describe the various logical components of Gloo Gateway. The [Deployment Architecture guide]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}}) provides examples and guidance for specific implementations of Gloo Gateway on different software stacks.
 
 ### Config Watcher
 
@@ -50,9 +50,9 @@ The *Secret Watcher* watches a secret store for updates to secrets (which are re
 
 *Endpoint Discovery* watches service registries such as Kubernetes, Cloud Foundry, and Consul for IPs associated with services. Endpoint Discovery is plugin-specific, so each endpoint type will require a plug-in that supports the discovery functionality. For example, the {{< protobuf name="kubernetes.options.gloo.solo.io.UpstreamSpec" display="Kubernetes Plugin">}} runs its own Endpoint Discovery goroutine.
 
-### Gloo Edge Translator
+### Gloo Gateway Translator
 
-The *Gloo Edge Translator* receives snapshots of the entire state, composed of the following configuration data:
+The *Gloo Gateway Translator* receives snapshots of the entire state, composed of the following configuration data:
 
 * Artifacts
 * Endpoints
@@ -82,17 +82,17 @@ The *Reporter* receives a validation report for every Upstream and Virtual Servi
 
 ### xDS Server
 
-The final snapshot is passed to the *xDS Server*, which notifies Envoy of a successful config update, updating the Envoy cluster with a new configuration to match the desired state set expressed by Gloo Edge.
+The final snapshot is passed to the *xDS Server*, which notifies Envoy of a successful config update, updating the Envoy cluster with a new configuration to match the desired state set expressed by Gloo Gateway.
 
 --- 
 
 ## Discovery Architecture
 
-Gloo Edge is supported by a suite of optional discovery services that automatically discover and configure Gloo Edge with Upstreams and functions to simplify routing for users and self-service.
+Gloo Gateway is supported by a suite of optional discovery services that automatically discover and configure Gloo Gateway with Upstreams and functions to simplify routing for users and self-service.
 
 ![Discovery Architecture]({{% versioned_link_path fromRoot="/img/discovery-architecture.png" %}})
 
-Discovery services act as automated Gloo Edge clients, automatically populating the storage layer with Upstreams and functions to facilitate easy routing for users. Discovery is optional, but when enabled, it will attempt to discover available Upstreams and functions.
+Discovery services act as automated Gloo Gateway clients, automatically populating the storage layer with Upstreams and functions to facilitate easy routing for users. Discovery is optional, but when enabled, it will attempt to discover available Upstreams and functions.
 
 The following discovery methods are currently supported:
 
@@ -105,9 +105,9 @@ The following discovery methods are currently supported:
 
 ## Next Steps
 
-Now that you have a basic understanding of the Gloo Edge architecture, there are number of potential next steps that we'd like to recommend.
+Now that you have a basic understanding of the Gloo Gateway architecture, there are number of potential next steps that we'd like to recommend.
 
-* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself.
-* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Edge on different software stacks.
-* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Edge and how they interact.
-* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Edge's functionality for your use case through various plugins.
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Gateway yourself.
+* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Gateway on different software stacks.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Gateway and how they interact.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Gateway's functionality for your use case through various plugins.
