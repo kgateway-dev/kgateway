@@ -25,7 +25,7 @@ func CreateAndPrintObject(ctx context.Context, yml []byte, outputType printers.O
 		if err != nil {
 			return eris.Wrapf(err, "saving Upstream to storage")
 		}
-		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, nil)
+		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, nil, namespace)
 	case *v1.VirtualService:
 		vs, err := helpers.MustNamespacedVirtualServiceClient(ctx, namespace).Write(res, clients.WriteOpts{})
 		if err != nil {
