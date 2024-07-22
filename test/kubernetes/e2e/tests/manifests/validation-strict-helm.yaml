@@ -19,6 +19,7 @@ gateway:
   persistProxySpec: false
   logLevel: info
   validation:
+    enabled: true
     allowWarnings: false
     alwaysAcceptResources: false
 kubeGateway:

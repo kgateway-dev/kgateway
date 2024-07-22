@@ -75,6 +75,26 @@ var _ = Describe("Plugin", func() {
 			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STRICT_DNS))
 		})
 
+		It("addr cannot be empty", func() {
+			upstreamSpec.Hosts = []*v1static.Host{
+				{
+					Addr: "",
+				},
+			}
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err.Error()).To(ContainSubstring("addr cannot be empty for host"))
+		})
+
+		It("port cannot be empty", func() {
+			upstreamSpec.Hosts = []*v1static.Host{
+				{
+					Addr: "~",
+				},
+			}
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err.Error()).To(ContainSubstring("port cannot be empty for host"))
+		})
+
 		It("use static if only has ips", func() {
 			upstreamSpec.Hosts = []*v1static.Host{{
 				Addr: "1.2.3.4",

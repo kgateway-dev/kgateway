@@ -2,11 +2,18 @@ package validation_strict
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -29,15 +36,51 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-//// TestInvalidUpstream tests behaviors when Gloo rejects an invalid upstream with
-//func (s *testingSuite) TestInvalidUpstream() {
-//	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
-//	s.Assert().Error(err, "admission webhook error exists")
-//	s.Assert().Contains(output, "admission webhook error")
-//	s.Assert().Contains(output, "port cannot be empty for host")
-//
-//	// TODO(npolshak): why is no-valid-host getting accepted? ***
-//}
+// TestInvalidUpstream tests behaviors when Gloo rejects an invalid upstream with
+func (s *testingSuite) TestInvalidUpstream() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.NginxPodManifest)
+		s.Assert().NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest)
+	s.Assert().NoError(err)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+
+	// Upstream is only rejected when the upstream plugin is run when a valid cluster is present
+	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply valid upstream")
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply valid virtual service")
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+
+	output, err = s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.Upstream failed: validating *v1.Upstream name:"invalid-us" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, "port cannot be empty for host")
+}
 
 //func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 //	s.T().Cleanup(func() {
@@ -84,25 +127,33 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) TestRejectsInvalidGatewayResources() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
-	s.Assert().Contains(output, `admission webhook "gloo.validation-strict-test.svc" denied the request`)
-	s.Assert().Contains(output, `Validating *v1.Gateway failed: validating *v1.Gateway name:"gateway-without-type" namespace:"validation-strict-test": 1 error occurred`)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.Gateway failed: validating *v1.Gateway name:"gateway-without-type" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
 	s.Assert().Contains(output, "invalid gateway: gateway must contain gatewayType")
 }
 
 func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
 	output, _ := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	// We don't expect an error exit code here because this is a warning
-	s.Assert().Contains(output, `admission webhook "gloo.validation-strict-test.svc" denied the request`)
-	s.Assert().Contains(output, `Validating *v1alpha1.RateLimitConfig failed: validating *v1alpha1.RateLimitConfig name:"rlc" namespace:"validation-strict-test": 1 error occurred`)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1alpha1.RateLimitConfig failed: validating *v1alpha1.RateLimitConfig name:"rlc" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
 	s.Assert().Contains(output, "The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead")
 }
 
 func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
-	s.Assert().Contains(output, `admission webhook "gloo.validation-strict-test.svc" denied the request`)
-	s.Assert().Contains(output, `Validating *v1.VirtualService failed: validating *v1.VirtualService name:"method-matcher" namespace:"validation-strict-test": 1 error occurred`)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.VirtualService failed: validating *v1.VirtualService name:"method-matcher" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
 	s.Assert().Contains(output, "invalid route: routes with delegate actions must use a prefix matcher")
+}
+
+func (s *testingSuite) TestRejectsInvalidVSMissingUpstream() {
+	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualMissingUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Error(err)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.VirtualService failed: validating *v1.VirtualService name:"no-upstream-vs" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { %s.does-not-exist } not found`, s.testInstallation.Metadata.InstallNamespace))
 }
 
 func (s *testingSuite) TestRejectsInvalidVSTypo() {
