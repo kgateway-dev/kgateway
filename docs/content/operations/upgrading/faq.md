@@ -4,6 +4,10 @@ weight: 10
 description: Prepare your environment, review version changes, and review FAQs before you upgrade Gloo Gateway.
 ---
 
+{{% notice note %}}
+In version 1.17, Gloo Edge is renamed Gloo Gateway to better align with Solo's product offerings. Gloo Gateway now supports two APIs to configure Envoy gateway resources: the Gloo Edge Gateway API that you are familiar with from previous versions, and the Kubernetes Gateway API available as of 1.17. The product name change does not impact any APIs, component names, or existing features that you already use. To learn more, see the [release blog](https://www.solo.io/blog/gloo-gateway-1-17/).
+{{% /notice %}}
+
 Before you upgrade Gloo Gateway, complete the following preparatory steps:
 * [Prepare your environment](#prepare), such as upgrading your current version to the latest patch and upgrading any dependencies to the required supported versions. 
 * [Review important changes](#review-changes) made to Gloo Gateway in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, including CRD, Helm, CLI, and feature changes.
