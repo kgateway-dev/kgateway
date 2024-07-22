@@ -1,9 +1,10 @@
-package validation_strict
+package validation_server_disabled
 
 import (
 	"context"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -30,8 +31,18 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestDoesNotReject checks webhook does not reject invalid transformation when server_enabled=false
 func (s *testingSuite) TestDoesNotReject() {
 	// accepts invalid inja template in transformation
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
 
-	// accepts invalid subgroup in transformation
+	// Extract mode -- accepts invalid subgroup in transformation
+	// note that the regex has no subgroups, but we are trying to extract the first subgroup
+	// this should be rejected
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
 
-	// accepts invalid subgroup in transformation
+	// Single replace mode -- accepts invalid subgroup in transformation
+	// note that the regex has no subgroups, but we are trying to extract the first subgroup
+	// this should be rejected
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.VSTransformationSingleReplace, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
 }

@@ -5,4 +5,4 @@ metadata:
 spec:
   static:
     hosts:
-      - addr: ~
+      - addr: "~"

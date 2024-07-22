@@ -1,4 +1,4 @@
-package validation_types
+package validation
 
 import (
 	"net/http"
@@ -13,6 +13,9 @@ import (
 const (
 	SecretName       = "tls-secret"
 	UnusedSecretName = "tls-secret-unused"
+
+	ExampleVsName       = "example-vs"
+	ExampleUpstreamName = "nginx-upstream"
 
 	ValidVsName   = "i-am-valid"
 	InvalidVsName = "i-am-invalid"
@@ -36,14 +39,17 @@ var (
 	Secret                         = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "secret.yaml")
 
 	// Invalid resources (allow warnings, strict, allow all)
-	InvalidUpstreamNoPort        = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "invalid-upstream.yaml")
-	InvalidUpstreamInvalidHost   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "invalid-upstream.yaml")
+	InvalidUpstreamNoPort        = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "invalid-upstream-no-port.yaml")
+	InvalidUpstreamInvalidHost   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "upstream-no-valid-host.yaml")
 	InvalidGateway               = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "gateway.yaml")
 	InvalidVirtualServiceMatcher = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "vs-method-matcher.yaml")
 	InvalidVirtualServiceTypo    = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "vs-typo.yaml")
+	InvalidRLC                   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "rlc.yaml")
 
 	// transformation validation (allow warnings, server_enabled)
-	TransformationVirtualService = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs.yaml")
+	VSTransformationExtractors    = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-extractors.yaml")
+	VSTransformationHeaderText    = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-header-text.yaml")
+	VSTransformationSingleReplace = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-single-replace.yaml")
 
 	// CurlPodExecOpt is the Pod that will be used to execute curl requests, and is defined in the upstream manifest files
 	CurlPodExecOpt = kubectl.PodExecOptions{

@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_types"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/stretchr/testify/suite"
@@ -41,42 +41,42 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestPersistInvalidVirtualService tests behaviors when Gloo allows invalid VirtualServices to be persisted
 func (s *testingSuite) TestPersistInvalidVirtualService() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation_types.ValidVS)
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ValidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.NoError(err, "can delete validVS")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation_types.ExampleUpstream)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete Upstreams manifest")
 	})
 
 	// First apply valid VirtualService and Upstream
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ValidVS)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ValidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply gloo.solo.io ValidVS manifest")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleUpstream)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply gloo.solo.io Upstreams manifest")
 
 	// Check valid works as expected
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		validation_types.CurlPodExecOpt,
+		validation.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			// The host header must match the domain in the VirtualService
 			curl.WithHostHeader("valid1.com"),
 			curl.WithPort(80),
 		},
-		validation_types.ExpectedUpstreamResp)
+		validation.ExpectedUpstreamResp)
 
 	// apply invalid VS
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.InvalidVS)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply gloo.solo.io invalidVS manifest")
 
 	helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
-		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation_types.InvalidVsName, clients.ReadOpts{
+		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.InvalidVsName, clients.ReadOpts{
 			Ctx: s.ctx,
 		})
 	})
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		validation_types.CurlPodExecOpt,
+		validation.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			// The host header must match the domain in the VirtualService
@@ -86,23 +86,23 @@ func (s *testingSuite) TestPersistInvalidVirtualService() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
 	// make the invalid vs valid and the valid vs invalid
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.SwitchVS)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.SwitchVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply gloo.solo.io switchVS manifest")
 
 	// the fixed virtual service should also work
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		validation_types.CurlPodExecOpt,
+		validation.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			// The host header must match the domain in the VirtualService
 			curl.WithHostHeader("valid1.com"),
 			curl.WithPort(80),
 		},
-		validation_types.ExpectedUpstreamResp)
+		validation.ExpectedUpstreamResp)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		validation_types.CurlPodExecOpt,
+		validation.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			// The host header must match the domain in the VirtualService
@@ -115,38 +115,38 @@ func (s *testingSuite) TestPersistInvalidVirtualService() {
 // TestMissingUpstream tests behaviors when Gloo allows invalid VirtualServices to be persisted
 func (s *testingSuite) TestMissingUpstream() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation_types.ValidVS)
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ValidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete gloo.solo.io validVS manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation_types.ExampleUpstream)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete gloo.solo.io Upstreams manifest")
 	})
 
 	// First apply valid VirtualService, and no Upstream
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ValidVS)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ValidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply gloo.solo.io validVS manifest")
 
 	// missing Upstream ref in VirtualService
 	helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
-		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation_types.ValidVsName, clients.ReadOpts{})
+		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ValidVsName, clients.ReadOpts{})
 	})
 
 	// Apply upstream
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation_types.ExampleUpstream)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply gloo.solo.io Upstreams manifest")
 
 	// Check valid works as expected
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		validation_types.CurlPodExecOpt,
+		validation.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
 			// The host header must match the domain in the VirtualService
 			curl.WithHostHeader("valid1.com"),
 			curl.WithPort(80),
 		},
-		validation_types.ExpectedUpstreamResp)
+		validation.ExpectedUpstreamResp)
 
 	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation_types.ValidVsName, clients.ReadOpts{})
+		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ValidVsName, clients.ReadOpts{})
 	})
 }
