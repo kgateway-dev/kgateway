@@ -1,10 +1,10 @@
 ---
 title: Timeout defaults
 weight: 60
-description: Quick reference for timeout settings in Gloo Edge resources.
+description: Quick reference for timeout settings in Gloo Gateway resources.
 ---
 
-Review this page for a list of commonly used timeout settings in Gloo Edge, organized by custom resource. For more information, see the [API reference]({{< versioned_link_path fromRoot="/reference/api/" >}}) for each resource.
+Review this page for a list of commonly used timeout settings in Gloo Gateway, organized by custom resource. For more information, see the [API reference]({{< versioned_link_path fromRoot="/reference/api/" >}}) for each resource.
 
 
 ## Gateway CRD

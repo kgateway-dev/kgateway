@@ -1,21 +1,21 @@
 ---
 title: Multicluster RBAC
-description: Applying role-based access control to multiple Gloo Edge instances
+description: Applying role-based access control to multiple Gloo Gateway instances
 weight: 50
 ---
 
-Gloo Edge Federation allows you to administer multiple instances of Gloo Edge across multiple Kubernetes clusters. One Gloo Edge Federation object might modify configuration across many instances of Gloo Edge across many Kubernetes clusters. Multicluster role-based access control is a feature of Gloo Edge Federation that controls access and actions on Gloo Edge Federation APIs that might reconfigure many Gloo Edge instances. The feature ensures that users are only allowed to modify Gloo Edge Federation resources that configure Gloo Edge resources in clusters and namespaces that they have explicitly been granted access to in order to facilitate multitenancy in the Gloo Edge Federation control plane.
+Gloo Gateway Federation allows you to administer multiple instances of Gloo Gateway across multiple Kubernetes clusters. One Gloo Gateway Federation object might modify configuration across many instances of Gloo Gateway across many Kubernetes clusters. Multicluster role-based access control is a feature of Gloo Gateway Federation that controls access and actions on Gloo Gateway Federation APIs that might reconfigure many Gloo Gateway instances. The feature ensures that users are only allowed to modify Gloo Gateway Federation resources that configure Gloo Gateway resources in clusters and namespaces that they have explicitly been granted access to in order to facilitate multitenancy in the Gloo Gateway Federation control plane.
 
 ## Prerequisites
 
 To successfully follow this Multicluster RBAC guide, you will need the following software available and configured on your system.
 
 * Kubectl - Used to execute commands against the clusters
-* Glooctl - Used to register the Kubernetes clusters with Gloo Edge Federation
+* Glooctl - Used to register the Kubernetes clusters with Gloo Gateway Federation
 * [Kind](https://kind.sigs.k8s.io/) - Required if using the `glooctl` federation demo environment
 * Docker - Required if using the `glooctl` federation demo environment
 
-You will need at least one Kubernetes cluster running Gloo Edge Enterprise and Gloo Edge Federation. For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `kind-local` and the remote cluster is `kind-remote`.
+You will need at least one Kubernetes cluster running Gloo Gateway Enterprise and Gloo Gateway Federation. For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Gateway Federation in addition to Gloo Gateway Enterprise. The kubectl context for the local cluster is `kind-local` and the remote cluster is `kind-remote`.
 
 <!--federation demo hidden for now
 {{% notice tip %}}
@@ -25,7 +25,7 @@ Want to spin up a demo environment to quickly validate the federation process? T
 
 ## Enable Multicluster RBAC
 
-Multicluster RBAC can be enabled during Gloo Edge Federation installation by overriding the `enableMultiClusterRbac` value in the helm chart to `true`. To do so, you would run the following `glooctl` command:
+Multicluster RBAC can be enabled during Gloo Gateway Federation installation by overriding the `enableMultiClusterRbac` value in the helm chart to `true`. To do so, you would run the following `glooctl` command:
 
 ```bash
 echo "enableMultiClusterRbac: true" > values.yaml
@@ -33,9 +33,9 @@ echo "enableMultiClusterRbac: true" > values.yaml
 glooctl install gateway enterprise --gloo-fed-values values.yaml --license-key LICENSE_KEY
 ```
 
-On an existing installation, the `enableMultiClusterRbac` setting can be updated by running `helm upgrade` and overriding the value. Enabling the Multicluster RBAC feature creates an RBAC webhook and pod enforcing permissions on the Gloo Edge Federation API groups.
+On an existing installation, the `enableMultiClusterRbac` setting can be updated by running `helm upgrade` and overriding the value. Enabling the Multicluster RBAC feature creates an RBAC webhook and pod enforcing permissions on the Gloo Gateway Federation API groups.
 
-In the demonstration environment, we will upgrade the existing Gloo Edge Federation installation by running the following:
+In the demonstration environment, we will upgrade the existing Gloo Gateway Federation installation by running the following:
 
 ```bash
 # Add the gloo-fed helm repo
@@ -44,7 +44,7 @@ helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
 # Update your repos 
 helm repo update
 
-# Upgrade your Gloo Edge Federation deployment
+# Upgrade your Gloo Gateway Federation deployment
 # Assumes your install is called gloo in the gloo-system namspace on the cluster you have installed gloo-fed
 helm upgrade -n gloo-system gloo gloo-fed/gloo-fed --set enableMultiClusterRbac=true
 ```
@@ -85,7 +85,7 @@ gloo-fed           35m
 gloo-fed-console   35m
 ```
 
-The `gloo-fed` MutliClusterRole defines a role with permissions to take any actions across all Gloo Edge instances in all clusters. The relevant portion of the spec is shown below:
+The `gloo-fed` MutliClusterRole defines a role with permissions to take any actions across all Gloo Gateway instances in all clusters. The relevant portion of the spec is shown below:
 
 ```yaml
 spec:
@@ -122,7 +122,7 @@ spec:
       - '*'
 ```
 
-The `gloo-fed` MultiClusterRoleBinding associates the MultiClusterRole with the `gloo-fed` service account. Without the binding, the gloo-fed pod wouldn't be able to update the status of Gloo Edge Federation API objects.
+The `gloo-fed` MultiClusterRoleBinding associates the MultiClusterRole with the `gloo-fed` service account. Without the binding, the gloo-fed pod wouldn't be able to update the status of Gloo Gateway Federation API objects.
 
 ```yaml
 spec:
@@ -138,7 +138,7 @@ The `gloo-fed-console` MultiClusterRole and MultiClusterRoleBinding grant the sa
 
 ## Create Roles and Bindings
 
-In the previous section we installed Multicluster RBAC. The process created a MultiClusterRole and MultiClusterRoleBinding for both the `gloo-fed` and `gloo-fed-console` service account. It did not create any role or binding for the default kind user account, kubernetes-admin, which means that we cannot make any changes to the Gloo Edge Federation custom resources.
+In the previous section we installed Multicluster RBAC. The process created a MultiClusterRole and MultiClusterRoleBinding for both the `gloo-fed` and `gloo-fed-console` service account. It did not create any role or binding for the default kind user account, kubernetes-admin, which means that we cannot make any changes to the Gloo Gateway Federation custom resources.
 
 Let's try and create a FederatedUpstream on the local cluster:
 
@@ -248,7 +248,7 @@ spec:
 EOF
 ```
 
-The MultiClusterRole allows the `CREATE` action for all Gloo Edge Federation API groups on the remote cluster and namspace gloo-system. Any account bound to this role would have no permissions on the local cluster, and would only be able to create new items in the remote cluster. The `action` key of the spec can be set to CREATE, UPDATE, or DELETE.
+The MultiClusterRole allows the `CREATE` action for all Gloo Gateway Federation API groups on the remote cluster and namspace gloo-system. Any account bound to this role would have no permissions on the local cluster, and would only be able to create new items in the remote cluster. The `action` key of the spec can be set to CREATE, UPDATE, or DELETE.
 
 The next step is to create a service account and bind it to the role. We'll create an account by running the following:
 
@@ -288,4 +288,4 @@ To use Google Groups in a GKE cluster, follow the instructions here: https://clo
 {{< /notice >}}
 ## Next Steps
 
-To get deeper into Federated Configuration, you can check out our [guide on the topic]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) next, or learn more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Edge Federation.
+To get deeper into Federated Configuration, you can check out our [guide on the topic]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) next, or learn more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Gateway Federation.

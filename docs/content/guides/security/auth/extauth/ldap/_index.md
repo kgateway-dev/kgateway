@@ -5,7 +5,7 @@ description: Authenticate and authorize requests using LDAP.
 ---
 
 {{% notice note %}}
-The LDAP feature was introduced with **Gloo Edge Enterprise**, release 0.18.27. If you are using an earlier 
+The LDAP feature was introduced with **Gloo Gateway Enterprise**, release 0.18.27. If you are using an earlier 
 version, this tutorial will not work.
 {{% /notice %}}
 
@@ -15,7 +15,7 @@ organizational information. A common use case for LDAP is to maintain informatio
 assign them to specific user groups, and give each of them access to resources based on their group memberships.
 
 In this guide you deploy a simple LDAP server to your Kubernetes cluster to explore how you can use it together with 
-Gloo Edge to authenticate users and control access to a target service based on the user's group memberships.
+Gloo Gateway to authenticate users and control access to a target service based on the user's group memberships.
 
 {{% notice tip %}}
 Check out [**this excellent tutorial**](https://www.digitalocean.com/community/tutorials/understanding-the-ldap-protocol-data-hierarchy-and-entry-components) by Digital Ocean to familiarize yourself with the basic concepts and components of an LDAP server; although it is not 
@@ -253,14 +253,14 @@ Now that we have all the necessary components in place, let's use the LDAP serve
 earlier. 
 
 ### LDAP auth flow 
-Before updating our Virtual Service, it is important to understand how Gloo Edge interacts with the LDAP server. Let's first 
+Before updating our Virtual Service, it is important to understand how Gloo Gateway interacts with the LDAP server. Let's first 
 look at the {{< protobuf
 display="LDAP auth configuration"
 name="enterprise.gloo.solo.io.Ldap"
 >}}:
 
-- `address`: The address of the LDAP server that Gloo Edge will query when a request matches the Virtual Service.
-- `userDnTemplate`: A template string that Gloo Edge uses to build the DNs of the user entry or service account that 
+- `address`: The address of the LDAP server that Gloo Gateway will query when a request matches the Virtual Service.
+- `userDnTemplate`: A template string that Gloo Gateway uses to build the DNs of the user entry or service account that 
    needs to be authenticated and authorized. It must contain a single occurrence of the “%s” placeholder.
 - `membershipAttributeName`: The case-insensitive name of the attribute that contains the names of the groups an entry is a
    member of. Defaults to `memberOf` if not provided.
@@ -269,14 +269,14 @@ name="enterprise.gloo.solo.io.Ldap"
 - `disableGroupChecking`: If set to true, disables validation for the membership attribute of the user entry. 
 - `groupLookupSettings`: Configures a service account to look up group memberships from the LDAP server. The service account must be set up in the LDAP server. 
 
-To better understand how this configuration is used, let's go over the steps that Gloo Edge performs when it detects a 
+To better understand how this configuration is used, let's go over the steps that Gloo Gateway performs when it detects a 
 request that needs to be authenticated with LDAP:
 
 1. Look for a [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) header on the request 
    and extract the username and credentials. 
 2. If the header is not present, return a `401` response. 
-3. Try to perform a [BIND](https://ldap.com/the-ldap-bind-operation/) operation with the LDAP server. Gloo Edge supports the following LDAP binding options: 
-   - **User binding**: Gloo Edge extracts the username from the basic auth header, and substitutes the name with the `%s` placeholder in the `userDnTemplate` to build the DN for the `BIND` operation. Note that [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) are removed from the username before performing the `BIND` operation to prevent injection attacks. Instead of user binding, you can use an LDAP service account to retrieve group membership information on behalf of the user.
+3. Try to perform a [BIND](https://ldap.com/the-ldap-bind-operation/) operation with the LDAP server. Gloo Gateway supports the following LDAP binding options: 
+   - **User binding**: Gloo Gateway extracts the username from the basic auth header, and substitutes the name with the `%s` placeholder in the `userDnTemplate` to build the DN for the `BIND` operation. Note that [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) are removed from the username before performing the `BIND` operation to prevent injection attacks. Instead of user binding, you can use an LDAP service account to retrieve group membership information on behalf of the user.
    - **Service account binding**: Instead of giving each user access to the group membership information, you can use an LDAP service account to look up this information on behalf of the user. To authenticate with the LDAP server, you must store the LDAP service account credentials in a Kubernetes secret in your cluster. Then, you reference that secret in your `AuthConfig`. Note that you can only verify the user's group membership in the LDAP server with the service account. 
 4. If the `BIND` operation fails when using user binding, the user is either unknown or their credentials are incorrect, and a `401` response code is returned. If the `BIND` operations fails for the service account, a `500` response code is returned. 
 5. If the `BIND` operation is successful, issue a search operation using the `searchFilter` filter for the user entry (with a [`base` scope](https://ldapwiki.com/wiki/BaseObject)) and look 
@@ -312,7 +312,7 @@ EOF
 
    In this AuthConfig you can find the following settings: 
    - The configuration points to the Kubernetes DNS name and port of the LDAP service `ldap.default.svc.cluster.local:389` that you deployed earlier. 
-   - Gloo Edge looks for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`. This is the format of the user entry DNs the LDAP server was bootstrapped with.
+   - Gloo Gateway looks for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`. This is the format of the user entry DNs the LDAP server was bootstrapped with.
    - Only members of the `cn=managers,ou=groups,dc=solo,dc=io` group can access the upstream.
 
    {{% /tab %}}
@@ -327,7 +327,7 @@ EOF
       glooctl create secret authcredentials --name ldapcredentials --username cn=admin,dc=solo,dc=io  --password solopwd
       ```
    
-   2. Create the Gloo Edge AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
+   2. Create the Gloo Gateway AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
       ```yaml
       kubectl apply -f - <<EOF
       apiVersion: enterprise.gloo.solo.io/v1
@@ -478,7 +478,7 @@ If you use service account binding and get back a `500` response code, make sure
 
 
 ### Summary 
-In this tutorial, you learned how Gloo Edge can integrate with LDAP to authenticate incoming requests and authorize them based 
+In this tutorial, you learned how Gloo Gateway can integrate with LDAP to authenticate incoming requests and authorize them based 
 on the group memberships of the user that was provided in the request.
 
 To clean up the resources we created, you can run the following commands:
