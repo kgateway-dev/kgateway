@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	SecretName       = "tls-secret"
-	UnusedSecretName = "tls-secret-unused"
-
 	ExampleVsName       = "example-vs"
 	ExampleUpstreamName = "nginx-upstream"
 
@@ -32,7 +29,7 @@ var (
 	SwitchVS  = filepath.Join(util.MustGetThisDir(), "testdata", "switch-valid-invalid.yaml")
 
 	// Secret Configs (allow warnings, strict tests)
-	SecretVS                       = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "vs-with-secret.yaml")
+	SecretVSTemplate               = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "vs-with-secret.yaml")
 	ValidationWebhookConfigFailure = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "validationwebhookconfig-failure.yaml")
 	UnusedSecret                   = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "unused-secret.yaml")
 	Secret                         = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "secret.yaml")

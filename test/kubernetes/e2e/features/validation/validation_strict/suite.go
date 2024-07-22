@@ -3,6 +3,7 @@ package validation_strict
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -40,13 +41,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) TestInvalidUpstream() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.NginxPodManifest)
-		s.Assert().NoError(err)
+		s.Assert().NoError(err, "can delete "+defaults.NginxPodManifest)
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
-		s.Assert().NoError(err)
+		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-		s.Assert().NoError(err)
+		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest)
@@ -82,47 +83,74 @@ func (s *testingSuite) TestInvalidUpstream() {
 	s.Assert().Contains(output, "port cannot be empty for host")
 }
 
-//func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
-//	s.T().Cleanup(func() {
-//		// Can delete resources in correct order
-//		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.SecretVS, "-n", s.testInstallation.Metadata.InstallNamespace)
-//		s.Assert().NoError(err)
-//
-//		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-//		s.Assert().NoError(err)
-//
-//		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
-//		s.Assert().NoError(err)
-//	})
-//
-//	// Secrets should be accepted
-//	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
-//	s.Assert().NoError(err)
-//	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
-//	s.Assert().NoError(err)
-//
-//	// Upstream should be accepted
-//	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-//	s.Assert().NoError(err)
-//	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-//		return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
-//	})
-//	// VS with secret should be accepted
-//	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.SecretVS)
-//	s.Assert().NoError(err)
-//	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-//		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
-//	})
-//
-//	// failing to delete a secret that is in use
-//	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, validation.Secret)
-//	s.Assert().Error(err)
-//	s.Assert().Contains(output, testmatchers.ContainSubstrings([]string{"admission webhook", "SSL secret not found", validation.SecretName}))
-//
-//	// deleting a secret that is not in use works
-//	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
-//	s.Assert().NoError(err)
-//}
+func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
+	// VS with secret should be accepted, need to substitute the secret ns
+	secretVS, err := os.ReadFile(validation.SecretVSTemplate)
+	s.Assert().NoError(err)
+	// Replace environment variables placeholders with their values
+	substitutedSecretVS := os.ExpandEnv(string(secretVS))
+
+	s.T().Cleanup(func() {
+		// Can delete resources in correct order
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, []byte(substitutedSecretVS), "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete virtual service with secret")
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.Secret)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, defaults.NginxPodManifest)
+		s.Assert().NoError(err, "can delete "+defaults.NginxPodManifest)
+	})
+
+	// apply example app
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest)
+	s.Assert().NoError(err)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+
+	// Secrets should be accepted
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+
+	// Upstream should be accepted
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+	// Apply VS with secret after Upstream and Secret exist
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, []byte(substitutedSecretVS))
+	s.Assert().NoError(err)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+
+	// failing to delete a secret that is in use
+	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Error(err)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf("failed validating the deletion of resource"))
+	s.Assert().Contains(output, fmt.Sprintf("SSL secret not found: list did not find secret %s.tls-secret", s.testInstallation.Metadata.InstallNamespace))
+
+	// deleting a secret that is not in use works
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+}
 
 func (s *testingSuite) TestRejectsInvalidGatewayResources() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)

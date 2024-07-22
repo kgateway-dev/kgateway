@@ -80,7 +80,7 @@ func (s *testingSuite) TestInvalidUpstream() {
 func (s *testingSuite) TestVirtualServiceWithSecret() {
 	s.T().Cleanup(func() {
 		// Can delete resources in correct order
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.SecretVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.SecretVSTemplate, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err)
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
@@ -100,7 +100,7 @@ func (s *testingSuite) TestVirtualServiceWithSecret() {
 		return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
 	})
 	// VS with secret should be accepted
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.SecretVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.SecretVSTemplate, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err)
 	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 		return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
