@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	// resource types to return in the kube gateway input snapshot
+	// KubeGatewayDefaultGVKs is the list of resource types to return in the kube gateway input snapshot
 	KubeGatewayDefaultGVKs = []schema.GroupVersionKind{
 		// Kubernetes Gateway API resources
 		wellknown.GatewayClassListGVK,

@@ -158,7 +158,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 	return formatResources(resources)
 }
 
-func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
+func (h *historyImpl) GetProxySnapshot(_ context.Context) ([]byte, error) {
 	snap := h.getRedactedApiSnapshot()
 
 	onlyProxies := &v1snap.ApiSnapshot{
@@ -262,14 +262,16 @@ func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupV
 		return nil, err
 	}
 	// convert each Unstructured to a Resource so that the final list can be merged with the
-	// edge resource list
+	// Edge API resource list
 	for _, uns := range list.Items {
 		out := crdv1.Resource{}
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
 		if err != nil {
 			return nil, err
 		}
-		out.ManagedFields = nil // todo: clarify why
+
+		// ManagedFields is noise on the object, that is not relevant to the Admin API, so we sanitize it
+		out.ManagedFields = nil
 		resources = append(resources, out)
 	}
 	return resources, nil
