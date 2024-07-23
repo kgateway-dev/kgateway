@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6604
-    resolvesIssue: true
-    description: >-
-      Deprecate dev mode in our Settings API, introduce documentation for our new Admin API.
