@@ -20,9 +20,9 @@ func HaveObjectMeta(namespacedName k8stypes.NamespacedName, additionalMetaMatche
 	return And(append(additionalMetaMatchers, nameNamespaceMatcher)...)
 }
 
-func HaveEmptyManagedFields() types.GomegaMatcher {
+func HaveNilManagedFields() types.GomegaMatcher {
 	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"ManagedFields": BeEmpty(),
+		"ManagedFields": BeNil(),
 	})
 }
 

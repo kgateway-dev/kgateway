@@ -238,27 +238,40 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 		return nil, nil
 	}
 
-	resources := []crdv1.Resource{}
+	var resources []crdv1.Resource
 	for _, gvk := range h.kubeGvks {
-		// populate an unstructured list for each resource type
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(gvk)
-		err := kubeGatewayClient.List(ctx, list)
+		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
+		if err != nil {
+			// todo: handle graceful error
+		}
+
+		resources = append(resources, gvkResources...)
+	}
+
+	return resources, nil
+}
+
+func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupVersionKind) ([]crdv1.Resource, error) {
+	var resources []crdv1.Resource
+
+	// populate an unstructured list for each resource type
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(gvk)
+	err := h.kubeGatewayClient.List(ctx, list)
+	if err != nil {
+		return nil, err
+	}
+	// convert each Unstructured to a Resource so that the final list can be merged with the
+	// edge resource list
+	for _, uns := range list.Items {
+		out := crdv1.Resource{}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
 		if err != nil {
 			return nil, err
 		}
-		// convert each Unstructured to a Resource so that the final list can be merged with the
-		// edge resource list
-		for _, uns := range list.Items {
-			out := crdv1.Resource{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
-			if err != nil {
-				return nil, err
-			}
-			resources = append(resources, out)
-		}
+		out.ManagedFields = nil // todo: clarify why
+		resources = append(resources, out)
 	}
-
 	return resources, nil
 }
 
