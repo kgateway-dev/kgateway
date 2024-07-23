@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/gcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
@@ -24,7 +25,7 @@ import (
 var (
 	testNamespace = "gloo-system"
 
-	// this descriptorBin contains descriptors for one service, helloworld.Greeter, with one function, SayHello
+	// this descriptorBin contains descriptors for one servcie, hellowowrld.Greeter, with one function, SayHello
 	protoDescriptorBin = []byte{10, 230, 1, 10, 16, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 46, 112, 114, 111, 116, 111, 18, 10, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 34, 28, 10, 12, 72, 101, 108, 108, 111, 82, 101, 113, 117, 101, 115, 116, 18, 12, 10, 4, 110, 97, 109, 101, 24, 1, 32, 1, 40, 9, 34, 29, 10, 10, 72, 101, 108, 108, 111, 82, 101, 112, 108, 121, 18, 15, 10, 7, 109, 101, 115, 115, 97, 103, 101, 24, 1, 32, 1, 40, 9, 50, 73, 10, 7, 71, 114, 101, 101, 116, 101, 114, 18, 62, 10, 8, 83, 97, 121, 72, 101, 108, 108, 111, 18, 24, 46, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 46, 72, 101, 108, 108, 111, 82, 101, 113, 117, 101, 115, 116, 26, 22, 46, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 46, 72, 101, 108, 108, 111, 82, 101, 112, 108, 121, 34, 0, 66, 54, 10, 27, 105, 111, 46, 103, 114, 112, 99, 46, 101, 120, 97, 109, 112, 108, 101, 115, 46, 104, 101, 108, 108, 111, 119, 111, 114, 108, 100, 66, 15, 72, 101, 108, 108, 111, 87, 111, 114, 108, 100, 80, 114, 111, 116, 111, 80, 1, 162, 2, 3, 72, 76, 87, 98, 6, 112, 114, 111, 116, 111, 51}
 	service            = "helloworld.Greeter"
 	functionName       = "SayHello"
@@ -193,6 +194,11 @@ var _ = Describe("Upstream", func() {
 				NamespacedStatuses: initialStatuses(),
 				UpstreamType: &v1.Upstream_AwsEc2{
 					AwsEc2: &ec2.UpstreamSpec{},
+				}}),
+			Entry("Gcp", &v1.Upstream{
+				NamespacedStatuses: initialStatuses(),
+				UpstreamType: &v1.Upstream_Gcp{
+					Gcp: &gcp.UpstreamSpec{},
 				}}),
 			Entry("Kube without ServiceSpec", &v1.Upstream{
 				NamespacedStatuses: initialStatuses(),
