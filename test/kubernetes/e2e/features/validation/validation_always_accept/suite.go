@@ -3,12 +3,14 @@ package validation_always_accept
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
@@ -186,6 +188,43 @@ func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 	)
 }
 
+func (s *testingSuite) TestAcceptInvalidRatelimitConfigResources() {
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+	// We don't expect an error exit code here because this is a warning
+	helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+		return s.testInstallation.ResourceClients.RateLimitConfigClient().Read(s.testInstallation.Metadata.InstallNamespace, "rlc", clients.ReadOpts{Ctx: s.ctx})
+	})
+
+	helpers.EventuallyResourceStatusHasReason(1,
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.RateLimitConfigClient().Read(s.testInstallation.Metadata.InstallNamespace, "rlc", clients.ReadOpts{Ctx: s.ctx})
+		},
+		"The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead",
+	)
+}
+
+func (s *testingSuite) TestAcceptsInvalidGatewayResources() {
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+
+	// We don't expect an error exit code here because this is a warning
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.GatewayClient().Read(s.testInstallation.Metadata.InstallNamespace, "gateway-without-type", clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Rejected,
+		gloo_defaults.GlooReporter,
+	)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesRejectedReasons(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.GatewayClient().Read(s.testInstallation.Metadata.InstallNamespace, "gateway-without-type", clients.ReadOpts{Ctx: s.ctx})
+		},
+		[]string{"invalid gateway: gateway must contain gatewayType"},
+		gloo_defaults.GlooReporter,
+	)
+}
+
 // TestMissingUpstream tests behaviors when Gloo allows invalid VirtualServices to be persisted
 func (s *testingSuite) TestMissingUpstream() {
 	s.T().Cleanup(func() {
@@ -239,4 +278,143 @@ func (s *testingSuite) TestMissingUpstream() {
 		core.Status_Accepted,
 		gloo_defaults.GlooReporter,
 	)
+}
+
+// TestInvalidUpstreamMissingPort tests behaviors when Gloo accepts an invalid upstream with a missing port
+func (s *testingSuite) TestInvalidUpstreamMissingPort() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
+		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+	s.Assert().NoError(err)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+
+	// Upstream is only rejected when the upstream plugin is run when a valid cluster is present
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply valid upstream")
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply valid virtual service")
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, "invalid-us", clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Warning,
+		gloo_defaults.GlooReporter,
+	)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesWarningReasons(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, "invalid-us", clients.ReadOpts{Ctx: s.ctx})
+		},
+		[]string{"port cannot be empty for host"},
+		gloo_defaults.GlooReporter,
+	)
+}
+
+// TestVirtualServiceWithSecretDeletion tests behaviors when Gloo accepts a VirtualService with a secret and the secret is deleted
+func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
+	// VS with secret should be accepted, need to substitute the secret ns
+	secretVS, err := os.ReadFile(validation.SecretVSTemplate)
+	s.Assert().NoError(err)
+	// Replace environment variables placeholders with their values
+	substitutedSecretVS := os.ExpandEnv(string(secretVS))
+
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, []byte(substitutedSecretVS))
+		s.Assert().NoError(err, "can delete virtual service with secret")
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.NginxPodManifest)
+		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
+	})
+
+	// apply example app
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+	s.Assert().NoError(err)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+
+	// Secrets should be accepted
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+
+	// Upstream should be accepted
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+	// Apply VS with secret after Upstream and Secret exist
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, []byte(substitutedSecretVS))
+	s.Assert().NoError(err)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+
+	// can delete a secret that is in use without error
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+
+	// deleting a secret that is not in use still works
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err)
+
+	/*
+		TODO(npolshak): Consistently update subresource statuses: https://github.com/solo-io/solo-projects/issues/6633
+		Note: the VirtualService subresource status will have rejection message when secret is deleted, but the status update
+		is flakey and may not get triggered immediately. This example of the expected status update:
+
+			status:
+			  statuses:
+			    validation-always-accept-test:
+			      reportedBy: gloo
+			      state: Accepted
+			      subresourceStatuses:
+			        '*v1.Proxy.gateway-proxy_validation-always-accept-test':
+			          reason: "1 error occurred:\n\t* Listener Error: SSLConfigError. Reason:
+			            SSL secret not found: list did not find secret validation-always-accept-test.tls-secret\n\n"
+			          reportedBy: gloo
+			          state: Rejected
+	*/
 }

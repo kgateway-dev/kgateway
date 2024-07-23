@@ -3,6 +3,7 @@ package gloogateway
 import (
 	"context"
 
+	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -22,6 +23,8 @@ type ResourceClients interface {
 	ServiceClient() skkube.ServiceClient
 	UpstreamClient() v1.UpstreamClient
 	VirtualServiceClient() gatewayv1.VirtualServiceClient
+	RateLimitConfigClient() v1alpha1.RateLimitConfigClient
+	GatewayClient() gatewayv1.GatewayClient
 }
 
 type Clients struct {
@@ -30,6 +33,8 @@ type Clients struct {
 	upstreamClient          v1.UpstreamClient
 	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
 	virtualServiceClient    gatewayv1.VirtualServiceClient
+	rateLimitConfigClient   v1alpha1.RateLimitConfigClient
+	gatewayClient           gatewayv1.GatewayClient
 }
 
 func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (ResourceClients, error) {
@@ -81,12 +86,34 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		return nil, err
 	}
 
+	rlcClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         v1alpha1.RateLimitConfigCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	rlcClient, err := v1alpha1.NewRateLimitConfigClient(ctx, rlcClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
+	gwClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.GatewayCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	gwClient, err := gatewayv1.NewGatewayClient(ctx, gwClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Clients{
 		routeOptionClient:       routeOptionClient,
 		serviceClient:           serviceClient,
 		upstreamClient:          upstreamClient,
 		virtualHostOptionClient: virtualHostOptionClient,
 		virtualServiceClient:    virtualServiceClient,
+		rateLimitConfigClient:   rlcClient,
+		gatewayClient:           gwClient,
 	}, nil
 }
 
@@ -108,4 +135,12 @@ func (c *Clients) UpstreamClient() v1.UpstreamClient {
 
 func (c *Clients) VirtualServiceClient() gatewayv1.VirtualServiceClient {
 	return c.virtualServiceClient
+}
+
+func (c *Clients) RateLimitConfigClient() v1alpha1.RateLimitConfigClient {
+	return c.rateLimitConfigClient
+}
+
+func (c *Clients) GatewayClient() gatewayv1.GatewayClient {
+	return c.gatewayClient
 }

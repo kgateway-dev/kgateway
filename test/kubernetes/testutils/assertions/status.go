@@ -68,6 +68,22 @@ func (p *Provider) EventuallyResourceStatusMatchesState(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+func (p *Provider) EventuallyResourceStatusMatchesSubResource(
+	getter helpers.InputResourceGetter,
+	desiredSubresourceName string,
+	desiredSubresource matchers.SoloKitSubresourceStatus,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		subResourceStatusMatcher := matchers.HaveSubResourceStatusState(desiredSubresourceName, desiredSubresource)
+		status, err := getResourceNamespacedStatus(getter)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+		g.Expect(status).ToNot(gomega.BeNil())
+		g.Expect(status).To(gomega.HaveValue(subResourceStatusMatcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.NamespacedStatuses, error) {
 	resource, err := getter()
 	if err != nil {

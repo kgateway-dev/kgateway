@@ -37,8 +37,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// TestInvalidUpstream tests behaviors when Gloo rejects an invalid upstream with
-func (s *testingSuite) TestInvalidUpstream() {
+// TestInvalidUpstreamMissingPort tests behaviors when Gloo rejects an invalid upstream with a missing port
+func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
 		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
@@ -58,7 +58,7 @@ func (s *testingSuite) TestInvalidUpstream() {
 	})
 
 	// Upstream is only rejected when the upstream plugin is run when a valid cluster is present
-	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply valid upstream")
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
 		func() (resources.InputResource, error) {
@@ -77,12 +77,13 @@ func (s *testingSuite) TestInvalidUpstream() {
 		gloo_defaults.GlooReporter,
 	)
 
-	output, err = s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
+	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
 	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.Upstream failed: validating *v1.Upstream name:"invalid-us" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
 	s.Assert().Contains(output, "port cannot be empty for host")
 }
 
+// TestVirtualServiceWithSecretDeletion tests behaviors when Gloo rejects a VirtualService with a secret that is deleted
 func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 	// VS with secret should be accepted, need to substitute the secret ns
 	secretVS, err := os.ReadFile(validation.SecretVSTemplate)
@@ -152,6 +153,7 @@ func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 	s.Assert().NoError(err)
 }
 
+// TestRejectsInvalidGatewayResources tests behaviors when Gloo rejects invalid Edge Gateway resources
 func (s *testingSuite) TestRejectsInvalidGatewayResources() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
@@ -160,6 +162,7 @@ func (s *testingSuite) TestRejectsInvalidGatewayResources() {
 	s.Assert().Contains(output, "invalid gateway: gateway must contain gatewayType")
 }
 
+// TestRejectsInvalidRatelimitConfigResources tests behaviors when Gloo rejects invalid RateLimitConfig resources due to missing enterprise features
 func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
 	output, _ := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	// We don't expect an error exit code here because this is a warning
@@ -168,6 +171,7 @@ func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
 	s.Assert().Contains(output, "The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead")
 }
 
+// TestRejectsInvalidVSMethodMatcher tests behaviors when Gloo rejects invalid VirtualService resources due to incorrect matchers
 func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
@@ -176,6 +180,7 @@ func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 	s.Assert().Contains(output, "invalid route: routes with delegate actions must use a prefix matcher")
 }
 
+// TestRejectsInvalidVSMissingUpstream tests behaviors when Gloo rejects invalid VirtualService resources due to missing upstream
 func (s *testingSuite) TestRejectsInvalidVSMissingUpstream() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualMissingUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
@@ -184,6 +189,7 @@ func (s *testingSuite) TestRejectsInvalidVSMissingUpstream() {
 	s.Assert().Contains(output, fmt.Sprintf(`Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { %s.does-not-exist } not found`, s.testInstallation.Metadata.InstallNamespace))
 }
 
+// TestRejectsInvalidVSTypo tests behaviors when Gloo rejects invalid VirtualService resources due to typos
 func (s *testingSuite) TestRejectsInvalidVSTypo() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualServiceTypo, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
