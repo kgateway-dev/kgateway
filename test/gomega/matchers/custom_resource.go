@@ -11,10 +11,17 @@ import (
 
 // HaveObjectMeta returns a GomegaMatcher which matches a struct that has the provided name/namespace
 // This should be used when asserting that a CustomResource has a provided name/namespace
-func HaveObjectMeta(namespacedName k8stypes.NamespacedName) types.GomegaMatcher {
+func HaveObjectMeta(namespacedName k8stypes.NamespacedName, additionalMetaMatchers ...types.GomegaMatcher) types.GomegaMatcher {
+	nameNamespaceMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+		"Name":      Equal(namespacedName.Name),
+		"Namespace": Equal(namespacedName.Namespace),
+	})
+
+	return And(append(additionalMetaMatchers, nameNamespaceMatcher)...)
+}
+
+func HaveEmptyManagedFields() types.GomegaMatcher {
 	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"Name":          Equal(namespacedName.Name),
-		"Namespace":     Equal(namespacedName.Namespace),
 		"ManagedFields": BeEmpty(),
 	})
 }
@@ -35,4 +42,10 @@ func ContainCustomResource(typeMetaMatcher, objectMetaMatcher, specMatcher types
 		"ObjectMeta": objectMetaMatcher,
 		"Spec":       specMatcher,
 	}))
+}
+
+// ContainCustomResourceType returns a GomegaMatcher which matches resource in a list if the provided
+// typeMeta match
+func ContainCustomResourceType(gvk schema.GroupVersionKind) types.GomegaMatcher {
+	return ContainCustomResource(HaveTypeMeta(gvk), gstruct.Ignore(), gstruct.Ignore())
 }
