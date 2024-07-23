@@ -79,10 +79,15 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 	var selected []gwv1.HTTPRoute
 	for _, child := range children {
 		inheritMatcher := shouldInheritMatcher(child)
-		matched := false
 
 		// Check if the child route has a prefix that matches the parent.
 		// Only rules matching the parent prefix are considered.
+		//
+		// We use validRules to store the rules in the child route that are valid
+		// (matches in the rule match the parent route matcher). If a specific rule
+		// in the child is not valid, then we discard it in the final child route
+		// returned by this function.
+		var validRules []gwv1.HTTPRouteRule
 		for i, rule := range child.Spec.Rules {
 			var validMatches []gwv1.HTTPRouteMatch
 
@@ -90,7 +95,6 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 			// simply inherit the parent's matcher.
 			if inheritMatcher && len(rule.Matches) == 0 {
 				validMatches = append(validMatches, parentMatch)
-				matched = true
 			}
 
 			for _, match := range rule.Matches {
@@ -100,7 +104,6 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 				if inheritMatcher {
 					mergeParentChildRouteMatch(&parentMatch, &match)
 					validMatches = append(validMatches, match)
-					matched = true
 					continue
 				}
 
@@ -108,14 +111,19 @@ func (r *gatewayQueries) GetDelegatedRoutes(
 				// to delegate from the parent route to the child.
 				if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, child.Namespace, child.Spec.ParentRefs); ok {
 					validMatches = append(validMatches, match)
-					matched = true
 				}
 			}
 
-			// Update the rule on the child instead of on a copy of the rule
-			child.Spec.Rules[i].Matches = validMatches
+			// Matchers in this rule match the parent route matcher, so consider the valid matchers on the child,
+			// and discard rules on the child that do not match the parent route matcher.
+			if len(validMatches) > 0 {
+				validRule := child.Spec.Rules[i]
+				validRule.Matches = validMatches
+				validRules = append(validRules, validRule)
+			}
 		}
-		if matched {
+		if len(validRules) > 0 {
+			child.Spec.Rules = validRules
 			selected = append(selected, child)
 		}
 	}
