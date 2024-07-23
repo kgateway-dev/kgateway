@@ -338,7 +338,19 @@ func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 	)
 }
 
-// TestVirtualServiceWithSecretDeletion tests behaviors when Gloo accepts a VirtualService with a secret and the secret is deleted
+/*
+TestVirtualServiceWithSecretDeletion tests behaviors when Gloo accepts a VirtualService with a secret and the secret is deleted
+
+To create the private key and certificate to use:
+
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+	   -keyout tls.key -out tls.crt -subj "/CN=*"
+
+To create the Kubernetes secrets to hold this cert:
+
+	kubectl create secret tls upstream-tls --key tls.key \
+	   --cert tls.crt --namespace gloo-system
+*/
 func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 	// VS with secret should be accepted, need to substitute the secret ns
 	secretVS, err := os.ReadFile(validation.SecretVSTemplate)

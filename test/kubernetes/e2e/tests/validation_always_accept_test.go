@@ -20,7 +20,7 @@ import (
 // installation where validation is set to always accept
 func TestValidationAlwaysAccept(t *testing.T) {
 	ctx := context.Background()
-	installNs := env.GetOrDefault(testutils.InstallNamespace, "validation-strict-test")
+	installNs := env.GetOrDefault(testutils.InstallNamespace, "validation-always-accept-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
