@@ -7,10 +7,11 @@ spec:
     domains:
       - 'invalid.com'
     routes:
-      - routeAction:
-          options:
-            prefixRewrite: matcher and action are missing
-        name: route
+      - matchers:
+          - { }
+        routeAction: { }
+        options:
+          prefixRewrite: "matcher and action are missing"
 ---
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
@@ -21,7 +22,9 @@ spec:
     domains:
       - 'all-good-in-the-hood.com'
     routes:
-      - routeAction:
-          options:
-            prefixRewrite: matcher and action are missing
-        name: route
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: nginx-upstream

@@ -9,27 +9,23 @@ spec:
       - "example.com"
     routes:
       - matchers:
-          - prefix: "/"
+          - prefix: /
         routeAction:
           single:
             upstream:
-              ref:
-                name: nginx-upstream
+              name: nginx-upstream
     options:
       transformations:
         clearRouteCache: true
         responseTransformation:
           transformationTemplate:
             extractors:
-              - key: "foo"
-                value:
-                  header: ":path"
-                  regex: ".*"
-                  subgroup: 1
-                  replacementText:
-                    value: "bar"
-                  mode: SINGLE_REPLACE
+              foo:
+                header: ":path"
+                regex: ".*"
+                subgroup: 1
+                replacementText: "bar"
+                mode: SINGLE_REPLACE
             headers:
-              - key: ":path"
-                value:
-                  text: "/"
+              ":path":
+                text: "/"

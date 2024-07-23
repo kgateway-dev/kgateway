@@ -1949,7 +1949,7 @@ spec:
 
 		})
 
-		FContext("DisableTransformationValidation", func() {
+		Context("DisableTransformationValidation", func() {
 
 			var (
 				invalidTransformation *glootransformation.Transformations

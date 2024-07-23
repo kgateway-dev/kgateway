@@ -9,24 +9,21 @@ spec:
       - "example.com"
     routes:
       - matchers:
-          - prefix: "/"
+          - prefix: /
         routeAction:
           single:
             upstream:
-              ref:
-                name: nginx-upstream
+              name: nginx-upstream
     options:
       transformations:
         clearRouteCache: true
         responseTransformation:
           transformationTemplate:
             extractors:
-              - key: "foo"
-                value:
-                  header: ":path"
-                  regex: ".*"
-                  subgroup: 1
+              foo:
+                header: ":path"
+                regex: ".*"
+                subgroup: 1
             headers:
-              - key: ":path"
-                value:
-                  text: "/"
+              ":path":
+                text: "/"

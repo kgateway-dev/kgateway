@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-// TestValidationServerDisabled is the function which executes a series of tests against a given
+// TestTransformationValidationDisabled is the function which executes a series of tests against a given
 // installation where validation has the validation server disabled
-func TestValidationServerDisabled(t *testing.T) {
+func TestTransformationValidationDisabled(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "validation-server-disabled-test",
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "validation-server-disabled-helm.yaml"),
+			InstallNamespace:   "disable-transformation-validation-test",
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "disable-transformation-validation-helm.yaml"),
 		},
 	)
 
@@ -44,5 +44,5 @@ func TestValidationServerDisabled(t *testing.T) {
 		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	ValidationServerDisabledSuiteRunner().Run(ctx, t, testInstallation)
+	DisableTransformationValidationSuiteRunner().Run(ctx, t, testInstallation)
 }

@@ -1,4 +1,4 @@
-package validation_server_disabled
+package transformation_validation_disabled
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is the entire Suite of tests for the webhook validation alwaysAccept=false feature
+// testingSuite is the entire Suite of tests for the webhook validation disableTransformationValidation=true feature
 type testingSuite struct {
 	suite.Suite
 
@@ -28,7 +28,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// TestDoesNotReject checks webhook does not reject invalid transformation when server_enabled=false
+// TestDoesNotReject checks webhook does not reject invalid transformation when disable_transformation_validation=false
 func (s *testingSuite) TestDoesNotReject() {
 	// accepts invalid inja template in transformation
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)

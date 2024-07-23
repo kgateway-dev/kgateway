@@ -20,7 +20,8 @@ gateway:
   logLevel: info
   validation:
     enabled: true
-    allowWarnings: false
+    failurePolicy: Fail # For "strict" validation mode, fail the validation if webhook server is not available
+    allowWarnings: false # For "strict" validation mode, webhook will also reject warnings
     alwaysAcceptResources: false
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway

@@ -8,7 +8,7 @@ import (
 
 	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -40,8 +40,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestInvalidUpstream tests behaviors when Gloo rejects an invalid upstream with
 func (s *testingSuite) TestInvalidUpstream() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.NginxPodManifest)
-		s.Assert().NoError(err, "can delete "+defaults.NginxPodManifest)
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
+		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
@@ -50,10 +50,10 @@ func (s *testingSuite) TestInvalidUpstream() {
 		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
 	s.Assert().NoError(err)
 	// Check that test resources are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=nginx",
 	})
 
@@ -101,15 +101,15 @@ func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete "+validation.Secret)
 
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, defaults.NginxPodManifest)
-		s.Assert().NoError(err, "can delete "+defaults.NginxPodManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.NginxPodManifest)
+		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
 	})
 
 	// apply example app
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
 	s.Assert().NoError(err)
 	// Check that test resources are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=nginx",
 	})
 

@@ -8,9 +8,8 @@ spec:
       - 'valid1.com'
     routes:
       - matchers:
-          prefix: "/"
+          - prefix: /
         routeAction:
           single:
             upstream:
               name: nginx-upstream
-        name: route

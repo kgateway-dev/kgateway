@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
 )
@@ -24,15 +23,14 @@ var (
 	ExampleUpstream = filepath.Join(util.MustGetThisDir(), "testdata", "example-upstream.yaml")
 
 	// Switch VirtualService configs (allow warnings)
-	InvalidVS = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-vs.yaml")
-	ValidVS   = filepath.Join(util.MustGetThisDir(), "testdata", "valid-vs.yaml")
-	SwitchVS  = filepath.Join(util.MustGetThisDir(), "testdata", "switch-valid-invalid.yaml")
+	InvalidVS = filepath.Join(util.MustGetThisDir(), "testdata", "switch-vs", "invalid-vs.yaml")
+	ValidVS   = filepath.Join(util.MustGetThisDir(), "testdata", "switch-vs", "valid-vs.yaml")
+	SwitchVS  = filepath.Join(util.MustGetThisDir(), "testdata", "switch-vs", "switch-valid-invalid.yaml")
 
 	// Secret Configs (allow warnings, strict tests)
-	SecretVSTemplate               = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "vs-with-secret.yaml")
-	ValidationWebhookConfigFailure = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "validationwebhookconfig-failure.yaml")
-	UnusedSecret                   = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "unused-secret.yaml")
-	Secret                         = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "secret.yaml")
+	SecretVSTemplate = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "vs-with-secret.yaml")
+	UnusedSecret     = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "unused-secret.yaml")
+	Secret           = filepath.Join(util.MustGetThisDir(), "testdata", "secret-deletion", "secret.yaml")
 
 	// Invalid resources (allow warnings, strict, allow all)
 	InvalidUpstreamNoPort         = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-resources", "invalid-upstream-no-port.yaml")
@@ -46,13 +44,6 @@ var (
 	VSTransformationExtractors    = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-extractors.yaml")
 	VSTransformationHeaderText    = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-header-text.yaml")
 	VSTransformationSingleReplace = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-single-replace.yaml")
-
-	// CurlPodExecOpt is the Pod that will be used to execute curl requests, and is defined in the upstream manifest files
-	CurlPodExecOpt = kubectl.PodExecOptions{
-		Name:      "curl",
-		Namespace: "curl",
-		Container: "curl",
-	}
 
 	ExpectedUpstreamResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,

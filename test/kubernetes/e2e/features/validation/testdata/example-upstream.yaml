@@ -8,4 +8,4 @@ spec:
       app.kubernetes.io/name: nginx
     serviceName: nginx
     serviceNamespace: nginx
-    servicePort: 80
+    servicePort: 8080

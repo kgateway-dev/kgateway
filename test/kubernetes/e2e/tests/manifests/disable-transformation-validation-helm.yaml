@@ -19,10 +19,9 @@ gateway:
   persistProxySpec: false
   logLevel: info
   validation:
-    enabled: false # TODO(npolshak): if this is not set serverEnabled=false breaks
+    disableTransformationValidation: true
     allowWarnings: true
     alwaysAcceptResources: false
-    serverEnabled: false
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true
