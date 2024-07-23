@@ -1,9 +1,9 @@
 ---
 title: Helm Chart Values
 weight: 25
-description: Section containing Helm chart values for Gloo Edge
+description: Section containing Helm chart values for Gloo Gateway
 ---
 
-Included in the sections below are the Helm chart Values for both Gloo Edge OSS and Gloo Edge Enterprise.
+Included in the sections below are the Helm chart Values for both Gloo Gateway OSS and Gloo Gateway Enterprise.
 
 {{% children description="true" %}}

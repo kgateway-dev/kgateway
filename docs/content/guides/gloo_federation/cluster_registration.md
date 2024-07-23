@@ -1,22 +1,22 @@
 ---
 title: Cluster Registration
-description: Registering a cluster with Gloo Edge Federation
+description: Registering a cluster with Gloo Gateway Federation
 weight: 20
 ---
 
-Gloo Edge Federation monitors and automatically discovers instances of Gloo Edge on clusters that are registered with `glooctl`. After the registration process is complete, you can use Gloo Edge Federation to create and apply federated configuration resources across registered clusters.
+Gloo Gateway Federation monitors and automatically discovers instances of Gloo Gateway on clusters that are registered with `glooctl`. After the registration process is complete, you can use Gloo Gateway Federation to create and apply federated configuration resources across registered clusters.
 
-In this guide, you register a Kubernetes cluster with Gloo Edge Federation.
+In this guide, you register a Kubernetes cluster with Gloo Gateway Federation.
 
 ![Figure of federated architecture]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-cluster-reg.png" %}})
 
 ## Prerequisites
 
-To successfully follow this guide, you need to have Gloo Edge Federation deployed on an admin cluster and a cluster to use for registration. The cluster can either be the admin cluster or a remote cluster. For instructions, follow the Gloo Edge Federation [installation guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/installation/" %}}).
+To successfully follow this guide, you need to have Gloo Gateway Federation deployed on an admin cluster and a cluster to use for registration. The cluster can either be the admin cluster or a remote cluster. For instructions, follow the Gloo Gateway Federation [installation guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/installation/" %}}).
 
 ## Register a cluster
 
-Gloo Edge Federation does not automatically register the Kubernetes cluster that it runs on. You must register both the local cluster and any remote clusters. The registration process creates a service account, cluster role, and cluster role binding on the target cluster, and stores the access credentials in a Kubernetes secret resource in the admin cluster.
+Gloo Gateway Federation does not automatically register the Kubernetes cluster that it runs on. You must register both the local cluster and any remote clusters. The registration process creates a service account, cluster role, and cluster role binding on the target cluster, and stores the access credentials in a Kubernetes secret resource in the admin cluster.
 
 ### Registration with glooctl
 
@@ -60,7 +60,7 @@ NAME    TYPE                 DATA   AGE
 local   solo.io/kubeconfig   1      37s
 ```
 
-In the registered cluster, Gloo Edge Federation has created a Kubernetes service account, cluster role, and role binding. You can review these resources by running the following commands:
+In the registered cluster, Gloo Gateway Federation has created a Kubernetes service account, cluster role, and role binding. You can review these resources by running the following commands:
 
 ```
 kubectl --cluster kind-local get serviceaccount local -n gloo-system
@@ -68,7 +68,7 @@ kubectl --cluster kind-local get clusterrole gloo-federation-controller
 kubectl --cluster kind-local get clusterrolebinding local-gloo-federation-controller-clusterrole-binding
 ```
 
-After a cluster is registered, Gloo Edge Federation automatically discovers all instances of Gloo Edge within the cluster. The discovered instances are stored in a Custom Resource of type `GlooInstance` in the `gloo-system` namespace. You can view the discovered instances by running the following command:
+After a cluster is registered, Gloo Gateway Federation automatically discovers all instances of Gloo Gateway within the cluster. The discovered instances are stored in a Custom Resource of type `GlooInstance` in the `gloo-system` namespace. You can view the discovered instances by running the following command:
 
 ```
 kubectl get glooinstances -n gloo-system
@@ -79,7 +79,7 @@ NAME                      AGE
 local-gloo-system         95m
 ```
 
-You have now successfully added a local or remote cluster to Gloo Edge Federation. You can repeat the same process for any other clusters you want to include in Gloo Edge Federation.
+You have now successfully added a local or remote cluster to Gloo Gateway Federation. You can repeat the same process for any other clusters you want to include in Gloo Gateway Federation.
 
 
 ### Manual registration
@@ -95,7 +95,7 @@ On the remote cluster:
 On the local cluster that runs Gloo Federation:
 - A **KubernetesCluster** custom resource with the same name as the `cluster-name` argument in the `glooctl` command.
 - A **Secret** with the `kubeconfig` and token of the **ServiceAccount** created on the remote cluster. The secret type is `solo.io/kubeconfig`.
-- A **GlooInstance** custom resource for each Gloo Edge deployment that Gloo Fed discovers.
+- A **GlooInstance** custom resource for each Gloo Gateway deployment that Gloo Fed discovers.
 
 If you cannot use the `glooctl` CLI, you can manually create these resources with the following steps.
 
@@ -108,13 +108,13 @@ If the cluster to register is running with KinD, empty the ca-cert section of yo
     export CLUSTER_NAME=target-cluster
     ```
 
-2. **Optional**: If Gloo Edge is not already running on the remote cluster, [install Gloo Edge]({{% versioned_link_path fromRoot="/guides/gloo_federation/installation/" %}}), such as with the following steps.
+2. **Optional**: If Gloo Gateway is not already running on the remote cluster, [install Gloo Gateway]({{% versioned_link_path fromRoot="/guides/gloo_federation/installation/" %}}), such as with the following steps.
     ```shell
     # install the Gloo Federation CRDs on the target cluster:
     helm fetch glooe/gloo-ee --version ${GLOO_VERSION} --devel --untar --untardir /tmp/glooee-${GLOO_VERSION}
     kubectl --context ${CLUSTER_NAME} apply -f /tmp/glooee-${GLOO_VERSION}/gloo-ee/charts/gloo-fed/crds/
    
-    # install the Gloo Edge CRDs on the admin cluster:
+    # install the Gloo Gateway CRDs on the admin cluster:
     kubectl apply -f /tmp/glooee-${GLOO_VERSION}/gloo-ee/charts/gloo/crds/
     ```
 
@@ -227,10 +227,10 @@ If the cluster to register is running with KinD, empty the ca-cert section of yo
     EOF
     ```
 
-Now that the custom resources are created, Gloo Federation automatically discovers the Gloo Edge deployments in the target cluster.
+Now that the custom resources are created, Gloo Federation automatically discovers the Gloo Gateway deployments in the target cluster.
 * For each registered cluster, the local cluster that runs `gloo-fed` has a new `KubernetesCluster` CR in the `gloo-system` namespace.
-* For each Gloo Edge deployment, the local cluster that runs `gloo-fed` has a new `GlooInstance` CR in the `gloo-system` namespace.
+* For each Gloo Gateway deployment, the local cluster that runs `gloo-fed` has a new `GlooInstance` CR in the `gloo-system` namespace.
 
 ## Next Steps
 
-With a registered cluster in Gloo Edge Federation, now might be a good time to read a bit more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Edge Federation, or you can try out the [Federated Configuration]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) feature.
+With a registered cluster in Gloo Gateway Federation, now might be a good time to read a bit more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Gateway Federation, or you can try out the [Federated Configuration]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) feature.

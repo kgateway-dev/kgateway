@@ -27,7 +27,7 @@ func Upstream(opts *options.Options) *cobra.Command {
 					return err
 				}
 			}
-			return printers.PrintUpstreams(upstreams, opts.Top.Output, xdsDump)
+			return printers.PrintUpstreams(upstreams, opts.Top.Output, xdsDump, opts.Metadata.GetNamespace())
 		},
 	}
 	return cmd

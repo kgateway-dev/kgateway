@@ -21,7 +21,7 @@ weight: 10
   - [Customizing Routes](#customizing-routes)
 - [Advanced Use Cases](#advanced-use-cases)
   - [Rate limiting by client IP](#rate-limiting-by-client-ip)
-    - [Configuring Gloo Edge to properly forward the client address](#configuring-gloo-edge-to-properly-forward-the-client-address)
+    - [Configuring Gloo Gateway to properly forward the client address](#configuring-gloo-edge-to-properly-forward-the-client-address)
     - [Configuring multiple limits per remote address](#configuring-multiple-limits-per-remote-address)
   - [Traffic prioritization based on HTTP method](#traffic-prioritization-based-on-http-method)
   - [Securing rate limit actions with JWTs](#securing-rate-limit-actions-with-jwts)
@@ -29,13 +29,13 @@ weight: 10
 
 ## Overview
 
-Learn how to use Gloo Edge with [Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter.html#).
+Learn how to use Gloo Gateway with [Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter.html#).
 
 {{% notice note %}}
 This guide only includes Envoy-style rate limiting examples. To learn about other rate limiting options, install your environment, and set up the components that you need for rate limiting, see [Rate limiting setup]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
 {{% /notice %}}
 
-The Envoy API uses two components to define how rate limiting works. For more information on where to define these components in your Gloo Edge custom resources, see [Implement rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/#implement" >}}).
+The Envoy API uses two components to define how rate limiting works. For more information on where to define these components in your Gloo Gateway custom resources, see [Implement rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/#implement" >}}).
 
 1. [Rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration) describe your requests and are used to define the rate limits themselves.
 2. [Rate limiting actions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-ratelimit-action) define the relationship between a request and its generated descriptors. 
@@ -49,14 +49,14 @@ You can define rate limits on a key matching a specific value, or you can omit t
 any unique value for that key. 
 See the Envoy rate limiting [configuration doc](https://github.com/envoyproxy/ratelimit#configuration) for full details.
 
-Rate limit descriptors live in the Gloo Edge Settings manifest, so the examples below will reflect a Gloo Edge Settings configuration 
+Rate limit descriptors live in the Gloo Gateway Settings manifest, so the examples below will reflect a Gloo Gateway Settings configuration 
 or patch. 
 
 ### Actions
 
 The [Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/route/route_components.proto#envoy-api-msg-route-ratelimit-action) 
 associated with the Virtual Service or the individual routes allow you to specify how parts of the request are 
-associated to rate limiting descriptor keys defined in the settings. Essentially, these actions tell Gloo Edge which rate limit counters
+associated to rate limiting descriptor keys defined in the settings. Essentially, these actions tell Gloo Gateway which rate limit counters
 to increment for a particular request. 
 
 You can specify more than one rate limit action, and the request is throttled if any one of the actions triggers 
@@ -241,7 +241,7 @@ A common use case is to rate limit based on client IP address, also referred to 
    {{< /highlight >}}
 
 {{% notice warning %}}
-You may need to make additional configuration changes to Gloo Edge in order for the `remote_address` value to be the real 
+You may need to make additional configuration changes to Gloo Gateway in order for the `remote_address` value to be the real 
 client IP address, and not an address that is internal to the Kubernetes cluster, or that is from a cloud load balancer. 
 To address these, check out the advanced use case below. 
 {{% /notice %}}
@@ -394,7 +394,7 @@ If the type and number are both present on a request, we want the limit to be 10
 from above, we would observe a limit of 1 per minute - the request would be rate limited based on the first rule, for just matching
 on the `type` descriptor. 
 
-Starting in Gloo Edge 1.x, you can now specify weights on rules. For a particular request that has multiple sets of actions, 
+Starting in Gloo Gateway 1.x, you can now specify weights on rules. For a particular request that has multiple sets of actions, 
 it will evaluate each and then increment only the matching rules with the highest weight. By default, the weight is 0, so we could 
 fix our config above by adding a weight to the nested descriptor:
 
@@ -494,9 +494,9 @@ A common desire is to limit requests based on the IP address of the client that 
 simple example above: 1) it relied on Envoy properly determining the remote address, which may require other configuration. 
 And 2) it wasn't clear how we could express two different limits for the same descriptor - i.e. 10 per second OR 100 per minute. 
 
-#### Configuring Gloo Edge to properly forward the client address
+#### Configuring Gloo Gateway to properly forward the client address
 
-There are several changes we want to make to the configuration of Gloo Edge so that Envoy will honor and forward the 
+There are several changes we want to make to the configuration of Gloo Gateway so that Envoy will honor and forward the 
 remote address of the downstream client (utilizing common conventions around the `x-forwarded-for` header). First, we
 can add a configuration to our HTTP connection manager settings to enable the use of remote address:
 
@@ -519,7 +519,7 @@ To apply this as a patch, write it to a file called `patch.yaml`, then apply the
 This assumes you are trying to patch the default http gateway in the gloo-system namespace.
 {{% /notice %}}
 
-Second, we may need to customize the way that Gloo Edge interacts with the Load Balancer so that Envoy receives a remote address
+Second, we may need to customize the way that Gloo Gateway interacts with the Load Balancer so that Envoy receives a remote address
 that is actually coming from outside the load balancer. In GKE, this can be done by patching the `gateway-proxy` service 
 so that the `externalTrafficPolicy` is set to `Local`: 
 
@@ -609,7 +609,7 @@ Suppose you have exposed an API that supports both `GET` and `POST` methods for 
 
 To implement this, we will build on the previous example and provide a global limit per remote client for all traffic classes as well a smaller limit for the less important `GET` method. This allows our system to drop the lower priority traffic and protect the higher priority traffic.
 
-We can implement this in Gloo Edge using a descriptor for the method of incoming request in conjunction with the remote client:
+We can implement this in Gloo Gateway using a descriptor for the method of incoming request in conjunction with the remote client:
 
 ```yaml
 spec:
@@ -676,7 +676,7 @@ encode the values as claims in a JWT that is passed on in the request. In the JW
 the headers to be derived from those extracted claims after the JWT has been verified. Then you can provide users 
 with a secure method of acquiring a JWT, such as through an auth negotiation with a trusted identity provider. 
 
-Let's assume these are our descriptors in Gloo Edge settings:
+Let's assume these are our descriptors in Gloo Gateway settings:
 ```yaml
 spec:
   ratelimit:
@@ -772,7 +772,7 @@ based on this trusted data. However, we want to further enhance security.
 
 First, we'll add a Web Application Firewall (WAF) configuration, in order to protect our proxy, auth, and rate limit server 
  against DOS or other types of malicious 
-or destructive traffic. Gloo Edge exposes this as another option when configuring routes, and provides the powerful modsecurity 
+or destructive traffic. Gloo Gateway exposes this as another option when configuring routes, and provides the powerful modsecurity 
 rule set and language to define WAF behavior in Envoy. In this example, we'll just use a very simple rule to show how 
 it can be wired up. 
 
@@ -984,5 +984,5 @@ server: envoy
 content-length: 0
 ```
 
-As we can now see, by taking advantage of other Gloo Edge security features, we can ensure rate limits are enforced
+As we can now see, by taking advantage of other Gloo Gateway security features, we can ensure rate limits are enforced
 while also securing routes against any kind of request that we didn't target with our rate limiting actions.

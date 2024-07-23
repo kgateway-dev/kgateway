@@ -1,10 +1,10 @@
 ---
 title: Datadog
 weight: 60
-description: Integrate the Datadog agent with your Gloo Edge and Envoy deployment
+description: Integrate the Datadog agent with your Gloo Gateway and Envoy deployment
 ---
 
-Datadog is a SaaS platform that allows you to easily collect metrics and events from your environment through integrations with solutions like Kubernetes, public cloud providers, Linux and more. In this guide, we will show you how Gloo Edge can work with the Datadog Kubernetes integration to deliver information from Envoy and other Gloo Edge components to Datadog for analysis.
+Datadog is a SaaS platform that allows you to easily collect metrics and events from your environment through integrations with solutions like Kubernetes, public cloud providers, Linux and more. In this guide, we will show you how Gloo Gateway can work with the Datadog Kubernetes integration to deliver information from Envoy and other Gloo Gateway components to Datadog for analysis.
 
 Here are the high level steps for completing the integration:
 
@@ -24,7 +24,7 @@ You will need the following to complete this guide:
 
 * **Datadog account**: If you don't already have an account, you can sign up for a free trial [on their website](https://app.datadoghq.com).
 * **Kubernetes cluster**: This can be deployed in any environment, follow our [preparation guide]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for more information.
-* **Gloo Edge installation**: You can install Gloo Edge on Kubernetes by following our [setup guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+* **Gloo Gateway installation**: You can install Gloo Gateway on Kubernetes by following our [setup guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 * **Helm**: You will be deploying the Datadog integration using [Helm v3](https://helm.sh/docs/intro/install/).
 * **kubectl**: Kubectl should be installed and configured to access the cluster where you are adding Datadog.
 
@@ -116,13 +116,13 @@ datadog-gloo-prn8j                                 1/1     Running   0          
 
 The installation creates a `DaemonSet` for the Datadog agent, so there will be `datadog-gloo` pods for each worker node in your cluster, and separate pods for the `cluster-agent` and `kube-state-metrics`.
 
-With Datadog installed, we now need to configure our Gloo Edge deployment to make Envoy metrics available to Datadog.
+With Datadog installed, we now need to configure our Gloo Gateway deployment to make Envoy metrics available to Datadog.
 
 ---
 
-## Configure the Gloo Edge deployment
+## Configure the Gloo Gateway deployment
 
-In this section, we will show you how to modify the Envoy proxy itself (`gateway-proxy` deployment) to provide its metrics to Datadog. In addition, by enabling the `prometheusScrape` option in the Datadog agent installation, we  expect to see control-plane-specific metrics emitted by other pods in the Gloo Edge fleet (e.g., gloo, discovery).
+In this section, we will show you how to modify the Envoy proxy itself (`gateway-proxy` deployment) to provide its metrics to Datadog. In addition, by enabling the `prometheusScrape` option in the Datadog agent installation, we  expect to see control-plane-specific metrics emitted by other pods in the Gloo Gateway fleet (e.g., gloo, discovery).
 
 We will need to update two things to allow metrics collection from Datadog. In order to discover the Envoy pods, the Datadog agent is relying on an [Autodiscovery feature](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes) that looks for specific annotations associated with Envoy pods. 
 
@@ -130,9 +130,9 @@ The Envoy pods are configured by default to listen on port 8081 and the path `/m
 
 ### Updating the `gateway-proxy` annotations
 
-First, we will publish metrics to Datadog for the Envoy proxy itself. To do this, we are going to edit the `gateway-proxy` deployment in Gloo Edge. We are going to add a series of Datadog-specific annotations that alert the agent that these pods are running Envoy. The annotations also let Datadog know what address to use for metrics collection and any log processing rules. The full list of potential annotations can be found in the [Datadog documentation](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes).
+First, we will publish metrics to Datadog for the Envoy proxy itself. To do this, we are going to edit the `gateway-proxy` deployment in Gloo Gateway. We are going to add a series of Datadog-specific annotations that alert the agent that these pods are running Envoy. The annotations also let Datadog know what address to use for metrics collection and any log processing rules. The full list of potential annotations can be found in the [Datadog documentation](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes).
 
-Assuming that you have deployed Gloo Edge in the namespace `gloo-system`, run the following command:
+Assuming that you have deployed Gloo Gateway in the namespace `gloo-system`, run the following command:
 
 ```bash
 kubectl edit deployments -n gloo-system gateway-proxy
@@ -157,10 +157,10 @@ spec:
          [{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}|{"}]}]'
 ```
 
-These annotations can also be added declaratively via helm, for example if using Gloo Edge Enterprise, these annotations can be added as a value for `gloo.gatewayProxies.gatewayProxy.podTemplate.extraAnnotations`.
+These annotations can also be added declaratively via helm, for example if using Gloo Gateway Enterprise, these annotations can be added as a value for `gloo.gatewayProxies.gatewayProxy.podTemplate.extraAnnotations`.
 
 {{< notice note >}}
-If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. Note that Helm 2 is not supported in Gloo Edge.
+If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. Note that Helm 2 is not supported in Gloo Gateway.
 {{< /notice >}}
 
 For more information about merging strategies, see the [Helm documentation](https://helm.sh/docs/faq/changes_since_helm2/#improved-upgrade-strategy-3-way-strategic-merge-patches).
@@ -175,7 +175,7 @@ kubectl get pods -n gloo-system -l gloo=gateway-proxy -o json | jq '.items | .[]
 
 The configuration of the Envoy `gateway-proxy` is stored in a ConfigMap called `gateway-proxy-envoy-config`. We are going to update the ConfigMap to update the route on the Prometheus listeners. 
 
-Assuming that you have deployed Gloo Edge in the namespace `gloo-system`, run the following command:
+Assuming that you have deployed Gloo Gateway in the namespace `gloo-system`, run the following command:
 
 ```bash
 kubectl edit configmap gateway-proxy-envoy-config -n gloo-system
@@ -237,16 +237,16 @@ That means the Datadog agent has fired up the Envoy integration and should be co
 
 In addition, you should be able to see meaningful statistics on the Datadog Metrics Explorer.
 
-![Gloo Edge Metrics in Datadog Metrics Explorer](./envoy-dd-metrics-explorer.png)
+![Gloo Gateway Metrics in Datadog Metrics Explorer](./envoy-dd-metrics-explorer.png)
 
-You should also be able to see log messages emitted by various Gloo Edge components.
+You should also be able to see log messages emitted by various Gloo Gateway components.
 
-![Gloo Edge Logs in Datadog](./envoy-dd-logs.png)
+![Gloo Gateway Logs in Datadog](./envoy-dd-logs.png)
 
 ---
 
 ## Summary
 
-In this guide we showed you how to integrate Datadog with Gloo Edge and Envoy proxies. It's important to remember that the changes made to the gateway-proxy ConfigMap and Deployment should also be updated in the Helm values file you use to deploy Gloo Edge. This is especially important if you are using Helm version 2, which does not gracefully handle out-of-band changes. It is also possible to configure these settings before Gloo Edge is installed by using a custom values file with the Helm installation. 
+In this guide we showed you how to integrate Datadog with Gloo Gateway and Envoy proxies. It's important to remember that the changes made to the gateway-proxy ConfigMap and Deployment should also be updated in the Helm values file you use to deploy Gloo Gateway. This is especially important if you are using Helm version 2, which does not gracefully handle out-of-band changes. It is also possible to configure these settings before Gloo Gateway is installed by using a custom values file with the Helm installation. 
 
 The full list of Helm values is available in the [docs]({{% versioned_link_path fromRoot="/reference/helm_chart_values/" %}}). The value `gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME` can be updated to add the required annotations, and the value `gatewayProxies.gatewayProxy.stats.routePrefixRewrite` controls the `route.prefix_rewrite` above.

@@ -1,12 +1,12 @@
 ---
 title: Transformations
 weight: 10
-description: Use the Gloo Edge Transformation API to transform requests and responses
+description: Use the Gloo Gateway Transformation API to transform requests and responses
 ---
 
-One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your upstream services and do the same with the resulting responses before they reach the downstream clients. Gloo Edge delivers on this promise by providing you with a powerful transformation API.
+One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your upstream services and do the same with the resulting responses before they reach the downstream clients. Gloo Gateway delivers on this promise by providing you with a powerful transformation API.
 
-To review where transformations happen as Gloo Edge filters traffic, see [Traffic processing]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}).
+To review where transformations happen as Gloo Gateway filters traffic, see [Traffic processing]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}).
 
 ## Defining a transformation
 Transformations are defined by adding the `transformations` attribute to your Virtual Services. You can define this attribute on three different Virtual Service sub-resources:
@@ -142,7 +142,7 @@ The `requestTransformation` and `responseTransformation` attributes have the {{<
 The `inheritTransformation` attribute allows child routes to inherit transformations from their parent RouteTables and/or VirtualHosts. For more information, see [Inheritance rules](#inheritance-rules).
 
 #### Transformation templates
-{{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo Edge's transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of the headers and bodies themselves. The following snippet illustrates the structure of the `transformationTemplate` object:
+{{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo Gateway's transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of the headers and bodies themselves. The following snippet illustrates the structure of the `transformationTemplate` object:
 
 ```yaml
 transformationTemplate:
@@ -160,24 +160,24 @@ transformationTemplate:
 ```
 
 {{% notice note %}}
-The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three different ways of handling the body of the request/response. Please note that **only one of them may be set**, otherwise Gloo Edge will reject the `transformationTemplate`.
+The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three different ways of handling the body of the request/response. Please note that **only one of them may be set**, otherwise Gloo Gateway will reject the `transformationTemplate`.
 {{% /notice %}}
 
 Let's go ahead and describe each one of these attributes in detail.
 
 ##### Body Parsing Behavior
 {{% notice warning %}}
-By default, `transformationTemplate` parses the request/response body as JSON, depending on whether you configure a `requestTransformation` or `responseTransformation`. If Gloo Edge fails to parse the request/response body as JSON, it returns a `400 Bad Request` error.
+By default, `transformationTemplate` parses the request/response body as JSON, depending on whether you configure a `requestTransformation` or `responseTransformation`. If Gloo Gateway fails to parse the request/response body as JSON, it returns a `400 Bad Request` error.
 
 If you want to skip this behavior, you can:
-* Set the [`parseBodyBehavior`](#parsebodybehavior) attribute to `DontParse`. Edge buffers the body as plain text and does not parse it.
-* Set the [`ignoreErrorOnParse`](#ignoreerroronparse) attribute to `true`. Edge parses the body as JSON, but does not return an error if the body is not valid JSON.
-* Enable [`passthrough`](#passthrough). Edge does not parse or buffer the body.
+* Set the [`parseBodyBehavior`](#parsebodybehavior) attribute to `DontParse`. Gloo Gateway buffers the body as plain text and does not parse it.
+* Set the [`ignoreErrorOnParse`](#ignoreerroronparse) attribute to `true`. Gloo Gateway parses the body as JSON, but does not return an error if the body is not valid JSON.
+* Enable [`passthrough`](#passthrough). Gloo Gatewayxs does not parse or buffer the body.
 {{% /notice %}}
 ##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
 
-- `ParseAsJson`: Gloo Edge will attempt to parse the body as a JSON structure. *This is the default behavior*.
+- `ParseAsJson`: Gloo Gateway will attempt to parse the body as a JSON structure. *This is the default behavior*.
 - `DontParse`: the body will be treated as plain text.
 
 The important part to know about the `DontParse` setting is that the body will be buffered and available, but will not be parsed. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
@@ -185,7 +185,7 @@ The important part to know about the `DontParse` setting is that the body will b
 As we will [see later](#templating-language), some of the templating features won't be available when treating the body as plain text.
 
 ##### ignoreErrorOnParse
-By default, Gloo Edge will attempt to parse the body as JSON, unless you have `DontParse` set as the `parseBodyBehavior`. If `ignoreErrorOnParse` is set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
+By default, Gloo Gateway will attempt to parse the body as JSON, unless you have `DontParse` set as the `parseBodyBehavior`. If `ignoreErrorOnParse` is set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
 
 Implicit in this setting is that the body will be buffered and available. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
 
@@ -213,10 +213,10 @@ An extraction must have one of two sources:
     ```
 
 {{% notice note %}}
-The `body` extraction source has been introduced with **Gloo Edge**, release 0.20.12, and **Gloo Edge Enterprise**, release 0.20.7. If you are using an earlier version, it will not work.
+The `body` extraction source has been introduced with **Gloo Gateway**, release 0.20.12, and **Gloo Gateway Enterprise**, release 0.20.7. If you are using an earlier version, it will not work.
 {{% /notice %}}
 
-Extracting the body is generally not useful when Gloo Edge has already parsed it as JSON, the default behavior. The parsed body data can be directly referenced using standard JSON syntax. The `body` extractor treats the body as plaintext, and is interpreted using a regular expression as noted below. This can be useful for body data that cannot be parsed as JSON.
+Extracting the body is generally not useful when Gloo Gateway has already parsed it as JSON, the default behavior. The parsed body data can be directly referenced using standard JSON syntax. The `body` extractor treats the body as plaintext, and is interpreted using a regular expression as noted below. This can be useful for body data that cannot be parsed as JSON.
 
 An extraction must also define which information is to be extracted from the source. This can be done by providing a regular expression via the `regex` attribute. The regular expression will be applied to the body or to the value of relevant header and must match the entire source. If your regular expression uses _capturing groups_, you can select the group match you want to use via the `subgroup` attribute.
 
@@ -272,7 +272,7 @@ Extracted values can be used in two ways:
 
 ##### Extractor Modes
 
-Starting with Gloo Edge 1.15, extractors support multiple different modes of operation. These modes enable more powerful and flexible extraction capabilities. You can specify the mode of operation for an extractor by using the `mode` field. The supported modes are:
+Starting with Gloo Gateway 1.15, extractors support multiple different modes of operation. These modes enable more powerful and flexible extraction capabilities. You can specify the mode of operation for an extractor by using the `mode` field. The supported modes are:
 
 |Mode|Description|Configuration validation|
 |--|--|--|
@@ -384,7 +384,7 @@ transformationTemplate:
 See the [template language section](#templating-language) for more details about template strings.
 
 ##### passthrough
-In some cases your do not need to transform the request/response body nor extract information from it. In these cases, particularly if the payload is large, you should use the `passthrough` attribute to instruct Gloo Edge to ignore the body (i.e. to not buffer it). The attribute always takes just the empty value:
+In some cases your do not need to transform the request/response body nor extract information from it. In these cases, particularly if the payload is large, you should use the `passthrough` attribute to instruct Gloo Gateway to ignore the body (i.e. to not buffer it). The attribute always takes just the empty value:
 
 ```yaml
 transformationTemplate:
@@ -438,12 +438,12 @@ dynamicMetadataValues:
 
 ```
 
-The `metadataNamespace` is optional. It defaults to the namespace of the Gloo Edge transformation filter name, i.e. `io.solo.transformation`.
+The `metadataNamespace` is optional. It defaults to the namespace of the Gloo Gateway transformation filter name, i.e. `io.solo.transformation`.
 
 A common use case for this attribute is to define custom data to be included in your access logs. See the [dedicated tutorial]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/enrich_access_logs/" %}}) for an example of how this can be achieved.
 
 ##### advancedTemplates
-This attribute determines which notation to use when accessing elements in JSON structures. If set to `true`, Gloo Edge will expect JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start"). Defaults to `false`.
+This attribute determines which notation to use when accessing elements in JSON structures. If set to `true`, Gloo Gateway will expect JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start"). Defaults to `false`.
 
 If set to `true`, you must use the `extraction` function to access extractors in template strings, such as `{{ extraction("myExtractor") }}`. If set to `false` (default), you must reference extractors in template strings by name only, such as `{{ myExtractor }}`.
 
@@ -455,7 +455,7 @@ This attribute is used to set for the entire transformation whether Inja should 
 Unless `parseBodyBehavior` is set to `DontParse`, templates can be used only if the request/response payload is a JSON string.
 {{% /notice %}}
 
-Gloo Edge templates are powered by v3.4 of the [Inja](https://github.com/pantor/inja/tree/v3.4.0) template engine, which is inspired by the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python. When writing your templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic, and functions.
+Gloo Gateway templates are powered by v3.4 of the [Inja](https://github.com/pantor/inja/tree/v3.4.0) template engine, which is inspired by the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python. When writing your templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic, and functions.
 
 In addition to the standard functions available in the core _Inja_ library, you can use additional custom functions that we have added:
 
@@ -496,6 +496,6 @@ XSLT transformations typically accept only XML as input. If the input to the tra
 the XSLT transformation is transforming a JSON input to XML, this would be set to `true`. By default, this is false and the XSLT transformation will only accept XML input.
 
 ### Common use cases
-On this page we have seen all the properties of the Gloo Edge Transformation API as well as some simple example snippets. If are looking for complete examples, please check out the following tutorials, which will guide you through some of the most common transformation use cases.
+On this page we have seen all the properties of the Gloo Gateway Transformation API as well as some simple example snippets. If are looking for complete examples, please check out the following tutorials, which will guide you through some of the most common transformation use cases.
 
 {{% children description="true" %}}
