@@ -34,6 +34,61 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+// TestMissingUpstream tests behaviors when Gloo allows invalid VirtualServices to be persisted
+func (s *testingSuite) TestMissingUpstream() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
+
+		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+		s.Assert().NoError(err)
+	})
+
+	// Apply setup
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+	s.Assert().NoError(err)
+	// Check that test resources are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+
+	// First apply valid VirtualService, and no Upstream
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply "+validation.ExampleVS)
+
+	// missing Upstream ref in VirtualService
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Warning,
+		gloo_defaults.GlooReporter,
+	)
+
+	// Apply upstream
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply "+validation.ExampleUpstream)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+
+	// Status should be fixed
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+}
+
 // TestInvalidUpstreamMissingPort tests behaviors when Gloo accepts an invalid upstream with a missing port
 func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 	s.T().Cleanup(func() {

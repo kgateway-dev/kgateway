@@ -14,7 +14,7 @@ import (
 )
 
 // TestTransformationValidationDisabled is the function which executes a series of tests against a given
-// installation where validation has the validation server disabled
+// installation where validation has disableTransformationValidation=true
 func TestTransformationValidationDisabled(t *testing.T) {
 	ctx := context.Background()
 	testInstallation := e2e.CreateTestInstallation(

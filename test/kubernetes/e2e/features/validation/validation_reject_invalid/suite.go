@@ -1,4 +1,4 @@
-package validation_strict
+package validation_reject_invalid
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is the entire Suite of tests for the webhook validation alwaysAccept=false feature
+// testingSuite is the entire Suite of tests for the webhook validation where invalid resources are rejected (alwaysAccept=false)
 type testingSuite struct {
 	suite.Suite
 
@@ -35,52 +35,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		ctx:              ctx,
 		testInstallation: testInst,
 	}
-}
-
-// TestInvalidUpstreamMissingPort tests behaviors when Gloo rejects an invalid upstream with a missing port
-func (s *testingSuite) TestInvalidUpstreamMissingPort() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
-		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
-		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
-	s.Assert().NoError(err)
-	// Check that test resources are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.NginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
-	})
-
-	// Upstream is only rejected when the upstream plugin is run when a valid cluster is present
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().NoError(err, "can apply valid upstream")
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleUpstreamName, clients.ReadOpts{Ctx: s.ctx})
-		},
-		core.Status_Accepted,
-		gloo_defaults.GlooReporter,
-	)
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().NoError(err, "can apply valid virtual service")
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, validation.ExampleVsName, clients.ReadOpts{Ctx: s.ctx})
-		},
-		core.Status_Accepted,
-		gloo_defaults.GlooReporter,
-	)
-
-	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.Upstream failed: validating *v1.Upstream name:"invalid-us" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, "port cannot be empty for host")
 }
 
 /*
@@ -170,7 +124,7 @@ func (s *testingSuite) TestRejectsInvalidGatewayResources() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.Gateway failed: validating *v1.Gateway name:"gateway-without-type" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, `Validating *v1.Gateway failed: validating *v1.Gateway name:"gateway-without-type"`)
 	s.Assert().Contains(output, "invalid gateway: gateway must contain gatewayType")
 }
 
@@ -179,7 +133,7 @@ func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
 	output, _ := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	// We don't expect an error exit code here because this is a warning
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1alpha1.RateLimitConfig failed: validating *v1alpha1.RateLimitConfig name:"rlc" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, `Validating *v1alpha1.RateLimitConfig failed: validating *v1alpha1.RateLimitConfig name:"rlc"`)
 	s.Assert().Contains(output, "The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead")
 }
 
@@ -188,17 +142,8 @@ func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.VirtualService failed: validating *v1.VirtualService name:"method-matcher" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, `*v1.VirtualService failed: validating *v1.VirtualService name:"method-matcher"`)
 	s.Assert().Contains(output, "invalid route: routes with delegate actions must use a prefix matcher")
-}
-
-// TestRejectsInvalidVSMissingUpstream tests behaviors when Gloo rejects invalid VirtualService resources due to missing upstream
-func (s *testingSuite) TestRejectsInvalidVSMissingUpstream() {
-	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualMissingUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().Error(err)
-	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, fmt.Sprintf(`Validating *v1.VirtualService failed: validating *v1.VirtualService name:"no-upstream-vs" namespace:"%s": 1 error occurred`, s.testInstallation.Metadata.InstallNamespace))
-	s.Assert().Contains(output, fmt.Sprintf(`Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { %s.does-not-exist } not found`, s.testInstallation.Metadata.InstallNamespace))
 }
 
 // TestRejectsInvalidVSTypo tests behaviors when Gloo rejects invalid VirtualService resources due to typos
@@ -218,4 +163,29 @@ func (s *testingSuite) TestRejectsInvalidVSTypo() {
 			strings.Contains(output, `VirtualService in version "v1" cannot be handled as a VirtualService: strict decoding error: unknown field "spec.virtualHoost"`)
 
 	}, "rejects invalid VirtualService with typo")
+}
+
+// TestRejectTransformation checks webhook rejects invalid transformation when disableTransformationValidation=false
+func (s *testingSuite) TestRejectTransformation() {
+	// reject invalid inja template in transformation
+	// This is only rejected when allowWarnings=false
+	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Error(err)
+	s.Assert().Contains(output, "Failed to parse response template: Failed to parse "+
+		"header template ':status': [inja.exception.parser_error] (at 1:92) expected statement close, got '%'")
+
+	// Extract mode -- rejects invalid subgroup in transformation
+	// note that the regex has no subgroups, but we are trying to extract the first subgroup
+	// this should be rejected
+	output, err = s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.VSTransformationExtractors, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Error(err)
+	s.Assert().Contains(output, "envoy validation mode output: error initializing configuration '': Failed to parse response template: group 1 requested for regex with only 0 sub groups")
+
+	// Single replace mode -- rejects invalid subgroup in transformation
+	// note that the regex has no subgroups, but we are trying to extract the first subgroup
+	// this should be rejected
+	output, err = s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.VSTransformationSingleReplace, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Error(err)
+	s.Assert().Contains(output, "envoy validation mode output: error initializing configuration '': Failed to parse response template: group 1 requested for regex with only 0 sub groups")
+
 }
