@@ -329,9 +329,9 @@ func preInstallMessage(installOpts *options.Install, mode Mode) {
 	}
 	switch mode {
 	case Enterprise:
-		fmt.Println("Starting Gloo Edge Enterprise installation...")
+		fmt.Println("Starting Gloo Gateway Enterprise installation...")
 	default:
-		fmt.Println("Starting Gloo Edge installation...")
+		fmt.Println("Starting Gloo Gateway installation...")
 	}
 }
 func postInstallMessage(installOpts *options.Install, mode Mode) {
@@ -340,9 +340,9 @@ func postInstallMessage(installOpts *options.Install, mode Mode) {
 	}
 	switch mode {
 	case Enterprise:
-		fmt.Println("\nGloo Edge Enterprise was successfully installed!")
+		fmt.Println("\nGloo Gateway Enterprise was successfully installed!")
 		if installOpts.WithGlooFed {
-			fmt.Println("\nGloo Edge Federation was successfully installed!")
+			fmt.Println("\nGloo Gateway Federation was successfully installed!")
 			fmt.Println("\nYou can now register your cluster with:")
 			fmt.Println("\nFor GKE clusters:")
 			fmt.Println(" glooctl cluster register --cluster-name [ex. gloo-fed-remote] --remote-context [gke-context-name] --federation-namespace [default: gloo-fed]")
@@ -351,7 +351,7 @@ func postInstallMessage(installOpts *options.Install, mode Mode) {
 			fmt.Println("\nSee the cluster registration guide for more information: https://docs.solo.io/gloo-edge/latest/guides/gloo_federation/cluster_registration/")
 		}
 	default:
-		fmt.Println("\nGloo Edge was successfully installed!")
+		fmt.Println("\nGloo Gateway was successfully installed!")
 	}
 }
 

@@ -4,7 +4,7 @@ weight: 80
 description: Routing to services registered as Kubernetes Services through the API
 ---
 
-To allow for optimal performance in Gloo Edge, it is recommended to use Gloo [static]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream/" %}}) and [discovered]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" %}}) Upstreams as your routing destination. However, if you run Gloo Edge in a Kubernetes cluster, you can choose between the following options to route to a Kubernetes service: 
+To allow for optimal performance in Gloo Gateway, it is recommended to use Gloo [static]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream/" %}}) and [discovered]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" %}}) Upstreams as your routing destination. However, if you run Gloo Gateway in a Kubernetes cluster, you can choose between the following options to route to a Kubernetes service: 
 
 ## Option 1: Route to a Kubernetes service directly
 
@@ -12,14 +12,14 @@ You can configure your VirtualService to route to a Kubernetes service (`routeAc
 
 {{% notice note %}}
 Consider the following information before choosing a Kubernetes service as your routing destination: 
-- For Gloo Edge to route traffic to a Kubernetes service directly, Gloo Edge requires scanning of all services in the cluster to create in-memory Upstream resources to represent them. Creating in-memory Upstream resources is automatically done for you if you set `disableKubernetesDestinations: false` in your Settings resource. 
-- Gloo Edge uses these resources to validate that the destination is valid and returns an error if the specified Kubernetes service cannot be found. Note that the in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time. In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true`. For more information, see [Disable Kubernetes destinations]({{< versioned_link_path fromRoot="/operations/production_deployment/#disable-kubernetes-destinations" >}}). 
-- Some Gloo Edge functionality, such as outlier detection policies or customizing load balancing modes, might not be available when using Kubernetes services as a routing destination. 
+- For Gloo Gateway to route traffic to a Kubernetes service directly, Gloo Gateway requires scanning of all services in the cluster to create in-memory Upstream resources to represent them. Creating in-memory Upstream resources is automatically done for you if you set `disableKubernetesDestinations: false` in your Settings resource. 
+- Gloo Gateway uses these resources to validate that the destination is valid and returns an error if the specified Kubernetes service cannot be found. Note that the in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Gateway translation and reconciliation time. In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true`. For more information, see [Disable Kubernetes destinations]({{< versioned_link_path fromRoot="/operations/production_deployment/#disable-kubernetes-destinations" >}}). 
+- Some Gloo Gateway functionality, such as outlier detection policies or customizing load balancing modes, might not be available when using Kubernetes services as a routing destination. 
 {{% /notice %}}
 
 To use Kubernetes services as a routing destination: 
 
-1. Get the default Gloo Edge settings and verify that `spec.gloo.disableKubernetesDestinations` is set to `false`. This setting is required to allow Gloo Edge to scan all Kubernetes services in the cluster and to create in-memory Upstream resources to represent them. If it is set to `true`, you cannot route to a Kubernetes service directly as the in-memory Upstream resources do not exist in your cluster. Follow the [upgrade guide]({{% versioned_link_path fromRoot="/operations/upgrading/" %}}) and set `settings.disableKubernetesDestinations: false` in your Helm chart to let Gloo Edge create the resources for you. 
+1. Get the default Gloo Gateway settings and verify that `spec.gloo.disableKubernetesDestinations` is set to `false`. This setting is required to allow Gloo Gateway to scan all Kubernetes services in the cluster and to create in-memory Upstream resources to represent them. If it is set to `true`, you cannot route to a Kubernetes service directly as the in-memory Upstream resources do not exist in your cluster. Follow the [upgrade guide]({{% versioned_link_path fromRoot="/operations/upgrading/" %}}) and set `settings.disableKubernetesDestinations: false` in your Helm chart to let Gloo Gateway create the resources for you. 
    ```sh
    kubectl get settings default -n gloo-system -o yaml
    ```

@@ -662,7 +662,7 @@ message GlooOptions {
         uint32 invalid_route_response_code = 2;
 
         // replaced routes reply to clients with this response body.
-        // default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
+        // default is 'Gloo Edge has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
         string invalid_route_response_body = 3;
     }
 

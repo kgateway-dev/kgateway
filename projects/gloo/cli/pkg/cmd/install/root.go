@@ -38,7 +38,7 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 		Long:   constants.UNINSTALL_COMMAND.Long,
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Uninstalling Gloo Edge...\n")
+			fmt.Printf("Uninstalling Gloo Gateway...\n")
 			if err := Uninstall(opts, &install.CmdKubectl{}, Gloo); err != nil {
 				return err
 			}

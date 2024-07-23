@@ -14,7 +14,7 @@ External processing is an Enterprise-only feature.
 Envoy's external processing filter is considered a work in progress and has an unknown security posture. Use caution when using this feature in production environments. For more information, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter#external-processing).
 {{% /notice %}}
 
-1. Before you begin, install [Gloo Edge Enterprise]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}) in your cluster. 
+1. Before you begin, install [Gloo Gateway Enterprise]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}) in your cluster. 
 
 2. Set up the ExtProc server. This example uses a prebuilt ExtProc server that manipulates request and response headers based on instructions that are sent in an `instructions` header. 
    
@@ -87,7 +87,7 @@ EOF
    ext-proc-grpc-59d44ddf76-42q2x   1/1     Running   0          24m
    ```
    
-4. Edit the default `Settings` custom resource to enable ExtProc in Gloo Edge. 
+4. Edit the default `Settings` custom resource to enable ExtProc in Gloo Gateway. 
    ```
    kubectl edit settings default -n gloo-system
    ```
