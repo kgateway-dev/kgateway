@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/gcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
@@ -194,11 +193,6 @@ var _ = Describe("Upstream", func() {
 				NamespacedStatuses: initialStatuses(),
 				UpstreamType: &v1.Upstream_AwsEc2{
 					AwsEc2: &ec2.UpstreamSpec{},
-				}}),
-			Entry("Gcp", &v1.Upstream{
-				NamespacedStatuses: initialStatuses(),
-				UpstreamType: &v1.Upstream_Gcp{
-					Gcp: &gcp.UpstreamSpec{},
 				}}),
 			Entry("Kube without ServiceSpec", &v1.Upstream{
 				NamespacedStatuses: initialStatuses(),
