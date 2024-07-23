@@ -131,13 +131,14 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	}
 
 	gwCfg := GatewayConfig{
-		Mgr:           mgr,
-		GWClasses:     sets.New(append(cfg.Opts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
-		AutoProvision: AutoProvision,
-		ControlPlane:  cfg.Opts.ControlPlane,
-		IstioValues:   cfg.Opts.GlooGateway.IstioValues,
-		Kick:          inputChannels.Kick,
-		Extensions:    k8sGwExtensions,
+		Mgr:            mgr,
+		GWClasses:      sets.New(append(cfg.Opts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
+		ControllerName: wellknown.GatewayControllerName,
+		AutoProvision:  AutoProvision,
+		ControlPlane:   cfg.Opts.ControlPlane,
+		IstioValues:    cfg.Opts.GlooGateway.IstioValues,
+		Kick:           inputChannels.Kick,
+		Extensions:     k8sGwExtensions,
 	}
 	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
