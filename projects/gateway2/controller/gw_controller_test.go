@@ -20,7 +20,6 @@ var _ = Describe("GwController", func() {
 	DescribeTable(
 		"should add status to gateway",
 		func(gwClass string) {
-			print(gwClass)
 			same := api.NamespacesFromSame
 			gwName := "gw-" + gwClass
 			gw := api.Gateway{

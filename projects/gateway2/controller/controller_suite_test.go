@@ -40,6 +40,8 @@ var (
 	cancel    context.CancelFunc
 
 	kubeconfig string
+
+	gwClasses = sets.New(gatewayClassName, altGatewayClassName)
 )
 
 const (
@@ -108,7 +110,7 @@ var _ = BeforeSuite(func() {
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		GWClasses:      sets.New(gatewayClassName, altGatewayClassName),
+		GWClasses:      gwClasses,
 		AutoProvision:  true,
 		Kick:           func(ctx context.Context) { return },
 		Extensions:     exts,
@@ -116,21 +118,23 @@ var _ = BeforeSuite(func() {
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = k8sClient.Create(ctx, &api.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: gatewayClassName,
-		},
-		Spec: api.GatewayClassSpec{
-			ControllerName: api.GatewayController(gatewayControllerName),
-			ParametersRef: &api.ParametersReference{
-				Group:     api.Group(v1alpha1.GroupVersion.Group),
-				Kind:      api.Kind("GatewayParameters"),
-				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(api.Namespace("default")),
+	for class := range gwClasses {
+		err = k8sClient.Create(ctx, &api.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: class,
 			},
-		},
-	})
-	Expect(err).NotTo(HaveOccurred())
+			Spec: api.GatewayClassSpec{
+				ControllerName: api.GatewayController(gatewayControllerName),
+				ParametersRef: &api.ParametersReference{
+					Group:     api.Group(v1alpha1.GroupVersion.Group),
+					Kind:      api.Kind("GatewayParameters"),
+					Name:      wellknown.DefaultGatewayParametersName,
+					Namespace: ptr.To(api.Namespace("default")),
+				},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	err = k8sClient.Create(ctx, &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
