@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6603
+    resolvesIssue: false
+    description: >-
+      Remove managedFields from API response, and expand tests to more easily inspect the state
+      of returned objects.
+      
+      Only changed unit tests in this PR:
+      
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
