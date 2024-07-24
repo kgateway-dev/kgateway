@@ -249,5 +249,5 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml"),
 	Entry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml"),
 	Entry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
-	Entry("https://github.com/solo-io/solo-projects/issues/6621", "bug-6621.yaml"),
+	Entry("Child route matcher does not match parent", "bug-6621.yaml"),
 )
