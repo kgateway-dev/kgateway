@@ -16,7 +16,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is the entire Suite of tests for the webhook validation alwaysAccept=false and allowWarnings=true features
+// testingSuite is the entire Suite of tests for the webhook validation allowWarnings=true features
 type testingSuite struct {
 	suite.Suite
 
