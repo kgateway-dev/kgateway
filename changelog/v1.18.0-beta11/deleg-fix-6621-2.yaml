@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6621
+    resolvesIssue: false
+    description: |
+      gateway2/delegation: resolve comments from 739b0e950
