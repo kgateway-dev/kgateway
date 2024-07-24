@@ -206,32 +206,63 @@ var _ = Describe("History", func() {
 			), "returned resources include endpoints")
 		})
 
-		It("Excludes Secrets", func() {
-			// TODO: We want to update the implementation to include secrets, but redact the contents of them
-			// https://github.com/solo-io/solo-projects/issues/6600
-
+		It("Includes Secrets (redacted)", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Secrets: v1.SecretList{{
-					Metadata: &core.Metadata{Name: "secret", Namespace: defaults.GlooSystem},
-				}},
-			})
-
-			returnedResources := getInputSnapshotResources(ctx, history)
-			Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(v1.SecretGVK), "returned resources exclude secrets")
-		})
-
-		It("Excludes Artifacts", func() {
-			// TODO: We want to update the implementation to include artifacts, but redact the contents of them
-			// https://github.com/solo-io/solo-projects/issues/6600
-
-			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Artifacts: v1.ArtifactList{
-					{Metadata: &core.Metadata{Name: "artifact", Namespace: defaults.GlooSystem}},
+				Secrets: v1.SecretList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "secret",
+							Namespace: defaults.GlooSystem,
+						},
+						Kind: &v1.Secret_Tls{Tls: &v1.TlsSecret{
+							CertChain:  "cert-chain",
+							PrivateKey: "private-key",
+							RootCa:     "root-ca",
+							OcspStaple: nil,
+						}},
+					},
 				},
 			})
 
 			returnedResources := getInputSnapshotResources(ctx, history)
-			Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(v1.ArtifactGVK), "returned resources exclude artifacts")
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.SecretGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "secret",
+				}),
+				BeEmpty(), // entire secret spec should be nil
+			), "returned resources include secrets")
+		})
+
+		It("Includes Artifacts (redacted)", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Artifacts: v1.ArtifactList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "artifact",
+							Namespace: defaults.GlooSystem,
+						},
+						Data: map[string]string{
+							"key":   "sensitive-data",
+							"key-2": "sensitive-data",
+						},
+					},
+				},
+			})
+
+			returnedResources := getInputSnapshotResources(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.ArtifactGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "artifact",
+				}),
+				HaveKeyWithValue("data", And(
+					HaveKeyWithValue("key", "<redacted>"),
+					HaveKeyWithValue("key-2", "<redacted>"),
+				)),
+			), "returned resources include artifacts")
 		})
 
 		It("Includes UpstreamGroups", func() {
@@ -621,10 +652,6 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(v1.ProxyGVK), "returned resources exclude proxies")
-		})
-
-		It("Sorts resources by GVK", func() {
-			// TODO
 		})
 
 		When("Kubernetes Gateway integration is enabled", func() {

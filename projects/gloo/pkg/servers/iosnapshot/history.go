@@ -292,9 +292,31 @@ func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 // into the hands of the field.As we iterate on this component, we can use some of the redaction
 // utilities in `/pkg/utils/syncutil`.
 func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
-	snap.Secrets = nil
+	snap.Secrets.Each(func(element *gloov1.Secret) {
+		redactSecretData(element)
+	})
 
 	// See `pkg/utils/syncutil/log_redactor.StringifySnapshot` for an explanation for
 	// why we redact Artifacts
-	snap.Artifacts = nil
+	snap.Artifacts.Each(func(element *gloov1.Artifact) {
+		redactArtifactData(element)
+	})
+}
+
+// redactSecretData modifies the secret to remove any sensitive information
+// The structure of a Secret in Gloo Gateway does not lend itself to easily redact data in different places.
+// As a result, we perform a primitive redaction method, where we maintain the metadata, and remove the entire spec
+func redactSecretData(element *gloov1.Secret) {
+	element.Kind = nil
+}
+
+const (
+	redactedString = "<redacted>"
+)
+
+// redactArtifactData modifies the artifact to remove any sensitive information
+func redactArtifactData(element *gloov1.Artifact) {
+	for k := range element.Data {
+		element.Data[k] = redactedString
+	}
 }
