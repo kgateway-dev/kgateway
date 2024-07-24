@@ -37,11 +37,16 @@ func HaveTypeMeta(gvk schema.GroupVersionKind) types.GomegaMatcher {
 // ContainCustomResource returns a GomegaMatcher which matches resource in a list if the provided
 // typeMeta, objectMeta and spec matchers match
 func ContainCustomResource(typeMetaMatcher, objectMetaMatcher, specMatcher types.GomegaMatcher) types.GomegaMatcher {
-	return ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+	return ContainElement(MatchCustomResource(typeMetaMatcher, objectMetaMatcher, specMatcher))
+}
+
+// MatchCustomResource returns a GomegaMatcher which matches a resource if the provided  typeMeta, objectMeta and spec matchers match
+func MatchCustomResource(typeMetaMatcher, objectMetaMatcher, specMatcher types.GomegaMatcher) types.GomegaMatcher {
+	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 		"TypeMeta":   typeMetaMatcher,
 		"ObjectMeta": objectMetaMatcher,
-		"Spec":       specMatcher,
-	}))
+		"Spec":       gstruct.PointTo(specMatcher),
+	})
 }
 
 // ContainCustomResourceType returns a GomegaMatcher which matches resource in a list if the provided

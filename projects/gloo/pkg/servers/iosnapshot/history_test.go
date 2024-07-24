@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	skmatchers "github.com/solo-io/solo-kit/test/matchers"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -206,32 +207,63 @@ var _ = Describe("History", func() {
 			), "returned resources include endpoints")
 		})
 
-		It("Excludes Secrets", func() {
-			// TODO: We want to update the implementation to include secrets, but redact the contents of them
-			// https://github.com/solo-io/solo-projects/issues/6600
-
+		It("Includes Secrets (redacted)", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Secrets: v1.SecretList{{
-					Metadata: &core.Metadata{Name: "secret", Namespace: defaults.GlooSystem},
-				}},
-			})
-
-			returnedResources := getInputSnapshotResources(ctx, history)
-			Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(v1.SecretGVK), "returned resources exclude secrets")
-		})
-
-		It("Excludes Artifacts", func() {
-			// TODO: We want to update the implementation to include artifacts, but redact the contents of them
-			// https://github.com/solo-io/solo-projects/issues/6600
-
-			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
-				Artifacts: v1.ArtifactList{
-					{Metadata: &core.Metadata{Name: "artifact", Namespace: defaults.GlooSystem}},
+				Secrets: v1.SecretList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "secret",
+							Namespace: defaults.GlooSystem,
+						},
+						Kind: &v1.Secret_Tls{Tls: &v1.TlsSecret{
+							CertChain:  "cert-chain",
+							PrivateKey: "private-key",
+							RootCa:     "root-ca",
+							OcspStaple: nil,
+						}},
+					},
 				},
 			})
 
 			returnedResources := getInputSnapshotResources(ctx, history)
-			Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(v1.ArtifactGVK), "returned resources exclude artifacts")
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.SecretGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "secret",
+				}),
+				BeEmpty(), // entire secret spec should be nil
+			), "returned resources include secrets")
+		})
+
+		It("Includes Artifacts (redacted)", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Artifacts: v1.ArtifactList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "artifact",
+							Namespace: defaults.GlooSystem,
+						},
+						Data: map[string]string{
+							"key":   "sensitive-data",
+							"key-2": "sensitive-data",
+						},
+					},
+				},
+			})
+
+			returnedResources := getInputSnapshotResources(ctx, history)
+			Expect(returnedResources).To(matchers.ContainCustomResource(
+				matchers.HaveTypeMeta(v1.ArtifactGVK),
+				matchers.HaveObjectMeta(types.NamespacedName{
+					Namespace: defaults.GlooSystem,
+					Name:      "artifact",
+				}),
+				HaveKeyWithValue("data", And(
+					HaveKeyWithValue("key", "<redacted>"),
+					HaveKeyWithValue("key-2", "<redacted>"),
+				)),
+			), "returned resources include artifacts")
 		})
 
 		It("Includes UpstreamGroups", func() {
@@ -621,10 +653,6 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(v1.ProxyGVK), "returned resources exclude proxies")
-		})
-
-		It("Sorts resources by GVK", func() {
-			// TODO
 		})
 
 		When("Kubernetes Gateway integration is enabled", func() {
@@ -1028,6 +1056,33 @@ var _ = Describe("History", func() {
 		})
 	})
 
+	Context("GetEdgeApiSnapshot", func() {
+
+		It("returns ApiSnapshot", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Proxies: v1.ProxyList{
+					{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}},
+				},
+				Upstreams: v1.UpstreamList{
+					{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}},
+				},
+			})
+
+			snap := getEdgeApiSnapshot(ctx, history)
+			Expect(snap.Proxies).To(ContainElements(
+				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}}),
+				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}}),
+			))
+			Expect(snap.Upstreams).To(ContainElements(
+				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}}),
+				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}}),
+			))
+		})
+
+	})
+
 	Context("GetProxySnapshot", func() {
 
 		It("returns ApiSnapshot with _only_ Proxies", func() {
@@ -1069,25 +1124,36 @@ var _ = Describe("History", func() {
 })
 
 func getInputSnapshotResources(ctx context.Context, history History) []crdv1.Resource {
-	inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-	Expect(err).NotTo(HaveOccurred())
+	snapshotResponse := history.GetInputSnapshot(ctx)
+	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var returnedResources []crdv1.Resource
-	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
+	err := json.Unmarshal(snapshotResponse.Data, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
 	return returnedResources
 }
 
 func getProxySnapshotResources(ctx context.Context, history History) []crdv1.Resource {
-	inputSnapshotBytes, err := history.GetProxySnapshot(ctx)
-	Expect(err).NotTo(HaveOccurred())
+	snapshotResponse := history.GetProxySnapshot(ctx)
+	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var returnedResources []crdv1.Resource
-	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
+	err := json.Unmarshal(snapshotResponse.Data, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
 	return returnedResources
+}
+
+func getEdgeApiSnapshot(ctx context.Context, history History) *v1snap.ApiSnapshot {
+	snapshotResponse := history.GetEdgeApiSnapshot(ctx)
+	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
+
+	var snap *v1snap.ApiSnapshot
+	err := json.Unmarshal(snapshotResponse.Data, &snap)
+	Expect(err).NotTo(HaveOccurred())
+
+	return snap
 }
 
 // setSnapshotOnHistory sets the ApiSnapshot on the history, and blocks until it has been processed

@@ -30,14 +30,26 @@ type History interface {
 	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
 	// Gateway integration is enabled, it additionally returns all resources on the cluster
 	// with types specified by `kubeGvks`.
-	GetInputSnapshot(ctx context.Context) ([]byte, error)
+	GetInputSnapshot(ctx context.Context) SnapshotResponseData
+
+	// GetEdgeApiSnapshot returns all resources in the Edge input snapshot
+	GetEdgeApiSnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetProxySnapshot returns the Proxies generated for all components.
-	GetProxySnapshot(ctx context.Context) ([]byte, error)
+	GetProxySnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
 	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-	GetXdsSnapshot(ctx context.Context) ([]byte, error)
+	GetXdsSnapshot(ctx context.Context) SnapshotResponseData
+}
+
+// SnapshotResponseData is the data that is returned by Getter methods on the History object
+// It allows us to encapsulate data and errors together, so that if an issue occurs durin the request,
+// we can get access to all the relevant information
+type SnapshotResponseData struct {
+	Status string
+	Data   []byte
+	Error  error
 }
 
 // HistoryFactoryParameters are the inputs used to create a History object
@@ -109,8 +121,36 @@ func (h *historyImpl) SetKubeGatewayClient(kubeGatewayClient client.Client) {
 	}()
 }
 
+func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData {
+	snap := h.getRedactedApiSnapshot()
+
+	m, err := apiSnapshotToGenericMap(snap)
+	if err != nil {
+		return SnapshotResponseData{
+			Status: "error",
+			Data:   nil,
+			Error:  err,
+		}
+	}
+
+	data, err := formatOutput("json_compact", m)
+	if err != nil {
+		return SnapshotResponseData{
+			Status: "error",
+			Data:   data,
+			Error:  err,
+		}
+	}
+
+	return SnapshotResponseData{
+		Status: "complete",
+		Data:   data,
+		Error:  nil,
+	}
+}
+
 // GetInputSnapshot gets the input snapshot for all components.
-func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
+func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 
 	// Proxies are defined on the ApiSnapshot, but are not considered part of the
@@ -134,14 +174,22 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 	// get the resources from the edge api snapshot
 	resources, err := snapshotToKubeResources(snap)
 	if err != nil {
-		return nil, err
+		return SnapshotResponseData{
+			Status: "error",
+			Data:   nil,
+			Error:  err,
+		}
 	}
 
 	// get settings, which is not part of the api snapshot
 	if h.settings != nil {
 		settings, err := settingsToKubeResource(h.settings)
 		if err != nil {
-			return nil, err
+			return SnapshotResponseData{
+				Status: "error",
+				Data:   nil,
+				Error:  err,
+			}
 		}
 		resources = append(resources, *settings)
 	}
@@ -150,14 +198,23 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 	// (if kube gateway integration is enabled)
 	kubeResources, err := h.getKubeGatewayResources(ctx)
 	if err != nil {
-		return nil, err
+		return SnapshotResponseData{
+			Status: "error",
+			Data:   nil,
+			Error:  err,
+		}
 	}
 	resources = append(resources, kubeResources...)
 
-	return formatResources(resources)
+	data, err := formatResources(resources)
+	return SnapshotResponseData{
+		Status: "complete",
+		Data:   data,
+		Error:  err,
+	}
 }
 
-func (h *historyImpl) GetProxySnapshot(_ context.Context) ([]byte, error) {
+func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 
 	onlyProxies := &v1snap.ApiSnapshot{
@@ -166,15 +223,24 @@ func (h *historyImpl) GetProxySnapshot(_ context.Context) ([]byte, error) {
 
 	resources, err := snapshotToKubeResources(onlyProxies)
 	if err != nil {
-		return nil, err
+		return SnapshotResponseData{
+			Status: "error",
+			Data:   nil,
+			Error:  err,
+		}
 	}
 
-	return formatResources(resources)
+	data, err := formatResources(resources)
+	return SnapshotResponseData{
+		Status: "complete",
+		Data:   data,
+		Error:  err,
+	}
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
 // NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
+func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 
@@ -187,7 +253,12 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
 		}
 	}
 
-	return formatOutput("json_compact", cacheEntries)
+	data, err := formatOutput("json_compact", cacheEntries)
+	return SnapshotResponseData{
+		Status: "complete",
+		Data:   data,
+		Error:  err,
+	}
 }
 
 // getRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
@@ -292,9 +363,31 @@ func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 // into the hands of the field.As we iterate on this component, we can use some of the redaction
 // utilities in `/pkg/utils/syncutil`.
 func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
-	snap.Secrets = nil
+	snap.Secrets.Each(func(element *gloov1.Secret) {
+		redactSecretData(element)
+	})
 
 	// See `pkg/utils/syncutil/log_redactor.StringifySnapshot` for an explanation for
 	// why we redact Artifacts
-	snap.Artifacts = nil
+	snap.Artifacts.Each(func(element *gloov1.Artifact) {
+		redactArtifactData(element)
+	})
+}
+
+// redactSecretData modifies the secret to remove any sensitive information
+// The structure of a Secret in Gloo Gateway does not lend itself to easily redact data in different places.
+// As a result, we perform a primitive redaction method, where we maintain the metadata, and remove the entire spec
+func redactSecretData(element *gloov1.Secret) {
+	element.Kind = nil
+}
+
+const (
+	redactedString = "<redacted>"
+)
+
+// redactArtifactData modifies the artifact to remove any sensitive information
+func redactArtifactData(element *gloov1.Artifact) {
+	for k := range element.Data {
+		element.Data[k] = redactedString
+	}
 }

@@ -18,7 +18,7 @@ import (
 func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error) {
 	var resourceList []crdv1.Resource
 
-	// gloo.solo.io resourceList
+	// gloo.solo.io resources
 	for _, upstream := range snap.Upstreams {
 		kubeUpstream, err := gloov1.UpstreamCrd.KubeResource(upstream)
 		if err != nil {
@@ -50,7 +50,23 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		resourceList = append(resourceList, *kubeEndpoint)
 	}
 
-	// gateway.solo.io resourceList
+	// Secrets and Artifacts do not follow the same base format as other resources, so we must use the custom conversion
+	for _, artifact := range snap.Artifacts {
+		kubeArtifact, err := convertToKube(artifact, gloov1.ArtifactCrd)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, *kubeArtifact)
+	}
+	for _, secret := range snap.Secrets {
+		kubeSecret, err := convertToKube(secret, gloov1.SecretCrd)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, *kubeSecret)
+	}
+
+	// gateway.solo.io resources
 	for _, gw := range snap.Gateways {
 		kubeGw, err := gatewayv1.GatewayCrd.KubeResource(gw)
 		if err != nil {
@@ -102,7 +118,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		resourceList = append(resourceList, *kubeTgw)
 	}
 
-	// enterprise.gloo.solo.io resourceList
+	// enterprise.gloo.solo.io resources
 	for _, ac := range snap.AuthConfigs {
 		kubeAc, err := extauthv1.AuthConfigCrd.KubeResource(ac)
 		if err != nil {
@@ -111,7 +127,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		resourceList = append(resourceList, *kubeAc)
 	}
 
-	// ratelimit.solo.io resourceList
+	// ratelimit.solo.io resources
 	for _, rlc := range snap.Ratelimitconfigs {
 		kubeRlc, err := ratelimitv1alpha1.RateLimitConfigCrd.KubeResource(rlc)
 		if err != nil {
@@ -120,7 +136,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		resourceList = append(resourceList, *kubeRlc)
 	}
 
-	// graphql.gloo.solo.io resourceList
+	// graphql.gloo.solo.io resources
 	for _, gqlApi := range snap.GraphqlApis {
 		kubeGqlApi, err := graphqlv1beta1.GraphQLApiCrd.KubeResource(gqlApi)
 		if err != nil {
