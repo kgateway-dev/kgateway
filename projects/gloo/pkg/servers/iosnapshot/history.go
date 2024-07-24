@@ -82,8 +82,7 @@ type historyImpl struct {
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
 	kubeGatewayClient client.Client
-	// this will hold all the kube gvks that we want to show in the input snapshot when kube gateway
-	// integration is enabled
+	// kubeGvks is the list of GVKs that the historyImpl will return when GetInputSnapshot is invoked
 	kubeGvks []schema.GroupVersionKind
 }
 

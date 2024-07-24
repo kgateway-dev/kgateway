@@ -362,8 +362,8 @@ observability:
     logLevel: error
 ```
 
-### Gloo Admin Endpoints [*Recommended, Introduced in 1.18*]
-The Control Plane exposes a set of [Administration endpoints](/projects/gloo/pkg/servers/admin). To access these:
+### Gloo Admin Endpoints [*Recommended, Introduced in 1.17*]
+The Control Plane exposes a set of [Administration endpoints](https://github.com/solo-io/gloo/tree/3ad2c1b4e7f0d73f6caeacee461f04315e612d47/projects/gloo/pkg/servers/admin). To access these:
 
 * Enable port forwarding:
 ```
@@ -375,7 +375,7 @@ The following endpoints are then available:
 * `http://localhost:9091/snapshots/proxies`: Returns a list of Proxy CRs.
 * `http://localhost:9091/snapshots/xds`: Returns a map of xDS snapshots, keyed by the cache key for each snapshot.
 
-### Dev Mode and Gloo Debug Endpoint [*Deprecated as of 1.18*]
+### Dev Mode and Gloo Debug Endpoint [*Deprecated as of 1.17*]
 
 In non-production environments `settings.devMode` can be set to `true` to enable a debug endpoint on the gloo deployment on port `10010`. If this flag set at install time, the port will be exposed automatically. To set it on an existing installation:
 * Enable in the settings CR:
