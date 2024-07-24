@@ -48,7 +48,7 @@ type History interface {
 // we can get access to all the relevant information
 type SnapshotResponseData struct {
 	Status string
-	Data   []byte
+	Data   string
 	Error  error
 }
 
@@ -128,7 +128,7 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 	if err != nil {
 		return SnapshotResponseData{
 			Status: "error",
-			Data:   nil,
+			Data:   "",
 			Error:  err,
 		}
 	}
@@ -137,14 +137,14 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 	if err != nil {
 		return SnapshotResponseData{
 			Status: "error",
-			Data:   data,
+			Data:   string(data),
 			Error:  err,
 		}
 	}
 
 	return SnapshotResponseData{
 		Status: "complete",
-		Data:   data,
+		Data:   string(data),
 		Error:  nil,
 	}
 }
@@ -176,7 +176,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	if err != nil {
 		return SnapshotResponseData{
 			Status: "error",
-			Data:   nil,
+			Data:   "",
 			Error:  err,
 		}
 	}
@@ -187,7 +187,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 		if err != nil {
 			return SnapshotResponseData{
 				Status: "error",
-				Data:   nil,
+				Data:   "",
 				Error:  err,
 			}
 		}
@@ -200,7 +200,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	if err != nil {
 		return SnapshotResponseData{
 			Status: "error",
-			Data:   nil,
+			Data:   "",
 			Error:  err,
 		}
 	}
@@ -209,7 +209,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	data, err := formatResources(resources)
 	return SnapshotResponseData{
 		Status: "complete",
-		Data:   data,
+		Data:   string(data),
 		Error:  err,
 	}
 }
@@ -225,7 +225,7 @@ func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 	if err != nil {
 		return SnapshotResponseData{
 			Status: "error",
-			Data:   nil,
+			Data:   "",
 			Error:  err,
 		}
 	}
@@ -233,7 +233,7 @@ func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 	data, err := formatResources(resources)
 	return SnapshotResponseData{
 		Status: "complete",
-		Data:   data,
+		Data:   string(data),
 		Error:  err,
 	}
 }
@@ -256,7 +256,7 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	data, err := formatOutput("json_compact", cacheEntries)
 	return SnapshotResponseData{
 		Status: "complete",
-		Data:   data,
+		Data:   string(data),
 		Error:  err,
 	}
 }
