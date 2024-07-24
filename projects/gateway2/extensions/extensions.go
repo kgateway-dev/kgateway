@@ -17,11 +17,11 @@ import (
 // which have Enterprise variants.
 type K8sGatewayExtensions interface {
 	// CreatePluginRegistry exposes the plugins supported by this implementation.
-	CreatePluginRegistry() registry.PluginRegistry
+	CreatePluginRegistry(context.Context) registry.PluginRegistry
 
 	// GetTranslator allows an extension to provide custom translation for
 	// different gateway classes.
-	GetTranslator(*apiv1.Gateway, registry.PluginRegistry) translator.K8sGwTranslator
+	GetTranslator(context.Context, *apiv1.Gateway, registry.PluginRegistry) translator.K8sGwTranslator
 }
 
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
@@ -69,11 +69,11 @@ type k8sGatewayExtensions struct {
 	queries                 query.GatewayQueries
 }
 
-func (e *k8sGatewayExtensions) GetTranslator(_ *apiv1.Gateway, pluginRegistry registry.PluginRegistry) translator.K8sGwTranslator {
+func (e *k8sGatewayExtensions) GetTranslator(_ context.Context, _ *apiv1.Gateway, pluginRegistry registry.PluginRegistry) translator.K8sGwTranslator {
 	return translator.NewTranslator(e.queries, pluginRegistry)
 }
 
-func (e *k8sGatewayExtensions) CreatePluginRegistry() registry.PluginRegistry {
+func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
 	plugins := registry.BuildPlugins(
 		e.queries,
 		e.mgr.GetClient(),

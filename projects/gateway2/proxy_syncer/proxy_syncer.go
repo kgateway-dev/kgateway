@@ -114,7 +114,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			return
 		}
 
-		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry()
+		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
 
@@ -123,7 +123,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			translatedGateways []gwplugins.TranslatedGateway
 		)
 		for _, gw := range gwl.Items {
-			gatewayTranslator := s.k8sGwExtensions.GetTranslator(&gw, pluginRegistry)
+			gatewayTranslator := s.k8sGwExtensions.GetTranslator(ctx, &gw, pluginRegistry)
 			if gatewayTranslator == nil {
 				contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Spec.GatewayClassName)
 				continue
