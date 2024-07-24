@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Allow configuring additional gatewayclasses for controller
+      and customizing Proxy translation based on the gateway class.
+      Used by GME.
