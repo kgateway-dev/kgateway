@@ -78,7 +78,7 @@ func (s *edgeGatewaySuite) TestEdgeGatewayRoutingHeadlessSvc() {
 	)
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
 		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, "headless-vs", clients.ReadOpts{Ctx: s.ctx})
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, "headless-vs", clients.ReadOpts{Ctx: s.ctx})
 		},
 		core.Status_Accepted,
 		gloo_defaults.GlooReporter,
