@@ -1,0 +1,16 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6600
+    resolvesIssue: false
+    description: >-
+      Redact the contents of Secrets and Artifacts.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6601
+    resolvesIssue: false
+    description: >-
+      Expose an endpoint in the Admin Server to return the unmodified Edge API Snapshot.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6602
+    resolvesIssue: false
+    description: >-
+      Admin Server returns partial results and errors.
