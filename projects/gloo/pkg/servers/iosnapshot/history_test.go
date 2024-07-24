@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	skmatchers "github.com/solo-io/solo-kit/test/matchers"
 	"time"
+
+	skmatchers "github.com/solo-io/solo-kit/test/matchers"
 
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
