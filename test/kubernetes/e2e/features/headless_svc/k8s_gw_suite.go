@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
@@ -60,6 +61,9 @@ func (s *k8sGatewaySuite) TestConfigureRoutingHeadlessSvc() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headlessSvcSetupManifest)
 	s.Assert().NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, headlessService.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
 	s.NoError(err, "can setup k8s routing manifest")
