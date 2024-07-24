@@ -1,0 +1,26 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6621
+    resolvesIssue: false
+    description: |
+      gateway2/delegation: fix extraneous route arising from invalid child rule
+
+      There's a bug where if a child route contains an invalid rule (rule
+      not matching the parent matcher), then even though the matcher is
+      discarded, the rule with an empty matcher but valid backendRef
+      is returned by GetDelegatedRoutes(). The result is that a `/`
+      route is programmed for such an invalid route rule. A more
+      precise fix is to also prune the rules that do not have a valid
+      matcher so that we do not rely on the translator to interpret
+      a route without a valid matcher as '/', which could be an alternative
+      fix though fragile.
+
+      The essence of this fix is to prune both the `rules` and `matches`
+      field on the child route when we process it in the context of the
+      parent matcher, so that:
+      1. invalid matchers on the child route are discarded
+      2. invalid rules (no valid child matchers) are also discarded
+
+      Previously, 2. was missing so a child route with a rule without
+      a matcher was configured, which results in a `/` route being exposed
+      for the corresponding backendRef.
