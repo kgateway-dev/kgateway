@@ -563,6 +563,8 @@ message Settings {
     // defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions,
     // or RouteOptions.
     extproc.options.gloo.solo.io.Settings ext_proc = 39;
+
+    bool mergeCorsSettings = 40;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream

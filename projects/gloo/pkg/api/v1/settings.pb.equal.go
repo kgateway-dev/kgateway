@@ -310,6 +310,10 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetMergeCorsSettings() != target.GetMergeCorsSettings() {
+		return false
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:

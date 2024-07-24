@@ -3,11 +3,12 @@ package translator
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 
@@ -89,7 +90,6 @@ type httpRouteConfigurationTranslator struct {
 }
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
-	fmt.Printf("in http.RouteConfigurationTranslator.ComputeRouteConfiguration()\n")
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name:                           h.routeConfigName,
@@ -110,7 +110,6 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 }
 
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(params plugins.Params) []*envoy_config_route_v3.VirtualHost {
-	fmt.Printf("in computeVirtualHosts()\n")
 	virtualHosts := h.listener.GetVirtualHosts()
 	ValidateVirtualHostDomains(virtualHosts, h.report)
 
@@ -133,7 +132,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	virtualHost *v1.VirtualHost,
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
-	fmt.Printf("in computeVirtualHost()\n")
 	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
 	if sanitizedName != virtualHost.GetName() {
 		virtualHost = virtualHost.Clone().(*v1.VirtualHost)
@@ -141,10 +139,12 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
-		if route.GetOptions() == nil {
-			route.Options = &v1.RouteOptions{}
+		if params.Settings.MergeCorsSettings {
+			if route.GetOptions() == nil {
+				route.Options = &v1.RouteOptions{}
+			}
+			route.GetOptions().Cors = mergeCors(virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
 		}
-		route.GetOptions().Cors = appendCors(virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
 
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
@@ -540,7 +540,6 @@ type multiRouteConfigurationTranslator struct {
 }
 
 func (m *multiRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
-	fmt.Printf("in multiRouteConfigurationTranslator.ComputeRouteConfiguration()\n")
 	var outRouteConfigs []*envoy_config_route_v3.RouteConfiguration
 
 	for _, translator := range m.translators {
@@ -922,8 +921,7 @@ func ValidateRoutePath(s string) error {
 	return nil
 }
 
-func appendCors(src, dest *cors.CorsPolicy) *cors.CorsPolicy {
-	fmt.Printf("appending cors: src: %+v, dest: %+v\n", src)
+func mergeCors(src, dest *cors.CorsPolicy) *cors.CorsPolicy {
 	if src == nil {
 		return dest
 	}
@@ -938,7 +936,7 @@ func appendCors(src, dest *cors.CorsPolicy) *cors.CorsPolicy {
 	} else if dest.GetAllowOrigin() == nil {
 		out.AllowOrigin = src.GetAllowOrigin()
 	} else {
-		out.AllowOrigin = append(dest.AllowOrigin, src.AllowOrigin...)
+		out.AllowOrigin = append(dest.GetAllowOrigin(), src.GetAllowOrigin()...)
 	}
 
 	if src.GetAllowHeaders() == nil {
@@ -946,9 +944,8 @@ func appendCors(src, dest *cors.CorsPolicy) *cors.CorsPolicy {
 	} else if dest.GetAllowHeaders() == nil {
 		out.AllowHeaders = src.GetAllowHeaders()
 	} else {
-		out.AllowHeaders = append(dest.AllowHeaders, src.AllowHeaders...)
+		out.AllowHeaders = append(dest.GetAllowHeaders(), src.GetAllowHeaders()...)
 	}
 
-	fmt.Printf("out: %+v\n", out)
 	return out
 }
