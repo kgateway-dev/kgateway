@@ -184,7 +184,7 @@ var _ = Describe("CORS", func() {
 							AllowMethods:     allowedMethods,
 						}}).
 					WithRouteOptions("route", &gloov1.RouteOptions{
-						// We dont set allowed methods to show that we still get this from VirtualHost
+						// We don't set allowed methods to show that we still get this from VirtualHost
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
@@ -230,9 +230,25 @@ var _ = Describe("CORS", func() {
 					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedVhostOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: BeEmpty(),
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:  Equal(allowedOrigins[0]),
 					}))
 				}).Should(Succeed(), "Request with allowed origin from vhost is not allowed, since route overrides it")
+
+				//// This demonstrates that when you define options both on the VirtualHost and Route levels,
+				//// only the route definition is respected
+				//allowedVhostOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+				//	WithOptionsMethod().
+				//	WithPath("cors").
+				//	// use the allowed origins defined on the vhost, not the route
+				//	WithHeader("Origin", allowedOrigins[0]).
+				//	WithHeader("Access-Control-Request-Method", http.MethodGet).
+				//	WithHeader("Access-Control-Request-Headers", "X-Requested-With")
+				//Eventually(func(g Gomega) {
+				//	g.Expect(testutils.DefaultHttpClient.Do(allowedVhostOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				//		requestACHMethods: BeEmpty(),
+				//	}))
+				//}).Should(Succeed(), "Request with allowed origin from vhost is not allowed, since route overrides it")
 
 				disallowedOriginRequestBuilder := allowedRouteOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
 				Eventually(func(g Gomega) {

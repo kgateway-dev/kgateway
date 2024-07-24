@@ -79,6 +79,7 @@ func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport) {
+	fmt.Printf("in Translate()\n")
 	// setup tracing, logging
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -225,6 +226,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 	[]*envoy_config_route_v3.RouteConfiguration,
 	[]*envoy_config_listener_v3.Listener,
 ) {
+	fmt.Printf("in translateListenerSubsystemComponents()\n")
 	var (
 		routeConfigs []*envoy_config_route_v3.RouteConfiguration
 		listeners    []*envoy_config_listener_v3.Listener
