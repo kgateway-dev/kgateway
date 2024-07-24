@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	"time"
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -207,6 +208,7 @@ var _ = Describe("History", func() {
 
 		It("Excludes Secrets", func() {
 			// TODO: We want to update the implementation to include secrets, but redact the contents of them
+			// https://github.com/solo-io/solo-projects/issues/6600
 
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Secrets: v1.SecretList{{
@@ -220,6 +222,7 @@ var _ = Describe("History", func() {
 
 		It("Excludes Artifacts", func() {
 			// TODO: We want to update the implementation to include artifacts, but redact the contents of them
+			// https://github.com/solo-io/solo-projects/issues/6600
 
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Artifacts: v1.ArtifactList{
