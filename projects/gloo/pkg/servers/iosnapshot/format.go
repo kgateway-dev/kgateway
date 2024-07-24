@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"slices"
 
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -41,4 +42,22 @@ func sortResources(resources []crdv1.Resource) {
 			cmp.Compare(a.GetName(), b.GetName()),
 		)
 	})
+}
+
+// apiSnapshotToGenericMap converts an ApiSnapshot into a generic map
+func apiSnapshotToGenericMap(snap *v1snap.ApiSnapshot) (map[string]interface{}, error) {
+	genericMap := map[string]interface{}{}
+
+	if snap == nil {
+		return genericMap, nil
+	}
+
+	jsn, err := json.Marshal(snap)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(jsn, &genericMap); err != nil {
+		return nil, err
+	}
+	return genericMap, nil
 }

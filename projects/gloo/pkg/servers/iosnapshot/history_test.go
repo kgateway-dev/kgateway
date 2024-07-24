@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	skmatchers "github.com/solo-io/solo-kit/test/matchers"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -1055,6 +1056,33 @@ var _ = Describe("History", func() {
 		})
 	})
 
+	Context("GetEdgeApiSnapshot", func() {
+
+		It("returns ApiSnapshot", func() {
+			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
+				Proxies: v1.ProxyList{
+					{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}},
+				},
+				Upstreams: v1.UpstreamList{
+					{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}},
+				},
+			})
+
+			snap := getEdgeApiSnapshot(ctx, history)
+			Expect(snap.Proxies).To(ContainElements(
+				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}}),
+				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}}),
+			))
+			Expect(snap.Upstreams).To(ContainElements(
+				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}}),
+				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}}),
+			))
+		})
+
+	})
+
 	Context("GetProxySnapshot", func() {
 
 		It("returns ApiSnapshot with _only_ Proxies", func() {
@@ -1096,25 +1124,36 @@ var _ = Describe("History", func() {
 })
 
 func getInputSnapshotResources(ctx context.Context, history History) []crdv1.Resource {
-	inputSnapshotBytes, err := history.GetInputSnapshot(ctx)
-	Expect(err).NotTo(HaveOccurred())
+	snapshotResponse := history.GetInputSnapshot(ctx)
+	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var returnedResources []crdv1.Resource
-	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
+	err := json.Unmarshal(snapshotResponse.Data, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
 	return returnedResources
 }
 
 func getProxySnapshotResources(ctx context.Context, history History) []crdv1.Resource {
-	inputSnapshotBytes, err := history.GetProxySnapshot(ctx)
-	Expect(err).NotTo(HaveOccurred())
+	snapshotResponse := history.GetProxySnapshot(ctx)
+	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var returnedResources []crdv1.Resource
-	err = json.Unmarshal(inputSnapshotBytes, &returnedResources)
+	err := json.Unmarshal(snapshotResponse.Data, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
 	return returnedResources
+}
+
+func getEdgeApiSnapshot(ctx context.Context, history History) *v1snap.ApiSnapshot {
+	snapshotResponse := history.GetEdgeApiSnapshot(ctx)
+	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
+
+	var snap *v1snap.ApiSnapshot
+	err := json.Unmarshal(snapshotResponse.Data, &snap)
+	Expect(err).NotTo(HaveOccurred())
+
+	return snap
 }
 
 // setSnapshotOnHistory sets the ApiSnapshot on the history, and blocks until it has been processed
