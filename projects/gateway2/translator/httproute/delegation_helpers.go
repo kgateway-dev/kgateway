@@ -31,7 +31,7 @@ const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matc
 // 1. The child route matches the route selector specified by the parent's backendRef
 //
 // 2.The child route has a rule that matches the parent's route matcher:
-//   - The child route's path must be a prefix of the parent's path
+//   - The child route's path must contain the the parent's path as a prefix
 //   - The child route's headers must be a superset of the parent's headers
 //   - The child route's query parameters must be a superset of the parent's query parameters
 //
