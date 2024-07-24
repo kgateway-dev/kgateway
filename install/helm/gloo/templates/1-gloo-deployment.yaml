@@ -80,11 +80,12 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
+        {{ $envoySidecarSecurityValues := merge (or .Values.global.glooMtls.envoy.securityContext dict) (or .Values.global.securityDefaults dict)}}
         {{- $securityDefaults := dict "runAsNonRoot" true }}
         {{- if not .Values.gloo.deployment.floatingUserId }}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end }}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $envoySidecarSecurityValues "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -127,7 +128,8 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{ $sdsSecurityValues := merge (or .Values.global.glooMtls.sds.securityContext dict) (or .Values.global.securityDefaults dict)}}
+        {{- include "gloo.containerSecurityContext" (dict "values" $sdsSecurityValues"defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -165,10 +167,12 @@ spec:
         {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
         {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */ -}}
         {{- /* If you specify your own securityContext, floatingUserId will have no effect  */ -}}
-        {{- if not .Values.gloo.deployment.floatingUserId -}}
+        {{ $glooContainerSecurityValues := merge (or .Values.gloo.deployment.glooContainerSecurityContext dict) (or .Values.global.securityDefaults dict)}}
+
+        {{- if not $glooContainerSecurityValues.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $glooContainerSecurityValues "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
