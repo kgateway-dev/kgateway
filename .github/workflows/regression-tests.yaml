@@ -49,8 +49,7 @@ jobs:
         # upgrade tests are run on LTS but not on main branch, for main they are run nightly
         # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
         # this is the github action version of ternary op
-        # TODO(npolshak): remove gloomtls, glooctl after 3 days of successful runs of new test suite
-        kube-e2e-test-type: [ 'gateway', 'gloo', 'helm', 'gloomtls', 'glooctl', 'upgrade' ]
+        kube-e2e-test-type: [ 'gateway', 'gloo', 'helm', 'upgrade' ]
         kube-version: [ { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
         image-variant:
           - distroless
