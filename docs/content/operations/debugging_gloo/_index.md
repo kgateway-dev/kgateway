@@ -380,7 +380,7 @@ All endpoints return data in the following shape:
 ```json
 {
    "status": "metadata about the response",
-   "data": "bytes of the returned data",
+   "data": "the returned data",
    "error": "error value, if one was encountered"
 }
 ```
