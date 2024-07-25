@@ -715,7 +715,7 @@ func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
 	for _, deploymentName := range glooDeploymentsToCheck {
 		runAndCleanCommand("kubectl", "rollout", "status", "deployment", "-n", testHelper.InstallNamespace, deploymentName)
 	}
-	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper.InstallNamespace, "90s")
 }
 
 func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
