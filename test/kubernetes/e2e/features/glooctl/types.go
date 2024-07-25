@@ -6,13 +6,12 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/skv2/codegen/util"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var (
-	backendManifestFile      = filepath.Join(util.MustGetThisDir(), "testdata", "backend.yaml")
+	upstreamManifestFile     = filepath.Join(util.MustGetThisDir(), "testdata", "upstream.yaml")
 	edgeGatewaysManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-gateways.yaml")
 	edgeRoutesManifestFile   = filepath.Join(util.MustGetThisDir(), "testdata", "edge-gateway-routes.yaml")
 	kubeGatewaysManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "kube-gateway-routes.yaml")
@@ -20,18 +19,6 @@ var (
 	invalidVSUpstreamDest    = filepath.Join(util.MustGetThisDir(), "testdata", "vs-invalid-upstream.yaml")
 
 	// resources created by backend manifest
-	nginxSvc = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-svc",
-			Namespace: "default",
-		},
-	}
-	nginxPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx",
-			Namespace: "default",
-		},
-	}
 	nginxUpstream = &gloov1.Upstream{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx-upstream",
