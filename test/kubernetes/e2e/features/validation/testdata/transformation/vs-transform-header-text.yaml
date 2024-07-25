@@ -1,0 +1,25 @@
+# Don't set namespace, apply to test installation namespace
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: example-vs
+spec:
+  virtualHost:
+    domains:
+      - "example.com"
+    routes:
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: nginx-upstream
+    options:
+      transformations:
+        clearRouteCache: true
+        responseTransformation:
+          transformationTemplate:
+            headers:
+              ":status":
+                # This is invalid: missing } at the end
+                text: '{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %'
