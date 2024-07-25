@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"encoding/base64"
+	"encoding/json"
 
 	"github.com/solo-io/gloo/test/testutils"
 	"go.uber.org/zap/zapcore"
@@ -342,6 +343,57 @@ var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
 					Headers: map[string]interface{}{
 						"x-custom-header": "value",
 					},
+				}))
+			}, "15s", ".5s").Should(Succeed())
+		})
+
+		It("Can modify specific body keys using MergeJsonKeys", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vsBuilder := helpers.BuilderFromVirtualService(vs)
+				vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						PostRouting: &transformation.RequestResponseTransformations{
+							ResponseTransforms: []*transformation.ResponseMatch{{
+								ResponseTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											BodyTransformation: &transformation.TransformationTemplate_MergeJsonKeys{
+												MergeJsonKeys: &transformation.MergeJsonKeys{
+													JsonKeys: map[string]*transformation.MergeJsonKeys_OverridableTemplate{
+														"key2": {
+															Tmpl: &transformation.InjaTemplate{Text: "\"new value\""},
+														},
+														"key3": {
+															Tmpl: &transformation.InjaTemplate{Text: "\"value3\""},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}},
+						},
+					},
+				})
+				return vsBuilder.Build()
+			})
+
+			// send a request, expect that:
+			// 1. The body will contain the metadata value
+			// 2. The header `x-custom-header` will contain the metadata value
+			jsnBody := map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+			}
+			bdyByt, err := json.Marshal(jsnBody)
+			Expect(err).NotTo(HaveOccurred())
+
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(string(bdyByt))
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       "{\"key1\":\"value1\",\"key2\":\"new value\",\"key3\":\"value3\"}",
 				}))
 			}, "15s", ".5s").Should(Succeed())
 		})
