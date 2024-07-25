@@ -1,6 +1,7 @@
 package curl
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strconv"
 	"strings"
@@ -178,6 +179,15 @@ func WithContentType(contentType string) Option {
 func WithHostHeader(host string) Option {
 	return func(config *requestConfig) {
 		WithHeader("Host", host)(config)
+	}
+}
+
+// WithHeader returns the Option to configure a basic auth header for the curl request
+func WithBasicAuth(username string, password string) Option {
+	auth := username + ":" + password
+	basicAuth := base64.StdEncoding.EncodeToString([]byte(auth))
+	return func(config *requestConfig) {
+		WithHeader("Authorization", "Basic "+basicAuth)(config)
 	}
 }
 
