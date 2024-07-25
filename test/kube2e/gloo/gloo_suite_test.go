@@ -100,7 +100,7 @@ func installGloo() {
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
 	Expect(err).NotTo(HaveOccurred())
 
-	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
