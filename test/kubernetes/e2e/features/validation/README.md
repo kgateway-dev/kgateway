@@ -2,7 +2,7 @@
 
 ## Overview
 The validation feature is a suite of tests that validate the behavior of the validation webhook with invalid configurations. 
-The tests are run against a Gloo Edge installation with the validation webhook enabled with different settings.
+The tests are run against a Gloo Gateway installation with the validation webhook enabled with different settings.
 
 The validation webhook settings are controlled by the `validation` field in the `settings` CRD and on the `validation` helm field. 
 This includes values:
