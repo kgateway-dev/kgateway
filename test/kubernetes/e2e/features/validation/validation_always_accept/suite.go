@@ -202,10 +202,10 @@ func (s *testingSuite) TestPersistInvalidVirtualService() {
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ValidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.NoError(err, "can delete "+validation.ValidVS)
 
-		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.NginxPodManifest)
 		s.Assert().NoError(err)
 
-		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.CurlPodManifest)
 		s.Assert().NoError(err)
 	})
 
