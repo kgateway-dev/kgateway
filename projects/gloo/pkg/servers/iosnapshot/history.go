@@ -388,6 +388,6 @@ const (
 // redactArtifactData modifies the artifact to remove any sensitive information
 func redactArtifactData(element *gloov1.Artifact) {
 	for k := range element.GetData() {
-		element.Data[k] = redactedString
+		element.GetData()[k] = redactedString
 	}
 }
