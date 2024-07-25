@@ -1,0 +1,9 @@
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: invalid-us
+spec:
+  static:
+    # This is invalid: the port field is missing
+    hosts:
+      - addr: "~"

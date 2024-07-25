@@ -1,0 +1,16 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: no-upstream-vs
+spec:
+  virtualHost:
+    routes:
+      - matchers:
+          - headers:
+              - name: foo
+                value: bar
+        routeAction:
+          single:
+            upstream:
+              # This is invalid: this upstream does not exist
+              name: does-not-exist
