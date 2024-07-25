@@ -238,8 +238,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO(npolshak): remove gloomtls, glooctl after 3 days of successful runs of new test suite
-        kube-e2e-test-type: ['gateway', 'gloo', 'helm', 'gloomtls', 'glooctl', 'upgrade']
+        kube-e2e-test-type: ['gateway', 'gloo', 'helm', 'upgrade']
         kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
                         { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
         image-variant:
@@ -268,8 +267,7 @@ jobs:
         #   We should extend the support/usage of those .env files to these other jobs.
         #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
         #   to limit the scope (and potentially unnecessary work) for now
-        # TODO(npolshak): remove gloomtls, glooctl after 3 days of successful runs of new test suite
-        kube-e2e-test-type: ['gateway', 'gloo', 'helm', 'gloomtls', 'glooctl', 'upgrade']
+        kube-e2e-test-type: ['gateway', 'gloo', 'helm', 'upgrade']
         kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
                         { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
         image-variant:
@@ -289,8 +287,7 @@ jobs:
       fail-fast: false
       matrix:
         # ingress are deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
-        # TODO(npolshak): remove gloomtls, glooctl after 3 days of successful runs of new test suite
-        kube-e2e-test-type: [ 'gateway', 'gloo', 'helm', 'gloomtls', 'glooctl', 'upgrade' ]
+        kube-e2e-test-type: [ 'gateway', 'gloo', 'helm', 'upgrade' ]
         kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
                         { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
     steps:

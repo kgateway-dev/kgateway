@@ -1,0 +1,11 @@
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: nginx-upstream
+spec:
+  kube:
+    selector:
+      app.kubernetes.io/name: nginx
+    serviceName: nginx
+    serviceNamespace: nginx
+    servicePort: 8080
