@@ -3,6 +3,7 @@ package validation_strict_warnings
 import (
 	"context"
 	"fmt"
+	"time"
 
 	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -38,14 +39,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestInvalidUpstreamMissingPort tests behaviors when Gloo rejects an invalid upstream with a missing port
 func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
-		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
 
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
+		// Delete can fail with strict validation if VS is not deleted first from snapshot, so try multiple times so that snapshot has time to update
+		s.Assert().Eventually(func() bool {
+			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+			return err == nil
+		}, time.Minute, 5*time.Second, "can delete "+validation.ExampleUpstream)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
+		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
