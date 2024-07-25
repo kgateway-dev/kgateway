@@ -16,16 +16,16 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-// TestGlooGatewayEdgeGateway is the function which executes a series of tests against a given installation where
-// the k8s Gateway controller is disabled
-func TestGlooGatewayEdgeGateway(t *testing.T) {
+// TestValidationAlwaysAccept is the function which executes a series of tests against a given
+// installation where validation is set to always accept
+func TestValidationAlwaysAccept(t *testing.T) {
 	ctx := context.Background()
-	installNs := env.GetOrDefault(testutils.InstallNamespace, "gloo-gateway-edge-test")
+	installNs := env.GetOrDefault(testutils.InstallNamespace, "validation-always-accept-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-gateway-test-helm.yaml"),
+			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "validation-always-accept-helm.yaml"),
 		},
 	)
 
@@ -47,10 +47,10 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 		})
 	})
 
-	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
+	// Install Gloo Gateway with correct validation settings
 	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
 		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	EdgeGwSuiteRunner().Run(ctx, t, testInstallation)
+	ValidationAlwaysAcceptSuiteRunner().Run(ctx, t, testInstallation)
 }

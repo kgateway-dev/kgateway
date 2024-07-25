@@ -32,6 +32,23 @@ func (p *Provider) EventuallyResourceStatusMatchesWarningReasons(getter helpers.
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+func (p *Provider) EventuallyResourceStatusMatchesRejectedReasons(getter helpers.InputResourceGetter, desiredStatusReasons []string, desiredReporter string, timeout ...time.Duration) {
+	ginkgo.GinkgoHelper()
+
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	gomega.Eventually(func(g gomega.Gomega) {
+		statusRejectionsMatcher := matchers.MatchStatusInNamespace(
+			p.glooGatewayContext.InstallNamespace,
+			gomega.And(matchers.HaveRejectedStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
+		)
+
+		status, err := getResourceNamespacedStatus(getter)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+		g.Expect(status).ToNot(gomega.BeNil())
+		g.Expect(status).To(gomega.HaveValue(statusRejectionsMatcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 func (p *Provider) EventuallyResourceStatusMatchesState(
 	getter helpers.InputResourceGetter,
 	desiredState core.Status_State,
@@ -48,6 +65,22 @@ func (p *Provider) EventuallyResourceStatusMatchesState(
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
 		g.Expect(status).ToNot(gomega.BeNil())
 		g.Expect(status).To(gomega.HaveValue(statusStateMatcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (p *Provider) EventuallyResourceStatusMatchesSubResource(
+	getter helpers.InputResourceGetter,
+	desiredSubresourceName string,
+	desiredSubresource matchers.SoloKitSubresourceStatus,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		subResourceStatusMatcher := matchers.HaveSubResourceStatusState(desiredSubresourceName, desiredSubresource)
+		status, err := getResourceNamespacedStatus(getter)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get resource namespaced status")
+		g.Expect(status).ToNot(gomega.BeNil())
+		g.Expect(status).To(gomega.HaveValue(subResourceStatusMatcher))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 

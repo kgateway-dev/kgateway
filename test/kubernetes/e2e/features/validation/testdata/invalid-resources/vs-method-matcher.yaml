@@ -1,0 +1,14 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: method-matcher
+spec:
+  virtualHost:
+    domains:
+      - unique2
+    routes:
+      - matchers:
+          - exact: /delegated-nonprefix  # not allowed
+        delegateAction:
+          name: does-not-exist # also not allowed, but after the matcher error
+          namespace: anywhere
