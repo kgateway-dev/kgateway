@@ -23,7 +23,7 @@ spec:
               foo:
                 header: ":path"
                 regex: ".*"
-                subgroup: 1
+                subgroup: 1 # This is invalid: group 1 requested for regex with only 0 sub groups
                 replacementText: "bar"
                 mode: SINGLE_REPLACE
             headers:

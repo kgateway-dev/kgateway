@@ -10,5 +10,5 @@ spec:
       - matchers:
           - exact: /delegated-nonprefix  # not allowed
         delegateAction:
-          name: does-not-exist # also not allowed, but caught later
+          name: does-not-exist # also not allowed, but after the matcher error
           namespace: anywhere

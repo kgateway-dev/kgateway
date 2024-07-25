@@ -4,5 +4,6 @@ metadata:
   name: invalid-us
 spec:
   static:
+    # This is invalid: the port field is missing
     hosts:
       - addr: "~"

@@ -7,8 +7,8 @@ spec:
     domains:
       - 'invalid.com'
     routes:
-      - matchers:
+      - matchers: # This is invalid: the matcher field is missing
           - {}
-        routeAction: {}
+        routeAction: {} # This is invalid: the action field is missing
         options:
           prefixRewrite: "matcher and action are missing"

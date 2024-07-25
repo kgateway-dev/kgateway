@@ -3,4 +3,5 @@ kind: VirtualService
 metadata:
   name: default
 spec:
+  # This is invalid: the virtualHost field is mistyped as virtualHoost
   virtualHoost: {}

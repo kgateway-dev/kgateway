@@ -61,6 +61,9 @@ func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 }
 
 func (s *testingSuite) TestAcceptInvalidRatelimitConfigResources() {
+	if s.testInstallation.Metadata.IsEnterprise {
+		s.T().Skip("RateLimitConfig is enterprise-only, skipping test when running enterprise helm chart")
+	}
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err)
 	// We don't expect an error exit code here because alwaysAccept=true

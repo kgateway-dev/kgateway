@@ -3,4 +3,5 @@ kind: Gateway
 metadata:
   name: gateway-without-type
 spec:
+  # This is invalid: the type field is missing
   bindAddress: '::'

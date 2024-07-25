@@ -12,4 +12,5 @@ spec:
         routeAction:
           single:
             upstream:
+              # This is invalid: this upstream does not exist
               name: does-not-exist
