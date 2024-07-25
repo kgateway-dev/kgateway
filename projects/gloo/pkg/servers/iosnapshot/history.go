@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/hashicorp/go-multierror"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -41,15 +43,6 @@ type History interface {
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
 	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
 	GetXdsSnapshot(ctx context.Context) SnapshotResponseData
-}
-
-// SnapshotResponseData is the data that is returned by Getter methods on the History object
-// It allows us to encapsulate data and errors together, so that if an issue occurs durin the request,
-// we can get access to all the relevant information
-type SnapshotResponseData struct {
-	Status string
-	Data   string
-	Error  error
 }
 
 // HistoryFactoryParameters are the inputs used to create a History object
@@ -126,27 +119,15 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 
 	m, err := apiSnapshotToGenericMap(snap)
 	if err != nil {
-		return SnapshotResponseData{
-			Status: "error",
-			Data:   "",
-			Error:  err,
-		}
+		errorSnapshotResponse(err)
 	}
 
 	data, err := formatOutput("json_compact", m)
 	if err != nil {
-		return SnapshotResponseData{
-			Status: "error",
-			Data:   string(data),
-			Error:  err,
-		}
+		errorSnapshotResponse(err)
 	}
 
-	return SnapshotResponseData{
-		Status: "complete",
-		Data:   string(data),
-		Error:  nil,
-	}
+	return completeSnapshotResponse(data)
 }
 
 // GetInputSnapshot gets the input snapshot for all components.
@@ -174,22 +155,14 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	// get the resources from the edge api snapshot
 	resources, err := snapshotToKubeResources(snap)
 	if err != nil {
-		return SnapshotResponseData{
-			Status: "error",
-			Data:   "",
-			Error:  err,
-		}
+		return errorSnapshotResponse(err)
 	}
 
 	// get settings, which is not part of the api snapshot
 	if h.settings != nil {
 		settings, err := settingsToKubeResource(h.settings)
 		if err != nil {
-			return SnapshotResponseData{
-				Status: "error",
-				Data:   "",
-				Error:  err,
-			}
+			return errorSnapshotResponse(err)
 		}
 		resources = append(resources, *settings)
 	}
@@ -198,20 +171,15 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	// (if kube gateway integration is enabled)
 	kubeResources, err := h.getKubeGatewayResources(ctx)
 	if err != nil {
-		return SnapshotResponseData{
-			Status: "error",
-			Data:   "",
-			Error:  err,
-		}
+		return errorSnapshotResponse(err)
 	}
 	resources = append(resources, kubeResources...)
 
 	data, err := formatResources(resources)
-	return SnapshotResponseData{
-		Status: "complete",
-		Data:   string(data),
-		Error:  err,
+	if err != nil {
+		return errorSnapshotResponse(err)
 	}
+	return completeSnapshotResponse(data)
 }
 
 func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
@@ -223,19 +191,14 @@ func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 
 	resources, err := snapshotToKubeResources(onlyProxies)
 	if err != nil {
-		return SnapshotResponseData{
-			Status: "error",
-			Data:   "",
-			Error:  err,
-		}
+		return errorSnapshotResponse(err)
 	}
 
 	data, err := formatResources(resources)
-	return SnapshotResponseData{
-		Status: "complete",
-		Data:   string(data),
-		Error:  err,
+	if err != nil {
+		return errorSnapshotResponse(err)
 	}
+	return completeSnapshotResponse(data)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
@@ -254,11 +217,10 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	}
 
 	data, err := formatOutput("json_compact", cacheEntries)
-	return SnapshotResponseData{
-		Status: "complete",
-		Data:   string(data),
-		Error:  err,
+	if err != nil {
+		return errorSnapshotResponse(err)
 	}
+	return completeSnapshotResponse(data)
 }
 
 // getRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
@@ -309,16 +271,18 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 	}
 
 	var resources []crdv1.Resource
+	var errs *multierror.Error
 	for _, gvk := range h.kubeGvks {
 		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
 		if err != nil {
-			// todo: handle graceful error
+			// We intentionally aggregate the errors so that we can return a "best effort" set of
+			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
+			errs = multierror.Append(errs, err)
 		}
-
 		resources = append(resources, gvkResources...)
 	}
 
-	return resources, nil
+	return resources, errs.ErrorOrNil()
 }
 
 func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupVersionKind) ([]crdv1.Resource, error) {
@@ -331,20 +295,22 @@ func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupV
 	if err != nil {
 		return nil, err
 	}
+
+	var errs *multierror.Error
+
 	// convert each Unstructured to a Resource so that the final list can be merged with the
 	// Edge API resource list
 	for _, uns := range list.Items {
 		out := crdv1.Resource{}
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
 		if err != nil {
-			return nil, err
+			errs = multierror.Append(errs, err)
 		}
 
-		// ManagedFields is noise on the object, that is not relevant to the Admin API, so we sanitize it
-		out.ManagedFields = nil
+		sanitizeResource(&out)
 		resources = append(resources, out)
 	}
-	return resources, nil
+	return resources, errs.ErrorOrNil()
 }
 
 // getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
@@ -390,4 +356,10 @@ func redactArtifactData(element *gloov1.Artifact) {
 	for k := range element.GetData() {
 		element.GetData()[k] = redactedString
 	}
+}
+
+// sanitizeResource modifies the Object to remove any unwanted fields
+func sanitizeResource(resource *crdv1.Resource) {
+	// ManagedFields is noise on the object, that is not relevant to the Admin API, so we sanitize it
+	resource.ManagedFields = nil
 }
