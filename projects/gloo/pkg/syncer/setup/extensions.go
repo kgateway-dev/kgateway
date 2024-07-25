@@ -4,6 +4,7 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
@@ -34,6 +35,10 @@ type Extensions struct {
 	// K8sGatewayExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that the K8s Gateway integration requires
 	K8sGatewayExtensionsFactory extensions.K8sGatewayExtensionsFactory
+
+	// SnapshotHistoryFactory is the factory function which will produce a History object
+	// This history object is used by the ControlPlane to track internal state
+	SnapshotHistoryFactory iosnapshot.HistoryFactory
 }
 
 // Validate returns an error if the Extensions are invalid, nil otherwise
@@ -41,7 +46,9 @@ func (e Extensions) Validate() error {
 	if e.K8sGatewayExtensionsFactory == nil {
 		return ErrNilExtension("K8sGatewayExtensionsFactory")
 	}
-
+	if e.SnapshotHistoryFactory == nil {
+		return ErrNilExtension("SnapshotHistoryFactory")
+	}
 	if e.PluginRegistryFactory == nil {
 		return ErrNilExtension("PluginRegistryFactory")
 	}

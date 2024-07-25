@@ -5,7 +5,7 @@ description: Transforming the request body from SOAP/XML to a JSON.
 ---
 
 {{% notice note %}}
-This feature requires a Gloo Edge Enterprise license. 
+This feature requires a Gloo Gateway Enterprise license. 
 {{% /notice %}}
 
 ## Introduction
@@ -14,7 +14,7 @@ SOAP remains prevalent today for enterprise web services across a number of indu
 including financial services and healthcare. However, SOAP uses XML, a message format over 2 decades old. 
 Modern services have adopted newer message formats, one of which is JSON. Modernizing a legacy SOAP service to use
 JSON can often mean rewriting the service entirely. This guide shows you a way of allowing for clients and services'
-message formats to differ by performing the translation within Gloo Edge. We leverage 
+message formats to differ by performing the translation within Gloo Gateway. We leverage 
 powerful XSLT transformations to allow for an XML-based SOAP service to communicate with a JSON client.
 
 # Setup
@@ -22,7 +22,7 @@ powerful XSLT transformations to allow for an XML-based SOAP service to communic
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 We will also be using the [jq](https://stedolan.github.io/jq/) commmand line utility to pretty print JSON strings.
 
-This guide uses a custom image for running a SOAP service. The source code for this image is available in the [Gloo Edge repository](https://github.com/solo-io/gloo) in `docs/examples/xslt-guide`.
+This guide uses a custom image for running a SOAP service. The source code for this image is available in the [Gloo Gateway repository](https://github.com/solo-io/gloo) in `docs/examples/xslt-guide`.
 In this guide, we pull the pre-built image from a remote repository, but if you want to rebuild the image, simply run `make docker-local`.
 
 
@@ -79,7 +79,7 @@ spec:
 EOF
 {{< /highlight >}}
     
-Once you create the service, Gloo Edge discovery should have created an upstream, which you can confirm by running
+Once you create the service, Gloo Gateway discovery should have created an upstream, which you can confirm by running
 ```shell
 glooctl get us --name default-world-cities-soap-service-8080
 ```
@@ -408,6 +408,6 @@ server to `application/json` using the `setContentType` field.
 
 ## Summary
 
-In this guide, we installed Gloo Edge Enterprise and created a SOAP service which uses XML as it's message format. 
+In this guide, we installed Gloo Gateway Enterprise and created a SOAP service which uses XML as it's message format. 
 We were then able to modernize the service using XSLT transformations to convert JSON -> XML and XML -> JSON. This allowed
 us to query our SOAP service with a JSON query, and to receive a JSON response in return, without ever changing the service.

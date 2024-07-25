@@ -159,7 +159,7 @@ func createUpstream(opts *options.Options) error {
 		}
 	}
 
-	return printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output, nil)
+	return printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output, nil, opts.Metadata.GetNamespace())
 }
 
 func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {

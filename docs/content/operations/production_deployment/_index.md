@@ -1,10 +1,10 @@
 ---
 title: Production Deployments
-description: This document shows some tips and tricks for deploying Gloo Edge into a production environment
+description: This document shows some tips and tricks for deploying Gloo Gateway into a production environment
 weight: 20
 ---
 
-This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo Edge to send PRs to this as well.
+This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo Gateway to send PRs to this as well.
 
 
 ## Safeguarding the control plane configuration
@@ -52,11 +52,11 @@ When you use header manipulation to add headers to or from requests and response
 ## Performance tips
 
 ### Disable Kubernetes destinations
-When you install Gloo Edge, the Settings resource is configured with `disableKubernetesDestinations: false` by default. This setting allows you to use both a Kubernetes service (`routeAction.single.kube`) or Upstream (`routeAction.single.upstream`) as a routing destination in your VirtualService. To enable routing to a Kubernetes service destination, Gloo Edge must scan all services in the cluster to create in-memory Upstream resources to represent them. Gloo Edge uses these in-memory resources to validate that the destination is valid and returns an error if the specified Kubernetes service cannot be found. 
+When you install Gloo Gateway, the Settings resource is configured with `disableKubernetesDestinations: false` by default. This setting allows you to use both a Kubernetes service (`routeAction.single.kube`) or Upstream (`routeAction.single.upstream`) as a routing destination in your VirtualService. To enable routing to a Kubernetes service destination, Gloo Gateway must scan all services in the cluster to create in-memory Upstream resources to represent them. Gloo Gateway uses these in-memory resources to validate that the destination is valid and returns an error if the specified Kubernetes service cannot be found. 
 
-The in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Edge translation and reconciliation time. 
+The in-memory Upstream resources are included in the API snapshot. If you have a large number of services in your cluster, the API snapshot increases as each Kubernetes destination is added as an Envoy cluster to each proxy in the cluster. Because of that, the API snapshot and proxy size increase, which can have a negative impact on the Gloo Gateway translation and reconciliation time. 
 
-In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true` in your Gloo Edge deployment. This setting decreases the size of the API snapshot and proxy, and improves translation and reciliation time in Gloo Edge. 
+In production deployments, it is therefore recommended to remove in-memory Upstream resources by setting `disableKubernetesDestinations: true` in your Gloo Gateway deployment. This setting decreases the size of the API snapshot and proxy, and improves translation and reciliation time in Gloo Gateway. 
 
 {{% notice note %}}
 When setting `disableKubernetesDestinations: true`, Kubernetes service destinations (`routeAction.single.kube`) cannot be used as the in-memory Upstream resources that represent the Kubernetes service do not exist in your cluster. You must use Upstream destinations in your VirtualService instead (`routeAction.single.upstream`). 
@@ -97,7 +97,7 @@ routes:
 
 ### Configure appropriate resource usage
 
-Before running in production it is important to ensure you have correctly configured the resources allocated to the various components of Gloo Edge. Ideally this tuning will be done in conjunction with load/performance testing.
+Before running in production it is important to ensure you have correctly configured the resources allocated to the various components of Gloo Gateway. Ideally this tuning will be done in conjunction with load/performance testing.
 
 These values can be configured via helm values for the various deployments, such as 
 * `gloo.deployment.resources.requests.*` 
@@ -128,7 +128,7 @@ You can also patch the `default` *Settings* CR with this value and delete the `d
 
 
 ### Enable Envoy's gzip filter
-Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
+Optionally, you may choose to enable Envoy's gzip filter through Gloo Gateway. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
 
 ### Set up an EDS warming timeout
 Set up the endpoints warming timeout to a non-zero value. More details [here](https://docs.solo.io/gloo-edge/latest/operations/upgrading/v1.3/#recommended-settings).
@@ -137,7 +137,7 @@ Set up the endpoints warming timeout to a non-zero value. More details [here](ht
 ## Access Logging
 
 Envoy provides a powerful access logging mechanism which enables users and operators to understand the various traffic flowing through the proxy.
-Before deploying Gloo Edge in production, consider enabling access logging to help with monitoring traffic as well as to provide helpful information for troubleshooting.
+Before deploying Gloo Gateway in production, consider enabling access logging to help with monitoring traffic as well as to provide helpful information for troubleshooting.
 The [access logging documentation]({{%versioned_link_path fromRoot="/guides/security/access_logging/" %}}) should be consulted for more details.
 
 {{% notice note %}}
@@ -152,7 +152,7 @@ You can scale up the `gateway-proxies` Envoy instances by using a Deployment or 
 
 #### Pod Disruption Budget
 
-To configure a Pod Disruption Budget (PDB) for the `gateway-proxy` deployment when you install Gloo Edge via Helm, set values for the `gatewayProxies.NAME.PodDisruptionBudget` fields in your values override file.
+To configure a Pod Disruption Budget (PDB) for the `gateway-proxy` deployment when you install Gloo Gateway via Helm, set values for the `gatewayProxies.NAME.PodDisruptionBudget` fields in your values override file.
 
 For example, consider the following snippet of a values override files, which defines `minAvailable` as `2`.
 
@@ -182,7 +182,7 @@ spec:
 
 #### Affinity/Anti-Affinity
 
-To configure affinity and anti-affinity rules for the `gateway-proxy` deployment when you install Gloo Edge via Helm, set values for the `gatewayProxies.NAME.affinity` and `gatewayProxies.NAME.antiAffinity` fields, respectively, in your values override file.
+To configure affinity and anti-affinity rules for the `gateway-proxy` deployment when you install Gloo Gateway via Helm, set values for the `gatewayProxies.NAME.affinity` and `gatewayProxies.NAME.antiAffinity` fields, respectively, in your values override file.
 
 For example, the following snippet of a values override file sets affinity rules on the `gateway-proxy` deployment:
 
@@ -218,7 +218,7 @@ global:
 
 #### Pod Disruption Budgets and Affinity/Anti-Affinity rules
 
-To configure a pod disruption budget for the ExtAuth service when you install Gloo Edge via Helm, set the `global.extensions.extAuth.deployment.podDisruptionBudget` field in your values override file.
+To configure a pod disruption budget for the ExtAuth service when you install Gloo Gateway via Helm, set the `global.extensions.extAuth.deployment.podDisruptionBudget` field in your values override file.
 
 By default, the following `podAffinity` rule is configured for the ExtAuth service:
 
@@ -241,13 +241,13 @@ global:
 
 ### Rate Limit
 
-To configure a pod disruption budget for the `rate-limit` deployment when you install Gloo Edge via Helm, set the `global.extensions.rateLimit.deployment.podDisruptionBudget` field in your values override file.
+To configure a pod disruption budget for the `rate-limit` deployment when you install Gloo Gateway via Helm, set the `global.extensions.rateLimit.deployment.podDisruptionBudget` field in your values override file.
 
 Affinity settings for the `rate-limit` deployment can be overwritten during installation by setting `global.extensions.rateLimit.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the `rate-limit` deployment can be configured by setting `global.extensions.rateLimit.antiAffinity`.
 
 ## Horizontally scaling the control plane
 
-You can increase the number of pods that the `gloo` deployment runs in the `gloo.deployment.replicas` Helm setting. Leave the `gloo.disableLeaderElection` Helm field set to the default value of `false` when you have multiple replicas of the `gloo` deployment. Gloo Edge elects a leader from the replicas, while the other replicas remain on standby to become the leader if the elected leader pod fails or restarts.
+You can increase the number of pods that the `gloo` deployment runs in the `gloo.deployment.replicas` Helm setting. Leave the `gloo.disableLeaderElection` Helm field set to the default value of `false` when you have multiple replicas of the `gloo` deployment. Gloo Gateway elects a leader from the replicas, while the other replicas remain on standby to become the leader if the elected leader pod fails or restarts.
 
 ## Enhancing the data-plane reliability
 
@@ -261,9 +261,9 @@ report itself as ready.
 
 * **Enable liveness/readiness probes for Envoy**
     - To enable liveness and readiness probes, specify `gatewayProxies.gatewayProxy.podTemplate.probes=true` in your Helm installation.
-If you are running Gloo Edge Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
+If you are running Gloo Gateway Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
 * **Configure your load balancer correctly**
-    - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the Envoy [health check filter]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks/" %}}).
+    - If you are running Gloo Gateway behind a load balancer, be sure to configure your load balancer properly to consume the Envoy [health check filter]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks/" %}}).
 
 ### Upstream health checks
 
@@ -299,18 +299,18 @@ A dedicated Grafana dashboard exists for each `Upstream` _Custom Resource_. Thes
 ### Prometheus 
 
 {{% notice note %}}
-Gloo Edge default prometheus server and grafana instance are not meant to be used `as-is` in production. Please provide your own instance or configure the provided one with production values
+Gloo Gateway default prometheus server and grafana instance are not meant to be used `as-is` in production. Please provide your own instance or configure the provided one with production values
 {{% /notice %}}
 
-When running Gloo Edge (or any application for that matter) in a production environment, it is important to have a monitoring solution in place.
-Gloo Edge Enterprise provides a simple deployment of Prometheus and Grafana to assist with this necessity.
-However, depending on the requirements on your organization you may require a more robust solution, in which case you should make sure the metrics from the Gloo Edge components (especially Envoy) are available in whatever solution you are using.
+When running Gloo Gateway (or any application for that matter) in a production environment, it is important to have a monitoring solution in place.
+Gloo Gateway Enterprise provides a simple deployment of Prometheus and Grafana to assist with this necessity.
+However, depending on the requirements on your organization you may require a more robust solution, in which case you should make sure the metrics from the Gloo Gateway components (especially Envoy) are available in whatever solution you are using.
 The [general documentation for monitoring/observability]({{%versioned_link_path fromRoot="/guides/observability/" %}}) has more info.
 
 Some metrics that may be useful to monitor (listed in Prometheus format):
 * `envoy_control_plane_connected_state` -- This metric shows whether or not a given Envoy instance is connected to the control plane, i.e. the Gloo pod.
  This metric should have a value of `1` otherwise it indicates that Envoy is having trouble connecting to the Gloo pod.
-* `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Edge containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
+* `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Gateway containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
 
 
 ### Troubleshooting monitoring components
@@ -411,12 +411,12 @@ persistentVolume.size = retention_in_seconds * ingested_samples_per_second * byt
 
 ## Security concerns
 
-One of the more important (and unique) things about Gloo Edge is the ability to significantly lock down the edge proxy. Other proxies require privileges to write to disk or access the Kubernetes API, while Gloo Edge splits those responsibilities between control plane and data plane. The data plane can be locked down with zero privileges while separating out the need to secure the control plane differently. 
+One of the more important (and unique) things about Gloo Gateway is the ability to significantly lock down the edge proxy. Other proxies require privileges to write to disk or access the Kubernetes API, while Gloo Gateway splits those responsibilities between control plane and data plane. The data plane can be locked down with zero privileges while separating out the need to secure the control plane differently. 
 
-For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file system. Additionally it doesn't require any additional tokens mounted in or OS-level privileges. By default some of these options are enabled to simplify developer experience, but if your use case doesn't need them, you should lock them down. 
+For example, Gloo Gateway's data plane (the `gateway-proxy` pod) has ReadOnly file system. Additionally it doesn't require any additional tokens mounted in or OS-level privileges. By default some of these options are enabled to simplify developer experience, but if your use case doesn't need them, you should lock them down. 
 
 * **Disable service account token mount**
-    - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can eliminate the need for the service account token. When installing Gloo Edge, set the `gateway.proxyServiceAccount.disableAutomount` field. 
+    - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can eliminate the need for the service account token. When installing Gloo Gateway, set the `gateway.proxyServiceAccount.disableAutomount` field. 
 
 
 ## Other Envoy-specific guidance

@@ -4,12 +4,7 @@ import (
 	"context"
 	"sync"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	ratelimitv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -23,28 +18,58 @@ import (
 // The ControlPlane will use the Setters to update the last known state,
 // and the Getters will be used by the Admin Server
 type History interface {
-	// SetApiSnapshot sets the latest ApiSnapshot
+	// SetApiSnapshot sets the latest Edge ApiSnapshot.
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
+
 	// SetKubeGatewayClient sets the client to use for Kubernetes CRUD operations when
-	// Kubernetes Gateway integration is enabled. If this is not set, then no Kubernetes
-	// Gateway resources will be returned from `GetInputSnapshot`.
+	// Kubernetes Gateway integration is enabled. If this is not set, then it is assumed
+	// that Kubernetes Gateway integration is not enabled, and no Kubernetes Gateway
+	// resources will be returned from `GetInputSnapshot`.
 	SetKubeGatewayClient(kubeGatewayClient client.Client)
-	// GetInputSnapshot gets the input snapshot for all components.
+
+	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
+	// Gateway integration is enabled, it additionally returns all resources on the cluster
+	// with types specified by `kubeGvks`.
 	GetInputSnapshot(ctx context.Context) ([]byte, error)
+
 	// GetProxySnapshot returns the Proxies generated for all components.
 	GetProxySnapshot(ctx context.Context) ([]byte, error)
+
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
 	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
 	GetXdsSnapshot(ctx context.Context) ([]byte, error)
 }
 
+// HistoryFactoryParameters are the inputs used to create a History object
+type HistoryFactoryParameters struct {
+	Settings *gloov1.Settings
+	Cache    cache.SnapshotCache
+}
+
+// HistoryFactory is a function that produces a History object
+type HistoryFactory func(params HistoryFactoryParameters) History
+
+// GetHistoryFactory returns a default HistoryFactory implementation
+func GetHistoryFactory() HistoryFactory {
+	return func(params HistoryFactoryParameters) History {
+		return NewHistory(params.Cache, params.Settings, KubeGatewayDefaultGVKs)
+	}
+}
+
 // NewHistory returns an implementation of the History interface
-func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings) History {
+//   - `cache` is the control plane's xDS snapshot cache
+//   - `settings` specifies the Settings for this control plane instance
+//   - `kubeGvks` specifies the list of resource types to return in the input snapshot when
+//     Kubernetes Gateway integration is enabled. For example, this may include Gateway API
+//     resources, Portal resources, or other resources specific to the Kubernetes Gateway integration.
+//     If not set, then only Edge ApiSnapshot resources will be returned from `GetInputSnapshot`.
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGvks []schema.GroupVersionKind) History {
 	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
 		settings:          settings,
 		kubeGatewayClient: nil,
+		kubeGvks:          kubeGvks,
 	}
 }
 
@@ -57,6 +82,9 @@ type historyImpl struct {
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
 	kubeGatewayClient client.Client
+	// this will hold all the kube gvks that we want to show in the input snapshot when kube gateway
+	// integration is enabled
+	kubeGvks []schema.GroupVersionKind
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -127,10 +155,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 	}
 	resources = append(resources, kubeResources...)
 
-	// sort all the resources before formatting
-	sortResources(resources)
-
-	return formatOutput("json_compact", resources)
+	return formatResources(resources)
 }
 
 func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
@@ -144,7 +169,8 @@ func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return formatOutput("json_compact", resources)
+
+	return formatResources(resources)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
@@ -213,25 +239,7 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 	}
 
 	resources := []crdv1.Resource{}
-	gvks := []schema.GroupVersionKind{
-		// Kubernetes Gateway API resources
-		wellknown.GatewayClassListGVK,
-		wellknown.GatewayListGVK,
-		wellknown.HTTPRouteListGVK,
-		wellknown.ReferenceGrantListGVK,
-
-		// Gloo resources used in Kubernetes Gateway integration
-		v1alpha1.GatewayParametersGVK,
-		gatewayv1.ListenerOptionGVK,
-		gatewayv1.HttpListenerOptionGVK,
-
-		// resources shared between Edge and Kubernetes Gateway integration
-		gatewayv1.RouteOptionGVK,
-		gatewayv1.VirtualHostOptionGVK,
-		extauthv1.AuthConfigGVK,
-		ratelimitv1alpha1.RateLimitConfigGVK,
-	}
-	for _, gvk := range gvks {
+	for _, gvk := range h.kubeGvks {
 		// populate an unstructured list for each resource type
 		list := &unstructured.UnstructuredList{}
 		list.SetGroupVersionKind(gvk)
@@ -255,6 +263,7 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 }
 
 // getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
+// on resources used in the Kubernetes Gateway integration
 func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 	h.RLock()
 	defer h.RUnlock()

@@ -1,14 +1,14 @@
 ---
 title: "Security Posture"
-description: Expected release cadence and support of Gloo Edge
+description: Expected release cadence and support of Gloo Gateway
 weight: 33
 ---
 
-Review the following information about security posture of Solo's Gloo Edge Envoy extensions. For more information, see the [Envoy threat model](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/threat_model).
+Review the following information about security posture of Solo's Gloo Gateway Envoy extensions. For more information, see the [Envoy threat model](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/threat_model).
 
 ## About the security posture {#about}
 
-The security posture includes extensions for both the Open Source and Enterprise versions of Gloo Edge. Each extension has the filter name and the the classification of the filter's security posture. The following table describes the security posture values.
+The security posture includes extensions for both the Open Source and Enterprise versions of Gloo Gateway. Each extension has the filter name and the the classification of the filter's security posture. The following table describes the security posture values.
 
 | Value | Description |
 | ----- | ----------- |
@@ -20,7 +20,7 @@ The security posture includes extensions for both the Open Source and Enterprise
 
 ## Security posture for extensions {#posture}
 
-Review the following Open Source and Enterprise security postures for Gloo Edge Envoy extensions. You can also download this [YAML file](../security-posture.yaml).
+Review the following Open Source and Enterprise security postures for Gloo Gateway Envoy extensions. You can also download this [YAML file](../security-posture.yaml).
 
 ```yaml
 {{< readfile file="/reference/security-posture.yaml">}}
