@@ -51,6 +51,13 @@ var (
 		},
 	}
 
+	NginxSvc = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx",
+			Namespace: "nginx",
+		},
+	}
+
 	NginxPodManifest = filepath.Join(util.MustGetThisDir(), "testdata", "nginx_pod.yaml")
 
 	NginxResponse = `<!DOCTYPE html>
