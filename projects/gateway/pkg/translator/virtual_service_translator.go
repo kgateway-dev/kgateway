@@ -296,6 +296,8 @@ func (v *VirtualServiceTranslator) virtualServiceToVirtualHost(vs *v1.VirtualSer
 		Options: vs.GetVirtualHost().GetOptions(),
 	}
 
+	// CORS merging might take place here if per-VS config is implemented
+
 	validateRoutesRegex(vs, vh, reports)
 
 	if v.WarnOnRouteShortCircuiting {

@@ -139,8 +139,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
+
 		if params.Settings.MergeCorsSettings {
 			if route.GetOptions() == nil {
+				// create an empty object to merge to if needed
 				route.Options = &v1.RouteOptions{}
 			}
 			route.GetOptions().Cors = mergeCors(virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
@@ -921,6 +923,8 @@ func ValidateRoutePath(s string) error {
 	return nil
 }
 
+// Implements the "union"/"most permissive" strategy for a couple fields as an example
+// Final implementation will operate on all fields or on each field on a case-by-case basis
 func mergeCors(src, dest *cors.CorsPolicy) *cors.CorsPolicy {
 	if src == nil {
 		return dest
