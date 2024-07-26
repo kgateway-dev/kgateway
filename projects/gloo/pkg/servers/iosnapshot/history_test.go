@@ -221,12 +221,14 @@ var _ = Describe("History", func() {
 								"safe-annotation":                  "safe-annotation-value",
 							},
 						},
-						Kind: &v1.Secret_Tls{Tls: &v1.TlsSecret{
-							CertChain:  "cert-chain",
-							PrivateKey: "private-key",
-							RootCa:     "root-ca",
-							OcspStaple: nil,
-						}},
+						Kind: &v1.Secret_Tls{
+							Tls: &v1.TlsSecret{
+								CertChain:  "cert-chain",
+								PrivateKey: "private-key",
+								RootCa:     "root-ca",
+								OcspStaple: nil,
+							},
+						},
 					},
 				},
 			})
@@ -1081,24 +1083,83 @@ var _ = Describe("History", func() {
 		It("returns ApiSnapshot", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Proxies: v1.ProxyList{
-					{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "proxy", Namespace: defaults.GlooSystem}},
 				},
 				Upstreams: v1.UpstreamList{
-					{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "upstream", Namespace: defaults.GlooSystem}},
+				},
+				Artifacts: v1.ArtifactList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "artifact",
+							Namespace: defaults.GlooSystem,
+							Annotations: map[string]string{
+								corev1.LastAppliedConfigAnnotation: "last-applied-configuration",
+								"safe-annotation":                  "safe-annotation-value",
+							},
+						},
+						Data: map[string]string{
+							"key": "sensitive-data",
+						},
+					},
+				},
+				Secrets: v1.SecretList{
+					{
+						Metadata: &core.Metadata{
+							Name:      "secret",
+							Namespace: defaults.GlooSystem,
+							Annotations: map[string]string{
+								corev1.LastAppliedConfigAnnotation: "last-applied-configuration",
+								"safe-annotation":                  "safe-annotation-value",
+							},
+						},
+						Kind: &v1.Secret_Tls{
+							Tls: &v1.TlsSecret{
+								CertChain:  "cert-chain",
+								PrivateKey: "private-key",
+								RootCa:     "root-ca",
+								OcspStaple: nil,
+							},
+						},
+					},
 				},
 			})
 
 			snap := getEdgeApiSnapshot(ctx, history)
-			Expect(snap.Proxies).To(ContainElements(
-				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}}),
-				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}}),
+			Expect(snap.Proxies).To(ContainElement(
+				skmatchers.MatchProto(&v1.Proxy{Metadata: &core.Metadata{Name: "proxy", Namespace: defaults.GlooSystem}}),
 			))
-			Expect(snap.Upstreams).To(ContainElements(
-				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}}),
-				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}}),
+			Expect(snap.Upstreams).To(ContainElement(
+				skmatchers.MatchProto(&v1.Upstream{Metadata: &core.Metadata{Name: "upstream", Namespace: defaults.GlooSystem}}),
 			))
+			Expect(snap.Artifacts).To(ContainElement(
+				skmatchers.MatchProto(&v1.Artifact{
+					Metadata: &core.Metadata{
+						Name:      "artifact",
+						Namespace: defaults.GlooSystem,
+						Annotations: map[string]string{
+							corev1.LastAppliedConfigAnnotation: "<redacted>",
+							"safe-annotation":                  "safe-annotation-value",
+						},
+					},
+					Data: map[string]string{
+						"key": "<redacted>",
+					},
+				}),
+			), "artifacts are included and redacted")
+			Expect(snap.Secrets).To(ContainElement(
+				skmatchers.MatchProto(&v1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: defaults.GlooSystem,
+						Annotations: map[string]string{
+							corev1.LastAppliedConfigAnnotation: "<redacted>",
+							"safe-annotation":                  "safe-annotation-value",
+						},
+					},
+					Kind: nil,
+				}),
+			), "secrets are included and redacted")
 		})
 
 	})
@@ -1108,12 +1169,10 @@ var _ = Describe("History", func() {
 		It("returns ApiSnapshot with _only_ Proxies", func() {
 			setSnapshotOnHistory(ctx, history, &v1snap.ApiSnapshot{
 				Proxies: v1.ProxyList{
-					{Metadata: &core.Metadata{Name: "proxy-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "proxy-west", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "proxy", Namespace: defaults.GlooSystem}},
 				},
 				Upstreams: v1.UpstreamList{
-					{Metadata: &core.Metadata{Name: "upstream-east", Namespace: defaults.GlooSystem}},
-					{Metadata: &core.Metadata{Name: "upstream-west", Namespace: defaults.GlooSystem}},
+					{Metadata: &core.Metadata{Name: "upstream", Namespace: defaults.GlooSystem}},
 				},
 			})
 
@@ -1123,15 +1182,7 @@ var _ = Describe("History", func() {
 					matchers.MatchTypeMeta(v1.ProxyGVK),
 					matchers.MatchObjectMeta(types.NamespacedName{
 						Namespace: defaults.GlooSystem,
-						Name:      "proxy-east",
-					}),
-					gstruct.Ignore(),
-				),
-				matchers.ContainCustomResource(
-					matchers.MatchTypeMeta(v1.ProxyGVK),
-					matchers.MatchObjectMeta(types.NamespacedName{
-						Namespace: defaults.GlooSystem,
-						Name:      "proxy-west",
+						Name:      "proxy",
 					}),
 					gstruct.Ignore(),
 				),
