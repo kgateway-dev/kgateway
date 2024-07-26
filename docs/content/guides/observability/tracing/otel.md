@@ -163,6 +163,13 @@ This guide uses the Zipkin tracing platform as an example to show how to set up 
    	{"kind": "exporter", "data_type": "traces", "name": "logging"}
     ```
 
+    Note that the `Status code` is set to `Unset`. This is the recommended setting in accordance with the OpenTelemetry [semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), which state:
+
+    > Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges, unless there was another error (e.g., network error receiving the response body; or 3xx codes with max redirects exceeded), in which case status MUST be set to Error.
+    > ... For HTTP status codes in the 5xx range, as well as any other code the client failed to interpret, span status MUST be set to Error.
+
+    To observe this, update the `status` returned by the `directResponseAction` to `500`. Subsequent requests sent to this endpoint will receive a `Status code: Error` instead of `Unset`.
+
 9. [Open the Zipkin web interface.](http://localhost:9411/zipkin/)
 
 10. In the Zipkin web interface, click **Run query** to view traces for your requests, and click **Show** to review the details of the trace.
