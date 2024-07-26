@@ -46,6 +46,7 @@ func sortResources(resources []crdv1.Resource) {
 }
 
 // apiSnapshotToGenericMap converts an ApiSnapshot into a generic map
+// Since maps do not guarantee ordering, we do not attempt to sort these resources, as we do four []crdv1.Resource
 func apiSnapshotToGenericMap(snap *v1snap.ApiSnapshot) (map[string]interface{}, error) {
 	genericMap := map[string]interface{}{}
 

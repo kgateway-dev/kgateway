@@ -1,50 +1,40 @@
 package iosnapshot
 
-import "fmt"
+import "encoding/json"
 
 // SnapshotResponseData is the data that is returned by Getter methods on the History object
 // It allows us to encapsulate data and errors together, so that if an issue occurs during the request,
 // we can get access to all the relevant information
 type SnapshotResponseData struct {
-	Status SnapshotResponseStatus
-	Data   string
-	Error  error
+	Data  string `json:"data"`
+	Error error  `json:"error"`
 }
 
-// SnapshotResponseStatus identifies the status of the SnapshotResponse
-type SnapshotResponseStatus int
-
-const (
-	// Complete signifies that the entire requested snapshot is returned
-	Complete SnapshotResponseStatus = iota
-
-	// Error signifies that the requested snapshot could not be returned, due to an error
-	Error
-)
-
-func (s SnapshotResponseStatus) String() string {
-	switch s {
-	case Complete:
-		return "Complete"
-	case Error:
-		return "Error"
-	default:
-		return fmt.Sprintf("%d", int(s))
+func (r SnapshotResponseData) MarshalJSON() ([]byte, error) {
+	var errorMsg string
+	if r.Error != nil {
+		errorMsg = r.Error.Error()
 	}
+	anon := struct {
+		Data  string `json:"data"`
+		Error string `json:"error"`
+	}{
+		Data:  r.Data,
+		Error: errorMsg,
+	}
+	return json.Marshal(anon)
 }
 
 func completeSnapshotResponse(bytes []byte) SnapshotResponseData {
 	return SnapshotResponseData{
-		Status: Complete,
-		Data:   string(bytes),
-		Error:  nil,
+		Data:  string(bytes),
+		Error: nil,
 	}
 }
 
 func errorSnapshotResponse(err error) SnapshotResponseData {
 	return SnapshotResponseData{
-		Status: Error,
-		Data:   "",
-		Error:  err,
+		Data:  "",
+		Error: err,
 	}
 }
