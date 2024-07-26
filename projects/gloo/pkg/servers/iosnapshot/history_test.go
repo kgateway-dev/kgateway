@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+
 	corev1 "k8s.io/api/core/v1"
 
 	skmatchers "github.com/solo-io/solo-kit/test/matchers"
@@ -971,6 +973,22 @@ var _ = Describe("History", func() {
 							},
 						},
 					},
+					Secrets: v1.SecretList{
+						{
+							Metadata: &core.Metadata{
+								Name:      "secret-snap",
+								Namespace: defaults.GlooSystem,
+							},
+						},
+					},
+					Upstreams: v1.UpstreamList{
+						{
+							Metadata: &core.Metadata{
+								Name:      "upstream-snap",
+								Namespace: defaults.GlooSystem,
+							},
+						},
+					},
 				})
 
 				// k8s resources on the cluster (in reality this would be a superset of the ones
@@ -1000,6 +1018,18 @@ var _ = Describe("History", func() {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "kube-rlc",
 							Namespace: "k",
+						},
+					},
+					&glookubev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "kube-secret",
+							Namespace: "m",
+						},
+					},
+					&glookubev1.Upstream{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "kube-upstream",
+							Namespace: "l",
 						},
 					},
 				}
@@ -1040,6 +1070,22 @@ var _ = Describe("History", func() {
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", ratelimitv1alpha1.RateLimitConfigGVK, "k", "kube-rlc"))
+				Expect(returnedResources).To(matchers.ContainCustomResource(
+					matchers.MatchTypeMeta(v1.SecretGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
+						Name:      "kube-secret",
+						Namespace: "m",
+					}, matchers.HaveNilManagedFields()),
+					gstruct.Ignore(),
+				), fmt.Sprintf("results should contain %v %s.%s", v1.SecretGVK, "m", "kube-secret"))
+				Expect(returnedResources).To(matchers.ContainCustomResource(
+					matchers.MatchTypeMeta(v1.UpstreamGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
+						Name:      "kube-upstream",
+						Namespace: "l",
+					}, matchers.HaveNilManagedFields()),
+					gstruct.Ignore(),
+				), fmt.Sprintf("results should contain %v %s.%s", v1.UpstreamGVK, "l", "kube-upstream"))
 
 				// should not contain the api snapshot resources
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
@@ -1049,7 +1095,7 @@ var _ = Describe("History", func() {
 						Namespace: defaults.GlooSystem,
 					}),
 					gstruct.Ignore(),
-				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.RouteOptionGVK, defaults.GlooSystem, "rto-snap"))
+				), fmt.Sprintf("results should not contain %v %s.%s", gatewayv1.RouteOptionGVK, defaults.GlooSystem, "rto-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
 					matchers.MatchTypeMeta(gatewayv1.VirtualHostOptionGVK),
 					matchers.MatchObjectMeta(types.NamespacedName{
@@ -1057,7 +1103,7 @@ var _ = Describe("History", func() {
 						Namespace: defaults.GlooSystem,
 					}),
 					gstruct.Ignore(),
-				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.VirtualHostOptionGVK, defaults.GlooSystem, "vho-snap"))
+				), fmt.Sprintf("results should not contain %v %s.%s", gatewayv1.VirtualHostOptionGVK, defaults.GlooSystem, "vho-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
 					matchers.MatchTypeMeta(extauthv1.AuthConfigGVK),
 					matchers.MatchObjectMeta(types.NamespacedName{
@@ -1065,7 +1111,7 @@ var _ = Describe("History", func() {
 						Namespace: defaults.GlooSystem,
 					}),
 					gstruct.Ignore(),
-				), fmt.Sprintf("results should contain %v %s.%s", extauthv1.AuthConfigGVK, defaults.GlooSystem, "ac-snap"))
+				), fmt.Sprintf("results should not contain %v %s.%s", extauthv1.AuthConfigGVK, defaults.GlooSystem, "ac-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
 					matchers.MatchTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
 					matchers.MatchObjectMeta(types.NamespacedName{
@@ -1073,7 +1119,23 @@ var _ = Describe("History", func() {
 						Namespace: defaults.GlooSystem,
 					}),
 					gstruct.Ignore(),
-				), fmt.Sprintf("results should contain %v %s.%s", ratelimitv1alpha1.RateLimitConfigGVK, defaults.GlooSystem, "rlc-snap"))
+				), fmt.Sprintf("results should not contain %v %s.%s", ratelimitv1alpha1.RateLimitConfigGVK, defaults.GlooSystem, "rlc-snap"))
+				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
+					matchers.MatchTypeMeta(v1.SecretGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
+						Name:      "secret-snap",
+						Namespace: defaults.GlooSystem,
+					}),
+					gstruct.Ignore(),
+				), fmt.Sprintf("results should not contain %v %s.%s", v1.SecretGVK, defaults.GlooSystem, "secret-snap"))
+				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
+					matchers.MatchTypeMeta(v1.UpstreamGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
+						Name:      "upstream-snap",
+						Namespace: defaults.GlooSystem,
+					}),
+					gstruct.Ignore(),
+				), fmt.Sprintf("results should not contain %v %s.%s", v1.UpstreamGVK, defaults.GlooSystem, "upstream-snap"))
 			})
 
 		})
