@@ -5,6 +5,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/any.proto";
 
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
@@ -19,6 +20,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/filters/stages.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
@@ -134,6 +136,9 @@ message TcpListener {
     TcpListenerOptions options = 8;
     // prefix for addressing envoy stats for the tcp proxy
     string stat_prefix = 3;
+
+    // Additional arbitrary network Filters that will be inserted directly into xDS.
+    repeated CustomEnvoyFilter custom_network_filters = 4;
 }
 
 message TcpHost {
@@ -185,6 +190,12 @@ message HttpListener {
     HttpListenerOptions options = 2;
     // prefix for addressing envoy stats for the http connection manager
     string stat_prefix = 3;
+
+    // Additional arbitrary HTTPFilters that will be inserted directly into xDS.
+    repeated CustomEnvoyFilter custom_http_filters = 4;
+
+    // Additional arbitrary network Filters that will be inserted directly into xDS.
+    repeated CustomEnvoyFilter custom_network_filters = 5;
 }
 
 message HybridListener {
@@ -217,6 +228,7 @@ message MatchedTcpListener {
 
     // The actual tcp listener to be used for this matcher in the aggregate listener
     TcpListener tcp_listener = 2;
+
 }
 
 message Matcher {
@@ -263,6 +275,12 @@ message AggregateListener {
         // The set of refs pointing to VirtualHosts which are available on this HttpFilterChain
         // Each ref corresponds to an entry in the HttpResources.VirtualHosts map
         repeated string virtual_host_refs = 3;
+
+        // Additional arbitrary HTTPFilters that will be inserted directly into xDS.
+        repeated CustomEnvoyFilter custom_http_filters = 37;
+
+        // Additional arbitrary network Filters that will be inserted directly into xDS.
+        repeated CustomEnvoyFilter custom_network_filters = 38;
     }
 
     // The aggregate set of resources available on this listener
@@ -601,4 +619,17 @@ message SourceMetadata {
 
     // A list of sources
     repeated SourceRef sources = 1;
+}
+
+// CustomEnvoyFilter contains an arbitrary filter.
+// These may be HTTPFilters or NetworkFilters, depending on the context they're used.
+message CustomEnvoyFilter {
+  // Determines filter ordering.
+  .filters.gloo.solo.io.FilterStage filter_stage = 1;
+
+  // The name of the filter configuration.
+  string name = 2;
+
+  // Filter specific configuration.
+  google.protobuf.Any config = 3;
 }
