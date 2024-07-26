@@ -8,15 +8,10 @@ import (
 
 var _ = Describe("SnapshotResponseData", func() {
 
-	DescribeTable("MarshalJSON",
+	DescribeTable("MarshalJSONString",
 		func(response SnapshotResponseData, expectedString string) {
-			bytes, err := response.MarshalJSON()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(bytes).To(
-				WithTransform(func(b []byte) string {
-					return string(b)
-				}, Equal(expectedString)),
-			)
+			responseStr := response.MarshalJSONString()
+			Expect(responseStr).To(Equal(expectedString))
 		},
 		Entry("successful response can be formatted as json",
 			SnapshotResponseData{

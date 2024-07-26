@@ -26,6 +26,14 @@ func (r SnapshotResponseData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(anon)
 }
 
+func (r SnapshotResponseData) MarshalJSONString() string {
+	bytes, err := r.MarshalJSON()
+	if err != nil {
+		return err.Error()
+	}
+	return string(bytes)
+}
+
 func completeSnapshotResponse(bytes []byte) SnapshotResponseData {
 	return SnapshotResponseData{
 		Data:  string(bytes),

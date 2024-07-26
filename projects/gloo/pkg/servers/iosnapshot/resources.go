@@ -30,6 +30,6 @@ var (
 		extauthv1.AuthConfigGVK,
 		ratelimitv1alpha1.RateLimitConfigGVK,
 		gloov1.UpstreamGVK,
-		gloov1.SecretGVK,
+		wellknown.SecretGVK,
 	}
 )

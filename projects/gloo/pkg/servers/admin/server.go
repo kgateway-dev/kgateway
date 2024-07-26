@@ -37,15 +37,7 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History) func(mux *h
 func respondJson(w http.ResponseWriter, response iosnapshot.SnapshotResponseData) {
 	w.Header().Set("Content-Type", getContentType("json"))
 
-	responseBytes, err := response.MarshalJSON()
-	if err != nil {
-		// This shouldn't happen
-		// We do our best to capture errors and return them in the response object itself
-		// This will only occur if formatting the SnapshotResponseData fails
-		_, _ = fmt.Fprintf(w, "%+v", err)
-	}
-
-	_, _ = fmt.Fprintf(w, "%+v", responseBytes)
+	_, _ = fmt.Fprintf(w, "%+v", response.MarshalJSONString())
 }
 
 func getContentType(format string) string {

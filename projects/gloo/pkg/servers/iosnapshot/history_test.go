@@ -238,6 +238,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
+				// When the Kubernetes Gateway integration is not enabled, the Secrets  are sourced from the
+				// ApiSnapshot, and thus use the internal Gloo-defined Secret GVK.
 				matchers.MatchTypeMeta(v1.SecretGVK),
 				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
@@ -248,7 +250,7 @@ var _ = Describe("History", func() {
 						HaveKeyWithValue("safe-annotation", "safe-annotation-value"),
 					),
 				})),
-				BeEmpty(), // entire secret spec should be nil
+				gstruct.PointTo(BeEmpty()), // entire secret spec should be nil
 			), "returned resources include secrets")
 		})
 
@@ -284,10 +286,10 @@ var _ = Describe("History", func() {
 						HaveKeyWithValue("safe-annotation", "safe-annotation-value"),
 					),
 				})),
-				HaveKeyWithValue("data", And(
+				gstruct.PointTo(HaveKeyWithValue("data", And(
 					HaveKeyWithValue("key", "<redacted>"),
 					HaveKeyWithValue("key-2", "<redacted>"),
-				)),
+				))),
 			), "returned resources include artifacts")
 		})
 
@@ -1020,7 +1022,7 @@ var _ = Describe("History", func() {
 							Namespace: "k",
 						},
 					},
-					&glookubev1.Secret{
+					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "kube-secret",
 							Namespace: "m",
@@ -1071,13 +1073,18 @@ var _ = Describe("History", func() {
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", ratelimitv1alpha1.RateLimitConfigGVK, "k", "kube-rlc"))
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.MatchTypeMeta(v1.SecretGVK),
+					// The Kubernetes Secret GVK uses an empty Group. This means that we cannot rely on the standard
+					// HaveTypeMeta matcher, which will use the GroupVersion() method that returns "/{version}"
+					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"APIVersion": Equal("v1"),
+						"Kind":       Equal("Secret"),
+					}),
 					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-secret",
 						Namespace: "m",
 					}, matchers.HaveNilManagedFields()),
-					gstruct.Ignore(),
-				), fmt.Sprintf("results should contain %v %s.%s", v1.SecretGVK, "m", "kube-secret"))
+					BeNil(),
+				), fmt.Sprintf("results should contain %v %s.%s", wellknown.SecretGVK, "m", "kube-secret"))
 				Expect(returnedResources).To(matchers.ContainCustomResource(
 					matchers.MatchTypeMeta(v1.UpstreamGVK),
 					matchers.MatchObjectMeta(types.NamespacedName{

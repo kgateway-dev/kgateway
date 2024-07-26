@@ -1,6 +1,7 @@
 package wellknown
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -72,5 +73,10 @@ var (
 		Group:   GatewayGroup,
 		Version: "v1beta1",
 		Kind:    ReferenceGrantListKind,
+	}
+	SecretGVK = schema.GroupVersionKind{
+		Group:   corev1.GroupName,
+		Version: "v1",
+		Kind:    "Secret",
 	}
 )
