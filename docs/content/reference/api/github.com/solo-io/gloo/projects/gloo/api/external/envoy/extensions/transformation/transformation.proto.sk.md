@@ -480,7 +480,7 @@ substring extends to the end of the input string.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `jsonKeys` | `map<string, .envoy.api.v2.filter.http.MergeJsonKeys.OverridableTemplate>` | Map of key name -> template to render into the JSON body For example, given the following JSON body: { "key1": "value1" } and the following MergeJsonKeys: { "key1": "{{ header("header1") }}", "key2": "{{ header("header2") }}" } The resulting JSON body will be: { "key1": "header1_value", "key2": "header2_value" }. |
+| `jsonKeys` | `map<string, .envoy.api.v2.filter.http.MergeJsonKeys.OverridableTemplate>` | Map of key name -> template to render into the JSON body. Specified keys which don't exist in the JSON body will be set, keys which do exist will be overriden. For example, given the following JSON body: { "key1": "value1" } and the following MergeJsonKeys: { "key1": "{{ header("header1") }}", "key2": "{{ header("header2") }}" } The resulting JSON body will be: { "key1": "header1_value", "key2": "header2_value" }. |
 
 
 

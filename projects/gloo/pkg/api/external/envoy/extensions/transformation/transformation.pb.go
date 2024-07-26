@@ -1151,7 +1151,10 @@ type MergeJsonKeys struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Map of key name -> template to render into the JSON body
+	// Map of key name -> template to render into the JSON body.
+	// Specified keys which don't exist in the JSON body will be set,
+	// keys which do exist will be overriden.
+	//
 	// For example, given the following JSON body:
 	// {
 	// "key1": "value1"
