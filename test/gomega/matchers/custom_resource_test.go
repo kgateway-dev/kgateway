@@ -141,7 +141,7 @@ var _ = Describe("CustomResource", func() {
 					Name:      "name",
 					Namespace: "namespace",
 				}),
-				HaveKeyWithValue("key", "value"),
+				gstruct.PointTo(HaveKeyWithValue("key", "value")),
 			))
 
 		})
