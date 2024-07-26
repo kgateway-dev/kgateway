@@ -41,7 +41,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		resourceList = append(resourceList, *kubeProxy)
 	}
 	// Endpoints are only stored in memory and don't have a Kubernetes resource equivalent,
-	// so we do custom conversion here to make the format consistent with the other resourceList
+	// so we do custom conversion here to make the format consistent with the other resources
 	for _, endpoint := range snap.Endpoints {
 		kubeEndpoint, err := convertToKube(endpoint, gloov1.EndpointCrd)
 		if err != nil {

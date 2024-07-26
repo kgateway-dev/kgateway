@@ -1046,7 +1046,7 @@ var _ = Describe("History", func() {
 					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "rto-snap",
 						Namespace: defaults.GlooSystem,
-					}, matchers.HaveNilManagedFields()),
+					}),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.RouteOptionGVK, defaults.GlooSystem, "rto-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
@@ -1054,7 +1054,7 @@ var _ = Describe("History", func() {
 					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "vho-snap",
 						Namespace: defaults.GlooSystem,
-					}, matchers.HaveNilManagedFields()),
+					}),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.VirtualHostOptionGVK, defaults.GlooSystem, "vho-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
@@ -1062,7 +1062,7 @@ var _ = Describe("History", func() {
 					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "ac-snap",
 						Namespace: defaults.GlooSystem,
-					}, matchers.HaveNilManagedFields()),
+					}),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", extauthv1.AuthConfigGVK, defaults.GlooSystem, "ac-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
@@ -1070,7 +1070,7 @@ var _ = Describe("History", func() {
 					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "rlc-snap",
 						Namespace: defaults.GlooSystem,
-					}, matchers.HaveNilManagedFields()),
+					}),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", ratelimitv1alpha1.RateLimitConfigGVK, defaults.GlooSystem, "rlc-snap"))
 			})
