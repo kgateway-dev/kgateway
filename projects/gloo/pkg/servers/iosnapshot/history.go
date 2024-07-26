@@ -2,9 +2,10 @@ package iosnapshot
 
 import (
 	"context"
+	"sync"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
-	"sync"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -33,7 +34,7 @@ type History interface {
 
 	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
 	// Gateway integration is enabled, it additionally returns all resources on the cluster
-	// with types specified by `kubeGvks`.
+	// with types specified by `kubeGatewayGvks`.
 	GetInputSnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetEdgeApiSnapshot returns all resources in the Edge input snapshot
@@ -66,17 +67,17 @@ func GetHistoryFactory() HistoryFactory {
 // NewHistory returns an implementation of the History interface
 //   - `cache` is the control plane's xDS snapshot cache
 //   - `settings` specifies the Settings for this control plane instance
-//   - `kubeGvks` specifies the list of resource types to return in the input snapshot when
+//   - `kubeGatewayGvks` specifies the list of resource types to return in the input snapshot when
 //     Kubernetes Gateway integration is enabled. For example, this may include Gateway API
 //     resources, Portal resources, or other resources specific to the Kubernetes Gateway integration.
 //     If not set, then only Edge ApiSnapshot resources will be returned from `GetInputSnapshot`.
-func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGvks []schema.GroupVersionKind) History {
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGatewayGvks []schema.GroupVersionKind) History {
 	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
 		settings:          settings,
 		kubeGatewayClient: nil,
-		kubeGvks:          kubeGvks,
+		kubeGatewayGvks:   kubeGatewayGvks,
 	}
 }
 
@@ -89,8 +90,8 @@ type historyImpl struct {
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
 	kubeGatewayClient client.Client
-	// kubeGvks is the list of GVKs that the historyImpl will return when GetInputSnapshot is invoked
-	kubeGvks []schema.GroupVersionKind
+	// kubeGatewayGvks is the list of GVKs that the historyImpl will return when GetInputSnapshot is invoked
+	kubeGatewayGvks []schema.GroupVersionKind
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -152,6 +153,8 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 		snap.VirtualHostOptions = nil
 		snap.AuthConfigs = nil
 		snap.Ratelimitconfigs = nil
+		snap.Secrets = nil
+		snap.Upstreams = nil
 	}
 
 	// get the resources from the edge api snapshot
@@ -274,7 +277,7 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 
 	var resources []crdv1.Resource
 	var errs *multierror.Error
-	for _, gvk := range h.kubeGvks {
+	for _, gvk := range h.kubeGatewayGvks {
 		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
 		if err != nil {
 			// We intentionally aggregate the errors so that we can return a "best effort" set of
