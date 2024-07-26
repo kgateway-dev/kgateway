@@ -316,7 +316,9 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 
 		// Build the HttpListener from the refs defined on the HttpFilterChain
 		httpListener := &v1.HttpListener{
-			Options: httpResources.GetHttpOptions()[httpFilterChain.GetHttpOptionsRef()],
+			Options:              httpResources.GetHttpOptions()[httpFilterChain.GetHttpOptionsRef()],
+			CustomHttpFilters:    httpFilterChain.GetCustomHttpFilters(),
+			CustomNetworkFilters: httpFilterChain.GetCustomNetworkFilters(),
 		}
 		for _, vhostRef := range httpFilterChain.GetVirtualHostRefs() {
 			httpListener.VirtualHosts = append(httpListener.GetVirtualHosts(), httpResources.GetVirtualHosts()[vhostRef])

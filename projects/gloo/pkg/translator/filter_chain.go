@@ -190,6 +190,7 @@ func (t *tcpFilterChainTranslator) computeNetworkFilters(params plugins.Params) 
 		if err != nil {
 			validation.AppendTCPListenerError(t.report, validationapi.TcpListenerReport_Error_ProcessingError, err.Error())
 		}
+		stagedFilters = append(stagedFilters, CustomNetworkFiltersTCP(t.listener)...)
 
 		for _, nf := range stagedFilters {
 			if nf.Filter == nil {
