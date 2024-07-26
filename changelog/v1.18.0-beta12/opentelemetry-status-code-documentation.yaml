@@ -5,3 +5,4 @@ changelog:
     description: >-
       Update documentation regarding how to interpret the Status code in OpenTelemetry Spans
 
+      skipCI-kube-tests:true
