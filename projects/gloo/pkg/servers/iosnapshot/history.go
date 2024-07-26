@@ -372,7 +372,7 @@ func redactArtifactData(element *gloov1.Artifact) {
 func redactGlooResourceMetadata(meta *core.Metadata) {
 	for key, _ := range meta.GetAnnotations() {
 		if key == corev1.LastAppliedConfigAnnotation {
-			meta.Annotations[key] = redactedString
+			meta.GetAnnotations()[key] = redactedString
 		}
 	}
 }
