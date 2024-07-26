@@ -36,14 +36,18 @@ func NewGloomtlsEdgeGatewayApiTestingSuite(ctx context.Context, testInst *e2e.Te
 }
 
 func (s *gloomtlsEdgeGatewayTestingSuite) SetupSuite() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply setup manifest")
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+	s.NoError(err, "can apply Nginx setup manifest")
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	s.NoError(err, "can apply Curl setup manifest")
 
 }
 
 func (s *gloomtlsEdgeGatewayTestingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, setupManifest)
-	s.NoError(err, "can delete setup manifest")
+	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.NginxPodManifest)
+	s.NoError(err, "can delete Nginx setup manifest")
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.CurlPodManifest)
+	s.NoError(err, "can delete Curl setup manifest")
 }
 
 func (s *gloomtlsEdgeGatewayTestingSuite) TestRouteSecureRequestToUpstream() {

@@ -78,6 +78,7 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 		if err != nil {
 			validation.AppendHTTPListenerError(n.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
+		stagedFilters = append(stagedFilters, CustomNetworkFiltersHTTP(n.listener)...)
 
 		for _, nf := range stagedFilters {
 			if nf.Filter == nil {
@@ -220,6 +221,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		if err != nil {
 			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
+		stagedFilters = append(stagedFilters, CustomHttpFilters(h.listener)...)
 
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.Filter == nil {
@@ -258,7 +260,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		&routerV3,
 		plugins.AfterStage(plugins.RouteStage),
 	)
-
 	if err != nil {
 		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 	}
@@ -269,7 +270,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 }
 
 func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(params plugins.Params, routerV3 *routerv3.Router) {
-
 	upstreamHttpFilters := plugins.StagedUpstreamHttpFilterList{}
 	for _, plug := range h.upstreamHttpPlugins {
 		stagedFilters, err := plug.UpstreamHttpFilters(params, h.listener)
@@ -301,7 +301,6 @@ func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(params plugins.P
 			},
 		})
 	}
-
 }
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
