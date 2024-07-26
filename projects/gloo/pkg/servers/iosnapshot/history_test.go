@@ -119,8 +119,8 @@ var _ = Describe("History", func() {
 			It("GetInputSnapshot includes Deployments", func() {
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(deploymentGvk),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(deploymentGvk),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Namespace: "a",
 						Name:      "kube-deploy",
 					}),
@@ -169,8 +169,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.SettingsGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(v1.SettingsGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					// This matches the name of the Settings resource that we construct the History object with
 					Name: "my-settings",
@@ -200,8 +200,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.EndpointGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(v1.EndpointGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "ep-snap",
 				}),
@@ -233,8 +233,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.SecretGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(v1.SecretGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "secret",
 				}, gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
@@ -269,8 +269,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.ArtifactGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(v1.ArtifactGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "artifact",
 				}, gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
@@ -314,8 +314,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.UpstreamGroupGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(v1.UpstreamGroupGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "ug-snap",
 				}),
@@ -349,8 +349,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(v1.UpstreamGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(v1.UpstreamGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "us-snap",
 				}),
@@ -375,8 +375,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(extauthv1.AuthConfigGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(extauthv1.AuthConfigGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "ac-snap",
 				}),
@@ -423,8 +423,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "rlc-snap",
 				}),
@@ -449,8 +449,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.VirtualServiceGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.VirtualServiceGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "vs-snap",
 				}),
@@ -482,8 +482,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.RouteTableGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.RouteTableGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "rt-snap",
 				}),
@@ -507,8 +507,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.GatewayGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.GatewayGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "gw-snap",
 				}),
@@ -537,8 +537,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.MatchableHttpGatewayGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.MatchableHttpGatewayGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "hgw-snap",
 				}),
@@ -563,8 +563,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.MatchableTcpGatewayGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.MatchableTcpGatewayGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "tgw-snap",
 				}),
@@ -595,8 +595,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.VirtualHostOptionGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.VirtualHostOptionGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "vho-snap",
 				}),
@@ -627,8 +627,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(gatewayv1.RouteOptionGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(gatewayv1.RouteOptionGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "rto-snap",
 				}),
@@ -655,8 +655,8 @@ var _ = Describe("History", func() {
 
 			returnedResources := getInputSnapshotResources(ctx, history)
 			Expect(returnedResources).To(matchers.ContainCustomResource(
-				matchers.HaveTypeMeta(graphqlv1beta1.GraphQLApiGVK),
-				matchers.HaveObjectMeta(types.NamespacedName{
+				matchers.MatchTypeMeta(graphqlv1beta1.GraphQLApiGVK),
+				matchers.MatchObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "gql-snap",
 				}),
@@ -691,8 +691,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(wellknown.GatewayGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(wellknown.GatewayGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-gw",
 						Namespace: "a",
 					}, matchers.HaveNilManagedFields()),
@@ -714,8 +714,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(wellknown.GatewayClassGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(wellknown.GatewayClassGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-gw-class",
 						Namespace: "c",
 					}, matchers.HaveNilManagedFields()),
@@ -737,8 +737,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(wellknown.HTTPRouteGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(wellknown.HTTPRouteGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-http-route",
 						Namespace: "b",
 					}, matchers.HaveNilManagedFields()),
@@ -760,8 +760,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(wellknown.ReferenceGrantGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(wellknown.ReferenceGrantGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-ref-grant",
 						Namespace: "d",
 					}, matchers.HaveNilManagedFields()),
@@ -783,8 +783,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(v1alpha1.GatewayParametersGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(v1alpha1.GatewayParametersGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-gwp",
 						Namespace: "e",
 					}, matchers.HaveNilManagedFields()),
@@ -806,8 +806,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.ListenerOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.ListenerOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-lo",
 						Namespace: "f",
 					}, matchers.HaveNilManagedFields()),
@@ -829,8 +829,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.HttpListenerOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.HttpListenerOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-hlo",
 						Namespace: "g",
 					}, matchers.HaveNilManagedFields()),
@@ -852,8 +852,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.RouteOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.RouteOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-rto",
 						Namespace: "h",
 					}, matchers.HaveNilManagedFields()),
@@ -875,8 +875,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.VirtualHostOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.VirtualHostOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-vho",
 						Namespace: "i",
 					}, matchers.HaveNilManagedFields()),
@@ -898,8 +898,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(extauthv1.AuthConfigGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(extauthv1.AuthConfigGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-ac",
 						Namespace: "j",
 					}, matchers.HaveNilManagedFields()),
@@ -921,8 +921,8 @@ var _ = Describe("History", func() {
 
 				returnedResources := getInputSnapshotResources(ctx, history)
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-rlc",
 						Namespace: "k",
 					}, matchers.HaveNilManagedFields()),
@@ -1006,32 +1006,32 @@ var _ = Describe("History", func() {
 
 				// should contain the kube resources
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.RouteOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.RouteOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-rto",
 						Namespace: "h",
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.RouteOptionGVK, "h", "kube-rto"))
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.VirtualHostOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.VirtualHostOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-vho",
 						Namespace: "i",
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.VirtualHostOptionGVK, "i", "kube-vho"))
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(extauthv1.AuthConfigGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(extauthv1.AuthConfigGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-ac",
 						Namespace: "j",
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", extauthv1.AuthConfigGVK, "j", "kube-ac"))
 				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "kube-rlc",
 						Namespace: "k",
 					}, matchers.HaveNilManagedFields()),
@@ -1040,32 +1040,32 @@ var _ = Describe("History", func() {
 
 				// should not contain the api snapshot resources
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.RouteOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.RouteOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "rto-snap",
 						Namespace: defaults.GlooSystem,
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.RouteOptionGVK, defaults.GlooSystem, "rto-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(gatewayv1.VirtualHostOptionGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(gatewayv1.VirtualHostOptionGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "vho-snap",
 						Namespace: defaults.GlooSystem,
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", gatewayv1.VirtualHostOptionGVK, defaults.GlooSystem, "vho-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(extauthv1.AuthConfigGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(extauthv1.AuthConfigGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "ac-snap",
 						Namespace: defaults.GlooSystem,
 					}, matchers.HaveNilManagedFields()),
 					gstruct.Ignore(),
 				), fmt.Sprintf("results should contain %v %s.%s", extauthv1.AuthConfigGVK, defaults.GlooSystem, "ac-snap"))
 				Expect(returnedResources).NotTo(matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(ratelimitv1alpha1.RateLimitConfigGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Name:      "rlc-snap",
 						Namespace: defaults.GlooSystem,
 					}, matchers.HaveNilManagedFields()),
@@ -1120,16 +1120,16 @@ var _ = Describe("History", func() {
 			returnedResources := getProxySnapshotResources(ctx, history)
 			Expect(returnedResources).To(And(
 				matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(v1.ProxyGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(v1.ProxyGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Namespace: defaults.GlooSystem,
 						Name:      "proxy-east",
 					}),
 					gstruct.Ignore(),
 				),
 				matchers.ContainCustomResource(
-					matchers.HaveTypeMeta(v1.ProxyGVK),
-					matchers.HaveObjectMeta(types.NamespacedName{
+					matchers.MatchTypeMeta(v1.ProxyGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
 						Namespace: defaults.GlooSystem,
 						Name:      "proxy-west",
 					}),
@@ -1219,8 +1219,8 @@ func eventuallyInputSnapshotContainsResource(
 	Eventually(func(g Gomega) {
 		returnedResources := getInputSnapshotResources(ctx, history)
 		g.Expect(returnedResources).To(matchers.ContainCustomResource(
-			matchers.HaveTypeMeta(gvk),
-			matchers.HaveObjectMeta(types.NamespacedName{
+			matchers.MatchTypeMeta(gvk),
+			matchers.MatchObjectMeta(types.NamespacedName{
 				Namespace: namespace,
 				Name:      name,
 			}),
