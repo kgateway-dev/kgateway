@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"time"
 
 	skmatchers "github.com/solo-io/solo-kit/test/matchers"
@@ -215,6 +216,10 @@ var _ = Describe("History", func() {
 						Metadata: &core.Metadata{
 							Name:      "secret",
 							Namespace: defaults.GlooSystem,
+							Annotations: map[string]string{
+								corev1.LastAppliedConfigAnnotation: "last-applied-configuration",
+								"safe-annotation":                  "safe-annotation-value",
+							},
 						},
 						Kind: &v1.Secret_Tls{Tls: &v1.TlsSecret{
 							CertChain:  "cert-chain",
@@ -232,7 +237,12 @@ var _ = Describe("History", func() {
 				matchers.HaveObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "secret",
-				}),
+				}, gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Annotations": And(
+						HaveKeyWithValue(corev1.LastAppliedConfigAnnotation, "<redacted>"),
+						HaveKeyWithValue("safe-annotation", "safe-annotation-value"),
+					),
+				})),
 				BeEmpty(), // entire secret spec should be nil
 			), "returned resources include secrets")
 		})
@@ -244,6 +254,10 @@ var _ = Describe("History", func() {
 						Metadata: &core.Metadata{
 							Name:      "artifact",
 							Namespace: defaults.GlooSystem,
+							Annotations: map[string]string{
+								corev1.LastAppliedConfigAnnotation: "last-applied-configuration",
+								"safe-annotation":                  "safe-annotation-value",
+							},
 						},
 						Data: map[string]string{
 							"key":   "sensitive-data",
@@ -259,7 +273,12 @@ var _ = Describe("History", func() {
 				matchers.HaveObjectMeta(types.NamespacedName{
 					Namespace: defaults.GlooSystem,
 					Name:      "artifact",
-				}),
+				}, gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Annotations": And(
+						HaveKeyWithValue(corev1.LastAppliedConfigAnnotation, "<redacted>"),
+						HaveKeyWithValue("safe-annotation", "safe-annotation-value"),
+					),
+				})),
 				HaveKeyWithValue("data", And(
 					HaveKeyWithValue("key", "<redacted>"),
 					HaveKeyWithValue("key-2", "<redacted>"),

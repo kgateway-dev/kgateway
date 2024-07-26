@@ -26,6 +26,12 @@ func HaveNilManagedFields() types.GomegaMatcher {
 	})
 }
 
+func HaveAFields() types.GomegaMatcher {
+	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+		"ManagedFields": BeNil(),
+	})
+}
+
 // HaveTypeMeta returns a GomegaMatcher which matches a struct that has the provide Group/Version/Kind
 func HaveTypeMeta(gvk schema.GroupVersionKind) types.GomegaMatcher {
 	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{

@@ -2,6 +2,8 @@ package iosnapshot
 
 import (
 	"context"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	corev1 "k8s.io/api/core/v1"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -345,6 +347,8 @@ func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
 // As a result, we perform a primitive redaction method, where we maintain the metadata, and remove the entire spec
 func redactSecretData(element *gloov1.Secret) {
 	element.Kind = nil
+
+	redactGlooResourceMetadata(element.GetMetadata())
 }
 
 const (
@@ -355,6 +359,18 @@ const (
 func redactArtifactData(element *gloov1.Artifact) {
 	for k := range element.GetData() {
 		element.GetData()[k] = redactedString
+	}
+
+	redactGlooResourceMetadata(element.GetMetadata())
+}
+
+// redactGlooResourceMetadata modifies the metadata to remove any sensitive information
+// ref: https://github.com/solo-io/skv2/blob/1583cb716c04eb3f8d01ecb179b0deeabaa6e42b/contrib/pkg/snapshot/redact.go#L20-L26
+func redactGlooResourceMetadata(meta *core.Metadata) {
+	for key, _ := range meta.GetAnnotations() {
+		if key == corev1.LastAppliedConfigAnnotation {
+			meta.Annotations[key] = redactedString
+		}
 	}
 }
 

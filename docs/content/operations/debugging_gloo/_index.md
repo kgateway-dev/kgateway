@@ -372,7 +372,7 @@ kubectl port-forward -n gloo-system deploy/gloo 9091:9091
 
 The following endpoints are then available:
 * `http://localhost:9091/snapshots/input`: Returns a list of resources, ordered by GVK, that the Control Plane is aware of.
-* `http://localhost:9091/snapshots/edge`: Returns a map of Edge API resources, key by type, that the Control Plane is aware of.
+* `http://localhost:9091/snapshots/edge`: Returns a map of Edge API resources, keyed by type, that the Control Plane is aware of.
 * `http://localhost:9091/snapshots/proxies`: Returns a list of Proxy CRs.
 * `http://localhost:9091/snapshots/xds`: Returns a map of xDS snapshots, keyed by the cache key for each snapshot.
 
