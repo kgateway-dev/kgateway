@@ -11,6 +11,7 @@ type SnapshotResponseData struct {
 }
 
 func (r SnapshotResponseData) MarshalJSON() ([]byte, error) {
+	// See: https://github.com/golang/go/issues/5161#issuecomment-1750037535
 	var errorMsg string
 	if r.Error != nil {
 		errorMsg = r.Error.Error()
