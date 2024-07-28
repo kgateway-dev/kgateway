@@ -74,6 +74,10 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc
 	if err != nil {
 		return nil, err
 	}
+
+	if uc.GetOneWayTls().GetValue() {
+		common.ValidationContextType = nil
+	}
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext:   common,
 		Sni:                uc.GetSni(),
