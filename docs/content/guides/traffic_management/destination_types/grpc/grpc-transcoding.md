@@ -57,7 +57,7 @@ To explore gRPC transcoding, you can use the Bookstore demo app in the Gloo Gate
    kubectl get pods | grep bookstore
    ```
    
-5. Verify that Gloo Gateway automatically discovered the gRPC service and added an upstream for it. 
+5. Verify that Gloo Gateway automatically discovered the gRPC service and its gRPC functions, and that an upstream was added for it. 
    ```shell
    kubectl get upstream -n gloo-system default-bookstore-8080 -o yaml
    ```

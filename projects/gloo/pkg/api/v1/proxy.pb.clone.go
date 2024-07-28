@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
+
 	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
 
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
@@ -24,6 +26,8 @@ import (
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_filters "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/filters"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 
@@ -238,6 +242,19 @@ func (m *TcpListener) Clone() proto.Message {
 
 	target.StatPrefix = m.GetStatPrefix()
 
+	if m.GetCustomNetworkFilters() != nil {
+		target.CustomNetworkFilters = make([]*CustomEnvoyFilter, len(m.GetCustomNetworkFilters()))
+		for idx, v := range m.GetCustomNetworkFilters() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomNetworkFilters[idx] = h.Clone().(*CustomEnvoyFilter)
+			} else {
+				target.CustomNetworkFilters[idx] = proto.Clone(v).(*CustomEnvoyFilter)
+			}
+
+		}
+	}
+
 	return target
 }
 
@@ -294,6 +311,32 @@ func (m *HttpListener) Clone() proto.Message {
 	}
 
 	target.StatPrefix = m.GetStatPrefix()
+
+	if m.GetCustomHttpFilters() != nil {
+		target.CustomHttpFilters = make([]*CustomEnvoyFilter, len(m.GetCustomHttpFilters()))
+		for idx, v := range m.GetCustomHttpFilters() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomHttpFilters[idx] = h.Clone().(*CustomEnvoyFilter)
+			} else {
+				target.CustomHttpFilters[idx] = proto.Clone(v).(*CustomEnvoyFilter)
+			}
+
+		}
+	}
+
+	if m.GetCustomNetworkFilters() != nil {
+		target.CustomNetworkFilters = make([]*CustomEnvoyFilter, len(m.GetCustomNetworkFilters()))
+		for idx, v := range m.GetCustomNetworkFilters() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomNetworkFilters[idx] = h.Clone().(*CustomEnvoyFilter)
+			} else {
+				target.CustomNetworkFilters[idx] = proto.Clone(v).(*CustomEnvoyFilter)
+			}
+
+		}
+	}
 
 	return target
 }
@@ -1049,6 +1092,31 @@ func (m *SourceMetadata) Clone() proto.Message {
 }
 
 // Clone function
+func (m *CustomEnvoyFilter) Clone() proto.Message {
+	var target *CustomEnvoyFilter
+	if m == nil {
+		return target
+	}
+	target = &CustomEnvoyFilter{}
+
+	if h, ok := interface{}(m.GetFilterStage()).(clone.Cloner); ok {
+		target.FilterStage = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_filters.FilterStage)
+	} else {
+		target.FilterStage = proto.Clone(m.GetFilterStage()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_filters.FilterStage)
+	}
+
+	target.Name = m.GetName()
+
+	if h, ok := interface{}(m.GetConfig()).(clone.Cloner); ok {
+		target.Config = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+	} else {
+		target.Config = proto.Clone(m.GetConfig()).(*github_com_golang_protobuf_ptypes_any.Any)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *TcpHost_TcpAction) Clone() proto.Message {
 	var target *TcpHost_TcpAction
 	if m == nil {
@@ -1169,6 +1237,32 @@ func (m *AggregateListener_HttpFilterChain) Clone() proto.Message {
 		for idx, v := range m.GetVirtualHostRefs() {
 
 			target.VirtualHostRefs[idx] = v
+
+		}
+	}
+
+	if m.GetCustomHttpFilters() != nil {
+		target.CustomHttpFilters = make([]*CustomEnvoyFilter, len(m.GetCustomHttpFilters()))
+		for idx, v := range m.GetCustomHttpFilters() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomHttpFilters[idx] = h.Clone().(*CustomEnvoyFilter)
+			} else {
+				target.CustomHttpFilters[idx] = proto.Clone(v).(*CustomEnvoyFilter)
+			}
+
+		}
+	}
+
+	if m.GetCustomNetworkFilters() != nil {
+		target.CustomNetworkFilters = make([]*CustomEnvoyFilter, len(m.GetCustomNetworkFilters()))
+		for idx, v := range m.GetCustomNetworkFilters() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.CustomNetworkFilters[idx] = h.Clone().(*CustomEnvoyFilter)
+			} else {
+				target.CustomNetworkFilters[idx] = proto.Clone(v).(*CustomEnvoyFilter)
+			}
 
 		}
 	}

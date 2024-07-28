@@ -10,6 +10,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/filters/stages.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
@@ -238,6 +239,7 @@ message HttpListenerOptions {
     // determine whether requests should be rejected based on the contents of
     // the header.
     header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 36;
+
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -250,6 +252,7 @@ message TcpListenerOptions {
     // LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer.
     // It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
     local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 5;
+
 }
 
 // Optional, feature-specific configuration that lives on virtual hosts.
