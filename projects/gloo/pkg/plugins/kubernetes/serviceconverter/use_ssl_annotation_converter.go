@@ -8,6 +8,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -29,6 +30,7 @@ const GlooSslSecretAnnotation = "gloo.solo.io/sslService.secret"
 const GlooSslTlsCertAnnotation = "gloo.solo.io/sslService.tlsCert"
 const GlooSslTlsKeyAnnotation = "gloo.solo.io/sslService.tlsKey"
 const GlooSslRootCaAnnotation = "gloo.solo.io/sslService.rootCa"
+const GlooSslOneWayTlsAnnotation = "gloo.solo.io/sslService.oneWayTls"
 
 // sets UseSsl on the upstream if the service has the relevant port name
 type UseSslConverter struct{}
@@ -65,30 +67,32 @@ func upstreamSslConfigFromService(svc *corev1.Service, svcPort corev1.ServicePor
 	tlsCert := getAnnotationValue(GlooSslTlsCertAnnotation)
 	tlsKey := getAnnotationValue(GlooSslTlsKeyAnnotation)
 	rootCa := getAnnotationValue(GlooSslRootCaAnnotation)
+	oneWayTls := getAnnotationValue(GlooSslOneWayTlsAnnotation)
 
+	upstreamSslCfg := &ssl.UpstreamSslConfig{
+		OneWayTls: &wrapperspb.BoolValue{Value: oneWayTls == "true"},
+	}
 	switch {
 	case secretName != "":
-		return &ssl.UpstreamSslConfig{
-			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{
-					Name:      secretName,
-					Namespace: svc.Namespace,
-				},
+		upstreamSslCfg.SslSecrets = &ssl.UpstreamSslConfig_SecretRef{
+			SecretRef: &core.ResourceRef{
+				Name:      secretName,
+				Namespace: svc.Namespace,
 			},
 		}
 	case tlsCert != "" || tlsKey != "" || rootCa != "":
-		return &ssl.UpstreamSslConfig{
-			SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
-				SslFiles: &ssl.SSLFiles{
-					TlsCert: tlsCert,
-					TlsKey:  tlsKey,
-					RootCa:  rootCa,
-				},
+		upstreamSslCfg.SslSecrets = &ssl.UpstreamSslConfig_SslFiles{
+			SslFiles: &ssl.SSLFiles{
+				TlsCert: tlsCert,
+				TlsKey:  tlsKey,
+				RootCa:  rootCa,
 			},
 		}
+	default:
+		return nil
 	}
 
-	return nil
+	return upstreamSslCfg
 }
 
 func splitPortFromValue(value string) (string, int32) {
