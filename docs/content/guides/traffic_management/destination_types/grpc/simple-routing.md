@@ -87,6 +87,18 @@ status:
     gloo-system:
       reportedBy: gloo
       state: 1
+    details:
+      fields:
+        functionNames:
+          structValue:
+            fields:
+              solo.examples.v1.StoreService:
+                listValue:
+                  values:
+                    - stringValue: CreateItem
+                    - stringValue: ListItems
+                    - stringValue: DeleteItem
+                    - stringValue: GetItem
    {{< /highlight >}}
 
 5. Optional: Decode the `spec.kube.serviceSpec.grpcJsonTanscoder` proto descriptor field. Note that the field is truncated in the example command. Make sure to add the entire `spec.kube.serviceSpec.grpcJsonTanscoder` value to this command. 
@@ -125,11 +137,6 @@ status:
               services:
               - solo.examples.v1.StoreService
         useHttp2: true
-      status:
-        statuses:
-          gloo-system:
-            reportedBy: gloo
-            state: Accepted
       {{< /highlight >}}
 
 7. Create the virtual service so that you can route incoming requests to the gRPC store app. The virtual service assumes that you use the `gloo-system` namespace for your Gloo Gateway installation. In this configuration, the prefix `/` is matched for all domains. 
