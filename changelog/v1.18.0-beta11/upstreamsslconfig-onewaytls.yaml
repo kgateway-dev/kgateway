@@ -1,7 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/9826
-    resolvesIssue: false
-    description: >-
-      Introduce API for oneWayTls in UpstreamSslConfig, and implement by removing validation context from 
-      Envoy's common tls context if set to true

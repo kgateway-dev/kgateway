@@ -69,9 +69,15 @@ func upstreamSslConfigFromService(svc *corev1.Service, svcPort corev1.ServicePor
 	rootCa := getAnnotationValue(GlooSslRootCaAnnotation)
 	oneWayTls := getAnnotationValue(GlooSslOneWayTlsAnnotation)
 
-	upstreamSslCfg := &ssl.UpstreamSslConfig{
-		OneWayTls: &wrapperspb.BoolValue{Value: oneWayTls == "true"},
+	upstreamSslCfg := &ssl.UpstreamSslConfig{}
+
+	switch strings.ToLower(oneWayTls) {
+	case "true", "1":
+		upstreamSslCfg.OneWayTls = &wrapperspb.BoolValue{Value: true}
+	case "false", "0":
+		upstreamSslCfg.OneWayTls = &wrapperspb.BoolValue{Value: false}
 	}
+
 	switch {
 	case secretName != "":
 		upstreamSslCfg.SslSecrets = &ssl.UpstreamSslConfig_SecretRef{
