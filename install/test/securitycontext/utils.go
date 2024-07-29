@@ -98,7 +98,7 @@ var DefaultOverrides = map[string]map[string]ApplyContainerSecurityDefaults{
 	"gateway-certgen-cronjob":       {"certgen": ApplyRunAsUserSecurityDefaults},
 }
 
-func ValidateSecurityContexts(testManifest TestManifest, validate func(container corev1.Container, resourceName string)) int {
+func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string)) int {
 	foundContainers := 0
 
 	testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -128,7 +128,7 @@ func ValidateSecurityContexts(testManifest TestManifest, validate func(container
 			// Uncomment this to print the enumerated list of containers
 			// fmt.Printf("%s, %s, %s\n", resource.GetKind(), resource.GetName(), container.Name)
 			foundContainers += 1
-			validate(container, resource.GetName())
+			validateContainer(container, resource.GetName())
 		}
 	})
 

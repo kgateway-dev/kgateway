@@ -6423,6 +6423,28 @@ metadata:
 					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", securitycontext.ApplyClusterIngressSecurityDefaults, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				)
 
+				DescribeTable("applies global security setings for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+					runAsGroup := int64(99999)
+					helmArgs := append(
+						extraArgs,
+						"global.securitySettings.floatingUserId=true",
+						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
+					)
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: helmArgs,
+					})
+
+					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
+					securityContext := structuredDeployment.Spec.Template.Spec.SecurityContext
+
+					Expect(securityContext.RunAsUser).To(BeNil(), "resource: %s", resourceName)
+					Expect(securityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s")
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+				)
+
 				DescribeTable("applies default restricted container security contexts", func(seccompType string) {
 
 					helmArgs := append(
