@@ -15,6 +15,5 @@ var (
 		Body:       ContainSubstring("Welcome to nginx!"),
 	}
 
-	setupManifest        = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
 	edgeRoutingResources = filepath.Join(util.MustGetThisDir(), "testdata", "edge_resources.yaml")
 )

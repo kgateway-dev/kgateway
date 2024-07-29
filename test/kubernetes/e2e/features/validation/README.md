@@ -1,0 +1,32 @@
+# Validation Feature
+
+## Overview
+The validation feature is a suite of tests that validate the behavior of the validation webhook with invalid configurations. 
+The tests are run against a Gloo Gateway installation with the validation webhook enabled with different settings.
+
+The validation webhook settings are controlled by the `validation` field in the `settings` CRD and on the `validation` helm field. 
+This includes values:
+
+| Field                             | Type | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|-----------------------------------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+| `alwaysAccept`                    | bool | Always accept resources even if validation produced an error. Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat. Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage.                                                                                                                                                                                                                                                                     |
+| `allowWarnings`                   | bool | Accept resources if validation produced a warning (defaults to true). By setting to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. Note that this setting has no impact on Kubernetes Gateway API validation, as warnings will always be allowed in that context.                                                                                                                                                                           |
+| `warnRouteShortCircuiting`        | bool | Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo will start assigning warnings to resources that would result in route short-circuiting within a virtual host, for example: - prefix routes that make later routes unreachable - regex routes that make later routes unreachable - duplicate matchers.                                                                                                                                           |
+| `disableTransformationValidation` | bool | By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them. |
+| `serverEnabled`                   | bool | By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as `warn_route_short_circuiting` and `disable_transformation_validation`. If not included, the validation server will be enabled.                                                                                                                                                                                      |
+
+The `failurePolicy` field on the gateway can configure the validation webhook configuration's failure policy. This determines 
+when a Gateway cannot communicate with Gloo (e.g. Gloo is offline) if the resources will be rejected by default.
+
+#### Test Combinations
+The below table contains the combinations that are run in the test suite.
+
+| Setup Name                        | Suites Run                                            | Description                            |
+|-----------------------------------|-------------------------------------------------------|----------------------------------------|
+| strict validation                 | validation_strict_warnings, validation_reject_invalid | allowWarnings=false, alwaysAllow=false |
+| allow warnings validation         | validation_allow_warnings, validation_reject_invalid  | allowWarnings=true, alwaysAllow=false  |
+| allow all validation              | validation_allow_warnings, validation_always_accept   | allowWarnings=true, alwaysAllow=true   |
+| disable transformation validation | transformation_validation_disabled                    | disableTransformationValidation=true   |
+
+When the validation webhook is enabled, the resource will not be able to be applied to the cluster if it is invalid. 
+When invalid resources are accepted (alwaysAllow=true), a status should appear on the resource with the correct status state and message.

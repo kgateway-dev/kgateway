@@ -36,8 +36,7 @@ gloo:
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
-    # TODO(npolshak): Add disabled=true here once glooctl tests are in the new framework: https://github.com/solo-io/solo-projects/issues/6303
-    healthyPanicThreshold: 0
+    disabled: true
 # Disable discovery, not recommended for production
 discovery:
   enabled: false

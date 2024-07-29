@@ -16,6 +16,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -42,9 +43,14 @@ func NewGetProxySuite(ctx context.Context, testInst *e2e.TestInstallation) suite
 
 func (s *getProxySuite) SetupSuite() {
 	// apply backend resources that other manifests will depend on
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendManifestFile)
-	s.Require().NoError(err, "can apply backend manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest)
+	s.Require().NoError(err, "can apply Nginx setup manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, defaults.NginxPod, defaults.NginxSvc)
+
+	// apply upstream resources that other manifests will depend on
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, upstreamManifestFile)
+	s.Require().NoError(err, "can apply upstream manifest")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, nginxUpstream)
 
 	// apply edge virtual services
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, edgeRoutesManifestFile)
@@ -120,9 +126,15 @@ func (s *getProxySuite) TearDownSuite() {
 	s.NoError(err, "can delete edge routes manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, edgeVs1, edgeVs2)
 
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendManifestFile)
-	s.NoError(err, "can delete backend manifest")
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, nginxSvc, nginxPod, nginxUpstream)
+	// delete upstream resources
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, upstreamManifestFile)
+	s.Require().NoError(err, "can delete upstream manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, nginxUpstream)
+
+	// delete backend resources that other manifests depend on
+	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, defaults.NginxPodManifest)
+	s.Require().NoError(err, "can delete Nginx setup manifest")
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, defaults.NginxPod, defaults.NginxSvc)
 
 	// make sure the proxies get cleaned up
 	s.testInstallation.Assertions.Gomega.Eventually(func(g Gomega) {

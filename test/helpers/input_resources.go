@@ -50,6 +50,17 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 	}, timeoutInterval, pollingInterval).Should(statusStateMatcher)
 }
 
+func EventuallyResourceStatusHasReason(offset int, getter InputResourceGetter, desiredStatusMessage string, intervals ...interface{}) {
+	statusMessageMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+		"Reason": gomega.ContainSubstring(desiredStatusMessage),
+	})
+
+	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
+	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {
+		return getResourceStatus(getter)
+	}, timeoutInterval, pollingInterval).Should(statusMessageMatcher)
+}
+
 func EventuallyResourceStatusMatches(getter InputResourceGetter, desiredMatcher types.GomegaMatcher, intervals ...interface{}) {
 	EventuallyResourceStatusMatchesWithOffset(1, getter, desiredMatcher, intervals...)
 }
@@ -72,7 +83,8 @@ func getResourceStatus(getter InputResourceGetter) (core.Status, error) {
 
 	// In newer versions of Gloo Edge we provide a default "empty" status, which allows us to patch it to perform updates
 	// As a result, a nil check isn't enough to determine that that status hasn't been reported
-	if status == nil || status.GetReportedBy() == "" {
+	// Note: RateLimitConfig statuses can have an empty reporter
+	if status == nil {
 		return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
 	}
 

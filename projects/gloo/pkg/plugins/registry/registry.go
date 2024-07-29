@@ -58,9 +58,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-var (
-	_ plugins.PluginRegistry = new(pluginRegistry)
-)
+var _ plugins.PluginRegistry = new(pluginRegistry)
 
 func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin

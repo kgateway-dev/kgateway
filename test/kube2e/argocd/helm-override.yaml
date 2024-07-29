@@ -1,7 +1,7 @@
 gateway:
   translateEmptyGateways: true
   validation:
-    allowWarnings: false
+    allowWarnings: true
     alwaysAcceptResources: false
     failurePolicy: Fail
   rolloutJob:
