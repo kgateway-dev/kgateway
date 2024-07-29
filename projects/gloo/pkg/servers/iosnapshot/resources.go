@@ -7,6 +7,7 @@ import (
 	ratelimitv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -30,6 +31,6 @@ var (
 		extauthv1.AuthConfigGVK,
 		ratelimitv1alpha1.RateLimitConfigGVK,
 		gloov1.UpstreamGVK,
-		wellknown.SecretGVK,
+		wellknownkube.SecretGVK,
 	}
 )

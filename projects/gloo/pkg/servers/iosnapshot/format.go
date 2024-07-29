@@ -25,6 +25,10 @@ const (
 	Yaml
 )
 
+func (f OutputFormat) String() string {
+	return [...]string{"Json", "Compact", "Yaml"}[f]
+}
+
 // formatResources sorts the resources and formats them into json output
 func formatResources(resources []crdv1.Resource) ([]byte, error) {
 	sortResources(resources)

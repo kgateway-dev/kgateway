@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
+
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -1084,7 +1086,7 @@ var _ = Describe("History", func() {
 						Namespace: "m",
 					}, matchers.HaveNilManagedFields()),
 					BeNil(),
-				), fmt.Sprintf("results should contain %v %s.%s", wellknown.SecretGVK, "m", "kube-secret"))
+				), fmt.Sprintf("results should contain %v %s.%s", wellknownkube.SecretGVK, "m", "kube-secret"))
 				Expect(returnedResources).To(matchers.ContainCustomResource(
 					matchers.MatchTypeMeta(v1.UpstreamGVK),
 					matchers.MatchObjectMeta(types.NamespacedName{
