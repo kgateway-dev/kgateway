@@ -11,20 +11,34 @@ import (
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 )
 
+// OutputFormat identifies the format to output an object
+type OutputFormat int
+
+const (
+	// Json marshals the data into json, with indents included
+	Json = iota
+
+	// JsonCompact marshals the data into json, but without indents
+	JsonCompact
+
+	// Yaml marshals the data into yaml
+	Yaml
+)
+
 // formatResources sorts the resources and formats them into json output
 func formatResources(resources []crdv1.Resource) ([]byte, error) {
 	sortResources(resources)
-	return formatOutput("json_compact", resources)
+	return formatOutput(JsonCompact, resources)
 }
 
 // formatOutput formats a generic object into the specified output format
-func formatOutput(format string, genericOutput interface{}) ([]byte, error) {
+func formatOutput(format OutputFormat, genericOutput interface{}) ([]byte, error) {
 	switch format {
-	case "json":
+	case Json:
 		return json.MarshalIndent(genericOutput, "", "    ")
-	case "", "json_compact":
+	case JsonCompact:
 		return json.Marshal(genericOutput)
-	case "yaml":
+	case Yaml:
 		// There may be a case in the future, where yaml formatting is necessary
 		// Since it is not required yet, we do not add support
 		return nil, fmt.Errorf("%s format is not yet supported", format)

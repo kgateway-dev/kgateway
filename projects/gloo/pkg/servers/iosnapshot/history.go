@@ -125,7 +125,7 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 		errorSnapshotResponse(err)
 	}
 
-	data, err := formatOutput("json_compact", m)
+	data, err := formatOutput(JsonCompact, m)
 	if err != nil {
 		errorSnapshotResponse(err)
 	}
@@ -221,7 +221,7 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 		}
 	}
 
-	data, err := formatOutput("json_compact", cacheEntries)
+	data, err := formatOutput(JsonCompact, cacheEntries)
 	if err != nil {
 		return errorSnapshotResponse(err)
 	}
@@ -373,6 +373,7 @@ func redactGlooResourceMetadata(meta *core.Metadata) {
 	for key, _ := range meta.GetAnnotations() {
 		if key == corev1.LastAppliedConfigAnnotation {
 			meta.GetAnnotations()[key] = redactedString
+			break
 		}
 	}
 }
