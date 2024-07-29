@@ -16,9 +16,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
+	"github.com/solo-io/gloo/install/test/securitycontext"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -6374,54 +6376,102 @@ metadata:
 					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
-				// Helper function to apply the default restricted container security context
-				type applyContainerSecurityDefaults func(*corev1.SecurityContext)
+				FIt("applies global security setings", func() {
 
-				applyDiscovery := applyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
-					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
-					securityContext.RunAsUser = pointer.Int64(int64(10101))
-				})
-				applyNil := applyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {})
-				applyRunAsUser := applyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
-					securityContext.RunAsUser = pointer.Int64(int64(10101))
-				})
-				applyKnative := applyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
-					securityContext.RunAsUser = pointer.Int64(int64(10101))
-					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
-					securityContext.Capabilities = &corev1.Capabilities{
-						Drop: []corev1.Capability{"ALL"},
-						Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-					}
-				})
-				applyClusterIngress := applyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
-					securityContext.Capabilities = &corev1.Capabilities{
-						Drop: []corev1.Capability{"ALL"},
-						Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-					}
-					securityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
-				})
+					runAsGroup := int64(99999)
+					helmArgs := append(
+						helmRenderEverythingValues(),
+						"global.securitySettings.floatingUserId=true",
+						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
+					)
 
-				getDefaultRestrictedContainerSecurityContext := func(seccompType string, applyContainerDefaults applyContainerSecurityDefaults) *corev1.SecurityContext {
-					// Use default value if not set
-					if seccompType == "" {
-						seccompType = "RuntimeDefault"
-					}
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: helmArgs,
+					})
 
-					defaultRestrictedContainerSecurityContext := &corev1.SecurityContext{
-						RunAsNonRoot:             pointer.Bool(true),
-						AllowPrivilegeEscalation: pointer.Bool(false),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
+					foundContainers := securitycontext.ValidateSecurityContexts(
+						testManifest,
+						func(container corev1.Container, resourceName string) {
+							Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
+							Expect(container.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s, container: %s", resourceName, container.Name)
 						},
-						SeccompProfile: &corev1.SeccompProfile{
-							Type: corev1.SeccompProfileType(seccompType),
-						},
-					}
-					applyContainerDefaults(defaultRestrictedContainerSecurityContext)
-					return defaultRestrictedContainerSecurityContext
-				}
+					)
 
-				DescribeTable("applies default restricted container security contexts", func(resourceName string, containerName string, resourceType string, applyDefaults applyContainerSecurityDefaults, extraArgs ...string) {
+					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers))
+				})
+
+				// Most of the containers are covered in the test above which loops over the entire deployment, but we can't
+				// render all possible charts at the same time because some templates render when
+				// .Values.settings.integrations.knative.version >= 0.8.0 and others render when < 0.8.0
+				FDescribeTable("(applies global security setings (one-offs)", func(resourceName string, containerName string, resourceType string, applyDefaults securitycontext.ApplyContainerSecurityDefaults, extraArgs ...string) {
+					runAsGroup := int64(99999)
+					helmArgs := append(
+						extraArgs,
+						"global.securitySettings.floatingUserId=true",
+						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
+					)
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: helmArgs,
+					})
+
+					container := getContainer(testManifest, resourceType, resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
+					Expect(container.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s, container: %s", resourceName, container.Name)
+
+				},
+					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", securitycontext.ApplyClusterIngressSecurityDefaults, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				)
+
+				DescribeTable("applies default restricted container security contexts", func(seccompType string) {
+
+					helmArgs := append(
+						helmRenderEverythingValues(),
+						"global.podSecurityStandards.container.enableRestrictedContainerDefaults=true",
+					)
+
+					if seccompType != "" {
+						helmArgs = append([]string{
+							"global.podSecurityStandards.container.defaultSeccompProfileType=" + seccompType,
+						}, helmArgs...)
+					}
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: helmArgs,
+					})
+
+					foundContainers := securitycontext.ValidateSecurityContexts(
+						testManifest,
+						func(container corev1.Container, resourceName string) {
+							// Uncomment this to print the enumerated list of containers
+							// fmt.Printf("%s, %s, %s\n", resource.GetKind(), resource.GetName(), container.Name)
+							updateDefaults := securitycontext.ApplyNilSecurityDefaults
+							updatePodDefaults, ok := securitycontext.DefaultOverrides[resourceName]
+							if ok {
+								updateContainerDefaults, ok2 := updatePodDefaults[container.Name]
+								if ok2 {
+									updateDefaults = updateContainerDefaults
+								}
+							}
+
+							expectedDefaults := securitycontext.GetDefaultRestrictedContainerSecurityContext(seccompType, updateDefaults)
+							securityContext := container.SecurityContext
+							Expect(securityContext).To(Equal(expectedDefaults), "resource: %s, container: %s, seccompTypeValue: %s", resourceName, container.Name, seccompType)
+						},
+					)
+
+					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers), "seccompTypeValue: %s", seccompType)
+
+				},
+					Entry("null/default", ""),
+					Entry("RuntimeDefault", "RuntimeDefault"),
+					Entry("Localhost", "Localhost"),
+				)
+
+				// Most of the containers are covered in the test above which loops over the entire deployment, but we can't
+				// render all possible charts at the same time because some templates render when
+				// .Values.settings.integrations.knative.version >= 0.8.0 and others render when < 0.8.0
+				DescribeTable("(applies default restricted container security contexts (one-offs)", func(resourceName string, containerName string, resourceType string, applyDefaults securitycontext.ApplyContainerSecurityDefaults, extraArgs ...string) {
 					for _, seccompTypeValue := range []string{"RuntimeDefault", "Localhost", ""} {
 						helmArgs := extraArgs
 						if seccompTypeValue != "" {
@@ -6429,7 +6479,7 @@ metadata:
 								"global.podSecurityStandards.container.defaultSeccompProfileType=" + seccompTypeValue,
 							}, helmArgs...)
 						}
-						expectedDefaults := getDefaultRestrictedContainerSecurityContext(seccompTypeValue, applyDefaults)
+						expectedDefaults := securitycontext.GetDefaultRestrictedContainerSecurityContext(seccompTypeValue, applyDefaults)
 
 						helmArgs = append([]string{
 							"global.podSecurityStandards.container.enableRestrictedContainerDefaults=true",
@@ -6444,28 +6494,7 @@ metadata:
 						Expect(securityContext).To(Equal(expectedDefaults), "seccompTypeValue: %s", seccompTypeValue)
 					}
 				},
-					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "Deployment", applyDiscovery),
-					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "Deployment", applyNil, "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "Deployment", applyNil, "global.istioIntegration.enabled=true"),
-					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "Deployment", applyDiscovery, "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "Deployment", applyRunAsUser, "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-sds", "gloo", "sds", "Deployment", applyRunAsUser, "global.glooMtls.enabled=true"),
-					Entry("19-gloo-mtls-certgen-job.yaml", "gloo-mtls-certgen", "certgen", "Job", applyRunAsUser, "global.glooMtls.enabled=true"),
-					Entry("3-discovery-deployment.yaml", "discovery", "discovery", "Deployment", applyDiscovery),
-					Entry("5-resource-cleanup-job.yaml", "gloo-resource-cleanup", "kubectl", "Job", applyRunAsUser),
-					Entry("5-resource-migration-job.yaml", "gloo-resource-migration", "kubectl", "Job", applyRunAsUser),
-					Entry("5-resource-rollout-check-job.yaml", "gloo-resource-rollout-check", "kubectl", "Job", applyRunAsUser),
-					Entry("5-resource-rollout-cleanup-job.yaml", "gloo-resource-rollout-cleanup", "kubectl", "Job", applyRunAsUser),
-					Entry("5-resource-rollout-job.yaml", "gloo-resource-rollout", "kubectl", "Job", applyRunAsUser),
-					Entry("6.5-gateway-certgen-job.yaml", "gateway-certgen", "certgen", "Job", applyRunAsUser),
-					Entry("6.5-gateway-certgen-cronjob.yaml", "gateway-certgen-cronjob", "certgen", "CronJob", applyRunAsUser, "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
-					Entry("6-access-logger-deployment.yaml", "gateway-proxy-access-logger", "access-logger", "Deployment", applyNil, "accessLogger.enabled=true"),
-					Entry("10-ingress-deployment.yaml", "ingress", "ingress", "Deployment", applyNil, "ingress.enabled=true"),
-					Entry("11-ingress-proxy-deployment.yaml", "ingress-proxy", "ingress-proxy", "Deployment", applyKnative, "ingress.enabled=true"),
-					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", applyClusterIngress, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
-					Entry("26-knative-external-proxy-deployment.yaml", "knative-external-proxy", "knative-external-proxy", "Deployment", applyKnative, "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-					Entry("29-knative-internal-proxy-deployment.yaml", "knative-internal-proxy", "knative-internal-proxy", "Deployment", applyKnative, "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", applyRunAsUser, "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", securitycontext.ApplyClusterIngressSecurityDefaults, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				)
 
 				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
@@ -6932,15 +6961,10 @@ metadata:
 
 			It("should add the additional labels to all resources", func() {
 				prepareMakefile(namespace, helmValues{
-					valuesArgs: []string{
+					valuesArgs: append(helmRenderEverythingValues(),
 						"global.additionalLabels.this=that",
 						"global.additionalLabels.the=other",
-
-						// Enabled components that have their own manifests
-						"settings.integrations.knative.enabled=true",
-						"accessLogger.enabled=true",
-						"ingress.enabled=true",
-					},
+					),
 				})
 
 				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
@@ -7320,5 +7344,21 @@ func generateExpectedImage(name string, version string, variant string) string {
 		fallthrough
 	default:
 		return fmt.Sprintf("%s:%s", name, version)
+	}
+}
+
+// Does not render **everything** as some templates render when .Values.settings.integrations.knative.version >= 0.8.0 and others render when < 0.8.0
+// These arguments use the default from values-template, which is "0.10.0"
+func helmRenderEverythingValues() []string {
+	return []string{
+		"accessLogger.enabled=true",
+		"gateway.certGenJob.cron.enabled=true",
+		"gateway.enabled=true",
+		"gateway.validation.enabled=true",
+		"gateway.validation.webhook.enabled=true",
+		"global.glooMtls.enabled=true",
+		"global.istioIntegration.enabled=true",
+		"ingress.enabled=true",
+		"settings.integrations.knative.enabled=true",
 	}
 }

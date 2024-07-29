@@ -143,6 +143,7 @@ This template is used to generate the gloo pod or container security context.
 It takes 3 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
+  .global - global settings.
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
@@ -152,31 +153,57 @@ It takes 3 values:
 Because of this, if a value is "true" in defaults it can not be modified with this method.
 */ -}}
 {{- define "gloo.securityContext" }}
+{{/* Move input parameters to non-null variables */}}
+{{- $defaults := dict -}}
+{{- if .defaults -}}
+  {{- $defaults = .defaults -}}
+{{- end -}}
+{{- $values := dict -}}
+{{- if .values -}}
+  {{- $values = .values -}}
+{{- end -}}
+{{- $global := dict  -}}
+{{- if .global -}}
+  {{- $global = .global -}}
+{{- end -}}
 {{ $indent := 0}}
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
+
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
-{{- if .values -}}
-  {{- if .values.mergePolicy }}
-    {{- if eq .values.mergePolicy "helm-merge" -}}
-      {{- $overwrite = false -}}
-    {{- else if ne .values.mergePolicy "no-merge" -}}
-      {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" .values.mergePolicy }}
-    {{- end -}}
-  {{- end }}
-{{- end -}}
-{{- if $overwrite -}}
-  {{- $securityContext = or .values .defaults (dict) -}}
-{{- else -}}
-  {{- $securityContext = merge .values .defaults }}
+
+{{- if $values.mergePolicy }}
+  {{- if eq $values.mergePolicy "helm-merge" -}}
+    {{- $overwrite = false -}}
+  {{- else if ne $values.mergePolicy "no-merge" -}}
+    {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" $values.mergePolicy }}
+  {{- end -}}
 {{- end }}
+
+{{- if $overwrite -}}
+  {{- $securityContext = or $values $defaults (dict) -}}
+{{- else -}}
+  {{- $securityContext = merge $values $defaults -}}
+{{- end }}
+
+{{/* Set Globals */}}
+{{- with $global.securitySettings -}}
+  {{- if hasKey . "floatingUserId" -}}
+    {{- $_ := unset $securityContext "runAsUser" -}}
+  {{- end -}}
+  {{- if hasKey . "fsGroup" -}}
+    {{- $_ := set $securityContext "runAsGroup" .fsGroup -}}
+  {{- end -}}
+{{- end -}}
+
+
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
 {{- $securityContext = omit $securityContext "mergePolicy" -}}
 {{- with $securityContext -}}
-{{- $toRender := dict "securityContext" $securityContext }}
-{{- toYaml $toRender | nindent $indent }}
+  {{- $toRender := dict "securityContext" $securityContext -}}
+  {{- toYaml $toRender | nindent $indent -}}
 {{- end }}
 {{- end }}
 
@@ -187,6 +214,8 @@ It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
   .podSecurityStandards - podSecurityStandard from values.yaml
+  .global - global settings for the security context. Makes `.podSecurityStandards` redundant, and will be removed in 1.18.
+            Until that happens, the passed .podSecurityStandards will be used
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
@@ -194,39 +223,59 @@ It takes 4 values:
   If .podSecurityStandards.container.enableRestrictedContainerDefaults is true, the defaults will be set to a restricted set of values.
   .podSecurityStandards.container.defaultSeccompProfileType can be used to set the seccompProfileType.
 */ -}}
-{{- define "gloo.containerSecurityContext" }}
-{{- $defaultSeccompProfileType := "RuntimeDefault"}}
-{{- /* set default seccompProfileType */ -}}
+{{- define "gloo.containerSecurityContext" -}}
+{{- /* Move input parameters to non-null variables */ -}}
+{{- $defaults := dict -}}
+{{- if .defaults -}}
+  {{- $defaults = .defaults -}}
+{{- end -}}
+{{- $values := dict -}}
+{{- if .values -}}
+  {{- $values = .values -}}
+{{- end -}}
+{{- $global := dict -}}
+{{- if .global -}}
+  {{- $global = .global -}}
+{{- end -}}
 {{ $indent := 0}}
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
+{{ $pss := dict }}
 {{- if .podSecurityStandards -}}
-  {{- if .podSecurityStandards.container -}}
-    {{- if .podSecurityStandards.container.defaultSeccompProfileType -}}
-      {{- $defaultSeccompProfileType = .podSecurityStandards.container.defaultSeccompProfileType -}}
-      {{- if and (ne $defaultSeccompProfileType "RuntimeDefault") (ne $defaultSeccompProfileType "Localhost") -}}
-        {{- fail printf "value '%s' is not an allowed value for defaultSeccompProfileType. Allowed values are 'RuntimeDefault' or 'Localhost'" . }}
-      {{- end -}}
-    {{ end -}}
-  {{ end -}}
+  {{- $pss = .podSecurityStandards -}}
 {{- end -}}
+{{- /* set default seccompProfileType */ -}}
+
+
 {{- $pss_restricted_defaults := dict 
     "runAsNonRoot" true
     "capabilities" (dict "drop" (list "ALL"))
-    "allowPrivilegeEscalation" false
-    "seccompProfile" (dict "type" $defaultSeccompProfileType) }}
+    "allowPrivilegeEscalation" false }}
 {{- /* set defaults if appropriate */ -}}
-{{- $defaults := .defaults }}
-{{- if .podSecurityStandards -}}
-  {{- if .podSecurityStandards.container -}}
-    {{- if .podSecurityStandards.container.enableRestrictedContainerDefaults -}}
-      {{- $defaults = merge .defaults $pss_restricted_defaults -}}
+{{- if $pss.container -}}
+  {{/* Set the default seccompProfileType */}}
+  {{- $defaultSeccompProfileType := "RuntimeDefault"}}
+  {{- if $pss.container.defaultSeccompProfileType -}}
+    {{- $defaultSeccompProfileType = $pss.container.defaultSeccompProfileType -}}
+    {{- if and (ne $defaultSeccompProfileType "RuntimeDefault") (ne $defaultSeccompProfileType "Localhost") -}}
+      {{- fail printf "value '%s' is not an allowed value for defaultSeccompProfileType. Allowed values are 'RuntimeDefault' or 'Localhost'" . }}
     {{- end -}}
   {{- end -}}
+  {{- $_ := set $pss_restricted_defaults  "seccompProfile" (dict "type" $defaultSeccompProfileType) -}}
+
+  {{- if $pss.container.enableRestrictedContainerDefaults -}}
+    {{- $defaults = merge .defaults $pss_restricted_defaults -}}
+  {{- end -}}
 {{- end -}}
+
+
 {{- /* call general securityContext template */ -}}
-{{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults "indent" $indent) -}}
+{{- include "gloo.securityContext" (dict 
+            "values" $values
+            "defaults" $defaults
+            "indent" $indent
+            "global" .global) -}}
 {{- end }}
 
 
@@ -328,3 +377,59 @@ app: gloo
 {{ toYaml . }}
 {{- end }}
 {{- end }}
+
+
+{{- define "gloo.filterSecurityDefaults" -}}
+{{- $defaults := dict
+ "floatingUserId" .floatingUserId
+"runAsUser" .runAsUser
+"fsGroup" .fsGroup 
+-}}
+{{ toYaml $defaults}}
+{{- end }}
+
+
+{{- define "gloo.copyInto" -}}
+{{- $result := dict -}}
+{{- range . -}}
+  {{ $obj := . }}
+  {{- range $k := keys . -}}
+    {{ $_ := set $result $k (get $obj $k) }}
+  {{- end -}}
+{{- end -}}
+{{ $result }}
+{{- end -}}
+
+{{/*
+{{- define "gloo.setSecurityContextGlobals" -}}
+{{- $sc := first . -}}
+{{- $globals := or (index . 1) (dict) -}}
+{{- with $globals -}}
+  {{- if hasKey . "runAsUser" -}}
+    {{- if .runAsUser -}}
+      {{ $_ := set $sc "runAsUser" .runAsUser }}
+    {{- else -}}
+      {{ $_ := unset $sc "runAsUser" }}
+    {{- end -}}
+  {{- end -}}
+  {{- if hasKey . "fsGroup" -}}
+    {{ $_ := set $sc "fsGroup" .fsGroup }}
+  {{- end -}}
+{{- end -}}
+{{ $sc }}
+{{- end -}}
+*/}}
+
+{{- define "gloo.setSecurityContextGlobals" -}}
+{{- $sc := first . -}}
+{{- $globals := or (index . 1) (dict) -}}
+{{- with $globals -}}
+  {{- if $globals.floatingUserId -}}
+    {{ $_ := unset $sc "runAsUser" }}
+  {{- end -}}
+  {{- if hasKey . "fsGroup" -}}
+    {{ $_ := set $sc "fsGroup" .fsGroup }}
+  {{- end -}}
+{{- end -}}
+{{ $sc | toYaml }}
+{{- end -}}

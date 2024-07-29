@@ -42,8 +42,9 @@ spec:
         {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
 {{- if $gg.envoyContainer -}}
 {{- if $gg.envoyContainer.securityContext }}
+      {{ $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.envoyContainer.securityContext .Values.global.securitySettings ) -}}
       securityContext:
-        {{- toYaml $gg.envoyContainer.securityContext | nindent 8 }}
+        {{- toYaml $securityContextWithGlobals | nindent 8 }}
 {{- end }}{{/* if $gg.envoyContainer.securityContext */}}
 {{- if $gg.envoyContainer.resources }}
       resources:
