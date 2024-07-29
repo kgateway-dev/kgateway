@@ -1,0 +1,59 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher: {}
+      virtualHostRefs:
+      - http~example_com
+    httpResources:
+      virtualHosts:
+        http~example_com:
+          domains:
+          - example.com
+          name: http~example_com
+          routes:
+          - matchers:
+            - prefix: /
+            metadataStatic:
+              sources:
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: extref1
+                  namespace: default
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: extref2
+                  namespace: default
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: target-1
+                  namespace: default
+              - resourceKind: RouteOption
+                resourceRef:
+                  name: target-2
+                  namespace: default
+            options:
+              appendXForwardedHost: true
+              headerManipulation:
+                responseHeadersToAdd:
+                - header:
+                    key: x-foo
+                    value: extref
+              hostRewrite: foo.com
+              prefixRewrite: /anything/rewrite
+            routeAction:
+              single:
+                kube:
+                  port: 8000
+                  ref:
+                    name: httpbin
+                    namespace: default
+  bindAddress: '::'
+  bindPort: 8080
+  name: http
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: default
+  name: default-gw
+  namespace: gloo-system
