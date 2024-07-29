@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/solo-projects/issues/6624
+    description: >-
+      Add istio.io/istio false positives CVEs to `.trivyignore`. These CVEs are
+      from very old versions of istio for which patches have already been
+      merged - these come up as false positives from trivy because we pin the
+      dependencies and trivy is unable to determine that the pinned versions
+      already have the fix. This is due to istio's tags not following go's
+      strict semver and therefore falling back to a go pseudo version.
