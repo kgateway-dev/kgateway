@@ -45,7 +45,6 @@ type Global struct {
 
 type SecuritySettings struct {
 	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId."`
-	RunAsUser      *float64 `json:"runAsUser,omitempty" desc:"Sets the default 'runAsUser' value for all instances of runAsUser."`
 	FsGroup        *float64 `json:"fsGroup,omitempty" desc:"Sets the default 'fsGroup' value for all instances of fsGroup."`
 }
 

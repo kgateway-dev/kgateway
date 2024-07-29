@@ -420,9 +420,13 @@ app: gloo
 {{- end -}}
 */}}
 
+{{/* pass in the container definition and the globals 
+     container definition is used because we may need to set globals even if there is no secCtx or container defined
+*/}}
 {{- define "gloo.setSecurityContextGlobals" -}}
-{{- $sc := first . -}}
+{{- $container := or (first .) (dict)  -}}
 {{- $globals := or (index . 1) (dict) -}}
+{{- $sc := or $container.securityContext dict -}}
 {{- with $globals -}}
   {{- if $globals.floatingUserId -}}
     {{ $_ := unset $sc "runAsUser" }}
@@ -431,5 +435,7 @@ app: gloo
     {{ $_ := set $sc "fsGroup" .fsGroup }}
   {{- end -}}
 {{- end -}}
+{{- if $sc -}}
 {{ $sc | toYaml }}
+{{- end -}}
 {{- end -}}

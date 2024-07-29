@@ -158,3 +158,17 @@ const ExpectedContainers = 21
 // Job, gloo-resource-rollout-check, kubectl
 // Job, gloo-resource-rollout-cleanup, kubectl
 // Job, gateway-certgen, certgen
+
+var ContainerSecurityContextRoots = []string{
+	"accessLogger.accessLoggerContainerSecurityContext",
+	"discovery.deployment.discoveryContainerSecurityContext",
+	"gateway.certGenJob.containerSecurityContext",
+	"gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext",
+	"global.glooMtls.envoy.securityContext",
+	"global.glooMtls.istioProxy.securityContext",
+	"global.glooMtls.sds.securityContext",
+	"gloo.deployment.glooContainerSecurityContext",
+	"ingress.deployment.ingressContainerSecurityContext",
+	"ingressProxy.deployment.ingressProxyContainerSecurityContext",
+	"settings.integrations.knative.proxy.containerSecurityContext",
+}

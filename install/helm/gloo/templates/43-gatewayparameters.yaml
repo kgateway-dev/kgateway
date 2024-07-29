@@ -40,12 +40,12 @@ spec:
         {{- end -}}{{/* if $gg.envoyContainer.image */}}
         {{- end }}{{/* if $gg.envoyContainer */}}
         {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- if $gg.envoyContainer -}}
-{{- if $gg.envoyContainer.securityContext }}
-      {{ $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.envoyContainer.securityContext .Values.global.securitySettings ) -}}
+{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.envoyContainer .Values.global.securitySettings ) -}}
+{{- with $securityContextWithGlobals  }}
       securityContext:
-        {{- toYaml $securityContextWithGlobals | nindent 8 }}
-{{- end }}{{/* if $gg.envoyContainer.securityContext */}}
+        {{-  . | nindent 8 }}
+{{- end }}{{/* with $securityContextWithGlobals */}}
+{{- if $gg.envoyContainer -}}
 {{- if $gg.envoyContainer.resources }}
       resources:
         {{- toYaml $gg.envoyContainer.resources | nindent 8 }}
@@ -58,10 +58,11 @@ spec:
     sdsContainer:
       image:
         {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- if $gg.sdsContainer.securityContext }}
+{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.sdsContainer .Values.global.securitySettings ) -}}
+{{- if $securityContextWithGlobals }}
       securityContext:
-        {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
-{{- end }}{{/* if $gg.sdsContainer.securityContext */}}
+        {{- $securityContextWithGlobals | nindent 8 }}
+{{- end }}{{/* with $securityContextWithGlobals */}}
 {{- if $gg.sdsContainer.logLevel }}
       bootstrap:
         logLevel: {{ $gg.sdsContainer.logLevel }}
@@ -79,10 +80,11 @@ spec:
       istioProxyContainer:
         image:
           {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
-{{- if $gg.istio.istioProxyContainer.securityContext }}
+{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.istio.istioProxyContainer .Values.global.securitySettings ) -}}
+{{- with $securityContextWithGlobals  }}
         securityContext:
-          {{- toYaml $gg.istio.istioProxyContainer.securityContext | nindent 10 }}
-{{- end }}{{/* if $gg.istio.istioProxyContainer.securityContext */}}
+          {{- . | nindent 10 }}
+{{- end }}{{/* with $securityContextWithGlobals */}}
 {{- if $gg.istio.istioProxyContainer.logLevel }}
         logLevel: {{ $gg.istio.istioProxyContainer.logLevel }}
 {{- end }}{{/* if $gg.istio.istioProxyContainer.logLevel */}}
@@ -100,13 +102,14 @@ spec:
       enabled: {{ $gg.aiExtension.enabled }}
       image:
         {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- if $gg.aiExtension.securityContext }}
+{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.aiExtension .Values.global.securitySettings ) -}}
+{{- with $securityContextWithGlobals  }}
       securityContext:
-        {{- toYaml $gg.aiExtension.securityContext | nindent 8 }}
-{{- end }}{{/* if $gg.aiExtension.securityContext */}}
+        {{- . | nindent 8 }}
+{{- end }}{{/* with $securityContextWithGlobals */}}
 {{- if $gg.aiExtension.resources }}
       resources:
-        {{- toYaml $gg.aiExtension.resources | nindent 8 }}
+        {{- $gg.aiExtension.resources | nindent 8 }}
 {{- end }}{{/* if $gg.aiExtension.resources */}}
 {{- if $gg.aiExtension.env }}
       env:

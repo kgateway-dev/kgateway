@@ -6376,7 +6376,7 @@ metadata:
 					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
-				FIt("applies global security setings", func() {
+				It("applies global security setings to containers", func() {
 
 					runAsGroup := int64(99999)
 					helmArgs := append(
@@ -6400,10 +6400,37 @@ metadata:
 					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers))
 				})
 
+				It("global security setings override container-specific values", func() {
+					runAsGroup := int64(99999)
+					helmArgs := append(
+						helmRenderEverythingValues(),
+						"global.securitySettings.floatingUserId=true",
+						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
+					)
+
+					for _, securityRoot := range securitycontext.ContainerSecurityContextRoots {
+						helmArgs = append(helmArgs, securityRoot+".runAsGroup=1234", securityRoot+".runAsUser=1234")
+					}
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: helmArgs,
+					})
+
+					foundContainers := securitycontext.ValidateSecurityContexts(
+						testManifest,
+						func(container corev1.Container, resourceName string) {
+							Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
+							Expect(container.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s, container: %s", resourceName, container.Name)
+						},
+					)
+
+					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers))
+				})
+
 				// Most of the containers are covered in the test above which loops over the entire deployment, but we can't
 				// render all possible charts at the same time because some templates render when
 				// .Values.settings.integrations.knative.version >= 0.8.0 and others render when < 0.8.0
-				FDescribeTable("(applies global security setings (one-offs)", func(resourceName string, containerName string, resourceType string, applyDefaults securitycontext.ApplyContainerSecurityDefaults, extraArgs ...string) {
+				DescribeTable("(applies global security setings (one-offs)", func(resourceName string, containerName string, resourceType string, applyDefaults securitycontext.ApplyContainerSecurityDefaults, extraArgs ...string) {
 					runAsGroup := int64(99999)
 					helmArgs := append(
 						extraArgs,
@@ -6444,6 +6471,31 @@ metadata:
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
+
+				// FIt("applies global security setings to KubeGw GatewayParameters", func() {
+
+				// 	runAsGroup := int64(99999)
+				// 	helmArgs := []string{
+				// 		"kubeGateway.enabled=true",
+				// 		"global.securitySettings.floatingUserId=true",
+				// 		fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
+				// 	}
+
+				// 	prepareMakefile(namespace, helmValues{
+				// 		valuesArgs: helmArgs,
+				// 	})
+
+				// 	testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+				// 		if u.GetKind() == "GatewayParameters" && u.GetName() == "resourceName" {
+				// 			return true
+				// 		}
+				// 		return false
+				// 	}).ExpectAll(func(resource *unstructured.Unstructured) {
+				// 		resourceUncast, err := kuberesource.ConvertUnstructured(resource)
+				// 		Expect(err).NotTo(HaveOccurred())
+				// 		gwParams, ok := resourceUncast.(*gatewayv2.GatewayParameters)
+				// 	})
+				// })
 
 				DescribeTable("applies default restricted container security contexts", func(seccompType string) {
 
@@ -7371,6 +7423,7 @@ func generateExpectedImage(name string, version string, variant string) string {
 
 // Does not render **everything** as some templates render when .Values.settings.integrations.knative.version >= 0.8.0 and others render when < 0.8.0
 // These arguments use the default from values-template, which is "0.10.0"
+// Also does not set kubeGateway.enabled=true - leave that to the individual tests
 func helmRenderEverythingValues() []string {
 	return []string{
 		"accessLogger.enabled=true",
