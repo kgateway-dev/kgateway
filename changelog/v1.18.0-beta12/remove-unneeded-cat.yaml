@@ -3,4 +3,4 @@ changelog:
     description: >-
       Remove unneeded cat calls from our docs
 
-      skipCI-kube-tests: true
+      skipCI-kube-tests:true
