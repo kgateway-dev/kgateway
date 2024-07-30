@@ -106,7 +106,7 @@ You can use a clustered Redis instance as the backing storage database for the G
    ```
 2. Create a secret with your Redis credentials in the same namespace as your Gloo Gateway installation, such as `gloo-system`. Make sure to encode your credentials in base64. For more information, see the [Redis security docs](https://redis.io/docs/management/security/acl/).
    ```yaml
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: v1
    kind: Secret
    metadata:

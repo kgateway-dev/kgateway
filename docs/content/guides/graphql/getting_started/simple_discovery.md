@@ -92,7 +92,7 @@ Explore basic GraphQL service discovery with the Pet Store sample application.
 
 5. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
    {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

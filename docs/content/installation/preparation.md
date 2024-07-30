@@ -35,7 +35,7 @@ You must provide the license key during the installation process.
    * **Provide license key in a secret**: You can specify your license key by creating a secret before you install Gloo Gateway.
      1. Create a secret with your license key in the `gloo-system` namespace of your cluster.
         ```yaml
-        cat << EOF | kubectl apply -n gloo-system -f -
+        kubectl apply -n gloo-system -f - << EOF
         apiVersion: v1
         kind: Secret
         type: Opaque
