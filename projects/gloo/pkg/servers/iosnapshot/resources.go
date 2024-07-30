@@ -41,6 +41,8 @@ var (
 		// Extension service policies
 		extauthv1.AuthConfigGVK,
 		ratelimitv1alpha1.RateLimitConfigGVK,
+		gloov1.UpstreamGVK,
+		wellknownkube.SecretGVK,
 	}
 
 	// InputSnapshotGVKs is the list of GVKs that will be returned by the InputSnapshot API

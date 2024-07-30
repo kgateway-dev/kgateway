@@ -303,6 +303,55 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(output).To(Equal(expectedOutput))
 			})
+
+			It("can propely translate MergeJsonKeys body transformation", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].
+					RequestTransformation.TransformationType = &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: &transformation.TransformationTemplate{
+						BodyTransformation: &transformation.TransformationTemplate_MergeJsonKeys{
+							MergeJsonKeys: &transformation.MergeJsonKeys{
+								JsonKeys: map[string]*transformation.MergeJsonKeys_OverridableTemplate{
+									"key1": {
+										Tmpl:          &transformation.InjaTemplate{Text: "value1"},
+										OverrideEmpty: true,
+									},
+									"key2": {
+										Tmpl: &transformation.InjaTemplate{Text: "value2"},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).
+					RequestMatch.RequestTransformation.TransformationType = &envoytransformation.Transformation_TransformationTemplate{
+					TransformationTemplate: &envoytransformation.TransformationTemplate{
+						BodyTransformation: &envoytransformation.TransformationTemplate_MergeJsonKeys{
+							MergeJsonKeys: &envoytransformation.MergeJsonKeys{
+								JsonKeys: map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate{
+									"key1": {
+										Tmpl:          &envoytransformation.InjaTemplate{Text: "value1"},
+										OverrideEmpty: true,
+									},
+									"key2": {
+										Tmpl: &envoytransformation.InjaTemplate{Text: "value2"},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
 		})
 
 		Context("EscapeCharacters", func() {

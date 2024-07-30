@@ -88,7 +88,7 @@ var _ = Describe("History", func() {
 		)
 	})
 
-	FContext("NewHistory", func() {
+	Context("NewHistory", func() {
 
 		var (
 			deploymentGvk = schema.GroupVersionKind{
@@ -125,7 +125,7 @@ var _ = Describe("History", func() {
 				setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 			})
 
-			FIt("GetInputSnapshot includes Deployments", func() {
+			It("GetInputSnapshot includes Deployments", func() {
 				format.MaxLength = 0
 
 				returnedResources := getInputSnapshotResources(ctx, history)
