@@ -122,7 +122,7 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 
 	m, err := apiSnapshotToGenericMap(snap)
 	if err != nil {
-		errorSnapshotResponse(err)
+		return errorSnapshotResponse(err)
 	}
 
 	return completeSnapshotResponse(m)
@@ -268,8 +268,9 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 			// We intentionally aggregate the errors so that we can return a "best effort" set of
 			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
 			errs = multierror.Append(errs, err)
+		} else {
+			resources = append(resources, gvkResources...)
 		}
-		resources = append(resources, gvkResources...)
 	}
 
 	return resources, errs.ErrorOrNil()
@@ -295,10 +296,10 @@ func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupV
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
 		if err != nil {
 			errs = multierror.Append(errs, err)
+		} else {
+			sanitizeResource(&out)
+			resources = append(resources, out)
 		}
-
-		sanitizeResource(&out)
-		resources = append(resources, out)
 	}
 	return resources, errs.ErrorOrNil()
 }
