@@ -42,8 +42,12 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-{{ with .Values.gloo.deployment.podSecurityContext }}
-{{- include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 6 "global" .Values.global -}}
+{{- $podSecCtx := dict -}}
+{{- with .Values.gloo.deployment.podSecurityContext -}}
+  {{- $podSecCtx = . -}}
+{{- end -}}
+{{- if or $podSecCtx (and .Values.global .Values.global.securitySettings) -}}
+{{- include "gloo.securityContext" (dict "values" $podSecCtx "global" .Values.global) | indent 6  -}}
 {{- end }}
 {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
