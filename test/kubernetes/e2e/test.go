@@ -23,7 +23,7 @@ import (
 // MustTestHelper returns the SoloTestHelper used for e2e tests
 // The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
 // in favor of using the exact tool that users rely on
-func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
+func MustTestHelper(t *testing.T, ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
 	testHelper, err := helper.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
 	if err != nil {
 		panic(err)
@@ -39,6 +39,20 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	installation.Metadata.HelmChartName = testHelper.HelmChartName
 	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
 	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
+
+	// validate that the glooGatewayContext has a valid manifest
+	if installation.Metadata.ValuesManifestFile == "" {
+		t.Fatalf("ValuesManifestFile must be provided in glooGatewayContext")
+	}
+
+	values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: installation.Metadata.ValuesManifestFile})
+	if err != nil {
+		t.Fatalf("failed to build helm values: %v", err)
+	}
+	err = testutils.ValidateHelmValues(values)
+	if err != nil {
+		t.Fatalf("failed to validate helm values: %v", err)
+	}
 
 	return testHelper
 }
