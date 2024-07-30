@@ -1,17 +1,18 @@
 package iosnapshot
 
 import (
+	"cmp"
 	"context"
+	"encoding/json"
+	"github.com/rotisserie/eris"
+	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"slices"
 	"sync"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/hashicorp/go-multierror"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,7 +61,7 @@ type HistoryFactory func(params HistoryFactoryParameters) History
 // GetHistoryFactory returns a default HistoryFactory implementation
 func GetHistoryFactory() HistoryFactory {
 	return func(params HistoryFactoryParameters) History {
-		return NewHistory(params.Cache, params.Settings, KubeGatewayDefaultGVKs)
+		return NewHistory(params.Cache, params.Settings, InputSnapshotGVKs)
 	}
 }
 
@@ -130,69 +131,51 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 
 // GetInputSnapshot gets the input snapshot for all components.
 func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData {
-	snap := h.getRedactedApiSnapshot()
-
-	// Proxies are defined on the ApiSnapshot, but are not considered part of the
-	// "input snapshot" since they are the product (output) of translation
-	snap.Proxies = nil
-
-	// If kubernetes gateway integration is enabled, we remove resource types from the ApiSnapshot
-	// that are shared between the edge and kube gateway controllers. Since the kube gateway controller
-	// watches all resources of the relevant types on the cluster (rather than only ones in the snapshot),
-	// the resources returned by getKubeGatewayResources below is a superset of what's in the edge api snapshot.
-	// So we remove the duplicate resource types from the api snapshot here.
 	kubeGatewayClient := h.getKubeGatewayClientSafe()
-	if kubeGatewayClient != nil {
-		// kube gateway integration is enabled
-		snap.RouteOptions = nil
-		snap.VirtualHostOptions = nil
-		snap.AuthConfigs = nil
-		snap.Ratelimitconfigs = nil
-		snap.Secrets = nil
-		snap.Upstreams = nil
+	if kubeGatewayClient == nil {
+		// No client has been set, so the Kubernetes Gateway integration has not been enabled
+		return errorSnapshotResponse(eris.New("Kubernetes Gateway Integration is not enabled"))
 	}
 
-	// get the resources from the edge api snapshot
-	resources, err := snapshotToKubeResources(snap)
-	if err != nil {
-		return errorSnapshotResponse(err)
-	}
-
-	// get settings, which is not part of the api snapshot
-	if h.settings != nil {
-		settings, err := settingsToKubeResource(h.settings)
+	var resources []client.Object
+	var errs *multierror.Error
+	for _, gvk := range h.kubeGatewayGvks {
+		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
 		if err != nil {
-			return errorSnapshotResponse(err)
+			// We intentionally aggregate the errors so that we can return a "best effort" set of
+			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
+			errs = multierror.Append(errs, err)
 		}
-		resources = append(resources, *settings)
+		resources = append(resources, gvkResources...)
 	}
-
-	// get the resources that the kubernetes gateway controller watches
-	// (if kube gateway integration is enabled)
-	kubeResources, err := h.getKubeGatewayResources(ctx)
-	if err != nil {
-		return errorSnapshotResponse(err)
-	}
-	resources = append(resources, kubeResources...)
-
 	sortResources(resources)
-	return completeSnapshotResponse(resources)
+
+	return SnapshotResponseData{
+		Data:  resources,
+		Error: errs.ErrorOrNil(),
+	}
 }
 
 func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 
-	onlyProxies := &v1snap.ApiSnapshot{
-		Proxies: snap.Proxies,
+	var resources []crdv1.Resource
+	var errs *multierror.Error
+
+	for _, proxy := range snap.Proxies {
+		kubeProxy, err := gloov1.ProxyCrd.KubeResource(proxy)
+		if err != nil {
+			// We intentionally aggregate the errors so that we can return a "best effort" set of
+			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
+			errs = multierror.Append(errs, err)
+		}
+		resources = append(resources, *kubeProxy)
 	}
 
-	resources, err := snapshotToKubeResources(onlyProxies)
-	if err != nil {
-		return errorSnapshotResponse(err)
+	return SnapshotResponseData{
+		Data:  resources,
+		Error: errs.ErrorOrNil(),
 	}
-
-	sortResources(resources)
-	return completeSnapshotResponse(resources)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
@@ -250,33 +233,8 @@ func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
 	return &clone
 }
 
-// getKubeGatewayResources returns the list of resources specific to the Kubernetes Gateway integration.
-// Since the Kubernetes Gateway controller does not have the concept of input snapshots or watch
-// namespaces, we return all resources on the cluster of the given types.
-func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Resource, error) {
-	kubeGatewayClient := h.getKubeGatewayClientSafe()
-	if kubeGatewayClient == nil {
-		// No client has been set, so the Kubernetes Gateway integration has not been enabled
-		return nil, nil
-	}
-
-	var resources []crdv1.Resource
-	var errs *multierror.Error
-	for _, gvk := range h.kubeGatewayGvks {
-		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
-		if err != nil {
-			// We intentionally aggregate the errors so that we can return a "best effort" set of
-			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
-			errs = multierror.Append(errs, err)
-		}
-		resources = append(resources, gvkResources...)
-	}
-
-	return resources, errs.ErrorOrNil()
-}
-
-func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupVersionKind) ([]crdv1.Resource, error) {
-	var resources []crdv1.Resource
+func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupVersionKind) ([]client.Object, error) {
+	var resources []client.Object
 
 	// populate an unstructured list for each resource type
 	list := &unstructured.UnstructuredList{}
@@ -291,13 +249,14 @@ func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupV
 	// convert each Unstructured to a Resource so that the final list can be merged with the
 	// Edge API resource list
 	for _, uns := range list.Items {
-		out := crdv1.Resource{}
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
+		var out client.Object
+
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, out)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		}
 
-		sanitizeResource(&out)
+		redactClientObject(out)
 		resources = append(resources, out)
 	}
 	return resources, errs.ErrorOrNil()
@@ -320,51 +279,43 @@ func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 // utilities in `/pkg/utils/syncutil`.
 func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
 	snap.Secrets.Each(func(element *gloov1.Secret) {
-		redactSecretData(element)
+		redactGlooSecretData(element)
 	})
 
 	// See `pkg/utils/syncutil/log_redactor.StringifySnapshot` for an explanation for
 	// why we redact Artifacts
 	snap.Artifacts.Each(func(element *gloov1.Artifact) {
-		redactArtifactData(element)
+		redactGlooArtifactData(element)
 	})
 }
 
-// redactSecretData modifies the secret to remove any sensitive information
-// The structure of a Secret in Gloo Gateway does not lend itself to easily redact data in different places.
-// As a result, we perform a primitive redaction method, where we maintain the metadata, and remove the entire spec
-func redactSecretData(element *gloov1.Secret) {
-	element.Kind = nil
-
-	redactGlooResourceMetadata(element.GetMetadata())
+// sortResources sorts resources by gvk, namespace, and name
+func sortResources(resources []client.Object) {
+	slices.SortStableFunc(resources, func(a, b client.Object) int {
+		return cmp.Or(
+			cmp.Compare(a.GetObjectKind().GroupVersionKind().Version, b.GetObjectKind().GroupVersionKind().Version),
+			cmp.Compare(a.GetObjectKind().GroupVersionKind().Kind, b.GetObjectKind().GroupVersionKind().Kind),
+			cmp.Compare(a.GetNamespace(), b.GetNamespace()),
+			cmp.Compare(a.GetName(), b.GetName()),
+		)
+	})
 }
 
-const (
-	redactedString = "<redacted>"
-)
+// apiSnapshotToGenericMap converts an ApiSnapshot into a generic map
+// Since maps do not guarantee ordering, we do not attempt to sort these resources, as we do four []crdv1.Resource
+func apiSnapshotToGenericMap(snap *v1snap.ApiSnapshot) (map[string]interface{}, error) {
+	genericMap := map[string]interface{}{}
 
-// redactArtifactData modifies the artifact to remove any sensitive information
-func redactArtifactData(element *gloov1.Artifact) {
-	for k := range element.GetData() {
-		element.GetData()[k] = redactedString
+	if snap == nil {
+		return genericMap, nil
 	}
 
-	redactGlooResourceMetadata(element.GetMetadata())
-}
-
-// redactGlooResourceMetadata modifies the metadata to remove any sensitive information
-// ref: https://github.com/solo-io/skv2/blob/1583cb716c04eb3f8d01ecb179b0deeabaa6e42b/contrib/pkg/snapshot/redact.go#L20-L26
-func redactGlooResourceMetadata(meta *core.Metadata) {
-	for key, _ := range meta.GetAnnotations() {
-		if key == corev1.LastAppliedConfigAnnotation {
-			meta.GetAnnotations()[key] = redactedString
-			break
-		}
+	jsn, err := json.Marshal(snap)
+	if err != nil {
+		return nil, err
 	}
-}
-
-// sanitizeResource modifies the Object to remove any unwanted fields
-func sanitizeResource(resource *crdv1.Resource) {
-	// ManagedFields is noise on the object, that is not relevant to the Admin API, so we sanitize it
-	resource.ManagedFields = nil
+	if err := json.Unmarshal(jsn, &genericMap); err != nil {
+		return nil, err
+	}
+	return genericMap, nil
 }

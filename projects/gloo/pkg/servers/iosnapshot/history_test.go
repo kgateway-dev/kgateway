@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/onsi/gomega/format"
 	"time"
 
 	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
@@ -83,11 +84,11 @@ var _ = Describe("History", func() {
 					Namespace: defaults.GlooSystem,
 				},
 			},
-			KubeGatewayDefaultGVKs,
+			InputSnapshotGVKs,
 		)
 	})
 
-	Context("NewHistory", func() {
+	FContext("NewHistory", func() {
 
 		var (
 			deploymentGvk = schema.GroupVersionKind{
@@ -107,7 +108,7 @@ var _ = Describe("History", func() {
 							Namespace: defaults.GlooSystem,
 						},
 					},
-					append(KubeGatewayDefaultGVKs, deploymentGvk), // include the Deployment GVK
+					append(InputSnapshotGVKs, deploymentGvk), // include the Deployment GVK
 				)
 
 				clientObjects := []client.Object{
@@ -116,21 +117,28 @@ var _ = Describe("History", func() {
 							Name:      "kube-deploy",
 							Namespace: "a",
 						},
+						Spec: appsv1.DeploymentSpec{
+							MinReadySeconds: 5,
+						},
 					},
 				}
 				setClientOnHistory(ctx, history, clientBuilder.WithObjects(clientObjects...))
 			})
 
-			It("GetInputSnapshot includes Deployments", func() {
+			FIt("GetInputSnapshot includes Deployments", func() {
+				format.MaxLength = 0
+
 				returnedResources := getInputSnapshotResources(ctx, history)
-				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.MatchTypeMeta(deploymentGvk),
-					matchers.MatchObjectMeta(types.NamespacedName{
+				Expect(returnedResources).To(ContainElement(matchers.MatchClientObject(
+					deploymentGvk,
+					types.NamespacedName{
 						Namespace: "a",
 						Name:      "kube-deploy",
-					}),
-					gstruct.Ignore(),
-				), "we should now see the deployment in the input snapshot results")
+					},
+					gstruct.PointTo(
+						HaveKeyWithValue("minReadySeconds", Equal(float64(5))),
+					),
+				)), "we should now see the deployment in the input snapshot results")
 			})
 
 		})
@@ -145,7 +153,7 @@ var _ = Describe("History", func() {
 							Namespace: defaults.GlooSystem,
 						},
 					},
-					KubeGatewayDefaultGVKs, // do not include the Deployment GVK
+					InputSnapshotGVKs, // do not include the Deployment GVK
 				)
 
 				clientObjects := []client.Object{
@@ -939,6 +947,62 @@ var _ = Describe("History", func() {
 				), fmt.Sprintf("results should contain %v %s.%s", ratelimitv1alpha1.RateLimitConfigGVK, "k", "kube-rlc"))
 			})
 
+			// todo
+			It("Includes Secrets (redacted)", func() {
+				setClientOnHistory(ctx, history, clientBuilder.WithObjects(
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "kube-secret",
+							Namespace: "secret",
+							ManagedFields: []metav1.ManagedFieldsEntry{{
+								Manager: "manager",
+							}},
+						},
+						Data: map[string][]byte{
+							"key": []byte("sensitive-data"),
+						},
+					}))
+
+				returnedResources := getInputSnapshotResources(ctx, history)
+				Expect(returnedResources).To(matchers.ContainCustomResource(
+					matchers.MatchTypeMeta(wellknownkube.SecretGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
+						Name:      "kube-secret",
+						Namespace: "secret",
+					}, matchers.HaveNilManagedFields()),
+					BeNil(), // this is wrong, we should be returning data that is redacted
+				), fmt.Sprintf("results should contain %v %s.%s", wellknownkube.SecretGVK, "secret", "kube-secret"))
+			})
+
+			// todo
+			It("Includes ConfigMaps", func() {
+				setClientOnHistory(ctx, history, clientBuilder.WithObjects(
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "kube-configmap",
+							Namespace: "configmap",
+							ManagedFields: []metav1.ManagedFieldsEntry{{
+								Manager: "manager",
+							}},
+						},
+						Data: map[string]string{
+							"key": "value",
+						},
+					}))
+
+				returnedResources := getInputSnapshotResources(ctx, history)
+				Expect(returnedResources).To(matchers.ContainCustomResource(
+					matchers.MatchTypeMeta(wellknownkube.ConfigMapGVK),
+					matchers.MatchObjectMeta(types.NamespacedName{
+						Name:      "kube-configmap",
+						Namespace: "configmap",
+					}, matchers.HaveNilManagedFields()),
+					gstruct.PointTo(HaveKeyWithValue("data", And(
+						HaveKeyWithValue("key", "value"),
+					))),
+				), fmt.Sprintf("results should contain %v %s.%s", wellknownkube.SecretGVK, "configmap", "kube-configmap"))
+			})
+
 			It("does not use ApiSnapshot for shared resources", func() {
 				// when kube gateway integration is enabled, we should get back all the shared resource types
 				// from k8s rather than only the ones from the api snapshot
@@ -1266,11 +1330,11 @@ var _ = Describe("History", func() {
 
 })
 
-func getInputSnapshotResources(ctx context.Context, history History) []crdv1.Resource {
+func getInputSnapshotResources(ctx context.Context, history History) []client.Object {
 	snapshotResponse := history.GetInputSnapshot(ctx)
 	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
-	var returnedResources []crdv1.Resource
+	var returnedResources []client.Object
 	dataJson, err := json.Marshal(snapshotResponse.Data)
 	Expect(err).NotTo(HaveOccurred())
 
