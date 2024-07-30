@@ -87,8 +87,12 @@ message Settings {
     // How frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
 
-    // Enable serving debug data on port 9090
-    bool dev_mode = 13;
+
+    // DEPRECATED: In the past DevMode was used to expose endpoints that behave as an Admin API
+    // https://github.com/solo-io/gloo/issues/6494
+    // We now support an Admin API on port 9091. See the following guide for more details
+    // https://docs.solo.io/gloo-edge/latest/operations/debugging_gloo/#debugging-the-control-plane
+    bool dev_mode = 13 [deprecated=true];
 
     // Enable automatic linkerd upstream header addition for easier routing to linkerd services
     bool linkerd = 17;

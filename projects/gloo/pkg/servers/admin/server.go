@@ -13,45 +13,31 @@ import (
 func ServerHandlers(ctx context.Context, history iosnapshot.History) func(mux *http.ServeMux, profiles map[string]string) {
 	return func(m *http.ServeMux, profiles map[string]string) {
 		m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
-			inputSnap, err := history.GetInputSnapshot(ctx)
-			if err != nil {
-				respondError(w, err)
-				return
-			}
+			response := history.GetInputSnapshot(ctx)
+			respondJson(w, response)
+		})
 
-			respondJson(w, inputSnap)
+		m.HandleFunc("/snapshots/edge", func(w http.ResponseWriter, request *http.Request) {
+			response := history.GetEdgeApiSnapshot(ctx)
+			respondJson(w, response)
 		})
 
 		m.HandleFunc("/snapshots/proxies", func(w http.ResponseWriter, r *http.Request) {
-			proxySnap, err := history.GetProxySnapshot(ctx)
-			if err != nil {
-				respondError(w, err)
-				return
-			}
-
-			respondJson(w, proxySnap)
+			response := history.GetProxySnapshot(ctx)
+			respondJson(w, response)
 		})
 
 		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
-			xdsEntries, err := history.GetXdsSnapshot(ctx)
-			if err != nil {
-				respondError(w, err)
-				return
-			}
-
-			respondJson(w, xdsEntries)
+			response := history.GetXdsSnapshot(ctx)
+			respondJson(w, response)
 		})
 	}
 }
 
-func respondJson(w http.ResponseWriter, response []byte) {
+func respondJson(w http.ResponseWriter, response iosnapshot.SnapshotResponseData) {
 	w.Header().Set("Content-Type", getContentType("json"))
 
-	_, _ = fmt.Fprintf(w, "%+v", string(response))
-}
-
-func respondError(w http.ResponseWriter, err error) {
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+	_, _ = fmt.Fprintf(w, "%+v", response.MarshalJSONString())
 }
 
 func getContentType(format string) string {

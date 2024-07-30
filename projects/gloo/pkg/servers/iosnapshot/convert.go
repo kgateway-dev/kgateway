@@ -16,7 +16,7 @@ import (
 
 // convert all the resources in the input snapshot, excluding Artifacts and Secrets, into Kubernetes format
 func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error) {
-	resources := []crdv1.Resource{}
+	var resourceList []crdv1.Resource
 
 	// gloo.solo.io resources
 	for _, upstream := range snap.Upstreams {
@@ -24,21 +24,21 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeUpstream)
+		resourceList = append(resourceList, *kubeUpstream)
 	}
 	for _, upstreamGroup := range snap.UpstreamGroups {
 		kubeUpstreamGroup, err := gloov1.UpstreamGroupCrd.KubeResource(upstreamGroup)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeUpstreamGroup)
+		resourceList = append(resourceList, *kubeUpstreamGroup)
 	}
 	for _, proxy := range snap.Proxies {
 		kubeProxy, err := gloov1.ProxyCrd.KubeResource(proxy)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeProxy)
+		resourceList = append(resourceList, *kubeProxy)
 	}
 	// Endpoints are only stored in memory and don't have a Kubernetes resource equivalent,
 	// so we do custom conversion here to make the format consistent with the other resources
@@ -47,7 +47,23 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeEndpoint)
+		resourceList = append(resourceList, *kubeEndpoint)
+	}
+
+	// Secrets and Artifacts do not follow the same base format as other resources, so we must use the custom conversion
+	for _, artifact := range snap.Artifacts {
+		kubeArtifact, err := convertToKube(artifact, gloov1.ArtifactCrd)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, *kubeArtifact)
+	}
+	for _, secret := range snap.Secrets {
+		kubeSecret, err := convertToKube(secret, gloov1.SecretCrd)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, *kubeSecret)
 	}
 
 	// gateway.solo.io resources
@@ -56,7 +72,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeGw)
+		resourceList = append(resourceList, *kubeGw)
 	}
 
 	for _, vs := range snap.VirtualServices {
@@ -64,42 +80,42 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeVs)
+		resourceList = append(resourceList, *kubeVs)
 	}
 	for _, rt := range snap.RouteTables {
 		kubeRt, err := gatewayv1.RouteTableCrd.KubeResource(rt)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeRt)
+		resourceList = append(resourceList, *kubeRt)
 	}
 	for _, vho := range snap.VirtualHostOptions {
 		kubeVho, err := gatewayv1.VirtualHostOptionCrd.KubeResource(vho)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeVho)
+		resourceList = append(resourceList, *kubeVho)
 	}
 	for _, rto := range snap.RouteOptions {
 		kubeRto, err := gatewayv1.RouteOptionCrd.KubeResource(rto)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeRto)
+		resourceList = append(resourceList, *kubeRto)
 	}
 	for _, hgw := range snap.HttpGateways {
 		kubeHgw, err := gatewayv1.MatchableHttpGatewayCrd.KubeResource(hgw)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeHgw)
+		resourceList = append(resourceList, *kubeHgw)
 	}
 	for _, tgw := range snap.TcpGateways {
 		kubeTgw, err := gatewayv1.MatchableTcpGatewayCrd.KubeResource(tgw)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeTgw)
+		resourceList = append(resourceList, *kubeTgw)
 	}
 
 	// enterprise.gloo.solo.io resources
@@ -108,7 +124,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeAc)
+		resourceList = append(resourceList, *kubeAc)
 	}
 
 	// ratelimit.solo.io resources
@@ -117,7 +133,7 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeRlc)
+		resourceList = append(resourceList, *kubeRlc)
 	}
 
 	// graphql.gloo.solo.io resources
@@ -126,10 +142,10 @@ func snapshotToKubeResources(snap *v1snap.ApiSnapshot) ([]crdv1.Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, *kubeGqlApi)
+		resourceList = append(resourceList, *kubeGqlApi)
 	}
 
-	return resources, nil
+	return resourceList, nil
 }
 
 // standalone func to convert Settings (which is not part of the ApiSnapshot)
