@@ -5,10 +5,6 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-<<<<<<< HEAD
-=======
-
->>>>>>> main
 	k8stypes "k8s.io/apimachinery/pkg/types"
 )
 
@@ -64,17 +60,3 @@ func MatchCustomResource(typeMetaMatcher, objectMetaMatcher, specMatcher types.G
 func ContainCustomResourceType(gvk schema.GroupVersionKind) types.GomegaMatcher {
 	return ContainCustomResource(MatchTypeMeta(gvk), gstruct.Ignore(), gstruct.Ignore())
 }
-<<<<<<< HEAD
-=======
-
-// HaveNameAndNamespace returns a matcher that will match a pointer to a client.Object
-// with the given name and namespace
-func HaveNameAndNamespace(name string, namespace string) types.GomegaMatcher {
-	return gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"ObjectMeta": MatchObjectMeta(k8stypes.NamespacedName{
-			Namespace: namespace,
-			Name:      name,
-		}),
-	}))
-}
->>>>>>> main

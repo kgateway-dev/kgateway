@@ -4,8 +4,10 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/rotisserie/eris"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"slices"
 	"sync"
 
@@ -15,7 +17,6 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -140,7 +141,7 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	var resources []client.Object
 	var errs *multierror.Error
 	for _, gvk := range h.kubeGatewayGvks {
-		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
+		gvkResources, err := h.listObjectsForGvk(ctx, kubeGatewayClient, gvk)
 		if err != nil {
 			// We intentionally aggregate the errors so that we can return a "best effort" set of
 			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
@@ -233,33 +234,43 @@ func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
 	return &clone
 }
 
-func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupVersionKind) ([]client.Object, error) {
-	var resources []client.Object
+func (h *historyImpl) listObjectsForGvk(ctx context.Context, cli client.Client, gvk schema.GroupVersionKind) ([]client.Object, error) {
+	var objects []client.Object
 
 	// populate an unstructured list for each resource type
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(gvk)
-	err := h.kubeGatewayClient.List(ctx, list)
+	err := cli.List(ctx, list)
 	if err != nil {
 		return nil, err
 	}
 
 	var errs *multierror.Error
 
-	// convert each Unstructured to a Resource so that the final list can be merged with the
-	// Edge API resource list
+	// convert each Unstructured to a client.Object
 	for _, uns := range list.Items {
-		var out client.Object
-
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, out)
+		realObj, err := cli.Scheme().New(gvk)
 		if err != nil {
 			errs = multierror.Append(errs, err)
+			continue
+		}
+		clientObj, ok := realObj.(client.Object)
+		if !ok {
+			errs = multierror.Append(errs, eris.New(fmt.Sprintf("%s could not be converted into client.Object", gvk)))
+			continue
 		}
 
-		redactClientObject(out)
-		resources = append(resources, out)
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, clientObj)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			continue
+		}
+
+		redactClientObject(clientObj)
+		objects = append(objects, clientObj)
 	}
-	return resources, errs.ErrorOrNil()
+
+	return objects, errs.ErrorOrNil()
 }
 
 // getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations

@@ -13,10 +13,10 @@ import (
 
 var (
 	KubernetesGatewayGVKs = []schema.GroupVersionKind{
-		wellknown.GatewayClassListGVK,
-		wellknown.GatewayListGVK,
-		wellknown.HTTPRouteListGVK,
-		wellknown.ReferenceGrantListGVK,
+		wellknown.GatewayClassGVK,
+		wellknown.GatewayGVK,
+		wellknown.HTTPRouteGVK,
+		wellknown.ReferenceGrantGVK,
 	}
 
 	KubernetesCoreGVKs = []schema.GroupVersionKind{
