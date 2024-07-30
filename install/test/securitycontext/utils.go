@@ -98,7 +98,7 @@ var DefaultOverrides = map[string]map[string]ApplyContainerSecurityDefaults{
 	"gateway-certgen-cronjob":       {"certgen": ApplyRunAsUserSecurityDefaults},
 }
 
-func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string)) int {
+func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string), filter func(resource *unstructured.Unstructured) bool) int {
 	foundContainers := 0
 
 	testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -133,6 +133,12 @@ func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(
 	})
 
 	return foundContainers
+}
+
+func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string)) int {
+	return FilterAndValidateSecurityContexts(testManifest, validateContainer, func(resource *unstructured.Unstructured) bool {
+		return resource.GetKind() == "Deployment" || resource.GetKind() == "Job" || resource.GetKind() == "CronJob"
+	})
 }
 
 const ExpectedContainers = 21
