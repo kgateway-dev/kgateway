@@ -265,7 +265,7 @@ It takes 4 values:
   {{- $_ := set $pss_restricted_defaults  "seccompProfile" (dict "type" $defaultSeccompProfileType) -}}
 
   {{- if $pss.container.enableRestrictedContainerDefaults -}}
-    {{- $defaults = merge .defaults $pss_restricted_defaults -}}
+    {{- $defaults = merge $defaults $pss_restricted_defaults -}}
   {{- end -}}
 {{- end -}}
 
