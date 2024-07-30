@@ -40,7 +40,7 @@ spec:
         {{- end -}}{{/* if $gg.envoyContainer.image */}}
         {{- end }}{{/* if $gg.envoyContainer */}}
         {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.envoyContainer .Values.global.securitySettings ) -}}
+{{- $securityContextWithGlobals := include "gloo.secCtxForGwParams" (list $gg.envoyContainer .Values.global.securitySettings ) -}}
 {{- with $securityContextWithGlobals  }}
       securityContext:
         {{-  . | nindent 8 }}
@@ -58,7 +58,7 @@ spec:
     sdsContainer:
       image:
         {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.sdsContainer .Values.global.securitySettings ) -}}
+{{- $securityContextWithGlobals := include "gloo.secCtxForGwParams" (list $gg.sdsContainer .Values.global.securitySettings ) -}}
 {{- if $securityContextWithGlobals }}
       securityContext:
         {{- $securityContextWithGlobals | nindent 8 }}
@@ -80,7 +80,7 @@ spec:
       istioProxyContainer:
         image:
           {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
-{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.istio.istioProxyContainer .Values.global.securitySettings ) -}}
+{{- $securityContextWithGlobals := include "gloo.secCtxForGwParams" (list $gg.istio.istioProxyContainer .Values.global.securitySettings ) -}}
 {{- with $securityContextWithGlobals  }}
         securityContext:
           {{- . | nindent 10 }}
@@ -102,7 +102,7 @@ spec:
       enabled: {{ $gg.aiExtension.enabled }}
       image:
         {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- $securityContextWithGlobals := include "gloo.setSecurityContextGlobals" (list $gg.aiExtension .Values.global.securitySettings ) -}}
+{{- $securityContextWithGlobals := include "gloo.secCtxForGwParams" (list $gg.aiExtension .Values.global.securitySettings ) -}}
 {{- with $securityContextWithGlobals  }}
       securityContext:
         {{- . | nindent 8 }}

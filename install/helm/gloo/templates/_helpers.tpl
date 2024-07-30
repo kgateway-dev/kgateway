@@ -379,51 +379,10 @@ app: gloo
 {{- end }}
 
 
-{{- define "gloo.filterSecurityDefaults" -}}
-{{- $defaults := dict
- "floatingUserId" .floatingUserId
-"runAsUser" .runAsUser
-"fsGroup" .fsGroup 
--}}
-{{ toYaml $defaults}}
-{{- end }}
-
-
-{{- define "gloo.copyInto" -}}
-{{- $result := dict -}}
-{{- range . -}}
-  {{ $obj := . }}
-  {{- range $k := keys . -}}
-    {{ $_ := set $result $k (get $obj $k) }}
-  {{- end -}}
-{{- end -}}
-{{ $result }}
-{{- end -}}
-
-{{/*
-{{- define "gloo.setSecurityContextGlobals" -}}
-{{- $sc := first . -}}
-{{- $globals := or (index . 1) (dict) -}}
-{{- with $globals -}}
-  {{- if hasKey . "runAsUser" -}}
-    {{- if .runAsUser -}}
-      {{ $_ := set $sc "runAsUser" .runAsUser }}
-    {{- else -}}
-      {{ $_ := unset $sc "runAsUser" }}
-    {{- end -}}
-  {{- end -}}
-  {{- if hasKey . "fsGroup" -}}
-    {{ $_ := set $sc "fsGroup" .fsGroup }}
-  {{- end -}}
-{{- end -}}
-{{ $sc }}
-{{- end -}}
-*/}}
-
 {{/* pass in the container definition and the globals 
      container definition is used because we may need to set globals even if there is no secCtx or container defined
 */}}
-{{- define "gloo.setSecurityContextGlobals" -}}
+{{- define "gloo.secCtxForGwParams" -}}
 {{- $container := or (first .) (dict)  -}}
 {{- $globals := or (index . 1) (dict) -}}
 {{- $sc := or $container.securityContext dict -}}
