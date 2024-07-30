@@ -3,7 +3,6 @@ package iosnapshot
 import (
 	"context"
 	"fmt"
-	"github.com/onsi/gomega/format"
 	"time"
 
 	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
@@ -124,8 +123,6 @@ var _ = Describe("History", func() {
 			})
 
 			It("GetInputSnapshot includes Deployments", func() {
-				format.MaxLength = 0
-
 				returnedResources := getInputSnapshotObjects(ctx, history)
 				Expect(returnedResources).To(ContainElement(matchers.MatchClientObject(
 					deploymentGvk,
@@ -133,10 +130,11 @@ var _ = Describe("History", func() {
 						Namespace: "a",
 						Name:      "kube-deploy",
 					},
-					gstruct.PointTo(
-						
-						HaveKeyWithValue("minReadySeconds", Equal(float64(5))),
-					),
+					gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Spec": Equal(appsv1.DeploymentSpec{
+							MinReadySeconds: 5,
+						}),
+					})),
 				)), "we should now see the deployment in the input snapshot results")
 			})
 
@@ -168,7 +166,7 @@ var _ = Describe("History", func() {
 
 			It("GetInputSnapshot excludes Deployments", func() {
 				returnedResources := getInputSnapshotObjects(ctx, history)
-				Expect(returnedResources).NotTo(matchers.ContainCustomResourceType(deploymentGvk), "snapshot should not include the deployment")
+				Expect(returnedResources).NotTo(ContainElement(matchers.MatchClientObjectGvk(deploymentGvk)), "snapshot should not include the deployment")
 			})
 		})
 
