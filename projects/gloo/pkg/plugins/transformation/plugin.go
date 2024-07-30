@@ -483,6 +483,28 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_MergeExtractorsToBody{
 			MergeExtractorsToBody: &envoytransformation.MergeExtractorsToBody{},
 		}
+	case *transformation.TransformationTemplate_MergeJsonKeys:
+		if inTemplate.GetAdvancedTemplates() {
+			return nil, fmt.Errorf("merge_json_keys is not supported with advanced templates")
+		}
+		if inTemplate.GetParseBodyBehavior() != transformation.TransformationTemplate_ParseAsJson {
+			return nil, fmt.Errorf("merge_json_keys is only supported with parse_body_behavior set to PARSE_AS_JSON")
+		}
+		jsonKeys := make(map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate, len(bodyTransformation.MergeJsonKeys.GetJsonKeys()))
+		for key, val := range bodyTransformation.MergeJsonKeys.GetJsonKeys() {
+			if strings.Contains(key, ".") {
+				return nil, fmt.Errorf("merge_json_keys key %s contains a period, which is not currently supported", key)
+			}
+			jsonKeys[key] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
+				Tmpl:          &envoytransformation.InjaTemplate{Text: val.GetTmpl().GetText()},
+				OverrideEmpty: val.GetOverrideEmpty(),
+			}
+		}
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_MergeJsonKeys{
+			MergeJsonKeys: &envoytransformation.MergeJsonKeys{
+				JsonKeys: jsonKeys,
+			},
+		}
 	}
 
 	if len(inTemplate.GetDynamicMetadataValues()) > 0 {
