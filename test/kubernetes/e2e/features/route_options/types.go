@@ -49,7 +49,8 @@ var (
 	extraRtoTargetRefMeta = objectMetaInDefault("extra-rto-targetref")
 	badRtoMeta            = objectMetaInDefault("bad-rto")
 	badRtoTargetRefMeta   = objectMetaInDefault("bad-rto-targetref")
-	extrefRtoMeta         = objectMetaInDefault("extref")
+	extref1RtoMeta        = objectMetaInDefault("extref1")
+	extref2RtoMeta        = objectMetaInDefault("extref2")
 	target1RtoMeta        = objectMetaInDefault("target-1")
 	target2RtoMeta        = objectMetaInDefault("target-2")
 

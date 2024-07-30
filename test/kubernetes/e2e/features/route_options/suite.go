@@ -252,7 +252,12 @@ func (s *testingSuite) TestConfigureRouteOptionsWithTargetRefAndFilterExtension(
 func (s *testingSuite) TestOptionsMerge() {
 	// Check status is accepted on RouteOptions
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		s.getterForMeta(&extrefRtoMeta),
+		s.getterForMeta(&extref1RtoMeta),
+		core.Status_Accepted,
+		defaults.KubeGatewayReporter,
+	)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&extref2RtoMeta),
 		core.Status_Accepted,
 		defaults.KubeGatewayReporter,
 	)
@@ -271,16 +276,18 @@ func (s *testingSuite) TestOptionsMerge() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
+			curl.WithPath("/headers"),
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			// Expect:
-			// x-foo: extref response header due to extref RouteOption
+			// x-foo: extref response header due to extref1 RouteOption
+			// X-Forwarded-Host header response in body due to extref2 RouteOption
 			// /anything/rewrite path rewrite due to target-1 RouteOption
 			// foo.com host rewrite due to target-2 RouteOption
 			//
 			// ref: test/kubernetes/e2e/features/route_options/testdata/merge.yaml
-			Body:    And(ContainSubstring("/anything/rewrite"), ContainSubstring("foo.com")),
+			Body:    And(ContainSubstring("/anything/rewrite"), ContainSubstring("foo.com"), ContainSubstring("X-Forwarded-Host")),
 			Headers: map[string]interface{}{"x-foo": Equal("extref")},
 		})
 }

@@ -52,30 +52,30 @@ func FindAppliedRouteFilter(
 	return nil
 }
 
-// FindExtensionRefFilter finds the first instance of an ExtensionRef filter that
+// FindExtensionRefFilters returns a list ExtensionRef filters that
 // references the supplied GroupKind in the Rule being processed.
 // Returns nil if the Rule doesn't contain a matching ExtensionRef filter
-func FindExtensionRefFilter(
+func FindExtensionRefFilters(
 	rule *gwv1.HTTPRouteRule,
 	gk schema.GroupKind,
-) *gwv1.HTTPRouteFilter {
+) []gwv1.HTTPRouteFilter {
 	if rule == nil {
 		return nil
 	}
+
+	var filters []gwv1.HTTPRouteFilter
 	// TODO: check full Filter list for duplicates and error?
 	for _, filter := range rule.Filters {
 		if filter.Type == gwv1.HTTPRouteFilterExtensionRef {
 			if filter.ExtensionRef.Group == gwv1.Group(gk.Group) && filter.ExtensionRef.Kind == gwv1.Kind(gk.Kind) {
-				return &filter
+				filters = append(filters, filter)
 			}
 		}
 	}
-	return nil
+	return filters
 }
 
-var (
-	ErrTypesNotEqual = fmt.Errorf("types not equal")
-)
+var ErrTypesNotEqual = fmt.Errorf("types not equal")
 
 // GetExtensionRefObj uses the provided query engine to retrieve an ExtensionRef object
 // and return the object of the same type as the type parameter.
