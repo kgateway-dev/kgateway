@@ -101,9 +101,7 @@ var DefaultOverrides = map[string]map[string]ApplyContainerSecurityDefaults{
 func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string), filter func(resource *unstructured.Unstructured) bool) int {
 	foundContainers := 0
 
-	testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-		return resource.GetKind() == "Deployment" || resource.GetKind() == "Job" || resource.GetKind() == "CronJob"
-	}).ExpectAll(func(resource *unstructured.Unstructured) {
+	testManifest.SelectResources(filter).ExpectAll(func(resource *unstructured.Unstructured) {
 
 		// Get the pods and validate their security context
 		var containers []corev1.Container
