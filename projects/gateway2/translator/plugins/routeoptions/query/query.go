@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,13 +63,18 @@ func (r *routeOptionQueries) GetRouteOptionForRouteRule(
 	gwQueries gwquery.GatewayQueries,
 ) (*solokubev1.RouteOption, []*gloov1.SourceMetadata_SourceRef, error) {
 	var sources []*gloov1.SourceMetadata_SourceRef
+	merged := &solokubev1.RouteOption{}
 
-	override, err := lookupFilterOverride(ctx, route, rule, gwQueries)
+	filterAttachments, err := lookupFilterAttachments(ctx, route, rule, gwQueries)
 	if err != nil {
 		return nil, nil, err
 	}
-	if override != nil {
-		sources = append(sources, routeOptionToSourceRef(override))
+	for _, opt := range filterAttachments {
+		optionUsed := false
+		merged.Spec.Options, optionUsed = glooutils.ShallowMergeRouteOptions(merged.Spec.GetOptions(), opt.Spec.GetOptions())
+		if optionUsed {
+			sources = append(sources, routeOptionToSourceRef(opt))
+		}
 	}
 
 	var list solokubev1.RouteOptionList
@@ -82,7 +88,7 @@ func (r *routeOptionQueries) GetRouteOptionForRouteRule(
 	}
 
 	if len(list.Items) == 0 {
-		return override, sources, nil
+		return nilOptionIfEmpty(merged), sources, nil
 	}
 
 	// warn for multiple targetRefs until we actually support this
@@ -92,11 +98,6 @@ func (r *routeOptionQueries) GetRouteOptionForRouteRule(
 		if len(item.Spec.GetTargetRefs()) > 1 {
 			contextutils.LoggerFrom(ctx).Warnf(utils.MultipleTargetRefErrStr, item.GetNamespace(), item.GetName())
 		}
-	}
-
-	merged := override
-	if merged == nil {
-		merged = &solokubev1.RouteOption{}
 	}
 
 	out := make([]*solokubev1.RouteOption, len(list.Items))
@@ -112,34 +113,51 @@ func (r *routeOptionQueries) GetRouteOptionForRouteRule(
 		}
 	}
 
-	return merged, sources, nil
+	return nilOptionIfEmpty(merged), sources, nil
 }
 
-func lookupFilterOverride(
+func nilOptionIfEmpty(opt *solokubev1.RouteOption) *solokubev1.RouteOption {
+	if opt == nil || opt.Spec.GetOptions() == nil {
+		return nil
+	}
+	return opt
+}
+
+// lookupFilterAttachments returns the RouteOptions attached to the route via ExtensionRef filters on the route's rule
+func lookupFilterAttachments(
 	ctx context.Context,
 	route types.NamespacedName,
 	rule *gwv1.HTTPRouteRule,
 	gwQueries gwquery.GatewayQueries,
-) (*solokubev1.RouteOption, error) {
+) ([]*solokubev1.RouteOption, error) {
 	if rule == nil {
 		return nil, nil
 	}
 
-	filter := utils.FindExtensionRefFilter(rule, routeOptionGK)
-	if filter == nil {
+	filters := utils.FindExtensionRefFilters(rule, routeOptionGK)
+	if filters == nil {
 		return nil, nil
 	}
 
+	var out []*solokubev1.RouteOption
+	var multiErr *multierror.Error
 	extLookup := extensionRefLookup{namespace: route.Namespace}
-	routeOption, err := utils.GetExtensionRefObjFrom[*solokubev1.RouteOption](ctx, extLookup, gwQueries, filter.ExtensionRef)
-
-	// If the filter is not found, report a specific error so that it can reflect more
-	// clearly on the status of the HTTPRoute.
-	if err != nil && apierrors.IsNotFound(err) {
-		return nil, errFilterNotFound(route.Namespace, filter)
+	for _, filter := range filters {
+		routeOption, err := utils.GetExtensionRefObjFrom[*solokubev1.RouteOption](ctx, extLookup, gwQueries, filter.ExtensionRef)
+		if err != nil {
+			// If the filter is not found, report a specific error so that it can reflect more
+			// clearly on the status of the HTTPRoute.
+			if apierrors.IsNotFound(err) {
+				multiErr = multierror.Append(multiErr, errFilterNotFound(route.Namespace, &filter))
+			} else {
+				multiErr = multierror.Append(multiErr, err)
+			}
+			continue
+		}
+		out = append(out, routeOption)
 	}
 
-	return routeOption, err
+	return out, multiErr.ErrorOrNil()
 }
 
 type extensionRefLookup struct {
