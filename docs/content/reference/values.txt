@@ -300,7 +300,7 @@
 |settings.circuitBreakers.maxRequests|uint32||Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
 |settings.circuitBreakers.maxRetries|uint32||Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3.|
 |settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Defaults to false.|
-|settings.devMode|bool||Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not recommended for production.|
+|settings.devMode|bool||Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not recommended for production. Warning: this value is deprecated as of 1.17 and will be removed in a future release.|
 |settings.secretOptions.sources[].vault.address|string||Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200).|
 |settings.secretOptions.sources[].vault.rootKey|string||All keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to gloo.|
 |settings.secretOptions.sources[].vault.pathPrefix|string||Optional. The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'.|
