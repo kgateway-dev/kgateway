@@ -251,3 +251,32 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
 	Entry("Child route matcher does not match parent", "bug-6621.yaml"),
 )
+
+var _ = DescribeTable("RouteOptions translator",
+	func(inputFile string) {
+		ctx := context.TODO()
+		dir := util.MustGetThisDir()
+
+		results, err := TestCase{
+			Name:       inputFile,
+			InputFiles: []string{filepath.Join(dir, "testutils/inputs/route_options", inputFile)},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "gw",
+				}: {
+					Proxy: filepath.Join(dir, "testutils/outputs/route_options", inputFile),
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
+			Namespace: "default",
+			Name:      "gw",
+		})
+	},
+	Entry("Merging", "merge.yaml"),
+)
