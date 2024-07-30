@@ -4,16 +4,6 @@ weight: 40
 description: How to setup ApiKey authentication. 
 ---
 
-{{% notice note %}}
-The API keys authentication feature was introduced with **Gloo Gateway Enterprise**, release 0.18.5. If you are using an earlier version, this tutorial will not work.
-{{% /notice %}}
-
-{{% notice note %}}
-The API key secret format shown in this guide was introduced with **Gloo Gateway Enterprise**, release v1.5.0-beta8. 
-If you are using an earlier version, please refer to the [previous version](https://docs.solo.io/gloo-edge/1.3.0/security/auth/apikey_auth/) 
-of this guide.
-{{% /notice %}}
-
 Sometimes when you need to protect a service, the set of users that will need to access it is known in advance and does 
 not change frequently. For example, these users might be other services or specific persons or teams in your organization. 
 
