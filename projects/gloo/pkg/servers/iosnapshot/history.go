@@ -125,12 +125,7 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 		errorSnapshotResponse(err)
 	}
 
-	data, err := formatOutput(JsonCompact, m)
-	if err != nil {
-		errorSnapshotResponse(err)
-	}
-
-	return completeSnapshotResponse(data)
+	return completeSnapshotResponse(m)
 }
 
 // GetInputSnapshot gets the input snapshot for all components.
@@ -180,11 +175,8 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData
 	}
 	resources = append(resources, kubeResources...)
 
-	data, err := formatResources(resources)
-	if err != nil {
-		return errorSnapshotResponse(err)
-	}
-	return completeSnapshotResponse(data)
+	sortResources(resources)
+	return completeSnapshotResponse(resources)
 }
 
 func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
@@ -199,11 +191,8 @@ func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 		return errorSnapshotResponse(err)
 	}
 
-	data, err := formatResources(resources)
-	if err != nil {
-		return errorSnapshotResponse(err)
-	}
-	return completeSnapshotResponse(data)
+	sortResources(resources)
+	return completeSnapshotResponse(resources)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
@@ -221,11 +210,7 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 		}
 	}
 
-	data, err := formatOutput(JsonCompact, cacheEntries)
-	if err != nil {
-		return errorSnapshotResponse(err)
-	}
-	return completeSnapshotResponse(data)
+	return completeSnapshotResponse(cacheEntries)
 }
 
 // getRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot

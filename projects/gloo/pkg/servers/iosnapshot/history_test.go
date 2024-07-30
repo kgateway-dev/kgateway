@@ -1271,7 +1271,10 @@ func getInputSnapshotResources(ctx context.Context, history History) []crdv1.Res
 	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var returnedResources []crdv1.Resource
-	err := json.Unmarshal([]byte(snapshotResponse.Data), &returnedResources)
+	dataJson, err := json.Marshal(snapshotResponse.Data)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = json.Unmarshal(dataJson, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
 	return returnedResources
@@ -1282,7 +1285,10 @@ func getProxySnapshotResources(ctx context.Context, history History) []crdv1.Res
 	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var returnedResources []crdv1.Resource
-	err := json.Unmarshal([]byte(snapshotResponse.Data), &returnedResources)
+	dataJson, err := json.Marshal(snapshotResponse.Data)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = json.Unmarshal(dataJson, &returnedResources)
 	Expect(err).NotTo(HaveOccurred())
 
 	return returnedResources
@@ -1293,7 +1299,10 @@ func getEdgeApiSnapshot(ctx context.Context, history History) *v1snap.ApiSnapsho
 	Expect(snapshotResponse.Error).NotTo(HaveOccurred())
 
 	var snap *v1snap.ApiSnapshot
-	err := json.Unmarshal([]byte(snapshotResponse.Data), &snap)
+	dataJson, err := json.Marshal(snapshotResponse.Data)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = json.Unmarshal(dataJson, &snap)
 	Expect(err).NotTo(HaveOccurred())
 
 	return snap
