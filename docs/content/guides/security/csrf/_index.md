@@ -29,7 +29,7 @@ This example was created and tested using a GKE cluster running k8s v1.16.15, bu
 {{< /notice >}}
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -96,7 +96,7 @@ Gloo Gateway discovers Kubernetes services automatically.  So, running the `gloo
 Create the following Gloo Gateway `VirtualService` that will route all its requests to the new `Upstream`.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -210,7 +210,7 @@ The CSRF filter configuration supports both policy shadowing and policy enforcem
 In this section, we will modify our `VirtualService` to apply the filter to all requests and report evaluation results using the Envoy metrics.  Note that we have added a `shadowEnabled` policy that evaluates 100% of the traffic and reports -- but does not block -- violations.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -256,7 +256,7 @@ Note that CSRF policies may be scoped at different levels of the Gloo Gateway hi
 Next we enable CSRF policy enforcement for our `VirtualService`.  This requires only a single-line change to our policy from `shadowEnabled` to `filterEnabled`.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -373,7 +373,7 @@ http.http.csrf.request_valid: 2
 The `origin` header and target host require a precise match by default. However, you may configure `additionalOrigins` as a filter option to allow alternative request sources.  For example, in our case assume we want to allow requests that originate from any derivative of example.com.  We could modify our `VirtualService` to supply a single `additionalOrigins` entry as follows.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
