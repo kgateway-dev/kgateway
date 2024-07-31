@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Return the error if it fails to close the listener after testing if the port is free.
+
