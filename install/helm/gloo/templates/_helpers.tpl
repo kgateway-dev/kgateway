@@ -187,8 +187,7 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- else -}}
   {{- $securityContext = merge $values $defaults -}}
 {{- end }}
-
-{{/* Set Globals */}}
+{{-/* Set Globals */}}
 {{- with $global -}}
   {{- if hasKey . "floatingUserId" -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
@@ -197,8 +196,6 @@ Because of this, if a value is "true" in defaults it can not be modified with th
     {{- $_ := set $securityContext "runAsGroup" .fsGroup -}}
   {{- end -}}
 {{- end -}}
-
-
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
 {{- $securityContext = omit $securityContext "mergePolicy" -}}
 {{- with $securityContext -}}
