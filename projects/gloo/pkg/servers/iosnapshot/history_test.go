@@ -85,7 +85,7 @@ var _ = Describe("History", func() {
 		})
 	})
 
-	FContext("NewHistory", func() {
+	Context("NewHistory", func() {
 
 		var (
 			deploymentGvk = schema.GroupVersionKind{
@@ -691,7 +691,7 @@ var _ = Describe("History", func() {
 
 		When("Kubernetes Gateway integration is enabled", func() {
 
-			It("Includes Gateways (Kubernetes API)", func() {
+			FIt("Includes Gateways (Kubernetes API)", func() {
 				setClientOnHistory(ctx, history, clientBuilder.WithObjects(
 					&apiv1.Gateway{
 						ObjectMeta: metav1.ObjectMeta{
@@ -704,14 +704,17 @@ var _ = Describe("History", func() {
 					}))
 
 				returnedResources := getInputSnapshotObjects(ctx, history)
-				Expect(returnedResources).To(matchers.ContainCustomResource(
-					matchers.MatchTypeMeta(wellknown.GatewayGVK),
-					matchers.MatchObjectMeta(types.NamespacedName{
+				Expect(returnedResources).To(ContainElement(matchers.MatchClientObject(
+					wellknown.GatewayGVK,
+					types.NamespacedName{
 						Name:      "kube-gw",
 						Namespace: "a",
-					}, matchers.HaveNilManagedFields()),
-					gstruct.Ignore(),
-				), fmt.Sprintf("results should contain %v %s.%s", wellknown.GatewayGVK, "a", "kube-gw"))
+					},
+					gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"ObjectMeta": matchers.HaveNilManagedFields(),
+					})),
+					matchers.HaveNilManagedFields(),
+				)), fmt.Sprintf("results should contain %v %s.%s", wellknown.GatewayGVK, "a", "kube-gw"))
 			})
 
 			It("Includes GatewayClasses", func() {
