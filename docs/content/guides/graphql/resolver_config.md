@@ -219,7 +219,7 @@ After you automatically or manually create your GraphQL resolver and schema, cre
 
 In this example, all traffic to `/graphql` is handled by the GraphQL server, which uses the `default-petstore-8080` GraphQL API.
 {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

@@ -892,7 +892,7 @@ the configmap you'll need:
 
 
 ```bash
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -957,7 +957,7 @@ if you're using a Kubernetes Cluster without an external load balancer (e.g. min
 Run the following command to create the service:
 
 ```bash
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -980,7 +980,7 @@ EOF
 Finally we'll want to create the deployment itself which will launch a pod with Envoy running inside.
 
 ```bash
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:

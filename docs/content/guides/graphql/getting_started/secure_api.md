@@ -37,7 +37,7 @@ Protect the GraphQL API that you created in the previous sections by using an AP
 
 4. Update the `default` virtual service that you previously created to reference the `apikey-auth` AuthConfig. 
    {{< highlight yaml "hl_lines=17-21" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

@@ -407,6 +407,9 @@ apis:
   envoy.api.v2.filter.http.MergeExtractorsToBody:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeExtractorsToBody
     package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.MergeJsonKeys:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeJsonKeys
+    package: envoy.api.v2.filter.http
   envoy.api.v2.filter.http.Passthrough:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Passthrough
     package: envoy.api.v2.filter.http
@@ -784,6 +787,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.ConsulServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#ConsulServiceDestination
+    package: gloo.solo.io
+  gloo.solo.io.CustomEnvoyFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#CustomEnvoyFilter
     package: gloo.solo.io
   gloo.solo.io.DeletedResources:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#DeletedResources
@@ -2050,6 +2056,9 @@ apis:
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.MergeExtractorsToBody:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeExtractorsToBody
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.MergeJsonKeys:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeJsonKeys
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters

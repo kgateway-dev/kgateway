@@ -52,7 +52,7 @@ great way to get a cluster up quickly.
 3. Let's create a Kubernetes Ingress object to route requests to the petstore:
 
     ```yaml
-    cat <<EOF | kubectl apply --filename -
+    kubectl apply --filename - << EOF
     apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
@@ -146,7 +146,7 @@ example using `gloo.system.com` domain.
 1. If you want to add server-side TLS to your Ingress, you can add it as shown below. Note that it is important that the hostnames match in both the `tls` section and in the `rules` that you want to be covered by TLS.
 
     {{< highlight yaml "hl_lines=9-12 14" >}}
-cat <<EOF | kubectl apply --filename -
+kubectl apply --filename - << EOF
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

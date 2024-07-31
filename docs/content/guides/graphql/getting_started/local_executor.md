@@ -73,7 +73,7 @@ Note that this example uses _local execution_, which means the Envoy server exec
 
 5. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `bookinfo-graphql` GraphQL API.
    {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

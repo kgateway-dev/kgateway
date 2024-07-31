@@ -4,6 +4,11 @@ import (
 	"context"
 	"sync"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/hashicorp/go-multierror"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -29,15 +34,18 @@ type History interface {
 
 	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
 	// Gateway integration is enabled, it additionally returns all resources on the cluster
-	// with types specified by `kubeGvks`.
-	GetInputSnapshot(ctx context.Context) ([]byte, error)
+	// with types specified by `kubeGatewayGvks`.
+	GetInputSnapshot(ctx context.Context) SnapshotResponseData
+
+	// GetEdgeApiSnapshot returns all resources in the Edge input snapshot
+	GetEdgeApiSnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetProxySnapshot returns the Proxies generated for all components.
-	GetProxySnapshot(ctx context.Context) ([]byte, error)
+	GetProxySnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
 	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-	GetXdsSnapshot(ctx context.Context) ([]byte, error)
+	GetXdsSnapshot(ctx context.Context) SnapshotResponseData
 }
 
 // HistoryFactoryParameters are the inputs used to create a History object
@@ -59,17 +67,17 @@ func GetHistoryFactory() HistoryFactory {
 // NewHistory returns an implementation of the History interface
 //   - `cache` is the control plane's xDS snapshot cache
 //   - `settings` specifies the Settings for this control plane instance
-//   - `kubeGvks` specifies the list of resource types to return in the input snapshot when
+//   - `kubeGatewayGvks` specifies the list of resource types to return in the input snapshot when
 //     Kubernetes Gateway integration is enabled. For example, this may include Gateway API
 //     resources, Portal resources, or other resources specific to the Kubernetes Gateway integration.
 //     If not set, then only Edge ApiSnapshot resources will be returned from `GetInputSnapshot`.
-func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGvks []schema.GroupVersionKind) History {
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGatewayGvks []schema.GroupVersionKind) History {
 	return &historyImpl{
 		latestApiSnapshot: nil,
 		xdsCache:          cache,
 		settings:          settings,
 		kubeGatewayClient: nil,
-		kubeGvks:          kubeGvks,
+		kubeGatewayGvks:   kubeGatewayGvks,
 	}
 }
 
@@ -82,9 +90,8 @@ type historyImpl struct {
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
 	kubeGatewayClient client.Client
-	// this will hold all the kube gvks that we want to show in the input snapshot when kube gateway
-	// integration is enabled
-	kubeGvks []schema.GroupVersionKind
+	// kubeGatewayGvks is the list of GVKs that the historyImpl will return when GetInputSnapshot is invoked
+	kubeGatewayGvks []schema.GroupVersionKind
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -110,8 +117,19 @@ func (h *historyImpl) SetKubeGatewayClient(kubeGatewayClient client.Client) {
 	}()
 }
 
+func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData {
+	snap := h.getRedactedApiSnapshot()
+
+	m, err := apiSnapshotToGenericMap(snap)
+	if err != nil {
+		return errorSnapshotResponse(err)
+	}
+
+	return completeSnapshotResponse(m)
+}
+
 // GetInputSnapshot gets the input snapshot for all components.
-func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
+func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 
 	// Proxies are defined on the ApiSnapshot, but are not considered part of the
@@ -130,19 +148,21 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 		snap.VirtualHostOptions = nil
 		snap.AuthConfigs = nil
 		snap.Ratelimitconfigs = nil
+		snap.Secrets = nil
+		snap.Upstreams = nil
 	}
 
 	// get the resources from the edge api snapshot
 	resources, err := snapshotToKubeResources(snap)
 	if err != nil {
-		return nil, err
+		return errorSnapshotResponse(err)
 	}
 
 	// get settings, which is not part of the api snapshot
 	if h.settings != nil {
 		settings, err := settingsToKubeResource(h.settings)
 		if err != nil {
-			return nil, err
+			return errorSnapshotResponse(err)
 		}
 		resources = append(resources, *settings)
 	}
@@ -151,14 +171,15 @@ func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
 	// (if kube gateway integration is enabled)
 	kubeResources, err := h.getKubeGatewayResources(ctx)
 	if err != nil {
-		return nil, err
+		return errorSnapshotResponse(err)
 	}
 	resources = append(resources, kubeResources...)
 
-	return formatResources(resources)
+	sortResources(resources)
+	return completeSnapshotResponse(resources)
 }
 
-func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
+func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 
 	onlyProxies := &v1snap.ApiSnapshot{
@@ -167,15 +188,16 @@ func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
 
 	resources, err := snapshotToKubeResources(onlyProxies)
 	if err != nil {
-		return nil, err
+		return errorSnapshotResponse(err)
 	}
 
-	return formatResources(resources)
+	sortResources(resources)
+	return completeSnapshotResponse(resources)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
 // NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
+func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 
@@ -188,7 +210,7 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
 		}
 	}
 
-	return formatOutput("json_compact", cacheEntries)
+	return completeSnapshotResponse(cacheEntries)
 }
 
 // getRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
@@ -238,28 +260,48 @@ func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Reso
 		return nil, nil
 	}
 
-	resources := []crdv1.Resource{}
-	for _, gvk := range h.kubeGvks {
-		// populate an unstructured list for each resource type
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(gvk)
-		err := kubeGatewayClient.List(ctx, list)
+	var resources []crdv1.Resource
+	var errs *multierror.Error
+	for _, gvk := range h.kubeGatewayGvks {
+		gvkResources, err := h.listResourcesForGvk(ctx, gvk)
 		if err != nil {
-			return nil, err
-		}
-		// convert each Unstructured to a Resource so that the final list can be merged with the
-		// edge resource list
-		for _, uns := range list.Items {
-			out := crdv1.Resource{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
-			if err != nil {
-				return nil, err
-			}
-			resources = append(resources, out)
+			// We intentionally aggregate the errors so that we can return a "best effort" set of
+			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
+			errs = multierror.Append(errs, err)
+		} else {
+			resources = append(resources, gvkResources...)
 		}
 	}
 
-	return resources, nil
+	return resources, errs.ErrorOrNil()
+}
+
+func (h *historyImpl) listResourcesForGvk(ctx context.Context, gvk schema.GroupVersionKind) ([]crdv1.Resource, error) {
+	var resources []crdv1.Resource
+
+	// populate an unstructured list for each resource type
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(gvk)
+	err := h.kubeGatewayClient.List(ctx, list)
+	if err != nil {
+		return nil, err
+	}
+
+	var errs *multierror.Error
+
+	// convert each Unstructured to a Resource so that the final list can be merged with the
+	// Edge API resource list
+	for _, uns := range list.Items {
+		out := crdv1.Resource{}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+		} else {
+			sanitizeResource(&out)
+			resources = append(resources, out)
+		}
+	}
+	return resources, errs.ErrorOrNil()
 }
 
 // getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
@@ -278,9 +320,52 @@ func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 // into the hands of the field.As we iterate on this component, we can use some of the redaction
 // utilities in `/pkg/utils/syncutil`.
 func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
-	snap.Secrets = nil
+	snap.Secrets.Each(func(element *gloov1.Secret) {
+		redactSecretData(element)
+	})
 
 	// See `pkg/utils/syncutil/log_redactor.StringifySnapshot` for an explanation for
 	// why we redact Artifacts
-	snap.Artifacts = nil
+	snap.Artifacts.Each(func(element *gloov1.Artifact) {
+		redactArtifactData(element)
+	})
+}
+
+// redactSecretData modifies the secret to remove any sensitive information
+// The structure of a Secret in Gloo Gateway does not lend itself to easily redact data in different places.
+// As a result, we perform a primitive redaction method, where we maintain the metadata, and remove the entire spec
+func redactSecretData(element *gloov1.Secret) {
+	element.Kind = nil
+
+	redactGlooResourceMetadata(element.GetMetadata())
+}
+
+const (
+	redactedString = "<redacted>"
+)
+
+// redactArtifactData modifies the artifact to remove any sensitive information
+func redactArtifactData(element *gloov1.Artifact) {
+	for k := range element.GetData() {
+		element.GetData()[k] = redactedString
+	}
+
+	redactGlooResourceMetadata(element.GetMetadata())
+}
+
+// redactGlooResourceMetadata modifies the metadata to remove any sensitive information
+// ref: https://github.com/solo-io/skv2/blob/1583cb716c04eb3f8d01ecb179b0deeabaa6e42b/contrib/pkg/snapshot/redact.go#L20-L26
+func redactGlooResourceMetadata(meta *core.Metadata) {
+	for key, _ := range meta.GetAnnotations() {
+		if key == corev1.LastAppliedConfigAnnotation {
+			meta.GetAnnotations()[key] = redactedString
+			break
+		}
+	}
+}
+
+// sanitizeResource modifies the Object to remove any unwanted fields
+func sanitizeResource(resource *crdv1.Resource) {
+	// ManagedFields is noise on the object, that is not relevant to the Admin API, so we sanitize it
+	resource.ManagedFields = nil
 }

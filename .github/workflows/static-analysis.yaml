@@ -51,5 +51,6 @@ jobs:
       with:
         version: v1.57.2
         args: --verbose --modules-download-mode=readonly --allow-parallel-runners
-        skip-pkg-cache: true
+        skip-cache: true
+        skip-save-cache: true
         only-new-issues: false
