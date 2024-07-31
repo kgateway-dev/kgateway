@@ -187,7 +187,7 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- else -}}
   {{- $securityContext = merge $values $defaults -}}
 {{- end }}
-{{-/* Set Globals */}}
+{{- /* Set Globals */ -}}
 {{- with $global -}}
   {{- if hasKey . "floatingUserId" -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
