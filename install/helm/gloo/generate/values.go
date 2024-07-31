@@ -40,7 +40,7 @@ type Global struct {
 	ExtraCustomResources *bool                 `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	AdditionalLabels     map[string]string     `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
 	PodSecurityStandards *PodSecurityStandards `json:"podSecurityStandards,omitempty" desc:"Configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
-	SecuritySettings     *SecuritySettings     `json:"SecuritySettings,omitempty" desc:"Security defaults for pod and container security contexts"`
+	SecuritySettings     *SecuritySettings     `json:"securitySettings,omitempty" desc:"Security defaults for pod and container security contexts"`
 }
 
 type SecuritySettings struct {
