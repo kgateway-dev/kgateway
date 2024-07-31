@@ -47,7 +47,7 @@ spec:
   {{- $podSecCtx = . -}}
 {{- end -}}
 {{- if or $podSecCtx (and .Values.global .Values.global.securitySettings) -}}
-{{- include "gloo.securityContext" (dict "values" $podSecCtx "global" .Values.global) | indent 6  -}}
+{{- include "gloo.securityContext" (dict "values" $podSecCtx "global" .Values.global.securitySettings) | indent 6  -}}
 {{- end }}
 {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
