@@ -189,7 +189,7 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- end }}
 
 {{/* Set Globals */}}
-{{- with $global.securitySettings -}}
+{{- with $global -}}
   {{- if hasKey . "floatingUserId" -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
   {{- end -}}
@@ -232,10 +232,6 @@ It takes 4 values:
 {{- $values := dict -}}
 {{- if .values -}}
   {{- $values = .values -}}
-{{- end -}}
-{{- $global := dict -}}
-{{- if .global -}}
-  {{- $global = .global -}}
 {{- end -}}
 {{ $indent := 0}}
 {{- if .indent -}}
