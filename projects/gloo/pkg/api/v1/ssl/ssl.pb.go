@@ -422,6 +422,7 @@ type UpstreamSslConfig struct {
 	AllowRenegotiation *wrappers.BoolValue `protobuf:"bytes,10,opt,name=allow_renegotiation,json=allowRenegotiation,proto3" json:"allow_renegotiation,omitempty"`
 	// If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
+	// This flag does nothing if SDS is configured.
 	// If unset, defaults to false.
 	OneWayTls *wrappers.BoolValue `protobuf:"bytes,11,opt,name=one_way_tls,json=oneWayTls,proto3" json:"one_way_tls,omitempty"`
 }
