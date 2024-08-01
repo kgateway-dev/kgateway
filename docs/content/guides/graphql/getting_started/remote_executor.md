@@ -70,7 +70,7 @@ In the previous section, you used local execution to resolve GraphQL queries to 
 
 4. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `default-todos-80` GraphQL API.
    {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
