@@ -41,6 +41,10 @@ var _ = Describe("Client", func() {
 
 	Context("Integration tests", func() {
 
+		When("Admin API is reachable", func() {
+			// We rely on e2e tests defined in /test/kubernetes/e2e/features/admin_server to verify this behavior
+		})
+
 		When("Admin API is not reachable", func() {
 
 			It("emits an error to configured locations", func() {
@@ -59,11 +63,11 @@ var _ = Describe("Client", func() {
 						curl.WithoutRetries(),
 					)
 
-				statsCmd := client.InputSnapshotCmd(ctx).
+				inputSnapshotCmd := client.InputSnapshotCmd(ctx).
 					WithStdout(&outLocation).
 					WithStderr(&errLocation)
 
-				err := statsCmd.Run().Cause()
+				err := inputSnapshotCmd.Run().Cause()
 				Expect(err).To(HaveOccurred(), "running the command should return an error")
 				Expect(defaultOutputLocation.Bytes()).To(BeEmpty(), "defaultOutputLocation should not be used")
 				Expect(outLocation.Bytes()).To(BeEmpty(), "failed request should not output to Stdout")
