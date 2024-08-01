@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -107,7 +106,6 @@ var _ = Describe("GlooResourcesTest", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			upstreamSslConfig := &ssl.UpstreamSslConfig{
-				OneWayTls: &wrapperspb.BoolValue{Value: true},
 				SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      tlsSecret.GetName(),
@@ -124,7 +122,6 @@ var _ = Describe("GlooResourcesTest", func() {
 					serviceconverter.DeepMergeAnnotationPrefix: "true",
 					serviceconverter.GlooAnnotationPrefix: fmt.Sprintf(`{
 							"sslConfig": {
-							    "oneWayTls": true,
 								"secretRef": {
 									"name": "%s",
 									"namespace":  "%s"
@@ -184,8 +181,6 @@ var _ = Describe("GlooResourcesTest", func() {
 			tlsSecret.Data = map[string][]byte{
 				corev1.TLSCertKey:       []byte(crt),
 				corev1.TLSPrivateKeyKey: []byte(crtKey),
-				// Add CA data, but we should still be ok since we set oneWayTls
-				corev1.ServiceAccountRootCAKey: []byte(crt),
 			}
 			_, err := resourceClientset.KubeClients().CoreV1().Secrets(tlsSecret.GetNamespace()).Update(ctx, tlsSecret, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
