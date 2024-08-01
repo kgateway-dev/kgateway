@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -71,10 +72,9 @@ func upstreamSslConfigFromService(svc *corev1.Service, svcPort corev1.ServicePor
 
 	upstreamSslCfg := &ssl.UpstreamSslConfig{}
 
-	switch strings.ToLower(oneWayTls) {
-	case "true", "1":
+	if oneWayTls != "" && envutils.IsTruthyValue(oneWayTls) {
 		upstreamSslCfg.OneWayTls = &wrapperspb.BoolValue{Value: true}
-	case "false", "0":
+	} else if oneWayTls != "" {
 		upstreamSslCfg.OneWayTls = &wrapperspb.BoolValue{Value: false}
 	}
 

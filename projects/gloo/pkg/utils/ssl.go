@@ -79,8 +79,9 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(
 	}
 
 	// If the user needs one-way TLS to the upstream, disable mTLS by removing
-	// the validation context added in ResolveCommonSslConfig.
-	if uc.GetOneWayTls().GetValue() {
+	// the validation context added in ResolveCommonSslConfig. This flag cannot
+	// be used with SDS config.
+	if uc.GetSds() == nil && uc.GetOneWayTls().GetValue() {
 		common.ValidationContextType = nil
 	}
 	return &envoyauth.UpstreamTlsContext{
