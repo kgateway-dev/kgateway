@@ -77,6 +77,7 @@ func (s *getProxySuite) SetupSuite() {
 		g.Expect(err).NotTo(HaveOccurred())
 		if s.testInstallation.Metadata.K8sGatewayEnabled {
 			g.Expect(proxies).To(ConsistOf(
+				matchers.HaveNameAndNamespace(edgeProxy1Name, ns),
 				matchers.HaveNameAndNamespace(edgeProxy2Name, ns),
 				matchers.HaveNameAndNamespace(edgeDefaultProxyName, ns),
 				matchers.HaveNameAndNamespace(kubeProxy1Name, ns),
