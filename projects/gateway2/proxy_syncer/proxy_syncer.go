@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -189,9 +190,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	for _, route := range rl.Items {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-			route.Status = *status
-			if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-				logger.Error(err)
+			if !reflect.DeepEqual(route.Status, *status) {
+				route.Status = *status
+				if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
+					logger.Error(err)
+				}
 			}
 		}
 	}
@@ -208,9 +211,11 @@ func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl 
 	for _, gw := range gwl.Items {
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
-			gw.Status = *status
-			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-				logger.Error(err)
+			if !reflect.DeepEqual(gw.Status, *status) {
+				gw.Status = *status
+				if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+					logger.Error(err)
+				}
 			}
 		}
 	}
