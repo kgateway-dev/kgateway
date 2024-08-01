@@ -6377,12 +6377,9 @@ metadata:
 				)
 
 				It("applies global security setings to containers", func() {
-
-					runAsGroup := int64(99999)
 					helmArgs := append(
 						helmRenderEverythingValues(),
 						"global.securitySettings.floatingUserId=true",
-						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
 					)
 
 					prepareMakefile(namespace, helmValues{
@@ -6392,8 +6389,10 @@ metadata:
 					foundContainers := securitycontext.ValidateSecurityContexts(
 						testManifest,
 						func(container corev1.Container, resourceName string) {
-							Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
-							Expect(container.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s, container: %s", resourceName, container.Name)
+							// If securityContext is nil, then it means runAsUser has not been set
+							if container.SecurityContext != nil {
+								Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
+							}
 						},
 					)
 
@@ -6401,11 +6400,9 @@ metadata:
 				})
 
 				It("global security setings override container-specific values", func() {
-					runAsGroup := int64(99999)
 					helmArgs := append(
 						helmRenderEverythingValues(),
 						"global.securitySettings.floatingUserId=true",
-						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
 					)
 
 					for _, securityRoot := range securitycontext.ContainerSecurityContextRoots {
@@ -6419,8 +6416,10 @@ metadata:
 					foundContainers := securitycontext.ValidateSecurityContexts(
 						testManifest,
 						func(container corev1.Container, resourceName string) {
-							Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
-							Expect(container.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s, container: %s", resourceName, container.Name)
+							// If securityContext is nil, then it means runAsUser has not been set
+							if container.SecurityContext != nil {
+								Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
+							}
 						},
 					)
 
@@ -6431,11 +6430,9 @@ metadata:
 				// render all possible charts at the same time because some templates render when
 				// .Values.settings.integrations.knative.version >= 0.8.0 and others render when < 0.8.0
 				DescribeTable("(applies global security setings (one-offs)", func(resourceName string, containerName string, resourceType string, applyDefaults securitycontext.ApplyContainerSecurityDefaults, extraArgs ...string) {
-					runAsGroup := int64(99999)
 					helmArgs := append(
 						extraArgs,
 						"global.securitySettings.floatingUserId=true",
-						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
 					)
 
 					prepareMakefile(namespace, helmValues{
@@ -6443,19 +6440,21 @@ metadata:
 					})
 
 					container := getContainer(testManifest, resourceType, resourceName, containerName)
-					Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
-					Expect(container.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s, container: %s", resourceName, container.Name)
+					// If securityContext is nil, then it means runAsUser has not been set
+					if container.SecurityContext != nil {
+						Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
+					}
 
 				},
 					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", securitycontext.ApplyClusterIngressSecurityDefaults, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				)
 
 				DescribeTable("applies global security setings for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
-					runAsGroup := int64(99999)
+					fsGroup := int64(99999)
 					helmArgs := append(
 						extraArgs,
 						"global.securitySettings.floatingUserId=true",
-						fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
+						fmt.Sprintf("global.securitySettings.fsGroup=%d", fsGroup),
 					)
 
 					prepareMakefile(namespace, helmValues{
@@ -6466,7 +6465,7 @@ metadata:
 					securityContext := structuredDeployment.Spec.Template.Spec.SecurityContext
 
 					Expect(securityContext.RunAsUser).To(BeNil(), "resource: %s", resourceName)
-					Expect(securityContext.RunAsGroup).To(Equal(pointer.Int64(runAsGroup)), "resource: %s")
+					Expect(securityContext.FSGroup).To(Equal(pointer.Int64(fsGroup)), "resource: %s")
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
@@ -6474,11 +6473,9 @@ metadata:
 
 				// FIt("applies global security setings to KubeGw GatewayParameters", func() {
 
-				// 	runAsGroup := int64(99999)
 				// 	helmArgs := []string{
 				// 		"kubeGateway.enabled=true",
 				// 		"global.securitySettings.floatingUserId=true",
-				// 		fmt.Sprintf("global.securitySettings.fsGroup=%d", runAsGroup),
 				// 	}
 
 				// 	prepareMakefile(namespace, helmValues{

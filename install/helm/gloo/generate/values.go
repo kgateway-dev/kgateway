@@ -44,7 +44,7 @@ type Global struct {
 }
 
 type SecuritySettings struct {
-	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId."`
+	FloatingUserId *bool    `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. Also has side effects in extauth and redis containers in EE installs (DO_NOT_SUMIT-elaborate)"`
 	FsGroup        *float64 `json:"fsGroup,omitempty" desc:"Sets the default 'fsGroup' value for all instances of fsGroup."`
 }
 

@@ -187,13 +187,13 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- else -}}
   {{- $securityContext = merge $values $defaults -}}
 {{- end }}
-{{- /* Set Globals */ -}}
+{{- /* Set global */ -}}
 {{- with $global -}}
-  {{- if hasKey . "floatingUserId" -}}
+  {{- if .floatingUserId -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
   {{- end -}}
   {{- if hasKey . "fsGroup" -}}
-    {{- $_ := set $securityContext "runAsGroup" .fsGroup -}}
+    {{- $_ := set $securityContext "fsGroup" .fsGroup -}}
   {{- end -}}
 {{- end -}}
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
@@ -262,14 +262,21 @@ It takes 4 values:
   {{- end -}}
 {{- end -}}
 
+{{- /* remove fsGroup from globals, as that field is not part of the container security context */ -}}
+{{ $global := dict }}
+{{- if .global -}}
+  {{- $global = deepCopy .global -}}
+  {{- $_ := unset $global "fsGroup" -}}
+{{- end -}}
+
 
 {{- /* call general securityContext template */ -}}
 {{- include "gloo.securityContext" (dict 
             "values" $values
             "defaults" $defaults
             "indent" $indent
-            "global" .global) -}}
-{{- end }}
+            "global" $global) -}}
+{{- end -}}
 
 
 {{- /*
@@ -372,20 +379,20 @@ app: gloo
 {{- end }}
 
 
-{{/* pass in the container definition and the globals 
-     container definition is used because we may need to set globals even if there is no secCtx or container defined
+{{/* Used by GatewayParameters to generate container securtityContexts
+    pass in the container definition and the global 
+     container definition is used because we may need to set global even if there is no secCtx or container defined
 */}}
 {{- define "gloo.secCtxForGwParams" -}}
 {{- $container := or (first .) (dict)  -}}
-{{- $globals := or (index . 1) (dict) -}}
+{{- $globalSec := or (index . 1) (dict) -}}
 {{- $sc := or $container.securityContext dict -}}
-{{- with $globals -}}
-  {{- if $globals.floatingUserId -}}
+{{- with $globalSec -}}
+  {{- if $globalSec.floatingUserId -}}
     {{ $_ := unset $sc "runAsUser" }}
   {{- end -}}
-  {{- if hasKey . "fsGroup" -}}
-    {{ $_ := set $sc "fsGroup" .fsGroup }}
-  {{- end -}}
+  {{- /* Don't need to look at fsGroup because it only gets set at the podSecurityContext 
+         and we are only creating the container securityContext */ -}}
 {{- end -}}
 {{- if $sc -}}
 {{ $sc | toYaml }}

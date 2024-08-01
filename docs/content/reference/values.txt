@@ -1612,5 +1612,5 @@
 |global.additionalLabels.NAME|string||Additional labels to add to all gloo resources.|
 |global.podSecurityStandards.container.enableRestrictedContainerDefaults|bool||Set to true to default all containers to a security policy that minimally conforms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). |
 |global.podSecurityStandards.container.defaultSeccompProfileType|string||The seccomp profile type to use for default restricted container securityContexts. Valid values are 'RuntimeDefault' and 'Localhost'. Default is 'RuntimeDefault'. Has no effect if enableRestrictedContainerDefaults is false.|
-|global.securitySettings.floatingUserId|bool||If true, use 'true' as default value for all instances of floatingUserId.|
+|global.securitySettings.floatingUserId|bool||If true, use 'true' as default value for all instances of floatingUserId. Also has side effects in extauth and redis containers in EE installs (DO_NOT_SUMIT-elaborate)|
 |global.securitySettings.fsGroup|float64||Sets the default 'fsGroup' value for all instances of fsGroup.|
