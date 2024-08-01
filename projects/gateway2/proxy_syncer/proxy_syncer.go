@@ -176,6 +176,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
+	logger.Debugf("syncing k8s gateway route status")
+	startTime := time.Now()
+
 	rl := apiv1.HTTPRouteList{}
 	err := s.mgr.GetClient().List(ctx, &rl)
 	if err != nil {
@@ -192,12 +195,16 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			}
 		}
 	}
+	contextutils.LoggerFrom(ctx).Debugf("synced route statuses in %v", time.Since(startTime))
 }
 
 // syncStatus updates the status of the Gateway CRs
 func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl apiv1.GatewayList) {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
+	logger.Debugf("syncing k8s gateway proxy status")
+	startTime := time.Now()
+
 	for _, gw := range gwl.Items {
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
@@ -207,6 +214,7 @@ func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl 
 			}
 		}
 	}
+	contextutils.LoggerFrom(ctx).Debugf("synced statuses in %v", time.Since(startTime))
 }
 
 // reconcileProxies persists the proxies that were generated during translations and stores them in an in-memory cache
