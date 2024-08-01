@@ -75,3 +75,23 @@ Return a container image value as a string
 {{- end -}}{{- /* if .digest */ -}}
 {{ $image }}
 {{- end -}}{{- /* define "gloo-gateway.gateway.image" */ -}}
+
+
+{{/* Used by GatewayParameters to generate container securtityContexts
+    pass in the container definition and the global 
+     container definition is used because we may need to set global even if there is no secCtx or container defined
+*/}}
+{{- define "gloo-gateway.renderSecurityContext" -}}
+{{- $container := or (first .) (dict)  -}}
+{{- $globalSec := or (index . 1) (dict) -}}
+{{- $sc := or $container.securityContext dict -}}
+{{- with $globalSec -}}
+  {{- if $globalSec.floatingUserId -}}
+    {{ $_ := unset $sc "runAsUser" }}
+  {{- end -}}
+  {{- /* Don't need to look at fsGroup because it only gets set at the podSecurityContext 
+         and we are only creating the container securityContext */ -}}
+{{- end -}}
+
+{{ $sc | toYaml }}
+{{- end -}}
