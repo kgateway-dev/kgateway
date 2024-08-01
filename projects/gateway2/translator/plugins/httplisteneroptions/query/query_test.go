@@ -2,6 +2,7 @@ package query_test
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/schemes"
 
 	. "github.com/onsi/ginkgo/v2"

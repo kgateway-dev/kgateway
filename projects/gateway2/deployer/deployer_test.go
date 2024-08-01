@@ -3,8 +3,9 @@ package deployer_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/schemes"
 	"slices"
+
+	"github.com/solo-io/gloo/pkg/schemes"
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"

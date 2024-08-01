@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/solo-io/gloo/pkg/schemes"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/schemes"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"

@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
+	"sync"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"slices"
-	"sync"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -48,8 +49,9 @@ type History interface {
 
 // HistoryFactoryParameters are the inputs used to create a History object
 type HistoryFactoryParameters struct {
-	Settings *gloov1.Settings
-	Cache    cache.SnapshotCache
+	Settings                    *gloov1.Settings
+	Cache                       cache.SnapshotCache
+	EnableK8sGatewayIntegration bool
 }
 
 // HistoryFactory is a function that produces a History object
@@ -70,7 +72,13 @@ func GetHistoryFactory() HistoryFactory {
 			}
 		}
 
-		return NewHistory(params.Cache, params.Settings, kubeClient, InputSnapshotGVKs)
+		// By default, only return the GVKs for using Gloo Gateway, with purely the Edge Gateway APIs
+		var gvks = EdgeOnlyInputSnapshotGVKs
+		if params.EnableK8sGatewayIntegration {
+			gvks = CompleteInputSnapshotGVKs
+		}
+
+		return NewHistory(params.Cache, params.Settings, kubeClient, gvks)
 	}
 }
 
@@ -122,15 +130,6 @@ func (h *historyImpl) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 	return completeSnapshotResponse(snap)
-
-	// todo: see if we can remove
-
-	m, err := apiSnapshotToGenericMap(snap)
-	if err != nil {
-		errorSnapshotResponse(err)
-	}
-
-	return completeSnapshotResponse(m)
 }
 
 // GetInputSnapshot gets the input snapshot for all components.

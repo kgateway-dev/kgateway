@@ -3,12 +3,13 @@ package controller_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/schemes"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/solo-io/gloo/pkg/schemes"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

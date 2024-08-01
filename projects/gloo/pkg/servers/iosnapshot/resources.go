@@ -1,13 +1,14 @@
 package iosnapshot
 
 import (
+	"slices"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"slices"
 )
 
 var (
@@ -17,40 +18,53 @@ var (
 	}
 
 	GlooGVKs = []schema.GroupVersionKind{
-		// todo: add other edge types
-
 		gloov1.SettingsGVK,
 		gloov1.UpstreamGVK,
+		gloov1.UpstreamGroupGVK,
 		gloov1.ProxyGVK,
 	}
 
+	// PolicyGVKs is the set of GVKs that are used by a classic Gloo Gateway installation,
+	// when only the Edge Gateway APIs are being used
 	PolicyGVKs = []schema.GroupVersionKind{
-		// Routing policies
-		gatewayv1.ListenerOptionGVK,
-		gatewayv1.HttpListenerOptionGVK,
 		gatewayv1.VirtualHostOptionGVK,
 		gatewayv1.RouteOptionGVK,
-
-		// Extension service policies
-		// todo: these should be EE only
-		// extauthv1.AuthConfigGVK,
-		// ratelimitv1alpha1.RateLimitConfigGVK,
 	}
 
-	KubernetesGatewayIntegrationGVKs = []schema.GroupVersionKind{
+	EdgeGatewayGVKs = []schema.GroupVersionKind{
+		gatewayv1.GatewayGVK,
+		gatewayv1.MatchableHttpGatewayGVK,
+		gatewayv1.MatchableTcpGatewayGVK,
+		gatewayv1.VirtualServiceGVK,
+		gatewayv1.RouteTableGVK,
+	}
+
+	KubernetesGatewayGVKs = []schema.GroupVersionKind{
 		wellknown.GatewayClassGVK,
 		wellknown.GatewayGVK,
 		wellknown.HTTPRouteGVK,
 		wellknown.ReferenceGrantGVK,
-
-		v1alpha1.GatewayParametersGVK,
 	}
 
-	// InputSnapshotGVKs is the list of GVKs that will be returned by the InputSnapshot API
-	InputSnapshotGVKs = slices.Concat(
+	KubernetesGatewayIntegrationPolicyGVKs = []schema.GroupVersionKind{
+		v1alpha1.GatewayParametersGVK,
+
+		// While these are in fact Policy APIs, they are only enabled if the Kubernetes Gateway Integration is turned on
+		gatewayv1.ListenerOptionGVK,
+		gatewayv1.HttpListenerOptionGVK,
+	}
+
+	EdgeOnlyInputSnapshotGVKs = slices.Concat(
 		KubernetesCoreGVKs,
 		GlooGVKs,
 		PolicyGVKs,
-		KubernetesGatewayIntegrationGVKs,
+		EdgeGatewayGVKs,
+	)
+
+	// CompleteInputSnapshotGVKs is the list of GVKs that will be returned by the InputSnapshot API
+	CompleteInputSnapshotGVKs = slices.Concat(
+		EdgeOnlyInputSnapshotGVKs,
+		KubernetesGatewayGVKs,
+		KubernetesGatewayIntegrationPolicyGVKs,
 	)
 )
