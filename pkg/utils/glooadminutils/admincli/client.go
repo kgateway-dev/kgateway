@@ -2,11 +2,13 @@ package admincli
 
 import (
 	"context"
-	"io"
-
+	"encoding/json"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
+	"io"
+	"log"
 )
 
 const (
@@ -79,12 +81,29 @@ func (c *Client) RequestPathCmd(ctx context.Context, path string) cmdutils.Cmd {
 }
 
 // GetInputSnapshot returns the data that is available at the input snapshot endpoint
-func (c *Client) GetInputSnapshot(ctx context.Context) (string, error) {
+func (c *Client) GetInputSnapshot(ctx context.Context) ([]interface{}, error) {
 	var outLocation threadsafe.Buffer
 
 	err := c.RequestPathCmd(ctx, InputSnapshotPath).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return outLocation.String(), nil
+
+	type anon struct {
+		Data  []interface{} `json:"data"`
+		Error string        `json:"error"`
+	}
+	var output anon
+
+	log.Printf("%v", string(outLocation.Bytes()))
+
+	err = json.Unmarshal(outLocation.Bytes(), &output)
+	if err != nil {
+		return nil, err
+	}
+
+	if output.Error != "" {
+		return nil, eris.New(output.Error)
+	}
+	return output.Data, nil
 }

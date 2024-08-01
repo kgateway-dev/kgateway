@@ -2,13 +2,15 @@ package admin_server
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"time"
+
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -48,8 +50,17 @@ func inputSnapshotAssertion(testInstallation *e2e.TestInstallation) func(ctx con
 	return func(ctx context.Context, adminClient *admincli.Client) {
 		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 			inputSnapshot, err := adminClient.GetInputSnapshot(ctx)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "error getting input snap")
-			g.Expect(inputSnapshot).To(gomega.BeEquivalentTo(42000)) // this hould fail
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "error getting input snapshot")
+			g.Expect(inputSnapshot).NotTo(gomega.BeEmpty(), "objects are returned")
+			g.Expect(inputSnapshot).To(gomega.ContainElement(
+				gomega.And(
+					gomega.HaveKeyWithValue("kind", gomega.Equal("Settings")),
+					gomega.HaveKeyWithValue("metadata", gomega.And(
+						gomega.HaveKeyWithValue("name", defaults.SettingsName),
+						gomega.HaveKeyWithValue("namespace", testInstallation.Metadata.InstallNamespace),
+					)),
+				),
+			), "should contain settings CR")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).

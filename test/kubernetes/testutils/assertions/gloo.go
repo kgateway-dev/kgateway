@@ -2,14 +2,15 @@ package assertions
 
 import (
 	"context"
+	"io"
+	"net"
+	"time"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net"
-	"time"
 )
 
 func (p *Provider) AssertGlooAdminApi(
