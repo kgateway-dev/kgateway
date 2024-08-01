@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
 )
@@ -48,7 +48,7 @@ var _ = Describe("Client", func() {
 					defaultOutputLocation, errLocation, outLocation threadsafe.Buffer
 				)
 
-				// Create a client that points to an address where Envoy is NOT running
+				// Create a client that points to an address where Gloo is NOT running
 				client := admincli.NewClient().
 					WithReceiver(&defaultOutputLocation).
 					WithCurlOptions(
@@ -59,7 +59,7 @@ var _ = Describe("Client", func() {
 						curl.WithoutRetries(),
 					)
 
-				statsCmd := client.StatsCmd(ctx).
+				statsCmd := client.InputSnapshotCmd(ctx).
 					WithStdout(&outLocation).
 					WithStderr(&errLocation)
 

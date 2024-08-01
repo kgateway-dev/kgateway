@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
@@ -81,11 +80,16 @@ func (c *Client) RequestPathCmd(ctx context.Context, path string) cmdutils.Cmd {
 	return c.Command(ctx, curl.WithPath(path))
 }
 
+// InputSnapshotCmd returns the cmdutils.Cmd that can be run, and will execute a request against the Input Snapshot path
+func (c *Client) InputSnapshotCmd(ctx context.Context) cmdutils.Cmd {
+	return c.Command(ctx, curl.WithPath(InputSnapshotPath))
+}
+
 // GetInputSnapshot returns the data that is available at the input snapshot endpoint
 func (c *Client) GetInputSnapshot(ctx context.Context) ([]interface{}, error) {
 	var outLocation threadsafe.Buffer
 
-	err := c.RequestPathCmd(ctx, InputSnapshotPath).WithStdout(&outLocation).Run().Cause()
+	err := c.InputSnapshotCmd(ctx).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +99,6 @@ func (c *Client) GetInputSnapshot(ctx context.Context) ([]interface{}, error) {
 		Error string        `json:"error"`
 	}
 	var output anon
-
-	log.Printf("%v", string(outLocation.Bytes()))
 
 	err = json.Unmarshal(outLocation.Bytes(), &output)
 	if err != nil {
