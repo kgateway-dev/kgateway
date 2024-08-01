@@ -3,6 +3,7 @@ package deployer_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/schemes"
 	"slices"
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -12,7 +13,6 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/version"
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -1024,8 +1024,10 @@ var _ = Describe("Deployer", func() {
 
 // initialize a fake controller-runtime client with the given list of objects
 func newFakeClientWithObjs(objs ...client.Object) client.Client {
-	s := scheme.NewScheme()
-	return fake.NewClientBuilder().WithScheme(s).WithObjects(objs...).Build()
+	return fake.NewClientBuilder().
+		WithScheme(schemes.DefaultScheme()).
+		WithObjects(objs...).
+		Build()
 }
 
 func fullyDefinedGatewayParams(name, namespace string) *gw2_v1alpha1.GatewayParameters {

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/schemes"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"slices"
@@ -28,15 +30,9 @@ type History interface {
 	// SetApiSnapshot sets the latest Edge ApiSnapshot.
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
 
-	// SetKubeGatewayClient sets the client to use for Kubernetes CRUD operations when
-	// Kubernetes Gateway integration is enabled. If this is not set, then it is assumed
-	// that Kubernetes Gateway integration is not enabled, and no Kubernetes Gateway
-	// resources will be returned from `GetInputSnapshot`.
-	SetKubeGatewayClient(kubeGatewayClient client.Client)
-
 	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
 	// Gateway integration is enabled, it additionally returns all resources on the cluster
-	// with types specified by `kubeGatewayGvks`.
+	// with types specified by `inputSnapshotGvks`.
 	GetInputSnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetEdgeApiSnapshot returns all resources in the Edge input snapshot
@@ -62,24 +58,36 @@ type HistoryFactory func(params HistoryFactoryParameters) History
 // GetHistoryFactory returns a default HistoryFactory implementation
 func GetHistoryFactory() HistoryFactory {
 	return func(params HistoryFactoryParameters) History {
-		return NewHistory(params.Cache, params.Settings, InputSnapshotGVKs)
+		var kubeClient client.Client
+
+		cfg, err := kubeutils.GetRestConfigWithKubeContext("")
+		if err == nil {
+			cli, err := client.New(cfg, client.Options{
+				Scheme: schemes.DefaultScheme(),
+			})
+			if err == nil {
+				kubeClient = cli
+			}
+		}
+
+		return NewHistory(params.Cache, params.Settings, kubeClient, InputSnapshotGVKs)
 	}
 }
 
 // NewHistory returns an implementation of the History interface
 //   - `cache` is the control plane's xDS snapshot cache
 //   - `settings` specifies the Settings for this control plane instance
-//   - `kubeGatewayGvks` specifies the list of resource types to return in the input snapshot when
+//   - `inputSnapshotGvks` specifies the list of resource types to return in the input snapshot when
 //     Kubernetes Gateway integration is enabled. For example, this may include Gateway API
 //     resources, Portal resources, or other resources specific to the Kubernetes Gateway integration.
 //     If not set, then only Edge ApiSnapshot resources will be returned from `GetInputSnapshot`.
-func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGatewayGvks []schema.GroupVersionKind) History {
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeClient client.Client, kubeGatewayGvks []schema.GroupVersionKind) History {
 	return &historyImpl{
-		latestApiSnapshot: nil,
-		xdsCache:          cache,
-		settings:          settings,
-		kubeGatewayClient: nil,
-		kubeGatewayGvks:   kubeGatewayGvks,
+		latestApiSnapshot:   nil,
+		xdsCache:            cache,
+		settings:            settings,
+		inputSnapshotClient: kubeClient,
+		inputSnapshotGvks:   kubeGatewayGvks,
 	}
 }
 
@@ -91,9 +99,12 @@ type historyImpl struct {
 	latestApiSnapshot *v1snap.ApiSnapshot
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
-	kubeGatewayClient client.Client
-	// kubeGatewayGvks is the list of GVKs that the historyImpl will return when GetInputSnapshot is invoked
-	kubeGatewayGvks []schema.GroupVersionKind
+
+	// The InputSnapshot API is really a pass through to the Kubernetes API Server
+	// Below are properties that are used to configure the behavior of GetInputSnapshot
+
+	inputSnapshotClient client.Client
+	inputSnapshotGvks   []schema.GroupVersionKind
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -108,19 +119,11 @@ func (h *historyImpl) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	}()
 }
 
-func (h *historyImpl) SetKubeGatewayClient(kubeGatewayClient client.Client) {
-	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
-	// any contention/issues, from impacting the runtime of the system
-	go func() {
-		h.Lock()
-		defer h.Unlock()
-
-		h.kubeGatewayClient = kubeGatewayClient
-	}()
-}
-
 func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
+	return completeSnapshotResponse(snap)
+
+	// todo: see if we can remove
 
 	m, err := apiSnapshotToGenericMap(snap)
 	if err != nil {
@@ -132,27 +135,26 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 
 // GetInputSnapshot gets the input snapshot for all components.
 func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData {
-	kubeGatewayClient := h.getKubeGatewayClientSafe()
-	if kubeGatewayClient == nil {
-		// No client has been set, so the Kubernetes Gateway integration has not been enabled
-		return errorSnapshotResponse(eris.New("Kubernetes Gateway Integration is not enabled"))
+	inputSnapshotClient := h.getInputSnapshotClientSafe()
+	if inputSnapshotClient == nil {
+		return errorSnapshotResponse(eris.New("No kubernetes Client found for InputSnapshot"))
 	}
 
-	var resources []client.Object
+	var objects []client.Object
 	var errs *multierror.Error
-	for _, gvk := range h.kubeGatewayGvks {
-		gvkResources, err := h.listObjectsForGvk(ctx, kubeGatewayClient, gvk)
+	for _, gvk := range h.inputSnapshotGvks {
+		gvkResources, err := h.listObjectsForGvk(ctx, inputSnapshotClient, gvk)
 		if err != nil {
 			// We intentionally aggregate the errors so that we can return a "best effort" set of
 			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
 			errs = multierror.Append(errs, err)
 		}
-		resources = append(resources, gvkResources...)
+		objects = append(objects, gvkResources...)
 	}
-	sortResources(resources)
+	sortResources(objects)
 
 	return SnapshotResponseData{
-		Data:  resources,
+		Data:  objects,
 		Error: errs.ErrorOrNil(),
 	}
 }
@@ -273,12 +275,12 @@ func (h *historyImpl) listObjectsForGvk(ctx context.Context, cli client.Client, 
 	return objects, errs.ErrorOrNil()
 }
 
-// getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
+// getInputSnapshotClientSafe gets the Kubernetes client used for CRUD operations
 // on resources used in the Kubernetes Gateway integration
-func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
+func (h *historyImpl) getInputSnapshotClientSafe() client.Client {
 	h.RLock()
 	defer h.RUnlock()
-	return h.kubeGatewayClient
+	return h.inputSnapshotClient
 }
 
 // redactApiSnapshot accepts an ApiSnapshot, and mutates it to remove sensitive data.

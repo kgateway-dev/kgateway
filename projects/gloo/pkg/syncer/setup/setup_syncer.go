@@ -919,7 +919,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			routeOptionClient,
 			virtualHostOptionClient,
 			statusClient,
-			snapshotHistory,
 		)
 	}
 

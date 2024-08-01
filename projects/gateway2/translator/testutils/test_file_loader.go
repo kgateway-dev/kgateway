@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/solo-io/gloo/pkg/schemes"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -22,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/skv2/contrib/pkg/sets"
 )
@@ -85,7 +85,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 }
 
 func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
-	scheme := scheme.NewScheme()
+	scheme := schemes.DefaultScheme()
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

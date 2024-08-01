@@ -2,6 +2,7 @@ package query_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/schemes"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,7 +12,6 @@ import (
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -29,7 +29,7 @@ var _ = Describe("Query", func() {
 	var builder *fake.ClientBuilder
 
 	BeforeEach(func() {
-		builder = fake.NewClientBuilder().WithScheme(gwscheme.NewScheme())
+		builder = fake.NewClientBuilder().WithScheme(schemes.DefaultScheme())
 		query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 			builder.WithIndex(o, f, fun)
 			return nil
