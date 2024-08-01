@@ -317,4 +317,4 @@ global:
   # additionalLabels adds a label to all object metadata
   additionalLabels: {}
   # securitySettings allows you to set global security settings for the Gloo Gateway
-  secuirtySettings: {}
+  securitySettings: {}

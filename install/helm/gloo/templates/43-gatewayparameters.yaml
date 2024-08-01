@@ -31,6 +31,9 @@ spec:
 {{- end }}{{/* if $gg.service */}}
     service:
       type: {{ $serviceType }}
+{{- with .Values.global.securitySettings.floatingUserId  }}
+    floatinguserId: {{ . }}
+{{- end }}
     envoyContainer:
       image:
         {{- $envoyImage := dict -}}
@@ -40,12 +43,11 @@ spec:
         {{- end -}}{{/* if $gg.envoyContainer.image */}}
         {{- end }}{{/* if $gg.envoyContainer */}}
         {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- $securityContextWithGlobals := include "gloo-gateway.renderSecurityContext" (list $gg.envoyContainer .Values.global.securitySettings ) -}}
-{{- with $securityContextWithGlobals  }}
-      securityContext:
-        {{-  . | nindent 8 }}
-{{- end }}{{/* with $securityContextWithGlobals */}}
 {{- if $gg.envoyContainer -}}
+{{- if $gg.envoyContainer.securityContext }}
+      securityContext:
+        {{- include "gloo-gateway.renderSecurityContext" (list $gg.envoyContainer.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+{{- end }}{{/* if $gg.envoyContainer.securityContext */}}
 {{- if $gg.envoyContainer.resources }}
       resources:
         {{- toYaml $gg.envoyContainer.resources | nindent 8 }}
@@ -58,11 +60,10 @@ spec:
     sdsContainer:
       image:
         {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- $securityContextWithGlobals := include "gloo-gateway.renderSecurityContext" (list $gg.sdsContainer .Values.global.securitySettings ) -}}
-{{- if $securityContextWithGlobals }}
+{{- if $gg.sdsContainer.securityContext }}
       securityContext:
-        {{- $securityContextWithGlobals | nindent 8 }}
-{{- end }}{{/* with $securityContextWithGlobals */}}
+        {{- include "gloo-gateway.renderSecurityContext" (list $gg.sdsContainer.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.securityContext */}}
 {{- if $gg.sdsContainer.logLevel }}
       bootstrap:
         logLevel: {{ $gg.sdsContainer.logLevel }}
@@ -80,11 +81,10 @@ spec:
       istioProxyContainer:
         image:
           {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
-{{- $securityContextWithGlobals := include "gloo-gateway.renderSecurityContext" (list $gg.istio.istioProxyContainer .Values.global.securitySettings ) -}}
-{{- with $securityContextWithGlobals  }}
-        securityContext:
-          {{- . | nindent 10 }}
-{{- end }}{{/* with $securityContextWithGlobals */}}
+{{- if $gg.istio.istioProxyContainer.securityContext }}
+      securityContext:
+        {{- include "gloo-gateway.renderSecurityContext" (list $gg.istioProxyContainer.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.securityContext */}}
 {{- if $gg.istio.istioProxyContainer.logLevel }}
         logLevel: {{ $gg.istio.istioProxyContainer.logLevel }}
 {{- end }}{{/* if $gg.istio.istioProxyContainer.logLevel */}}
@@ -102,14 +102,13 @@ spec:
       enabled: {{ $gg.aiExtension.enabled }}
       image:
         {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
-{{- $securityContextWithGlobals := include "gloo-gateway.renderSecurityContext" (list $gg.aiExtension .Values.global.securitySettings ) -}}
-{{- with $securityContextWithGlobals  }}
+{{- if $gg.aiExtension.securityContext }}
       securityContext:
-        {{- . | nindent 8 }}
-{{- end }}{{/* with $securityContextWithGlobals */}}
+        {{- include "gloo-gateway.renderSecurityContext" (list $gg.aiExtension.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+{{- end }}{{/* if $gg.aiExtension.securityContext */}}
 {{- if $gg.aiExtension.resources }}
       resources:
-        {{- $gg.aiExtension.resources | nindent 8 }}
+        {{- toYaml $gg.aiExtension.resources | nindent 8 }}
 {{- end }}{{/* if $gg.aiExtension.resources */}}
 {{- if $gg.aiExtension.env }}
       env:

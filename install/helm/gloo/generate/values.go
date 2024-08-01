@@ -330,6 +330,7 @@ type GatewayParameters struct {
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
 	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
+	FloatingUserId  *bool                      `json:"floatingUserId,omitempty" desc:"DO_NOT_SUBMIT"`
 	// TODO(npolshak): Add support for GlooMtls
 }
 

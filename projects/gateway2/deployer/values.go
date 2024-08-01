@@ -45,6 +45,7 @@ type helmGateway struct {
 	Image             *helmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	FloatingUserId    *bool                        `json:"floatingUserId,omitempty"`
 
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`

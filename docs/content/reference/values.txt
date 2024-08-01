@@ -163,6 +163,7 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].containerPort|int32|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].protocol|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostIP|string|||
+|kubeGateway.gatewayParameters.glooGateway.floatingUserId|bool||DO_NOT_SUBMIT|
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|

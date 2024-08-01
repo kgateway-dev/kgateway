@@ -89,8 +89,31 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
 	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
+	dstKube.FloatingUserId = mergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId())
+
+	applyFloatingUserId(dstKube)
 
 	return dst
+}
+
+func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
+	if dstKube == nil || dstKube.FloatingUserId == nil || !*dstKube.FloatingUserId {
+		return
+	}
+
+	securityContexts := []*corev1.SecurityContext{
+		dstKube.GetEnvoyContainer().GetSecurityContext(),
+		dstKube.GetSdsContainer().GetSecurityContext(),
+		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
+		dstKube.GetAiExtension().GetSecurityContext(),
+	}
+
+	for _, securityContext := range securityContexts {
+		if securityContext != nil {
+			securityContext.RunAsUser = nil
+		}
+	}
+
 }
 
 func deepMergeStatsConfig(dst *v1alpha1.StatsConfig, src *v1alpha1.StatsConfig) *v1alpha1.StatsConfig {
