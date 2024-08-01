@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	types2 "github.com/onsi/gomega/types"
+	gomegatypes "github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/schemes"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -839,16 +839,14 @@ func setSnapshotOnHistory(ctx context.Context, history History, snap *v1snap.Api
 
 	Eventually(func(g Gomega) {
 		apiSnapshot := getEdgeApiSnapshot(ctx, history)
-		Expect(apiSnapshot.Gateways).To(ContainElement(
-			skmatchers.MatchProto(gwSignal),
-		))
+		g.Expect(apiSnapshot.Gateways).To(ContainElement(skmatchers.MatchProto(gwSignal)))
 	}).
 		WithPolling(time.Millisecond*100).
 		WithTimeout(time.Second*5).
 		Should(Succeed(), fmt.Sprintf("snapshot should eventually contain resource %v %s", gatewayv1.GatewayGVK, gwSignal.GetMetadata().Ref().String()))
 }
 
-func simpleObjectMatcher(gvk schema.GroupVersionKind, namespacedName types.NamespacedName) types2.GomegaMatcher {
+func simpleObjectMatcher(gvk schema.GroupVersionKind, namespacedName types.NamespacedName) gomegatypes.GomegaMatcher {
 	return matchers.MatchClientObject(
 		gvk,
 		namespacedName,
