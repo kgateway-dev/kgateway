@@ -3,12 +3,13 @@ package admincli
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"log"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
-	"io"
-	"log"
 )
 
 const (
