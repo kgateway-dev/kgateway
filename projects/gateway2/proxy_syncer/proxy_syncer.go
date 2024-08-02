@@ -2,10 +2,13 @@ package proxy_syncer
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -17,9 +20,10 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
@@ -112,7 +116,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
 		startTime := time.Now()
 
-		var gwl apiv1.GatewayList
+		var gwl gwv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {
 			// This should never happen, try again?
@@ -180,20 +184,32 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	logger.Debugf("syncing k8s gateway route status")
 	startTime := time.Now()
 
-	rl := apiv1.HTTPRouteList{}
+	rl := gwv1.HTTPRouteList{}
 	err := s.mgr.GetClient().List(ctx, &rl)
 	if err != nil {
 		logger.Error(err)
 		return
 	}
 
+	// TODO(npolshak): remove this
+	useReflection := os.Getenv("USE_REFLECTION") == "true"
+
 	for _, route := range rl.Items {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-			if !reflect.DeepEqual(route.Status, *status) {
-				route.Status = *status
-				if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-					logger.Error(err)
+			if useReflection {
+				if !reflect.DeepEqual(route.Status, *status) {
+					route.Status = *status
+					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
+						logger.Error(err)
+					}
+				}
+			} else {
+				if !isHTTPRouteStatusEqual(&route.Status, status) {
+					route.Status = *status
+					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
+						logger.Error(err)
+					}
 				}
 			}
 		}
@@ -202,19 +218,31 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 }
 
 // syncStatus updates the status of the Gateway CRs
-func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl apiv1.GatewayList) {
+func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl gwv1.GatewayList) {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Debugf("syncing k8s gateway proxy status")
 	startTime := time.Now()
 
+	// TODO(npolshak): remove this
+	useReflection := os.Getenv("USE_REFLECTION") == "true"
+
 	for _, gw := range gwl.Items {
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
-			if !reflect.DeepEqual(gw.Status, *status) {
-				gw.Status = *status
-				if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-					logger.Error(err)
+			if useReflection {
+				if !reflect.DeepEqual(gw.Status, *status) {
+					gw.Status = *status
+					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+						logger.Error(err)
+					}
+				}
+			} else {
+				if !isGatewayStatusEqual(&gw.Status, status) {
+					gw.Status = *status
+					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+						logger.Error(err)
+					}
 				}
 			}
 		}
@@ -259,4 +287,27 @@ func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.Pl
 			continue
 		}
 	}
+}
+
+// TODO(npolshak): Add support for more gateway types
+
+var opts = cmp.Options{
+	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
+		return k == "lastTransitionTime"
+	}),
+}
+
+func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
+	if cmp.Equal(objA, objB, opts) {
+		return true
+	}
+	return false
+}
+
+func isHTTPRouteStatusEqual(objA, objB *gwv1.HTTPRouteStatus) bool {
+	if cmp.Equal(objA, objB, opts) {
+		return true
+	}
+	return false
 }
