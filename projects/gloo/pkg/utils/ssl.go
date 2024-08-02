@@ -69,10 +69,20 @@ func NewSslConfigTranslator() *sslConfigTranslator {
 	return &sslConfigTranslator{}
 }
 
-func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *ssl.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
+func (s *sslConfigTranslator) ResolveUpstreamSslConfig(
+	secrets v1.SecretList,
+	uc *ssl.UpstreamSslConfig,
+) (*envoyauth.UpstreamTlsContext, error) {
 	common, err := s.ResolveCommonSslConfig(uc, secrets, false)
 	if err != nil {
 		return nil, err
+	}
+
+	// If the user needs one-way TLS to the upstream, disable mTLS by removing
+	// the validation context added in ResolveCommonSslConfig. This flag cannot
+	// be used with SDS config.
+	if uc.GetSds() == nil && uc.GetOneWayTls().GetValue() {
+		common.ValidationContextType = nil
 	}
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext:   common,
