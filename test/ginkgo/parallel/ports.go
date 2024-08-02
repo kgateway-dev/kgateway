@@ -25,7 +25,7 @@ func GetPortOffset() int {
 	return GetParallelProcessCount() * 1000
 }
 
-// RetryWithLoggedError retries if there is an error and prints that error that occurs to stdout
+// RetryWithLoggedError retries if there is an error and prints that error to stdout
 func RetryWithLoggedError() retry.Option {
 	return retry.RetryIf(func(err error) bool {
 		if err != nil {
