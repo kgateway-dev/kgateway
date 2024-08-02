@@ -47,7 +47,7 @@ Create a Kubernetes secret that contains your AWS access key and secret key. Glo
        --name 'aws-creds' \
        --namespace gloo-system \
        --access-key $ACCESS_KEY \
-       --secret-key $SECRET_KEY
+       --secret-key $SECRET_KEY \
        --session-token $SESSION_TOKEN
    ```
 
