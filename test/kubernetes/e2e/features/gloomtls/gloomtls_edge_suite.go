@@ -17,6 +17,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )
 
+var _ e2e.NewSuiteFunc = NewGloomtlsEdgeGatewayApiTestingSuite
+
 // gloomtlsEdgeGatewayTestingSuite is the entire Suite of tests for the "Gloo mtls" cases
 type gloomtlsEdgeGatewayTestingSuite struct {
 	suite.Suite
