@@ -25,7 +25,7 @@ var (
 	}
 
 	// PolicyGVKs is the set of GVKs that are used by a classic Gloo Gateway installation.
-	// This is the common set of GVKs that are available when only Edge Gateway APIs are being
+	// This is the common set of GVKs that are available when Edge Gateway APIs are being
 	// used. See KubernetesGatewayIntegrationPolicyGVKs for the set of GVKs that are added
 	// when the Kubernetes Gateway API is enabled
 	PolicyGVKs = []schema.GroupVersionKind{
