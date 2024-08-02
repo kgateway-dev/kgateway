@@ -25,7 +25,7 @@ func GetPortOffset() int {
 	return GetParallelProcessCount() * 1000
 }
 
-// RetryWithLoggedError retries if there is no error and prints any error that occurs to stdout
+// RetryWithLoggedError retries if there is an error and prints that error that occurs to stdout
 func RetryWithLoggedError() retry.Option {
 	return retry.RetryIf(func(err error) bool {
 		if err != nil {
@@ -85,6 +85,6 @@ func portInUseListen(proposedPort uint32) error {
 		return eris.Wrapf(err, "port %d is in use", proposedPort)
 	}
 
-	// Port is available
+	// Port should available if the listener closes without an error
 	return ln.Close()
 }
