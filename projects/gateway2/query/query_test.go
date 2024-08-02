@@ -3,10 +3,11 @@ package query_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/schemes"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,12 +30,13 @@ var _ = Describe("Query", func() {
 	}
 
 	BeforeEach(func() {
-		scheme = gwscheme.NewScheme()
+		scheme = schemes.DefaultScheme()
 		builder = fake.NewClientBuilder().WithScheme(scheme)
-		query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
+		err := query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 			builder.WithIndex(o, f, fun)
 			return nil
 		})
+		Expect(err).NotTo(HaveOccurred())
 	})
 	Describe("GetBackendForRef", func() {
 		It("should get service from same namespace", func() {

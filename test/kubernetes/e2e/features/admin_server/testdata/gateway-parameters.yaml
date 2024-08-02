@@ -1,0 +1,24 @@
+apiVersion: gateway.gloo.solo.io/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-params
+  namespace: default
+spec:
+  kube:
+    deployment:
+      replicas: 1
+    podTemplate:
+      extraLabels:
+        pod-label-key: pod-label-val
+      extraAnnotations:
+        pod-anno-key: pod-anno-val
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+        componentLogLevels:
+          upstream: debug
+          connection: trace
+      securityContext:
+        runAsUser: null
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true

@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/schemes"
+
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -10,7 +12,6 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
@@ -19,7 +20,6 @@ import (
 	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -63,10 +63,6 @@ type StartConfig struct {
 	// as the gateway controller (in another start func)
 	// TODO(ilackarms) refactor to enable the status syncer to be started in the same start func
 	QueueStatusForProxies proxy_syncer.QueueStatusForProxiesFn
-
-	// SnapshotHistory is used for debugging purposes
-	// The controller updates the History with the Kubernetes Client is used, and the History is then used by the Admin Server
-	SnapshotHistory iosnapshot.History
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -81,7 +77,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	ctrl.SetLogger(zap.New(opts...))
 
 	mgrOpts := ctrl.Options{
-		Scheme:           scheme.NewScheme(),
+		Scheme:           schemes.DefaultScheme(),
 		PprofBindAddress: "127.0.0.1:9099",
 		// if you change the port here, also change the port "health" in the helmchart.
 		HealthProbeBindAddress: ":9093",
@@ -97,8 +93,6 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
-
-	cfg.SnapshotHistory.SetKubeGatewayClient(mgr.GetClient())
 
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 
