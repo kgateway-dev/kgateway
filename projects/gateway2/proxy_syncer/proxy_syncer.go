@@ -2,8 +2,6 @@ package proxy_syncer
 
 import (
 	"context"
-	"os"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -191,25 +189,13 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 		return
 	}
 
-	// TODO(npolshak): remove this
-	useReflection := os.Getenv("USE_REFLECTION") == "true"
-
 	for _, route := range rl.Items {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-			if useReflection {
-				if !reflect.DeepEqual(route.Status, *status) {
-					route.Status = *status
-					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-						logger.Error(err)
-					}
-				}
-			} else {
-				if !isHTTPRouteStatusEqual(&route.Status, status) {
-					route.Status = *status
-					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-						logger.Error(err)
-					}
+			if !isHTTPRouteStatusEqual(&route.Status, status) {
+				route.Status = *status
+				if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
+					logger.Error(err)
 				}
 			}
 		}
@@ -224,25 +210,13 @@ func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl 
 	logger.Debugf("syncing k8s gateway proxy status")
 	startTime := time.Now()
 
-	// TODO(npolshak): remove this
-	useReflection := os.Getenv("USE_REFLECTION") == "true"
-
 	for _, gw := range gwl.Items {
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
-			if useReflection {
-				if !reflect.DeepEqual(gw.Status, *status) {
-					gw.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error(err)
-					}
-				}
-			} else {
-				if !isGatewayStatusEqual(&gw.Status, status) {
-					gw.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error(err)
-					}
+			if !isGatewayStatusEqual(&gw.Status, status) {
+				gw.Status = *status
+				if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+					logger.Error(err)
 				}
 			}
 		}
@@ -288,8 +262,6 @@ func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.Pl
 		}
 	}
 }
-
-// TODO(npolshak): Add support for more gateway types
 
 var opts = cmp.Options{
 	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
