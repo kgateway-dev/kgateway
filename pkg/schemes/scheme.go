@@ -15,14 +15,6 @@ import (
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-var defaultScheme *runtime.Scheme
-
-func init() {
-	s := scheme.Scheme
-	_ = AddToScheme(s)
-	defaultScheme = s
-}
-
 // SchemeBuilder contains all the Schemes for registering the CRDs with which Gloo Gateway interacts.
 // We share one SchemeBuilder as there's no harm in registering all I/O types internally.
 var SchemeBuilder = runtime.SchemeBuilder{
@@ -55,6 +47,10 @@ func AddToScheme(s *runtime.Scheme) error {
 }
 
 // DefaultScheme returns a scheme with all the types registered for Gloo Gateway
+// We intentionally do not perform this operation in an init!!
+// See https://github.com/solo-io/gloo/pull/9692 for context
 func DefaultScheme() *runtime.Scheme {
-	return defaultScheme
+	s := scheme.Scheme
+	_ = AddToScheme(s)
+	return s
 }
