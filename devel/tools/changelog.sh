@@ -16,9 +16,8 @@ CHANGELOG_FILE="$CHANGELOG_DIR/$BRANCH_NAME.yaml"
 
 if [[ ! -f $CHANGELOG_FILE ]]; then
     echo "Creating $CHANGELOG_FILE"
-fi
 
-cat <<EOF > "$CHANGELOG_FILE"
+    cat << EOF > "$CHANGELOG_FILE"
 changelog:
   - type: FIX
     issueLink:
@@ -28,6 +27,7 @@ changelog:
 EOF
 
 echo "Wrote to $CHANGELOG_FILE"
+fi
 
 # TODO this is a quick hack to avoid args parsing. If this script grows in complexity, parsing args will be more appropriate than this check.
 if [[ $# > 0 ]] && [[ "$1" == "edit" ]]; then
