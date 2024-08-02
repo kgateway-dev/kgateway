@@ -39,7 +39,7 @@ Create an AWS Lambda function to test with Gloo Gateway routing.
 
 Create a Kubernetes secret that contains your AWS access key and secret key. Gloo Gateway uses this secret to connect to AWS Lambda for service discovery.
 
-1. Get the access key and secret key for your AWS account. Note that your [AWS credentials](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html) must have the appropriate permissions to interact with AWS Lambda.
+1. Get the access key, secret key and session token for your AWS account. Note that your [AWS credentials](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html) must have the appropriate permissions to interact with AWS Lambda.
 
 2. Create a Kubernetes secret that contains the AWS access key and secret key.
    ```sh
@@ -48,6 +48,7 @@ Create a Kubernetes secret that contains your AWS access key and secret key. Glo
        --namespace gloo-system \
        --access-key $ACCESS_KEY \
        --secret-key $SECRET_KEY
+       --session-token $SESSION_TOKEN
    ```
 
 ### Step 3: Create an upstream and virtual service
