@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/gomega/types"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/gomega"
@@ -35,33 +37,87 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// TestGetInputSnapshot verifies that we can query the /snapshots/input API and have it return data without an error
-func (s *testingSuite) TestGetInputSnapshot() {
+// TestGetInputSnapshotIncludesSettings verifies that we can query the /snapshots/input API and have it return Settings
+// without an error.
+func (s *testingSuite) TestGetInputSnapshotIncludesSettings() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
 			Name:      kubeutils.GlooDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
-		inputSnapshotAssertion(s.testInstallation),
+		inputSnapshotContainsElement(s.testInstallation, "Settings", metav1.ObjectMeta{
+			Name:      defaults.SettingsName,
+			Namespace: s.testInstallation.Metadata.InstallNamespace,
+		}),
 	)
 }
 
-func inputSnapshotAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+// TestGetInputSnapshotIncludesEdgeApiResources verifies that we can query the /snapshots/input API and have it return Edge API
+// resources without an error
+func (s *testingSuite) TestGetInputSnapshotIncludesEdgeApiResources() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, upstreamManifest)
+		s.NoError(err, "can delete manifest")
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, upstreamManifest)
+	s.Assert().NoError(err, "can apply gloo.solo.io Upstreams manifest")
+
+	s.testInstallation.Assertions.AssertGlooAdminApi(
+		s.ctx,
+		metav1.ObjectMeta{
+			Name:      kubeutils.GlooDeploymentName,
+			Namespace: s.testInstallation.Metadata.InstallNamespace,
+		},
+		inputSnapshotContainsElement(s.testInstallation, "Upstream", upstreamMeta),
+	)
+}
+
+// TestGetInputSnapshotIncludesK8sGatewayApiResources verifies that we can query the /snapshots/input API and have it return K8s Gateway API
+// resources without an error
+func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
+	if !s.testInstallation.Metadata.K8sGatewayEnabled {
+		s.T().Skip("Installation of Gloo Gateway does not have K8s Gateway enabled, skipping test as there is nothing to test")
+	}
+
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gatewayParametersManifest)
+		s.NoError(err, "can delete manifest")
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayParametersManifest)
+	s.Assert().NoError(err, "can apply gateway.gloo.solo.io GatewayParameters manifest")
+
+	s.testInstallation.Assertions.AssertGlooAdminApi(
+		s.ctx,
+		metav1.ObjectMeta{
+			Name:      kubeutils.GlooDeploymentName,
+			Namespace: s.testInstallation.Metadata.InstallNamespace,
+		},
+		inputSnapshotContainsElement(s.testInstallation, "GatewayParameters", gatewayParametersMeta),
+	)
+}
+
+func inputSnapshotContainsElement(testInstallation *e2e.TestInstallation, kind string, meta metav1.ObjectMeta) func(ctx context.Context, adminClient *admincli.Client) {
+	return inputSnapshotMatches(testInstallation, gomega.ContainElement(
+		gomega.And(
+			gomega.HaveKeyWithValue("kind", gomega.Equal(kind)),
+			gomega.HaveKeyWithValue("metadata", gomega.And(
+				gomega.HaveKeyWithValue("name", meta.GetName()),
+				gomega.HaveKeyWithValue("namespace", meta.GetNamespace()),
+			)),
+		),
+	))
+}
+
+func inputSnapshotMatches(testInstallation *e2e.TestInstallation, inputSnapshotMatcher types.GomegaMatcher) func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
 		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 			inputSnapshot, err := adminClient.GetInputSnapshot(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "error getting input snapshot")
 			g.Expect(inputSnapshot).NotTo(gomega.BeEmpty(), "objects are returned")
-			g.Expect(inputSnapshot).To(gomega.ContainElement(
-				gomega.And(
-					gomega.HaveKeyWithValue("kind", gomega.Equal("Settings")),
-					gomega.HaveKeyWithValue("metadata", gomega.And(
-						gomega.HaveKeyWithValue("name", defaults.SettingsName),
-						gomega.HaveKeyWithValue("namespace", testInstallation.Metadata.InstallNamespace),
-					)),
-				),
-			), "should contain settings CR")
+			g.Expect(inputSnapshot).To(inputSnapshotMatcher)
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).
