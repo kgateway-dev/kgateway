@@ -23,5 +23,6 @@ jobs:
         with:
           labels: |
             keep pr updated
+            work in progress
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
