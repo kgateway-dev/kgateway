@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
 )
@@ -42,10 +42,7 @@ var _ = Describe("Client", func() {
 	Context("Integration tests", func() {
 
 		When("Admin API is reachable", func() {
-			// We do not YET write additional integration tests for when the Admin API is reachable
-			// This utility is used in our test/services/envoy.Instance, which is the core service
-			// for our in-memory e2e (test/e2e) tests.
-			// todo: we should introduce integration tests to validate this behavior
+			// We rely on e2e tests defined in /test/kubernetes/e2e/features/admin_server to verify this behavior
 		})
 
 		When("Admin API is not reachable", func() {
@@ -55,7 +52,7 @@ var _ = Describe("Client", func() {
 					defaultOutputLocation, errLocation, outLocation threadsafe.Buffer
 				)
 
-				// Create a client that points to an address where Envoy is NOT running
+				// Create a client that points to an address where Gloo is NOT running
 				client := admincli.NewClient().
 					WithReceiver(&defaultOutputLocation).
 					WithCurlOptions(
@@ -66,11 +63,11 @@ var _ = Describe("Client", func() {
 						curl.WithoutRetries(),
 					)
 
-				statsCmd := client.StatsCmd(ctx).
+				inputSnapshotCmd := client.InputSnapshotCmd(ctx).
 					WithStdout(&outLocation).
 					WithStderr(&errLocation)
 
-				err := statsCmd.Run().Cause()
+				err := inputSnapshotCmd.Run().Cause()
 				Expect(err).To(HaveOccurred(), "running the command should return an error")
 				Expect(defaultOutputLocation.Bytes()).To(BeEmpty(), "defaultOutputLocation should not be used")
 				Expect(outLocation.Bytes()).To(BeEmpty(), "failed request should not output to Stdout")
