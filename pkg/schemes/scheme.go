@@ -6,7 +6,7 @@ import (
 	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
 	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1/kube/apis/graphql.gloo.solo.io/v1beta1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+	ratelimitv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +38,7 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	// These are packed in the OSS Helm Chart, and therefore we register the schemes here as well
 	graphqlv1beta1.AddToScheme,
 	extauthkubev1.AddToScheme,
-	v1alpha1.AddToScheme,
+	ratelimitv1alpha1.AddToScheme,
 }
 
 func AddToScheme(s *runtime.Scheme) error {

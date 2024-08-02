@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6600
+    resolvesIssue: false
+    description: >-
+      Fast follow PR, to incorporate feedback from previous PR review.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6602
+    resolvesIssue: false
+    description: >-
+      Fast follow PR, to incorporate feedback from previous PR review.
