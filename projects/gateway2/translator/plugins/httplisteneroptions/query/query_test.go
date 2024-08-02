@@ -3,13 +3,14 @@ package query_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/schemes"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -44,7 +45,7 @@ var _ = Describe("Query Get HttpListenerOptions", func() {
 	})
 
 	JustBeforeEach(func() {
-		builder := fake.NewClientBuilder().WithScheme(gwscheme.NewScheme())
+		builder := fake.NewClientBuilder().WithScheme(schemes.DefaultScheme())
 		query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 			builder.WithIndex(o, f, fun)
 			return nil

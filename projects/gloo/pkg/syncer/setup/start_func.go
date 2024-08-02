@@ -62,7 +62,6 @@ func K8sGatewayControllerStartFunc(
 	routeOptionClient gateway.RouteOptionClient,
 	vhOptionClient gateway.VirtualHostOptionClient,
 	statusClient resources.StatusClient,
-	snapshotHistory iosnapshot.History,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
@@ -77,8 +76,6 @@ func K8sGatewayControllerStartFunc(
 			RouteOptionClient:       routeOptionClient,
 			VirtualHostOptionClient: vhOptionClient,
 			StatusReporter:          statusReporter,
-
-			SnapshotHistory: snapshotHistory,
 
 			// Useful for development purposes
 			// At the moment, this is not tied to any user-facing API
