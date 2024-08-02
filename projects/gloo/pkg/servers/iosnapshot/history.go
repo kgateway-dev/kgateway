@@ -134,15 +134,14 @@ func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData
 
 // GetInputSnapshot gets the input snapshot for all components.
 func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData {
-	inputSnapshotClient := h.getInputSnapshotClientSafe()
-	if inputSnapshotClient == nil {
+	if h.inputSnapshotClient == nil {
 		return errorSnapshotResponse(eris.New("No kubernetes Client found for InputSnapshot"))
 	}
 
 	var objects []client.Object
 	var errs *multierror.Error
 	for _, gvk := range h.inputSnapshotGvks {
-		gvkResources, err := h.listObjectsForGvk(ctx, inputSnapshotClient, gvk)
+		gvkResources, err := h.listObjectsForGvk(ctx, h.inputSnapshotClient, gvk)
 		if err != nil {
 			// We intentionally aggregate the errors so that we can return a "best effort" set of
 			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
@@ -272,14 +271,6 @@ func (h *historyImpl) listObjectsForGvk(ctx context.Context, cli client.Client, 
 	}
 
 	return objects, errs.ErrorOrNil()
-}
-
-// getInputSnapshotClientSafe gets the Kubernetes client used for CRUD operations
-// on resources used in the Kubernetes Gateway integration
-func (h *historyImpl) getInputSnapshotClientSafe() client.Client {
-	h.RLock()
-	defer h.RUnlock()
-	return h.inputSnapshotClient
 }
 
 // redactApiSnapshot accepts an ApiSnapshot, and mutates it to remove sensitive data.
