@@ -10,7 +10,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
@@ -50,7 +49,7 @@ func AddToScheme(s *runtime.Scheme) error {
 // We intentionally do not perform this operation in an init!!
 // See https://github.com/solo-io/gloo/pull/9692 for context
 func DefaultScheme() *runtime.Scheme {
-	s := scheme.Scheme
+	s := runtime.NewScheme()
 	_ = AddToScheme(s)
 	return s
 }
