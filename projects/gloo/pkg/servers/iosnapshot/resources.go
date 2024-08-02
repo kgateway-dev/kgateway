@@ -24,8 +24,10 @@ var (
 		gloov1.ProxyGVK,
 	}
 
-	// PolicyGVKs is the set of GVKs that are used by a classic Gloo Gateway installation,
-	// when only the Edge Gateway APIs are being used
+	// PolicyGVKs is the set of GVKs that are used by a classic Gloo Gateway installation.
+	// This is the common set of GVKs that are available when Edge Gateway APIs are being
+	// used. See KubernetesGatewayIntegrationPolicyGVKs for the set of GVKs that are added
+	// when the Kubernetes Gateway API is enabled
 	PolicyGVKs = []schema.GroupVersionKind{
 		gatewayv1.VirtualHostOptionGVK,
 		gatewayv1.RouteOptionGVK,
