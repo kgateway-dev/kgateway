@@ -209,6 +209,13 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.RequireClientCertificate.GetValue()).To(BeFalse())
 		})
 
+		It("should set validation context to nil if oneWayTls enabled for upstream config", func() {
+			upstreamCfg.OneWayTls = &wrappers.BoolValue{Value: true}
+			cfg, err := configTranslator.ResolveUpstreamSslConfig(secrets, upstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.CommonTlsContext.GetValidationContext()).To(BeNil())
+		})
+
 		It("should set alpn default for downstream config", func() {
 			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
 			Expect(err).NotTo(HaveOccurred())

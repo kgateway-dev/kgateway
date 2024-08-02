@@ -194,6 +194,12 @@ func (m *UpstreamSslConfig) Clone() proto.Message {
 		target.AllowRenegotiation = proto.Clone(m.GetAllowRenegotiation()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetOneWayTls()).(clone.Cloner); ok {
+		target.OneWayTls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.OneWayTls = proto.Clone(m.GetOneWayTls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *UpstreamSslConfig_SecretRef:
