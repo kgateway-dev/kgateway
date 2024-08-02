@@ -108,6 +108,12 @@ message UpstreamSslConfig {
     // Allow Tls renegotiation, the default value is false.
     // TLS renegotiation is considered insecure and shouldn’t be used unless absolutely necessary.
     google.protobuf.BoolValue allow_renegotiation = 10;
+
+    // If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
+    // Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
+    // This flag does nothing if SDS is configured.
+    // If unset, defaults to false.
+    google.protobuf.BoolValue one_way_tls = 11;
 }
 
 message SDSConfig {
