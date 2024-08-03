@@ -1,0 +1,28 @@
+---
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher: {}
+      virtualHostRefs:
+      - http~example_com
+    httpResources:
+      virtualHosts:
+        http~example_com:
+          domains:
+          - example.com
+          name: http~example_com
+          routes:
+          - directResponseAction:
+              status: 500
+            matchers:
+            - prefix: /
+            options: {}
+  bindAddress: '::'
+  bindPort: 8080
+  name: http
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: default
+  name: default-example-gateway
+  namespace: gloo-system
