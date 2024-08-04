@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: |
+      Set the 'message' field on various HTTPRoute conditions to enable easier troubleshooting
